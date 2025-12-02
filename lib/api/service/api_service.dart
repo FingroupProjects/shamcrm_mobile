@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:collection';
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/services.dart';
 import 'package:crm_task_manager/models/LeadStatusForFilter.dart';
 import 'package:crm_task_manager/models/api_exception_model.dart';
 import 'package:crm_task_manager/models/author_data_response.dart';
@@ -406,6 +407,26 @@ Future<String> getDynamicBaseUrl() async {
 
     // Очищаем новые данные email-flow
     await clearEmailVerificationData();
+
+    // Clear widget permissions on iOS (via App Groups)
+    await _clearWidgetPermissions();
+  }
+
+  // Clear widget permissions on logout
+  Future<void> _clearWidgetPermissions() async {
+    try {
+      // Import is at the top of the file, but we need to call the static method
+      // This will be handled by the WidgetService
+      const platform = MethodChannel('com.softtech.crm_task_manager/widget');
+      if (Platform.isIOS) {
+        await platform.invokeMethod('syncPermissionsToWidget', {
+          'permissions': <String>[],
+        });
+        debugPrint('ApiService: Cleared widget permissions on logout');
+      }
+    } catch (e) {
+      debugPrint('ApiService: Error clearing widget permissions: $e');
+    }
   }
 
 // Метод для получения информации о пользователе по email
@@ -779,122 +800,106 @@ Future<http.Response> _patchRequest(
 
   //_________________________________ START___API__METHOD__POST__DEVICE__TOKEN_________________________________________________//
 
-  // Добавление метода для отправки токена устройства
-Future<void> sendDeviceToken(String deviceToken) async {
-  try {
-    debugPrint('═══════════════════════════════════════════════════════════');
-    debugPrint('sendDeviceToken: 📤 Начало отправки токена');
-    debugPrint('sendDeviceToken: Token: ${deviceToken.substring(0, 20)}...');
-    
-    // ✅ ПРОВЕРКА 1: baseUrl инициализирован?
-    if (baseUrl == null || baseUrl!.isEmpty) {
-      debugPrint('sendDeviceToken: ❌ baseUrl не инициализирован!');
-      debugPrint('sendDeviceToken: 💾 Сохраняем токен как отложенный');
+// ОТЛОЖЕННЫЙ ТОКЕН — ОДИН РАЗ, НАДЁЖНО
+  static const String _pendingFcmKey = 'pending_fcm_token';
+
+  Future<void> sendDeviceToken(String deviceToken) async {
+    try {
+      debugPrint('═══════════════════════════════════════════════════════════');
+      debugPrint('sendDeviceToken: Начало отправки FCM-токена');
+      debugPrint('sendDeviceToken: Token: ${deviceToken.substring(0, 20)}...');
+
+      // 1. Ждём, пока всё инициализировано
+      await ensureInitialized();
+      if (baseUrl == null || baseUrl!.isEmpty) {
+        debugPrint('sendDeviceToken: baseUrl не готов → сохраняем как отложенный');
+        await _savePendingToken(deviceToken);
+        return;
+      }
+
+      final token = await getToken();
+      if (token == null || token.isEmpty) {
+        debugPrint('sendDeviceToken: Нет авторизационного токена → отложенный');
+        await _savePendingToken(deviceToken);
+        return;
+      }
+
+      final organizationId = await getSelectedOrganization();
+      final url = '$baseUrl/add-fcm-token${organizationId != null ? '?organization_id=$organizationId' : ''}';
+
+      debugPrint('sendDeviceToken: URL: $url');
+
+      final response = await http.post(
+        Uri.parse(url),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Authorization': 'Bearer $token',
+          'Device': 'mobile',
+        },
+        body: json.encode({
+          'type': 'mobile',
+          'token': deviceToken,
+        }),
+      );
+
+      debugPrint('sendDeviceToken: Ответ: ${response.statusCode} ${response.body}');
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        debugPrint('sendDeviceToken: УСПЕШНО отправлен');
+        await _removePendingToken(); // Удаляем только при успехе
+      } else {
+        debugPrint('sendDeviceToken: Ошибка ${response.statusCode} → отложенный');
+        await _savePendingToken(deviceToken);
+      }
+    } catch (e, s) {
+      debugPrint('sendDeviceToken: Исключение: $e\n$s');
       await _savePendingToken(deviceToken);
-      return;
+    } finally {
+      debugPrint('═══════════════════════════════════════════════════════════');
     }
-
-    debugPrint('sendDeviceToken: ✅ baseUrl: $baseUrl');
-
-    // ✅ ПРОВЕРКА 2: Токен авторизации
-    final token = await getToken();
-    if (token == null || token.isEmpty) {
-      debugPrint('sendDeviceToken: ⚠️ Токен авторизации отсутствует');
-      await _savePendingToken(deviceToken);
-      return;
-    }
-
-    debugPrint('sendDeviceToken: ✅ Authorization token: ${token.substring(0, 20)}...');
-
-    // ✅ ПРОВЕРКА 3: Organization ID
-    final organizationId = await getSelectedOrganization();
-    debugPrint('sendDeviceToken: Organization ID: ${organizationId ?? "не указан"}');
-
-    final url = '$baseUrl/add-fcm-token${organizationId != null ? '?organization_id=$organizationId' : ''}';
-    debugPrint('sendDeviceToken: 🌐 Full URL: $url');
-
-    final response = await http.post(
-      Uri.parse(url),
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'Authorization': 'Bearer $token',
-        'Device': 'mobile'
-      },
-      body: json.encode({
-        'type': 'mobile',
-        'token': deviceToken,
-      }),
-    );
-
-    debugPrint('sendDeviceToken: 📬 Response status: ${response.statusCode}');
-    debugPrint('sendDeviceToken: 📬 Response body: ${response.body}');
-
-    if (response.statusCode == 200) {
-      debugPrint('sendDeviceToken: ✅ FCM-токен успешно отправлен!');
-      // Удаляем отложенный токен при успешной отправке
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.remove('pending_fcm_token');
-      debugPrint('sendDeviceToken: 🗑️ Отложенный токен удалён');
-    } else {
-      debugPrint('sendDeviceToken: ❌ Ошибка ${response.statusCode}');
-      await _savePendingToken(deviceToken);
-    }
-
-    debugPrint('═══════════════════════════════════════════════════════════');
-  } catch (e, stackTrace) {
-    debugPrint('═══════════════════════════════════════════════════════════');
-    debugPrint('sendDeviceToken: 💥 Exception: $e');
-    debugPrint('sendDeviceToken: StackTrace: $stackTrace');
-    debugPrint('═══════════════════════════════════════════════════════════');
-    await _savePendingToken(deviceToken);
-    rethrow;
   }
-}
 
-// ← ДОБАВЬ ЭТОТ МЕТОД
-Future<void> _savePendingToken(String token) async {
-  final prefs = await SharedPreferences.getInstance();
-  await prefs.setString('pending_fcm_token', token);
-  debugPrint('sendDeviceToken: Токен сохранён как отложенный');
-}
-
-Future<void> ensureInitialized() async {
-  if (baseUrl == null) {
-    await _initializeIfDomainExists();
-  }
-}
-
-Future<void> sendPendingFCMToken() async {
-  try {
-    debugPrint('ApiService: Проверка отложенного FCM токена');
-    
+  // Сохранение отложенного токена
+  Future<void> _savePendingToken(String token) async {
     final prefs = await SharedPreferences.getInstance();
-    final pendingToken = prefs.getString('pending_fcm_token');
-    
-    if (pendingToken != null && pendingToken.isNotEmpty) {
-      debugPrint('ApiService: Найден отложенный FCM токен, отправляем на сервер');
-      
-      // Проверяем что baseUrl инициализирован
-      // if (baseUrl.isEmpty) {
-      //   debugPrint('ApiService: baseUrl не инициализирован, пропускаем отправку');
-      //   return;
-      // }
-      
-      await sendDeviceToken(pendingToken);
-      
-      // Удаляем токен после успешной отправки
-      await prefs.remove('pending_fcm_token');
-      debugPrint('ApiService: FCM токен успешно отправлен и удалён из локального хранилища');
-      
-    } else {
-      debugPrint('ApiService: Отложенный FCM токен не найден');
-    }
-    
-  } catch (e) {
-    debugPrint('ApiService: Ошибка отправки отложенного FCM токена: $e');
+    await prefs.setString(_pendingFcmKey, token);
+    debugPrint('sendDeviceToken: Токен сохранён как отложенный');
   }
-}
+
+  // Удаление отложенного токена ТОЛЬКО при успехе
+  Future<void> _removePendingToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    final hadToken = prefs.containsKey(_pendingFcmKey);
+    await prefs.remove(_pendingFcmKey);
+    if (hadToken) debugPrint('sendDeviceToken: Отложенный токен удалён');
+  }
+
+  // ЕДИНАЯ точка отправки отложенного токена
+  Future<void> sendPendingFCMTokenIfNeeded() async {
+    final prefs = await SharedPreferences.getInstance();
+    final pending = prefs.getString(_pendingFcmKey);
+
+    if (pending == null || pending.isEmpty) {
+      debugPrint('sendPendingFCMTokenIfNeeded: Нет отложенного токена');
+      return;
+    }
+
+    debugPrint('sendPendingFCMTokenIfNeeded: Найден отложенный токен → отправляем');
+    await sendDeviceToken(pending); // ← внутри уже всё обработается
+    // НЕ удаляем здесь! Удаление только в sendDeviceToken при успехе
+  }
+
+  // Гарантируем, что baseUrl готов (вызывать везде, где нужен ApiService)
+  Future<void> ensureInitialized() async {
+    if (baseUrl != null && baseUrl!.isNotEmpty) return;
+
+    await initialize(); // твой текущий initialize()
+    if (baseUrl == null || baseUrl!.isEmpty) {
+      await _initializeIfDomainExists(); // если есть сохранённый домен
+    }
+  }
+
 //_________________________________ END___API__METHOD__POST__DEVICE__TOKEN_________________________________________________//
   // Новый метод для получения домена из QR данных
   Future<String?> _getQrDomain() async {
@@ -6061,9 +6066,8 @@ Future<ChatsGetId> getChatById(int chatId) async {
   String path = '/v2/chat/$chatId';
   path = await _appendQueryParams(path);
 
-  if (kDebugMode) {
-    //debugPrint('ApiService.getChatById: Generated path: $path');
-  }
+  debugPrint('════════════════════════════════════════════════════════');
+  debugPrint('🔍 [getChatById] Requesting: $baseUrl$path');
 
   final response = await http.get(
     Uri.parse('$baseUrl$path'),
@@ -6076,16 +6080,37 @@ Future<ChatsGetId> getChatById(int chatId) async {
     },
   );
 
-  if (kDebugMode) {
-    //debugPrint('ApiService.getChatById: Response status: ${response.statusCode}');
-    //debugPrint('ApiService.getChatById: Response body: ${response.body}');
-  }
+  debugPrint('📥 [getChatById] Status: ${response.statusCode}');
+  debugPrint('📥 [getChatById] Full Response: ${response.body}');
 
   if (response.statusCode == 200) {
     final data = json.decode(response.body);
+
+    // ✅ ЛОГИРУЕМ СТРУКТУРУ ВЕРХНЕГО УРОВНЯ
+    debugPrint('📊 [getChatById] Top-level keys: ${data.keys.toList()}');
+
     if (data['result'] != null) {
-      // Передаём именно result в fromJson
-      return ChatsGetId.fromJson(data['result']);
+      final result = data['result'];
+
+      // ✅ ЛОГИРУЕМ СТРУКТУРУ result
+      debugPrint('📊 [getChatById] Result keys: ${result.keys.toList()}');
+      debugPrint('📊 [getChatById] Result type: ${result['type']}');
+      debugPrint('📊 [getChatById] Result name: "${result['name']}"');
+      debugPrint('📊 [getChatById] Result group: ${result['group']}');
+      debugPrint('📊 [getChatById] Result chatUsers type: ${result['chatUsers']?.runtimeType}');
+      debugPrint('📊 [getChatById] Result chatUsers length: ${result['chatUsers']?.length}');
+
+      if (result['chatUsers'] != null && result['chatUsers'] is List) {
+        debugPrint('📊 [getChatById] ChatUsers content:');
+        for (var i = 0; i < (result['chatUsers'] as List).length; i++) {
+          final user = result['chatUsers'][i];
+          debugPrint('   [$i] type: ${user['type']}, participant: ${user['participant']?['name']}');
+        }
+      }
+
+      debugPrint('════════════════════════════════════════════════════════');
+
+      return ChatsGetId.fromJson(result);
     } else {
       throw Exception('Результат отсутствует в ответе');
     }

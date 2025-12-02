@@ -12,5 +12,7 @@ import SwiftUI
 struct deeplink_widgetBundle: WidgetBundle {
     var body: some Widget {
         deeplink_widget()
+        accounting_widget()
+        references_widget()
     }
 }

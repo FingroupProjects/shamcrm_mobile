@@ -1,5 +1,6 @@
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
+import 'package:crm_task_manager/custom_widget/price_input_formatter.dart';
 import 'package:crm_task_manager/models/cash_register_list_model.dart';
 import 'package:crm_task_manager/page_2/money/widgets/cash_register_radio_group.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
@@ -262,11 +263,14 @@ class _AddMoneyIncomeAnotherCashRegisterState extends State<AddMoneyIncomeAnothe
 
   Widget _buildAmountField(AppLocalizations localizations) {
     return CustomTextField(
+      inputFormatters: [
+        PriceInputFormatter(),
+      ],
       controller: _amountController,
       label: AppLocalizations.of(context)!.translate('amount') ?? 'Сумма',
       hintText: AppLocalizations.of(context)!.translate('enter_amount') ?? 'Введите сумму',
       maxLines: 1,
-      keyboardType: TextInputType.number,
+      keyboardType: const TextInputType.numberWithOptions(decimal: true),
         validator: (value) {
           if (value == null || value.isEmpty) {
             return AppLocalizations.of(context)!.translate('enter_amount') ?? 'Введите сумму';

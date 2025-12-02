@@ -148,6 +148,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
     GlobalKey<ScaffoldMessengerState>();
+    
 void main() async {
   try {
     WidgetsFlutterBinding.ensureInitialized();
@@ -506,6 +507,8 @@ class _MyAppState extends State<MyApp> {
   }
 
   Future<void> checkForNewVersion(BuildContext context) async {
+    // TODO remove on building ipa or apk files
+    return;
     try {
       final newVersionPlus = NewVersionPlus();
       final status = await newVersionPlus.getVersionStatus();
@@ -516,12 +519,18 @@ class _MyAppState extends State<MyApp> {
       final localizations = AppLocalizations.of(context);
 
       await UpdateDialog.show(
-        context: context,
-        status: status,
-        title: localizations?.translate('app_update_available_title') ?? 'Обновление',
-        message: localizations?.translate('app_update_available_message') ?? 'Доступна новая версия приложения',
-        updateButton: localizations?.translate('app_update_button') ?? 'Обновить',
-      );
+  context: context,
+  status: status,
+  title: localizations?.translate('app_update_available_title') ?? 'Обновление',
+  message: localizations?.translate('app_update_available_message') ?? 'Доступна новая версия приложения',
+  updateButton: localizations?.translate('app_update_button') ?? 'Обновить',
+  laterButton: localizations?.translate('later') ?? 'Позже', // ← Добавь перевод
+  onLaterPressed: () {
+    // Опционально: можно сохранить, что пользователь отложил обновление
+    // Например: SharedPreferences.setBool('update_later_shown', true);
+    debugPrint('Пользователь отложил обновление');
+  },
+);
     } catch (e) {
       // print('MyApp: Error checking version: $e');
     }

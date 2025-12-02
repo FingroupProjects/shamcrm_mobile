@@ -6,7 +6,24 @@ import 'package:crm_task_manager/bloc/permission/permession_event.dart';
 import 'package:crm_task_manager/bloc/permission/permession_state.dart';
 import 'package:crm_task_manager/page_2/online_shop.dart';
 import 'package:crm_task_manager/page_2/order/order_screen.dart';
+import 'package:crm_task_manager/page_2/category/category_screen.dart';
+import 'package:crm_task_manager/page_2/goods/goods_screen.dart';
+import 'package:crm_task_manager/page_2/money/money_income/money_income_screen.dart';
+import 'package:crm_task_manager/page_2/money/money_outcome/money_outcome_screen.dart';
+import 'package:crm_task_manager/page_2/money/money_references/cash_desk/cash_desk_screen.dart';
+import 'package:crm_task_manager/page_2/money/money_references/expense/expense_screen.dart';
+import 'package:crm_task_manager/page_2/money/money_references/income/income_screen.dart';
+import 'package:crm_task_manager/page_2/warehouse/client_return/client_return_screen.dart';
+import 'package:crm_task_manager/page_2/warehouse/client_sale/client_sales_screen.dart';
+import 'package:crm_task_manager/page_2/warehouse/incoming/incoming_screen.dart';
+import 'package:crm_task_manager/page_2/warehouse/movement/movement_screen.dart';
+import 'package:crm_task_manager/page_2/warehouse/openings/openings_screen.dart';
+import 'package:crm_task_manager/page_2/warehouse/references_screen.dart';
+import 'package:crm_task_manager/page_2/warehouse/supplier/supplier_creen.dart';
+import 'package:crm_task_manager/page_2/warehouse/supplier_return_document/supplier_return_document_screen.dart';
+import 'package:crm_task_manager/page_2/warehouse/ware_house/ware_house_screen.dart';
 import 'package:crm_task_manager/page_2/warehouse/warehouse_screen.dart';
+import 'package:crm_task_manager/page_2/warehouse/write_off/write_off_screen.dart';
 import 'package:crm_task_manager/screens/MyNavBar.dart';
 import 'package:crm_task_manager/screens/background_data_loader_service.dart';
 import 'package:crm_task_manager/screens/chats/chats_screen.dart';
@@ -27,7 +44,7 @@ class HomeScreen extends StatefulWidget {
   _HomeScreenState createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   int _selectedIndexGroup1 = 0;
   int _selectedIndexGroup2 = -1;
   final TextEditingController _searchController = TextEditingController();
@@ -49,12 +66,34 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
 
+    // ✅ Подписываемся на изменения жизненного цикла приложения
+    WidgetsBinding.instance.addObserver(this);
+
     // ✅ Инициализируем экраны синхронно
     _initializeScreensSync();
 
-    // ✅ Подписываемся на события от виджета (Android формат)
+    // ✅ Устанавливаем callback'и для навигации от виджета
+    _setupWidgetNavigationCallbacks();
+
+    // ✅ Запускаем фоновую загрузку и обработку push после отрисовки
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && !_isBackgroundLoading) {
+        _loadDataInBackground();
+        _handleInitialMessage();
+        _checkPendingWidgetNavigation();
+      }
+    });
+  }
+
+  // ==========================================================================
+  // ✅ SETUP WIDGET NAVIGATION CALLBACKS
+  // ==========================================================================
+
+  void _setupWidgetNavigationCallbacks() {
+    // ✅ Подписываемся на события от виджета (legacy Android формат)
     WidgetService.onNavigateFromWidget = (group, screenIndex) {
       if (mounted) {
+        context.read<PermissionsBloc>().add(FetchPermissionsEvent());
         setState(() {
           if (group == 1 && screenIndex < _widgetOptionsGroup1.length) {
             _selectedIndexGroup1 = screenIndex;
@@ -67,24 +106,67 @@ class _HomeScreenState extends State<HomeScreen> {
       }
     };
 
-    // ✅ Подписываемся на события от виджета (iOS формат: screen identifier)
+    // ✅ Подписываемся на события от виджета (screen identifier - iOS and Android)
     WidgetService.onNavigateFromWidgetByScreen = (screenIdentifier) {
       if (mounted) {
+        context.read<PermissionsBloc>().add(FetchPermissionsEvent());
+        debugPrint('HomeScreen: Callback triggered for: $screenIdentifier');
         _navigateToScreenByIdentifier(screenIdentifier);
       }
     };
+  }
 
-    // ✅ Запускаем фоновую загрузку и обработку push после отрисовки
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted && !_isBackgroundLoading) {
-        _loadDataInBackground();
-        _handleInitialMessage();
+  // ==========================================================================
+  // ✅ APP LIFECYCLE OBSERVER
+  // ==========================================================================
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    debugPrint('HomeScreen: App lifecycle changed to $state');
+
+    if (state == AppLifecycleState.resumed) {
+      // ✅ Когда приложение возобновляется, проверяем pending navigation
+      // и убеждаемся, что callback установлен
+      if (mounted) {
+        _setupWidgetNavigationCallbacks();
+
+        // Проверяем pending navigation с небольшой задержкой
+        Future.delayed(const Duration(milliseconds: 300), () {
+          if (mounted) {
+            _checkPendingWidgetNavigation();
+          }
+        });
       }
-    });
+    }
+  }
+
+  // ==========================================================================
+  // ✅ CHECK PENDING WIDGET NAVIGATION (for cold start from widget)
+  // ==========================================================================
+
+  void _checkPendingWidgetNavigation() {
+    debugPrint('HomeScreen: === _checkPendingWidgetNavigation() ===');
+    debugPrint('HomeScreen: _isInitialized = $_isInitialized');
+    debugPrint('HomeScreen: _widgetOptionsGroup1.length = ${_widgetOptionsGroup1.length}');
+
+    final pendingScreen = WidgetService.consumePendingNavigation();
+    debugPrint('HomeScreen: pendingScreen from WidgetService: $pendingScreen');
+
+    if (pendingScreen != null) {
+      context.read<PermissionsBloc>().add(FetchPermissionsEvent());
+      debugPrint('HomeScreen: Found pending widget navigation: $pendingScreen');
+      _navigateToScreenByIdentifier(pendingScreen);
+    } else {
+      debugPrint('HomeScreen: No pending navigation');
+    }
   }
 
   @override
   void dispose() {
+    // ✅ Отписываемся от изменений жизненного цикла
+    WidgetsBinding.instance.removeObserver(this);
+
     WidgetService.onNavigateFromWidget = null;
     WidgetService.onNavigateFromWidgetByScreen = null;
     _searchController.dispose();
@@ -96,10 +178,16 @@ class _HomeScreenState extends State<HomeScreen> {
   // ==========================================================================
 
   void _navigateToScreenByIdentifier(String screenIdentifier) {
+    debugPrint('HomeScreen: === _navigateToScreenByIdentifier($screenIdentifier) ===');
+    debugPrint('HomeScreen: _isInitialized = $_isInitialized');
+    debugPrint('HomeScreen: mounted = $mounted');
+
     if (!_isInitialized) {
+      debugPrint('HomeScreen: Not initialized yet, scheduling retry in 500ms');
       // Если экраны еще не инициализированы, ждем и пробуем снова
       Future.delayed(const Duration(milliseconds: 500), () {
         if (mounted) {
+          debugPrint('HomeScreen: Retrying navigation after delay');
           _navigateToScreenByIdentifier(screenIdentifier);
         }
       });
@@ -107,39 +195,301 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     // Маппинг идентификаторов экранов на их типы
-    int? targetIndex;
-    
+    int? targetIndexGroup1;
+    int? targetIndexGroup2;
+
+    // Handle accounting document screen identifiers
+    final accountingScreenIdentifiers = [
+      'client_sale',
+      'client_return',
+      'income_goods',
+      'transfer',
+      'write_off',
+      'supplier_return',
+      'money_income',
+      'money_outcome'
+    ];
+
+    // Handle references screen - close all reference screens and return to references
+    if (screenIdentifier == 'references') {
+      debugPrint('HomeScreen: References screen identifier detected');
+
+      // Close all pushed reference screens and navigate to ReferencesScreen
+      if (Navigator.canPop(context)) {
+        Navigator.popUntil(context, (route) => route.isFirst);
+      }
+
+      // Navigate to ReferencesScreen
+      Future.delayed(const Duration(milliseconds: 100), () {
+        if (!mounted) return;
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => ReferencesScreen()),
+        );
+        debugPrint('HomeScreen: ✅ Navigated to references screen');
+      });
+
+      return;
+    }
+
+    // Handle warehouse screen - close all document screens and return to warehouse
+    if (screenIdentifier == 'warehouse') {
+      debugPrint('HomeScreen: Warehouse screen identifier detected');
+
+      // Find warehouse screen index
+      int? warehouseIndex;
+      for (int i = 0; i < _widgetOptionsGroup1.length; i++) {
+        final widget = _widgetOptionsGroup1[i];
+        if (widget is WarehouseAccountingScreen) {
+          warehouseIndex = i;
+          break;
+        }
+      }
+
+      if (warehouseIndex != null) {
+        // Navigate to warehouse tab first
+        setState(() {
+          _selectedIndexGroup1 = warehouseIndex!;
+          _selectedIndexGroup2 = -1;
+        });
+
+        // Close all pushed document screens and return to warehouse
+        // Pop until we reach the HomeScreen (which contains warehouse)
+        if (Navigator.canPop(context)) {
+          Navigator.popUntil(context, (route) => route.isFirst);
+        }
+
+        debugPrint('HomeScreen: ✅ Navigated to warehouse screen');
+        return;
+      } else {
+        debugPrint('HomeScreen: ⚠️ Warehouse screen not found');
+      }
+    }
+
+    // Handle reference screen identifiers
+    final referenceScreenIdentifiers = [
+      'reference_warehouse',
+      'reference_supplier',
+      'reference_product',
+      'reference_category',
+      'reference_openings',
+      'reference_cash_desk',
+      'reference_expense_article',
+      'reference_income_article'
+    ];
+
+    if (referenceScreenIdentifiers.contains(screenIdentifier)) {
+      debugPrint('HomeScreen: Reference screen identifier detected: $screenIdentifier');
+
+      // Close all pushed screens first
+      if (Navigator.canPop(context)) {
+        Navigator.popUntil(context, (route) => route.isFirst);
+      }
+
+      // Then navigate to specific reference screen after a short delay
+      Future.delayed(const Duration(milliseconds: 300), () {
+        if (!mounted) return;
+
+        Widget? targetScreen;
+        switch (screenIdentifier) {
+          case 'reference_warehouse':
+            targetScreen = WareHouseScreen();
+            break;
+          case 'reference_supplier':
+            targetScreen = const SupplierCreen();
+            break;
+          case 'reference_product':
+            targetScreen = GoodsScreen();
+            break;
+          case 'reference_category':
+            targetScreen = CategoryScreen();
+            break;
+          case 'reference_openings':
+            targetScreen = const OpeningsScreen();
+            break;
+          case 'reference_cash_desk':
+            targetScreen = CashDeskScreen();
+            break;
+          case 'reference_expense_article':
+            targetScreen = ExpenseScreen();
+            break;
+          case 'reference_income_article':
+            targetScreen = IncomeScreen();
+            break;
+        }
+
+        if (targetScreen != null) {
+          // Always use pushReplacement to replace current reference screen
+          if (Navigator.canPop(context)) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => targetScreen!),
+            );
+          } else {
+            // If we can't pop, just push (first time opening a reference)
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => targetScreen!),
+            );
+          }
+          debugPrint('HomeScreen: ✅ Navigated to reference: $screenIdentifier');
+        }
+      });
+
+      return;
+    }
+
+    // Handle accounting document screen identifiers
+    if (accountingScreenIdentifiers.contains(screenIdentifier)) {
+      debugPrint('HomeScreen: Accounting screen identifier detected: $screenIdentifier');
+
+      // First, navigate to warehouse screen
+      int? warehouseIndex;
+      for (int i = 0; i < _widgetOptionsGroup1.length; i++) {
+        final widget = _widgetOptionsGroup1[i];
+        if (widget is WarehouseAccountingScreen) {
+          warehouseIndex = i;
+          break;
+        }
+      }
+
+      if (warehouseIndex != null) {
+        setState(() {
+          _selectedIndexGroup1 = warehouseIndex!;
+          _selectedIndexGroup2 = -1;
+        });
+
+        // Then navigate to specific document screen after a short delay
+        // Use pushReplacement to replace current screen instead of pushing
+        Future.delayed(const Duration(milliseconds: 300), () {
+          if (!mounted) return;
+
+          Widget? targetScreen;
+          switch (screenIdentifier) {
+            case 'client_sale':
+              targetScreen = ClientSaleScreen();
+              break;
+            case 'client_return':
+              targetScreen = ClientReturnScreen();
+              break;
+            case 'income_goods':
+              targetScreen = IncomingScreen();
+              break;
+            case 'transfer':
+              targetScreen = MovementScreen(organizationId: 1);
+              break;
+            case 'write_off':
+              targetScreen = WriteOffScreen();
+              break;
+            case 'supplier_return':
+              targetScreen = SupplierReturnScreen();
+              break;
+            case 'money_income':
+              targetScreen = MoneyIncomeScreen();
+              break;
+            case 'money_outcome':
+              targetScreen = MoneyOutcomeScreen();
+              break;
+          }
+
+          if (targetScreen != null) {
+            // Always use pushReplacement to replace current document screen
+            // This prevents stacking multiple document screens
+            if (Navigator.canPop(context)) {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => targetScreen!),
+              );
+            } else {
+              // If we can't pop, just push (first time opening a document)
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => targetScreen!),
+              );
+            }
+            debugPrint('HomeScreen: ✅ Navigated to accounting document: $screenIdentifier');
+          }
+        });
+
+        return;
+      } else {
+        debugPrint('HomeScreen: ⚠️ Warehouse screen not found, cannot navigate to accounting document');
+      }
+    }
+
+    debugPrint('HomeScreen: Searching in Group1 (${_widgetOptionsGroup1.length} screens)');
+
     // Ищем экран в группе 1
     for (int i = 0; i < _widgetOptionsGroup1.length; i++) {
       final widget = _widgetOptionsGroup1[i];
-      
+      debugPrint('HomeScreen: Group1[$i] = ${widget.runtimeType}');
+
       // Проверяем тип виджета по его runtimeType
       if (screenIdentifier == 'dashboard' && widget is DashboardScreen) {
-        targetIndex = i;
+        targetIndexGroup1 = i;
+        debugPrint('HomeScreen: Found dashboard at index $i');
         break;
       } else if (screenIdentifier == 'tasks' && widget is TaskScreen) {
-        targetIndex = i;
+        targetIndexGroup1 = i;
+        debugPrint('HomeScreen: Found tasks at index $i');
         break;
       } else if (screenIdentifier == 'leads' && widget is LeadScreen) {
-        targetIndex = i;
+        targetIndexGroup1 = i;
+        debugPrint('HomeScreen: Found leads at index $i');
         break;
       } else if (screenIdentifier == 'deals' && widget is DealScreen) {
-        targetIndex = i;
+        targetIndexGroup1 = i;
+        debugPrint('HomeScreen: Found deals at index $i');
         break;
       } else if (screenIdentifier == 'chats' && widget is ChatsScreen) {
-        targetIndex = i;
+        targetIndexGroup1 = i;
+        debugPrint('HomeScreen: Found chats at index $i');
+        break;
+      } else if (screenIdentifier == 'warehouse' && widget is WarehouseAccountingScreen) {
+        targetIndexGroup1 = i;
+        debugPrint('HomeScreen: Found warehouse at index $i');
         break;
       }
     }
 
-    if (targetIndex != null) {
+    // Ищем экран в группе 2 (Orders, Online Store)
+    if (targetIndexGroup1 == null) {
+      debugPrint('HomeScreen: Not found in Group1, searching Group2 (${_widgetOptionsGroup2.length} screens)');
+      for (int i = 0; i < _widgetOptionsGroup2.length; i++) {
+        final widget = _widgetOptionsGroup2[i];
+        debugPrint('HomeScreen: Group2[$i] = ${widget.runtimeType}');
+
+        if (screenIdentifier == 'orders' && widget is OrderScreen) {
+          targetIndexGroup2 = i;
+          debugPrint('HomeScreen: Found orders at index $i');
+          break;
+        } else if (screenIdentifier == 'online_store' && widget is OnlineStoreScreen) {
+          targetIndexGroup2 = i;
+          debugPrint('HomeScreen: Found online_store at index $i');
+          break;
+        }
+      }
+    }
+
+    debugPrint('HomeScreen: targetIndexGroup1 = $targetIndexGroup1');
+    debugPrint('HomeScreen: targetIndexGroup2 = $targetIndexGroup2');
+
+    if (targetIndexGroup1 != null) {
+      debugPrint('HomeScreen: Setting _selectedIndexGroup1 = $targetIndexGroup1');
       setState(() {
-        _selectedIndexGroup1 = targetIndex!;
+        _selectedIndexGroup1 = targetIndexGroup1!;
         _selectedIndexGroup2 = -1;
       });
-      debugPrint('HomeScreen: Navigated to screen=$screenIdentifier at index=$targetIndex');
+      debugPrint('HomeScreen: ✅ Navigated to Group1 screen=$screenIdentifier at index=$targetIndexGroup1');
+    } else if (targetIndexGroup2 != null) {
+      debugPrint('HomeScreen: Setting _selectedIndexGroup2 = $targetIndexGroup2');
+      setState(() {
+        _selectedIndexGroup2 = targetIndexGroup2!;
+        _selectedIndexGroup1 = -1;
+      });
+      debugPrint('HomeScreen: ✅ Navigated to Group2 screen=$screenIdentifier at index=$targetIndexGroup2');
     } else {
-      debugPrint('HomeScreen: Screen $screenIdentifier not found or not available');
+      debugPrint('HomeScreen: ❌ Screen $screenIdentifier not found or not available');
     }
   }
 

@@ -84,7 +84,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
   bool _initialHasFile = false;
   bool _initialHasDeal = false;
   bool _initialUrgent = false;
-  List<String> _selectedAuthors = []; 
+  List<String> _selectedAuthors = [];
   List<String> _initialSelectedAuthors = [];
   List<String> _selectedProjects = [];
   List<String> _initialSelectedProjects = [];
@@ -1025,161 +1025,162 @@ Future<void> _saveFilterState() async {
     }
   }
 
-  Widget _buildTabBarView() {
-    return BlocListener<TaskBloc, TaskState>(
-      listener: (context, state) async {
-        if (state is TaskLoaded) {
-          await TaskCache.cacheTaskStatuses(state.taskStatuses
+Widget _buildTabBarView() {
+  return BlocListener<TaskBloc, TaskState>(
+    listener: (context, state) async {
+      if (state is TaskLoaded || state is TaskLoadingWithCache) {
+        // Обрабатываем оба состояния одинаково
+        final taskStatuses = state is TaskLoaded
+            ? state.taskStatuses
+            : (state as TaskLoadingWithCache).cachedStatuses;
+
+        await TaskCache.cacheTaskStatuses(taskStatuses
+            .map((status) =>
+        {'id': status.id, 'title': status.taskStatus?.name ?? ""})
+            .toList());
+
+        setState(() {
+          _tabTitles = taskStatuses
+              .where((status) => _canReadTaskStatus)
               .map((status) =>
-          {'id': status.id, 'title': status.taskStatus?.name ?? ""})
-              .toList());
-          setState(() {
-            _tabTitles = state.taskStatuses
-                .where((status) => _canReadTaskStatus)
-                .map((status) =>
-            {'id': status.id, 'title': status.taskStatus?.name ?? ""})
-                .toList();
-            _tabKeys = List.generate(_tabTitles.length, (_) => GlobalKey());
+          {'id': status.id, 'title': status.taskStatus!.name ?? ""})
+              .toList();
+          _tabKeys = List.generate(_tabTitles.length, (_) => GlobalKey());
 
-            if (_tabTitles.isNotEmpty) {
-              _tabController =
-                  TabController(length: _tabTitles.length, vsync: this);
-              _tabController.addListener(() {
-                setState(() {
-                  _currentTabIndex = _tabController.index;
-                });
-                final currentStatusId = _tabTitles[_currentTabIndex]['id'];
-                if (_scrollController.hasClients) {
-                  _scrollToActiveTab();
-                }
+          if (_tabTitles.isNotEmpty) {
+            _tabController =
+                TabController(length: _tabTitles.length, vsync: this);
+            _tabController.addListener(() {
+              setState(() {
+                _currentTabIndex = _tabController.index;
               });
-              int initialIndex = state.taskStatuses
-                  .indexWhere((status) => status.id == widget.initialStatusId);
-              if (initialIndex != -1) {
-                _tabController.index = initialIndex;
-                _currentTabIndex = initialIndex;
-              } else {
-                _tabController.index = _currentTabIndex;
-              }
-
+              final currentStatusId = _tabTitles[_currentTabIndex]['id'];
               if (_scrollController.hasClients) {
                 _scrollToActiveTab();
               }
+            });
 
-              //Логика для перехода к созданн статусе
-              if (navigateToEnd) {
-                navigateToEnd = false;
-                if (_tabController != null) {
+            int initialIndex = taskStatuses
+                .indexWhere((status) => status.id == widget.initialStatusId);
+            if (initialIndex != -1) {
+              _tabController.index = initialIndex;
+              _currentTabIndex = initialIndex;
+            } else {
+              _tabController.index = _currentTabIndex;
+            }
+
+            if (_scrollController.hasClients) {
+              _scrollToActiveTab();
+            }
+
+            if (navigateToEnd) {
+              navigateToEnd = false;
+              if (_tabController != null) {
+                _tabController.animateTo(_tabTitles.length - 1);
+              }
+            }
+
+            if (navigateAfterDelete) {
+              navigateAfterDelete = false;
+              if (_deletedIndex != null) {
+                if (_deletedIndex == 0 && _tabTitles.length > 1) {
+                  _tabController.animateTo(1);
+                } else if (_deletedIndex == _tabTitles.length) {
                   _tabController.animateTo(_tabTitles.length - 1);
-                }
-              }
-
-              //Логика для перехода к после удаления статусе на лево
-              if (navigateAfterDelete) {
-                navigateAfterDelete = false;
-                if (_deletedIndex != null) {
-                  if (_deletedIndex == 0 && _tabTitles.length > 1) {
-                    _tabController.animateTo(1);
-                  } else if (_deletedIndex == _tabTitles.length) {
-                    _tabController.animateTo(_tabTitles.length - 1);
-                  } else {
-                    _tabController.animateTo(_deletedIndex! - 1);
-                  }
+                } else {
+                  _tabController.animateTo(_deletedIndex! - 1);
                 }
               }
             }
-          });
-        } else if (state is TaskError) {
-          if (state.message.contains(
-            AppLocalizations.of(context)!.translate('unauthorized_access'),
-          )) {
-            ApiService apiService = ApiService();
-            await apiService.logout();
-            Navigator.pushAndRemoveUntil(
-              context,
-              MaterialPageRoute(builder: (context) => LoginScreen()),
-                  (Route<dynamic> route) => false,
-            );
-          } else if (state.message.contains(
-            AppLocalizations.of(context)!.translate('no_internet_connection'),
-          )) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  AppLocalizations.of(context)!
-                      .translate(state.message), // Локализация сообщения
-                  style: TextStyle(
-                    fontFamily: 'Gilroy',
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.white,
-                  ),
-                ),
-                behavior: SnackBarBehavior.floating,
-                margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                backgroundColor: Colors.red,
-                elevation: 3,
-                padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                duration: Duration(seconds: 3),
-              ),
-            );
           }
+        });
+      } else if (state is TaskError) {
+        if (state.message.contains(
+          AppLocalizations.of(context)!.translate('unauthorized_access'),
+        )) {
+          ApiService apiService = ApiService();
+          await apiService.logout();
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (context) => LoginScreen()),
+                (Route<dynamic> route) => false,
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                state.message,
+                style: TextStyle(
+                  fontFamily: 'Gilroy',
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white,
+                ),
+              ),
+              behavior: SnackBarBehavior.floating,
+              margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              backgroundColor: Colors.red,
+              elevation: 3,
+              padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+              duration: Duration(seconds: 3),
+            ),
+          );
         }
+      }
+    },
+    child: BlocBuilder<TaskBloc, TaskState>(
+      builder: (context, state) {
+        // Показываем центральную анимацию загрузки для обоих состояний загрузки
+        if (state is TaskLoading || state is TaskLoadingWithCache) {
+          return const Center(
+            child: PlayStoreImageLoading(
+              size: 80.0,
+              duration: Duration(milliseconds: 1000),
+            ),
+          );
+        }
+
+        if (state is TaskDataLoaded) {
+          final List<Task> tasks = state.tasks;
+          return searchWidget(tasks);
+        }
+
+        if (state is TaskLoaded) {
+          if (_tabTitles.isEmpty) {
+            return const Center(child: Text(''));
+          }
+          return TabBarView(
+            controller: _tabController,
+            children: List.generate(_tabTitles.length, (index) {
+              final statusId = _tabTitles[index]['id'];
+              final title = _tabTitles[index]['title'];
+              return TaskColumn(
+                isTaskScreenTutorialCompleted: _isTaskScreenTutorialCompleted,
+                statusId: statusId,
+                name: title,
+                userId: _selectedUserId,
+                onStatusId: (newStatusId) {
+                  final index = _tabTitles
+                      .indexWhere((status) => status['id'] == newStatusId);
+                  final taskBloc = BlocProvider.of<TaskBloc>(context);
+                  taskBloc.add(FetchTaskStatuses());
+                  if (index != -1) {
+                    _tabController.animateTo(index);
+                  }
+                },
+              );
+            }),
+          );
+        }
+
+        return const SizedBox();
       },
-      child: BlocBuilder<TaskBloc, TaskState>(
-        builder: (context, state) {
-          // //print('state: ${state.runtimeType}');
-          if (state is TaskDataLoaded) {
-            final List<Task> tasks = state.tasks;
-            return searchWidget(tasks);
-          }
-          if (state is TaskLoading) {
-            return const Center(
-              child: PlayStoreImageLoading(
-                size: 80.0,
-                duration: Duration(milliseconds: 1000),
-              ),
-            );
-          } else if (state is TaskLoaded) {
-            if (_tabTitles.isEmpty) {
-              return const Center(child: Text(''));
-            }
-            return TabBarView(
-              controller: _tabController,
-              // key: UniqueKey(),
-              children: List.generate(_tabTitles.length, (index) {
-                final statusId = _tabTitles[index]['id'];
-                final title = _tabTitles[index]['title'];
-                return TaskColumn(
-                  isTaskScreenTutorialCompleted: _isTaskScreenTutorialCompleted,
-                  statusId: statusId,
-                  name: title,
-                  userId: _selectedUserId,
-                  onStatusId: (newStatusId) {
-                    //print('Status ID changed: $newStatusId');
-                    final index = _tabTitles
-                        .indexWhere((status) => status['id'] == newStatusId);
-
-                    // context.read<TaskBloc>().add(FetchTaskStatuses());
-                    final taskBloc = BlocProvider.of<TaskBloc>(context);
-                    taskBloc.add(FetchTaskStatuses());
-
-                    if (index != -1) {
-                      _tabController.animateTo(index);
-                    }
-                  },
-                );
-              }),
-            );
-          }
-          return const SizedBox();
-        },
-      ),
-    );
-  }
+    ),
+  );
+}
 
   void _scrollToActiveTab() {
     final keyContext = _tabKeys[_currentTabIndex].currentContext;

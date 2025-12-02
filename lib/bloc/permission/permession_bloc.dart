@@ -1,9 +1,11 @@
 import 'dart:async';
 import 'package:bloc/bloc.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/api/service/widget_service.dart';
 import 'package:crm_task_manager/bloc/permission/permession_event.dart';
 import 'package:crm_task_manager/bloc/permission/permession_state.dart';
 import 'package:crm_task_manager/models/permission.dart';
+import 'package:crm_task_manager/screens/profile/languages/local_manager_lang.dart';
 
 class PermissionsBloc extends Bloc<PermissionsEvent, PermissionsState> {
   final ApiService apiService;
@@ -23,6 +25,35 @@ class PermissionsBloc extends Bloc<PermissionsEvent, PermissionsState> {
           .toList();
 
       await apiService.savePermissions(permissions);
+      
+      // Sync permissions to iOS widget via App Groups
+      await WidgetService.syncPermissionsToWidget(permissions);
+      
+      // Sync visibility flags to Android widget
+      // Warehouse/Accounting - requires accounting_of_goods OR accounting_money
+      final hasWarehouseAccess = permissions.contains('accounting_of_goods') || 
+                                 permissions.contains('accounting_money');
+      
+      // Orders - requires order.read AND warehouse access
+      final hasOrdersAccess = permissions.contains('order.read') && hasWarehouseAccess;
+      
+      // Online Store - requires order.read WITHOUT warehouse access
+      final hasOnlineStoreAccess = permissions.contains('order.read') && !hasWarehouseAccess;
+      
+      await WidgetService.syncWidgetVisibilityToAndroid({
+        'dashboard': permissions.contains('section.dashboard'),
+        'tasks': permissions.contains('task.read'),
+        'leads': permissions.contains('lead.read'),
+        'deals': permissions.contains('deal.read'),
+        'chats': true, // Chats always visible
+        'warehouse': hasWarehouseAccess,
+        'orders': hasOrdersAccess,
+        'online_store': hasOnlineStoreAccess,
+      });
+      
+      // Also sync current language to widget
+      await LanguageManager.syncCurrentLanguageToWidget();
+      
       emit(PermissionsLoaded(permissionModels));
     } catch (e) {
       emit(PermissionsError('Ошибка при загрузке прав доступа!'));

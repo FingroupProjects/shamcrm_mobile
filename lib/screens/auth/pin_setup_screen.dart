@@ -47,7 +47,7 @@ class _PinSetupScreenState extends State<PinSetupScreen>
   bool isPermissionsLoaded = false;
   Map<String, dynamic>? tutorialProgress;
   
-  final ApiService _apiService = ApiService();
+  // ✅ Убрано: final ApiService _apiService = ApiService(); — используем context.read<ApiService>()
   
   // ✅ НОВОЕ: Флаг для предотвращения повторной отправки FCM токена
   bool _fcmTokenSent = false;
@@ -73,7 +73,9 @@ class _PinSetupScreenState extends State<PinSetupScreen>
     _fetchMiniAppSettings();
     
     // ✅ КРИТИЧНО: Отправляем FCM токен при открытии экрана
-    _sendFCMTokenOnInit();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _sendFCMTokenOnInit();
+    });
     
     // Инициализируем анимацию
     _animationController = AnimationController(
@@ -105,6 +107,8 @@ class _PinSetupScreenState extends State<PinSetupScreen>
 
     _isInitializing = true;
 
+    final apiService = context.read<ApiService>();
+
     try {
       debugPrint('════════════════════════════════════════════════════════');
       debugPrint('PinSetupScreen: 📱 СТАРТ: Отправка FCM токена при инициализации');
@@ -112,17 +116,17 @@ class _PinSetupScreenState extends State<PinSetupScreen>
       
       // ✅ ШАГ 1: Инициализируем ApiService
       debugPrint('PinSetupScreen: 🔧 Шаг 1/3: Инициализация ApiService...');
-      await _apiService.ensureInitialized();
+      await apiService.ensureInitialized();
       
       // Проверяем что baseUrl инициализирован
-      if (_apiService.baseUrl == null || _apiService.baseUrl!.isEmpty) {
+      if (apiService.baseUrl == null || apiService.baseUrl!.isEmpty) {
         debugPrint('PinSetupScreen: ⚠️ baseUrl не инициализирован после ensureInitialized');
         debugPrint('PinSetupScreen: 🔄 Пробуем явную инициализацию...');
         
-        await _apiService.initialize();
+        await apiService.initialize();
         
         // Финальная проверка
-        if (_apiService.baseUrl == null || _apiService.baseUrl!.isEmpty) {
+        if (apiService.baseUrl == null || apiService.baseUrl!.isEmpty) {
           debugPrint('PinSetupScreen: ❌ baseUrl всё ещё null, откладываем отправку');
           debugPrint('════════════════════════════════════════════════════════');
           _isInitializing = false;
@@ -131,7 +135,7 @@ class _PinSetupScreenState extends State<PinSetupScreen>
       }
       
       debugPrint('PinSetupScreen: ✅ ApiService инициализирован');
-      debugPrint('PinSetupScreen: 🌐 baseUrl: ${_apiService.baseUrl}');
+      debugPrint('PinSetupScreen: 🌐 baseUrl: ${apiService.baseUrl}');
       
       // ✅ ШАГ 2: Получаем FCM токен (с поддержкой iOS)
       debugPrint('PinSetupScreen: 📡 Шаг 2/3: Получение FCM токена...');
@@ -149,7 +153,7 @@ class _PinSetupScreenState extends State<PinSetupScreen>
       
       // ✅ ШАГ 3: Отправляем токен на сервер
       debugPrint('PinSetupScreen: 📤 Шаг 3/3: Отправка FCM токена на сервер...');
-      await _apiService.sendDeviceToken(fcmToken);
+      await apiService.sendDeviceToken(fcmToken);
       
       _fcmTokenSent = true;
       debugPrint('PinSetupScreen: ✅ FCM токен УСПЕШНО отправлен на сервер!');
@@ -240,16 +244,17 @@ class _PinSetupScreenState extends State<PinSetupScreen>
   }
 
   Future<void> _fetchMiniAppSettings() async {
+    final apiService = context.read<ApiService>();
     try {
       final prefs = await SharedPreferences.getInstance();
-      final organizationId = await _apiService.getSelectedOrganization();
+      final organizationId = await apiService.getSelectedOrganization();
       
       if (organizationId == null) {
         debugPrint('PinSetupScreen: organizationId is null, пропускаем загрузку MiniAppSettings');
         return;
       }
       
-      final settingsList = await _apiService.getMiniAppSettings(organizationId);
+      final settingsList = await apiService.getMiniAppSettings(organizationId);
       
       if (settingsList.isNotEmpty) {
         final settings = settingsList.first;
@@ -269,12 +274,13 @@ class _PinSetupScreenState extends State<PinSetupScreen>
   }
 
   Future<void> _fetchTutorialProgress() async {
+    final apiService = context.read<ApiService>();
     try {
       final prefs = await SharedPreferences.getInstance();
       bool isNewUser = prefs.getString('user_pin') == null;
 
       if (isNewUser) {
-        final progress = await _apiService.getTutorialProgress();
+        final progress = await apiService.getTutorialProgress();
         setState(() {
           tutorialProgress = progress['result'];
         });
@@ -296,9 +302,10 @@ class _PinSetupScreenState extends State<PinSetupScreen>
   }
 
   Future<void> _fetchSettings() async {
+    final apiService = context.read<ApiService>();
     try {
       final prefs = await SharedPreferences.getInstance();
-      final organizationId = await _apiService.getSelectedOrganization();
+      final organizationId = await apiService.getSelectedOrganization();
 
       if (organizationId == null) {
         debugPrint('PinSetupScreen: organizationId is null, используем настройки по умолчанию');
@@ -306,7 +313,7 @@ class _PinSetupScreenState extends State<PinSetupScreen>
         return;
       }
 
-      final response = await _apiService.getSettings(organizationId);
+      final response = await apiService.getSettings(organizationId);
 
       if (response['result'] != null) {
         // Сохраняем localization
@@ -366,6 +373,7 @@ class _PinSetupScreenState extends State<PinSetupScreen>
   }
 
   Future<void> _loadUserRoleId() async {
+    final apiService = context.read<ApiService>();
     try {
       SharedPreferences prefs = await SharedPreferences.getInstance();
       String userId = prefs.getString('userID') ?? '';
@@ -378,8 +386,7 @@ class _PinSetupScreenState extends State<PinSetupScreen>
         return;
       }
 
-      UserByIdProfile userProfile =
-          await ApiService().getUserById(int.parse(userId));
+      UserByIdProfile userProfile = await apiService.getUserById(int.parse(userId));
       
       setState(() {
         userRoleId = userProfile.role!.first.id;
@@ -456,6 +463,7 @@ class _PinSetupScreenState extends State<PinSetupScreen>
   }
 
   Future<void> _validatePins() async {
+    final apiService = context.read<ApiService>();
     if (_pin == _confirmPin) {
       debugPrint('════════════════════════════════════════════════════════');
       debugPrint('PinSetupScreen: ✅ PIN-коды совпадают, сохраняем...');
@@ -468,8 +476,8 @@ class _PinSetupScreenState extends State<PinSetupScreen>
       // ✅ Проверка отложенных токенов (на всякий случай)
       try {
         debugPrint('PinSetupScreen: 📤 Проверка отложенных FCM токенов...');
-        await _apiService.ensureInitialized();
-        await _apiService.sendPendingFCMToken();
+        await apiService.ensureInitialized();
+        await apiService.sendPendingFCMTokenIfNeeded();
         debugPrint('PinSetupScreen: ✅ Отложенные токены обработаны');
       } catch (e) {
         debugPrint('PinSetupScreen: ❌ Ошибка отправки отложенных токенов: $e');

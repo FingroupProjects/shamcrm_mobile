@@ -1,169 +1,306 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Default Layout: 5x2 size (two rows) - ALL 8 ITEMS -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/widget_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
+    android:gravity="start"
     android:background="@drawable/widget_background"
-    android:padding="16dp">
+    android:padding="4dp">
 
     <!-- Заголовок -->
+    <ImageView
+        android:layout_width="wrap_content"
+        android:layout_height="@dimen/widget_logo_size"
+        android:layout_gravity="start"
+        android:layout_marginStart="4dp"
+        android:layout_marginTop="4dp"
+        android:adjustViewBounds="true"
+        android:scaleType="fitCenter"
+        android:src="@drawable/sham_crm_logo" />
+
+    <!-- Первый ряд (4 кнопки) -->
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:gravity="center_vertical"
+        android:layout_height="0dp"
+        android:layout_weight="1"
         android:orientation="horizontal"
-        android:paddingBottom="12dp">
-
-        <ImageView
-            android:layout_width="32dp"
-            android:layout_height="32dp"
-            android:src="@mipmap/ic_launcher"
-            android:background="@drawable/circle_avatar"
-            android:padding="4dp" />
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="10dp"
-            android:text="shamCRM"
-            android:textColor="#1E2E52"
-            android:textSize="20sp"
-            android:textStyle="bold" />
-    </LinearLayout>
-
-    <!-- 5 кнопок с подписями -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:orientation="horizontal"
-        android:gravity="center"
-        android:weightSum="5">
+        android:gravity="center_vertical">
 
         <!-- Дашборд -->
         <LinearLayout
             android:id="@+id/btn_dashboard"
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
+            android:layout_height="match_parent"
             android:layout_weight="1"
             android:orientation="vertical"
             android:gravity="center"
-            android:padding="8dp">
+            android:paddingTop="1dp"
+            android:paddingBottom="1dp">
 
             <ImageView
                 android:id="@+id/icon_dashboard"
-                android:layout_width="32dp"
-                android:layout_height="32dp"
+                android:layout_width="@dimen/widget_icon_size"
+                android:layout_height="@dimen/widget_icon_size"
+                android:background="@drawable/widget_button_bg"
+                android:padding="10dp"
+                android:scaleType="fitCenter"
+                android:tint="@android:color/white"
                 android:contentDescription="Дашборд" />
 
             <TextView
+                android:id="@+id/label_dashboard"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
+                android:layout_marginTop="2dp"
                 android:text="Дашборд"
-                android:textSize="10sp"
-                android:textColor="#666666" />
+                android:textSize="@dimen/widget_text_size"
+                android:textColor="#1E2E52"
+                android:maxLines="1"
+                android:ellipsize="end" />
         </LinearLayout>
 
         <!-- Задачи -->
         <LinearLayout
             android:id="@+id/btn_tasks"
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
+            android:layout_height="match_parent"
             android:layout_weight="1"
             android:orientation="vertical"
             android:gravity="center"
-            android:padding="8dp">
+            android:paddingTop="1dp"
+            android:paddingBottom="1dp">
 
             <ImageView
                 android:id="@+id/icon_tasks"
-                android:layout_width="32dp"
-                android:layout_height="32dp"
+                android:layout_width="@dimen/widget_icon_size"
+                android:layout_height="@dimen/widget_icon_size"
+                android:background="@drawable/widget_button_bg"
+                android:padding="10dp"
+                android:scaleType="fitCenter"
+                android:tint="@android:color/white"
                 android:contentDescription="Задачи" />
 
             <TextView
+                android:id="@+id/label_tasks"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
+                android:layout_marginTop="2dp"
                 android:text="Задачи"
-                android:textSize="10sp"
-                android:textColor="#666666" />
+                android:textSize="@dimen/widget_text_size"
+                android:textColor="#1E2E52"
+                android:maxLines="1"
+                android:ellipsize="end" />
         </LinearLayout>
 
         <!-- Лиды -->
         <LinearLayout
             android:id="@+id/btn_leads"
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
+            android:layout_height="match_parent"
             android:layout_weight="1"
             android:orientation="vertical"
             android:gravity="center"
-            android:padding="8dp">
+            android:paddingTop="1dp"
+            android:paddingBottom="1dp">
 
             <ImageView
                 android:id="@+id/icon_leads"
-                android:layout_width="32dp"
-                android:layout_height="32dp"
+                android:layout_width="@dimen/widget_icon_size"
+                android:layout_height="@dimen/widget_icon_size"
+                android:background="@drawable/widget_button_bg"
+                android:padding="10dp"
+                android:scaleType="fitCenter"
+                android:tint="@android:color/white"
                 android:contentDescription="Лиды" />
 
             <TextView
+                android:id="@+id/label_leads"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
+                android:layout_marginTop="2dp"
                 android:text="Лиды"
-                android:textSize="10sp"
-                android:textColor="#666666" />
+                android:textSize="@dimen/widget_text_size"
+                android:textColor="#1E2E52"
+                android:maxLines="1"
+                android:ellipsize="end" />
         </LinearLayout>
 
         <!-- Сделки -->
         <LinearLayout
             android:id="@+id/btn_deals"
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
+            android:layout_height="match_parent"
             android:layout_weight="1"
             android:orientation="vertical"
             android:gravity="center"
-            android:padding="8dp">
+            android:paddingTop="1dp"
+            android:paddingBottom="1dp">
 
             <ImageView
                 android:id="@+id/icon_deals"
-                android:layout_width="32dp"
-                android:layout_height="32dp"
+                android:layout_width="@dimen/widget_icon_size"
+                android:layout_height="@dimen/widget_icon_size"
+                android:background="@drawable/widget_button_bg"
+                android:padding="10dp"
+                android:scaleType="fitCenter"
+                android:tint="@android:color/white"
                 android:contentDescription="Сделки" />
 
             <TextView
+                android:id="@+id/label_deals"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
+                android:layout_marginTop="2dp"
                 android:text="Сделки"
-                android:textSize="10sp"
-                android:textColor="#666666" />
+                android:textSize="@dimen/widget_text_size"
+                android:textColor="#1E2E52"
+                android:maxLines="1"
+                android:ellipsize="end" />
         </LinearLayout>
+    </LinearLayout>
+
+    <!-- Второй ряд (4 кнопки) -->
+    <LinearLayout
+        android:id="@+id/second_row_layout"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
 
         <!-- Чаты -->
         <LinearLayout
             android:id="@+id/btn_chats"
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
+            android:layout_height="match_parent"
             android:layout_weight="1"
             android:orientation="vertical"
             android:gravity="center"
-            android:padding="8dp">
+            android:paddingTop="1dp"
+            android:paddingBottom="1dp">
 
             <ImageView
                 android:id="@+id/icon_chats"
-                android:layout_width="32dp"
-                android:layout_height="32dp"
+                android:layout_width="@dimen/widget_icon_size"
+                android:layout_height="@dimen/widget_icon_size"
+                android:background="@drawable/widget_button_bg"
+                android:padding="10dp"
+                android:scaleType="fitCenter"
+                android:tint="@android:color/white"
                 android:contentDescription="Чаты" />
 
             <TextView
+                android:id="@+id/label_chats"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
+                android:layout_marginTop="2dp"
                 android:text="Чаты"
-                android:textSize="10sp"
-                android:textColor="#666666" />
+                android:textSize="@dimen/widget_text_size"
+                android:textColor="#1E2E52"
+                android:maxLines="1"
+                android:ellipsize="end" />
         </LinearLayout>
 
+        <!-- Учёт -->
+        <LinearLayout
+            android:id="@+id/btn_warehouse"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:paddingTop="1dp"
+            android:paddingBottom="1dp">
+
+            <ImageView
+                android:id="@+id/icon_warehouse"
+                android:layout_width="@dimen/widget_icon_size"
+                android:layout_height="@dimen/widget_icon_size"
+                android:background="@drawable/widget_button_bg"
+                android:padding="10dp"
+                android:scaleType="fitCenter"
+                android:tint="@android:color/white"
+                android:contentDescription="Учёт" />
+
+            <TextView
+                android:id="@+id/label_warehouse"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:text="Учёт"
+                android:textSize="@dimen/widget_text_size"
+                android:textColor="#1E2E52"
+                android:maxLines="1"
+                android:ellipsize="end" />
+        </LinearLayout>
+
+        <!-- Заказы -->
+        <LinearLayout
+            android:id="@+id/btn_orders"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:paddingTop="1dp"
+            android:paddingBottom="1dp">
+
+            <ImageView
+                android:id="@+id/icon_orders"
+                android:layout_width="@dimen/widget_icon_size"
+                android:layout_height="@dimen/widget_icon_size"
+                android:background="@drawable/widget_button_bg"
+                android:padding="10dp"
+                android:scaleType="fitCenter"
+                android:tint="@android:color/white"
+                android:contentDescription="Заказы" />
+
+            <TextView
+                android:id="@+id/label_orders"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:text="Заказы"
+                android:textSize="@dimen/widget_text_size"
+                android:textColor="#1E2E52"
+                android:maxLines="1"
+                android:ellipsize="end" />
+        </LinearLayout>
+
+        <!-- Магазин -->
+        <LinearLayout
+            android:id="@+id/btn_online_store"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:paddingTop="1dp"
+            android:paddingBottom="1dp">
+
+            <ImageView
+                android:id="@+id/icon_online_store"
+                android:layout_width="@dimen/widget_icon_size"
+                android:layout_height="@dimen/widget_icon_size"
+                android:background="@drawable/widget_button_bg"
+                android:padding="10dp"
+                android:scaleType="fitCenter"
+                android:tint="@android:color/white"
+                android:contentDescription="Магазин" />
+
+            <TextView
+                android:id="@+id/label_online_store"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:text="Магазин"
+                android:textSize="@dimen/widget_text_size"
+                android:textColor="#1E2E52"
+                android:maxLines="1"
+                android:ellipsize="end" />
+        </LinearLayout>
     </LinearLayout>
+
 </LinearLayout>

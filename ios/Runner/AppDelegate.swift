@@ -1,9 +1,13 @@
 import UIKit
 import Flutter
+import WidgetKit
 
 @main
 @objc class AppDelegate: FlutterAppDelegate {
     private var methodChannel: FlutterMethodChannel?
+    
+    // App Group identifier for sharing data with widget
+    private let appGroupId = "group.com.softtech.crmTaskManager"
     
     override func application(
         _ application: UIApplication,
@@ -18,10 +22,75 @@ import Flutter
                 name: "com.softtech.crm_task_manager/widget",
                 binaryMessenger: controller.binaryMessenger
             )
+            
+            // Setup method call handler for syncing data to widget
+            methodChannel?.setMethodCallHandler { [weak self] (call, result) in
+                switch call.method {
+                case "syncPermissionsToWidget":
+                    if let args = call.arguments as? [String: Any],
+                       let permissions = args["permissions"] as? [String] {
+                        self?.syncPermissionsToWidget(permissions: permissions)
+                        result(true)
+                    } else {
+                        result(FlutterError(code: "INVALID_ARGS", message: "Invalid arguments", details: nil))
+                    }
+                case "syncLanguageToWidget":
+                    if let args = call.arguments as? [String: Any],
+                       let languageCode = args["languageCode"] as? String {
+                        self?.syncLanguageToWidget(languageCode: languageCode)
+                        result(true)
+                    } else {
+                        result(FlutterError(code: "INVALID_ARGS", message: "Invalid arguments", details: nil))
+                    }
+                default:
+                    result(FlutterMethodNotImplemented)
+                }
+            }
+            
             //print("✅ MethodChannel initialized")
         }
         
         return super.application(application, didFinishLaunchingWithOptions: launchOptions)
+    }
+    
+    // MARK: - Sync Permissions to Widget via App Groups
+    private func syncPermissionsToWidget(permissions: [String]) {
+        guard let userDefaults = UserDefaults(suiteName: appGroupId) else {
+            print("❌ Failed to access App Group UserDefaults")
+            return
+        }
+        
+        // Save permissions to shared UserDefaults
+        userDefaults.set(permissions, forKey: "user_permissions")
+        userDefaults.synchronize()
+        
+        print("✅ Synced \(permissions.count) permissions to widget: \(permissions)")
+        
+        // Reload widget timelines to reflect new permissions
+        if #available(iOS 14.0, *) {
+            WidgetCenter.shared.reloadAllTimelines()
+            print("✅ Widget timelines reloaded")
+        }
+    }
+    
+    // MARK: - Sync Language to Widget via App Groups
+    private func syncLanguageToWidget(languageCode: String) {
+        guard let userDefaults = UserDefaults(suiteName: appGroupId) else {
+            print("❌ Failed to access App Group UserDefaults")
+            return
+        }
+        
+        // Save language code to shared UserDefaults
+        userDefaults.set(languageCode, forKey: "app_language")
+        userDefaults.synchronize()
+        
+        print("✅ Synced language to widget: \(languageCode)")
+        
+        // Reload widget timelines to reflect new language
+        if #available(iOS 14.0, *) {
+            WidgetCenter.shared.reloadAllTimelines()
+            print("✅ Widget timelines reloaded for language change")
+        }
     }
     
     // MARK: - Deep Link Handler (для виджета)

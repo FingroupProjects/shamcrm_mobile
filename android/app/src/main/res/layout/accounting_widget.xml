@@ -1,0 +1,328 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Accounting Widget Layout: 2x4 grid (two rows, 4 buttons each) -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@drawable/widget_background"
+    android:padding="4dp">
+
+    <!-- Header -->
+    <ImageView
+        android:layout_width="wrap_content"
+        android:layout_height="@dimen/widget_logo_size"
+        android:layout_gravity="start"
+        android:layout_marginStart="4dp"
+        android:layout_marginTop="4dp"
+        android:adjustViewBounds="true"
+        android:scaleType="fitCenter"
+        android:src="@drawable/sham_crm_logo" />
+
+    <!-- Empty state (shown when no permissions) -->
+    <LinearLayout
+        android:id="@+id/empty_state"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:visibility="gone">
+
+        <TextView
+            android:id="@+id/empty_state_text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Войдите в приложение"
+            android:textColor="#666666"
+            android:textSize="12sp" />
+    </LinearLayout>
+
+    <!-- First row (4 buttons) -->
+    <LinearLayout
+        android:id="@+id/first_row_layout"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingTop="1dp"
+        android:paddingBottom="1dp">
+
+        <!-- Продажа -->
+        <LinearLayout
+            android:id="@+id/btn_client_sale"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:paddingTop="1dp"
+            android:paddingBottom="1dp">
+
+            <ImageView
+                android:id="@+id/icon_client_sale"
+                android:layout_width="@dimen/widget_icon_size"
+                android:layout_height="@dimen/widget_icon_size"
+                android:background="@drawable/widget_button_bg"
+                android:padding="10dp"
+                android:scaleType="fitCenter"
+                android:tint="@android:color/white"
+                android:contentDescription="Продажа" />
+
+            <TextView
+                android:id="@+id/label_client_sale"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:text="Продажа"
+                android:textSize="@dimen/widget_text_size"
+                android:textColor="#1E2E52"
+                android:maxLines="1"
+                android:ellipsize="end" />
+        </LinearLayout>
+
+        <!-- Возврат от клиента -->
+        <LinearLayout
+            android:id="@+id/btn_client_return"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:paddingTop="1dp"
+            android:paddingBottom="1dp">
+
+            <ImageView
+                android:id="@+id/icon_client_return"
+                android:layout_width="@dimen/widget_icon_size"
+                android:layout_height="@dimen/widget_icon_size"
+                android:background="@drawable/widget_button_bg"
+                android:padding="10dp"
+                android:scaleType="fitCenter"
+                android:tint="@android:color/white"
+                android:contentDescription="Возврат от клиента" />
+
+            <TextView
+                android:id="@+id/label_client_return"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:text="Возврат от клиента"
+                android:textSize="@dimen/widget_text_size"
+                android:textColor="#1E2E52"
+                android:maxLines="1"
+                android:ellipsize="end" />
+        </LinearLayout>
+
+        <!-- Приход товаров -->
+        <LinearLayout
+            android:id="@+id/btn_income_goods"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:paddingTop="1dp"
+            android:paddingBottom="1dp">
+
+            <ImageView
+                android:id="@+id/icon_income_goods"
+                android:layout_width="@dimen/widget_icon_size"
+                android:layout_height="@dimen/widget_icon_size"
+                android:background="@drawable/widget_button_bg"
+                android:padding="10dp"
+                android:scaleType="fitCenter"
+                android:tint="@android:color/white"
+                android:contentDescription="Приход товаров" />
+
+            <TextView
+                android:id="@+id/label_income_goods"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:text="Приход товаров"
+                android:textSize="@dimen/widget_text_size"
+                android:textColor="#1E2E52"
+                android:maxLines="1"
+                android:ellipsize="end" />
+        </LinearLayout>
+
+        <!-- Перемещение -->
+        <LinearLayout
+            android:id="@+id/btn_transfer"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:paddingTop="1dp"
+            android:paddingBottom="1dp">
+
+            <ImageView
+                android:id="@+id/icon_transfer"
+                android:layout_width="@dimen/widget_icon_size"
+                android:layout_height="@dimen/widget_icon_size"
+                android:background="@drawable/widget_button_bg"
+                android:padding="10dp"
+                android:scaleType="fitCenter"
+                android:tint="@android:color/white"
+                android:contentDescription="Перемещение" />
+
+            <TextView
+                android:id="@+id/label_transfer"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:text="Перемещение"
+                android:textSize="@dimen/widget_text_size"
+                android:textColor="#1E2E52"
+                android:maxLines="1"
+                android:ellipsize="end" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- Second row (4 buttons) -->
+    <LinearLayout
+        android:id="@+id/second_row_layout"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <!-- Списание -->
+        <LinearLayout
+            android:id="@+id/btn_write_off"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:paddingTop="1dp"
+            android:paddingBottom="1dp">
+
+            <ImageView
+                android:id="@+id/icon_write_off"
+                android:layout_width="@dimen/widget_icon_size"
+                android:layout_height="@dimen/widget_icon_size"
+                android:background="@drawable/widget_button_bg"
+                android:padding="10dp"
+                android:scaleType="fitCenter"
+                android:tint="@android:color/white"
+                android:contentDescription="Списание" />
+
+            <TextView
+                android:id="@+id/label_write_off"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:text="Списание"
+                android:textSize="@dimen/widget_text_size"
+                android:textColor="#1E2E52"
+                android:maxLines="1"
+                android:ellipsize="end" />
+        </LinearLayout>
+
+        <!-- Возврат поставщику -->
+        <LinearLayout
+            android:id="@+id/btn_supplier_return"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:paddingTop="1dp"
+            android:paddingBottom="1dp">
+
+            <ImageView
+                android:id="@+id/icon_supplier_return"
+                android:layout_width="@dimen/widget_icon_size"
+                android:layout_height="@dimen/widget_icon_size"
+                android:background="@drawable/widget_button_bg"
+                android:padding="10dp"
+                android:scaleType="fitCenter"
+                android:tint="@android:color/white"
+                android:contentDescription="Возврат поставщику" />
+
+            <TextView
+                android:id="@+id/label_supplier_return"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:text="Возврат поставщику"
+                android:textSize="@dimen/widget_text_size"
+                android:textColor="#1E2E52"
+                android:maxLines="1"
+                android:ellipsize="end" />
+        </LinearLayout>
+
+        <!-- Приход денег -->
+        <LinearLayout
+            android:id="@+id/btn_money_income"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:paddingTop="1dp"
+            android:paddingBottom="1dp">
+
+            <ImageView
+                android:id="@+id/icon_money_income"
+                android:layout_width="@dimen/widget_icon_size"
+                android:layout_height="@dimen/widget_icon_size"
+                android:background="@drawable/widget_button_bg"
+                android:padding="10dp"
+                android:scaleType="fitCenter"
+                android:tint="@android:color/white"
+                android:contentDescription="Приход денег" />
+
+            <TextView
+                android:id="@+id/label_money_income"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:text="Приход денег"
+                android:textSize="@dimen/widget_text_size"
+                android:textColor="#1E2E52"
+                android:maxLines="1"
+                android:ellipsize="end" />
+        </LinearLayout>
+
+        <!-- Расход денег -->
+        <LinearLayout
+            android:id="@+id/btn_money_outcome"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:paddingTop="1dp"
+            android:paddingBottom="1dp">
+
+            <ImageView
+                android:id="@+id/icon_money_outcome"
+                android:layout_width="@dimen/widget_icon_size"
+                android:layout_height="@dimen/widget_icon_size"
+                android:background="@drawable/widget_button_bg"
+                android:padding="10dp"
+                android:scaleType="fitCenter"
+                android:tint="@android:color/white"
+                android:contentDescription="Расход денег" />
+
+            <TextView
+                android:id="@+id/label_money_outcome"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:text="Расход денег"
+                android:textSize="@dimen/widget_text_size"
+                android:textColor="#1E2E52"
+                android:maxLines="1"
+                android:ellipsize="end" />
+        </LinearLayout>
+    </LinearLayout>
+
+</LinearLayout>
+

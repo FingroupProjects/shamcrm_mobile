@@ -62,6 +62,7 @@ class _LeadConversionChartState extends State<LeadConversionChart> {
     return BlocBuilder<DashboardConversionBloc, DashboardConversionState>(
       builder: (context, state) {
         if (state is DashboardConversionError) {
+          if (!mounted) return SizedBox.shrink();
         ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(

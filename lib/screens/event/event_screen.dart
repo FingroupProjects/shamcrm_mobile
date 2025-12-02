@@ -384,119 +384,106 @@ int _tutorialStep = 0; // Добавляем шаг туториала
   ).show(context: context);
 }
 // Новый метод для построения заголовка с выбором воронки
-  Widget _buildTitleWidget(BuildContext context) {
-    //print('EventScreen: Entering _buildTitleWidget');
-    return BlocBuilder<SalesFunnelBloc, SalesFunnelState>(
-      builder: (context, state) {
-        //print('EventScreen: _buildTitleWidget - Current SalesFunnelBloc state: $state');
-        String title = AppLocalizations.of(context)!.translate('events');
-        SalesFunnel? selectedFunnel;
-        if (state is SalesFunnelLoading) {
-          //print('EventScreen: _buildTitleWidget - State is SalesFunnelLoading');
-          title = AppLocalizations.of(context)!.translate('events');
-        } else if (state is SalesFunnelLoaded) {
-          //print('EventScreen: _buildTitleWidget - State is SalesFunnelLoaded, funnels: ${state.funnels}, selectedFunnel: ${state.selectedFunnel}');
-          selectedFunnel = state.selectedFunnel ?? state.funnels.firstOrNull;
-          _selectedFunnel = selectedFunnel; // Обновляем _selectedFunnel
-          //print('EventScreen: _buildTitleWidget - Selected funnel set to: $selectedFunnel');
-          title = selectedFunnel?.name ?? AppLocalizations.of(context)!.translate('events');
-          //print('EventScreen: _buildTitleWidget - Title set to: $title');
-        } else if (state is SalesFunnelError) {
-          //print('EventScreen: _buildTitleWidget - State is SalesFunnelError: ${state.message}');
-          title = 'Ошибка загрузки';
+ Widget _buildTitleWidget(BuildContext context) {
+  return BlocBuilder<SalesFunnelBloc, SalesFunnelState>(
+    builder: (context, state) {
+      // Дефолтный заголовок — всегда "События"
+      String title = AppLocalizations.of(context)!.translate('events');
+      SalesFunnel? selectedFunnel;
+
+      // Только если воронки успешно загружены — пытаемся показать название текущей
+      if (state is SalesFunnelLoaded) {
+        selectedFunnel = state.selectedFunnel ?? state.funnels.firstOrNull;
+        _selectedFunnel = selectedFunnel;
+
+        if (selectedFunnel != null) {
+          title = selectedFunnel.name;
         }
-        //print('EventScreen: _buildTitleWidget - Rendering title: $title');
-        return Row(
-          children: [
-            Expanded(
-              child: Text(
-                title,
-                style: TextStyle(
-                  fontSize: 20,
-                  fontFamily: 'Gilroy',
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xff1E2E52),
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+      }
+      // При Loading, Error, Initial — просто оставляем "События". Пользователь не должен видеть ошибку в шапке.
+
+      return Row(
+        children: [
+          Expanded(
+            child: Text(
+              title,
+              style: const TextStyle(
+                fontSize: 20,
+                fontFamily: 'Gilroy',
+                fontWeight: FontWeight.w600,
+                color: Color(0xff1E2E52),
               ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
-            if (state is SalesFunnelLoaded && state.funnels.length > 1)
-              Padding(
-                padding: const EdgeInsets.only(left: 8.0),
-                child: PopupMenuButton<SalesFunnel>(
-                  icon: Icon(Icons.arrow_drop_down, color: Color(0xff1E2E52)),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12.0),
-                  ),
-                  color: Colors.white,
-                  elevation: 8,
-                  shadowColor: Colors.black.withOpacity(0.2),
-                  offset: Offset(0, 40),
-                  onSelected: (SalesFunnel funnel) async {
-                    //print('EventScreen: _buildTitleWidget - Selected new funnel: ${funnel.name} (ID: ${funnel.id})');
-                    try {
-                      // Сохраняем новую воронку
-                      await _apiService.saveSelectedEventSalesFunnel(funnel.id.toString());
-                      //print('EventScreen: _buildTitleWidget - Saved funnel ID ${funnel.id} to SharedPreferences');
-                      // Сбрасываем фильтры
-                      _resetFilters();
-                      //print('EventScreen: _buildTitleWidget - Reset filters');
-                      setState(() {
-                        _selectedFunnel = funnel;
-                        _isSearching = false;
-                        _searchController.clear();
-                        _lastSearchQuery = '';
-                        //print('EventScreen: _buildTitleWidget - Updated _selectedFunnel: $_selectedFunnel, cleared search');
-                      });
-                      // Обновляем воронку в SalesFunnelBloc
-                      context.read<SalesFunnelBloc>().add(SelectSalesFunnel(funnel));
-                      // Загружаем события для новой воронки
-                      _loadEvents();
-                    } catch (e) {
-                      //print('EventScreen: Error switching funnel: $e');
+          ),
+
+          // Стрелочка переключения воронок — только если есть несколько воронок
+          if (state is SalesFunnelLoaded && state.funnels.length > 1)
+            Padding(
+              padding: const EdgeInsets.only(left: 8.0),
+              child: PopupMenuButton<SalesFunnel>(
+                icon: const Icon(Icons.arrow_drop_down, color: Color(0xff1E2E52)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                color: Colors.white,
+                elevation: 8,
+                offset: const Offset(0, 40),
+                onSelected: (SalesFunnel funnel) async {
+                  try {
+                    // Сохраняем выбор пользователя
+                    await _apiService.saveSelectedEventSalesFunnel(funnel.id.toString());
+
+                    // Очищаем старое состояние
+                    _resetFilters();
+
+                    setState(() {
+                      _selectedFunnel = funnel;
+                      _isSearching = false;
+                      _searchController.clear();
+                      _lastSearchQuery = '';
+                    });
+
+                    // Обновляем глобальный выбор воронки
+                    context.read<SalesFunnelBloc>().add(SelectSalesFunnel(funnel));
+
+                    // Перезагружаем события для новой воронки
+                    _loadEvents();
+                  } catch (e) {
+                    if (mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            'Ошибка при смене воронки',
-                            style: TextStyle(
-                              fontFamily: 'Gilroy',
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.white,
-                            ),
-                          ),
+                        const SnackBar(
+                          content: Text('Ошибка при смене воронки'),
                           backgroundColor: Colors.red,
                         ),
                       );
                     }
-                  },
-                  itemBuilder: (BuildContext context) {
-                    //print('EventScreen: _buildTitleWidget - Building PopupMenu with funnels: ${state.funnels}');
-                    return state.funnels
-                        .map((funnel) => PopupMenuItem<SalesFunnel>(
-                              value: funnel,
-                              child: Text(
-                                funnel.name,
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontFamily: 'Gilroy',
-                                  fontWeight: FontWeight.w500,
-                                  color: Color(0xff1E2E52),
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ))
-                        .toList();
-                  },
-                ),
+                  }
+                },
+                itemBuilder: (_) => state.funnels
+                    .map((f) => PopupMenuItem<SalesFunnel>(
+                          value: f,
+                          child: Text(
+                            f.name,
+                            style: const TextStyle(
+                              fontFamily: 'Gilroy',
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                              color: Color(0xff1E2E52),
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ))
+                    .toList(),
               ),
-          ],
-        );
-      },
-    );
-  }
+            ),
+        ],
+      );
+    },
+  );
+}
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();

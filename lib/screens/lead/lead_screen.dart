@@ -231,10 +231,10 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
 
     // Загружаем воронки
     context.read<SalesFunnelBloc>().add(FetchSalesFunnels());
-
-    debugPrint('✅ Initialized with funnelId: $savedFunnelId');
+    
+    // debugPrint('✅ Initialized with funnelId: $savedFunnelId');
   } catch (e) {
-    debugPrint('❌ _initializeSalesFunnel error: $e');
+    // debugPrint('❌ _initializeSalesFunnel error: $e');
   }
 }
 
@@ -654,17 +654,17 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
   }
 
   //print('LeadScreen: _handleManagerSelected - Loader shown, clearing cache');
-  
+
   final currentStatusId = _tabTitles[_currentTabIndex]['id'];
-  
+
   // Очищаем кэш
   await LeadCache.clearLeadsForStatus(currentStatusId);
-  
+
   //print('LeadScreen: _handleManagerSelected - Cache cleared, dispatching FetchLeads');
-  
+
   // Небольшая задержка для гарантии отображения лоадера
   await Future.delayed(Duration(milliseconds: 50));
-  
+
   final leadBloc = BlocProvider.of<LeadBloc>(context);
   leadBloc.add(FetchLeads(
     currentStatusId,
@@ -691,7 +691,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
     query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
     ignoreCache: true,
   ));
-  
+
   //print('LeadScreen: _handleManagerSelected - FetchLeads dispatched');
 }
 
@@ -706,136 +706,94 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
 
   bool isClickAvatarIcon = false;
 
-  Widget _buildTitleWidget(BuildContext context) {
-    //print('LeadScreen: Entering _buildTitleWidget');
-    return BlocBuilder<SalesFunnelBloc, SalesFunnelState>(
-      builder: (context, state) {
-        //print('LeadScreen: _buildTitleWidget - Current SalesFunnelBloc state: $state');
-        String title = AppLocalizations.of(context)!.translate('appbar_leads');
-        SalesFunnel? selectedFunnel;
-        if (state is SalesFunnelLoading) {
-          //print('LeadScreen: _buildTitleWidget - State is SalesFunnelLoading');
-          title = AppLocalizations.of(context)!.translate('appbar_leads');
-        } else if (state is SalesFunnelLoaded) {
-          //print('LeadScreen: _buildTitleWidget - State is SalesFunnelLoaded, funnels: ${state.funnels}, selectedFunnel: ${state.selectedFunnel}');
-          selectedFunnel = state.selectedFunnel ?? state.funnels.firstOrNull;
-          _selectedFunnel = selectedFunnel;
-          //print('LeadScreen: _buildTitleWidget - Selected funnel set to: $selectedFunnel');
-          title = selectedFunnel?.name ?? AppLocalizations.of(context)!.translate('appbar_leads');
-          //print('LeadScreen: _buildTitleWidget - Title set to: $title');
-        } else if (state is SalesFunnelError) {
-          //print('LeadScreen: _buildTitleWidget - State is SalesFunnelError: ${state.message}');
-          title = 'Ошибка загрузки';
-        } else {
-          //print('LeadScreen: _buildTitleWidget - Unexpected state: $state');
+Widget _buildTitleWidget(BuildContext context) {
+  return BlocBuilder<SalesFunnelBloc, SalesFunnelState>(
+    builder: (context, state) {
+      String title = AppLocalizations.of(context)!.translate('appbar_leads');
+      SalesFunnel? selectedFunnel;
+
+      if (state is SalesFunnelLoaded) {
+        selectedFunnel = state.selectedFunnel ?? state.funnels.firstOrNull;
+        _selectedFunnel = selectedFunnel;
+        if (selectedFunnel != null) {
+          title = selectedFunnel.name;
         }
-        //print('LeadScreen: _buildTitleWidget - Rendering title: $title');
-        return Row(
-          children: [
-            Expanded(
-              child: Text(
-                title,
-                style: TextStyle(
-                  fontSize: 20,
-                  fontFamily: 'Gilroy',
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xff1E2E52),
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+      }
+      // Loading / Error → просто "Лиды"
+
+      return Row(
+        children: [
+          Expanded(
+            child: Text(
+              title,
+              style: const TextStyle(
+                fontSize: 20,
+                fontFamily: 'Gilroy',
+                fontWeight: FontWeight.w600,
+                color: Color(0xff1E2E52),
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          if (state is SalesFunnelLoaded && state.funnels.length > 1)
+            Padding(
+              padding: const EdgeInsets.only(left: 8.0),
+              child: PopupMenuButton<SalesFunnel>(
+                icon: const Icon(Icons.arrow_drop_down, color: Color(0xff1E2E52)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                color: Colors.white,
+                elevation: 8,
+                offset: const Offset(0, 40),
+                onSelected: (funnel) async {
+                  try {
+                    setState(() => _isSwitchingFunnel = true);
+                    await _apiService.saveSelectedSalesFunnel(funnel.id.toString());
+                    await LeadCache.clearAllLeads();
+                    await LeadCache.clearCache();
+                    _resetFilters();
+
+                    if (mounted) {
+                      setState(() {
+                        _selectedFunnel = funnel;
+                        _isSearching = false;
+                        _searchController.clear();
+                        _lastSearchQuery = '';
+                      });
+                    }
+
+                    context.read<SalesFunnelBloc>().add(SelectSalesFunnel(funnel));
+                    await Future.delayed(const Duration(milliseconds: 100));
+                    if (mounted) {
+                      setState(() {
+                        _tabTitles.clear();
+                        _tabController = TabController(length: 0, vsync: this);
+                      });
+                    }
+                    context.read<LeadBloc>().add(FetchLeadStatuses());
+                  } catch (e) {
+                    setState(() => _isSwitchingFunnel = false);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Ошибка при смене воронки'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
+                },
+                itemBuilder: (context) => state.funnels
+                    .map((f) => PopupMenuItem<SalesFunnel>(
+                          value: f,
+                          child: Text(f.name, style: const TextStyle(fontFamily: 'Gilroy')),
+                        ))
+                    .toList(),
               ),
             ),
-            if (state is SalesFunnelLoaded && state.funnels.length > 1)
-              Padding(
-                padding: const EdgeInsets.only(left: 8.0),
-                child: PopupMenuButton<SalesFunnel>(
-                  icon: Icon(Icons.arrow_drop_down, color: Color(0xff1E2E52)),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12.0),
-                  ),
-                  color: Colors.white,
-                  elevation: 8,
-                  shadowColor: Colors.black.withOpacity(0.2),
-                  offset: Offset(0, 40),
-                  onSelected: (SalesFunnel funnel) async {
-                    //print('LeadScreen: _buildTitleWidget - Selected new funnel: ${funnel.name} (ID: ${funnel.id})');
-                    try {
-                      setState(() {
-                        _isSwitchingFunnel = true;
-                        //print('LeadScreen: _buildTitleWidget - _isSwitchingFunnel set to true');
-                      });
-                      await _apiService.saveSelectedSalesFunnel(funnel.id.toString());
-                      //print('LeadScreen: _buildTitleWidget - Saved funnel ID ${funnel.id} to SharedPreferences');
-                      await LeadCache.clearAllLeads();
-                      await LeadCache.clearCache();
-                      //print('LeadScreen: _buildTitleWidget - Cleared lead cache and statuses');
-                      _resetFilters();
-                      //print('LeadScreen: _buildTitleWidget - Reset filters');
-                      if (mounted) {
-                        setState(() {
-                          _selectedFunnel = funnel;
-                          _isSearching = false;
-                          _searchController.clear();
-                          _lastSearchQuery = '';
-                          //print('LeadScreen: _buildTitleWidget - Updated _selectedFunnel: $_selectedFunnel, cleared search');
-                        });
-                      }
-                      context.read<SalesFunnelBloc>().add(SelectSalesFunnel(funnel));
-                      await Future.delayed(Duration(milliseconds: 100));
-                      if (mounted) {
-                        setState(() {
-                          _tabTitles.clear();
-                          _tabController = TabController(length: 0, vsync: this);
-                        });
-                      }
-                      context.read<LeadBloc>().add(FetchLeadStatuses());
-                    } catch (e) {
-                      //print('LeadScreen: Error switching funnel: $e');
-                      setState(() {
-                        _isSwitchingFunnel = false;
-                      });
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            'Ошибка при смене воронки',
-                            style: TextStyle(
-                              fontFamily: 'Gilroy',
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.white,
-                            ),
-                          ),
-                          backgroundColor: Colors.red,
-                        ),
-                      );
-                    }
-                  },
-                  itemBuilder: (BuildContext context) {
-                    //print('LeadScreen: _buildTitleWidget - Building PopupMenu with funnels: ${state.funnels}');
-                    return state.funnels
-                        .map((funnel) => PopupMenuItem<SalesFunnel>(
-                      value: funnel,
-                      child: Text(
-                        funnel.name,
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontFamily: 'Gilroy',
-                          fontWeight: FontWeight.w500,
-                          color: Color(0xff1E2E52),
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ))
-                        .toList();
-                  },
-                ),
-              ),
-          ],
-        );
-      },
-    );
-  }
+        ],
+      );
+    },
+  );
+}
 
   @override
   Widget build(BuildContext context) {
@@ -909,7 +867,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
             focusNode: focusNode,
             showMenuIcon: _showCustomTabBar,
             showFilterIconOnSelectLead: !_showCustomTabBar,
-           // hasActiveLeadFilters: !_showCustomTabBar,
+            hasActiveLeadFilters: !_showCustomTabBar,
             showFilterTaskIcon: false,
             showMyTaskIcon: true,
             showCallCenter: true,

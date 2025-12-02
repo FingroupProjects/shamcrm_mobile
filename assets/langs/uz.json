@@ -1896,5 +1896,6 @@
   "users_who_can_change_status": "Bitimni ushbu statusga o'zgartirishi mumkin bo'lgan foydalanuvchilar",
   "show_field": "Maydonni ko'rsatish",
   "show_on_table": "Jadvalda ko'rsatish",
-  "lead_status": "Lid holati"
+  "lead_status": "Lid holati",
+  "later": "Keyinroq"
 }

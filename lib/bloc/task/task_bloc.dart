@@ -49,54 +49,96 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
     }
   }
 
-  Future<void> _fetchTaskStatuses(FetchTaskStatuses event, Emitter<TaskState> emit) async {
-    emit(TaskLoading());
+Future<void> _fetchTaskStatuses(FetchTaskStatuses event, Emitter<TaskState> emit) async {
+  // Всегда показываем loading в начале
+  emit(TaskLoading());
 
-    if (!await _checkInternetConnection()) {
-      final cachedStatuses = await TaskCache.getTaskStatuses();
-      if (cachedStatuses.isNotEmpty) {
-        emit(TaskLoaded(
-          cachedStatuses.map((status) => TaskStatus.fromJson(status)).toList(),
-          taskCounts: Map.from(_taskCounts),
-        ));
-      } else {
-        emit(TaskError('Нет подключения к интернету и нет данных в кэше!'));
-      }
-      return;
+  // Проверяем интернет
+  final hasInternet = await _checkInternetConnection();
+
+  // Загружаем кэш
+  final cachedStatuses = await TaskCache.getTaskStatuses();
+
+  // Если нет интернета
+  if (!hasInternet) {
+    if (cachedStatuses.isNotEmpty) {
+      // Показываем кэшированные данные
+      emit(TaskLoaded(
+        cachedStatuses.map((status) => TaskStatus.fromJson(status)).toList(),
+        taskCounts: Map.from(_taskCounts),
+      ));
+    } else {
+      // Нет кэша и нет интернета
+      emit(TaskError('Нет подключения к интернету и нет данных в кэше!'));
+    }
+    return;
+  }
+
+  // Если есть кэш, показываем его с индикацией загрузки
+  if (cachedStatuses.isNotEmpty) {
+    emit(TaskLoadingWithCache(
+      cachedStatuses.map((status) => TaskStatus.fromJson(status)).toList(),
+      taskCounts: Map.from(_taskCounts),
+    ));
+  }
+
+  try {
+    // Делаем запрос с таймаутом 15 секунд
+    final response = await apiService.getTaskStatuses()
+        .timeout(
+          Duration(seconds: 15),
+          onTimeout: () {
+            throw TimeoutException('Превышено время ожидания ответа от сервера');
+          },
+        );
+
+    // Сохраняем в кэш
+    await TaskCache.cacheTaskStatuses(response
+        .map((status) => {'id': status.id, 'title': status.taskStatus?.name ?? ""})
+        .toList());
+
+    // Получаем количество задач для каждого статуса
+    final futures = response.map((status) {
+      return apiService.getTasks(status.id, page: 1, perPage: 1)
+          .timeout(Duration(seconds: 5), onTimeout: () => <Task>[]);
+    }).toList();
+
+    final taskCountsResults = await Future.wait(futures);
+
+    for (int i = 0; i < response.length; i++) {
+      _taskCounts[response[i].id] = taskCountsResults[i].length;
     }
 
-    try {
-      final cachedStatuses = await TaskCache.getTaskStatuses();
-      if (cachedStatuses.isNotEmpty) {
-        emit(TaskLoaded(
-          cachedStatuses.map((status) => TaskStatus.fromJson(status)).toList(),
-          taskCounts: Map.from(_taskCounts),
-        ));
-      }
+    emit(TaskLoaded(response, taskCounts: Map.from(_taskCounts)));
 
-      final response = await apiService.getTaskStatuses();
-      await TaskCache.cacheTaskStatuses(response
-          .map((status) => {'id': status.id, 'title': status.taskStatus!.name ?? ""})
-          .toList());
-
-      final futures = response.map((status) {
-        return apiService.getTasks(status.id, page: 1, perPage: 1);
-      }).toList();
-
-      final taskCountsResults = await Future.wait(futures);
-
-      for (int i = 0; i < response.length; i++) {
-        _taskCounts[response[i].id] = taskCountsResults[i].length;
-      }
-
-      emit(TaskLoaded(response, taskCounts: Map.from(_taskCounts)));
-    } catch (e) {
+  } on TimeoutException catch (e) {
+    // При таймауте показываем кэш если он есть
+    if (cachedStatuses.isNotEmpty) {
+      emit(TaskLoaded(
+        cachedStatuses.map((status) => TaskStatus.fromJson(status)).toList(),
+        taskCounts: Map.from(_taskCounts),
+      ));
+    } else {
+      emit(TaskError('Превышено время ожидания. Попробуйте позже.'));
+    }
+  } catch (e) {
+    // При любой другой ошибке
+    if (cachedStatuses.isNotEmpty) {
+      emit(TaskError('Не удалось загрузить данные!', hasCachedData: true));
+      // Через небольшую задержку показываем кэш
+      await Future.delayed(Duration(milliseconds: 500));
+      emit(TaskLoaded(
+        cachedStatuses.map((status) => TaskStatus.fromJson(status)).toList(),
+        taskCounts: Map.from(_taskCounts),
+      ));
+    } else {
       emit(TaskError('Не удалось загрузить данные!'));
     }
   }
+}
 
-  Future<void> _fetchTasks(FetchTasks event, Emitter<TaskState> emit) async {
-    emit(TaskLoading());
+Future<void> _fetchTasks(FetchTasks event, Emitter<TaskState> emit) async {
+  emit(TaskLoading());
 
     _currentQuery = event.query;
     _currentUserIds = event.userIds;
@@ -114,62 +156,79 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
     _currentDepartment = event.department;
     _currentDirectoryValues = event.directoryValues; // Сохраняем directoryValues
 
-    if (!await _checkInternetConnection()) {
-      final cachedTasks = await TaskCache.getTasksForStatus(event.statusId);
-      if (cachedTasks.isNotEmpty) {
-        emit(TaskDataLoaded(cachedTasks, currentPage: 1, taskCounts: {}));
-      } else {
-        emit(TaskError('Нет подключения к интернету и нет данных в кэше!'));
-      }
-      return;
+  final hasInternet = await _checkInternetConnection();
+
+  // Загружаем кэш
+  final cachedTasks = await TaskCache.getTasksForStatus(event.statusId);
+
+  if (!hasInternet) {
+    if (cachedTasks.isNotEmpty) {
+      emit(TaskDataLoaded(cachedTasks, currentPage: 1, taskCounts: {}));
+    } else {
+      emit(TaskError('Нет подключения к интернету и нет данных в кэше!'));
     }
-
-    try {
-      final cachedTasks = await TaskCache.getTasksForStatus(event.statusId);
-      if (cachedTasks.isNotEmpty) {
-        emit(TaskDataLoaded(cachedTasks, currentPage: 1, taskCounts: {}));
-      }
-
-      final tasks = await apiService.getTasks(
-        event.statusId,
-        page: 1,
-        perPage: 20,
-        search: event.query,
-        users: event.userIds,
-        statuses: event.statusIds,
-        fromDate: event.fromDate,
-        toDate: event.toDate,
-        overdue: event.overdue,
-        hasFile: event.hasFile,
-        hasDeal: event.hasDeal,
-        urgent: event.urgent,
-        projectIds: event.projectIds,
-        authors: event.authors,
-        deadlinefromDate: event.deadlinefromDate,
-        deadlinetoDate: event.deadlinetoDate,
-        department: event.department,
-        directoryValues: event.directoryValues, // Передаем directoryValues
-      );
-
-      await TaskCache.cacheTasksForStatus(event.statusId, tasks);
-      _taskCounts[event.statusId] = tasks.length;
-
-      final taskCounts = Map<int, int>.from(_taskCounts);
-      for (var task in tasks) {
-        taskCounts[task.statusId] = (taskCounts[task.statusId] ?? 0) + 1;
-      }
-      allTasksFetched = tasks.isEmpty;
-
-      emit(TaskDataLoaded(tasks, currentPage: 1, taskCounts: taskCounts));
-    } catch (e) {
-      if (e is ApiException && e.statusCode == 401) {
-        emit(TaskError('Неавторизованный доступ!'));
-      } else {
-        emit(TaskError('Не удалось загрузить данные!'));
-      }
-    }
+    return;
   }
 
+  // Если есть кэш, показываем его сразу
+  if (cachedTasks.isNotEmpty) {
+    emit(TaskDataLoaded(cachedTasks, currentPage: 1, taskCounts: {}));
+  }
+
+  try {
+    final tasks = await apiService.getTasks(
+      event.statusId,
+      page: 1,
+      perPage: 20,
+      search: event.query,
+      users: event.userIds,
+      statuses: event.statusIds,
+      fromDate: event.fromDate,
+      toDate: event.toDate,
+      overdue: event.overdue,
+      hasFile: event.hasFile,
+      hasDeal: event.hasDeal,
+      urgent: event.urgent,
+      projectIds: event.projectIds,
+      authors: event.authors,
+      deadlinefromDate: event.deadlinefromDate,
+      deadlinetoDate: event.deadlinetoDate,
+      department: event.department,
+      directoryValues: event.directoryValues,
+    ).timeout(
+      Duration(seconds: 15),
+      onTimeout: () => <Task>[],
+    );
+
+    await TaskCache.cacheTasksForStatus(event.statusId, tasks);
+    _taskCounts[event.statusId] = tasks.length;
+
+    final taskCounts = Map<int, int>.from(_taskCounts);
+    for (var task in tasks) {
+      taskCounts[task.statusId] = (taskCounts[task.statusId] ?? 0) + 1;
+    }
+    allTasksFetched = tasks.isEmpty;
+
+    emit(TaskDataLoaded(tasks, currentPage: 1, taskCounts: taskCounts));
+
+  } on TimeoutException {
+    if (cachedTasks.isNotEmpty) {
+      // Кэш уже показан, просто оставляем как есть
+      return;
+    } else {
+      emit(TaskError('Превышено время ожидания. Попробуйте позже.'));
+    }
+  } catch (e) {
+    if (e is ApiException && e.statusCode == 401) {
+      emit(TaskError('Неавторизованный доступ!'));
+    } else {
+      if (cachedTasks.isEmpty) {
+        emit(TaskError('Не удалось загрузить данные!'));
+      }
+      // Если кэш есть, он уже показан
+    }
+  }
+}
   Future<void> _fetchMoreTasks(FetchMoreTasks event, Emitter<TaskState> emit) async {
     if (allTasksFetched) return;
 
