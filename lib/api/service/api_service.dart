@@ -1405,10 +1405,10 @@ Future<ForgotPinResponse> forgotPin(LoginModel loginModel) async {
       //debugPrint('ApiService: getLeads - After _appendQueryParams: $path');
     }
 
-    // Добавляем sales_funnel_id из аргумента, если он передан
-    if (salesFunnelId != null) {
-      path += '&sales_funnel_id=$salesFunnelId';
-    }
+    // // Добавляем sales_funnel_id из аргумента, если он передан
+    // if (salesFunnelId != null) {
+    //   path += '&sales_funnel_id=$salesFunnelId';
+    // }
 
     bool hasFilters = (search != null && search.isNotEmpty) ||
         (managers != null && managers.isNotEmpty) ||
@@ -1582,159 +1582,149 @@ Future<ForgotPinResponse> forgotPin(LoginModel loginModel) async {
     }
   }
 
-  Future<List<LeadStatus>> getLeadStatuses() async {
-    final SharedPreferences prefs = await SharedPreferences.getInstance();
-    final organizationId = await getSelectedOrganization();
-    final salesFunnelId = await getSelectedSalesFunnel();
+Future<List<LeadStatus>> getLeadStatuses({
+  List<int>? managers,
+  List<int>? regions,
+  List<int>? sources,
+  DateTime? fromDate,
+  DateTime? toDate,
+  bool? hasSuccessDeals,
+  bool? hasInProgressDeals,
+  bool? hasFailureDeals,
+  bool? hasNotices,
+  bool? hasContact,
+  bool? hasChat,
+  bool? hasNoReplies,
+  bool? hasUnreadMessages,
+  bool? hasDeal,
+  bool? hasOrders,
+  int? daysWithoutActivity,
+  List<Map<String, dynamic>>? directoryValues,
+}) async {
+  final SharedPreferences prefs = await SharedPreferences.getInstance();
+  final organizationId = await getSelectedOrganization();
+  final salesFunnelId = await getSelectedSalesFunnel();
 
-    // ⚠️ КРИТИЧНО: Проверяем наличие обязательного параметра
-    if (organizationId == null || organizationId.isEmpty || organizationId == 'null') {
-      throw Exception('Organization ID is required but missing');
+  if (organizationId == null || organizationId.isEmpty || organizationId == 'null') {
+    throw Exception('Organization ID is required but missing');
+  }
+
+  if (kDebugMode) {
+    debugPrint('🔍 getLeadStatuses - START WITH FILTERS');
+    debugPrint('🔍 getLeadStatuses - organizationId: $organizationId');
+    debugPrint('🔍 getLeadStatuses - salesFunnelId: ${salesFunnelId ?? "NULL"}');
+  }
+
+  final cacheKey = 'cachedLeadStatuses_${organizationId}_funnel_${salesFunnelId ?? "null"}';
+
+  try {
+    String path = '/lead/statuses?organization_id=$organizationId';
+
+    if (salesFunnelId != null && salesFunnelId.isNotEmpty && salesFunnelId != 'null') {
+      path += '&sales_funnel_id=$salesFunnelId';
+    }
+
+    // Добавляем фильтры к запросу статусов
+    if (managers != null && managers.isNotEmpty) {
+      for (int i = 0; i < managers.length; i++) {
+        path += '&managers[$i]=${managers[i]}';
+      }
+    }
+    if (regions != null && regions.isNotEmpty) {
+      for (int i = 0; i < regions.length; i++) {
+        path += '&regions[$i]=${regions[i]}';
+      }
+    }
+    if (sources != null && sources.isNotEmpty) {
+      for (int i = 0; i < sources.length; i++) {
+        path += '&sources[$i]=${sources[i]}';
+      }
+    }
+    if (fromDate != null && toDate != null) {
+      final formattedFromDate = DateFormat('yyyy-MM-dd').format(fromDate);
+      final formattedToDate = DateFormat('yyyy-MM-dd').format(toDate);
+      path += '&from=$formattedFromDate&to=$formattedToDate';
+    }
+    if (hasSuccessDeals == true) path += '&hasSuccessDeals=1';
+    if (hasInProgressDeals == true) path += '&hasInProgressDeals=1';
+    if (hasFailureDeals == true) path += '&hasFailureDeals=1';
+    if (hasNotices == true) path += '&hasNotices=1';
+    if (hasContact == true) path += '&hasContact=1';
+    if (hasChat == true) path += '&hasChat=1';
+    if (hasNoReplies == true) path += '&hasNoReplies=1';
+    if (hasUnreadMessages == true) path += '&hasUnreadMessages=1';
+    if (hasDeal == true) path += '&withoutDeal=1';
+    if (hasOrders == true) path += '&hasOrders=1';
+    if (daysWithoutActivity != null) path += '&lastUpdate=$daysWithoutActivity';
+    if (directoryValues != null && directoryValues.isNotEmpty) {
+      for (int i = 0; i < directoryValues.length; i++) {
+        final directoryId = directoryValues[i]['directory_id'];
+        final entryId = directoryValues[i]['entry_id'];
+        path += '&directory_values[$i][directory_id]=$directoryId';
+        path += '&directory_values[$i][entry_id]=$entryId';
+      }
     }
 
     if (kDebugMode) {
-      debugPrint('🔍 getLeadStatuses - START');
-      debugPrint('🔍 getLeadStatuses - organizationId: $organizationId');
-      debugPrint('🔍 getLeadStatuses - salesFunnelId: ${salesFunnelId ?? "NULL"}');
+      debugPrint('📤 getLeadStatuses WITH FILTERS - Final path: $path');
     }
-
-    // Формируем ключ кэша с учётом воронки
-    final cacheKey = 'cachedLeadStatuses_${organizationId}_funnel_${salesFunnelId ?? "null"}';
-
-    if (kDebugMode) {
-      debugPrint('🔍 getLeadStatuses - cacheKey: $cacheKey');
-    }
-
-    try {
-      // КРИТИЧНО: Формируем путь ЯВНО с гарантией параметров
-      String path = '/lead/statuses?organization_id=$organizationId';
-
-      // КРИТИЧНО: ВСЕГДА добавляем sales_funnel_id (даже если null)
-      if (salesFunnelId != null && salesFunnelId.isNotEmpty && salesFunnelId != 'null') {
-        path += '&sales_funnel_id=$salesFunnelId';
-        if (kDebugMode) {
-          debugPrint('✅ getLeadStatuses - Added sales_funnel_id: $salesFunnelId');
-        }
-      } else {
-        if (kDebugMode) {
-          debugPrint('⚠️ getLeadStatuses - No funnel selected, will load ALL statuses from backend');
-        }
-        // ОПЦИОНАЛЬНО: Если бэкенд требует явного значения:
-        // path += '&sales_funnel_id=0';
-      }
-
-      if (kDebugMode) {
-        debugPrint('📤 getLeadStatuses - Final path: $path');
-      }
 
       final response = await _getRequest(path);
 
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-
-        if (kDebugMode) {
-          debugPrint('✅ getLeadStatuses - Response received');
-          debugPrint('🔍 getLeadStatuses - Response type: ${data.runtimeType}');
-        }
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
 
         List<dynamic>? statusList;
 
-        // Определяем структуру ответа
-        if (data is List) {
-          statusList = data;
-          if (kDebugMode) {
-            debugPrint('✅ getLeadStatuses - Data is direct List');
-          }
-        } else if (data is Map) {
-          if (data['result'] != null) {
-            statusList = data['result'] as List;
-            if (kDebugMode) {
-              debugPrint('✅ getLeadStatuses - Data found in "result" field');
-            }
-          } else if (data['data'] != null) {
-            statusList = data['data'] as List;
-            if (kDebugMode) {
-              debugPrint('✅ getLeadStatuses - Data found in "data" field');
-            }
-          } else if (data['statuses'] != null) {
-            statusList = data['statuses'] as List;
-            if (kDebugMode) {
-              debugPrint('✅ getLeadStatuses - Data found in "statuses" field');
-            }
-          }
+      if (data is List) {
+        statusList = data;
+      } else if (data is Map) {
+        if (data['result'] != null) {
+          statusList = data['result'] as List;
+        } else if (data['data'] != null) {
+          statusList = data['data'] as List;
+        } else if (data['statuses'] != null) {
+          statusList = data['statuses'] as List;
         }
-
-        // Обрабатываем найденные данные
-        if (statusList != null && statusList.isNotEmpty) {
-          // Проверяем старый кэш
-          final cachedStatuses = prefs.getString(cacheKey);
-          if (cachedStatuses != null && kDebugMode) {
-            debugPrint('⚠️ getLeadStatuses - Old cache data found, will be replaced');
-          }
-
-          // Обновляем кэш новыми данными
-          await prefs.setString(cacheKey, json.encode(statusList));
-
-          if (kDebugMode) {
-            debugPrint('✅ getLeadStatuses - Cached ${statusList.length} statuses with key: $cacheKey');
-          }
-
-          // Парсим статусы
-          final statuses = statusList
-              .map((status) => LeadStatus.fromJson(status))
-              .toList();
-
-          // КРИТИЧНО: Обновляем постоянные счетчики
-          await LeadCache.updatePersistentCountsFromStatuses(statuses);
-
-          if (kDebugMode) {
-            debugPrint('✅ getLeadStatuses - Updated persistent counts from API');
-            for (var status in statuses) {
-              debugPrint('   Status ID: ${status.id}, Count: ${status.leadsCount}');
-            }
-          }
-
-          return statuses;
-        } else {
-          if (kDebugMode) {
-            debugPrint('❌ getLeadStatuses - No valid data in response');
-            debugPrint('   Available keys: ${data is Map ? data.keys.toList() : "N/A"}');
-          }
-          throw Exception('Результат отсутствует в ответе или пустой');
-        }
-      } else {
-        if (kDebugMode) {
-          debugPrint('❌ getLeadStatuses - Failed with status code: ${response.statusCode}');
-        }
-        throw Exception('Ошибка ${response.statusCode}!');
-      }
-    } catch (e) {
-      if (kDebugMode) {
-        debugPrint('⚠️ getLeadStatuses - Error occurred: $e');
-        debugPrint('⚠️ getLeadStatuses - Trying to load from cache');
       }
 
-      // Пытаемся загрузить из кэша
-      final cachedStatuses = prefs.getString(cacheKey);
-      if (cachedStatuses != null) {
-        final decodedData = json.decode(cachedStatuses);
-        final cachedList = (decodedData as List)
+      if (statusList != null && statusList.isNotEmpty) {
+        await prefs.setString(cacheKey, json.encode(statusList));
+
+        final statuses = statusList
             .map((status) => LeadStatus.fromJson(status))
             .toList();
 
+        await LeadCache.updatePersistentCountsFromStatuses(statuses);
+
         if (kDebugMode) {
-          debugPrint('✅ getLeadStatuses - Loaded ${cachedList.length} statuses from cache');
+          debugPrint('✅ getLeadStatuses WITH FILTERS - Got ${statuses.length} statuses');
         }
-        return cachedList;
+
+        return statuses;
       } else {
-        if (kDebugMode) {
-          debugPrint('❌ getLeadStatuses - No cache data available');
-        }
-        throw Exception(
-            'Ошибка загрузки статусов лидов и отсутствуют кэшированные данные!');
+        throw Exception('Результат отсутствует в ответе или пустой');
       }
+    } else {
+      throw Exception('Ошибка ${response.statusCode}!');
+    }
+  } catch (e) {
+    if (kDebugMode) {
+      debugPrint('❌ getLeadStatuses WITH FILTERS - Error: $e');
+    }
+
+    final cachedStatuses = prefs.getString(cacheKey);
+    if (cachedStatuses != null) {
+      final decodedData = json.decode(cachedStatuses);
+      final cachedList = (decodedData as List)
+          .map((status) => LeadStatus.fromJson(status))
+          .toList();
+      return cachedList;
+    } else {
+      throw Exception('Ошибка загрузки статусов лидов и отсутствуют кэшированные данные!');
     }
   }
+}
 
   Future<bool> checkIfStatusHasLeads(int leadStatusId) async {
     try {
@@ -7469,27 +7459,31 @@ Future<String> _appendQueryParams(String path) async {
     }
   }
 
-// Метод для прочтения всех Уведомлений
-  Future<int> DeleteAllNotifications() async {
-    // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
-    String path = await _appendQueryParams('/notification/readAll');
-    if (kDebugMode) {
-      //debugPrint('ApiService: DeleteAllNotifications - Generated path: $path');
-    }
 
-    ////debugPrint('Sending POST request to API with path: $path');
 
-    final response = await _postRequest(path, {});
+// Замените метод DeleteAllNotifications на это:
 
-    // Успешные коды: 200, 201, 204, 429
-    final successCodes = [200, 201, 204, 429];
-    if (successCodes.contains(response.statusCode)) {
-      return response.statusCode;
-    } else {
-      throw Exception('Ошибка удаления уведомлений!');
-    }
+Future<int> DeleteAllNotifications() async {
+  // Используем эндпоинт /notification/readAll с POST методом
+  String path = await _appendQueryParams('/notification/readAll');
+
+  if (kDebugMode) {
+    debugPrint('ApiService: DeleteAllNotifications - Generated path: $path');
   }
 
+  debugPrint('Sending POST request to API with path: $path');
+
+  // Используем POST метод как и раньше
+  final response = await _postRequest(path, {});
+
+  final successCodes = [200, 201, 204, 429];
+  if (successCodes.contains(response.statusCode)) {
+    debugPrint('✅ All notifications deleted successfully. Status: ${response.statusCode}');
+    return response.statusCode;
+  } else {
+    throw Exception('Ошибка удаления уведомлений! Status: ${response.statusCode}');
+  }
+}
 // Метод для удаления Уведомлений
   Future<int> DeleteNotifications({int? notificationId}) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id

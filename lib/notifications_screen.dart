@@ -226,20 +226,135 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     return Future.delayed(Duration(milliseconds: 1500));
   }
 
-  void _clearAllNotifications() async {
-    debugPrint('🗑️ [DELETE ALL] Удаление всех уведомлений');
-    notificationBloc.add(DeleteAllNotification());
-    setState(() {
-      if (notificationBloc.state is NotificationDataLoaded) {
-        (notificationBloc.state as NotificationDataLoaded)
-            .notifications
-            .clear();
+void _clearAllNotifications() async {
+  debugPrint('🗑️ [DELETE ALL] Запрос на удаление всех уведомлений');
+
+  // Проверяем, есть ли уведомления
+  if (notificationBloc.state is NotificationDataLoaded) {
+    final currentState = notificationBloc.state as NotificationDataLoaded;
+    if (currentState.notifications.isEmpty) {
+      debugPrint('⚠️ Нет уведомлений для удаления');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              AppLocalizations.of(context)!.translate('no_notifications_to_delete') ?? 
+              'Нет уведомлений для удаления',
+              style: TextStyle(
+                fontFamily: 'Gilroy',
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                color: Colors.white,
+              ),
+            ),
+            behavior: SnackBarBehavior.floating,
+            margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            backgroundColor: Color(0xff5A6B87),
+            duration: Duration(seconds: 2),
+          ),
+        );
       }
-    });
+      return;
+    }
+  }
+final bool? confirmed = await showDialog<bool>(
+    context: context,
+    barrierDismissible: false,
+    builder: (BuildContext dialogContext) {
+      return AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        title: Row(
+          children: [
+            Icon(
+              Icons.warning_amber_rounded,
+              color: Colors.orange,
+              size: 28,
+            ),
+            SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                AppLocalizations.of(context)!.translate('confirm_delete') ?? 
+                'Подтверждение',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xff1E2E52),
+                  fontFamily: 'Gilroy',
+                ),
+              ),
+            ),
+          ],
+        ),
+        content: Text(
+          AppLocalizations.of(context)!.translate('delete_all_notifications_message') ?? 
+          'Вы уверены, что хотите удалить все уведомления? Это действие нельзя отменить.',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w400,
+            color: Color(0xff5A6B87),
+            fontFamily: 'Gilroy',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(dialogContext).pop(false);
+            },
+            child: Text(
+              AppLocalizations.of(context)!.translate('cancel') ?? 'Отмена',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: Color(0xff5A6B87),
+                fontFamily: 'Gilroy',
+              ),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.of(dialogContext).pop(true);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            ),
+            child: Text(
+              AppLocalizations.of(context)!.translate('delete') ?? 'Удалить',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: Colors.white,
+                fontFamily: 'Gilroy',
+              ),
+            ),
+          ),
+        ],
+      );
+    },
+  );
+
+  // ✅ ЕСЛИ ПОЛЬЗОВАТЕЛЬ ПОДТВЕРДИЛ - УДАЛЯЕМ
+  if (confirmed == true) {
+    debugPrint('✅ Пользователь подтвердил удаление');
+    
+    notificationBloc.add(DeleteAllNotification());
+
+    // Обновляем флаг в SharedPreferences
     SharedPreferences.getInstance().then((prefs) {
       prefs.setBool('hasNewNotification', false);
     });
+  } else {
+    debugPrint('❌ Пользователь отменил удаление');
   }
+}
 
   @override
   Widget build(BuildContext context) {

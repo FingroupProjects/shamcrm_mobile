@@ -49,6 +49,8 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
     on<FetchLeadStatus>(_fetchLeadStatus);
     on<RestoreCountsFromCache>(_restoreCountsFromCache);
     on<RefreshCurrentStatus>(_refreshCurrentStatus);
+    on<FetchLeadStatusesWithFilters>(_fetchLeadStatusesWithFilters);
+
   }
 
   Future<void> _fetchLeadStatus(FetchLeadStatus event, Emitter<LeadState> emit) async {
@@ -774,6 +776,228 @@ Future<void> _refreshCurrentStatus(RefreshCurrentStatus event, Emitter<LeadState
   } catch (e) {
     //print('LeadBloc: _refreshCurrentStatus - Error: $e');
     emit(LeadError('Не удалось обновить данные статуса: $e'));
+  }
+}
+
+Future<void> _fetchLeadStatusesWithFilters(
+  FetchLeadStatusesWithFilters event,
+  Emitter<LeadState> emit,
+) async {
+  if (kDebugMode) {
+    debugPrint('🔍 LeadBloc: _fetchLeadStatusesWithFilters - START');
+  }
+
+  emit(LeadLoading());
+
+  try {
+    // 1. Получаем статусы с учётом фильтров
+    final statuses = await apiService.getLeadStatuses(
+      managers: event.managerIds,
+      regions: event.regionsIds,
+      sources: event.sourcesIds,
+      fromDate: event.fromDate,
+      toDate: event.toDate,
+      hasSuccessDeals: event.hasSuccessDeals,
+      hasInProgressDeals: event.hasInProgressDeals,
+      hasFailureDeals: event.hasFailureDeals,
+      hasNotices: event.hasNotices,
+      hasContact: event.hasContact,
+      hasChat: event.hasChat,
+      hasNoReplies: event.hasNoReplies,
+      hasUnreadMessages: event.hasUnreadMessages,
+      hasDeal: event.hasDeal,
+      hasOrders: event.hasOrders,
+      daysWithoutActivity: event.daysWithoutActivity,
+      directoryValues: event.directoryValues,
+    );
+
+    if (kDebugMode) {
+      debugPrint('✅ LeadBloc: Got ${statuses.length} statuses with filters');
+    }
+
+    // 2. Обновляем счётчики из полученных статусов
+    _leadCounts.clear();
+    for (var status in statuses) {
+      _leadCounts[status.id] = status.leadsCount;
+      await LeadCache.setPersistentLeadCount(status.id, status.leadsCount);
+    }
+
+    // 3. Кэшируем статусы
+    await LeadCache.cacheLeadStatuses(statuses);
+
+    // 4. Эмитим состояние со статусами
+    emit(LeadLoaded(statuses, leadCounts: Map.from(_leadCounts)));
+
+    // 5. ← КРИТИЧНО: СОХРАНЯЕМ ФИЛЬТРЫ В БЛОКЕ ПЕРЕД ПАРАЛЛЕЛЬНОЙ ЗАГРУЗКОЙ!
+    if (statuses.isNotEmpty) {
+      if (kDebugMode) {
+        debugPrint('🚀 LeadBloc: Starting parallel fetch for ${statuses.length} statuses');
+        debugPrint('🔍 LeadBloc: SAVING FILTERS TO BLOC STATE:');
+        debugPrint('   managerIds: ${event.managerIds}');
+        debugPrint('   regionsIds: ${event.regionsIds}');
+        debugPrint('   sourcesIds: ${event.sourcesIds}');
+        debugPrint('   hasContact: ${event.hasContact}');
+        debugPrint('   hasOrders: ${event.hasOrders}');
+      }
+
+      // ← СОХРАНЯЕМ фильтры для последующих запросов
+      _currentQuery = null; // При фильтрах query обычно null
+      _currentManagerIds = event.managerIds;
+      _currentRegionIds = event.regionsIds;
+      _currentSourceIds = event.sourcesIds;
+      _currentStatusId = null; // Будет устанавливаться для каждого статуса отдельно
+      _currentFromDate = event.fromDate;
+      _currentToDate = event.toDate;
+      _currentHasSuccessDeals = event.hasSuccessDeals;
+      _currentHasInProgressDeals = event.hasInProgressDeals;
+      _currentHasFailureDeals = event.hasFailureDeals;
+      _currentHasNotices = event.hasNotices;
+      _currentHasContact = event.hasContact;
+      _currentHasChat = event.hasChat;
+      _currentHasNoReplies = event.hasNoReplies;
+      _currentHasUnreadMessages = event.hasUnreadMessages;
+      _currentHasDeal = event.hasDeal;
+      _currentHasOrders = event.hasOrders;
+      _currentDaysWithoutActivity = event.daysWithoutActivity;
+      _currentDirectoryValues = event.directoryValues;
+
+      if (kDebugMode) {
+        debugPrint('✅ LeadBloc: Filters saved to bloc state');
+      }
+
+      // Создаём список Future для параллельной загрузки
+      final List<Future<void>> fetchTasks = statuses.map((status) {
+        return _fetchLeadsForStatusWithFilters(
+          status.id,
+          event.managerIds,
+          event.regionsIds,
+          event.sourcesIds,
+          event.fromDate,
+          event.toDate,
+          event.hasSuccessDeals,
+          event.hasInProgressDeals,
+          event.hasFailureDeals,
+          event.hasNotices,
+          event.hasContact,
+          event.hasChat,
+          event.hasNoReplies,
+          event.hasUnreadMessages,
+          event.hasDeal,
+          event.hasOrders,
+          event.daysWithoutActivity,
+          event.directoryValues,
+          event.salesFunnelId,
+        );
+      }).toList();
+
+      // Запускаем все запросы параллельно
+      await Future.wait(fetchTasks);
+
+      if (kDebugMode) {
+        debugPrint('✅ LeadBloc: All parallel fetches completed');
+      }
+
+      // После загрузки всех данных эмитим финальное состояние
+      final allLeads = <Lead>[];
+      for (var status in statuses) {
+        final leadsForStatus = await LeadCache.getLeadsForStatus(status.id);
+        allLeads.addAll(leadsForStatus);
+      }
+
+      emit(LeadDataLoaded(allLeads, currentPage: 1, leadCounts: Map.from(_leadCounts)));
+    }
+  } catch (e) {
+    if (kDebugMode) {
+      debugPrint('❌ LeadBloc: _fetchLeadStatusesWithFilters - Error: $e');
+    }
+    emit(LeadError('Не удалось загрузить статусы с фильтрами: $e'));
+  }
+}
+
+// Вспомогательный метод для загрузки лидов одного статуса
+Future<void> _fetchLeadsForStatusWithFilters(
+  int statusId,
+  List<int>? managerIds,
+  List<int>? regionsIds,
+  List<int>? sourcesIds,
+  DateTime? fromDate,
+  DateTime? toDate,
+  bool? hasSuccessDeals,
+  bool? hasInProgressDeals,
+  bool? hasFailureDeals,
+  bool? hasNotices,
+  bool? hasContact,
+  bool? hasChat,
+  bool? hasNoReplies,
+  bool? hasUnreadMessages,
+  bool? hasDeal,
+  bool? hasOrders,
+  int? daysWithoutActivity,
+  List<Map<String, dynamic>>? directoryValues,
+  int? salesFunnelId,
+) async {
+  try {
+    if (!await _checkInternetConnection()) {
+      if (kDebugMode) {
+        debugPrint('⚠️ LeadBloc: No internet for status $statusId');
+      }
+      return;
+    }
+
+    if (kDebugMode) {
+      debugPrint('🔍 LeadBloc: _fetchLeadsForStatusWithFilters for status $statusId');
+      debugPrint('   managerIds: $managerIds');
+      debugPrint('   regionsIds: $regionsIds');
+      debugPrint('   sourcesIds: $sourcesIds');
+      debugPrint('   hasContact: $hasContact');
+      debugPrint('   hasOrders: $hasOrders');
+      debugPrint('   hasSuccessDeals: $hasSuccessDeals');
+      debugPrint('   hasInProgressDeals: $hasInProgressDeals');
+      debugPrint('   hasFailureDeals: $hasFailureDeals');
+      debugPrint('   hasNotices: $hasNotices');
+    }
+
+    final leads = await apiService.getLeads(
+      null, // ← leadStatusId = null
+      page: 1,
+      perPage: 20,
+      managers: managerIds, // ← КРИТИЧНО: Передаём фильтры!
+      regions: regionsIds,
+      sources: sourcesIds,
+      statuses: statusId, // ← ВАЖНО: ID статуса через параметр statuses
+      fromDate: fromDate,
+      toDate: toDate,
+      hasSuccessDeals: hasSuccessDeals,
+      hasInProgressDeals: hasInProgressDeals,
+      hasFailureDeals: hasFailureDeals,
+      hasNotices: hasNotices,
+      hasContact: hasContact, // ← Проверь что передаётся!
+      hasChat: hasChat,
+      hasNoReplies: hasNoReplies,
+      hasUnreadMessages: hasUnreadMessages,
+      hasDeal: hasDeal,
+      hasOrders: hasOrders, // ← Проверь что передаётся!
+      daysWithoutActivity: daysWithoutActivity,
+      directoryValues: directoryValues,
+      salesFunnelId: salesFunnelId,
+    );
+
+    if (kDebugMode) {
+      debugPrint('✅ LeadBloc: Fetched ${leads.length} leads for status $statusId WITH FILTERS');
+    }
+
+    // Кэшируем с сохранением реального счётчика
+    final realCount = _leadCounts[statusId];
+    await LeadCache.cacheLeadsForStatus(
+      statusId,
+      leads,
+      updatePersistentCount: true,
+      actualTotalCount: realCount,
+    );
+  } catch (e) {
+    if (kDebugMode) {
+      debugPrint('❌ LeadBloc: Error fetching leads for status $statusId: $e');
+    }
   }
 }
 }

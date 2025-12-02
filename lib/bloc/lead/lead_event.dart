@@ -258,3 +258,45 @@ class RefreshCurrentStatus extends LeadEvent {
 
   RefreshCurrentStatus(this.statusId, {this.salesFunnelId});
 }
+
+class FetchLeadStatusesWithFilters extends LeadEvent {
+  final List<int>? managerIds;
+  final List<int>? regionsIds;
+  final List<int>? sourcesIds;
+  final DateTime? fromDate;
+  final DateTime? toDate;
+  final bool? hasSuccessDeals;
+  final bool? hasInProgressDeals;
+  final bool? hasFailureDeals;
+  final bool? hasNotices;
+  final bool? hasContact;
+  final bool? hasChat;
+  final bool? hasNoReplies;
+  final bool? hasUnreadMessages;
+  final bool? hasDeal;
+  final bool? hasOrders;
+  final int? daysWithoutActivity;
+  final List<Map<String, dynamic>>? directoryValues;
+  final int? salesFunnelId;
+
+  FetchLeadStatusesWithFilters({
+    this.managerIds,
+    this.regionsIds,
+    this.sourcesIds,
+    this.fromDate,
+    this.toDate,
+    this.hasSuccessDeals,
+    this.hasInProgressDeals,
+    this.hasFailureDeals,
+    this.hasNotices,
+    this.hasContact,
+    this.hasChat,
+    this.hasNoReplies,
+    this.hasUnreadMessages,
+    this.hasDeal,
+    this.hasOrders,
+    this.daysWithoutActivity,
+    this.directoryValues,
+    this.salesFunnelId,
+  });
+}
