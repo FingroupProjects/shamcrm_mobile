@@ -189,7 +189,7 @@ void main() async {
     } catch (e) {
       //print('main: Ошибка получения initial message: $e');
     }
-
+    
     SystemChrome.setSystemUIOverlayStyle(
       const SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
@@ -703,12 +703,12 @@ Widget build(BuildContext context) {
         }
         return supportedLocales.first;
       },
-      // ✅ InternetAwareWrapper ЗДЕСЬ, в builder MaterialApp
-      builder: (context, child) {
-        return InternetAwareWrapper(
-          child: child ?? const SizedBox.shrink(),
-        );
-      },
+      // // ✅ InternetAwareWrapper ЗДЕСЬ, в builder MaterialApp
+      // builder: (context, child) {
+      //   return InternetAwareWrapper(
+      //     child: child ?? const SizedBox.shrink(),
+      //   );
+      // },
       home: Builder(
         builder: (context) {
           if (!widget.sessionValid) {

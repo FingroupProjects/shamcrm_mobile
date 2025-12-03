@@ -62,7 +62,8 @@
                     android:layout_marginTop="4dp"
                     android:text="Дашборд"
                     android:textSize="@dimen/widget_text_compact_size"
-                    android:textColor="#1E2E52"
+android:textStyle="bold"
+                    android:textColor="#FFFFFF"
                     android:maxLines="1"
                     android:ellipsize="end" />
             </LinearLayout>
@@ -94,7 +95,8 @@
                     android:layout_marginTop="4dp"
                     android:text="Задачи"
                     android:textSize="@dimen/widget_text_compact_size"
-                    android:textColor="#1E2E52"
+android:textStyle="bold"
+                    android:textColor="#FFFFFF"
                     android:maxLines="1"
                     android:ellipsize="end" />
             </LinearLayout>
@@ -126,7 +128,8 @@
                     android:layout_marginTop="4dp"
                     android:text="Лиды"
                     android:textSize="@dimen/widget_text_compact_size"
-                    android:textColor="#1E2E52"
+android:textStyle="bold"
+                    android:textColor="#FFFFFF"
                     android:maxLines="1"
                     android:ellipsize="end" />
             </LinearLayout>
@@ -158,7 +161,8 @@
                     android:layout_marginTop="4dp"
                     android:text="Сделки"
                     android:textSize="@dimen/widget_text_compact_size"
-                    android:textColor="#1E2E52"
+android:textStyle="bold"
+                    android:textColor="#FFFFFF"
                     android:maxLines="1"
                     android:ellipsize="end" />
             </LinearLayout>
