@@ -160,7 +160,7 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
               });
             },
             itemBuilder: (context, index) {
-              final imageUrl = '$baseUrl/${sortedFiles[index].path}';
+              final imageUrl = '${sortedFiles[index].path}';
               if (sortedFiles[index].path.isEmpty) {
                 return _buildPlaceholder();
               }
@@ -213,7 +213,7 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
   void _openImageGallery(BuildContext context, List<GoodsFile> files, int initialIndex) {
     final List<String> imageUrls = files
         .where((file) => file.path.isNotEmpty)
-        .map((file) => '$baseUrl/${file.path}')
+        .map((file) => '${file.path}')
         .toList();
 
     if (imageUrls.isEmpty) return;
@@ -481,9 +481,9 @@ AppBar _buildAppBar(BuildContext context, String title) {
     List<Map<String, String>> attributes = uniqueAttributes.take(4).toList();
     String? imageUrl;
     if (variant.files != null && variant.files!.isNotEmpty) {
-      imageUrl = '$baseUrl/${variant.files!.first.path}';
+      imageUrl = '${variant.files!.first.path}';
     } else if (goodsFiles.isNotEmpty) {
-      imageUrl = '$baseUrl/${goodsFiles.first.path}';
+      imageUrl = '${goodsFiles.first.path}';
     }
 
     return GestureDetector(

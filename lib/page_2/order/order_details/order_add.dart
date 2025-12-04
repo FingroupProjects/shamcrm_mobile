@@ -863,7 +863,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                 ? ClipRRect(
               borderRadius: BorderRadius.circular(8),
               child: Image.network(
-                '$baseUrl/${item['imagePath']}',
+                '${item['imagePath']}',
                 width: 48,
                 height: 48,
                 fit: BoxFit.cover,

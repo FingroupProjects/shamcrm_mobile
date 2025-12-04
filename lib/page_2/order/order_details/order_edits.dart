@@ -813,7 +813,7 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
               child: CachedNetworkImage(
                 imageUrl: item['imagePath'].startsWith('http')
                     ? item['imagePath']
-                    : '$baseUrl/${item['imagePath']}',
+                    : '${item['imagePath']}',
                 width: 48,
                 height: 48,
                 fit: BoxFit.cover,

@@ -119,7 +119,8 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
   // Режим настроек
   bool isSettingsMode = false;
   bool isSavingFieldOrder = false;
-  List<FieldConfiguration>? originalFieldConfigurations; // Для отслеживания изменений
+  List<FieldConfiguration>?
+      originalFieldConfigurations; // Для отслеживания изменений
   final GlobalKey _addFieldButtonKey = GlobalKey();
 
   int? _selectedStatuses;
@@ -223,8 +224,7 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
           controller: TextEditingController(
               text: dirValue.entry!.values.isNotEmpty
                   ? dirValue.entry!.values.first.value
-                  : ''
-          ),
+                  : ''),
           isDirectoryField: true,
           directoryId: dirValue.entry!.directory.id,
           entryId: dirValue.entry!.id,
@@ -259,9 +259,9 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
     }
 
     if (mounted) {
-      context.read<FieldConfigurationBloc>().add(
-          FetchFieldConfiguration('leads')
-      );
+      context
+          .read<FieldConfigurationBloc>()
+          .add(FetchFieldConfiguration('leads'));
     }
   }
 
@@ -275,7 +275,8 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
           'id': config.id,
           'position': config.position,
           'is_active': config.isActive ? 1 : 0,
-          'is_required': config.originalRequired ? 1 : 0, // Используем originalRequired
+          'is_required':
+              config.originalRequired ? 1 : 0, // Используем originalRequired
           'show_on_table': config.showOnTable ? 1 : 0,
         });
       }
@@ -325,7 +326,8 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
   CustomField _getOrCreateCustomField(FieldConfiguration config) {
     // Ищем существующее поле по имени и флагу isCustomField
     final existingField = customFields.firstWhere(
-          (field) => field.fieldName == config.fieldName && field.isCustomField == true,
+      (field) =>
+          field.fieldName == config.fieldName && field.isCustomField == true,
       orElse: () {
         // Если не найдено, создаем новое с пустым контроллером
         final newField = CustomField(
@@ -346,7 +348,7 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
   // Вспомогательный метод для создания/получения поля-справочника
   CustomField _getOrCreateDirectoryField(FieldConfiguration config) {
     final existingField = customFields.firstWhere(
-          (field) => field.directoryId == config.directoryId,
+      (field) => field.directoryId == config.directoryId,
       orElse: () {
         final newField = CustomField(
           fieldName: config.fieldName,
@@ -363,11 +365,16 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
     return existingField;
   }
 
-  Future<void> _addCustomField(String fieldName, {bool isDirectory = false, int? directoryId, String? type}) async {
+  Future<void> _addCustomField(String fieldName,
+      {bool isDirectory = false, int? directoryId, String? type}) async {
     if (isDirectory && directoryId != null) {
-      bool directoryExists = customFields.any((field) => field.isDirectoryField && field.directoryId == directoryId);
+      bool directoryExists = customFields.any((field) =>
+          field.isDirectoryField && field.directoryId == directoryId);
       if (directoryExists) {
-        showCustomSnackBar(context: context, message: 'Справочник уже добавлен', isSuccess: true);
+        showCustomSnackBar(
+            context: context,
+            message: 'Справочник уже добавлен',
+            isSuccess: true);
         debugPrint("Directory with ID $directoryId already exists.");
         return;
       }
@@ -379,7 +386,10 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
           organizationId: ApiService().getSelectedOrganization().toString(),
         );
 
-        showCustomSnackBar(context: context, message: 'Справочник успешно добавлен', isSuccess: true);
+        showCustomSnackBar(
+            context: context,
+            message: 'Справочник успешно добавлен',
+            isSuccess: true);
 
         // Добавляем справочник локально сразу после успешного связывания
         if (mounted) {
@@ -399,9 +409,9 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
         // После успешного добавления справочника перезагружаем конфигурацию полей
         // Конфигурация с сервера уже будет содержать этот справочник
         if (mounted) {
-          context.read<FieldConfigurationBloc>().add(
-              FetchFieldConfiguration('leads')
-          );
+          context
+              .read<FieldConfigurationBloc>()
+              .add(FetchFieldConfiguration('leads'));
         }
 
         if (kDebugMode) {
@@ -447,9 +457,9 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
 
       // После успешного добавления перезагружаем конфигурацию полей
       if (mounted) {
-        context.read<FieldConfigurationBloc>().add(
-            FetchFieldConfiguration('leads')
-        );
+        context
+            .read<FieldConfigurationBloc>()
+            .add(FetchFieldConfiguration('leads'));
       }
 
       // Добавляем поле локально только после успешного добавления на backend
@@ -496,7 +506,8 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
   }
 
   void _showAddFieldMenu() {
-    final RenderBox? renderBox = _addFieldButtonKey.currentContext?.findRenderObject() as RenderBox?;
+    final RenderBox? renderBox =
+        _addFieldButtonKey.currentContext?.findRenderObject() as RenderBox?;
     if (renderBox == null) return;
 
     final Offset offset = renderBox.localToGlobal(Offset.zero);
@@ -540,7 +551,9 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
         offset.dx,
         showAbove ? offset.dy + verticalOffset : offset.dy + verticalOffset,
         MediaQuery.of(context).size.width - offset.dx - size.width,
-        showAbove ? MediaQuery.of(context).size.height - offset.dy + verticalOffset : MediaQuery.of(context).size.height - offset.dy - size.height - 8,
+        showAbove
+            ? MediaQuery.of(context).size.height - offset.dy + verticalOffset
+            : MediaQuery.of(context).size.height - offset.dy - size.height - 8,
       ),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
@@ -584,8 +597,7 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
   // Метод для построения стандартных системных полей
   Widget _buildStandardField(FieldConfiguration config) {
     switch (config.fieldName) {
-
-    case 'price_type_id':
+      case 'price_type_id':
         return PriceTypeWidget(
           selectedPriceType: _selectedPriceType,
           onChanged: (String? newValue) {
@@ -657,21 +669,24 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
       case 'tg_nick':
         return CustomTextField(
           controller: telegramController,
-          hintText: AppLocalizations.of(context)!.translate('enter_telegram_username'),
+          hintText: AppLocalizations.of(context)!
+              .translate('enter_telegram_username'),
           label: AppLocalizations.of(context)!.translate('telegram'),
         );
 
       case 'insta_login':
         return CustomTextField(
           controller: instaLoginController,
-          hintText: AppLocalizations.of(context)!.translate('enter_instagram_username'),
+          hintText: AppLocalizations.of(context)!
+              .translate('enter_instagram_username'),
           label: AppLocalizations.of(context)!.translate('instagram'),
         );
 
       case 'facebook_login':
         return CustomTextField(
           controller: facebookLoginController,
-          hintText: AppLocalizations.of(context)!.translate('enter_facebook_username'),
+          hintText: AppLocalizations.of(context)!
+              .translate('enter_facebook_username'),
           label: AppLocalizations.of(context)!.translate('Facebook'),
         );
 
@@ -685,8 +700,10 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
 
       case 'lead_status_id':
         return LeadStatusEditpWidget(
-          selectedStatus: _selectedStatuses?.toString(), // Проверяем, что это не null
-          salesFunnelId: selectedSalesFunnel, // Убеждаемся, что передаем salesFunnelId
+          selectedStatus:
+              _selectedStatuses?.toString(), // Проверяем, что это не null
+          salesFunnelId:
+              selectedSalesFunnel, // Убеждаемся, что передаем salesFunnelId
           onSelectStatus: (LeadStatus selectedStatusData) {
             setState(() {
               _selectedStatuses = selectedStatusData.id;
@@ -700,10 +717,9 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
           onChanged: (String? newValue) {
             setState(() {
               selectedSalesFunnel = newValue;
-              _showDuplicateOptions = newValue != null &&
-                  newValue != widget.salesFunnelId;
-              if (_showDuplicateOptions &&
-                  _duplicateOption == null) {
+              _showDuplicateOptions =
+                  newValue != null && newValue != widget.salesFunnelId;
+              if (_showDuplicateOptions && _duplicateOption == null) {
                 _duplicateOption = DuplicateOption.duplicate;
               } else if (!_showDuplicateOptions) {
                 _duplicateOption = null;
@@ -739,13 +755,14 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
         directoryId: directoryField.directoryId!,
         directoryName: directoryField.fieldName,
         selectedField: directoryField.entryId != null
-            ? MainField(id: directoryField.entryId!, value: directoryField.controller.text)
+            ? MainField(
+                id: directoryField.entryId!,
+                value: directoryField.controller.text)
             : null,
         onSelectField: (MainField selectedField) {
           setState(() {
-            final index = customFields.indexWhere(
-                    (f) => f.directoryId == config.directoryId
-            );
+            final index = customFields
+                .indexWhere((f) => f.directoryId == config.directoryId);
             if (index != -1) {
               customFields[index] = directoryField.copyWith(
                 entryId: selectedField.id,
@@ -757,9 +774,8 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
         controller: directoryField.controller,
         onSelectEntryId: (int entryId) {
           setState(() {
-            final index = customFields.indexWhere(
-                    (f) => f.directoryId == config.directoryId
-            );
+            final index = customFields
+                .indexWhere((f) => f.directoryId == config.directoryId);
             if (index != -1) {
               customFields[index] = directoryField.copyWith(
                 entryId: entryId,
@@ -778,12 +794,13 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
   // Проверка, были ли изменения в конфигурации полей
   bool _hasFieldChanges() {
     if (originalFieldConfigurations == null) return false;
-    if (originalFieldConfigurations!.length != fieldConfigurations.length) return true;
+    if (originalFieldConfigurations!.length != fieldConfigurations.length)
+      return true;
 
     for (int i = 0; i < fieldConfigurations.length; i++) {
       final current = fieldConfigurations[i];
       final original = originalFieldConfigurations!.firstWhere(
-            (f) => f.id == current.id,
+        (f) => f.id == current.id,
         orElse: () => current,
       );
 
@@ -800,55 +817,59 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
   // Диалог подтверждения выхода из режима настроек без сохранения
   Future<bool> _showExitSettingsDialog() async {
     return await showDialog<bool>(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          backgroundColor: Colors.white,
-          title: Text(
-            AppLocalizations.of(context)!.translate('warning'),
-            style: TextStyle(
-              fontFamily: 'Gilroy',
-              fontSize: 20,
-              fontWeight: FontWeight.w600,
-              color: Color(0xff1E2E52),
-            ),
-          ),
-          content: Text(
-            AppLocalizations.of(context)!.translate('position_changes_will_not_be_saved'),
-            style: TextStyle(
-              fontFamily: 'Gilroy',
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-              color: Color(0xff1E2E52),
-            ),
-          ),
-          actions: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                Expanded(
-                  child: CustomButton(
-                    buttonText: AppLocalizations.of(context)!.translate('cancel'),
-                    onPressed: () => Navigator.of(context).pop(false),
-                    buttonColor: Color(0xff1E2E52),
-                    textColor: Colors.white,
-                  ),
+          context: context,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              backgroundColor: Colors.white,
+              title: Text(
+                AppLocalizations.of(context)!.translate('warning'),
+                style: TextStyle(
+                  fontFamily: 'Gilroy',
+                  fontSize: 20,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xff1E2E52),
                 ),
-                SizedBox(width: 8),
-                Expanded(
-                  child: CustomButton(
-                    buttonText: AppLocalizations.of(context)!.translate('dont_save'),
-                    onPressed: () => Navigator.of(context).pop(true),
-                    buttonColor: Colors.red,
-                    textColor: Colors.white,
-                  ),
+              ),
+              content: Text(
+                AppLocalizations.of(context)!
+                    .translate('position_changes_will_not_be_saved'),
+                style: TextStyle(
+                  fontFamily: 'Gilroy',
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: Color(0xff1E2E52),
+                ),
+              ),
+              actions: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    Expanded(
+                      child: CustomButton(
+                        buttonText:
+                            AppLocalizations.of(context)!.translate('cancel'),
+                        onPressed: () => Navigator.of(context).pop(false),
+                        buttonColor: Color(0xff1E2E52),
+                        textColor: Colors.white,
+                      ),
+                    ),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: CustomButton(
+                        buttonText: AppLocalizations.of(context)!
+                            .translate('dont_save'),
+                        onPressed: () => Navigator.of(context).pop(true),
+                        buttonColor: Colors.red,
+                        textColor: Colors.white,
+                      ),
+                    ),
+                  ],
                 ),
               ],
-            ),
-          ],
-        );
-      },
-    ) ?? false;
+            );
+          },
+        ) ??
+        false;
   }
 
   // Получение отображаемого названия поля
@@ -881,6 +902,8 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
         return localizations!.translate('lead_status');
       case 'sales_funnel_id':
         return localizations!.translate('sales_funnel');
+            case 'description':  // <-- ДОБАВЛЯЕМ ЭТУ СТРОКУ
+      return localizations!.translate('additional_client_info');  // <-- И ЭТУ
       default:
         return config.fieldName;
     }
@@ -899,7 +922,8 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
 
   // Режим настроек - отображение списка полей с возможностью изменения порядка
   Widget _buildSettingsMode() {
-    final sortedFields = [...fieldConfigurations]..sort((a, b) => a.position.compareTo(b.position));
+    final sortedFields = [...fieldConfigurations]
+      ..sort((a, b) => a.position.compareTo(b.position));
 
     return Column(
       children: [
@@ -911,7 +935,8 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
               return AnimatedBuilder(
                 animation: animation,
                 builder: (BuildContext context, Widget? child) {
-                  final double animValue = Curves.easeInOut.transform(animation.value);
+                  final double animValue =
+                      Curves.easeInOut.transform(animation.value);
                   final double scale = 1.0 + (animValue * 0.05);
                   final double elevation = animValue * 12.0;
 
@@ -930,7 +955,8 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
               );
             },
             onReorder: (oldIndex, newIndex) {
-              if (oldIndex == sortedFields.length || newIndex == sortedFields.length + 1) {
+              if (oldIndex == sortedFields.length ||
+                  newIndex == sortedFields.length + 1) {
                 return;
               }
 
@@ -964,7 +990,8 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                     type: config.type,
                     isDirectory: config.isDirectory,
                     showOnTable: config.showOnTable,
-                    originalRequired: config.originalRequired, // Сохраняем оригинальное значение
+                    originalRequired: config
+                        .originalRequired, // Сохраняем оригинальное значение
                   ));
                 }
 
@@ -977,7 +1004,8 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                   key: _addFieldButtonKey,
                   margin: const EdgeInsets.only(bottom: 12),
                   child: CustomButton(
-                    buttonText: AppLocalizations.of(context)!.translate('add_field'),
+                    buttonText:
+                        AppLocalizations.of(context)!.translate('add_field'),
                     buttonColor: Color(0xff1E2E52),
                     textColor: Colors.white,
                     onPressed: _showAddFieldMenu,
@@ -992,7 +1020,8 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
               return Container(
                 key: ValueKey('field_${config.id}'),
                 margin: const EdgeInsets.only(bottom: 12),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(12),
@@ -1045,7 +1074,10 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                             ],
                           ),
                           SizedBox(height: 12),
-                          GestureDetector(
+                          if (config.fieldName != 'name' &&
+                              config.fieldName != 'phone' &&
+                              config.fieldName != 'manager_id')
+                            GestureDetector(
                               behavior: HitTestBehavior.opaque,
                               onTap: () {
                                 setState(() {
@@ -1064,17 +1096,20 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                                     type: config.type,
                                     isDirectory: config.isDirectory,
                                     showOnTable: config.showOnTable,
-                                    originalRequired: config.originalRequired, // Сохраняем оригинальное значение
+                                    originalRequired: config
+                                        .originalRequired, // Сохраняем оригинальное значение
                                   );
 
-                                  final idx = fieldConfigurations.indexWhere((f) => f.id == config.id);
+                                  final idx = fieldConfigurations
+                                      .indexWhere((f) => f.id == config.id);
                                   if (idx != -1) {
                                     fieldConfigurations[idx] = updatedConfig;
                                   }
                                 });
                               },
                               child: Padding(
-                                padding: const EdgeInsets.symmetric(vertical: 4),
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 4),
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
@@ -1084,9 +1119,13 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                                       width: 24,
                                       height: 24,
                                       decoration: BoxDecoration(
-                                        color: config.isActive ? Color(0xff4759FF) : Colors.white,
+                                        color: config.isActive
+                                            ? Color(0xff4759FF)
+                                            : Colors.white,
                                         border: Border.all(
-                                          color: config.isActive ? Color(0xff4759FF) : Color(0xffCCD5E0),
+                                          color: config.isActive
+                                              ? Color(0xff4759FF)
+                                              : Color(0xffCCD5E0),
                                           width: 2,
                                         ),
                                         borderRadius: BorderRadius.circular(6),
@@ -1103,12 +1142,15 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                                     ),
                                     SizedBox(width: 12),
                                     Text(
-                                      AppLocalizations.of(context)!.translate('show_field'),
+                                      AppLocalizations.of(context)!
+                                          .translate('show_field'),
                                       style: TextStyle(
                                         fontSize: 14,
                                         fontFamily: 'Gilroy',
                                         fontWeight: FontWeight.w500,
-                                        color: config.isActive ? Color(0xff1E2E52) : Color(0xff6B7A99),
+                                        color: config.isActive
+                                            ? Color(0xff1E2E52)
+                                            : Color(0xff6B7A99),
                                       ),
                                     ),
                                   ],
@@ -1138,91 +1180,94 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
           ),
           child: isSavingFieldOrder
               ? Container(
-            height: 50,
-            decoration: BoxDecoration(
-              color: Color(0xff4759FF).withOpacity(0.7),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Center(
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                    ),
+                  height: 50,
+                  decoration: BoxDecoration(
+                    color: Color(0xff4759FF).withOpacity(0.7),
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  SizedBox(width: 12),
-                  Text(
-                    AppLocalizations.of(context)!.translate('saving'),
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          )
-              : CustomButton(
-            buttonText: AppLocalizations.of(context)!.translate('save'),
-            buttonColor: Color(0xff4759FF),
-            textColor: Colors.white,
-            onPressed: () async {
-              setState(() {
-                isSavingFieldOrder = true;
-              });
-
-              try {
-                await _saveFieldOrderToBackend();
-
-                if (mounted) {
-                  setState(() {
-                    originalFieldConfigurations = null;
-                    isSettingsMode = false;
-                  });
-
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        'Настройки полей сохранены',
-                        style: TextStyle(
-                          fontFamily: 'Gilroy',
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.white,
+                  child: Center(
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor:
+                                AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
                         ),
-                      ),
-                      behavior: SnackBarBehavior.floating,
-                      margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      backgroundColor: Colors.green,
-                      elevation: 3,
-                      padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                      duration: Duration(seconds: 2),
+                        SizedBox(width: 12),
+                        Text(
+                          AppLocalizations.of(context)!.translate('saving'),
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontFamily: 'Gilroy',
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
                     ),
-                  );
-                }
-              } catch (e) {
-                if (kDebugMode) {
-                  print('LeadEditScreen: Error in save button: $e');
-                }
-              } finally {
-                if (mounted) {
-                  setState(() {
-                    isSavingFieldOrder = false;
-                  });
-                }
-              }
-            },
-          ),
+                  ),
+                )
+              : CustomButton(
+                  buttonText: AppLocalizations.of(context)!.translate('save'),
+                  buttonColor: Color(0xff4759FF),
+                  textColor: Colors.white,
+                  onPressed: () async {
+                    setState(() {
+                      isSavingFieldOrder = true;
+                    });
+
+                    try {
+                      await _saveFieldOrderToBackend();
+
+                      if (mounted) {
+                        setState(() {
+                          originalFieldConfigurations = null;
+                          isSettingsMode = false;
+                        });
+
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              'Настройки полей сохранены',
+                              style: TextStyle(
+                                fontFamily: 'Gilroy',
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.white,
+                              ),
+                            ),
+                            behavior: SnackBarBehavior.floating,
+                            margin: EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 8),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            backgroundColor: Colors.green,
+                            elevation: 3,
+                            padding: EdgeInsets.symmetric(
+                                vertical: 12, horizontal: 16),
+                            duration: Duration(seconds: 2),
+                          ),
+                        );
+                      }
+                    } catch (e) {
+                      if (kDebugMode) {
+                        print('LeadEditScreen: Error in save button: $e');
+                      }
+                    } finally {
+                      if (mounted) {
+                        setState(() {
+                          isSavingFieldOrder = false;
+                        });
+                      }
+                    }
+                  },
+                ),
         ),
       ],
     );
@@ -1275,8 +1320,10 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
       galleryLabel: AppLocalizations.of(context)!.translate('gallery'),
       cameraLabel: AppLocalizations.of(context)!.translate('camera'),
       cancelLabel: AppLocalizations.of(context)!.translate('cancel'),
-      fileSizeTooLargeMessage: AppLocalizations.of(context)!.translate('file_size_too_large'),
-      errorPickingFileMessage: AppLocalizations.of(context)!.translate('error_picking_file'),
+      fileSizeTooLargeMessage:
+          AppLocalizations.of(context)!.translate('file_size_too_large'),
+      errorPickingFileMessage:
+          AppLocalizations.of(context)!.translate('error_picking_file'),
     );
 
     // Если файлы выбраны, добавляем их
@@ -1287,7 +1334,8 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
           // fileNames.add(file.name);
           // fileSizes.add(file.sizeKB);
 
-          files.add(FileHelper(id: 0, name: file.name, path: file.path, size: file.sizeKB));
+          files.add(FileHelper(
+              id: 0, name: file.name, path: file.path, size: file.sizeKB));
         }
       });
     }
@@ -1302,13 +1350,16 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
 
           for (var link in directoryLinkData.data!) {
             bool directoryExists = customFields.any((field) =>
-            field.isDirectoryField && field.directoryId == link.directory.id);
+                field.isDirectoryField &&
+                field.directoryId == link.directory.id);
 
             if (!directoryExists) {
               DirectoryValue? existingValue;
               try {
                 existingValue = widget.directoryValues.firstWhere(
-                      (dirValue) => dirValue.entry != null && dirValue.entry!.directory.id == link.directory.id,
+                  (dirValue) =>
+                      dirValue.entry != null &&
+                      dirValue.entry!.directory.id == link.directory.id,
                 );
               } catch (e) {
                 existingValue = null;
@@ -1321,7 +1372,9 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                 controllerText = existingValue.entry!.values.isNotEmpty
                     ? existingValue.entry!.values.first.value
                     : '';
-                entryId = existingValue.entry!.id != 0 ? existingValue.entry!.id : null;
+                entryId = existingValue.entry!.id != 0
+                    ? existingValue.entry!.id
+                    : null;
               }
 
               fieldsToAdd.add(CustomField(
@@ -1347,7 +1400,8 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              AppLocalizations.of(context)!.translate('error_fetching_directories'),
+              AppLocalizations.of(context)!
+                  .translate('error_fetching_directories'),
               style: TextStyle(
                 fontFamily: 'Gilroy',
                 fontSize: 16,
@@ -1392,7 +1446,8 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                       width: 100,
                       child: Column(
                         children: [
-                          Image.asset('assets/icons/files/add.png', width: 60, height: 60),
+                          Image.asset('assets/icons/files/add.png',
+                              width: 60, height: 60),
                           SizedBox(height: 8),
                           Text(
                             AppLocalizations.of(context)!.translate('add_file'),
@@ -1463,7 +1518,8 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                               ),
                             ],
                           ),
-                          child: Icon(Icons.close, size: 16, color: Color(0xff1E2E52)),
+                          child: Icon(Icons.close,
+                              size: 16, color: Color(0xff1E2E52)),
                         ),
                       ),
                     ),
@@ -1533,7 +1589,8 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                     setState(() {
                       // Находим новые поля (которые есть в текущей конфигурации, но нет в оригинальной)
                       final newFields = fieldConfigurations.where((current) {
-                        return !originalFieldConfigurations!.any((original) => original.id == current.id);
+                        return !originalFieldConfigurations!
+                            .any((original) => original.id == current.id);
                       }).toList();
 
                       // Восстанавливаем оригинальную конфигурацию
@@ -1541,7 +1598,11 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
 
                       // Добавляем новые поля в конец списка
                       if (newFields.isNotEmpty) {
-                        int maxPosition = fieldConfigurations.isEmpty ? 0 : fieldConfigurations.map((e) => e.position).reduce((a, b) => a > b ? a : b);
+                        int maxPosition = fieldConfigurations.isEmpty
+                            ? 0
+                            : fieldConfigurations
+                                .map((e) => e.position)
+                                .reduce((a, b) => a > b ? a : b);
                         for (int i = 0; i < newFields.length; i++) {
                           fieldConfigurations.add(FieldConfiguration(
                             id: newFields[i].id,
@@ -1558,7 +1619,8 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                             type: newFields[i].type,
                             isDirectory: newFields[i].isDirectory,
                             showOnTable: newFields[i].showOnTable,
-                            originalRequired: newFields[i].originalRequired, // Сохраняем оригинальное значение
+                            originalRequired: newFields[i]
+                                .originalRequired, // Сохраняем оригинальное значение
                           ));
                         }
                       }
@@ -1577,7 +1639,8 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
               } else {
                 // Входим в режим настроек - сохраняем снимок конфигурации
                 setState(() {
-                  originalFieldConfigurations = fieldConfigurations.map((config) {
+                  originalFieldConfigurations =
+                      fieldConfigurations.map((config) {
                     return FieldConfiguration(
                       id: config.id,
                       tableName: config.tableName,
@@ -1593,7 +1656,8 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                       type: config.type,
                       isDirectory: config.isDirectory,
                       showOnTable: config.showOnTable,
-                      originalRequired: config.originalRequired, // Сохраняем оригинальное значение
+                      originalRequired: config
+                          .originalRequired, // Сохраняем оригинальное значение
                     );
                   }).toList();
                   isSettingsMode = true;
@@ -1630,12 +1694,14 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
       body: BlocConsumer<FieldConfigurationBloc, FieldConfigurationState>(
         listener: (context, configState) {
           if (kDebugMode) {
-            print('LeadEditScreen: FieldConfigurationBloc state changed: ${configState.runtimeType}');
+            print(
+                'LeadEditScreen: FieldConfigurationBloc state changed: ${configState.runtimeType}');
           }
 
           if (configState is FieldConfigurationLoaded) {
             if (kDebugMode) {
-              print('LeadAddScreen: Configuration loaded with ${configState.fields.length} fields');
+              print(
+                  'LeadAddScreen: Configuration loaded with ${configState.fields.length} fields');
             }
             // Используем порядок с сервера
             setState(() {
@@ -1644,7 +1710,8 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
             });
           } else if (configState is FieldConfigurationError) {
             if (kDebugMode) {
-              print('LeadEditScreen: Configuration error: ${configState.message}');
+              print(
+                  'LeadEditScreen: Configuration error: ${configState.message}');
             }
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
@@ -1664,7 +1731,8 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
         },
         builder: (context, configState) {
           if (kDebugMode) {
-            print('LeadEditScreen: Building with state: ${configState.runtimeType}, isLoaded: $isConfigurationLoaded');
+            print(
+                'LeadEditScreen: Building with state: ${configState.runtimeType}, isLoaded: $isConfigurationLoaded');
           }
 
           if (configState is FieldConfigurationLoading) {
@@ -1710,7 +1778,8 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                       ),
                     ),
                     behavior: SnackBarBehavior.floating,
-                    margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    margin:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     backgroundColor: Colors.red,
                     elevation: 0,
                     duration: Duration(seconds: 3),
@@ -1739,7 +1808,8 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                     duration: Duration(seconds: 3),
                   ),
                 );
-                Navigator.pop(context, true); // Возвращаем true при успешном сохранении
+                Navigator.pop(
+                    context, true); // Возвращаем true при успешном сохранении
                 context.read<LeadBloc>().add(FetchLeadStatuses());
               }
             },
@@ -1763,7 +1833,8 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                               final sorted = fieldConfigurations
                                   .where((config) => config.isActive)
                                   .toList()
-                                ..sort((a, b) => a.position.compareTo(b.position));
+                                ..sort(
+                                    (a, b) => a.position.compareTo(b.position));
 
                               return sorted.map((config) {
                                 return Column(
@@ -1779,48 +1850,57 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                             ...customFields.where((field) {
                               // Исключаем поля, которые уже есть в серверной конфигурации
                               return !fieldConfigurations.any((config) =>
-                              (config.isCustomField && config.fieldName == field.fieldName) ||
-                                  (config.isDirectory && config.directoryId == field.directoryId)
-                              );
+                                  (config.isCustomField &&
+                                      config.fieldName == field.fieldName) ||
+                                  (config.isDirectory &&
+                                      config.directoryId == field.directoryId));
                             }).map((field) {
                               return Column(
                                 children: [
-                                  field.isDirectoryField && field.directoryId != null
+                                  field.isDirectoryField &&
+                                          field.directoryId != null
                                       ? MainFieldDropdownWidget(
-                                      directoryId: field.directoryId!,
-                                      directoryName: field.fieldName,
-                                      selectedField: field.entryId != null
-                                          ? MainField(id: field.entryId!, value: field.controller.text)
-                                          : null,
-                                      onSelectField: (MainField selectedField) {
-                                        setState(() {
-                                          final idx = customFields.indexOf(field);
-                                          customFields[idx] = field.copyWith(
-                                            entryId: selectedField.id,
-                                            controller: TextEditingController(
-                                                text: selectedField.value),
-                                          );
-                                        });
-                                      },
-                                      controller: field.controller,
-                                      onSelectEntryId: (int entryId) {
-                                        setState(() {
-                                          final idx = customFields.indexOf(field);
-                                          customFields[idx] = field.copyWith(
-                                            entryId: entryId,
-                                          );
-                                        });
-                                      }
-                                  )
+                                          directoryId: field.directoryId!,
+                                          directoryName: field.fieldName,
+                                          selectedField: field.entryId != null
+                                              ? MainField(
+                                                  id: field.entryId!,
+                                                  value: field.controller.text)
+                                              : null,
+                                          onSelectField:
+                                              (MainField selectedField) {
+                                            setState(() {
+                                              final idx =
+                                                  customFields.indexOf(field);
+                                              customFields[idx] =
+                                                  field.copyWith(
+                                                entryId: selectedField.id,
+                                                controller:
+                                                    TextEditingController(
+                                                        text: selectedField
+                                                            .value),
+                                              );
+                                            });
+                                          },
+                                          controller: field.controller,
+                                          onSelectEntryId: (int entryId) {
+                                            setState(() {
+                                              final idx =
+                                                  customFields.indexOf(field);
+                                              customFields[idx] =
+                                                  field.copyWith(
+                                                entryId: entryId,
+                                              );
+                                            });
+                                          })
                                       : CustomFieldWidget(
-                                    key: ValueKey(
-                                        'field_${field.fieldName}${field.isCustomField}'),
-
-                                    fieldName: field.fieldName,
-                                    valueController: field.controller,
-                                    type: field.type,
-                                    isDirectory: false,
-                                  ),
+                                          key: ValueKey(
+                                              'field_${field.fieldName}${field.isCustomField}'),
+                                          fieldName: field.fieldName,
+                                          valueController: field.controller,
+                                          type: field.type,
+                                          isDirectory: false,
+                                        ),
                                   const SizedBox(height: 16),
                                 ],
                               );
@@ -1834,12 +1914,14 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                     ),
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 30),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 30),
                     child: Row(
                       children: [
                         Expanded(
                           child: CustomButton(
-                            buttonText: AppLocalizations.of(context)!.translate('cancel'),
+                            buttonText: AppLocalizations.of(context)!
+                                .translate('cancel'),
                             buttonColor: const Color(0xffF4F7FD),
                             textColor: Colors.black,
                             onPressed: () => Navigator.pop(context, null),
@@ -1857,24 +1939,34 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                                 );
                               } else {
                                 return CustomButton(
-                                  buttonText: AppLocalizations.of(context)!.translate('save'),
+                                  buttonText: AppLocalizations.of(context)!
+                                      .translate('save'),
                                   buttonColor: const Color(0xff4759FF),
                                   textColor: Colors.white,
                                   onPressed: () {
                                     if (_formKey.currentState!.validate()) {
-                                      print('whatsAppToSend: $_fullWhatsAppNumber'); // Логирование для отладки
-                                      String phoneToSend = selectedDialCode + phoneController.text;
-                                      String? whatsAppToSend = _fullWhatsAppNumber; // Используем полный номер
+                                      print(
+                                          'whatsAppToSend: $_fullWhatsAppNumber'); // Логирование для отладки
+                                      String phoneToSend = selectedDialCode +
+                                          phoneController.text;
+                                      String? whatsAppToSend =
+                                          _fullWhatsAppNumber; // Используем полный номер
 
                                       DateTime? parsedBirthday;
                                       if (birthdayController.text.isNotEmpty) {
                                         try {
-                                          parsedBirthday = DateFormat('dd/MM/yyyy').parseStrict(birthdayController.text);
+                                          parsedBirthday =
+                                              DateFormat('dd/MM/yyyy')
+                                                  .parseStrict(
+                                                      birthdayController.text);
                                         } catch (e) {
-                                          ScaffoldMessenger.of(context).showSnackBar(
+                                          ScaffoldMessenger.of(context)
+                                              .showSnackBar(
                                             SnackBar(
                                               content: Text(
-                                                AppLocalizations.of(context)!.translate('error_enter_birth_day'),
+                                                AppLocalizations.of(context)!
+                                                    .translate(
+                                                        'error_enter_birth_day'),
                                               ),
                                               backgroundColor: Colors.red,
                                             ),
@@ -1882,12 +1974,16 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                                           return;
                                         }
                                       }
-                                      List<Map<String, dynamic>> customFieldList = [];
-                                      List<Map<String, int>> directoryValues = [];
+                                      List<Map<String, dynamic>>
+                                          customFieldList = [];
+                                      List<Map<String, int>> directoryValues =
+                                          [];
 
                                       for (var field in customFields) {
-                                        String fieldName = field.fieldName.trim();
-                                        String fieldValue = field.controller.text.trim();
+                                        String fieldName =
+                                            field.fieldName.trim();
+                                        String fieldValue =
+                                            field.controller.text.trim();
                                         String? fieldType = field.type;
 
                                         // ВАЖНО: Нормализуем тип поля - преобразуем "text" в "string"
@@ -1897,12 +1993,17 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                                         // Если type null, устанавливаем string по умолчанию
                                         fieldType ??= 'string';
 
-                                        if (fieldType == 'number' && fieldValue.isNotEmpty) {
-                                          if (!RegExp(r'^\d+$').hasMatch(fieldValue)) {
-                                            ScaffoldMessenger.of(context).showSnackBar(
+                                        if (fieldType == 'number' &&
+                                            fieldValue.isNotEmpty) {
+                                          if (!RegExp(r'^\d+$')
+                                              .hasMatch(fieldValue)) {
+                                            ScaffoldMessenger.of(context)
+                                                .showSnackBar(
                                               SnackBar(
                                                 content: Text(
-                                                  AppLocalizations.of(context)!.translate('enter_valid_number'),
+                                                  AppLocalizations.of(context)!
+                                                      .translate(
+                                                          'enter_valid_number'),
                                                   style: TextStyle(
                                                     fontFamily: 'Gilroy',
                                                     fontSize: 16,
@@ -1917,24 +2018,37 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                                           }
                                         }
 
-                                        if ((fieldType == 'date' || fieldType == 'datetime') && fieldValue.isNotEmpty) {
+                                        if ((fieldType == 'date' ||
+                                                fieldType == 'datetime') &&
+                                            fieldValue.isNotEmpty) {
                                           try {
                                             DateTime parsedDate;
-                                            if (fieldValue.contains('GMT+0500')) {
-                                              parsedDate = DateFormat("EEE MMM dd yyyy HH:mm:ss 'GMT+0500 (Таджикистан)'").parse(fieldValue);
+                                            if (fieldValue
+                                                .contains('GMT+0500')) {
+                                              parsedDate = DateFormat(
+                                                      "EEE MMM dd yyyy HH:mm:ss 'GMT+0500 (Таджикистан)'")
+                                                  .parse(fieldValue);
                                             } else {
                                               parsedDate = fieldType == 'date'
-                                                  ? DateFormat('dd/MM/yyyy').parse(fieldValue)
-                                                  : DateFormat('dd/MM/yyyy HH:mm').parse(fieldValue);
+                                                  ? DateFormat('dd/MM/yyyy')
+                                                      .parse(fieldValue)
+                                                  : DateFormat(
+                                                          'dd/MM/yyyy HH:mm')
+                                                      .parse(fieldValue);
                                             }
                                             fieldValue = fieldType == 'date'
-                                                ? DateFormat('dd/MM/yyyy').format(parsedDate)
-                                                : DateFormat('dd/MM/yyyy HH:mm').format(parsedDate);
+                                                ? DateFormat('dd/MM/yyyy')
+                                                    .format(parsedDate)
+                                                : DateFormat('dd/MM/yyyy HH:mm')
+                                                    .format(parsedDate);
                                           } catch (e) {
-                                            ScaffoldMessenger.of(context).showSnackBar(
+                                            ScaffoldMessenger.of(context)
+                                                .showSnackBar(
                                               SnackBar(
                                                 content: Text(
-                                                  AppLocalizations.of(context)!.translate('enter_valid_$fieldType'),
+                                                  AppLocalizations.of(context)!
+                                                      .translate(
+                                                          'enter_valid_$fieldType'),
                                                   style: TextStyle(
                                                     fontFamily: 'Gilroy',
                                                     fontSize: 16,
@@ -1948,47 +2062,81 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                                             return;
                                           }
                                         }
-                                        if (field.isDirectoryField && field.directoryId != null && field.entryId != null) {
+                                        if (field.isDirectoryField &&
+                                            field.directoryId != null &&
+                                            field.entryId != null) {
                                           directoryValues.add({
                                             'directory_id': field.directoryId!,
                                             'entry_id': field.entryId!,
                                           });
-                                        } else if (fieldName.isNotEmpty && fieldValue.isNotEmpty) {
+                                        } else if (fieldName.isNotEmpty &&
+                                            fieldValue.isNotEmpty) {
                                           customFieldList.add({
                                             'key': fieldName,
                                             'value': fieldValue,
-                                            'type': fieldType, // Теперь гарантированно один из: string, number, date, datetime
+                                            'type':
+                                                fieldType, // Теперь гарантированно один из: string, number, date, datetime
                                           });
                                         }
                                       }
 
                                       String? duplicateValue;
-                                      if (_showDuplicateOptions && _duplicateOption != null) {
-                                        duplicateValue = _duplicateOption == DuplicateOption.duplicate ? "1" : "0";
-                                        print('duplicateValue set to: $duplicateValue');
+                                      if (_showDuplicateOptions &&
+                                          _duplicateOption != null) {
+                                        duplicateValue = _duplicateOption ==
+                                                DuplicateOption.duplicate
+                                            ? "1"
+                                            : "0";
+                                        print(
+                                            'duplicateValue set to: $duplicateValue');
                                       } else {
-                                        print('duplicateValue not set: _showDuplicateOptions=$_showDuplicateOptions, _duplicateOption=$_duplicateOption');
+                                        print(
+                                            'duplicateValue not set: _showDuplicateOptions=$_showDuplicateOptions, _duplicateOption=$_duplicateOption');
                                       }
 
-                                      bool isSystemManager = selectedManager == "-1" || selectedManager == "0";
+                                      bool isSystemManager =
+                                          selectedManager == "-1" ||
+                                              selectedManager == "0";
                                       final leadBloc = context.read<LeadBloc>();
-                                      final localizations = AppLocalizations.of(context)!;
+                                      final localizations =
+                                          AppLocalizations.of(context)!;
 
                                       leadBloc.add(UpdateLead(
                                         leadId: widget.leadId,
                                         name: titleController.text,
                                         phone: phoneToSend,
                                         waPhone: whatsAppToSend,
-                                        regionId: selectedRegion != null ? int.tryParse(selectedRegion!) : null,
-                                        managerId: !isSystemManager && selectedManager != null ? int.tryParse(selectedManager!) : null,
-                                        sourseId: selectedSource != null ? int.tryParse(selectedSource!) : null,
-                                        instaLogin: instaLoginController.text.isEmpty ? null : instaLoginController.text,
-                                        facebookLogin: facebookLoginController.text.isEmpty ? null : facebookLoginController.text,
-                                        tgNick: telegramController.text.isEmpty ? null : telegramController.text,
+                                        regionId: selectedRegion != null
+                                            ? int.tryParse(selectedRegion!)
+                                            : null,
+                                        managerId: !isSystemManager &&
+                                                selectedManager != null
+                                            ? int.tryParse(selectedManager!)
+                                            : null,
+                                        sourseId: selectedSource != null
+                                            ? int.tryParse(selectedSource!)
+                                            : null,
+                                        instaLogin:
+                                            instaLoginController.text.isEmpty
+                                                ? null
+                                                : instaLoginController.text,
+                                        facebookLogin:
+                                            facebookLoginController.text.isEmpty
+                                                ? null
+                                                : facebookLoginController.text,
+                                        tgNick: telegramController.text.isEmpty
+                                            ? null
+                                            : telegramController.text,
                                         birthday: parsedBirthday,
-                                        email: emailController.text.isEmpty ? null : emailController.text,
-                                        description: descriptionController.text.isEmpty ? null : descriptionController.text,
-                                        leadStatusId: _selectedStatuses!.toInt(),
+                                        email: emailController.text.isEmpty
+                                            ? null
+                                            : emailController.text,
+                                        description:
+                                            descriptionController.text.isEmpty
+                                                ? null
+                                                : descriptionController.text,
+                                        leadStatusId:
+                                            _selectedStatuses!.toInt(),
                                         customFields: customFieldList,
                                         directoryValues: directoryValues,
                                         localizations: localizations,
@@ -1999,10 +2147,13 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                                         duplicate: duplicateValue,
                                       ));
                                     } else {
-                                      ScaffoldMessenger.of(context).showSnackBar(
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
                                         SnackBar(
                                           content: Text(
-                                            AppLocalizations.of(context)!.translate('fill_required_fields'),
+                                            AppLocalizations.of(context)!
+                                                .translate(
+                                                    'fill_required_fields'),
                                             style: TextStyle(
                                               fontFamily: 'Gilroy',
                                               fontSize: 16,
@@ -2033,7 +2184,6 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
   }
 
   void showDeleteFileDialog({required int fileId, required int index}) {
-
     bool isDeleting = false;
 
     showDialog<bool>(
@@ -2063,7 +2213,8 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(
-                    AppLocalizations.of(context)!.translate('error_delete_file'),
+                    AppLocalizations.of(context)!
+                        .translate('error_delete_file'),
                     style: TextStyle(
                       fontFamily: 'Gilroy',
                       fontSize: 16,

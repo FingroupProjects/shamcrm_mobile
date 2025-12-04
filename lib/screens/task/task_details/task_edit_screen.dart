@@ -1095,6 +1095,12 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                             ],
                           ),
                           SizedBox(height: 12),
+                          if (config.fieldName != 'name' && 
+    config.fieldName != 'description' && 
+    config.fieldName != 'executor' &&
+    config.fieldName != 'project' &&
+    config.fieldName != 'deadline' &&
+    config.fieldName != 'task_status_id')
                           GestureDetector(
                               behavior: HitTestBehavior.opaque,
                               onTap: () {

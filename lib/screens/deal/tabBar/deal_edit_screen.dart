@@ -677,6 +677,8 @@ class _DealEditScreenState extends State<DealEditScreen> {
         return loc.translate('deal_status');
       case 'users': // ✅ НОВОЕ
         return loc.translate('assignees_list');
+          case 'user_ids':  // <-- ДОБАВЛЯЕМ ЭТУ СТРОКУ
+      return loc.translate('assignees_list');  // <-- И ЭТУ
       // case 'file':
       //   return loc.translate('file');
       default:
@@ -841,6 +843,13 @@ class _DealEditScreenState extends State<DealEditScreen> {
                             ],
                           ),
                           SizedBox(height: 12),
+                          if (config.fieldName != 'name' && 
+    config.fieldName != 'lead_id' && 
+    config.fieldName != 'manager_id' &&
+    config.fieldName != 'start_date' &&
+    config.fieldName != 'end_date' &&
+    config.fieldName != 'sum' &&
+    config.fieldName != 'description')
                           GestureDetector(
                               behavior: HitTestBehavior.opaque,
                               onTap: () {

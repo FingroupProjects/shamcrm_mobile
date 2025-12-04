@@ -1,7 +1,15 @@
+// import 'package:crm_task_manager/widgets/internet_overlay_widget.dart';
 // import 'package:flutter/material.dart';
+// import 'dart:async';
 // import '../api/service/internet_monitor_service.dart';
-// import 'internet_overlay_widget.dart';
 
+// /// 🛡️ Обертка для отслеживания интернет-соединения
+// /// 
+// /// Улучшения:
+// /// ✅ Защита от ложных срабатываний (grace period)
+// /// ✅ Умная логика при resume приложения
+// /// ✅ Дебаунс для предотвращения мерцания overlay
+// /// ✅ Использует ваш красивый дизайн из internet_overlay_widget_localized.dart
 // class InternetAwareWrapper extends StatefulWidget {
 //   final Widget child;
 
@@ -17,8 +25,16 @@
 // class _InternetAwareWrapperState extends State<InternetAwareWrapper> 
 //     with WidgetsBindingObserver {
 //   final _internetMonitor = InternetMonitorService();
+  
 //   bool _isConnected = true;
-//   bool _isFirstCheck = true; // ✅ Флаг первой проверки после resume
+//   bool _showOverlay = false; // ✅ Отдельный флаг для UI
+  
+//   Timer? _graceTimer; // ✅ "Период прощения" перед показом overlay
+//   DateTime? _lastDisconnectTime; // ✅ Время последнего отключения
+  
+//   // ✅ НАСТРОЙКИ - можете изменить под свои нужды
+//   static const Duration _gracePeriod = Duration(seconds: 5); // 5 секунд перед показом
+//   static const Duration _minDisconnectDuration = Duration(seconds: 3); // Минимум 3 секунды отключения
 
 //   @override
 //   void initState() {
@@ -29,6 +45,7 @@
 
 //   @override
 //   void dispose() {
+//     _graceTimer?.cancel();
 //     WidgetsBinding.instance.removeObserver(this);
 //     super.dispose();
 //   }
@@ -39,54 +56,106 @@
     
 //     if (state == AppLifecycleState.resumed) {
 //       debugPrint('🌐 InternetAwareWrapper: Приложение resumed');
-//       _isFirstCheck = true; // ✅ Устанавливаем флаг
-//       _checkImmediately(); // ✅ МГНОВЕННАЯ проверка
-//     }
-//   }
-
-//   // ✅ МГНОВЕННАЯ проверка (синхронная)
-//   void _checkImmediately() {
-//     // Запускаем асинхронную проверку БЕЗ ожидания
-//     _internetMonitor.checkNow().then((_) {
-//       if (mounted) {
-//         final newStatus = _internetMonitor.isConnected;
-//         if (_isConnected != newStatus) {
-//           setState(() {
-//             _isConnected = newStatus;
-//           });
-//           debugPrint('🌐 InternetAwareWrapper: БЫСТРОЕ обновление -> $_isConnected');
-//         }
-//         _isFirstCheck = false;
+      
+//       // ✅ НЕ показываем overlay сразу - ждем подтверждения от сервиса
+//       _graceTimer?.cancel();
+      
+//       // ✅ КРИТИЧНО для iOS: Скрываем overlay при resume
+//       if (_showOverlay) {
+//         setState(() {
+//           _showOverlay = false;
+//         });
+//         debugPrint('🌐 InternetAwareWrapper: Overlay скрыт при resume');
 //       }
-//     });
+      
+//     } else if (state == AppLifecycleState.paused) {
+//       debugPrint('🌐 InternetAwareWrapper: Приложение paused');
+//       _graceTimer?.cancel();
+//     }
 //   }
 
 //   Future<void> _initializeMonitoring() async {
 //     // ✅ Получаем начальный статус
 //     _isConnected = _internetMonitor.isConnected;
+//     debugPrint('🌐 InternetAwareWrapper: Начальный статус -> $_isConnected');
 
-//     // ✅ Слушаем изменения
+//     // ✅ Слушаем изменения с умной логикой
 //     _internetMonitor.internetStatus.listen((isConnected) {
-//       // ❌ НЕ обновляем UI сразу после resume (ждем _checkImmediately)
-//       if (mounted && !_isFirstCheck && _isConnected != isConnected) {
-//         setState(() {
-//           _isConnected = isConnected;
-//         });
-//         debugPrint('🌐 InternetAwareWrapper: Статус изменился -> $_isConnected');
+//       if (!mounted) return;
+      
+//       debugPrint('🌐 InternetAwareWrapper: Получен статус -> $isConnected (текущий: $_isConnected)');
+      
+//       if (_isConnected != isConnected) {
+//         _isConnected = isConnected;
+        
+//         if (!isConnected) {
+//           // ❌ Интернет пропал - запускаем grace period
+//           _handleDisconnect();
+//         } else {
+//           // ✅ Интернет восстановлен - сразу скрываем overlay
+//           _handleReconnect();
+//         }
 //       }
 //     });
+//   }
+
+//   /// ❌ Обработка отключения интернета
+//   void _handleDisconnect() {
+//     _lastDisconnectTime = DateTime.now();
+    
+//     // ✅ Отменяем предыдущий таймер
+//     _graceTimer?.cancel();
+    
+//     debugPrint('🌐 InternetAwareWrapper: ⚠️ Отключение обнаружено - жду ${_gracePeriod.inSeconds}s перед показом overlay...');
+    
+//     // ✅ НОВОЕ: Ждем N секунд перед показом overlay (защита от false positive)
+//     _graceTimer = Timer(_gracePeriod, () {
+//       if (!mounted) return;
+      
+//       // ✅ Проверяем, что отключение длится достаточно долго
+//       if (_lastDisconnectTime != null) {
+//         final disconnectDuration = DateTime.now().difference(_lastDisconnectTime!);
+        
+//         if (disconnectDuration >= _minDisconnectDuration && !_isConnected) {
+//           debugPrint('🌐 InternetAwareWrapper: ❌ ПОКАЗЫВАЕМ OVERLAY (отключено ${disconnectDuration.inSeconds}s)');
+          
+//           setState(() {
+//             _showOverlay = true;
+//           });
+//         } else {
+//           debugPrint('🌐 InternetAwareWrapper: ℹ️ Отключение слишком короткое (${disconnectDuration.inSeconds}s) - игнорируем');
+//         }
+//       }
+//     });
+//   }
+
+//   /// ✅ Обработка восстановления интернета
+//   void _handleReconnect() {
+//     _graceTimer?.cancel();
+//     _lastDisconnectTime = null;
+    
+//     debugPrint('🌐 InternetAwareWrapper: ✅ Подключение восстановлено');
+    
+//     // ✅ Сразу скрываем overlay (без задержки)
+//     if (_showOverlay) {
+//       setState(() {
+//         _showOverlay = false;
+//       });
+//       debugPrint('🌐 InternetAwareWrapper: Overlay скрыт');
+//     }
 //   }
 
 //   @override
 //   Widget build(BuildContext context) {
 //     return Stack(
 //       children: [
+//         // ✅ Основной контент приложения
 //         widget.child,
         
-//         // ✅ Показываем overlay только если точно нет интернета
-//         if (!_isConnected && !_isFirstCheck)
+//         // ✅ Ваш красивый overlay (показываем только когда нужно)
+//         if (_showOverlay)
 //           const Positioned.fill(
-//             child: InternetOverlayWidget(),
+//             child: InternetOverlayWidget(), // ✅ ВАШ ДИЗАЙН
 //           ),
 //       ],
 //     );

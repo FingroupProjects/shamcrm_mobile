@@ -1913,5 +1913,6 @@
   "error_delete_file":"Ошибка при удалении файла",
   "show_field": "Показать поле",
   "show_on_table": "Показать в таблице",
-  "lead_status": "Статус лида"
+  "lead_status": "Статус лида",
+  "additional_client_info": "Доп. информация клиента"
 }

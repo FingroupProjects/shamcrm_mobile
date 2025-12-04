@@ -122,7 +122,7 @@ Future<void> _initializeBaseUrl() async {
                           fit: BoxFit.contain,
                         )
                       : Image.network(
-                          '$baseUrl/${widget.imageUrl!}',
+                          '${widget.imageUrl!}',
                           width: double.infinity,
                           height: 200,
                           fit: BoxFit.contain,

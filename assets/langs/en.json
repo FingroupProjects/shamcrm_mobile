@@ -1898,5 +1898,6 @@
   "show_field": "Show field",
   "show_on_table": "Show in table",
   "lead_status": "Lead status",
-  "later": "Later"
+  "later": "Later",
+  "additional_client_info": "Additional client information"
 }

@@ -898,6 +898,13 @@ class _DealAddScreenState extends State<DealAddScreen> {
                             ],
                           ),
                           SizedBox(height: 12),
+                          if (config.fieldName != 'name' && 
+    config.fieldName != 'lead_id' && 
+    config.fieldName != 'manager_id' &&
+    config.fieldName != 'start_date' &&
+    config.fieldName != 'end_date' &&
+    config.fieldName != 'sum' &&
+    config.fieldName != 'description')
                           GestureDetector(
                               behavior: HitTestBehavior.opaque,
                               onTap: () {
@@ -1314,6 +1321,8 @@ class _DealAddScreenState extends State<DealAddScreen> {
         return loc.translate('description_list');
       case 'deal_status_id':
         return loc.translate('status');
+            case 'users':  // <-- ДОБАВЛЯЕМ ЭТУ СТРОКУ
+      return loc.translate('assignees_list');  // <-- И ЭТУ
       // case 'file':
       //   return loc.translate('file');
       default:

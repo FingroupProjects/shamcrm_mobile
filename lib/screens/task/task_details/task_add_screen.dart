@@ -772,6 +772,12 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                             ],
                           ),
                           SizedBox(height: 12),
+                          if (config.fieldName != 'name' && 
+    config.fieldName != 'description' && 
+    config.fieldName != 'executor' &&
+    config.fieldName != 'project' &&
+    config.fieldName != 'deadline' &&
+    config.fieldName != 'task_status_id')
                           GestureDetector(
                               behavior: HitTestBehavior.opaque,
                               onTap: () {

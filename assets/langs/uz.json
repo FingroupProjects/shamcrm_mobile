@@ -1897,5 +1897,6 @@
   "show_field": "Maydonni ko'rsatish",
   "show_on_table": "Jadvalda ko'rsatish",
   "lead_status": "Lid holati",
-  "later": "Keyinroq"
+  "later": "Keyinroq",
+  "additional_client_info": "Qo'shimcha mijoz ma'lumotlari"
 }

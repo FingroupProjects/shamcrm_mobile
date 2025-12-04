@@ -90,6 +90,7 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
   List<FieldConfiguration>? originalFieldConfigurations; // Для отслеживания изменений
   final GlobalKey _addFieldButtonKey = GlobalKey();
 
+
   @override
   void initState() {
     super.initState();
@@ -746,6 +747,8 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
         return localizations!.translate('email');
       case 'lead_status_id':
         return localizations!.translate('lead_status');
+        case 'description':  // <-- ДОБАВЛЯЕМ ЭТУ СТРОКУ
+      return localizations!.translate('additional_client_info');  // <-- И ЭТУ
       default:
         return config.fieldName;
     }
@@ -916,6 +919,9 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
                             ],
                           ),
                           SizedBox(height: 12),
+                          if (config.fieldName != 'name' && 
+    config.fieldName != 'phone' && 
+    config.fieldName != 'manager_id')
                           GestureDetector(
                               behavior: HitTestBehavior.opaque,
                               onTap: () {

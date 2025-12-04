@@ -1,7 +1,6 @@
 import 'package:app_tracking_transparency/app_tracking_transparency.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/api/service/firebase_api.dart';
-import 'package:crm_task_manager/api/service/internet_monitor_service.dart';
 import 'package:crm_task_manager/api/service/secure_storage_service.dart';
 import 'package:crm_task_manager/api/service/widget_service.dart';
 import 'package:crm_task_manager/bloc/My-Task_Status_Name/statusName_bloc.dart';
@@ -129,7 +128,8 @@ import 'package:crm_task_manager/screens/profile/languages/app_localizations.dar
 import 'package:crm_task_manager/screens/profile/languages/local_manager_lang.dart';
 import 'package:crm_task_manager/screens/profile/profile_screen.dart';
 import 'package:crm_task_manager/update_dialog.dart';
-import 'package:crm_task_manager/widgets/internet_aware_wrapper.dart';
+import 'package:crm_task_manager/widgets/native_internet_aware_wrapper_WITH_GAME.dart';
+import 'package:crm_task_manager/widgets/native_internet_monitor_simple.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
@@ -145,6 +145,7 @@ import 'screens/auth/login_screen.dart';
 import 'screens/home_screen.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
+
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
     GlobalKey<ScaffoldMessengerState>();
@@ -153,7 +154,7 @@ void main() async {
   try {
     WidgetsFlutterBinding.ensureInitialized();
     WidgetService.initialize();
-        await InternetMonitorService().initialize();
+       await NativeInternetMonitor().initialize();
           
     await _initializeFirebase();
 
@@ -189,7 +190,7 @@ void main() async {
     } catch (e) {
       //print('main: Ошибка получения initial message: $e');
     }
-    
+
     SystemChrome.setSystemUIOverlayStyle(
       const SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
@@ -202,7 +203,7 @@ void main() async {
     final Locale savedLocale = savedLanguageCode != null
         ? Locale(savedLanguageCode)
         : const Locale('ru');
-
+    
     runApp(MyApp(
       apiService: apiService,
       authService: authService,
@@ -703,12 +704,12 @@ Widget build(BuildContext context) {
         }
         return supportedLocales.first;
       },
-      // // ✅ InternetAwareWrapper ЗДЕСЬ, в builder MaterialApp
-      // builder: (context, child) {
-      //   return InternetAwareWrapper(
-      //     child: child ?? const SizedBox.shrink(),
-      //   );
-      // },
+      // ✅ ДОБАВЬТЕ/РАСКОММЕНТИРУЙТЕ builder
+      builder: (context, child) {
+        return NativeInternetAwareWrapper( // ← НОВОЕ ИМЯ
+          child: child ?? const SizedBox.shrink(),
+        );
+      },
       home: Builder(
         builder: (context) {
           if (!widget.sessionValid) {
