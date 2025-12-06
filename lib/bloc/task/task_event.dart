@@ -4,7 +4,44 @@ import 'package:crm_task_manager/screens/profile/languages/app_localizations.dar
 
 abstract class TaskEvent {}
 
-class FetchTaskStatuses extends TaskEvent {}
+class FetchTaskStatuses extends TaskEvent {
+  final bool forceRefresh;
+  FetchTaskStatuses({this.forceRefresh = false});
+}
+
+class FetchTaskStatusesWithFilters extends TaskEvent {
+  final List<int>? userIds;
+  final int? statusIds;
+  final DateTime? fromDate;
+  final DateTime? toDate;
+  final bool? overdue;
+  final bool? hasFile;
+  final bool? hasDeal;
+  final bool? urgent;
+  final DateTime? deadlinefromDate;
+  final DateTime? deadlinetoDate;
+  final List<int>? projectIds;
+  final List<String>? authors;
+  final String? department;
+  final List<Map<String, dynamic>>? directoryValues;
+
+  FetchTaskStatusesWithFilters({
+    this.userIds,
+    this.statusIds,
+    this.fromDate,
+    this.toDate,
+    this.overdue,
+    this.hasFile,
+    this.hasDeal,
+    this.urgent,
+    this.deadlinefromDate,
+    this.deadlinetoDate,
+    this.projectIds,
+    this.authors,
+    this.department,
+    this.directoryValues,
+  });
+}
 
 class FetchTasks extends TaskEvent {
   final int statusId;

@@ -145,6 +145,29 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
   bool get _hasActiveCustomFieldFilters => _selectedCustomFieldFilters.values
       .any((values) => values.isNotEmpty);
 
+  // Метод для проверки наличия активных фильтров
+  bool _hasActiveFilters() {
+    return _selectedManagers.isNotEmpty ||
+        _selectedRegions.isNotEmpty ||
+        _selectedSources.isNotEmpty ||
+        _selectedStatuses != null ||
+        _fromDate != null ||
+        _toDate != null ||
+        _hasSuccessDeals == true ||
+        _hasInProgressDeals == true ||
+        _hasFailureDeals == true ||
+        _hasNotices == true ||
+        _hasContact == true ||
+        _hasChat == true ||
+        _hasNoReplies == true ||
+        _hasUnreadMessages == true ||
+        _hasDeal == true ||
+        _hasOrders == true ||
+        _daysWithoutActivity != null ||
+        _directoryValues.isNotEmpty ||
+        _hasActiveCustomFieldFilters;
+  }
+
 
   @override
   void initState() {
@@ -716,7 +739,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
             focusNode: focusNode,
             showMenuIcon: _showCustomTabBar,
             showFilterIconOnSelectLead: !_showCustomTabBar,
-            hasActiveLeadFilters: !_showCustomTabBar,
+            hasActiveLeadFilters: _hasActiveFilters(),
             showFilterTaskIcon: false,
             showMyTaskIcon: true,
             showCallCenter: true,
@@ -1496,7 +1519,9 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
                       sourcesIds: hasActiveFilters && _selectedSources.isNotEmpty
                           ? _selectedSources.map((source) => source.id).toList()
                           : null,
-                      statusIds: hasActiveFilters ? _selectedStatuses : null,
+                      // ВАЖНО: всегда пробрасываем текущий статус вкладки,
+                      // чтобы в каждом запросе присутствовал lead_status_id
+                      statusIds: currentStatusId,
                       fromDate: hasActiveFilters ? _fromDate : null,
                       toDate: hasActiveFilters ? _toDate : null,
                       hasSuccessDeals: hasActiveFilters ? _hasSuccessDeals : null,
@@ -1584,15 +1609,42 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
                 }
 
                 // При радикальном обновлении (после refresh) автоматически загружаем лиды для активного статуса
+                // НО только если нет активных фильтров, иначе будет второй «чистый» запрос без фильтров
                 Future.delayed(Duration(milliseconds: 150), () {
                   if (mounted && _tabTitles.isNotEmpty) {
                     final activeStatusId = _tabTitles[_currentTabIndex]['id'];
-                    //print('LeadScreen: Auto-loading leads for active status after refresh: $activeStatusId');
-                    context.read<LeadBloc>().add(FetchLeads(
-                      activeStatusId,
-                      salesFunnelId: _selectedFunnel?.id,
-                      ignoreCache: true,
-                    ));
+
+                    final bool hasActiveFilters = _selectedManagers.isNotEmpty ||
+                        _selectedRegions.isNotEmpty ||
+                        _selectedSources.isNotEmpty ||
+                        _selectedStatuses != null ||
+                        _fromDate != null ||
+                        _toDate != null ||
+                        _hasSuccessDeals == true ||
+                        _hasInProgressDeals == true ||
+                        _hasFailureDeals == true ||
+                        _hasNotices == true ||
+                        _hasContact == true ||
+                        _hasChat == true ||
+                        _hasNoReplies == true ||
+                        _hasUnreadMessages == true ||
+                        _hasDeal == true ||
+                        _hasOrders == true ||
+                        _daysWithoutActivity != null ||
+                        _directoryValues.isNotEmpty;
+
+                    if (!hasActiveFilters) {
+                      //print('LeadScreen: Auto-loading leads for active status after refresh: $activeStatusId');
+                      context.read<LeadBloc>().add(FetchLeads(
+                        activeStatusId,
+                        salesFunnelId: _selectedFunnel?.id,
+                        ignoreCache: true,
+                      ));
+                    } else {
+                      if (kDebugMode) {
+                        debugPrint('LeadScreen: Skip auto FetchLeads due to active filters');
+                      }
+                    }
                   }
                 });
 
