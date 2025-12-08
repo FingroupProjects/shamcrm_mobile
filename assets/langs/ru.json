@@ -1259,6 +1259,7 @@
   "write_off": "Списание",
   "client_sale": "Продажа",
   "client_return": "Возврат от клиента",
+  "clientreturn": "Возврат клиентy",
   "supplier_return": "Возврат поставщику",
   "appbar_money_income": "Приход",
   "client_payment": "Оплата от клиента",

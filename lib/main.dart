@@ -217,7 +217,7 @@ void main() async {
   } catch (e, stackTrace) {
     runApp(ErrorApp(error: e.toString()));
   }
-}
+} 
 
 Future<void> _initializeFirebase() async {
   try {
@@ -271,7 +271,7 @@ Future<void> _initializeFirebaseMessaging(ApiService apiService) async {
       badge: true,
       sound: true,
     );
-
+    
     // ✅ УБРАНО: НЕ обрабатываем getInitialMessage здесь!
     // FirebaseMessaging.instance.getInitialMessage() - УДАЛЕНО
 

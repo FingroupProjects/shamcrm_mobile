@@ -1898,5 +1898,6 @@
   "show_on_table": "Jadvalda ko'rsatish",
   "lead_status": "Lid holati",
   "later": "Keyinroq",
-  "additional_client_info": "Qo'shimcha mijoz ma'lumotlari"
+  "additional_client_info": "Qo'shimcha mijoz ma'lumotlari",
+  "clientreturn": "Mijoz qaytishi"
 }
