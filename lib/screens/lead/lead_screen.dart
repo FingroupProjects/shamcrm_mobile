@@ -1461,10 +1461,9 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
                   // Создаем новый контроллер
                   _tabController = TabController(length: _tabTitles.length, vsync: this);
                   //print('LeadScreen: Created new TabController with length: ${_tabTitles.length}');
-                }
-
-                // ← ЕДИНСТВЕННЫЙ LISTENER С ПРОВЕРКОЙ _skipNextTabListener
-                _tabController.addListener(() {
+                  
+                  // ← КРИТИЧНО: Добавляем listener ТОЛЬКО при создании нового контроллера!
+                  _tabController.addListener(() {
                   if (!_tabController.indexIsChanging) {
                     // ← КРИТИЧНО: Проверяем флаг пропуска!
                     if (_skipNextTabListener) {
@@ -1548,7 +1547,8 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
                       }
                     }
                   }
-                });
+                  }); // ← Закрываем listener здесь, только для нового контроллера!
+                }
 
                 // Установка правильного индекса
                 if (needNewController) {

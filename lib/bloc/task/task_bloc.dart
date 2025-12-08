@@ -87,7 +87,7 @@ Future<void> _fetchTaskStatuses(FetchTaskStatuses event, Emitter<TaskState> emit
       _currentDeadlineToDate = null;
       _currentDepartment = null;
       _currentDirectoryValues = null;
-      
+
       // Загружаем статусы с сервера
       response = await apiService.getTaskStatuses();
       
@@ -107,7 +107,7 @@ Future<void> _fetchTaskStatuses(FetchTaskStatuses event, Emitter<TaskState> emit
     } else {
       // Стандартная логика для обычной загрузки
       if (!await _checkInternetConnection()) {
-        final cachedStatuses = await TaskCache.getTaskStatuses();
+  final cachedStatuses = await TaskCache.getTaskStatuses();
         if (cachedStatuses.isNotEmpty) {
           // При отсутствии интернета загружаем минимальные данные из кэша
           // но это будет работать только для отображения табов
@@ -140,17 +140,17 @@ Future<void> _fetchTaskStatuses(FetchTaskStatuses event, Emitter<TaskState> emit
           }).toList();
           
           emit(TaskLoaded(minimalStatuses, taskCounts: Map.from(_taskCounts)));
-        } else {
+    } else {
           emit(TaskError('Нет подключения к интернету и нет кэшированных данных'));
-        }
-        return;
-      }
+    }
+    return;
+  }
 
       // ВСЕГДА загружаем с API для получения актуальных счётчиков
       response = await apiService.getTaskStatuses();
-      await TaskCache.cacheTaskStatuses(response
-          .map((status) => {'id': status.id, 'title': status.taskStatus?.name ?? ""})
-          .toList());
+    await TaskCache.cacheTaskStatuses(response
+        .map((status) => {'id': status.id, 'title': status.taskStatus?.name ?? ""})
+        .toList());
 
       // Устанавливаем счетчики из свежих данных API
       _taskCounts.clear();
@@ -189,7 +189,7 @@ Future<void> _fetchTasks(FetchTasks event, Emitter<TaskState> emit) async {
 
   try {
     if (state is! TaskDataLoaded) {
-      emit(TaskLoading());
+  emit(TaskLoading());
     }
 
     // Сохраняем параметры текущего запроса
@@ -230,7 +230,7 @@ Future<void> _fetchTasks(FetchTasks event, Emitter<TaskState> emit) async {
         debugPrint('✅ TaskBloc: _fetchTasks - Emitting ${tasks.length} cached tasks for status ${event.statusId}');
       }
       emit(TaskDataLoaded(tasks, currentPage: 1, taskCounts: Map.from(_taskCounts)));
-    }
+  }
 
     if (await _checkInternetConnection()) {
       if (kDebugMode) {
@@ -238,24 +238,24 @@ Future<void> _fetchTasks(FetchTasks event, Emitter<TaskState> emit) async {
       }
 
       tasks = await apiService.getTasks(
-        event.statusId,
-        page: 1,
-        perPage: 20,
-        search: event.query,
-        users: event.userIds,
-        statuses: event.statusIds,
-        fromDate: event.fromDate,
-        toDate: event.toDate,
-        overdue: event.overdue,
-        hasFile: event.hasFile,
-        hasDeal: event.hasDeal,
-        urgent: event.urgent,
-        projectIds: event.projectIds,
-        authors: event.authors,
-        deadlinefromDate: event.deadlinefromDate,
-        deadlinetoDate: event.deadlinetoDate,
-        department: event.department,
-        directoryValues: event.directoryValues,
+      event.statusId,
+      page: 1,
+      perPage: 20,
+      search: event.query,
+      users: event.userIds,
+      statuses: event.statusIds,
+      fromDate: event.fromDate,
+      toDate: event.toDate,
+      overdue: event.overdue,
+      hasFile: event.hasFile,
+      hasDeal: event.hasDeal,
+      urgent: event.urgent,
+      projectIds: event.projectIds,
+      authors: event.authors,
+      deadlinefromDate: event.deadlinefromDate,
+      deadlinetoDate: event.deadlinetoDate,
+      department: event.department,
+      directoryValues: event.directoryValues,
       );
 
       if (kDebugMode) {
@@ -283,7 +283,7 @@ Future<void> _fetchTasks(FetchTasks event, Emitter<TaskState> emit) async {
     } else {
       if (kDebugMode) {
         debugPrint('❌ TaskBloc: No internet connection');
-      }
+    }
     }
 
     allTasksFetched = tasks.isEmpty;
@@ -301,8 +301,8 @@ Future<void> _fetchTasks(FetchTasks event, Emitter<TaskState> emit) async {
     if (e is ApiException && e.statusCode == 401) {
       emit(TaskError('Неавторизованный доступ!'));
     } else {
-      emit(TaskError('Не удалось загрузить данные!'));
-    }
+        emit(TaskError('Не удалось загрузить данные!'));
+      }
   } finally {
     isFetching = false;
     if (kDebugMode) {
@@ -755,6 +755,6 @@ Future<void> _fetchTasksForStatusWithFilters(
       int statusId = int.parse(statusIdStr);
       int count = allPersistentCounts[statusIdStr] ?? 0;
       _taskCounts[statusId] = count;
-    }
   }
+}
 }

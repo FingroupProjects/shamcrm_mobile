@@ -115,7 +115,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
     _scrollController = ScrollController();
     _scrollController.addListener(_onScroll);
     _loadUserRoles();
-    _loadFilterState(); // Загружаем состояние фильтров
+    // НЕ загружаем состояние фильтров - каждый раз начинаем с чистого листа
     
     // Запускаем загрузку статусов
     BlocProvider.of<TaskBloc>(context).add(FetchTaskStatuses());
@@ -1337,18 +1337,17 @@ Widget _buildTabBarView() {
               // Проверяем, нужно ли создавать новый контроллер
               bool needNewController = _tabController.length != _tabTitles.length;
 
-              if (needNewController) {
-                // Dispose старого контроллера если он существует
-                if (_tabController.length > 0) {
-                  _tabController.dispose();
-                }
+                if (needNewController) {
+                  // Dispose старого контроллера если он существует
+                  if (_tabController.length > 0) {
+                    _tabController.dispose();
+                  }
 
-                // Создаем новый контроллер
-                _tabController = TabController(length: _tabTitles.length, vsync: this);
-              }
-
-              // ← ЕДИНСТВЕННЫЙ LISTENER С ПРОВЕРКОЙ _skipNextTabListener
-              _tabController.addListener(() {
+                  // Создаем новый контроллер
+                  _tabController = TabController(length: _tabTitles.length, vsync: this);
+                  
+                  // ← КРИТИЧНО: Добавляем listener ТОЛЬКО при создании нового контроллера!
+                  _tabController.addListener(() {
                 if (!_tabController.indexIsChanging) {
                   // ← КРИТИЧНО: Проверяем флаг пропуска!
                   if (_skipNextTabListener) {
@@ -1398,14 +1397,15 @@ Widget _buildTabBarView() {
                     directoryValues: hasActiveFilters && _selectedDirectoryValues.isNotEmpty
                         ? _selectedDirectoryValues
                         : null,
-                  ));
+                    ));
 
-                  debugPrint('TaskScreen: FetchTasks dispatched for statusId: $currentStatusId');
+                    debugPrint('TaskScreen: FetchTasks dispatched for statusId: $currentStatusId');
+                  }
+                  }); // ← Закрываем listener здесь, только для нового контроллера!
                 }
-              });
 
-              // Установка правильного индекса
-              if (needNewController) {
+                // Установка правильного индекса
+                if (needNewController) {
                 if (_currentTabIndex < _tabTitles.length && _currentTabIndex >= 0) {
                   _tabController.index = _currentTabIndex;
                 } else {
