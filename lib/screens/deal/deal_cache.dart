@@ -8,22 +8,22 @@ class DealCache {
 
   // Save deal statuses to cache, including deals_count
   static Future<void> cacheDealStatuses(List<Map<String, dynamic>> dealStatuses) async {
-    final SharedPreferences prefs = await SharedPreferences.getInstance();
-    final String encodedStatuses = json.encode(dealStatuses);
-    await prefs.setString(_cachedDealStatusesKey, encodedStatuses);
+  final SharedPreferences prefs = await SharedPreferences.getInstance();
+  final String encodedStatuses = json.encode(dealStatuses);
+  await prefs.setString(_cachedDealStatusesKey, encodedStatuses);
   }
 
   // Get deal statuses from cache
-  static Future<List<Map<String, dynamic>>> getDealStatuses() async {
-    final SharedPreferences prefs = await SharedPreferences.getInstance();
-    final String? cachedStatuses = prefs.getString(_cachedDealStatusesKey);
-    if (cachedStatuses != null) {
-      final List<dynamic> decodedData = json.decode(cachedStatuses);
-      final statuses = decodedData.map((status) => Map<String, dynamic>.from(status)).toList();
-      return statuses;
-    }
-    return [];
+ static Future<List<Map<String, dynamic>>> getDealStatuses() async {
+  final SharedPreferences prefs = await SharedPreferences.getInstance();
+  final String? cachedStatuses = prefs.getString(_cachedDealStatusesKey);
+  if (cachedStatuses != null) {
+    final List<dynamic> decodedData = json.decode(cachedStatuses);
+    final statuses = decodedData.map((status) => Map<String, dynamic>.from(status)).toList();
+    return statuses;
   }
+  return [];
+}
 
   // Save deals for a specific status to cache
   static Future<void> cacheDealsForStatus(

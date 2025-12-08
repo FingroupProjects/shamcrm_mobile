@@ -112,7 +112,7 @@ void initState() {
 
   _scrollController = ScrollController();
   _scrollController.addListener(_onScroll);
-  _loadFilterState();
+  // НЕ загружаем состояние фильтров - каждый раз начинаем с чистого листа
   _checkPermissions();
 
   _apiService.getSelectedDealSalesFunnel().then((funnelId) {
@@ -317,12 +317,18 @@ void initState() {
               .map((l) => LeadData.fromJson(l))
               .toList();
       _selectedStatuses = prefs.getInt('deal_selected_statuses');
-      _fromDate = prefs.getString('deal_from_date') != null
-          ? DateTime.parse(prefs.getString('deal_from_date')!)
+      
+      // Безопасный парсинг дат
+      final fromDateStr = prefs.getString('deal_from_date');
+      _fromDate = (fromDateStr != null && fromDateStr.isNotEmpty && fromDateStr != 'null')
+          ? DateTime.tryParse(fromDateStr)
           : null;
-      _toDate = prefs.getString('deal_to_date') != null
-          ? DateTime.parse(prefs.getString('deal_to_date')!)
+      
+      final toDateStr = prefs.getString('deal_to_date');
+      _toDate = (toDateStr != null && toDateStr.isNotEmpty && toDateStr != 'null')
+          ? DateTime.tryParse(toDateStr)
           : null;
+      
       _daysWithoutActivity = prefs.getInt('deal_days_without_activity');
       _hasTasks = prefs.getBool('deal_has_tasks') ?? false;
       _selectedDirectoryValues =
@@ -385,7 +391,7 @@ void initState() {
       final dealBloc = BlocProvider.of<DealBloc>(context);
       if (dealBloc.state is DealDataLoaded) {
         final state = dealBloc.state as DealDataLoaded;
-        if (!dealBloc.allDealsFetched) {
+        if (!dealBloc.allDealsFetched && _tabTitles.isNotEmpty && _currentTabIndex < _tabTitles.length) {
           final currentStatusId = _tabTitles[_currentTabIndex]['id'];
           dealBloc.add(FetchMoreDeals(currentStatusId, state.currentPage));
         }
@@ -560,7 +566,6 @@ void initState() {
       salesFunnelId: _selectedFunnel?.id,
       customFieldFilters: _selectedDealCustomFieldFilters,
     ));
-    await _saveFilterState();
   }
 
   void _resetFilters() {
@@ -663,30 +668,29 @@ Future<void> _handleManagerSelected(Map managers) async {
   ));
 
   debugPrint('DealScreen: _handleManagerSelected - Dispatched FetchDealStatusesWithFilters');
-  await _saveFilterState();
 }
 
   Future _handleStatusSelected(int? selectedStatusId) async {
     setState(() {
-      ////debugPrint("DealScreen: Handling status selection: $selectedStatusId");
       _showCustomTabBar = false;
       _selectedStatuses = selectedStatusId;
       _initialSelStatus = selectedStatusId;
     });
 
+    if (_tabTitles.isEmpty || _currentTabIndex >= _tabTitles.length) return;
+    
     final currentStatusId = _tabTitles[_currentTabIndex]['id'];
     _dealBloc.add(FetchDeals(
       currentStatusId,
       statusIds: _selectedStatuses,
       query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
-    salesFunnelId: _selectedFunnel?.id,
-    customFieldFilters: _selectedDealCustomFieldFilters,
+      salesFunnelId: _selectedFunnel?.id,
+      customFieldFilters: _selectedDealCustomFieldFilters,
     ));
   }
 
   Future _handleDateSelected(DateTime? fromDate, DateTime? toDate) async {
     setState(() {
-      ////debugPrint("DealScreen: Handling date selection: from $fromDate to $toDate");
       _showCustomTabBar = false;
       _fromDate = fromDate;
       _toDate = toDate;
@@ -694,21 +698,22 @@ Future<void> _handleManagerSelected(Map managers) async {
       _intialToDate = toDate;
     });
 
+    if (_tabTitles.isEmpty || _currentTabIndex >= _tabTitles.length) return;
+    
     final currentStatusId = _tabTitles[_currentTabIndex]['id'];
     _dealBloc.add(FetchDeals(
       currentStatusId,
       fromDate: _fromDate,
       toDate: _toDate,
       query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
-    salesFunnelId: _selectedFunnel?.id,
-    customFieldFilters: _selectedDealCustomFieldFilters,
+      salesFunnelId: _selectedFunnel?.id,
+      customFieldFilters: _selectedDealCustomFieldFilters,
     ));
   }
 
   Future _handleStatusAndDateSelected(
       int? selectedStatus, DateTime? fromDate, DateTime? toDate) async {
     setState(() {
-      ////debugPrint("DealScreen: Handling status and date selection: status $selectedStatus, from $fromDate to $toDate");
       _showCustomTabBar = false;
       _selectedStatuses = selectedStatus;
       _fromDate = fromDate;
@@ -718,6 +723,8 @@ Future<void> _handleManagerSelected(Map managers) async {
       _intialToDate = toDate;
     });
 
+    if (_tabTitles.isEmpty || _currentTabIndex >= _tabTitles.length) return;
+    
     final currentStatusId = _tabTitles[_currentTabIndex]['id'];
     _dealBloc.add(FetchDeals(
       currentStatusId,
@@ -725,13 +732,14 @@ Future<void> _handleManagerSelected(Map managers) async {
       fromDate: _fromDate,
       toDate: _toDate,
       query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
-    salesFunnelId: _selectedFunnel?.id,
-    customFieldFilters: _selectedDealCustomFieldFilters,
+      salesFunnelId: _selectedFunnel?.id,
+      customFieldFilters: _selectedDealCustomFieldFilters,
     ));
   }
 
   void _onSearch(String query) {
     _lastSearchQuery = query;
+    if (_tabTitles.isEmpty || _currentTabIndex >= _tabTitles.length) return;
     final currentStatusId = _tabTitles[_currentTabIndex]['id'];
     _searchDeals(query, currentStatusId);
   }
@@ -833,7 +841,7 @@ Future<void> _handleManagerSelected(Map managers) async {
                     _dealBloc.add(
                         FetchDealStatuses(salesFunnelId: _selectedFunnel?.id));
                   } else {
-                    ////debugPrint("DealScreen: IF SEARCH EMPTY BUT FILTERS EXIST");
+                    if (_tabTitles.isEmpty || _currentTabIndex >= _tabTitles.length) return;
                     final currentStatusId = _tabTitles[_currentTabIndex]['id'];
                     _dealBloc.add(FetchDeals(
                       currentStatusId,
@@ -855,7 +863,7 @@ Future<void> _handleManagerSelected(Map managers) async {
                   }
                 } else if (_selectedManagerIds != null &&
                     _selectedManagerIds!.isNotEmpty) {
-                  ////debugPrint("DealScreen: ELSE IF SEARCH NOT EMPTY");
+                  if (_tabTitles.isEmpty || _currentTabIndex >= _tabTitles.length) return;
                   final currentStatusId = _tabTitles[_currentTabIndex]['id'];
                   _dealBloc.add(FetchDeals(
                     currentStatusId,
@@ -891,7 +899,7 @@ Future<void> _handleManagerSelected(Map managers) async {
   }
 
   Widget searchWidget(List<Deal> deals) {
-    final currentStatusId = _tabTitles.isNotEmpty
+    final currentStatusId = _tabTitles.isNotEmpty && _currentTabIndex < _tabTitles.length
         ? _tabTitles[_currentTabIndex]['id']
         : 0;
 
@@ -989,7 +997,8 @@ Future<void> _handleManagerSelected(Map managers) async {
       },
       child: BlocBuilder<DealBloc, DealState>(
         builder: (context, state) {
-          final currentStatusId = _tabTitles.isNotEmpty
+          // Безопасное получение currentStatusId
+          final currentStatusId = _tabTitles.isNotEmpty && _tabController.index < _tabTitles.length
               ? _tabTitles[_tabController.index]['id']
               : 0;
 
@@ -1005,7 +1014,12 @@ Future<void> _handleManagerSelected(Map managers) async {
 
           if (state is DealDataLoaded) {
             final List<Deal> deals = state.deals;
-            final statusId = _tabTitles[_tabController.index]['id'];
+            
+            // Безопасное получение statusId
+            final statusId = _tabTitles.isNotEmpty && _tabController.index < _tabTitles.length
+                ? _tabTitles[_tabController.index]['id']
+                : (deals.isNotEmpty ? deals.first.statusId : 0);
+            
             final filteredDeals = deals
                 .where((deal) => deal.statusId == statusId)
                 .toList();
@@ -1389,10 +1403,9 @@ Future<void> _handleManagerSelected(Map managers) async {
 
                   // Создаем новый контроллер
                   _tabController = TabController(length: _tabTitles.length, vsync: this);
-                }
-
-                // ← ЕДИНСТВЕННЫЙ LISTENER С ПРОВЕРКОЙ _skipNextTabListener
-                _tabController.addListener(() {
+                  
+                  // ← КРИТИЧНО: Добавляем listener ТОЛЬКО при создании нового контроллера!
+                  _tabController.addListener(() {
                   if (!_tabController.indexIsChanging) {
                     // ← КРИТИЧНО: Проверяем флаг пропуска!
                     if (_skipNextTabListener) {
@@ -1442,7 +1455,8 @@ Future<void> _handleManagerSelected(Map managers) async {
 
                     debugPrint('DealScreen: FetchDeals dispatched for statusId: $currentStatusId');
                   }
-                });
+                  }); // ← Закрываем listener здесь, только для нового контроллера!
+                }
 
                 // Установка правильного индекса
                 if (needNewController) {
@@ -1496,7 +1510,7 @@ Future<void> _handleManagerSelected(Map managers) async {
 
                 // Автоматически загружаем сделки для активного статуса после refresh
                 Future.delayed(Duration(milliseconds: 150), () {
-                  if (mounted && _tabTitles.isNotEmpty) {
+                  if (mounted && _tabTitles.isNotEmpty && _currentTabIndex < _tabTitles.length) {
                     final activeStatusId = _tabTitles[_currentTabIndex]['id'];
 
                     final bool hasActiveFilters = _hasActiveFilters();
