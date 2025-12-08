@@ -392,22 +392,22 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
           ),
         );
 
-      case 'task_status_id':
-        return Card(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          color: Colors.white,
-          child: Padding(
-            padding: const EdgeInsets.all(8),
-            child: TaskStatusRadioGroupWidget(
-              selectedStatus: _selectedStatuses?.toString(),
-              onSelectStatus: (TaskStatus selectedStatusData) {
-                setState(() {
-                  _selectedStatuses = selectedStatusData.id;
-                });
-              },
-            ),
-          ),
-        );
+      // case 'task_status_id':
+      //   return Card(
+      //     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      //     color: Colors.white,
+      //     child: Padding(
+      //       padding: const EdgeInsets.all(8),
+      //       child: TaskStatusRadioGroupWidget(
+      //         selectedStatus: _selectedStatuses?.toString(),
+      //         onSelectStatus: (TaskStatus selectedStatusData) {
+      //           setState(() {
+      //             _selectedStatuses = selectedStatusData.id;
+      //           });
+      //         },
+      //       ),
+      //     ),
+      //   );
 
       case 'project':
         return Card(
@@ -764,23 +764,23 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
                             ),
                           ),
                         ),
-                        const SizedBox(height: 8),
-                        Card(
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12)),
-                          color: Colors.white,
-                          child: Padding(
-                            padding: const EdgeInsets.all(8),
-                            child: TaskStatusRadioGroupWidget(
-                              selectedStatus: _selectedStatuses?.toString(),
-                              onSelectStatus: (TaskStatus selectedStatusData) {
-                                setState(() {
-                                  _selectedStatuses = selectedStatusData.id;
-                                });
-                              },
-                            ),
-                          ),
-                        ),
+                        // const SizedBox(height: 8),
+                        // Card(
+                        //   shape: RoundedRectangleBorder(
+                        //       borderRadius: BorderRadius.circular(12)),
+                        //   color: Colors.white,
+                        //   child: Padding(
+                        //     padding: const EdgeInsets.all(8),
+                        //     child: TaskStatusRadioGroupWidget(
+                        //       selectedStatus: _selectedStatuses?.toString(),
+                        //       onSelectStatus: (TaskStatus selectedStatusData) {
+                        //         setState(() {
+                        //           _selectedStatuses = selectedStatusData.id;
+                        //         });
+                        //       },
+                        //     ),
+                        //   ),
+                        // ),
                         const SizedBox(height: 8),
                         Card(
                           shape: RoundedRectangleBorder(

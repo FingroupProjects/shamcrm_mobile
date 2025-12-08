@@ -53,6 +53,34 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
 
   }
 
+  bool get _hasActiveFilters {
+    final bool listsOrQuery =
+        (_currentQuery != null && _currentQuery!.isNotEmpty) ||
+        (_currentManagerIds != null && _currentManagerIds!.isNotEmpty) ||
+        (_currentRegionIds != null && _currentRegionIds!.isNotEmpty) ||
+        (_currentSourceIds != null && _currentSourceIds!.isNotEmpty) ||
+        (_currentDirectoryValues != null && _currentDirectoryValues!.isNotEmpty) ||
+        (_currentCustomFieldFilters != null && _currentCustomFieldFilters!.isNotEmpty);
+
+    final bool flagsOrDates =
+        (_currentStatusId != null) ||
+        (_currentFromDate != null) ||
+        (_currentToDate != null) ||
+        (_currentHasSuccessDeals == true) ||
+        (_currentHasInProgressDeals == true) ||
+        (_currentHasFailureDeals == true) ||
+        (_currentHasNotices == true) ||
+        (_currentHasContact == true) ||
+        (_currentHasChat == true) ||
+        (_currentHasNoReplies == true) ||
+        (_currentHasUnreadMessages == true) ||
+        (_currentHasDeal == true) ||
+        (_currentHasOrders == true) ||
+        (_currentDaysWithoutActivity != null);
+
+    return listsOrQuery || flagsOrDates;
+  }
+
   Future<void> _fetchLeadStatus(FetchLeadStatus event, Emitter<LeadState> emit) async {
     emit(LeadLoading());
     try {
@@ -348,9 +376,9 @@ Future<void> _fetchLeadStatuses(FetchLeadStatuses event, Emitter<LeadState> emit
     //print('LeadBloc: _fetchLeadStatuses - Final leadCounts: $_leadCounts');
     emit(LeadLoaded(response, leadCounts: Map.from(_leadCounts)));
 
-    // При обычной загрузке автоматически загружаем лиды для первого статуса
-    // При forceRefresh НЕ загружаем автоматически - это будет делать LeadScreen вручную
-    if (response.isNotEmpty && !event.forceRefresh) {
+    // При обычной загрузке автоматически загружаем лиды для первого статуса,
+    // НО только если нет активных фильтров. При forceRefresh также не загружаем.
+    if (response.isNotEmpty && !event.forceRefresh && !_hasActiveFilters) {
       final firstStatusId = response.first.id;
       //print('LeadBloc: Auto-loading leads for first status: $firstStatusId');
       add(FetchLeads(firstStatusId, ignoreCache: false));

@@ -1,7 +1,7 @@
 import UIKit
 import Flutter
 import WidgetKit
-import Network
+import Network // ✅ Для NWPathMonitor
 
 @main
 @objc class AppDelegate: FlutterAppDelegate {
@@ -10,14 +10,11 @@ import Network
     // App Group identifier for sharing data with widget
     private let appGroupId = "group.com.softtech.crmTaskManager"
     
-    // ✅ Network Monitor
+    // ✅ НОВОЕ: Network Monitor
     private var networkMonitor: NWPathMonitor?
     private let networkQueue = DispatchQueue(label: "NetworkMonitor")
     private var networkEventChannel: FlutterEventChannel?
     private var networkEventSink: FlutterEventSink?
-    
-    // ✅ КРИТИЧНО: Отслеживаем есть ли ХОТЬ ОДНА сеть
-    private var hasAnyNetwork = false
     
     override func application(
         _ application: UIApplication,
@@ -53,16 +50,12 @@ import Network
                     } else {
                         result(FlutterError(code: "INVALID_ARGS", message: "Invalid arguments", details: nil))
                     }
-                case "checkNetworkStatus":
-                    let isConnected = self?.hasAnyNetwork ?? true
-                    result(isConnected)
-                    
                 default:
                     result(FlutterMethodNotImplemented)
                 }
             }
             
-            // ✅ Network Event Channel
+            // ✅ НОВОЕ: Network Event Channel
             networkEventChannel = FlutterEventChannel(
                 name: "com.shamcrm/network_status",
                 binaryMessenger: controller.binaryMessenger
@@ -72,39 +65,44 @@ import Network
             print("✅ MethodChannel initialized (widget + network)")
         }
         
-        // ✅ Запускаем network monitor
+        // ✅ НОВОЕ: Запускаем network monitor
         startNetworkMonitoring()
         
         return super.application(application, didFinishLaunchingWithOptions: launchOptions)
     }
     
-    // MARK: - Network Monitoring
-    
+    // MARK: - Network Monitoring (ПРОСТАЯ ЛОГИКА)
     private func startNetworkMonitoring() {
         networkMonitor = NWPathMonitor()
         
         networkMonitor?.pathUpdateHandler = { [weak self] path in
-            guard let self = self else { return }
+            // ✅ ПРОСТАЯ ПРОВЕРКА: Есть ли ХОТЬ ОДНО подключение?
+            let hasAnyConnection = (path.status == .satisfied)
             
-            // ✅ Проверяем есть ли ХОТЬ ОДНА сеть (WiFi, Cellular, Ethernet)
-            let hasNetwork = path.status == .satisfied
+            print("🍎 iOS NetworkMonitor: status=\(path.status.rawValue), hasConnection=\(hasAnyConnection)")
             
-            print("🍎 iOS NetworkMonitor: status=\(path.status.rawValue), hasNetwork=\(hasNetwork)")
+            // ✅ ДОПОЛНИТЕЛЬНАЯ ПРОВЕРКА: Есть ли хоть один интерфейс?
+            let hasAnyInterface = path.availableInterfaces.count > 0
             
-            // ✅ КРИТИЧНО: Обновляем статус
-            if self.hasAnyNetwork != hasNetwork {
-                self.hasAnyNetwork = hasNetwork
-                
-                // ✅ Отправляем в Flutter
-                DispatchQueue.main.async {
-                    self.networkEventSink?(hasNetwork)
-                    print("🍎 iOS: 📡 Sent to Flutter: \(hasNetwork)")
+            if hasAnyInterface {
+                print("🍎 Доступные интерфейсы: \(path.availableInterfaces.count)")
+                for interface in path.availableInterfaces {
+                    print("   - \(interface.name): \(interface.type)")
                 }
+            } else {
+                print("🍎 ❌ Нет доступных интерфейсов")
             }
+            
+            // ✅ Показываем overlay ТОЛЬКО если нет ВООБЩЕ подключения
+            // И нет доступных интерфейсов
+            let shouldShowOverlay = !hasAnyConnection || !hasAnyInterface
+            
+            // Отправляем в Flutter (инвертируем, т.к. Flutter ожидает "isConnected")
+            self?.networkEventSink?(!shouldShowOverlay)
         }
         
         networkMonitor?.start(queue: networkQueue)
-        print("✅ iOS: Network monitoring started")
+        print("✅ iOS Network monitoring started")
     }
     
     // MARK: - ВАШ СУЩЕСТВУЮЩИЙ КОД (виджеты)
@@ -198,23 +196,32 @@ import Network
     }
 }
 
-// MARK: - FlutterStreamHandler для network events
-
+// ✅ НОВОЕ: FlutterStreamHandler для network events
 extension AppDelegate: FlutterStreamHandler {
     
     func onListen(withArguments arguments: Any?, eventSink events: @escaping FlutterEventSink) -> FlutterError? {
         networkEventSink = events
         
-        // ✅ Отправляем текущий статус сразу
-        events(hasAnyNetwork)
-        print("✅ iOS: Network event sink attached, initial status: \(hasAnyNetwork)")
+        // Отправляем текущий статус сразу
+        if let path = networkMonitor?.currentPath {
+            let hasConnection = (path.status == .satisfied)
+            let hasInterfaces = path.availableInterfaces.count > 0
+            let isConnected = hasConnection && hasInterfaces
+            
+            events(isConnected)
+            print("✅ iOS Network event sink attached, initial status: \(isConnected)")
+        } else {
+            // Если монитор еще не готов, предполагаем что интернет есть
+            events(true)
+            print("✅ iOS Network event sink attached, default status: true")
+        }
         
         return nil
     }
     
     func onCancel(withArguments arguments: Any?) -> FlutterError? {
         networkEventSink = nil
-        print("✅ iOS: Network event sink detached")
+        print("✅ iOS Network event sink detached")
         return nil
     }
 }

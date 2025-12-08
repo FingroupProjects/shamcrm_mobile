@@ -5,9 +5,38 @@ import 'package:crm_task_manager/screens/profile/languages/app_localizations.dar
 abstract class DealEvent {}
 
  class FetchDealStatuses extends DealEvent {
-  final int? salesFunnelId; // Добавляем параметр
+  final int? salesFunnelId;
+  final bool forceRefresh;
 
-  FetchDealStatuses({this.salesFunnelId});
+  FetchDealStatuses({this.salesFunnelId, this.forceRefresh = false});
+}
+
+class FetchDealStatusesWithFilters extends DealEvent {
+  final List<int>? managerIds;
+  final List<int>? leadIds;
+  final int? statusIds;
+  final DateTime? fromDate;
+  final DateTime? toDate;
+  final int? daysWithoutActivity;
+  final bool? hasTasks;
+  final List<Map<String, dynamic>>? directoryValues;
+  final List<String>? names;
+  final int? salesFunnelId;
+  final Map<String, List<String>>? customFieldFilters;
+
+  FetchDealStatusesWithFilters({
+    this.managerIds,
+    this.leadIds,
+    this.statusIds,
+    this.fromDate,
+    this.toDate,
+    this.daysWithoutActivity,
+    this.hasTasks,
+    this.directoryValues,
+    this.names,
+    this.salesFunnelId,
+    this.customFieldFilters,
+  });
 }
 
   class FetchDeals extends DealEvent {

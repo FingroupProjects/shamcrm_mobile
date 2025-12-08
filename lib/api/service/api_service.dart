@@ -4172,44 +4172,118 @@ Future<Map<String, dynamic>> updateDealStatusEdit(
   }
 
 // Метод для получения статусов задач
-  Future<List<TaskStatus>> getTaskStatuses() async {
+  Future<List<TaskStatus>> getTaskStatuses({
+    List<int>? users,
+    int? statuses,
+    DateTime? fromDate,
+    DateTime? toDate,
+    bool? overdue,
+    bool? hasFile,
+    bool? hasDeal,
+    bool? urgent,
+    DateTime? deadlinefromDate,
+    DateTime? deadlinetoDate,
+    List<int>? projectIds,
+    List<String>? authors,
+    String? department,
+    List<Map<String, dynamic>>? directoryValues,
+  }) async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
     final organizationId = await getSelectedOrganization();
 
+    if (kDebugMode) {
+      debugPrint('🔍 getTaskStatuses - START WITH FILTERS');
+      debugPrint('🔍 getTaskStatuses - organizationId: $organizationId');
+    }
+
     try {
-      // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
-      final path = await _appendQueryParams('/task-status');
+      String path = '/task-status';
+      path = await _appendQueryParams(path);
+      
+      // Добавляем фильтры к запросу статусов
+      if (users != null && users.isNotEmpty) {
+        for (int i = 0; i < users.length; i++) {
+          path += '&users[$i]=${users[i]}';
+        }
+      }
+      if (statuses != null) {
+        path += '&task_status_id=$statuses';
+      }
+      if (fromDate != null && toDate != null) {
+        final formattedFromDate = DateFormat('yyyy-MM-dd').format(fromDate);
+        final formattedToDate = DateFormat('yyyy-MM-dd').format(toDate);
+        path += '&from=$formattedFromDate&to=$formattedToDate';
+      }
+      if (overdue == true) path += '&overdue=1';
+      if (hasFile == true) path += '&hasFile=1';
+      if (hasDeal == true) path += '&hasDeal=1';
+      if (urgent == true) path += '&urgent=1';
+      if (deadlinefromDate != null && deadlinetoDate != null) {
+        final formattedDeadlineFrom = DateFormat('yyyy-MM-dd').format(deadlinefromDate);
+        final formattedDeadlineTo = DateFormat('yyyy-MM-dd').format(deadlinetoDate);
+        path += '&deadline_from=$formattedDeadlineFrom&deadline_to=$formattedDeadlineTo';
+      }
+      if (projectIds != null && projectIds.isNotEmpty) {
+        for (int i = 0; i < projectIds.length; i++) {
+          path += '&project_ids[$i]=${projectIds[i]}';
+        }
+      }
+      if (authors != null && authors.isNotEmpty) {
+        for (int i = 0; i < authors.length; i++) {
+          path += '&authors[$i]=${Uri.encodeQueryComponent(authors[i])}';
+        }
+      }
+      if (department != null && department.isNotEmpty) {
+        path += '&department=${Uri.encodeQueryComponent(department)}';
+      }
+      if (directoryValues != null && directoryValues.isNotEmpty) {
+        for (int i = 0; i < directoryValues.length; i++) {
+          final directoryId = directoryValues[i]['directory_id'];
+          final entryId = directoryValues[i]['entry_id'];
+          path += '&directory_values[$i][directory_id]=$directoryId';
+          path += '&directory_values[$i][entry_id]=$entryId';
+        }
+      }
+
       if (kDebugMode) {
-        //debugPrint('ApiService: getTaskStatuses - Generated path: $path');
+        debugPrint('📤 getTaskStatuses WITH FILTERS - Final path: $path');
       }
 
       final response = await _getRequest(path);
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        if (data['result'] != null) {
-          // Принт старых кэшированных данных (если они есть)
-          final cachedStatuses =
-          prefs.getString('cachedTaskStatuses_$organizationId');
-          if (cachedStatuses != null) {
-            final decodedData = json.decode(cachedStatuses);
-            // ////debugPrint(
-            //     '------------------------------ Старые данные в кэше ------------------------------');
-            // ////debugPrint(decodedData); // Старые данные
+        
+        List<dynamic>? statusList;
+        
+        if (data is List) {
+          statusList = data;
+        } else if (data is Map) {
+          if (data['result'] != null) {
+            statusList = data['result'] as List;
+          } else if (data['data'] != null) {
+            statusList = data['data'] as List;
+          } else if (data['statuses'] != null) {
+            statusList = data['statuses'] as List;
           }
+        }
 
+        if (statusList != null && statusList.isNotEmpty) {
           // Обновляем кэш новыми данными
           await prefs.setString('cachedTaskStatuses_$organizationId',
-              json.encode(data['result']));
-          // ////debugPrint(
-          //     '------------------------------------ Новые данные, которые сохраняются в кэш ---------------------------------');
-          // ////debugPrint(data['result']); // Новые данные, которые будут сохранены в кэш
+              json.encode(statusList));
 
-          return (data['result'] as List)
+          final statuses = statusList
               .map((status) => TaskStatus.fromJson(status))
               .toList();
+
+          if (kDebugMode) {
+            debugPrint('✅ getTaskStatuses WITH FILTERS - Got ${statuses.length} statuses');
+          }
+
+          return statuses;
         } else {
-          throw Exception('Результат отсутствует в ответе');
+          throw Exception('Результат отсутствует в ответе или пустой');
         }
       } else {
         throw Exception('Ошибка ${response.statusCode}!');

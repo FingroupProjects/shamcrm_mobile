@@ -345,7 +345,8 @@ class _CustomAppBarState extends State<CustomAppBar>
     _areFiltersActive = widget.hasActiveChatFilters ||
         widget.hasActiveEventFilters ||
         widget.hasActiveDealFilters ||
-        widget.hasActiveTaskFilters;
+        widget.hasActiveTaskFilters ||
+        widget.hasActiveLeadFilters;
     _iconColor = _areFiltersActive ? Colors.blue : Colors.black;
     if (_cachedUserImage.isNotEmpty) {
       _userImage = _cachedUserImage;
@@ -1465,7 +1466,10 @@ class _CustomAppBarState extends State<CustomAppBar>
                     position: PopupMenuPosition.under,
                     icon: Stack(
                       children: [
-                        Icon(Icons.more_vert),
+                        Icon(
+                          Icons.more_vert,
+                          color: _areFiltersActive ? _iconColor : Colors.black,
+                        ),
                         if (_hasOverdueTasks)
                           Positioned(
                             right: 0,
@@ -1551,7 +1555,7 @@ class _CustomAppBarState extends State<CustomAppBar>
                                 'assets/icons/AppBar/filter.png',
                                 width: 24,
                                 height: 24,
-                                color: _iconColor,
+                                color: widget.hasActiveLeadFilters ? Colors.blue : _iconColor,
                               ),
                               SizedBox(width: 8),
                               Text(AppLocalizations.of(context)!
@@ -1601,7 +1605,7 @@ class _CustomAppBarState extends State<CustomAppBar>
                                 'assets/icons/AppBar/filter.png',
                                 width: 24,
                                 height: 24,
-                                color: _iconColor,
+                                color: widget.hasActiveTaskFilters ? Colors.blue : _iconColor,
                               ),
                               SizedBox(width: 8),
                               Text(AppLocalizations.of(context)!
@@ -1670,8 +1674,8 @@ class _CustomAppBarState extends State<CustomAppBar>
                                 'assets/icons/AppBar/call_center.png',
                                 width: 24,
                                 height: 24,
-                                color:
-                                _iconColor, // Добавляем изменение цвета иконки
+                                // Иконка колл-центра всегда черная, не реагирует на фильтры
+                                color: Colors.black,
                               ),
                               SizedBox(width: 8),
                               Text(AppLocalizations.of(context)!
