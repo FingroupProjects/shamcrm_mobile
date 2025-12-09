@@ -976,8 +976,7 @@ Future<void> _saveFilterState() async {
                     physics: const AlwaysScrollableScrollPhysics(),
                     child: Text(
                       _selectedUsers.isNotEmpty
-                          ? AppLocalizations.of(context)!
-                          .translate('selected_manager_has_any_lead')
+                          ? 'У выбранного пользователя нет задач'
                           : AppLocalizations.of(context)!
                           .translate('nothing_found'),
                       style: const TextStyle(
