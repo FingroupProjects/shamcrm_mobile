@@ -30,6 +30,7 @@ import 'package:crm_task_manager/screens/chats/chats_screen.dart';
 import 'package:crm_task_manager/screens/dashboard/dashboard_screen.dart';
 import 'package:crm_task_manager/screens/deal/deal_screen.dart';
 import 'package:crm_task_manager/screens/empty_screen.dart';
+import 'package:crm_task_manager/screens/no_access_screen.dart';
 import 'package:crm_task_manager/screens/lead/lead_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/task/task_screen.dart';
@@ -664,11 +665,13 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     }
 
     // Чаты
-    widgetsGroup1.add(ChatsScreen());
-    titleKeysGroup1.add('appbar_chats');
-    navBarTitleKeysGroup1.add('appbar_chats');
-    activeIconsGroup1.add('assets/icons/MyNavBar/chats_ON.png');
-    inactiveIconsGroup1.add('assets/icons/MyNavBar/chats_OFF.png');
+    if (hasPermission('chat.read')) {
+      widgetsGroup1.add(ChatsScreen());
+      titleKeysGroup1.add('appbar_chats');
+      navBarTitleKeysGroup1.add('appbar_chats');
+      activeIconsGroup1.add('assets/icons/MyNavBar/chats_ON.png');
+      inactiveIconsGroup1.add('assets/icons/MyNavBar/chats_OFF.png');
+    }
 
     // ========== КЛЮЧЕВАЯ ЛОГИКА ==========
 
@@ -705,11 +708,20 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       }
     }
 
-    // ✅ ИСПРАВЛЕНИЕ: Если нет экранов в группе 1, добавляем EmptyScreen
-    if (widgetsGroup1.isEmpty) {
+    // ✅ ИСПРАВЛЕНИЕ: Если нет экранов вообще - показываем экран с сообщением об отсутствии доступа
+    if (widgetsGroup1.isEmpty && widgetsGroup2.isEmpty) {
+      widgetsGroup1.add(NoAccessScreen());
+      titleKeysGroup1.add('');
+      navBarTitleKeysGroup1.add('');
+      activeIconsGroup1.add('');
+      inactiveIconsGroup1.add('');
+    } else if (widgetsGroup1.isEmpty) {
+      // Если группа 1 пустая, но есть группа 2
       widgetsGroup1.add(EmptyScreen());
       titleKeysGroup1.add('');
       navBarTitleKeysGroup1.add('');
+      activeIconsGroup1.add('');
+      inactiveIconsGroup1.add('');
     }
 
     if (mounted) {
@@ -804,7 +816,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           return Scaffold(
             body: safeBody,
             backgroundColor: Colors.white,
-            bottomNavigationBar: _isInitialized
+            bottomNavigationBar: _isInitialized && currentWidget is! NoAccessScreen
                 ? MyNavBar(
               currentIndexGroup1: _selectedIndexGroup1,
               currentIndexGroup2: _selectedIndexGroup2,

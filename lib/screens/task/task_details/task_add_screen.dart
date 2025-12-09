@@ -1592,23 +1592,7 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
             }
             break;
           case 'task_status_id':
-            if (selectedStatus == null || selectedStatus!.isEmpty) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    '${AppLocalizations.of(context)!.translate('task_status')} - ${AppLocalizations.of(context)!.translate('field_required')}',
-                    style: TextStyle(
-                      fontFamily: 'Gilroy',
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.white,
-                    ),
-                  ),
-                  backgroundColor: Colors.red,
-                ),
-              );
-              return;
-            }
+            // Статус задачи уже установлен из widget.statusId, валидация не требуется
             break;
           case 'description':
             if (descriptionController.text.trim().isEmpty) {
