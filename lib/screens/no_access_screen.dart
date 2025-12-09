@@ -36,7 +36,7 @@ class NoAccessScreen extends StatelessWidget {
               ),
               SizedBox(height: 24),
               Text(
-                'У вас нет доступа ни к одному разделу',
+                'У вас нет доступа',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 20,

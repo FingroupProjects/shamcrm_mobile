@@ -1558,7 +1558,7 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(
-                    '${AppLocalizations.of(context)!.translate('lead')} - ${AppLocalizations.of(context)!.translate('field_required')}',
+                    '${AppLocalizations.of(context)!.translate('assignees_list')} - ${AppLocalizations.of(context)!.translate('field_required')}',
                     style: TextStyle(
                       fontFamily: 'Gilroy',
                       fontSize: 16,
@@ -1573,96 +1573,18 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
             }
             break;
           case 'project':
-            if (selectedProject == null || selectedProject!.isEmpty) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    '${AppLocalizations.of(context)!.translate('projects')} - ${AppLocalizations.of(context)!.translate('field_required')}',
-                    style: TextStyle(
-                      fontFamily: 'Gilroy',
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.white,
-                    ),
-                  ),
-                  backgroundColor: Colors.red,
-                ),
-              );
-              return;
-            }
+            // Проект не обязателен
             break;
           case 'task_status_id':
             // Статус задачи уже установлен из widget.statusId, валидация не требуется
             break;
           case 'description':
-            if (descriptionController.text.trim().isEmpty) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    '${AppLocalizations.of(context)!.translate('description_list')} - ${AppLocalizations.of(context)!.translate('field_required')}',
-                    style: TextStyle(
-                      fontFamily: 'Gilroy',
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.white,
-                    ),
-                  ),
-                  backgroundColor: Colors.red,
-                ),
-              );
-              return;
-            }
+            // Описание не обязательно
             break;
         }
       }
 
-      // Проверяем кастомные поля
-      if (config.isCustomField) {
-        final customFieldIndex = customFields.indexWhere(
-              (f) => f.fieldName == config.fieldName && f.isCustomField,
-        );
-        if (customFieldIndex == -1 || customFields[customFieldIndex].controller.text.trim().isEmpty) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                '${config.fieldName} - ${AppLocalizations.of(context)!.translate('field_required')}',
-                style: TextStyle(
-                  fontFamily: 'Gilroy',
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.white,
-                ),
-              ),
-              backgroundColor: Colors.red,
-            ),
-          );
-          return;
-        }
-      }
-
-      // Проверяем справочники
-      if (config.isDirectory && config.directoryId != null) {
-        final directoryFieldIndex = customFields.indexWhere(
-              (f) => f.directoryId == config.directoryId,
-        );
-        if (directoryFieldIndex == -1 || customFields[directoryFieldIndex].entryId == null) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                '${config.fieldName} - ${AppLocalizations.of(context)!.translate('field_required')}',
-                style: TextStyle(
-                  fontFamily: 'Gilroy',
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.white,
-                ),
-              ),
-              backgroundColor: Colors.red,
-            ),
-          );
-          return;
-        }
-      }
+      // Кастомные поля и справочники не обязательны - валидация убрана
     }
 
     for (var field in customFields) {
