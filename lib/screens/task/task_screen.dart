@@ -21,6 +21,7 @@ import 'package:crm_task_manager/screens/task/task_details/task_status_add.dart'
 import 'package:crm_task_manager/screens/task/task_status_delete.dart';
 import 'package:crm_task_manager/screens/task/task_status_edit.dart';
 import 'package:crm_task_manager/utils/TutorialStyleWidget.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -412,28 +413,10 @@ Future<void> _saveFilterState() async {
       taskBloc.add(FetchTaskStatuses(forceRefresh: true));
 
     } catch (e) {
+      // ✅ УБРАНО: Не показываем SnackBar с кнопкой "Повторить"
+      debugPrint('TaskScreen: Ошибка при обновлении данных: $e');
+      
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Ошибка при обновлении данных: ${e.toString()}',
-              style: TextStyle(
-                fontFamily: 'Gilroy',
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                color: Colors.white,
-              ),
-            ),
-            backgroundColor: Colors.red,
-            duration: Duration(seconds: 4),
-            action: SnackBarAction(
-              label: 'Повторить',
-              textColor: Colors.white,
-              onPressed: () => _onRefresh(currentStatusId),
-            ),
-          ),
-        );
-
         final taskBloc = BlocProvider.of<TaskBloc>(context);
         taskBloc.add(FetchTaskStatuses(forceRefresh: false));
       }
@@ -1492,30 +1475,62 @@ Widget _buildTabBarView() {
                 (Route<dynamic> route) => false,
           );
         } else {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  state.message,
-                  style: TextStyle(
-                    fontFamily: 'Gilroy',
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.white,
-                  ),
-                ),
-                backgroundColor: Colors.red,
-                duration: Duration(seconds: 3),
-                action: SnackBarAction(
-                  label: 'Повторить',
-                  textColor: Colors.white,
-                  onPressed: () {
-                    context.read<TaskBloc>().add(FetchTaskStatuses(forceRefresh: true));
-                  },
+          // ✅ УБРАНО: Не показываем SnackBar с кнопкой "Повторить"
+          // Переведенные сообщения об ошибках будут показаны в других местах
+          if (kDebugMode) {
+            debugPrint('TaskScreen: Error state - ${state.message}');
+          }
+          // Можно показать простое сообщение БЕЗ кнопки повторить, если нужно
+          // if (mounted) {
+          //   ScaffoldMessenger.of(context).showSnackBar(
+          //     SnackBar(
+          //       content: Text(
+          //         state.message,
+          //         style: TextStyle(
+          //           fontFamily: 'Gilroy',
+          //           fontSize: 14,
+          //           color: Colors.white,
+          //         ),
+          //       ),
+          //       backgroundColor: Colors.red,
+          //       duration: Duration(seconds: 2),
+          //     ),
+          //   );
+          // }
+        }
+      } else if (state is TaskSuccess) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                state.message,
+                style: TextStyle(
+                  fontFamily: 'Gilroy',
+                  fontSize: 14,
+                  color: Colors.white,
                 ),
               ),
-            );
-          }
+              backgroundColor: Colors.green,
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
+      } else if (state is TaskDeleted) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                state.message,
+                style: TextStyle(
+                  fontFamily: 'Gilroy',
+                  fontSize: 14,
+                  color: Colors.white,
+                ),
+              ),
+              backgroundColor: Colors.green,
+              duration: Duration(seconds: 2),
+            ),
+          );
         }
       }
     },

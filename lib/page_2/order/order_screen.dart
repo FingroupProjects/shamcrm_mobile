@@ -116,29 +116,11 @@ class _OrderScreenState extends State<OrderScreen> with TickerProviderStateMixin
       orderBloc.add(FetchOrderStatuses(forceRefresh: true));
 
     } catch (e) {
+      // ✅ УБРАНО: Не показываем SnackBar с кнопкой "Повторить"
+      debugPrint('OrderScreen: Ошибка при обновлении данных: $e');
+      
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Ошибка при обновлении данных: ${e.toString()}',
-              style: TextStyle(
-                fontFamily: 'Gilroy',
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                color: Colors.white,
-              ),
-            ),
-            backgroundColor: Colors.red,
-            duration: Duration(seconds: 4),
-            action: SnackBarAction(
-              label: 'Повторить',
-              textColor: Colors.white,
-              onPressed: () => _onRefresh(currentStatusId),
-            ),
-          ),
-        );
-
-                        _orderBloc.add(FetchOrderStatuses(forceRefresh: false));
+        _orderBloc.add(FetchOrderStatuses(forceRefresh: false));
       }
     }
   }

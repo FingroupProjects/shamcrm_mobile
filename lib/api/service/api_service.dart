@@ -8,6 +8,8 @@ import 'package:crm_task_manager/models/api_exception_model.dart';
 import 'package:crm_task_manager/models/author_data_response.dart';
 import 'package:crm_task_manager/models/calendar_model.dart';
 import 'package:crm_task_manager/models/file_helper.dart';
+import 'package:crm_task_manager/models/localization_model.dart';
+import 'package:crm_task_manager/models/task_overdue_history_model.dart';
 import 'package:crm_task_manager/models/money/add_cash_desk_model.dart';
 import 'package:crm_task_manager/models/money/cash_register_model.dart';
 import 'package:crm_task_manager/models/money/expense_model.dart';
@@ -5026,6 +5028,45 @@ Future<Map<String, dynamic>> updateDealStatusEdit(
     } catch (e) {
       ////debugPrint('Error occurred!');
       throw Exception('Ошибка загрузки истории задач!');
+    }
+  }
+
+  /// Получить историю выполнения задачи (overdue history)
+  /// GET /api/task/overdue-history/{taskId}?organization_id=1&sales_funnel_id=1
+  Future<TaskOverdueHistoryResponse?> getTaskOverdueHistory(int taskId) async {
+    try {
+      final path = await _appendQueryParams('/task/overdue-history/$taskId');
+      if (kDebugMode) {
+        debugPrint('ApiService: getTaskOverdueHistory - Path: $path');
+      }
+
+      final response = await _getRequest(path);
+
+      if (kDebugMode) {
+        debugPrint('ApiService: getTaskOverdueHistory - Status: ${response.statusCode}');
+      }
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = json.decode(response.body);
+        final historyResponse = TaskOverdueHistoryResponse.fromJson(data);
+        
+        if (kDebugMode) {
+          debugPrint('ApiService: История выполнения получена - ${historyResponse.result?.length ?? 0} записей');
+        }
+        
+        return historyResponse;
+      } else {
+        if (kDebugMode) {
+          debugPrint('ApiService: Ошибка получения истории выполнения: ${response.statusCode}');
+        }
+        return null;
+      }
+    } catch (e, stackTrace) {
+      if (kDebugMode) {
+        debugPrint('ApiService: Исключение при получении истории выполнения: $e');
+        debugPrint('ApiService: StackTrace: $stackTrace');
+      }
+      return null;
     }
   }
 
@@ -17643,6 +17684,96 @@ Future<List<ExpenseArticleDashboardWarehouse>> getExpenseArticleDashboardWarehou
         debugPrint('ApiService: Ошибка загрузки вариантов товаров: ${response.statusCode}');
       }
       throw Exception('Ошибка загрузки вариантов товаров: ${response.statusCode}');
+    }
+  }
+
+  // ======================================== LOCALIZATION API ========================================
+  
+  /// Получить настройки локализации с сервера
+  /// GET /api/localization?organization_id=1&sales_funnel_id=1
+  Future<LocalizationResponse?> getLocalization() async {
+    try {
+      // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+      String path = await _appendQueryParams('/localization');
+      
+      if (kDebugMode) {
+        debugPrint('ApiService: getLocalization - Path: $path');
+      }
+
+      final response = await _getRequest(path);
+      
+      if (kDebugMode) {
+        debugPrint('ApiService: getLocalization - Status: ${response.statusCode}');
+        debugPrint('ApiService: getLocalization - Response: ${response.body}');
+      }
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = json.decode(response.body);
+        final localizationResponse = LocalizationResponse.fromJson(data);
+        
+        if (kDebugMode) {
+          debugPrint('ApiService: Локализация получена успешно');
+          debugPrint('  - Language: ${localizationResponse.result?.language}');
+          debugPrint('  - Phone code: ${localizationResponse.result?.countryPhoneCodes}');
+        }
+        
+        return localizationResponse;
+      } else {
+        if (kDebugMode) {
+          debugPrint('ApiService: Ошибка получения локализации: ${response.statusCode}');
+        }
+        return null;
+      }
+    } catch (e, stackTrace) {
+      if (kDebugMode) {
+        debugPrint('ApiService: Исключение при получении локализации: $e');
+        debugPrint('ApiService: StackTrace: $stackTrace');
+      }
+      return null;
+    }
+  }
+
+  /// Изменить язык на сервере
+  /// POST /api/localization/change-language
+  Future<bool> changeLanguage(String language) async {
+    try {
+      final organizationId = await getSelectedOrganization();
+      final salesFunnelId = await getSelectedSalesFunnel();
+      
+      final Map<String, dynamic> body = {
+        'language': language,
+        'organization_id': organizationId != null ? int.parse(organizationId) : null,
+        'sales_funnel_id': salesFunnelId != null ? int.parse(salesFunnelId) : null,
+      };
+      
+      if (kDebugMode) {
+        debugPrint('ApiService: changeLanguage - Body: $body');
+      }
+
+      final response = await _postRequest('/localization/change-language', body);
+      
+      if (kDebugMode) {
+        debugPrint('ApiService: changeLanguage - Status: ${response.statusCode}');
+        debugPrint('ApiService: changeLanguage - Response: ${response.body}');
+      }
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        if (kDebugMode) {
+          debugPrint('ApiService: Язык успешно изменён на сервере: $language');
+        }
+        return true;
+      } else {
+        if (kDebugMode) {
+          debugPrint('ApiService: Ошибка изменения языка: ${response.statusCode}');
+        }
+        return false;
+      }
+    } catch (e, stackTrace) {
+      if (kDebugMode) {
+        debugPrint('ApiService: Исключение при изменении языка: $e');
+        debugPrint('ApiService: StackTrace: $stackTrace');
+      }
+      return false;
     }
   }
 

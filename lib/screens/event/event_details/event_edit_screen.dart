@@ -42,6 +42,7 @@ class _NoticeEditScreenState extends State<NoticeEditScreen> {
   bool sendNotification = false;
   bool isLoading = false;
   String? selectedSubject;
+  bool isSubjectInvalid = false; // Флаг для валидации тематики
   
 // Переменные для файлов
   List<String> selectedFiles = [];
@@ -188,8 +189,10 @@ class _NoticeEditScreenState extends State<NoticeEditScreen> {
                           onSelectSubject: (String subject) {
                             setState(() {
                               selectedSubject = subject;
+                              isSubjectInvalid = subject.isEmpty; // Сбрасываем ошибку при вводе
                             });
                           },
+                          hasError: isSubjectInvalid, // Передаем флаг ошибки
                         ),
                         const SizedBox(height: 8),
                         CustomTextField(
@@ -475,10 +478,29 @@ Widget _buildFileIcon(String fileName, String fileExtension) {
     if (_formKey.currentState!.validate()) {
       // // Проверяем тематику
       if (selectedSubject == null || selectedSubject!.trim().isEmpty) {
+        setState(() {
+          isSubjectInvalid = true;
+        });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Выберите тематику!'),
+            content: Text(
+              AppLocalizations.of(context)!.translate('select_subject'),
+              style: TextStyle(
+                fontFamily: 'Gilroy',
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                color: Colors.white,
+              ),
+            ),
+            behavior: SnackBarBehavior.floating,
+            margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
             backgroundColor: Colors.red,
+            elevation: 3,
+            padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+            duration: Duration(seconds: 3),
           ),
         );
         return;

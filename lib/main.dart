@@ -115,6 +115,7 @@ import 'package:crm_task_manager/bloc/source_list/source_bloc.dart';
 import 'package:crm_task_manager/bloc/task/task_bloc.dart';
 import 'package:crm_task_manager/bloc/task_add_from_deal/task_add_from_deal_bloc.dart';
 import 'package:crm_task_manager/bloc/task_by_id/taskById_bloc.dart';
+import 'package:crm_task_manager/bloc/task_overdue_history/task_overdue_history_bloc.dart';
 import 'package:crm_task_manager/bloc/task_status_add/task_bloc.dart';
 import 'package:crm_task_manager/bloc/user/client/get_all_client_bloc.dart';
 import 'package:crm_task_manager/bloc/user/create_cleant/create_client_bloc.dart';
@@ -571,6 +572,7 @@ Widget build(BuildContext context) {
         BlocProvider(create: (context) => GetAllProjectBloc()),
         BlocProvider(create: (context) => UserTaskBloc(widget.apiService)),
         BlocProvider(create: (context) => HistoryBlocTask(widget.apiService)),
+        BlocProvider(create: (context) => TaskOverdueHistoryBloc(widget.apiService)),
         BlocProvider(create: (context) => HistoryLeadsBloc(widget.apiService)),
         BlocProvider(create: (context) => HistoryBlocMyTask(widget.apiService)),
         BlocProvider(create: (context) => RoleBloc(widget.apiService)),

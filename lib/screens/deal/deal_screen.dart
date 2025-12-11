@@ -22,6 +22,7 @@ import 'package:crm_task_manager/screens/deal/tabBar/deal_status_add.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/profile/profile_screen.dart';
 import 'package:crm_task_manager/utils/TutorialStyleWidget.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/bloc/deal/deal_bloc.dart';
@@ -1547,29 +1548,10 @@ Future<void> _handleManagerSelected(Map managers) async {
                   (Route<dynamic> route) => false,
             );
           } else {
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    state.message,
-                    style: TextStyle(
-                      fontFamily: 'Gilroy',
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.white,
-                    ),
-                  ),
-                  backgroundColor: Colors.red,
-                  duration: Duration(seconds: 3),
-                  action: SnackBarAction(
-                    label: 'Повторить',
-                    textColor: Colors.white,
-                    onPressed: () {
-                      _dealBloc.add(FetchDealStatuses(salesFunnelId: _selectedFunnel?.id, forceRefresh: true));
-                    },
-                  ),
-                ),
-              );
+            // ✅ УБРАНО: Не показываем непереведенный SnackBar с кнопкой "Повторить"
+            // Переведенные сообщения показываются в других местах
+            if (kDebugMode) {
+              debugPrint('DealScreen: Error state - ${state.message}');
             }
           }
         }

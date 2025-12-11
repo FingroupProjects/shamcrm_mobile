@@ -750,8 +750,28 @@ AppBar _buildAppBar(BuildContext context, String title) {
       body: BlocConsumer<GoodsByIdBloc, GoodsByIdState>(
         listener: (context, state) {
           if (state is GoodsByIdError) {
-            ScaffoldMessenger.of(context)
-                .showSnackBar(SnackBar(content: Text(state.message)));
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  AppLocalizations.of(context)!.translate(state.message),
+                  style: TextStyle(
+                    fontFamily: 'Gilroy',
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.white,
+                  ),
+                ),
+                behavior: SnackBarBehavior.floating,
+                margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                backgroundColor: Colors.red,
+                elevation: 3,
+                padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                duration: Duration(seconds: 3),
+              ),
+            );
           } else if (state is GoodsByIdDeleted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(

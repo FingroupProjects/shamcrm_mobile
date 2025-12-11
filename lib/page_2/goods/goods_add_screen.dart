@@ -258,6 +258,24 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                           : null,
                     ),
                     const SizedBox(height: 8),
+                    CategoryDropdownWidget(
+                      selectedCategory: selectedCategory?.name,
+                      onSelectCategory: (category) {
+                        setState(() {
+                          selectedCategory = category;
+                          attributeControllers.clear();
+                          tableAttributes.clear();
+                          if (category != null && category.attributes.isNotEmpty) {
+                            for (var attribute in category.attributes.where((a) => !a.isIndividual)) {
+                              attributeControllers[attribute.name] = TextEditingController();
+                            }
+                          }
+                        });
+                      },
+                      subCategories: subCategories,
+                      isValid: isCategoryValid,
+                    ),
+                    const SizedBox(height: 8),
                     CustomTextField(
                       controller: goodsDescriptionController,
                       hintText: AppLocalizations.of(context)!.translate('enter_goods_description'),
@@ -334,24 +352,7 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                         });
                       },
                     ),
-                    const SizedBox(height: 8),
-                    CategoryDropdownWidget(
-                      selectedCategory: selectedCategory?.name,
-                      onSelectCategory: (category) {
-                        setState(() {
-                          selectedCategory = category;
-                          attributeControllers.clear();
-                          tableAttributes.clear();
-                          if (category != null && category.attributes.isNotEmpty) {
-                            for (var attribute in category.attributes.where((a) => !a.isIndividual)) {
-                              attributeControllers[attribute.name] = TextEditingController();
-                            }
-                          }
-                        });
-                      },
-                      subCategories: subCategories,
-                      isValid: isCategoryValid,
-                    ),
+                    
                     const SizedBox(height: 16),
                     if (selectedCategory != null && selectedCategory!.attributes.isNotEmpty)
                       Column(

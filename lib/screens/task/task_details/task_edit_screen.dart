@@ -1878,6 +1878,22 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                             return;
                           }
 
+                          // Проверяем обязательные поля: Исполнители
+                          if (!_hasTaskCreateForMySelfPermission && (selectedUsers == null || selectedUsers!.isEmpty)) {
+                            _showErrorSnackBar(
+                              '${AppLocalizations.of(context)!.translate('assignees_list')} - ${AppLocalizations.of(context)!.translate('field_required')}',
+                            );
+                            return;
+                          }
+
+                          // Проверяем обязательные поля: Проект
+                          if (selectedProject == null || selectedProject!.isEmpty) {
+                            _showErrorSnackBar(
+                              '${AppLocalizations.of(context)!.translate('project')} - ${AppLocalizations.of(context)!.translate('field_required')}',
+                            );
+                            return;
+                          }
+
                           List<Map<String, dynamic>> customFieldList = [];
                           List<Map<String, int>> directoryValues = [];
 

@@ -1573,7 +1573,24 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
             }
             break;
           case 'project':
-            // Проект не обязателен
+            // Проект обязателен
+            if (selectedProject == null || selectedProject!.isEmpty) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    '${AppLocalizations.of(context)!.translate('project')} - ${AppLocalizations.of(context)!.translate('field_required')}',
+                    style: TextStyle(
+                      fontFamily: 'Gilroy',
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.white,
+                    ),
+                  ),
+                  backgroundColor: Colors.red,
+                ),
+              );
+              return;
+            }
             break;
           case 'task_status_id':
             // Статус задачи уже установлен из widget.statusId, валидация не требуется

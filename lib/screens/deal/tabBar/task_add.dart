@@ -463,6 +463,61 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
         );
         return;
       }
+      
+      // Проверяем обязательные поля: Исполнители
+      if (selectedUsers == null || selectedUsers!.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              '${AppLocalizations.of(context)!.translate('assignees_list')} - ${AppLocalizations.of(context)!.translate('field_required')}',
+              style: TextStyle(
+                fontFamily: 'Gilroy',
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                color: Colors.white,
+              ),
+            ),
+            behavior: SnackBarBehavior.floating,
+            margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            backgroundColor: Colors.red,
+            elevation: 3,
+            padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+            duration: Duration(seconds: 3),
+          ),
+        );
+        return;
+      }
+      
+      // Проверяем обязательные поля: Проект
+      if (selectedProject == null || selectedProject!.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              '${AppLocalizations.of(context)!.translate('project')} - ${AppLocalizations.of(context)!.translate('field_required')}',
+              style: TextStyle(
+                fontFamily: 'Gilroy',
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                color: Colors.white,
+              ),
+            ),
+            behavior: SnackBarBehavior.floating,
+            margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            backgroundColor: Colors.red,
+            elevation: 3,
+            padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+            duration: Duration(seconds: 3),
+          ),
+        );
+        return;
+      }
+      
       _createTask();
     } else {
       //print('TaskAddFromDeal: Form validation failed');

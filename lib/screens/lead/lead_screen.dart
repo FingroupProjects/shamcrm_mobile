@@ -1672,30 +1672,10 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
                   (Route<dynamic> route) => false,
             );
           } else {
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    state.message,
-                    style: TextStyle(
-                      fontFamily: 'Gilroy',
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.white,
-                    ),
-                  ),
-                  backgroundColor: Colors.red,
-                  duration: Duration(seconds: 3),
-                  action: SnackBarAction(
-                    label: 'Повторить',
-                    textColor: Colors.white,
-                    onPressed: () {
-                      // При ошибке пробуем еще раз с принудительным обновлением
-                      context.read<LeadBloc>().add(FetchLeadStatuses(forceRefresh: true));
-                    },
-                  ),
-                ),
-              );
+            // ✅ УБРАНО: Не показываем непереведенный SnackBar с кнопкой "Повторить"
+            // Переведенные сообщения показываются в других местах
+            if (kDebugMode) {
+              debugPrint('LeadScreen: Error state - ${state.message}');
             }
           }
         }

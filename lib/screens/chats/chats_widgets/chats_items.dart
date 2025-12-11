@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:html/parser.dart' show parse;
+import 'package:html/dom.dart' as dom;
 
 class ChatItem {
   final String name;
@@ -298,71 +300,101 @@ class ChatListItem extends StatelessWidget {
   }
 
   List<TextSpan> parseHtmlToTextSpans(String html, TextStyle baseStyle) {
-    final RegExp htmlRegExp = RegExp(
-      r'<(strong|em|s|a href="([^"]*)"[^>]*)(.*?)>(.*?)</\1>',
-      multiLine: true,
-      caseSensitive: false,
-    );
+    // Проверяем, содержит ли текст HTML-теги
+    final bool isHtml = html.contains('<') && html.contains('>');
+    
+    if (!isHtml) {
+      // Простой текст - возвращаем как есть
+      return [TextSpan(text: html, style: baseStyle)];
+    }
 
+    // Предобработка HTML: убираем служебные теги
+    String cleanedHtml = html
+        // Убираем служебные теги Quill-редактора
+        .replaceAll(RegExp(r'<span class="ql-cursor"[^>]*>.*?</span>', dotAll: true), '')
+        .replaceAll(RegExp(r'<span[^>]*>\s*</span>'), '') // Пустые span
+        // Убираем невидимые символы
+        .replaceAll(RegExp(r'[\u200B-\u200D\uFEFF]'), '');
+
+    // Парсим HTML с помощью HTML parser для правильной обработки вложенных тегов
+    final document = parse(cleanedHtml);
     List<TextSpan> spans = [];
-    int lastEnd = 0;
 
-    for (final match in htmlRegExp.allMatches(html)) {
-      if (match.start > lastEnd) {
-        spans.add(TextSpan(
-          text: html.substring(lastEnd, match.start),
-          style: baseStyle,
-        ));
+    void parseNode(dom.Node node, TextStyle currentStyle) {
+      if (node is dom.Text) {
+        final textContent = node.text.trim();
+        if (textContent.isNotEmpty) {
+          spans.add(TextSpan(text: textContent, style: currentStyle));
+        }
+      } else if (node is dom.Element) {
+        // Игнорируем служебные элементы
+        if (node.localName == 'span' && 
+            (node.attributes['class']?.contains('ql-') ?? false)) {
+          return; // Пропускаем служебные span от Quill
+        }
+        
+        TextStyle newStyle = currentStyle;
+        
+        // Обработка форматирования
+        if (node.localName == 'strong' || node.localName == 'b') {
+          newStyle = newStyle.copyWith(fontWeight: FontWeight.bold);
+        } else if (node.localName == 'em' || node.localName == 'i') {
+          newStyle = newStyle.copyWith(fontStyle: FontStyle.italic);
+        } else if (node.localName == 's' || node.localName == 'strike' || node.localName == 'del') {
+          newStyle = newStyle.copyWith(decoration: TextDecoration.lineThrough);
+        } else if (node.localName == 'u') {
+          newStyle = newStyle.copyWith(decoration: TextDecoration.underline);
+        } else if (node.localName == 'a') {
+          final url = node.attributes['href'] ?? '';
+          final linkText = node.text.trim();
+          if (linkText.isNotEmpty) {
+            spans.add(
+              TextSpan(
+                text: linkText,
+                style: newStyle.copyWith(
+                  color: Colors.blue,
+                  decoration: TextDecoration.underline,
+                ),
+                recognizer: TapGestureRecognizer()
+                  ..onTap = () async {
+                    final uri = Uri.parse(url);
+                    if (await canLaunchUrl(uri)) {
+                      await launchUrl(uri, mode: LaunchMode.externalApplication);
+                    }
+                  },
+              ),
+            );
+          }
+          return;
+        } else if (node.localName == 'br') {
+          spans.add(TextSpan(text: ' ', style: currentStyle));
+          return;
+        } else if (node.localName == 'p' || 
+                   node.localName == 'div' || 
+                   node.localName == 'span') {
+          // Блочные элементы и span - просто обрабатываем содержимое
+          for (var child in node.nodes) {
+            parseNode(child, newStyle);
+          }
+          return;
+        }
+
+        // Обрабатываем дочерние узлы
+        for (var child in node.nodes) {
+          parseNode(child, newStyle);
+        }
       }
-
-      String tag = match.group(1)!.toLowerCase();
-      String content = match.group(4)!;
-      String? href = tag.startsWith('a href') ? match.group(2) : null;
-
-      if (tag == 'strong') {
-        spans.add(TextSpan(
-          text: content,
-          style: baseStyle.copyWith(fontWeight: FontWeight.bold),
-        ));
-      } else if (tag == 'em') {
-        spans.add(TextSpan(
-          text: content,
-          style: baseStyle.copyWith(fontStyle: FontStyle.italic),
-        ));
-      } else if (tag == 's') {
-        spans.add(TextSpan(
-          text: content,
-          style: baseStyle.copyWith(decoration: TextDecoration.lineThrough),
-        ));
-      } else if (tag.startsWith('a') && href != null) {
-        spans.add(TextSpan(
-          text: content,
-          style: baseStyle.copyWith(
-            color: Colors.blue,
-            decoration: TextDecoration.underline,
-          ),
-          recognizer: TapGestureRecognizer()
-            ..onTap = () async {
-              final url = Uri.parse(href);
-              if (await canLaunchUrl(url)) {
-                await launchUrl(url, mode: LaunchMode.externalApplication);
-              }
-            },
-        ));
-      }
-
-      lastEnd = match.end;
     }
 
-    if (lastEnd < html.length) {
-      spans.add(TextSpan(
-        text: html.substring(lastEnd),
-        style: baseStyle,
-      ));
+    for (var node in document.body!.nodes) {
+      parseNode(node, baseStyle);
     }
 
+    // Если нет span'ов, возвращаем исходный текст без тегов
     if (spans.isEmpty) {
-      spans.add(TextSpan(text: html, style: baseStyle));
+      // Убираем все HTML теги и возвращаем чистый текст
+      final plainText = cleanedHtml.replaceAll(RegExp(r'<[^>]*>'), '').trim();
+      return [TextSpan(text: plainText.isNotEmpty ? plainText : html, style: baseStyle)];
     }
 
     return spans;

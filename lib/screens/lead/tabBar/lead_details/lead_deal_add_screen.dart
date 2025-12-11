@@ -55,6 +55,8 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
   List<CustomField> customFields = [];
   bool isStartDateInvalid = false;
   bool isEndDateInvalid = false;
+  bool isTitleInvalid = false; // Для валидации названия
+  bool isManagerInvalid = false; // Для валидации менеджера
   bool _showAdditionalFields = false;
   List<FileHelper> files = [];
 
@@ -464,9 +466,11 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
                             onSelectDealName: (String dealName) {
                               setState(() {
                                 titleController.text = dealName;
+                                isTitleInvalid = dealName.isEmpty; // Сбрасываем ошибку при вводе
                                 //print('LeadDealAddScreen: Deal name selected: $dealName');
                               });
                             },
+                            hasError: isTitleInvalid, // Передаем флаг ошибки
                           ),
                           const SizedBox(height: 8),
                           DealStatusWidget(
@@ -484,9 +488,11 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
                             onSelectManager: (ManagerData selectedManagerData) {
                               setState(() {
                                 selectedManager = selectedManagerData.id.toString();
+                                isManagerInvalid = false; // Сбрасываем ошибку при выборе
                                 //print('LeadDealAddScreen: Manager selected: ${selectedManagerData.id}');
                               });
                             },
+                            hasError: isManagerInvalid, // Передаем флаг ошибки
                           ),
                           const SizedBox(height: 8),
                           CustomTextFieldDate(
@@ -644,6 +650,11 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
 
   void _submitForm() {
     //print('LeadDealAddScreen: Submitting form with title: ${titleController.text}, manager: $selectedManager, dealStatus: $selectedDealStatus');
+    setState(() {
+      isTitleInvalid = titleController.text.isEmpty;
+      isManagerInvalid = selectedManager == null;
+    });
+    
     if (_formKey.currentState!.validate() && titleController.text.isNotEmpty && selectedManager != null && selectedDealStatus != null) {
       _createLeadDeal();
     } else {

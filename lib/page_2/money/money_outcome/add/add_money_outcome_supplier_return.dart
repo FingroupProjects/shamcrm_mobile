@@ -34,6 +34,7 @@ class _AddMoneyOutcomeSupplierReturnState extends State<AddMoneyOutcomeSupplierR
   CashRegisterData? selectedCashRegister;
   List<SupplierData> suppliersList = [];
   bool _isLoading = false;
+  bool _isSupplierInvalid = false; // Флаг для отображения ошибки валидации
 
   @override
   void initState() {
@@ -58,6 +59,9 @@ class _AddMoneyOutcomeSupplierReturnState extends State<AddMoneyOutcomeSupplierR
     if (!_formKey.currentState!.validate()) return;
 
     if (_selectedSupplier == null) {
+      setState(() {
+        _isSupplierInvalid = true;
+      });
       _showSnackBar(
         AppLocalizations.of(context)!.translate('select_supplier') ?? 'Пожалуйста, выберите поставщика',
         false,
@@ -217,7 +221,10 @@ class _AddMoneyOutcomeSupplierReturnState extends State<AddMoneyOutcomeSupplierR
               decoration: CustomDropdownDecoration(
                 closedFillColor: const Color(0xffF4F7FD),
                 expandedFillColor: Colors.white,
-                closedBorder: Border.all(color: const Color(0xffF4F7FD), width: 1),
+                closedBorder: Border.all(
+                  color: _isSupplierInvalid ? Colors.red : const Color(0xffF4F7FD), 
+                  width: _isSupplierInvalid ? 2 : 1,
+                ),
                 closedBorderRadius: BorderRadius.circular(12),
                 expandedBorder: Border.all(color: const Color(0xffF4F7FD), width: 1),
                 expandedBorderRadius: BorderRadius.circular(12),
@@ -260,6 +267,7 @@ class _AddMoneyOutcomeSupplierReturnState extends State<AddMoneyOutcomeSupplierR
                 if (value != null && mounted) {
                   setState(() {
                     _selectedSupplier = value;
+                    _isSupplierInvalid = false; // Сбрасываем ошибку при выборе
                   });
                   FocusScope.of(context).unfocus();
                 }
@@ -267,6 +275,19 @@ class _AddMoneyOutcomeSupplierReturnState extends State<AddMoneyOutcomeSupplierR
             );
           },
         ),
+        if (_isSupplierInvalid)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Text(
+              AppLocalizations.of(context)!.translate('field_required') ?? 'Поле обязательно для заполнения',
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w400,
+                fontFamily: 'Gilroy',
+                color: Colors.red,
+              ),
+            ),
+          ),
       ],
     );
   }
