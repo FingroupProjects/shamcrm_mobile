@@ -1,5 +1,8 @@
 import 'dart:io';
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/bloc/field_configuration/field_configuration_bloc.dart';
+import 'package:crm_task_manager/bloc/field_configuration/field_configuration_event.dart';
+import 'package:crm_task_manager/bloc/field_configuration/field_configuration_state.dart';
 import 'package:crm_task_manager/bloc/main_field/main_field_bloc.dart';
 import 'package:crm_task_manager/bloc/manager_list/manager_bloc.dart';
 import 'package:crm_task_manager/bloc/project_task/project_task_bloc.dart';
@@ -14,6 +17,8 @@ import 'package:crm_task_manager/custom_widget/custom_create_field_widget.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_withPriority.dart';
+import 'package:crm_task_manager/models/field_configuration.dart';
+import 'package:crm_task_manager/models/file_helper.dart';
 import 'package:crm_task_manager/models/main_field_model.dart';
 import 'package:crm_task_manager/models/project_task_model.dart';
 import 'package:crm_task_manager/models/task_model.dart';
@@ -25,11 +30,14 @@ import 'package:crm_task_manager/screens/lead/tabBar/lead_details/main_field_dro
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/task/task_details/project_list_task.dart';
 import 'package:crm_task_manager/screens/task/task_details/status_list.dart';
+import 'package:crm_task_manager/screens/task/task_details/task_status_list_edit.dart';
 import 'package:crm_task_manager/screens/task/task_details/user_list.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 
 class TaskAddFromDeal extends StatefulWidget {
@@ -43,14 +51,18 @@ class TaskAddFromDeal extends StatefulWidget {
 
 class _TaskAddFromDealState extends State<TaskAddFromDeal> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  final ApiService _apiService = ApiService();
+  
   final TextEditingController nameController = TextEditingController();
   final TextEditingController startDateController = TextEditingController();
   final TextEditingController endDateController = TextEditingController();
   final TextEditingController descriptionController = TextEditingController();
 
+  // Файлы
   List<String> selectedFiles = [];
   List<String> fileNames = [];
   List<String> fileSizes = [];
+  
   int? selectedPriority;
   String? selectedProject;
   int? selectedStatusId;
@@ -58,6 +70,20 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
   List<CustomField> customFields = [];
   bool isEndDateInvalid = false;
   bool _showAdditionalFields = false;
+  
+  // Флаги для валидации обязательных полей
+  bool isExecutorInvalid = false;
+  bool isProjectInvalid = false;
+
+  // Режим настроек (как в task_add_screen.dart)
+  bool isSettingsMode = false;
+  bool isSavingFieldOrder = false;
+  List<FieldConfiguration>? originalFieldConfigurations;
+  final GlobalKey _addFieldButtonKey = GlobalKey();
+
+  // Конфигурация полей с сервера
+  List<FieldConfiguration> fieldConfigurations = [];
+  bool isConfigurationLoaded = false;
 
   @override
   void initState() {
@@ -66,7 +92,18 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
     context.read<GetTaskProjectBloc>().add(GetTaskProjectEv());
     context.read<UserTaskBloc>().add(FetchUsers());
     _setDefaultValues();
-    _fetchAndAddCustomFields();
+    
+    // Загружаем конфигурацию полей
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadFieldConfiguration();
+    });
+  }
+  
+  Future<void> _loadFieldConfiguration() async {
+    if (kDebugMode) {
+      print('TaskAddFromDeal: Loading field configuration for tasks');
+    }
+    context.read<FieldConfigurationBloc>().add(FetchFieldConfiguration('tasks'));
   }
 
   void _fetchAndAddCustomFields() async {
@@ -466,6 +503,9 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
       
       // Проверяем обязательные поля: Исполнители
       if (selectedUsers == null || selectedUsers!.isEmpty) {
+        setState(() {
+          isExecutorInvalid = true;
+        });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
@@ -493,6 +533,9 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
       
       // Проверяем обязательные поля: Проект
       if (selectedProject == null || selectedProject!.isEmpty) {
+        setState(() {
+          isProjectInvalid = true;
+        });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
@@ -833,9 +876,11 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
                             onSelectUsers: (List<UserData> selectedUsersData) {
                               setState(() {
                                 selectedUsers = selectedUsersData.map((user) => user.id.toString()).toList();
+                                isExecutorInvalid = false; // Сбрасываем ошибку при выборе
                                 //print('TaskAddFromDeal: Selected users: $selectedUsers');
                               });
                             },
+                            hasError: isExecutorInvalid, // Передаем флаг ошибки
                           ),
                           const SizedBox(height: 8),
                           ProjectTaskGroupWidget(
@@ -843,9 +888,11 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
                             onSelectProject: (ProjectTask selectedProjectData) {
                               setState(() {
                                 selectedProject = selectedProjectData.id.toString();
+                                isProjectInvalid = false; // Сбрасываем ошибку при выборе
                                 //print('TaskAddFromDeal: Selected project: ${selectedProjectData.id}');
                               });
                             },
+                            hasError: isProjectInvalid, // Передаем флаг ошибки
                           ),
                           const SizedBox(height: 8),
                           CustomTextFieldDate(

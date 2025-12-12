@@ -63,6 +63,10 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
   String? selectedStatus;
   List<String>? selectedUsers;
   List<CustomField> customFields = [];
+  
+  // Флаги для валидации обязательных полей
+  bool isExecutorInvalid = false;
+  bool isProjectInvalid = false;
   bool isEndDateInvalid = false;
   bool _hasTaskCreatePermission = false;
   bool _hasTaskCreateForMySelfPermission = false;
@@ -235,8 +239,10 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
             onSelectUsers: (List<UserData> selectedUsersData) {
               setState(() {
                 selectedUsers = selectedUsersData.map((user) => user.id.toString()).toList();
+                isExecutorInvalid = false; // Сбрасываем ошибку при выборе
               });
             },
+            hasError: isExecutorInvalid, // Передаем флаг ошибки
           );
         } else {
           return SizedBox.shrink();
@@ -248,8 +254,10 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
           onSelectProject: (ProjectTask selectedProjectData) {
             setState(() {
               selectedProject = selectedProjectData.id.toString();
+              isProjectInvalid = false; // Сбрасываем ошибку при выборе
             });
           },
+          hasError: isProjectInvalid, // Передаем флаг ошибки
         );
       case 'deadline':
         return CustomTextFieldDate(
@@ -1555,6 +1563,9 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
             break;
           case 'executor':
             if (selectedUsers == null || selectedUsers!.isEmpty) {
+              setState(() {
+                isExecutorInvalid = true;
+              });
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(
@@ -1575,6 +1586,9 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
           case 'project':
             // Проект обязателен
             if (selectedProject == null || selectedProject!.isEmpty) {
+              setState(() {
+                isProjectInvalid = true;
+              });
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(

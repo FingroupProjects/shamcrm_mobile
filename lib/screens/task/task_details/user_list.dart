@@ -10,12 +10,14 @@ class UserMultiSelectWidget extends StatefulWidget {
   final List<String>? selectedUsers;
   final Function(List<UserData>) onSelectUsers;
   final String? customLabelText; // ✅ НОВОЕ: для кастомного заголовка
+  final bool hasError; // Флаг для отображения ошибки
 
   UserMultiSelectWidget({
     super.key,
     required this.onSelectUsers,
     this.selectedUsers,
     this.customLabelText, // ✅ НОВОЕ
+    this.hasError = false,
   });
 
   @override
@@ -45,7 +47,7 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
   @override
   void initState() {
     super.initState();
-    print('🔵 INITIAL USERS (widget.selectedUsers): ${widget.selectedUsers}');
+    // Debug логи убраны для производительности
     context.read<GetAllClientBloc>().add(GetAllClientEv());
   }
 
@@ -132,8 +134,8 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                 color: const Color(0xFFF4F7FD),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  width: 1,
-                  color: field.hasError ? Colors.red : Colors.white,
+                  width: widget.hasError ? 2 : 1,
+                  color: widget.hasError ? Colors.red : Colors.white,
                 ),
               ),
               child: BlocConsumer<GetAllClientBloc, GetAllClientState>(
@@ -188,10 +190,6 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                       .where((selectedUser) => currentUsersList.any((u) => u.id == selectedUser.id))
                       .map((selectedUser) => currentUsersList.firstWhere((u) => u.id == selectedUser.id))
                       .toList();
-
-                  print('🟣 BUILDER - Current users list IDs: ${currentUsersList.map((u) => u.id).toList()}');
-                  print('🟣 BUILDER - Selected users data IDs: ${selectedUsersData.map((u) => u.id).toList()}');
-                  print('🟣 BUILDER - Synced selected users IDs: ${syncedSelectedUsers.map((u) => u.id).toList()}');
 
                   return CustomDropdown<UserData>.multiSelectSearch(
                     items: currentDisplayList,
@@ -306,19 +304,23 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                       final filteredValues =
                           values.where((user) => user.id != -1).toList();
                       
-                      print('🔴 ON_LIST_CHANGED - Selected users: ${filteredValues.map((u) => '${u.id}: ${u.name} ${u.lastname}').toList()}');
-                      print('🔴 ON_LIST_CHANGED - Selected users IDs: ${filteredValues.map((u) => u.id).toList()}');
+                      // Debug логи убраны для производительности
                       
                       // Проверяем, изменились ли выбранные пользователи
                       final currentIds = selectedUsersData.map((u) => u.id).toList()..sort();
                       final newIds = filteredValues.map((u) => u.id).toList()..sort();
                       
                       if (!listEquals(currentIds, newIds)) {
-                        setState(() {
-                          selectedUsersData = filteredValues;
+                        // Используем SchedulerBinding чтобы избежать setState во время build
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          if (mounted) {
+                            setState(() {
+                              selectedUsersData = filteredValues;
+                            });
+                            widget.onSelectUsers(filteredValues);
+                            field.didChange(filteredValues);
+                          }
                         });
-                        widget.onSelectUsers(filteredValues);
-                        field.didChange(filteredValues);
                       }
                     },
                   );
@@ -334,6 +336,19 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                     color: Colors.red,
                     fontSize: 14,
                     fontWeight: FontWeight.w400,
+                  ),
+                ),
+              ),
+            if (widget.hasError)
+              Padding(
+                padding: const EdgeInsets.only(top: 4, left: 0),
+                child: Text(
+                  AppLocalizations.of(context)!.translate('field_required'),
+                  style: const TextStyle(
+                    color: Colors.red,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w400,
+                    fontFamily: 'Gilroy',
                   ),
                 ),
               ),
