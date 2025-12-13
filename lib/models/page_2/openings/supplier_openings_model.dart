@@ -8,13 +8,25 @@ class SupplierOpeningsResponse {
   });
 
   factory SupplierOpeningsResponse.fromJson(Map<String, dynamic> json) {
-    return SupplierOpeningsResponse(
-      result: json["result"] == null
-          ? []
-          : List<SupplierOpening>.from(
-              json["result"]!.map((x) => SupplierOpening.fromJson(x))),
-      errors: json["errors"],
-    );
+    if (json["result"] != null) {
+      final resultData = json["result"];
+      if (resultData is Map<String, dynamic> && resultData["data"] != null) {
+        // Формат: {"result": {"data": [...]}}
+        return SupplierOpeningsResponse(
+          result: (resultData["data"] as List?)
+              ?.map((x) => SupplierOpening.fromJson(x as Map<String, dynamic>))
+              .toList() ?? [],
+          errors: json["errors"],
+        );
+      } else if (resultData is List) {
+        // Формат: {"result": [...]}
+        return SupplierOpeningsResponse(
+          result: resultData.map((x) => SupplierOpening.fromJson(x as Map<String, dynamic>)).toList(),
+          errors: json["errors"],
+        );
+      }
+    }
+    return SupplierOpeningsResponse(result: [], errors: json["errors"]);
   }
 }
 

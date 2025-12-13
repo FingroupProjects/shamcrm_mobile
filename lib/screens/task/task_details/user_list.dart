@@ -61,10 +61,6 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
         .where((user) => widget.selectedUsers!.contains(user.id.toString()))
         .toList();
 
-    print('🟡 SYNC - Initial (widget.selectedUsers): ${widget.selectedUsers}');
-    print('🟡 SYNC - All users count: ${usersList.length}');
-    print('🟡 SYNC - Selected users: ${newSelectedUsersData.map((u) => '${u.id}: ${u.name} ${u.lastname}').toList()}');
-
     // Проверяем, изменились ли выбранные пользователи
     if (!listEquals(
       selectedUsersData.map((u) => u.id).toList()..sort(),
@@ -144,10 +140,6 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                   if (state is GetAllClientSuccess) {
                     final newUsersList = state.dataUser.result ?? [];
                     
-                    print('🟢 LISTENER - All users count: ${newUsersList.length}');
-                    print('🟢 LISTENER - All users: ${newUsersList.map((u) => '${u.id}: ${u.name} ${u.lastname}').toList()}');
-                    print('🟢 LISTENER - Initial (widget.selectedUsers): ${widget.selectedUsers}');
-                    
                     // Обновляем состояние только если список пользователей изменился
                     if (!listEquals(
                       usersList.map((u) => u.id).toList()..sort(),
@@ -163,8 +155,6 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                         newSelectedUsersData = [];
                       }
                       
-                      print('🟢 LISTENER - Selected users after sync: ${newSelectedUsersData.map((u) => '${u.id}: ${u.name} ${u.lastname}').toList()}');
-                      
                       setState(() {
                         usersList = newUsersList;
                         displayUsersList = [selectAllItem, ...usersList];
@@ -175,25 +165,17 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                 },
                 builder: (context, state) {
                   // В builder только читаем данные, не изменяем состояние
-                  final currentUsersList = state is GetAllClientSuccess
-                      ? (state.dataUser.result ?? [])
-                      : usersList;
+                  final currentUsersList = usersList;
                   
                   final currentDisplayList = currentUsersList.isNotEmpty
                       ? [selectAllItem, ...currentUsersList]
                       : displayUsersList;
 
-                  // Синхронизируем selectedUsersData с объектами из currentUsersList
-                  // чтобы избежать ошибки "Initial items must match with the items in the items list"
-                  // Используем объекты из currentUsersList, чтобы они совпадали по ссылке с items
-                  final syncedSelectedUsers = selectedUsersData
-                      .where((selectedUser) => currentUsersList.any((u) => u.id == selectedUser.id))
-                      .map((selectedUser) => currentUsersList.firstWhere((u) => u.id == selectedUser.id))
-                      .toList();
-
+                  // Используем selectedUsersData напрямую без синхронизации в build()
+                  // Синхронизация происходит только в listener при изменении данных
                   return CustomDropdown<UserData>.multiSelectSearch(
                     items: currentDisplayList,
-                    initialItems: syncedSelectedUsers,
+                    initialItems: selectedUsersData,
                     searchHintText:
                         AppLocalizations.of(context)!.translate('search'),
                     overlayHeight: 400,
@@ -215,7 +197,7 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                       // Проверяем, является ли элемент "Выбрать всех"
                       final isSelectAll = item.id == -1;
                       final allSelected =
-                          syncedSelectedUsers.length == currentUsersList.length &&
+                          selectedUsersData.length == currentUsersList.length &&
                           currentUsersList.isNotEmpty;
 
                       return ListTile(
@@ -304,23 +286,18 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                       final filteredValues =
                           values.where((user) => user.id != -1).toList();
                       
-                      // Debug логи убраны для производительности
-                      
                       // Проверяем, изменились ли выбранные пользователи
                       final currentIds = selectedUsersData.map((u) => u.id).toList()..sort();
                       final newIds = filteredValues.map((u) => u.id).toList()..sort();
                       
+                      // Вызываем callback ТОЛЬКО если данные реально изменились
                       if (!listEquals(currentIds, newIds)) {
-                        // Используем SchedulerBinding чтобы избежать setState во время build
-                        WidgetsBinding.instance.addPostFrameCallback((_) {
-                          if (mounted) {
-                            setState(() {
-                              selectedUsersData = filteredValues;
-                            });
-                            widget.onSelectUsers(filteredValues);
-                            field.didChange(filteredValues);
-                          }
+                        setState(() {
+                          selectedUsersData = filteredValues;
                         });
+                        // Вызываем callback только после обновления состояния
+                        widget.onSelectUsers(filteredValues);
+                        field.didChange(filteredValues);
                       }
                     },
                   );

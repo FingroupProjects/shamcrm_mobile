@@ -11,6 +11,7 @@ import 'package:crm_task_manager/models/deal_model.dart';
 import 'package:crm_task_manager/models/deal_name_list.dart';
 import 'package:crm_task_manager/models/lead_multi_model.dart';
 import 'package:crm_task_manager/models/manager_model.dart';
+import 'package:crm_task_manager/models/region_model.dart';
 import 'package:crm_task_manager/models/sales_funnel_model.dart';
 import 'package:crm_task_manager/screens/auth/login_screen.dart';
 import 'package:crm_task_manager/screens/deal/deal_cache.dart';
@@ -70,6 +71,7 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
   String _lastSearchQuery = "";
 
   List<ManagerData> _selectedManagers = [];
+  List<RegionData> _selectedRegions = [];
   List<LeadData> _selectedLeads = [];
   int? _selectedStatuses;
   DateTime? _fromDate;
@@ -80,7 +82,7 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
   Map<String, List<String>>? _selectedDealCustomFieldFilters;
 
   List<ManagerData> _initialselectedManagers = [];
-
+  List<RegionData> _initialselectedRegions = [];
   List<LeadData> _initialselectedLeads = [];
   int? _initialSelStatus;
   DateTime? _intialFromDate;
@@ -375,6 +377,7 @@ void initState() {
   // Метод для проверки наличия активных фильтров
   bool _hasActiveFilters() {
     return _selectedManagers.isNotEmpty ||
+        _selectedRegions.isNotEmpty ||
         _selectedLeads.isNotEmpty ||
         _selectedStatuses != null ||
         _fromDate != null ||
@@ -550,6 +553,9 @@ void initState() {
       managerIds: _selectedManagers.isNotEmpty
           ? _selectedManagers.map((manager) => manager.id).toList()
           : null,
+      regionsIds: _selectedRegions.isNotEmpty
+          ? _selectedRegions.map((region) => region.id).toList()
+          : null,
       leadIds: _selectedLeads.isNotEmpty
           ? _selectedLeads.map((lead) => lead.id).toList()
           : null,
@@ -575,6 +581,7 @@ void initState() {
         _showCustomTabBar = true;
         _isSearching = false;
         _selectedManagers = [];
+        _selectedRegions = [];
         _selectedLeads = [];
         _selectedStatuses = null;
         _fromDate = null;
@@ -585,6 +592,7 @@ void initState() {
         _selectedDealNames = [];
         _selectedDealCustomFieldFilters = null;
         _initialselectedManagers = [];
+        _initialselectedRegions = [];
         _initialselectedLeads = [];
         _initialSelStatus = null;
         _intialFromDate = null;
@@ -616,6 +624,7 @@ Future<void> _handleManagerSelected(Map managers) async {
       _lastSearchQuery = '';
 
       _selectedManagers = managers['managers'] ?? [];
+      _selectedRegions = managers['regions'] ?? [];
       _selectedLeads = managers['leads'] ?? [];
       _selectedStatuses = managers['statuses'];
       _fromDate = managers['fromDate'];
@@ -635,6 +644,7 @@ Future<void> _handleManagerSelected(Map managers) async {
 
       // Сохраняем initial значения
       _initialselectedManagers = managers['managers'] ?? [];
+      _initialselectedRegions = managers['regions'] ?? [];
       _initialselectedLeads = managers['leads'] ?? [];
       _initialSelStatus = managers['statuses'];
       _intialFromDate = managers['fromDate'];
@@ -651,6 +661,9 @@ Future<void> _handleManagerSelected(Map managers) async {
   _dealBloc.add(FetchDealStatusesWithFilters(
     managerIds: _selectedManagers.isNotEmpty
         ? _selectedManagers.map((manager) => manager.id).toList()
+        : null,
+    regionsIds: _selectedRegions.isNotEmpty
+        ? _selectedRegions.map((region) => region.id).toList()
         : null,
     leadIds: _selectedLeads.isNotEmpty
         ? _selectedLeads.map((lead) => lead.id).toList()
@@ -797,6 +810,7 @@ Future<void> _handleManagerSelected(Map managers) async {
             onDateRangeDealSelected: _handleDateSelected,
             onStatusAndDateRangeDealSelected: _handleStatusAndDateSelected,
             initialManagersDeal: _initialselectedManagers,
+            initialRegionsDeal: _initialselectedRegions,
             initialLeadsDeal: _initialselectedLeads,
             initialManagerDealStatuses: _initialSelStatus,
             initialManagerDealFromDate: _intialFromDate,
@@ -828,6 +842,7 @@ Future<void> _handleManagerSelected(Map managers) async {
                 });
                 if (_searchController.text.isEmpty) {
                   if (_selectedManagers.isEmpty &&
+                      _selectedRegions.isEmpty &&
                       _selectedStatuses == null &&
                       _fromDate == null &&
                       _toDate == null &&
@@ -850,6 +865,9 @@ Future<void> _handleManagerSelected(Map managers) async {
                           ? _selectedManagers
                               .map((manager) => manager.id)
                               .toList()
+                          : null,
+                      regionsIds: _selectedRegions.isNotEmpty
+                          ? _selectedRegions.map((region) => region.id).toList()
                           : null,
                       statusIds: _selectedStatuses,
                       fromDate: _fromDate,
@@ -1437,6 +1455,9 @@ Future<void> _handleManagerSelected(Map managers) async {
                       managerIds: hasActiveFilters && _selectedManagers.isNotEmpty
                           ? _selectedManagers.map((manager) => manager.id).toList()
                           : null,
+                      regionsIds: hasActiveFilters && _selectedRegions.isNotEmpty
+                          ? _selectedRegions.map((region) => region.id).toList()
+                          : null,
                       leadIds: hasActiveFilters && _selectedLeads.isNotEmpty
                           ? _selectedLeads.map((lead) => lead.id).toList()
                           : null,
@@ -1595,6 +1616,9 @@ Future<void> _handleManagerSelected(Map managers) async {
                         query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
                         managerIds: _selectedManagers.isNotEmpty
                             ? _selectedManagers.map((manager) => manager.id).toList()
+                            : null,
+                        regionsIds: _selectedRegions.isNotEmpty
+                            ? _selectedRegions.map((region) => region.id).toList()
                             : null,
                         leadIds: _selectedLeads.isNotEmpty
                             ? _selectedLeads.map((lead) => lead.id).toList()

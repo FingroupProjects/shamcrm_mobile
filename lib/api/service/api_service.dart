@@ -3060,6 +3060,7 @@ Future<List<Deal>> getDeals(
   int perPage = 20,
   String? search,
   List<int>? managers,
+  List<int>? regions,
   List<int>? leads,
   int? statuses,
   DateTime? fromDate,
@@ -3096,6 +3097,7 @@ Future<List<Deal>> getDeals(
   // Проверяем наличие фильтров
   bool hasFilters = (search != null && search.isNotEmpty) ||
       (managers != null && managers.isNotEmpty) ||
+      (regions != null && regions.isNotEmpty) ||
       (leads != null && leads.isNotEmpty) ||
       (fromDate != null) ||
       (toDate != null) ||
@@ -3119,6 +3121,12 @@ Future<List<Deal>> getDeals(
   if (managers != null && managers.isNotEmpty) {
     for (int i = 0; i < managers.length; i++) {
       path += '&managers[$i]=${managers[i]}';
+    }
+  }
+
+  if (regions != null && regions.isNotEmpty) {
+    for (int i = 0; i < regions.length; i++) {
+      path += '&regions[$i]=${regions[i]}';
     }
   }
 
@@ -9899,6 +9907,7 @@ Future<int> DeleteAllNotifications() async {
     int? statusId,
     String? query,
     List<String>? managerIds,
+    List<String>? regionsIds,
     List<String>? leadIds,
     DateTime? fromDate,
     DateTime? toDate,
@@ -9916,6 +9925,11 @@ Future<int> DeleteAllNotifications() async {
     if (managerIds != null && managerIds.isNotEmpty) {
       for (int i = 0; i < managerIds.length; i++) {
         url += '&managers[$i]=${managerIds[i]}';
+      }
+    }
+    if (regionsIds != null && regionsIds.isNotEmpty) {
+      for (int i = 0; i < regionsIds.length; i++) {
+        url += '&regions[$i]=${regionsIds[i]}';
       }
     }
     if (leadIds != null && leadIds.isNotEmpty) {

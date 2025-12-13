@@ -13,6 +13,7 @@ abstract class DealEvent {}
 
 class FetchDealStatusesWithFilters extends DealEvent {
   final List<int>? managerIds;
+  final List<int>? regionsIds;
   final List<int>? leadIds;
   final int? statusIds;
   final DateTime? fromDate;
@@ -26,6 +27,7 @@ class FetchDealStatusesWithFilters extends DealEvent {
 
   FetchDealStatusesWithFilters({
     this.managerIds,
+    this.regionsIds,
     this.leadIds,
     this.statusIds,
     this.fromDate,
@@ -43,6 +45,7 @@ class FetchDealStatusesWithFilters extends DealEvent {
     final int statusId;
     final String? query;
     final List<int>? managerIds;
+    final List<int>? regionsIds;
     final List<int>? leadIds;
     final int? statusIds;
     final DateTime? fromDate;
@@ -58,6 +61,7 @@ class FetchDealStatusesWithFilters extends DealEvent {
       this.statusId, {
       this.query,
       this.managerIds,
+      this.regionsIds,
       this.leadIds,
       this.statusIds,
       this.fromDate,

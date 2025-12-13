@@ -23,6 +23,7 @@ class PinnedLeadMessageWidget extends StatelessWidget {
     'instagram': 'assets/icons/leads/instagram.png',
     'facebook': 'assets/icons/leads/messenger.png',
     'email': 'assets/icons/leads/email.png',
+    'site': '', // Используется Flutter иконка Icons.language
   };
 
   String _getChannelIcon(String? channelType) {
@@ -56,19 +57,25 @@ class PinnedLeadMessageWidget extends StatelessWidget {
                 borderRadius: BorderRadius.circular(3),
               ),
             ),
-            Image.asset(
-              _getChannelIcon(channelType),
-              width: 28,
-              height: 28,
-              errorBuilder: (context, error, stackTrace) {
-                debugPrint('Error loading icon: $error');
-                return Image.asset(
-                  'assets/icons/leads/default.png',
-                  width: 28,
-                  height: 28,
-                );
-              },
-            ),
+            channelType == 'site'
+                ? Icon(
+                    Icons.language,
+                    size: 28,
+                    color: Color(0xff1E2E52),
+                  )
+                : Image.asset(
+                    _getChannelIcon(channelType),
+                    width: 28,
+                    height: 28,
+                    errorBuilder: (context, error, stackTrace) {
+                      debugPrint('Error loading icon: $error');
+                      return Image.asset(
+                        'assets/icons/leads/default.png',
+                        width: 28,
+                        height: 28,
+                      );
+                    },
+                  ),
             const SizedBox(width: 10),
             Expanded(
               child: Column(

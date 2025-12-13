@@ -169,18 +169,24 @@ class ChatListItem extends StatelessWidget {
           ),
         ),
         child: Center(
-          child: Image.asset(
-            chatItem.icon,
-            width: 52,
-            height: 52,
-            errorBuilder: (context, error, stackTrace) {
-              return Icon(
-                Icons.person,
-                size: 32,
-                color: Colors.grey[600],
-              );
-            },
-          ),
+          child: chatItem.icon == ''  // Для site используется Flutter иконка
+              ? Icon(
+                  Icons.language,
+                  size: 32,
+                  color: Color(0xff1E2E52),
+                )
+              : Image.asset(
+                  chatItem.icon,
+                  width: 52,
+                  height: 52,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Icon(
+                      Icons.person,
+                      size: 32,
+                      color: Colors.grey[600],
+                    );
+                  },
+                ),
         ),
       );
     }

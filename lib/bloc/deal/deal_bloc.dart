@@ -14,6 +14,7 @@ class DealBloc extends Bloc<DealEvent, DealState> {
   Map<int, int> _dealCounts = {}; 
   String? _currentQuery;
   List<int>? _currentManagerIds;
+  List<int>? _currentRegionsIds;
   int? _currentStatusId;
   DateTime? _currentFromDate;
   DateTime? _currentToDate;
@@ -43,6 +44,7 @@ class DealBloc extends Bloc<DealEvent, DealState> {
     final bool listsOrQuery =
         (_currentQuery != null && _currentQuery!.isNotEmpty) ||
         (_currentManagerIds != null && _currentManagerIds!.isNotEmpty) ||
+        (_currentRegionsIds != null && _currentRegionsIds!.isNotEmpty) ||
         (_currentLeadIds != null && _currentLeadIds!.isNotEmpty) ||
         (_currentDirectoryValues != null && _currentDirectoryValues!.isNotEmpty) ||
         (_currentCustomFieldFilters != null && _currentCustomFieldFilters!.isNotEmpty) ||
@@ -88,6 +90,7 @@ class DealBloc extends Bloc<DealEvent, DealState> {
       // Сохраняем параметры текущего запроса
       _currentQuery = event.query;
       _currentManagerIds = event.managerIds;
+      _currentRegionsIds = event.regionsIds;
       _currentStatusId = event.statusIds;
       _currentFromDate = event.fromDate;
       _currentToDate = event.toDate;
@@ -126,6 +129,7 @@ class DealBloc extends Bloc<DealEvent, DealState> {
         perPage: 20,
         search: event.query,
         managers: event.managerIds,
+        regions: event.regionsIds,
         statuses: event.statusIds,
         fromDate: event.fromDate,
         toDate: event.toDate,
@@ -313,6 +317,7 @@ class DealBloc extends Bloc<DealEvent, DealState> {
         perPage: 20,
         search: _currentQuery,
         managers: _currentManagerIds,
+        regions: _currentRegionsIds,
         statuses: _currentStatusId,
         fromDate: _currentFromDate,
         toDate: _currentToDate,
@@ -577,6 +582,7 @@ Future<void> _updateDealStatusEdit(
           return _fetchDealsForStatusWithFilters(
             status.id,
             event.managerIds,
+            event.regionsIds,
             event.leadIds,
             event.statusIds,
             event.fromDate,
@@ -614,6 +620,7 @@ Future<void> _updateDealStatusEdit(
   Future<void> _fetchDealsForStatusWithFilters(
     int statusId,
     List<int>? managerIds,
+    List<int>? regionsIds,
     List<int>? leadIds,
     int? statusIds,
     DateTime? fromDate,
@@ -638,6 +645,7 @@ Future<void> _updateDealStatusEdit(
         page: 1,
         perPage: 20,
         managers: managerIds,
+        regions: regionsIds,
         leads: leadIds,
         statuses: statusId, // ID статуса через параметр statuses
         fromDate: fromDate,
@@ -677,6 +685,7 @@ Future<void> _updateDealStatusEdit(
     // Сбрасываем все текущие параметры фильтрации
     _currentQuery = null;
     _currentManagerIds = null;
+    _currentRegionsIds = null;
     _currentStatusId = null;
     _currentFromDate = null;
     _currentToDate = null;

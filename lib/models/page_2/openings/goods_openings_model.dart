@@ -15,14 +15,26 @@ class GoodsOpeningsResponse {
         errors: null,
       );
     } else if (json is Map<String, dynamic>) {
-      // На случай если API вернет с оберткой
-      return GoodsOpeningsResponse(
-        result: json["result"] == null
-            ? []
-            : List<GoodsOpeningDocument>.from(
-                json["result"]!.map((x) => GoodsOpeningDocument.fromJson(x))),
-        errors: json["errors"],
-      );
+      // API может вернуть {"result": {"data": [...]}} или {"result": [...]}
+      if (json["result"] != null) {
+        final resultData = json["result"];
+        if (resultData is Map<String, dynamic> && resultData["data"] != null) {
+          // Формат: {"result": {"data": [...]}}
+          return GoodsOpeningsResponse(
+            result: (resultData["data"] as List?)
+                ?.map((x) => GoodsOpeningDocument.fromJson(x as Map<String, dynamic>))
+                .toList() ?? [],
+            errors: json["errors"],
+          );
+        } else if (resultData is List) {
+          // Формат: {"result": [...]}
+          return GoodsOpeningsResponse(
+            result: resultData.map((x) => GoodsOpeningDocument.fromJson(x as Map<String, dynamic>)).toList(),
+            errors: json["errors"],
+          );
+        }
+      }
+      return GoodsOpeningsResponse(result: [], errors: json["errors"]);
     }
     return GoodsOpeningsResponse(result: [], errors: null);
   }
