@@ -723,6 +723,7 @@
   "notes": "Events",
   "deals": "Deals",
   "history": "History",
+  "execution_history": "Execution History",
   "tutorial_lead_card_title": "Lead card",
   "tutorial_lead_card_description": "Here you can view and manage lead data",
   "tutorial_lead_button_title": "Add lead",

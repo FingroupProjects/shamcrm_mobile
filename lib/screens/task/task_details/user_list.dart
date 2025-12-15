@@ -319,15 +319,15 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
             if (widget.hasError)
               Padding(
                 padding: const EdgeInsets.only(top: 4, left: 0),
-                child: Text(
-                  AppLocalizations.of(context)!.translate('field_required'),
-                  style: const TextStyle(
-                    color: Colors.red,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w400,
-                    fontFamily: 'Gilroy',
-                  ),
-                ),
+                    // child: Text(
+                    //   AppLocalizations.of(context)!.translate('field_required'),
+                    //   style: const TextStyle(
+                    //     color: Colors.red,
+                    //     fontSize: 12,
+                    //     fontWeight: FontWeight.w400,
+                    //     fontFamily: 'Gilroy',
+                    //   ),
+                    // ),
               ),
           ],
         );

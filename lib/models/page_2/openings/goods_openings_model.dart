@@ -28,10 +28,10 @@ class GoodsOpeningsResponse {
           );
         } else if (resultData is List) {
           // Формат: {"result": [...]}
-          return GoodsOpeningsResponse(
+      return GoodsOpeningsResponse(
             result: resultData.map((x) => GoodsOpeningDocument.fromJson(x as Map<String, dynamic>)).toList(),
-            errors: json["errors"],
-          );
+        errors: json["errors"],
+      );
         }
       }
       return GoodsOpeningsResponse(result: [], errors: json["errors"]);

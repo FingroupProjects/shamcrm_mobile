@@ -728,6 +728,7 @@
   "notes": "События",
   "deals": "Сделки",
   "history": "История",
+  "execution_history": "История выполнения",
   "tutorial_lead_card_title": "Карточка лида",
   "tutorial_lead_card_description": "Здесь вы можете просмотривать и управлять данными лида",
   "tutorial_lead_button_title": "Добавить клиента",

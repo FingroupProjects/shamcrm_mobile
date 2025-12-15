@@ -20,10 +20,10 @@ class ClientOpeningsResponse {
         );
       } else if (resultData is List) {
         // Формат: {"result": [...]}
-        return ClientOpeningsResponse(
+    return ClientOpeningsResponse(
           result: resultData.map((x) => ClientOpening.fromJson(x as Map<String, dynamic>)).toList(),
-          errors: json["errors"],
-        );
+      errors: json["errors"],
+    );
       }
     }
     return ClientOpeningsResponse(result: [], errors: json["errors"]);

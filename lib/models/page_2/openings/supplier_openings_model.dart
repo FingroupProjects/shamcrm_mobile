@@ -20,10 +20,10 @@ class SupplierOpeningsResponse {
         );
       } else if (resultData is List) {
         // Формат: {"result": [...]}
-        return SupplierOpeningsResponse(
+    return SupplierOpeningsResponse(
           result: resultData.map((x) => SupplierOpening.fromJson(x as Map<String, dynamic>)).toList(),
-          errors: json["errors"],
-        );
+      errors: json["errors"],
+    );
       }
     }
     return SupplierOpeningsResponse(result: [], errors: json["errors"]);

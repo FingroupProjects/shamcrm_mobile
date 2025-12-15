@@ -64,18 +64,18 @@ class PinnedLeadMessageWidget extends StatelessWidget {
                     color: Color(0xff1E2E52),
                   )
                 : Image.asset(
-                    _getChannelIcon(channelType),
-                    width: 28,
-                    height: 28,
-                    errorBuilder: (context, error, stackTrace) {
-                      debugPrint('Error loading icon: $error');
-                      return Image.asset(
-                        'assets/icons/leads/default.png',
-                        width: 28,
-                        height: 28,
-                      );
-                    },
-                  ),
+              _getChannelIcon(channelType),
+              width: 28,
+              height: 28,
+              errorBuilder: (context, error, stackTrace) {
+                debugPrint('Error loading icon: $error');
+                return Image.asset(
+                  'assets/icons/leads/default.png',
+                  width: 28,
+                  height: 28,
+                );
+              },
+            ),
             const SizedBox(width: 10),
             Expanded(
               child: Column(

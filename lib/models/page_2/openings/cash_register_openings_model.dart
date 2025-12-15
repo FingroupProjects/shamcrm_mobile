@@ -22,8 +22,8 @@ class CashRegisterOpeningsResponse {
         // Формат: {"result": [...]}
         return CashRegisterOpeningsResponse(
           result: resultData.map((x) => CashRegisterOpening.fromJson(x as Map<String, dynamic>)).toList(),
-          errors: json["errors"],
-        );
+        errors: json["errors"],
+      );
       }
     }
     return CashRegisterOpeningsResponse(result: [], errors: json["errors"]);

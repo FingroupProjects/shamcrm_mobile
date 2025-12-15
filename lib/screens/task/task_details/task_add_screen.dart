@@ -65,9 +65,12 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
   List<CustomField> customFields = [];
   
   // Флаги для валидации обязательных полей
+  bool isNameInvalid = false;
   bool isExecutorInvalid = false;
   bool isProjectInvalid = false;
   bool isEndDateInvalid = false;
+  bool isStatusInvalid = false;
+  
   bool _hasTaskCreatePermission = false;
   bool _hasTaskCreateForMySelfPermission = false;
   int? _currentUserId;
@@ -75,7 +78,7 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
   // Режим настроек
   bool isSettingsMode = false;
   bool isSavingFieldOrder = false;
-  List<FieldConfiguration>? originalFieldConfigurations; // Для отслеживания изменений
+  List<FieldConfiguration>? originalFieldConfigurations;
   final GlobalKey _addFieldButtonKey = GlobalKey();
 
   // Конфигурация полей с сервера
@@ -90,7 +93,7 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
     context.read<UserTaskBloc>().add(FetchUsers());
     _setDefaultValues();
     _checkPermissionsAndUser();
-    // ВАЖНО: Добавляем небольшую задержку чтобы context был готов
+    
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadFieldConfiguration();
     });
@@ -100,6 +103,7 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
     selectedPriority = 1;
     final now = DateTime.now();
     startDateController.text = DateFormat('dd/MM/yyyy').format(now);
+    selectedStatus = widget.statusId.toString();
   }
 
   Future<void> _loadFieldConfiguration() async {
@@ -111,19 +115,17 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
 
   Future<void> _saveFieldOrderToBackend() async {
     try {
-      // Подготовка данных для отправки
       final List<Map<String, dynamic>> updates = [];
       for (var config in fieldConfigurations) {
         updates.add({
           'id': config.id,
           'position': config.position,
           'is_active': config.isActive ? 1 : 0,
-          'is_required': config.originalRequired ? 1 : 0, // Используем originalRequired
+          'is_required': config.originalRequired ? 1 : 0,
           'show_on_table': config.showOnTable ? 1 : 0,
         });
       }
 
-      // Отправка на бэкенд
       await ApiService().updateFieldPositions(
         tableName: 'tasks',
         updates: updates,
@@ -136,7 +138,6 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
       if (kDebugMode) {
         print('TaskAddScreen: Error saving field positions: $e');
       }
-      // Показываем ошибку пользователю
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -164,7 +165,6 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
     }
   }
 
-  // Вспомогательный метод для создания/получения кастомного поля
   CustomField _getOrCreateCustomField(FieldConfiguration config) {
     final existingField = customFields.firstWhere(
           (field) => field.fieldName == config.fieldName && field.isCustomField,
@@ -184,7 +184,6 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
     return existingField;
   }
 
-  // Вспомогательный метод для создания/получения поля-справочника
   CustomField _getOrCreateDirectoryField(FieldConfiguration config) {
     final existingField = customFields.firstWhere(
           (field) => field.directoryId == config.directoryId,
@@ -204,22 +203,50 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
     return existingField;
   }
 
-  // Метод для построения стандартных системных полей
   Widget _buildStandardField(FieldConfiguration config) {
     switch (config.fieldName) {
       case 'name':
-        return CustomTextFieldWithPriority(
-          controller: nameController,
-          hintText: AppLocalizations.of(context)!.translate('enter_title'),
-          label: AppLocalizations.of(context)!.translate('event_name'),
-          showPriority: true,
-          isPrioritySelected: selectedPriority == 3,
-          onPriorityChanged: (bool? value) {
-            setState(() {
-              selectedPriority = value == true ? 3 : 1;
-            });
-          },
-          priorityText: AppLocalizations.of(context)!.translate('urgent'),
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            CustomTextFieldWithPriority(
+              controller: nameController,
+              hintText: AppLocalizations.of(context)!.translate('enter_title'),
+              label: AppLocalizations.of(context)!.translate('event_name'),
+              showPriority: true,
+              isPrioritySelected: selectedPriority == 3,
+              hasError: isNameInvalid,
+              onPriorityChanged: (bool? value) {
+                setState(() {
+                  selectedPriority = value == true ? 3 : 1;
+                  if (nameController.text.trim().isNotEmpty) {
+                    isNameInvalid = false;
+                  }
+                });
+              },
+              priorityText: AppLocalizations.of(context)!.translate('urgent'),
+              onChanged: (value) {
+                if (value.trim().isNotEmpty) {
+                  setState(() {
+                    isNameInvalid = false;
+                  });
+                }
+              },
+            ),
+            if (isNameInvalid)
+              Padding(
+                padding: const EdgeInsets.only(top: 4, left: 4),
+                child: Text(
+                  AppLocalizations.of(context)!.translate('field_required'),
+                  style: TextStyle(
+                    color: Colors.red,
+                    fontSize: 12,
+                    fontFamily: 'Gilroy',
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+          ],
         );
 
       case 'description':
@@ -231,7 +258,6 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
           keyboardType: TextInputType.multiline,
         );
 
-    // Условно отображаем UserMultiSelectWidget
       case 'executor':
         if (_hasTaskCreatePermission || !_hasTaskCreateForMySelfPermission) {
           return UserMultiSelectWidget(
@@ -239,41 +265,105 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
             onSelectUsers: (List<UserData> selectedUsersData) {
               setState(() {
                 selectedUsers = selectedUsersData.map((user) => user.id.toString()).toList();
-                isExecutorInvalid = false; // Сбрасываем ошибку при выборе
+                isExecutorInvalid = false;
               });
             },
-            hasError: isExecutorInvalid, // Передаем флаг ошибки
+            hasError: isExecutorInvalid,
           );
         } else {
           return SizedBox.shrink();
         }
 
       case 'project':
-        return ProjectTaskGroupWidget(
-          selectedProject: selectedProject,
-          onSelectProject: (ProjectTask selectedProjectData) {
-            setState(() {
-              selectedProject = selectedProjectData.id.toString();
-              isProjectInvalid = false; // Сбрасываем ошибку при выборе
-            });
-          },
-          hasError: isProjectInvalid, // Передаем флаг ошибки
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ProjectTaskGroupWidget(
+              selectedProject: selectedProject,
+              onSelectProject: (ProjectTask selectedProjectData) {
+                setState(() {
+                  selectedProject = selectedProjectData.id.toString();
+                  isProjectInvalid = false;
+                });
+              },
+              hasError: isProjectInvalid,
+            ),
+            if (isProjectInvalid)
+              Padding(
+                padding: const EdgeInsets.only(top: 4, left: 4),
+                child: Text(
+                  AppLocalizations.of(context)!.translate('field_required'),
+                  style: TextStyle(
+                    color: Colors.red,
+                    fontSize: 12,
+                    fontFamily: 'Gilroy',
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+          ],
         );
+
       case 'deadline':
-        return CustomTextFieldDate(
-          controller: endDateController,
-          label: AppLocalizations.of(context)!.translate('deadline'),
-          hasError: isEndDateInvalid,
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            CustomTextFieldDate(
+              controller: endDateController,
+              label: AppLocalizations.of(context)!.translate('deadline'),
+              hasError: isEndDateInvalid,
+              onChanged: (value) {
+                if (value.trim().isNotEmpty) {
+                  setState(() {
+                    isEndDateInvalid = false;
+                  });
+                }
+              },
+            ),
+            if (isEndDateInvalid)
+              Padding(
+                padding: const EdgeInsets.only(top: 4, left: 4),
+                child: Text(
+                  AppLocalizations.of(context)!.translate('field_required'),
+                  style: TextStyle(
+                    color: Colors.red,
+                    fontSize: 12,
+                    fontFamily: 'Gilroy',
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+          ],
         );
 
       case 'task_status_id':
-        return TaskStatusEditWidget(
-          selectedStatus: selectedStatus?.toString(),
-          onSelectStatus: (TaskStatus selectedStatusData) {
-            setState(() {
-              selectedStatus = selectedStatusData.id.toString();
-            });
-          },
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            TaskStatusEditWidget(
+              selectedStatus: selectedStatus?.toString(),
+              onSelectStatus: (TaskStatus selectedStatusData) {
+                setState(() {
+                  selectedStatus = selectedStatusData.id.toString();
+                  isStatusInvalid = false;
+                });
+              },
+              hasError: isStatusInvalid,
+            ),
+            if (isStatusInvalid)
+              Padding(
+                padding: const EdgeInsets.only(top: 4, left: 4),
+                child: Text(
+                  AppLocalizations.of(context)!.translate('field_required'),
+                  style: TextStyle(
+                    color: Colors.red,
+                    fontSize: 12,
+                    fontFamily: 'Gilroy',
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+          ],
         );
 
       default:
@@ -281,9 +371,7 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
     }
   }
 
-  // Метод для построения виджета на основе конфигурации поля
   Widget? _buildFieldWidget(FieldConfiguration config) {
-    // Сначала проверяем, является ли это кастомным полем
     if (config.isCustomField) {
       final customField = _getOrCreateCustomField(config);
 
@@ -295,7 +383,6 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
       );
     }
 
-    // Затем проверяем, является ли это справочником
     if (config.isDirectory && config.directoryId != null) {
       final directoryField = _getOrCreateDirectoryField(config);
 
@@ -328,7 +415,32 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
       );
     }
 
-    // Иначе это стандартное системное поле
+    // Специальная обработка для executor - добавляем текст ошибки
+    if (config.fieldName == 'executor') {
+      final field = _buildStandardField(config);
+      if (field == null || field is SizedBox) return field;
+      
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          field,
+          if (isExecutorInvalid)
+            Padding(
+              padding: const EdgeInsets.only(top: 4, left: 4),
+              child: Text(
+                AppLocalizations.of(context)!.translate('field_required'),
+                style: TextStyle(
+                  color: Colors.red,
+                  fontSize: 12,
+                  fontFamily: 'Gilroy',
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+        ],
+      );
+    }
+
     return _buildStandardField(config);
   }
 
@@ -347,7 +459,6 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
   }
 
   List<Widget> _buildConfiguredFieldWidgets() {
-    // Фильтруем только активные поля и сортируем по позициям
     final sorted = fieldConfigurations
         .where((config) => config.isActive)
         .toList()
@@ -411,12 +522,10 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
               type: null,
             ));
           });
-          // Перезагружаем конфигурацию после успешной привязки справочника
           context.read<FieldConfigurationBloc>().add(
             FetchFieldConfiguration('tasks'),
           );
 
-          // Сообщаем об успешном добавлении справочника
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
@@ -444,7 +553,6 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
       return;
     }
 
-    // Добавление пользовательского поля через API, затем локально
     try {
       await ApiService().addNewField(
         tableName: 'tasks',
@@ -479,7 +587,6 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
     final Offset offset = renderBox.localToGlobal(Offset.zero);
     final Size size = renderBox.size;
 
-    // Список элементов меню
     final menuItems = [
       PopupMenuItem(
         value: 'manual',
@@ -507,7 +614,6 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
       ),
     ];
 
-    // Если элементов 5 или больше, показываем над кнопкой, иначе под кнопкой
     final showAbove = menuItems.length >= 5;
     final double verticalOffset = showAbove ? -8 : size.height + 8;
 
@@ -556,7 +662,6 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
     });
   }
 
-  // Проверка изменений в конфигурации полей
   bool _hasFieldChanges() {
     if (originalFieldConfigurations == null) return false;
     if (originalFieldConfigurations!.length != fieldConfigurations.length) return true;
@@ -578,7 +683,6 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
     return false;
   }
 
-  // Диалог подтверждения выхода из режима настроек без сохранения
   Future<bool> _showExitSettingsDialog() async {
     return await showDialog<bool>(
       context: context,
@@ -629,8 +733,7 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
           ],
         );
       },
-    ) ??
-        false;
+    ) ?? false;
   }
 
   Widget _buildSettingsMode() {
@@ -689,7 +792,7 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                     tableName: config.tableName,
                     fieldName: config.fieldName,
                     position: i + 1,
-                    required: false, // Всегда false в UI
+                    required: false,
                     isActive: config.isActive,
                     isCustomField: config.isCustomField,
                     createdAt: config.createdAt,
@@ -699,7 +802,7 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                     type: config.type,
                     isDirectory: config.isDirectory,
                     showOnTable: config.showOnTable,
-                    originalRequired: config.originalRequired, // Сохраняем оригинальное значение
+                    originalRequired: config.originalRequired,
                   ));
                 }
 
@@ -795,7 +898,7 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                                     tableName: config.tableName,
                                     fieldName: config.fieldName,
                                     position: config.position,
-                                    required: false, // Всегда false в UI
+                                    required: false,
                                     isActive: !config.isActive,
                                     isCustomField: config.isCustomField,
                                     createdAt: config.createdAt,
@@ -805,7 +908,7 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                                     type: config.type,
                                     isDirectory: config.isDirectory,
                                     showOnTable: config.showOnTable,
-                                    originalRequired: config.originalRequired, // Сохраняем оригинальное значение
+                                    originalRequired: config.originalRequired,
                                   );
 
                                   final idx = fieldConfigurations.indexWhere((f) => f.id == config.id);
@@ -953,7 +1056,7 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                 }
               } catch (e) {
                 if (kDebugMode) {
-                  print('LeadAddScreen: Error in save button: $e');
+                  print('TaskAddScreen: Error in save button: $e');
                 }
               } finally {
                 if (mounted) {
@@ -969,7 +1072,6 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
     );
   }
 
-  // Получение отображаемого названия поля
   String _getFieldDisplayName(FieldConfiguration config) {
     final loc = AppLocalizations.of(context)!;
     switch (config.fieldName) {
@@ -991,7 +1093,6 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
     }
   }
 
-  // Получение типа поля для отображения
   String _getFieldTypeLabel(FieldConfiguration config) {
     if (config.isDirectory) {
       return AppLocalizations.of(context)!.translate('directory');
@@ -1003,12 +1104,10 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
   }
 
   Future<void> _pickFile() async {
-    // Вычисляем текущий общий размер файлов
     double totalSize = files.fold<double>(0.0, (sum, file) {
       return sum + File(file.path).lengthSync() / (1024 * 1024);
     });
 
-    // Показываем диалог выбора типа файла
     final List<PickedFileInfo>? pickedFiles = await FilePickerDialog.show(
       context: context,
       allowMultiple: true,
@@ -1022,7 +1121,6 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
       errorPickingFileMessage: AppLocalizations.of(context)!.translate('error_picking_file'),
     );
 
-    // Если файлы выбраны, добавляем их
     if (pickedFiles != null && pickedFiles.isNotEmpty) {
       setState(() {
         for (var file in pickedFiles) {
@@ -1034,7 +1132,6 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
 
   @override
   Widget build(BuildContext context) {
-    //print('TaskAddScreen: Building with selectedLead: $selectedLead, selectedManager: $selectedManager');
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -1069,7 +1166,6 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
           ),
         ),
         leadingWidth: 40,
-        // Добавляем кнопку обновления и настройки
         actions: [
           IconButton(
             icon: Icon(
@@ -1078,24 +1174,18 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
             ),
             onPressed: () async {
               if (isSettingsMode) {
-                // Выходим из режима настроек
                 if (_hasFieldChanges()) {
-                  // Есть несохраненные изменения - показываем диалог
                   final shouldExit = await _showExitSettingsDialog();
                   if (!shouldExit) return;
 
-                  // Восстанавливаем позиции, но сохраняем новые добавленные поля
                   if (originalFieldConfigurations != null) {
                     setState(() {
-                      // Находим новые поля (которые есть в текущей конфигурации, но нет в оригинальной)
                       final newFields = fieldConfigurations.where((current) {
                         return !originalFieldConfigurations!.any((original) => original.id == current.id);
                       }).toList();
 
-                      // Восстанавливаем оригинальную конфигурацию
                       fieldConfigurations = [...originalFieldConfigurations!];
 
-                      // Добавляем новые поля в конец списка
                       if (newFields.isNotEmpty) {
                         int maxPosition = fieldConfigurations.isEmpty
                             ? 0
@@ -1106,7 +1196,7 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                             tableName: newFields[i].tableName,
                             fieldName: newFields[i].fieldName,
                             position: maxPosition + i + 1,
-                            required: false, // Всегда false в UI
+                            required: false,
                             isActive: newFields[i].isActive,
                             isCustomField: newFields[i].isCustomField,
                             createdAt: newFields[i].createdAt,
@@ -1116,7 +1206,7 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                             type: newFields[i].type,
                             isDirectory: newFields[i].isDirectory,
                             showOnTable: newFields[i].showOnTable,
-                            originalRequired: newFields[i].originalRequired, // Сохраняем оригинальное значение
+                            originalRequired: newFields[i].originalRequired,
                           ));
                         }
                       }
@@ -1126,14 +1216,12 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                     });
                   }
                 } else {
-                  // Нет изменений - просто выходим
                   setState(() {
                     originalFieldConfigurations = null;
                     isSettingsMode = false;
                   });
                 }
               } else {
-                // Входим в режим настроек - сохраняем снимок конфигурации
                 setState(() {
                   originalFieldConfigurations = fieldConfigurations.map((config) {
                     return FieldConfiguration(
@@ -1141,7 +1229,7 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                       tableName: config.tableName,
                       fieldName: config.fieldName,
                       position: config.position,
-                      required: false, // Всегда false в UI
+                      required: false,
                       isActive: config.isActive,
                       isCustomField: config.isCustomField,
                       createdAt: config.createdAt,
@@ -1151,7 +1239,7 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                       type: config.type,
                       isDirectory: config.isDirectory,
                       showOnTable: config.showOnTable,
-                      originalRequired: config.originalRequired, // Сохраняем оригинальное значение
+                      originalRequired: config.originalRequired,
                     );
                   }).toList();
                   isSettingsMode = true;
@@ -1162,27 +1250,6 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                 ? AppLocalizations.of(context)!.translate('close')
                 : AppLocalizations.of(context)!.translate('appbar_settings'),
           ),
-          // IconButton(
-          //   icon: Icon(Icons.refresh, color: Color(0xff1E2E52)),
-          //   onPressed: () async {
-          //     // Очищаем кэш и загружаем заново
-          //     await ApiService().clearFieldConfigurationCache();
-          //     await ApiService().loadAndCacheAllFieldConfigurations();
-          //
-          //     // Перезагружаем конфигурацию
-          //     context.read<FieldConfigurationBloc>().add(
-          //         FetchFieldConfiguration('leads')
-          //     );
-          //
-          //     ScaffoldMessenger.of(context).showSnackBar(
-          //       SnackBar(
-          //         content: Text('Конфигурация обновлена'),
-          //         backgroundColor: Colors.green,
-          //       ),
-          //     );
-          //   },
-          //   tooltip: 'Обновить структуру полей',
-          // ),
         ],
         backgroundColor: const Color.fromARGB(255, 255, 255, 255),
       ),
@@ -1286,7 +1353,6 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                           children: [
                             ..._buildConfiguredFieldWidgets(),
 
-                            // Отступ между сконфигурированными и пользовательскими полями
                             if (customFields.where((field) {
                               return !fieldConfigurations.any((config) =>
                               (config.isCustomField && config.fieldName == field.fieldName) ||
@@ -1294,10 +1360,8 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                             }).isNotEmpty)
                               const SizedBox(height: 16),
 
-                            // ТОЛЬКО пользовательские поля (те, которые добавлены через кнопку "Добавить поле")
                             ...(() {
                               final customFieldsList = customFields.where((field) {
-                                // Исключаем поля, которые уже есть в серверной конфигурации
                                 return !fieldConfigurations.any((config) =>
                                 (config.isCustomField && config.fieldName == field.fieldName) ||
                                     (config.isDirectory && config.directoryId == field.directoryId));
@@ -1341,10 +1405,9 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                               return _withVerticalSpacing(customFieldWidgets, spacing: 8);
                             })(),
 
-                            // Всегда показываем выбор файлов внизу
                             const SizedBox(height: 16),
                             _buildFileSelection(),
-                            const SizedBox(height: 80), // Отступ внизу для кнопок
+                            const SizedBox(height: 80),
                           ],
                         ),
                       ),
@@ -1402,34 +1465,83 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
   }
 
   void _submitForm() {
-    if (_formKey.currentState!.validate()) {
-      if (!_hasTaskCreatePermission && _hasTaskCreateForMySelfPermission && _currentUserId == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              AppLocalizations.of(context)!.translate('user_id_not_found'),
-              style: TextStyle(
-                fontFamily: 'Gilroy',
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                color: Colors.white,
-              ),
-            ),
-            behavior: SnackBarBehavior.floating,
-            margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            backgroundColor: Colors.red,
-            elevation: 3,
-            padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-            duration: Duration(seconds: 3),
-          ),
-        );
-        return;
+    setState(() {
+      isNameInvalid = false;
+      isExecutorInvalid = false;
+      isProjectInvalid = false;
+      isEndDateInvalid = false;
+      isStatusInvalid = false;
+    });
+
+    bool hasError = false;
+
+    // 1. Название
+    if (nameController.text.trim().isEmpty) {
+      setState(() {
+        isNameInvalid = true;
+      });
+      hasError = true;
+    }
+
+    // 2. Статус задачи
+    if (selectedStatus == null || selectedStatus!.isEmpty) {
+      setState(() {
+        isStatusInvalid = true;
+      });
+      hasError = true;
+    }
+
+    // 3. Исполнитель
+    if (_hasTaskCreatePermission || !_hasTaskCreateForMySelfPermission) {
+      if (selectedUsers == null || selectedUsers!.isEmpty) {
+        setState(() {
+          isExecutorInvalid = true;
+        });
+        hasError = true;
       }
-      _createTask();
-    } else {
+    } else if (!_hasTaskCreatePermission && _hasTaskCreateForMySelfPermission && _currentUserId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            AppLocalizations.of(context)!.translate('user_id_not_found'),
+            style: TextStyle(
+              fontFamily: 'Gilroy',
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              color: Colors.white,
+            ),
+          ),
+          behavior: SnackBarBehavior.floating,
+          margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          backgroundColor: Colors.red,
+          elevation: 3,
+          padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+          duration: Duration(seconds: 3),
+        ),
+      );
+      return;
+    }
+
+    // 4. Проект
+    if (selectedProject == null || selectedProject!.isEmpty) {
+      setState(() {
+        isProjectInvalid = true;
+      });
+      hasError = true;
+    }
+
+    // 5. Дедлайн
+    if (endDateController.text.trim().isEmpty) {
+      setState(() {
+        isEndDateInvalid = true;
+      });
+      hasError = true;
+    }
+
+    if (hasError) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
@@ -1452,7 +1564,10 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
           duration: Duration(seconds: 3),
         ),
       );
+      return;
     }
+
+    _createTask();
   }
 
   void _createTask() {
@@ -1516,121 +1631,16 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
     List<Map<String, dynamic>> customFieldMap = [];
     List<Map<String, int>> directoryValues = [];
 
-    // Проверяем обязательные поля на основе конфигурации
-    for (var config in fieldConfigurations) {
-      if (!config.isActive) continue; // Убрали проверку required - в мобильном приложении нет обязательных полей
-
-      // Проверяем системные поля
-      if (!config.isCustomField && !config.isDirectory) {
-        switch (config.fieldName) {
-          case 'name':
-            if (nameController.text.trim().isEmpty) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    '${AppLocalizations.of(context)!.translate('event_name')} - ${AppLocalizations.of(context)!.translate('field_required')}',
-                    style: TextStyle(
-                      fontFamily: 'Gilroy',
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.white,
-                    ),
-                  ),
-                  backgroundColor: Colors.red,
-                ),
-              );
-              return;
-            }
-            break;
-          case 'deadline':
-            if (endDateController.text.trim().isEmpty) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    '${AppLocalizations.of(context)!.translate('deadline')} - ${AppLocalizations.of(context)!.translate('field_required')}',
-                    style: TextStyle(
-                      fontFamily: 'Gilroy',
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.white,
-                    ),
-                  ),
-                  backgroundColor: Colors.red,
-                ),
-              );
-              return;
-            }
-            break;
-          case 'executor':
-            if (selectedUsers == null || selectedUsers!.isEmpty) {
-              setState(() {
-                isExecutorInvalid = true;
-              });
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    '${AppLocalizations.of(context)!.translate('assignees_list')} - ${AppLocalizations.of(context)!.translate('field_required')}',
-                    style: TextStyle(
-                      fontFamily: 'Gilroy',
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.white,
-                    ),
-                  ),
-                  backgroundColor: Colors.red,
-                ),
-              );
-              return;
-            }
-            break;
-          case 'project':
-            // Проект обязателен
-            if (selectedProject == null || selectedProject!.isEmpty) {
-              setState(() {
-                isProjectInvalid = true;
-              });
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    '${AppLocalizations.of(context)!.translate('project')} - ${AppLocalizations.of(context)!.translate('field_required')}',
-                    style: TextStyle(
-                      fontFamily: 'Gilroy',
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.white,
-                    ),
-                  ),
-                  backgroundColor: Colors.red,
-                ),
-              );
-              return;
-            }
-            break;
-          case 'task_status_id':
-            // Статус задачи уже установлен из widget.statusId, валидация не требуется
-            break;
-          case 'description':
-            // Описание не обязательно
-            break;
-        }
-      }
-
-      // Кастомные поля и справочники не обязательны - валидация убрана
-    }
-
     for (var field in customFields) {
       String fieldName = field.fieldName.trim();
       String fieldValue = field.controller.text.trim();
       String? fieldType = field.type;
 
-      // ВАЖНО: Н рмализуем тип поля - преобразуем "text" в "string"
       if (fieldType == 'text') {
         fieldType = 'string';
       }
-      // Если type null, устанавливаем string по умолчанию
       fieldType ??= 'string';
 
-      // Валидация для number
       if (fieldType == 'number' && fieldValue.isNotEmpty) {
         if (!RegExp(r'^\d+$').hasMatch(fieldValue)) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -1651,7 +1661,6 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
         }
       }
 
-      // Валидация для date и datetime
       if ((fieldType == 'date' || fieldType == 'datetime') && fieldValue.isNotEmpty) {
         try {
           if (fieldType == 'date') {
@@ -1687,27 +1696,24 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
         customFieldMap.add({
           'key': fieldName,
           'value': fieldValue,
-          'type': fieldType, // Теперь гарантированно один из: string, number, date, datetime
+          'type': fieldType,
         });
       }
     }
 
     final localizations = AppLocalizations.of(context)!;
 
-    // Определяем userId в зависимости от разрешений
     List<int>? userIds;
     if (!_hasTaskCreatePermission && _hasTaskCreateForMySelfPermission && _currentUserId != null) {
-      // Если есть только task.createForMySelf, отправляем ID текущего пользователя
       userIds = [_currentUserId!];
     } else {
-      // Иначе используем выбранных пользователей из UserMultiSelectWidget
       userIds = selectedUsers?.map((id) => int.parse(id)).toList();
     }
 
     context.read<TaskBloc>().add(CreateTask(
       name: name,
       statusId: widget.statusId,
-      taskStatusId: widget.statusId,
+      taskStatusId: int.parse(selectedStatus!),
       startDate: startDate,
       endDate: endDate,
       projectId: selectedProject != null ? int.parse(selectedProject!) : null,
@@ -1779,7 +1785,6 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                       width: 100,
                       child: Column(
                         children: [
-                          // НОВОЕ: Используем метод buildFileIcon для показа превью или иконки
                           buildFileIcon(files, fileName, fileExtension),
                           SizedBox(height: 8),
                           Text(
@@ -1838,7 +1843,6 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
       final prefs = await SharedPreferences.getInstance();
       final userIdString = prefs.getString('userID');
 
-      // Параллельно проверяем разрешения
       final results = await Future.wait([
         apiService.hasPermission('task.create'),
         apiService.hasPermission('task.createForMySelf'),
@@ -1849,11 +1853,7 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
         _hasTaskCreateForMySelfPermission = results[1];
         _currentUserId = userIdString != null ? int.tryParse(userIdString) : null;
       });
-
-      // Логируем для отладки
-      //print('TaskAddScreen: Permissions - task.create: $_hasTaskCreatePermission, task.createForMySelf: $_hasTaskCreateForMySelfPermission, userID: $_currentUserId');
     } catch (e) {
-      //print('TaskAddScreen: Ошибка при проверке разрешений или получении userID: $e');
       setState(() {
         _hasTaskCreatePermission = false;
         _hasTaskCreateForMySelfPermission = false;
