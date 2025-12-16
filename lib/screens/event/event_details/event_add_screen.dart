@@ -35,6 +35,7 @@ class _NoticeAddScreenState extends State<NoticeAddScreen> {
   String body = '';
   String date = '';
   bool sendNotification = false;
+  bool isSubjectInvalid = false; // Флаг для валидации тематики
   // Переменные для файлов
   List<String> selectedFiles = [];
   List<String> fileNames = [];
@@ -347,8 +348,10 @@ Widget _buildFileIcon(String fileName, String fileExtension) {
                             onSelectSubject: (String subject) {
                               setState(() {
                                 selectedSubject = subject;
+                                isSubjectInvalid = subject.isEmpty; // Сбрасываем ошибку при вводе
                               });
                             },
+                            hasError: isSubjectInvalid, // Передаем флаг ошибки
                           ),
                           const SizedBox(height: 8),
                           // Lead selection
@@ -489,6 +492,9 @@ Widget _buildFileIcon(String fileName, String fileExtension) {
         }
       }
       if (selectedSubject == null || selectedSubject!.isEmpty) {
+        setState(() {
+          isSubjectInvalid = true;
+        });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(

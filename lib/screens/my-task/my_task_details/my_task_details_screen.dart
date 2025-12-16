@@ -242,7 +242,11 @@ class _MyTaskDetailsScreenState extends State<MyTaskDetailsScreen> {
       if (!config.isActive) continue;
       
       String? value = _getFieldValue(task, config);
-      if (value != null && value.isNotEmpty) {
+      // Для поля end_date всегда добавляем, даже если пустое
+      if (config.fieldName == 'end_date') {
+        String label = _getFieldLabel(config);
+        details.add({'label': label, 'value': value ?? ''});
+      } else if (value != null && value.isNotEmpty) {
         String label = _getFieldLabel(config);
         details.add({'label': label, 'value': value});
       }
@@ -274,9 +278,15 @@ class _MyTaskDetailsScreenState extends State<MyTaskDetailsScreen> {
       case 'status_id':
         return task.taskStatus?.title;
       case 'end_date':
-        return task.endDate != null && task.endDate!.isNotEmpty
-            ? DateFormat('dd.MM.yyyy').format(DateTime.parse(task.endDate!))
-            : null;
+        // Всегда возвращаем значение, даже если null - будет пустая строка
+        if (task.endDate != null && task.endDate!.isNotEmpty) {
+          try {
+            return DateFormat('dd.MM.yyyy').format(DateTime.parse(task.endDate!));
+          } catch (e) {
+            return task.endDate;
+          }
+        }
+        return ''; // Возвращаем пустую строку вместо null
       default:
         return null;
     }
@@ -313,6 +323,24 @@ class _MyTaskDetailsScreenState extends State<MyTaskDetailsScreen> {
           'value': formatDate(task.startDate)
         });
       }
+    }
+    
+    // Дедлайн - всегда добавляем, даже если null
+    bool alreadyAdded = details.any((d) => d['label'] == AppLocalizations.of(context)!.translate('deadLine'));
+    if (!alreadyAdded) {
+      String deadlineValue = '';
+      if (task.endDate != null && task.endDate!.isNotEmpty) {
+        try {
+          deadlineValue = DateFormat('dd.MM.yyyy').format(DateTime.parse(task.endDate!));
+        } catch (e) {
+          // Если ошибка парсинга даты, добавляем как есть
+          deadlineValue = task.endDate!;
+        }
+      }
+      details.add({
+        'label': AppLocalizations.of(context)!.translate('deadLine'),
+        'value': deadlineValue
+      });
     }
   }
 

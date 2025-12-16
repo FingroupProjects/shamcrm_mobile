@@ -17,6 +17,7 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
   bool isFetching = false;
   String? _currentQuery;
   List<String>? _currentManagerIds;
+  List<String>? _currentRegionsIds;
   List<String>? _currentLeadIds;
   DateTime? _currentFromDate;
   DateTime? _currentToDate;
@@ -43,6 +44,7 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
     final bool listsOrQuery =
         (_currentQuery != null && _currentQuery!.isNotEmpty) ||
         (_currentManagerIds != null && _currentManagerIds!.isNotEmpty) ||
+        (_currentRegionsIds != null && _currentRegionsIds!.isNotEmpty) ||
         (_currentLeadIds != null && _currentLeadIds!.isNotEmpty);
 
     final bool flagsOrDates =
@@ -85,6 +87,7 @@ Future<void> _fetchOrderStatuses(FetchOrderStatuses event, Emitter<OrderState> e
         // Сбрасываем все параметры фильтрации
         _currentQuery = null;
         _currentManagerIds = null;
+        _currentRegionsIds = null;
         _currentLeadIds = null;
         _currentFromDate = null;
         _currentToDate = null;
@@ -203,6 +206,7 @@ Future<void> _fetchOrderStatuses(FetchOrderStatuses event, Emitter<OrderState> e
       // Сохраняем параметры текущего запроса
       _currentQuery = event.query;
       _currentManagerIds = event.managerIds;
+      _currentRegionsIds = event.regionsIds;
       _currentLeadIds = event.leadIds;
       _currentFromDate = event.fromDate;
       _currentToDate = event.toDate;
@@ -246,6 +250,7 @@ Future<void> _fetchOrderStatuses(FetchOrderStatuses event, Emitter<OrderState> e
           perPage: event.perPage,
           query: event.query,
           managerIds: event.managerIds,
+          regionsIds: event.regionsIds,
           leadIds: event.leadIds,
           fromDate: event.fromDate,
           toDate: event.toDate,
@@ -320,6 +325,7 @@ Future<void> _fetchOrderStatuses(FetchOrderStatuses event, Emitter<OrderState> e
         perPage: event.perPage,
         query: _currentQuery,
         managerIds: _currentManagerIds,
+        regionsIds: _currentRegionsIds,
         leadIds: _currentLeadIds,
         fromDate: _currentFromDate,
         toDate: _currentToDate,
@@ -711,6 +717,7 @@ Future<void> _updateOrder(UpdateOrder event, Emitter<OrderState> emit) async {
           forceRefresh: true,
           query: _currentQuery,
           managerIds: _currentManagerIds,
+          regionsIds: _currentRegionsIds,
           leadIds: _currentLeadIds,
           fromDate: _currentFromDate,
           toDate: _currentToDate,
@@ -819,6 +826,7 @@ Future<void> _updateOrder(UpdateOrder event, Emitter<OrderState> emit) async {
         // Сохраняем фильтры для последующих запросов
         _currentQuery = null;
         _currentManagerIds = event.managerIds;
+        _currentRegionsIds = event.regionsIds;
         _currentLeadIds = event.leadIds;
         _currentFromDate = event.fromDate;
         _currentToDate = event.toDate;
@@ -832,6 +840,7 @@ Future<void> _updateOrder(UpdateOrder event, Emitter<OrderState> emit) async {
           return _fetchOrdersForStatusWithFilters(
             status.id,
             event.managerIds,
+            event.regionsIds,
             event.leadIds,
             event.fromDate,
             event.toDate,
@@ -873,6 +882,7 @@ Future<void> _updateOrder(UpdateOrder event, Emitter<OrderState> emit) async {
   Future<void> _fetchOrdersForStatusWithFilters(
     int statusId,
     List<String>? managerIds,
+    List<String>? regionsIds,
     List<String>? leadIds,
     DateTime? fromDate,
     DateTime? toDate,
@@ -892,6 +902,7 @@ Future<void> _updateOrder(UpdateOrder event, Emitter<OrderState> emit) async {
         page: 1,
         perPage: 20,
         managerIds: managerIds,
+        regionsIds: regionsIds,
         leadIds: leadIds,
         fromDate: fromDate,
         toDate: toDate,
@@ -930,6 +941,7 @@ Future<void> _updateOrder(UpdateOrder event, Emitter<OrderState> emit) async {
     // Сбрасываем все текущие параметры фильтрации
     _currentQuery = null;
     _currentManagerIds = null;
+    _currentRegionsIds = null;
     _currentLeadIds = null;
     _currentFromDate = null;
     _currentToDate = null;

@@ -116,6 +116,7 @@ class CustomAppBar extends StatefulWidget {
   initialLeadCustomFields; // Пользовательские поля для фильтра лидов
 
   final List? initialManagersDeal;
+  final List? initialRegionsDeal;
   final List? initialLeadsDeal;
   final int? initialManagerDealStatuses;
   final DateTime? initialManagerDealFromDate;
@@ -228,6 +229,7 @@ class CustomAppBar extends StatefulWidget {
     this.hasActiveLeadFilters = false,
     this.initialChatFilters,
     this.initialManagersDeal,
+    this.initialRegionsDeal,
     this.initialLeadsDeal,
     this.initialManagerDealStatuses,
     this.initialManagerDealFromDate,
@@ -1747,6 +1749,7 @@ class _CustomAppBarState extends State<CustomAppBar>
           onDateRangeSelected: widget.onDateRangeDealSelected,
           onStatusAndDateRangeSelected: widget.onStatusAndDateRangeDealSelected,
           initialManagers: widget.initialManagersDeal,
+          initialRegions: widget.initialRegionsDeal,
           initialLeads: widget.initialLeadsDeal,
           initialHasTasks: widget.initialManagerDealHasTasks,
           initialStatuses: widget.initialManagerDealStatuses,

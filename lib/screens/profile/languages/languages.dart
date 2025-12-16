@@ -1,7 +1,9 @@
+import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/main.dart';
 import 'package:crm_task_manager/screens/profile/languages/local_manager_lang.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'app_localizations.dart';
 
 class LanguageButtonWidget extends StatelessWidget {
@@ -124,9 +126,74 @@ class LanguageButtonWidget extends StatelessWidget {
   }
 
   void _changeLanguage(BuildContext context, String languageCode) async {
-    Locale newLocale = Locale(languageCode);
-    MyApp.setLocale(context, newLocale);
-    await LanguageManager.saveLanguage(languageCode);
+    try {
+      // Показываем индикатор загрузки
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (BuildContext context) {
+          return Center(
+            child: CircularProgressIndicator(
+              color: Color(0xff1E2E52),
+            ),
+          );
+        },
+      );
+
+      // ✅ Отправляем POST запрос на сервер для смены языка
+      final apiService = context.read<ApiService>();
+      final success = await apiService.changeLanguage(languageCode);
+      
+      if (success) {
+        debugPrint('LanguageButtonWidget: Язык успешно изменён на сервере: $languageCode');
+        
+        // Применяем язык локально
+        Locale newLocale = Locale(languageCode);
+        MyApp.setLocale(context, newLocale);
+        await LanguageManager.saveLanguage(languageCode);
+        
+        // Закрываем индикатор загрузки
+        if (context.mounted) {
+          Navigator.pop(context);
+        }
+        
+        debugPrint('LanguageButtonWidget: Язык применён локально');
+      } else {
+        debugPrint('LanguageButtonWidget: Не удалось изменить язык на сервере');
+        
+        // Закрываем индикатор загрузки
+        if (context.mounted) {
+          Navigator.pop(context);
+        }
+        
+        // Показываем сообщение об ошибке
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Ошибка при изменении языка'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      debugPrint('LanguageButtonWidget: Ошибка при смене языка: $e');
+      
+      // Закрываем индикатор загрузки
+      if (context.mounted) {
+        Navigator.pop(context);
+      }
+      
+      // Показываем сообщение об ошибке
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Ошибка при изменении языка'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 }
 

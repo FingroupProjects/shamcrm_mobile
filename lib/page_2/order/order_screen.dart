@@ -116,29 +116,11 @@ class _OrderScreenState extends State<OrderScreen> with TickerProviderStateMixin
       orderBloc.add(FetchOrderStatuses(forceRefresh: true));
 
     } catch (e) {
+      // ✅ УБРАНО: Не показываем SnackBar с кнопкой "Повторить"
+      debugPrint('OrderScreen: Ошибка при обновлении данных: $e');
+      
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Ошибка при обновлении данных: ${e.toString()}',
-              style: TextStyle(
-                fontFamily: 'Gilroy',
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                color: Colors.white,
-              ),
-            ),
-            backgroundColor: Colors.red,
-            duration: Duration(seconds: 4),
-            action: SnackBarAction(
-              label: 'Повторить',
-              textColor: Colors.white,
-              onPressed: () => _onRefresh(currentStatusId),
-            ),
-          ),
-        );
-
-                        _orderBloc.add(FetchOrderStatuses(forceRefresh: false));
+        _orderBloc.add(FetchOrderStatuses(forceRefresh: false));
       }
     }
   }
@@ -167,7 +149,15 @@ class _OrderScreenState extends State<OrderScreen> with TickerProviderStateMixin
 
   // Метод для проверки наличия активных фильтров
   bool _hasActiveFilters() {
-    return _currentFilters.isNotEmpty;
+    if (_currentFilters.isEmpty) return false;
+    
+    return (_currentFilters['managers'] != null && (_currentFilters['managers'] as List).isNotEmpty) ||
+        (_currentFilters['regions'] != null && (_currentFilters['regions'] as List).isNotEmpty) ||
+        (_currentFilters['leads'] != null && (_currentFilters['leads'] as List).isNotEmpty) ||
+        _currentFilters['fromDate'] != null ||
+        _currentFilters['toDate'] != null ||
+        _currentFilters['status'] != null ||
+        _currentFilters['paymentMethod'] != null;
   }
 
   void _onSearch(String query) {
@@ -194,6 +184,7 @@ class _OrderScreenState extends State<OrderScreen> with TickerProviderStateMixin
         query: query,
         forceRefresh: true,
         managerIds: _currentFilters['managers'],
+        regionsIds: _currentFilters['regions'],
         leadIds: _currentFilters['leads'],
         fromDate: _currentFilters['fromDate'],
         toDate: _currentFilters['toDate'],
@@ -221,6 +212,7 @@ void _onStatusUpdated(int newStatusId) {
       forceRefresh: true,
       query: _isSearching ? _searchController.text : null,
       managerIds: _currentFilters['managers'],
+      regionsIds: _currentFilters['regions'],
       leadIds: _currentFilters['leads'],
       fromDate: _currentFilters['fromDate'],
       toDate: _currentFilters['toDate'],
@@ -235,6 +227,7 @@ void _onStatusUpdated(int newStatusId) {
         forceRefresh: true,
         query: _isSearching ? _searchController.text : null,
         managerIds: _currentFilters['managers'],
+        regionsIds: _currentFilters['regions'],
         leadIds: _currentFilters['leads'],
         fromDate: _currentFilters['fromDate'],
         toDate: _currentFilters['toDate'],
@@ -384,6 +377,7 @@ void _onStatusUpdated(int newStatusId) {
                     perPage: 20,
                     forceRefresh: true,
                     managerIds: _currentFilters['managers'],
+                    regionsIds: _currentFilters['regions'],
                     leadIds: _currentFilters['leads'],
                     fromDate: _currentFilters['fromDate'],
                     toDate: _currentFilters['toDate'],
@@ -438,6 +432,7 @@ void _onStatusUpdated(int newStatusId) {
 
               _orderBloc.add(FetchOrderStatusesWithFilters(
                 managerIds: filters['managers'],
+                regionsIds: filters['regions'],
                 leadIds: filters['leads'],
                 fromDate: filters['fromDate'],
                 toDate: filters['toDate'],
@@ -522,6 +517,7 @@ void _onStatusUpdated(int newStatusId) {
                                     perPage: 20,
                                     query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
                                     managerIds: hasActiveFilters ? _currentFilters['managers'] : null,
+                                    regionsIds: hasActiveFilters ? _currentFilters['regions'] : null,
                                     leadIds: hasActiveFilters ? _currentFilters['leads'] : null,
                                     fromDate: hasActiveFilters ? _currentFilters['fromDate'] : null,
                                     toDate: hasActiveFilters ? _currentFilters['toDate'] : null,

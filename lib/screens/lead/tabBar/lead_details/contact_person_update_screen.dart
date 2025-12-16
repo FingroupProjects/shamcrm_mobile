@@ -183,12 +183,12 @@ class _ContactPersonUpdateScreenState extends State<ContactPersonUpdateScreen> {
                         controller: positionController,
                         hintText: AppLocalizations.of(context)!.translate('enter_position'),
                         label: AppLocalizations.of(context)!.translate('position'),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return AppLocalizations.of(context)!.translate('field_required');
-                          }
-                          return null;
-                        },
+                        // validator: (value) {
+                        //   if (value == null || value.isEmpty) {
+                        //     return AppLocalizations.of(context)!.translate('field_required');
+                        //   }
+                        //   return null;
+                        // },
                       ),
                     ],
                   ),

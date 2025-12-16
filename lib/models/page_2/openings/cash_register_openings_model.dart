@@ -7,14 +7,27 @@ class CashRegisterOpeningsResponse {
     this.errors,
   });
 
-  factory CashRegisterOpeningsResponse.fromJson(Map<String, dynamic> json) =>
-      CashRegisterOpeningsResponse(
-        result: json["result"] == null
-            ? []
-            : List<CashRegisterOpening>.from(
-                json["result"]!.map((x) => CashRegisterOpening.fromJson(x))),
+  factory CashRegisterOpeningsResponse.fromJson(Map<String, dynamic> json) {
+    if (json["result"] != null) {
+      final resultData = json["result"];
+      if (resultData is Map<String, dynamic> && resultData["data"] != null) {
+        // Формат: {"result": {"data": [...]}}
+        return CashRegisterOpeningsResponse(
+          result: (resultData["data"] as List?)
+              ?.map((x) => CashRegisterOpening.fromJson(x as Map<String, dynamic>))
+              .toList() ?? [],
+          errors: json["errors"],
+        );
+      } else if (resultData is List) {
+        // Формат: {"result": [...]}
+        return CashRegisterOpeningsResponse(
+          result: resultData.map((x) => CashRegisterOpening.fromJson(x as Map<String, dynamic>)).toList(),
         errors: json["errors"],
       );
+      }
+    }
+    return CashRegisterOpeningsResponse(result: [], errors: json["errors"]);
+  }
 
   Map<String, dynamic> toJson() => {
         "result": result == null

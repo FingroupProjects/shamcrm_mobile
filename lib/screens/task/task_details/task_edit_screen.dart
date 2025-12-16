@@ -91,6 +91,10 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
   int? _selectedStatuses;
   List<CustomField> customFields = [];
   bool isEndDateInvalid = false;
+  
+  // Флаги для валидации обязательных полей
+  bool isExecutorInvalid = false;
+  bool isProjectInvalid = false;
   List<FileHelper> files = [];
   final ApiService _apiService = ApiService();
   List<TaskFiles> existingFiles = []; // Для отслеживания удаленных файлов с сервера
@@ -470,8 +474,10 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
             onSelectUsers: (List<UserData> selectedUsersData) {
               setState(() {
                 selectedUsers = selectedUsersData.map((user) => user.id.toString()).toList();
+                isExecutorInvalid = false; // Сбрасываем ошибку при выборе
               });
             },
+            hasError: isExecutorInvalid, // Передаем флаг ошибки
           );
         } else {
           return SizedBox.shrink();
@@ -483,8 +489,10 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
           onSelectProject: (ProjectTask selectedProjectData) {
             setState(() {
               selectedProject = selectedProjectData.id.toString();
+              isProjectInvalid = false; // Сбрасываем ошибку при выборе
             });
           },
+          hasError: isProjectInvalid, // Передаем флаг ошибки
         );
 
       case 'deadline':
@@ -630,16 +638,20 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
           onSelectUsers: (List<UserData> selectedUsersData) {
             setState(() {
               selectedUsers = selectedUsersData.map((user) => user.id.toString()).toList();
+              isExecutorInvalid = false; // Сбрасываем ошибку при выборе
             });
           },
+          hasError: isExecutorInvalid, // Передаем флаг ошибки
         ),
       ProjectTaskGroupWidget(
         selectedProject: selectedProject,
         onSelectProject: (ProjectTask selectedProjectData) {
           setState(() {
             selectedProject = selectedProjectData.id.toString();
+            isProjectInvalid = false; // Сбрасываем ошибку при выборе
           });
         },
+        hasError: isProjectInvalid, // Передаем флаг ошибки
       ),
       CustomTextFieldDate(
         controller: endDateController,
@@ -1874,6 +1886,28 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                               AppLocalizations.of(context)!
                                   .translate(
                                   'start_date_after_end_date'),
+                            );
+                            return;
+                          }
+
+                          // Проверяем обязательные поля: Исполнители
+                          if (!_hasTaskCreateForMySelfPermission && (selectedUsers == null || selectedUsers!.isEmpty)) {
+                            setState(() {
+                              isExecutorInvalid = true;
+                            });
+                            _showErrorSnackBar(
+                              '${AppLocalizations.of(context)!.translate('assignees_list')} - ${AppLocalizations.of(context)!.translate('field_required')}',
+                            );
+                            return;
+                          }
+
+                          // Проверяем обязательные поля: Проект
+                          if (selectedProject == null || selectedProject!.isEmpty) {
+                            setState(() {
+                              isProjectInvalid = true;
+                            });
+                            _showErrorSnackBar(
+                              '${AppLocalizations.of(context)!.translate('project')} - ${AppLocalizations.of(context)!.translate('field_required')}',
                             );
                             return;
                           }

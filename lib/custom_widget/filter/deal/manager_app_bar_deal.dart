@@ -6,6 +6,7 @@ import 'package:crm_task_manager/custom_widget/filter/deal/deal_NamesMultiSelect
 import 'package:crm_task_manager/custom_widget/filter/deal/deal_status_list.dart';
 import 'package:crm_task_manager/custom_widget/filter/deal/lead_manager_list.dart';
 import 'package:crm_task_manager/custom_widget/filter/lead/multi_manager_list.dart';
+import 'package:crm_task_manager/custom_widget/filter/lead/multi_region_list.dart';
 import 'package:crm_task_manager/custom_widget/filter/lead/multi_directory_dropdown_widget.dart';
 import 'package:crm_task_manager/models/deal_model.dart';
 import 'package:crm_task_manager/models/deal_name_list.dart';
@@ -13,6 +14,7 @@ import 'package:crm_task_manager/models/directory_link_model.dart';
 import 'package:crm_task_manager/models/lead_multi_model.dart';
 import 'package:crm_task_manager/models/field_configuration.dart';
 import 'package:crm_task_manager/models/manager_model.dart';
+import 'package:crm_task_manager/models/region_model.dart';
 import 'package:crm_task_manager/models/main_field_model.dart';
 import 'package:crm_task_manager/screens/deal/deal_cache.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
@@ -28,6 +30,7 @@ class DealManagerFilterScreen extends StatefulWidget {
   final Function(DateTime?, DateTime?)? onDateRangeSelected;
   final Function(int?, DateTime?, DateTime?)? onStatusAndDateRangeSelected;
   final List? initialManagers;
+  final List? initialRegions;
   final List? initialLeads;
   final int? initialStatuses;
   final DateTime? initialFromDate;
@@ -49,6 +52,7 @@ class DealManagerFilterScreen extends StatefulWidget {
     this.onDateRangeSelected,
     this.onStatusAndDateRangeSelected,
     this.initialManagers,
+    this.initialRegions,
     this.initialLeads,
     this.initialStatuses,
     this.initialFromDate,
@@ -78,6 +82,7 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
   bool _isConfigurationLoaded = false;
 
   List _selectedManagers = [];
+  List _selectedRegions = [];
   List _selectedLeads = [];
   int? _selectedStatuses;
   DateTime? _fromDate;
@@ -115,6 +120,7 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
       _loadFieldConfiguration();
     });
     _selectedManagers = widget.initialManagers ?? [];
+    _selectedRegions = widget.initialRegions ?? [];
     _selectedLeads = widget.initialLeads ?? [];
     _selectedStatuses = widget.initialStatuses;
     _fromDate = widget.initialFromDate;
@@ -311,6 +317,22 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
             ),
           ),
         );
+      case 'region_id':
+        return Card(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          color: Colors.white,
+          child: Padding(
+            padding: const EdgeInsets.all(8),
+            child: RegionsMultiSelectWidget(
+              selectedRegions: _selectedRegions.map((r) => r.id.toString()).toList(),
+              onSelectRegions: (List<RegionData> selectedRegionsData) {
+                setState(() {
+                  _selectedRegions = selectedRegionsData;
+                });
+              },
+            ),
+          ),
+        );
       case 'lead_id':
         return Card(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -477,6 +499,7 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
               setState(() {
                 widget.onResetFilters?.call();
                 _selectedManagers.clear();
+                _selectedRegions.clear();
                 _selectedLeads.clear();
                 _selectedStatuses = null;
                 _fromDate = null;
@@ -521,6 +544,7 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
 
               Map<String, dynamic> filterData = {
                 'managers': _selectedManagers,
+                'regions': _selectedRegions,
                 'leads': _selectedLeads,
                 'statuses': _selectedStatuses,
                 'fromDate': _fromDate,
@@ -551,6 +575,7 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
                 filterData['custom_field_filters'] = customFieldFilters;
               }
               if (_selectedManagers.isNotEmpty ||
+                  _selectedRegions.isNotEmpty ||
                   _selectedLeads.isNotEmpty ||
                   _selectedStatuses != null ||
                   _fromDate != null ||
@@ -621,7 +646,7 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
                 child: Column(
                   children: [
                     if (_isConfigurationLoaded && _fieldConfigurations.isNotEmpty)
-                      ..._fieldConfigurations.map((config) {
+                      ..._fieldConfigurations.where((config) => config.fieldName != 'region_id').map((config) {
                         final widget = _buildFieldWidgetByConfig(config);
                         if (widget == null) return SizedBox.shrink();
                         return Padding(
@@ -745,6 +770,25 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
                           const SizedBox(height: 8),
                         ],
                       ],
+                    
+                    // ОБЯЗАТЕЛЬНОЕ поле "Регион" - показывается ВСЕГДА
+                    Card(
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      color: Colors.white,
+                      child: Padding(
+                        padding: const EdgeInsets.all(8),
+                        child: RegionsMultiSelectWidget(
+                          selectedRegions: _selectedRegions.map((r) => r.id.toString()).toList(),
+                          onSelectRegions: (List<RegionData> selectedRegionsData) {
+                            setState(() {
+                              _selectedRegions = selectedRegionsData;
+                            });
+                          },
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    
                     Card(
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       color: Colors.white,

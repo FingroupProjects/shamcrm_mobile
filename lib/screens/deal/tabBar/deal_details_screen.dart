@@ -440,6 +440,8 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
         return AppLocalizations.of(context)!.translate('creation_date_details');
       case 'deal_status_id':
         return AppLocalizations.of(context)!.translate('status_history');
+      case 'users':
+        return AppLocalizations.of(context)!.translate('assignees_list');
       default:
         return '${fc.fieldName}:';
     }
@@ -512,6 +514,17 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
           return deal.dealStatuses.map((s) => s.title).join(', ');
         }
         return deal.dealStatus?.title ?? '';
+
+      case 'users':
+        if (deal.users != null && deal.users!.isNotEmpty) {
+          final userNames = deal.users!
+              .where((dealUser) => dealUser.user?.name != null)
+              .map((dealUser) => dealUser.user?.name ?? '')
+              .where((name) => name.isNotEmpty)
+              .toList();
+          return userNames.join(', ');
+        }
+        return '';
 
       default:
         return '';
@@ -924,7 +937,8 @@ void _showUsersDialog(String users) {
       builder: (BuildContext context, BoxConstraints constraints) {
               // ✅ НОВОЕ: Обработка пользователей
       if (label == AppLocalizations.of(context)!.translate('assignee') ||
-          label == AppLocalizations.of(context)!.translate('assignees')) {
+          label == AppLocalizations.of(context)!.translate('assignees') ||
+          label == AppLocalizations.of(context)!.translate('assignees_list')) {
         return GestureDetector(
           onTap: () => _showUsersDialog(value),
           child: Row(

@@ -147,7 +147,7 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                state.message,
+                localizations.translate(state.message),
                 style: TextStyle(
                   fontFamily: 'Gilroy',
                   fontSize: 16,

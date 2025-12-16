@@ -921,6 +921,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                       if (_canReadOrders)
                         OrdersWidget(
                           leadId: int.parse(widget.leadId),
+                          clientPhone: widget.phone, // Передаем телефон клиента для автозаполнения
                           key: GlobalKey(),
                         ),
                       ContactPersonWidget(
@@ -1360,36 +1361,39 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
     }
 
     if (value == 'become_manager') {
-      return GestureDetector(
-        onTap: () {
-          _assignManager();
-        },
-        child: Container(
-          padding: EdgeInsets.symmetric(horizontal: 5, vertical: 5),
-          decoration: BoxDecoration(
-            color: Color(0xff1E2E52),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                Icons.person_add_alt_1,
-                color: Colors.white,
-                size: 20,
-              ),
-              SizedBox(width: 12),
-              Text(
-                AppLocalizations.of(context)!.translate('become_manager'),
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 16,
-                  fontFamily: 'Gilroy',
-                  fontWeight: FontWeight.w500,
+      return Align(
+        alignment: Alignment.centerLeft,
+        child: GestureDetector(
+          onTap: () {
+            _assignManager();
+          },
+          child: Container(
+            padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: Color(0xff1E2E52),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.person_add_alt_1,
                   color: Colors.white,
+                  size: 18,
                 ),
-              ),
-            ],
+                SizedBox(width: 6),
+                Text(
+                  AppLocalizations.of(context)!.translate('become_manager'),
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontFamily: 'Gilroy',
+                    fontWeight: FontWeight.w500,
+                    color: Colors.white,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       );

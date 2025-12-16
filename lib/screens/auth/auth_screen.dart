@@ -274,7 +274,26 @@ class _AuthScreenState extends State<AuthScreen> {
                               try {
                                 if (state is DomainError) {
                                   ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(content: Text(state.message)),
+                                    SnackBar(
+                                      content: Text(
+                                        AppLocalizations.of(context)!.translate(state.message),
+                                        style: TextStyle(
+                                          fontFamily: 'Gilroy',
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w500,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                      behavior: SnackBarBehavior.floating,
+                                      margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      backgroundColor: Colors.red,
+                                      elevation: 3,
+                                      padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                                      duration: Duration(seconds: 3),
+                                    ),
                                   );
                                 } else if (state is EmailVerified) {
                                   setState(() {
@@ -370,7 +389,26 @@ class _AuthScreenState extends State<AuthScreen> {
                                       }
                                     } else if (loginState is LoginError) {
                                       ScaffoldMessenger.of(context).showSnackBar(
-                                        SnackBar(content: Text(loginState.message)),
+                                        SnackBar(
+                                          content: Text(
+                                            AppLocalizations.of(context)!.translate(loginState.message),
+                                            style: TextStyle(
+                                              fontFamily: 'Gilroy',
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.w500,
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                          behavior: SnackBarBehavior.floating,
+                                          margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(12),
+                                          ),
+                                          backgroundColor: Colors.red,
+                                          elevation: 3,
+                                          padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                                          duration: Duration(seconds: 3),
+                                        ),
                                       );
                                     }
                                   } catch (e) {

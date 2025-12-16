@@ -8,13 +8,25 @@ class ClientOpeningsResponse {
   });
 
   factory ClientOpeningsResponse.fromJson(Map<String, dynamic> json) {
+    if (json["result"] != null) {
+      final resultData = json["result"];
+      if (resultData is Map<String, dynamic> && resultData["data"] != null) {
+        // Формат: {"result": {"data": [...]}}
+        return ClientOpeningsResponse(
+          result: (resultData["data"] as List?)
+              ?.map((x) => ClientOpening.fromJson(x as Map<String, dynamic>))
+              .toList() ?? [],
+          errors: json["errors"],
+        );
+      } else if (resultData is List) {
+        // Формат: {"result": [...]}
     return ClientOpeningsResponse(
-      result: json["result"] == null
-          ? []
-          : List<ClientOpening>.from(
-          json["result"]!.map((x) => ClientOpening.fromJson(x))),
+          result: resultData.map((x) => ClientOpening.fromJson(x as Map<String, dynamic>)).toList(),
       errors: json["errors"],
     );
+      }
+    }
+    return ClientOpeningsResponse(result: [], errors: json["errors"]);
   }
 }
 

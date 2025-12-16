@@ -1,11 +1,13 @@
 import 'dart:async';
 import 'package:bloc/bloc.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/api/service/localization_service.dart';
 import 'package:crm_task_manager/api/service/widget_service.dart';
 import 'package:crm_task_manager/bloc/permission/permession_event.dart';
 import 'package:crm_task_manager/bloc/permission/permession_state.dart';
 import 'package:crm_task_manager/models/permission.dart';
 import 'package:crm_task_manager/screens/profile/languages/local_manager_lang.dart';
+import 'package:flutter/foundation.dart';
 
 class PermissionsBloc extends Bloc<PermissionsEvent, PermissionsState> {
   final ApiService apiService;
@@ -25,6 +27,9 @@ class PermissionsBloc extends Bloc<PermissionsEvent, PermissionsState> {
           .toList();
 
       await apiService.savePermissions(permissions);
+      
+      // ✅ ИЗМЕНЕНО: Запрос локализации синхронно (await), чтобы применялось сразу
+      await _fetchAndApplyLocalization();
       
       // Sync permissions to iOS widget via App Groups
       await WidgetService.syncPermissionsToWidget(permissions);
@@ -57,6 +62,50 @@ class PermissionsBloc extends Bloc<PermissionsEvent, PermissionsState> {
       emit(PermissionsLoaded(permissionModels));
     } catch (e) {
       emit(PermissionsError('Ошибка при загрузке прав доступа!'));
+    }
+  }
+
+  /// Получить и применить локализацию с сервера (синхронно)
+  Future<void> _fetchAndApplyLocalization() async {
+    try {
+      if (kDebugMode) {
+        debugPrint('PermissionsBloc: Получаем локализацию с сервера...');
+      }
+      
+      final localizationResponse = await apiService.getLocalization();
+      
+      if (localizationResponse?.result != null) {
+        final newLanguage = localizationResponse!.result!.language ?? 'ru';
+        final newPhoneCode = localizationResponse.result!.countryPhoneCodes ?? '+992';
+        
+        // Получаем текущие сохранённые значения
+        final currentLanguage = await LocalizationService.getLanguage();
+        final currentPhoneCode = await LocalizationService.getDialCode();
+        
+        if (kDebugMode) {
+          debugPrint('PermissionsBloc: Текущие настройки - язык: $currentLanguage, код: $currentPhoneCode');
+          debugPrint('PermissionsBloc: Новые настройки - язык: $newLanguage, код: $newPhoneCode');
+        }
+        
+        // Сохраняем настройки локализации в SharedPreferences
+        await LocalizationService.applyLocalizationSettings(
+          language: newLanguage,
+          phoneCode: newPhoneCode,
+        );
+        
+        if (kDebugMode) {
+          debugPrint('PermissionsBloc: Локализация сохранена и применена успешно');
+        }
+      } else {
+        if (kDebugMode) {
+          debugPrint('PermissionsBloc: Не удалось получить локализацию с сервера');
+        }
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('PermissionsBloc: Ошибка при получении локализации: $e');
+      }
+      // Ошибка не критична - используем сохранённые настройки
     }
   }
 

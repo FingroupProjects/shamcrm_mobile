@@ -30,6 +30,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 import 'dropdown_history_task.dart';
+import 'task_history_dialog.dart';
 
 class TaskDetailsScreen extends StatefulWidget {
   final String taskId;
@@ -660,6 +661,26 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
+            // ✨ Иконка истории
+            IconButton(
+              padding: EdgeInsets.zero,
+              constraints: BoxConstraints(),
+              icon: const Icon(
+                Icons.history_outlined,
+                size: 30,
+                color: Color(0xff1E2E52),
+              ),
+              onPressed: () {
+                if (currentTask != null) {
+                  showDialog(
+                    context: context,
+                    builder: (BuildContext context) => TaskHistoryDialog(
+                      taskId: currentTask!.id,
+                    ),
+                  );
+                }
+              },
+            ),
             if (_canCreateTask || (_hasTaskCreateForMySelfPermission && _isAuthor))
               IconButton(
                 padding: EdgeInsets.zero,
@@ -1449,7 +1470,10 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                                                     Navigator.pop(dialogContext);
                                                     ScaffoldMessenger.of(context).showSnackBar(
                                                       SnackBar(
-                                                        content: Text(result['message'] ?? '', style: TextStyle(fontFamily: 'Gilroy', fontSize: 16, fontWeight: FontWeight.w500, color: Colors.white)),
+                                                        content: Text(
+                                                          AppLocalizations.of(context)!.translate(result['message'] ?? ''),
+                                                          style: TextStyle(fontFamily: 'Gilroy', fontSize: 16, fontWeight: FontWeight.w500, color: Colors.white),
+                                                        ),
                                                         behavior: SnackBarBehavior.floating,
                                                         margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                                                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -1466,7 +1490,19 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                                                   } catch (e) {
                                                     Navigator.pop(dialogContext);
                                                     ScaffoldMessenger.of(context).showSnackBar(
-                                                      SnackBar(content: Text(e.toString(), style: TextStyle(fontFamily: 'Gilroy', fontSize: 16, fontWeight: FontWeight.w500, color: Colors.white)), backgroundColor: Colors.red),
+                                                      SnackBar(
+                                                        content: Text(
+                                                          AppLocalizations.of(context)!.translate('error_task_finish'),
+                                                          style: TextStyle(fontFamily: 'Gilroy', fontSize: 16, fontWeight: FontWeight.w500, color: Colors.white),
+                                                        ),
+                                                        behavior: SnackBarBehavior.floating,
+                                                        margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                                        backgroundColor: Colors.red,
+                                                        elevation: 3,
+                                                        padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                                                        duration: Duration(seconds: 3),
+                                                      ),
                                                     );
                                                   } finally {
                                                     setState(() => _isLoading = false);

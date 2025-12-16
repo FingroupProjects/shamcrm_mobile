@@ -8,6 +8,7 @@ class FetchOrderStatuses extends OrderEvent {
 
 class FetchOrderStatusesWithFilters extends OrderEvent {
   final List<String>? managerIds;
+  final List<String>? regionsIds;
   final List<String>? leadIds;
   final DateTime? fromDate;
   final DateTime? toDate;
@@ -16,6 +17,7 @@ class FetchOrderStatusesWithFilters extends OrderEvent {
 
   FetchOrderStatusesWithFilters({
     this.managerIds,
+    this.regionsIds,
     this.leadIds,
     this.fromDate,
     this.toDate,
@@ -31,6 +33,7 @@ class FetchOrders extends OrderEvent {
   final String? query;
   final bool forceRefresh;
   final List<String>? managerIds;
+  final List<String>? regionsIds;
   final List<String>? leadIds;
   final DateTime? fromDate;
   final DateTime? toDate;
@@ -44,6 +47,7 @@ class FetchOrders extends OrderEvent {
     this.query,
     this.forceRefresh = false,
     this.managerIds,
+    this.regionsIds,
     this.leadIds,
     this.fromDate,
     this.toDate,

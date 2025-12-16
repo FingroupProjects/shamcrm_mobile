@@ -620,28 +620,10 @@ int _tutorialStep = 0; // Добавляем шаг туториала
       ));
 
     } catch (e) {
+      // ✅ УБРАНО: Не показываем SnackBar с кнопкой "Повторить"
+      debugPrint('EventScreen: Ошибка при обновлении данных: $e');
+      
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Ошибка при обновлении данных: ${e.toString()}',
-              style: TextStyle(
-                fontFamily: 'Gilroy',
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                color: Colors.white,
-              ),
-            ),
-            backgroundColor: Colors.red,
-            duration: Duration(seconds: 4),
-            action: SnackBarAction(
-              label: 'Повторить',
-              textColor: Colors.white,
-              onPressed: () => _onRefresh(),
-            ),
-          ),
-        );
-
         final eventBloc = context.read<EventBloc>();
         final bool isCompleted = _currentTabIndex == 1;
         eventBloc.add(FetchEvents(

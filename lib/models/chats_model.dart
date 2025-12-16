@@ -256,6 +256,7 @@ class Chats {
 
   String _mapChannelToIcon(String channel) {
     const channelIconMap = {
+      'mini_app': 'assets/icons/leads/telegram.png',
       'telegram_bot': 'assets/icons/leads/telegram.png',
       'telegram_account': 'assets/icons/leads/telegram.png',
       'whatsapp': 'assets/icons/leads/whatsapp.png',
@@ -264,6 +265,7 @@ class Chats {
       'messenger': 'assets/icons/leads/messenger.png',
       'phone': 'assets/icons/leads/telefon.png',
       'email': 'assets/icons/leads/email.png',
+      'site': '', // Используется Flutter иконка Icons.language
     };
     return channelIconMap[channel] ?? 'assets/icons/leads/default.png';
   }

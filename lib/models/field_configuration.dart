@@ -68,14 +68,14 @@ class FieldConfiguration extends Equatable {
       fieldName: json['field_name'],
       position: json['position'],
       required: false, // Всегда false в UI
-      isActive: json['is_active'],
-      isCustomField: json['is_custom_field'],
+      isActive: json['is_active'] == true || json['is_active'] == 1,
+      isCustomField: json['is_custom_field'] == true || json['is_custom_field'] == 1,
       createdAt: DateTime.parse(json['created_at']),
       updatedAt: DateTime.parse(json['updated_at']),
       customFieldId: json['custom_field_id'],
       directoryId: json['directory_id'],
       type: json['type'],
-      isDirectory: json['is_directory'],
+      isDirectory: json['is_directory'] == true || json['is_directory'] == 1,
       showOnTable: json['show_on_table'] == 1,
       originalRequired: originalRequiredValue, // Сохраняем оригинальное значение
     );

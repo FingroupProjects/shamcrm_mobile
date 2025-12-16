@@ -10,12 +10,14 @@ class UserMultiSelectWidget extends StatefulWidget {
   final List<String>? selectedUsers;
   final Function(List<UserData>) onSelectUsers;
   final String? customLabelText; // ✅ НОВОЕ: для кастомного заголовка
+  final bool hasError; // Флаг для отображения ошибки
 
   UserMultiSelectWidget({
     super.key,
     required this.onSelectUsers,
     this.selectedUsers,
     this.customLabelText, // ✅ НОВОЕ
+    this.hasError = false,
   });
 
   @override
@@ -45,7 +47,7 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
   @override
   void initState() {
     super.initState();
-    print('🔵 INITIAL USERS (widget.selectedUsers): ${widget.selectedUsers}');
+    // Debug логи убраны для производительности
     context.read<GetAllClientBloc>().add(GetAllClientEv());
   }
 
@@ -58,10 +60,6 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
     final newSelectedUsersData = usersList
         .where((user) => widget.selectedUsers!.contains(user.id.toString()))
         .toList();
-
-    print('🟡 SYNC - Initial (widget.selectedUsers): ${widget.selectedUsers}');
-    print('🟡 SYNC - All users count: ${usersList.length}');
-    print('🟡 SYNC - Selected users: ${newSelectedUsersData.map((u) => '${u.id}: ${u.name} ${u.lastname}').toList()}');
 
     // Проверяем, изменились ли выбранные пользователи
     if (!listEquals(
@@ -132,8 +130,8 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                 color: const Color(0xFFF4F7FD),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  width: 1,
-                  color: field.hasError ? Colors.red : Colors.white,
+                  width: widget.hasError ? 2 : 1,
+                  color: widget.hasError ? Colors.red : Colors.white,
                 ),
               ),
               child: BlocConsumer<GetAllClientBloc, GetAllClientState>(
@@ -141,10 +139,6 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                   // Обрабатываем изменения состояния в listener, а не в builder
                   if (state is GetAllClientSuccess) {
                     final newUsersList = state.dataUser.result ?? [];
-                    
-                    print('🟢 LISTENER - All users count: ${newUsersList.length}');
-                    print('🟢 LISTENER - All users: ${newUsersList.map((u) => '${u.id}: ${u.name} ${u.lastname}').toList()}');
-                    print('🟢 LISTENER - Initial (widget.selectedUsers): ${widget.selectedUsers}');
                     
                     // Обновляем состояние только если список пользователей изменился
                     if (!listEquals(
@@ -161,8 +155,6 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                         newSelectedUsersData = [];
                       }
                       
-                      print('🟢 LISTENER - Selected users after sync: ${newSelectedUsersData.map((u) => '${u.id}: ${u.name} ${u.lastname}').toList()}');
-                      
                       setState(() {
                         usersList = newUsersList;
                         displayUsersList = [selectAllItem, ...usersList];
@@ -173,29 +165,17 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                 },
                 builder: (context, state) {
                   // В builder только читаем данные, не изменяем состояние
-                  final currentUsersList = state is GetAllClientSuccess
-                      ? (state.dataUser.result ?? [])
-                      : usersList;
+                  final currentUsersList = usersList;
                   
                   final currentDisplayList = currentUsersList.isNotEmpty
                       ? [selectAllItem, ...currentUsersList]
                       : displayUsersList;
 
-                  // Синхронизируем selectedUsersData с объектами из currentUsersList
-                  // чтобы избежать ошибки "Initial items must match with the items in the items list"
-                  // Используем объекты из currentUsersList, чтобы они совпадали по ссылке с items
-                  final syncedSelectedUsers = selectedUsersData
-                      .where((selectedUser) => currentUsersList.any((u) => u.id == selectedUser.id))
-                      .map((selectedUser) => currentUsersList.firstWhere((u) => u.id == selectedUser.id))
-                      .toList();
-
-                  print('🟣 BUILDER - Current users list IDs: ${currentUsersList.map((u) => u.id).toList()}');
-                  print('🟣 BUILDER - Selected users data IDs: ${selectedUsersData.map((u) => u.id).toList()}');
-                  print('🟣 BUILDER - Synced selected users IDs: ${syncedSelectedUsers.map((u) => u.id).toList()}');
-
+                  // Используем selectedUsersData напрямую без синхронизации в build()
+                  // Синхронизация происходит только в listener при изменении данных
                   return CustomDropdown<UserData>.multiSelectSearch(
                     items: currentDisplayList,
-                    initialItems: syncedSelectedUsers,
+                    initialItems: selectedUsersData,
                     searchHintText:
                         AppLocalizations.of(context)!.translate('search'),
                     overlayHeight: 400,
@@ -217,7 +197,7 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                       // Проверяем, является ли элемент "Выбрать всех"
                       final isSelectAll = item.id == -1;
                       final allSelected =
-                          syncedSelectedUsers.length == currentUsersList.length &&
+                          selectedUsersData.length == currentUsersList.length &&
                           currentUsersList.isNotEmpty;
 
                       return ListTile(
@@ -306,17 +286,16 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                       final filteredValues =
                           values.where((user) => user.id != -1).toList();
                       
-                      print('🔴 ON_LIST_CHANGED - Selected users: ${filteredValues.map((u) => '${u.id}: ${u.name} ${u.lastname}').toList()}');
-                      print('🔴 ON_LIST_CHANGED - Selected users IDs: ${filteredValues.map((u) => u.id).toList()}');
-                      
                       // Проверяем, изменились ли выбранные пользователи
                       final currentIds = selectedUsersData.map((u) => u.id).toList()..sort();
                       final newIds = filteredValues.map((u) => u.id).toList()..sort();
                       
+                      // Вызываем callback ТОЛЬКО если данные реально изменились
                       if (!listEquals(currentIds, newIds)) {
                         setState(() {
                           selectedUsersData = filteredValues;
                         });
+                        // Вызываем callback только после обновления состояния
                         widget.onSelectUsers(filteredValues);
                         field.didChange(filteredValues);
                       }
@@ -336,6 +315,19 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                     fontWeight: FontWeight.w400,
                   ),
                 ),
+              ),
+            if (widget.hasError)
+              Padding(
+                padding: const EdgeInsets.only(top: 4, left: 0),
+                    // child: Text(
+                    //   AppLocalizations.of(context)!.translate('field_required'),
+                    //   style: const TextStyle(
+                    //     color: Colors.red,
+                    //     fontSize: 12,
+                    //     fontWeight: FontWeight.w400,
+                    //     fontFamily: 'Gilroy',
+                    //   ),
+                    // ),
               ),
           ],
         );

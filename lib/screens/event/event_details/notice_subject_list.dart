@@ -10,11 +10,13 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 class SubjectSelectionWidget extends StatefulWidget {
   final String? selectedSubject;
   final Function(String) onSelectSubject;
+  final bool hasError; // Флаг для отображения ошибки
 
   SubjectSelectionWidget({
     Key? key,
     this.selectedSubject,
     required this.onSelectSubject,
+    this.hasError = false,
   }) : super(key: key);
 
   @override
@@ -148,8 +150,8 @@ class _SubjectSelectionWidgetState extends State<SubjectSelectionWidget> {
             color: Color(0xffF4F7FD),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: Color(0xffF4F7FD),
-              width: 1,
+              color: widget.hasError ? Colors.red : Color(0xffF4F7FD),
+              width: widget.hasError ? 2 : 1,
             ),
           ),
           child: Row(

@@ -44,7 +44,7 @@ class DebtorsResult extends Equatable {
 
   factory DebtorsResult.fromJson(Map<String, dynamic> json) {
     return DebtorsResult(
-      totalDebt: json['total_debt'] as int,
+      totalDebt: json['total_debt'] as num,
       debtors: (json['debtors'] as List<dynamic>).map((e) => Debtor.fromJson(e as Map<String, dynamic>)).toList(),
       period: Period.fromJson(json['period'] as Map<String, dynamic>),
       percentageChange: (json['percentage_change'] as num).toDouble(), // Handle int or double
@@ -84,7 +84,7 @@ class Debtor extends Equatable {
       id: json['id'] as int,
       name: json['name'] as String,
       phone: json['phone'] as String?,
-      debtAmount: json['debt_amount'] as int,
+      debtAmount: json['debt_amount'] as num,
     );
   }
 

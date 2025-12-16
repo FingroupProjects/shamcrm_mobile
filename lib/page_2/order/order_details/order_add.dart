@@ -7,7 +7,8 @@ import 'package:crm_task_manager/bloc/page_2_BLOC/deliviry_adress/delivery_addre
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_state.dart';
-import 'package:crm_task_manager/custom_widget/custom_phone_for_edit.dart';
+import 'package:crm_task_manager/custom_widget/country_data_list.dart';
+import 'package:crm_task_manager/custom_widget/custom_phone_number_input.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/models/lead_list_model.dart';
 import 'package:crm_task_manager/models/manager_model.dart';
@@ -34,8 +35,9 @@ class OrderAddScreen extends StatefulWidget {
   final Order? order;
   final int? organizationId;
   final int? leadId;
+  final String? clientPhone; // Телефон клиента для автозаполнения
 
-  const OrderAddScreen({this.order, this.organizationId, this.leadId, super.key});
+  const OrderAddScreen({this.order, this.organizationId, this.leadId, this.clientPhone, super.key});
 
   @override
   State<OrderAddScreen> createState() => _OrderAddScreenState();
@@ -63,6 +65,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
   bool isManagerManuallySelected = false;
   int? currencyId; // Поле для хранения currency_id
   final Map<int, TextEditingController> _quantityControllers = {};
+  Country? _initialCountry; // Для автоопределения страны из телефона клиента
 
   @override
   void initState() {
@@ -70,7 +73,32 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
     if (widget.leadId != null) {
       selectedLead = widget.leadId.toString();
     }
-    _phoneController = TextEditingController(text: widget.order?.phone ?? '');
+    
+    // Автозаполнение телефона: приоритет - заказ, затем телефон клиента, затем пусто
+    String phoneToSet = widget.order?.phone ?? widget.clientPhone ?? '';
+    
+    // Разбираем телефон на код страны и номер для правильного отображения
+    String phoneNumber = '';
+    if (phoneToSet.isNotEmpty) {
+      // Определяем страну и код из списка доступных стран
+      for (var country in countries) {
+        if (phoneToSet.startsWith(country.dialCode)) {
+          phoneNumber = phoneToSet.substring(country.dialCode.length);
+          selectedDialCode = phoneToSet; // Полный номер с кодом
+          _initialCountry = country; // Сохраняем страну для виджета
+          debugPrint('OrderAddScreen: Detected country: ${country.name}, code: ${country.dialCode}, phone: $phoneNumber');
+          break;
+        }
+      }
+      
+      // Если код не найден, используем весь номер
+      if (phoneNumber.isEmpty) {
+        phoneNumber = phoneToSet;
+        selectedDialCode = phoneToSet;
+      }
+    }
+    
+    _phoneController = TextEditingController(text: phoneNumber);
     _deliveryAddressController =
         TextEditingController(text: widget.order?.deliveryAddress ?? '');
 
@@ -106,6 +134,11 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
       _loadStatuses();
       _loadCurrencyId(); // Загружаем currencyId
       context.read<BranchBloc>().add(FetchBranches());
+      
+      // Убедимся что selectedDialCode установлен сразу после инициализации
+      if (phoneToSet.isNotEmpty && selectedDialCode != null) {
+        debugPrint('OrderAddScreen: Auto-filled phone: $selectedDialCode');
+      }
     });
   }
 
@@ -620,6 +653,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                           if (widget.leadId == null) const SizedBox(height: 8),
                           CustomPhoneNumberInput(
                             controller: _phoneController,
+                            initialCountry: _initialCountry, // Передаем определенную страну
                             onInputChanged: (String number) {
                               WidgetsBinding.instance.addPostFrameCallback((_) {
                                 if (mounted) {
