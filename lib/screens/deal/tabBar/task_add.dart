@@ -323,19 +323,30 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
         );
 
       case 'task_status_id':
-        return Column(
+        debugPrint('🔵🔵🔵 TaskAddFromDeal: _buildStandardField - Building task_status_id widget 🔵🔵🔵');
+        debugPrint('🔵 TaskAddFromDeal: selectedStatusId = $selectedStatusId');
+        debugPrint('🔵 TaskAddFromDeal: isStatusInvalid = $isStatusInvalid');
+        debugPrint('🔵 TaskAddFromDeal: context is mounted: ${mounted}');
+        
+        final statusRadioWidget = TaskStatusRadioGroupWidget(
+          selectedStatus: selectedStatusId?.toString(),
+          onSelectStatus: (TaskStatus selectedStatusData) {
+            debugPrint('🔵 TaskAddFromDeal: Status selected: ${selectedStatusData.id}');
+            setState(() {
+              selectedStatusId = selectedStatusData.id;
+              isStatusInvalid = false;
+            });
+          },
+          hasError: isStatusInvalid,
+        );
+        
+        debugPrint('🔵 TaskAddFromDeal: TaskStatusRadioGroupWidget created, type: ${statusRadioWidget.runtimeType}');
+        
+        final statusWidget = Column(
+          key: ValueKey('task_status_id_column'),
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            TaskStatusRadioGroupWidget(
-              selectedStatus: selectedStatusId?.toString(),
-              onSelectStatus: (TaskStatus selectedStatusData) {
-                setState(() {
-                  selectedStatusId = selectedStatusData.id;
-                  isStatusInvalid = false;
-                });
-              },
-              hasError: isStatusInvalid,
-            ),
+            statusRadioWidget,
             if (isStatusInvalid)
               Padding(
                 padding: const EdgeInsets.only(top: 4, left: 4),
@@ -351,6 +362,13 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
               ),
           ],
         );
+        
+        debugPrint('🔵 TaskAddFromDeal: _buildStandardField - task_status_id Column widget built');
+        debugPrint('🔵 TaskAddFromDeal: Column has ${statusWidget.children.length} children');
+        debugPrint('🔵 TaskAddFromDeal: Column key: ${statusWidget.key}');
+        debugPrint('🔵 TaskAddFromDeal: Returning Column widget, type: ${statusWidget.runtimeType}');
+        
+        return statusWidget;
 
       default:
         return SizedBox.shrink();
@@ -427,11 +445,35 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
 
     // Специальная обработка для task_status_id - всегда показываем
     if (config.fieldName == 'task_status_id') {
+      debugPrint('🟢🟢🟢 TaskAddFromDeal: _buildFieldWidget - Processing task_status_id 🟢🟢🟢');
+      debugPrint('🟢 TaskAddFromDeal: config.id = ${config.id}');
+      debugPrint('🟢 TaskAddFromDeal: config.tableName = ${config.tableName}');
+      debugPrint('🟢 TaskAddFromDeal: config.fieldName = ${config.fieldName}');
+      debugPrint('🟢 TaskAddFromDeal: config.isCustomField = ${config.isCustomField}');
+      debugPrint('🟢 TaskAddFromDeal: config.isDirectory = ${config.isDirectory}');
+      debugPrint('🟢 TaskAddFromDeal: config.isActive = ${config.isActive}');
+      debugPrint('🟢 TaskAddFromDeal: config.position = ${config.position}');
+      debugPrint('🟢 TaskAddFromDeal: config.required = ${config.required}');
+      debugPrint('🟢 TaskAddFromDeal: config.originalRequired = ${config.originalRequired}');
+      
+      debugPrint('🟢 TaskAddFromDeal: Calling _buildStandardField for task_status_id...');
       final field = _buildStandardField(config);
+      debugPrint('🟢 TaskAddFromDeal: _buildFieldWidget - _buildStandardField returned widget type: ${field.runtimeType}');
+      debugPrint('🟢 TaskAddFromDeal: _buildFieldWidget - field is SizedBox: ${field is SizedBox}');
+      debugPrint('🟢 TaskAddFromDeal: _buildFieldWidget - field is Column: ${field is Column}');
+      
+      if (field is SizedBox) {
+        debugPrint('🟢 TaskAddFromDeal: ⚠️⚠️⚠️ CRITICAL ERROR: _buildStandardField returned SizedBox for task_status_id! ⚠️⚠️⚠️');
+      } else if (field is Column) {
+        debugPrint('🟢 TaskAddFromDeal: ✅ Column widget received, has ${field.children.length} children');
+        debugPrint('🟢 TaskAddFromDeal: Column key: ${field.key}');
+      }
+      
       // ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Всегда возвращаем виджет для task_status_id
       if (kDebugMode) {
         print('TaskAddFromDeal: _buildFieldWidget for task_status_id, returning widget type: ${field.runtimeType}');
       }
+      debugPrint('🟢🟢🟢 TaskAddFromDeal: _buildFieldWidget - Returning widget for task_status_id 🟢🟢🟢');
       return field;
     }
 
@@ -439,14 +481,32 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
   }
 
   List<Widget> _withVerticalSpacing(List<Widget> widgets, {double spacing = 8}) {
-    if (widgets.isEmpty) return widgets;
+    debugPrint('🔷 TaskAddFromDeal: _withVerticalSpacing - START');
+    debugPrint('🔷 TaskAddFromDeal: Input widgets.length: ${widgets.length}');
+    
+    if (widgets.isEmpty) {
+      debugPrint('🔷 TaskAddFromDeal: _withVerticalSpacing - widgets is empty, returning empty list');
+      return widgets;
+    }
+    
     final result = <Widget>[];
     for (var i = 0; i < widgets.length; i++) {
-      result.add(widgets[i]);
+      final widget = widgets[i];
+      debugPrint('🔷 TaskAddFromDeal: Adding widget $i, type: ${widget.runtimeType}');
+      if (widget is Column && widget.key != null && widget.key.toString().contains('task_status_id')) {
+        debugPrint('🔷 TaskAddFromDeal: ⭐⭐⭐ Found task_status_id Column widget at index $i! ⭐⭐⭐');
+      }
+      result.add(widget);
       if (i != widgets.length - 1) {
         result.add(SizedBox(height: spacing));
+        debugPrint('🔷 TaskAddFromDeal: Added spacing SizedBox after widget $i');
       }
     }
+    
+    debugPrint('🔷 TaskAddFromDeal: _withVerticalSpacing - END');
+    debugPrint('🔷 TaskAddFromDeal: Output result.length: ${result.length}');
+    debugPrint('🔷 TaskAddFromDeal: Expected length: ${widgets.length * 2 - 1} (${widgets.length} widgets + ${widgets.length - 1} spacing)');
+    
     return result;
   }
 
@@ -570,10 +630,26 @@ List<Widget> _buildAllRequiredFields() {
 
   return widgets;
 }
- List<Widget> _buildConfiguredFieldWidgets() {
+  List<Widget> _buildConfiguredFieldWidgets() {
+  debugPrint('🟡🟡🟡 TaskAddFromDeal: _buildConfiguredFieldWidgets - START 🟡🟡🟡');
+  debugPrint('🟡 TaskAddFromDeal: fieldConfigurations.length = ${fieldConfigurations.length}');
+  debugPrint('🟡 TaskAddFromDeal: isConfigurationLoaded = $isConfigurationLoaded');
+  
   // Сортируем поля по позиции
   final sortedFields = [...fieldConfigurations]
     ..sort((a, b) => a.position.compareTo(b.position));
+
+  debugPrint('🟡 TaskAddFromDeal: sortedFields.length = ${sortedFields.length}');
+  
+  // Проверяем наличие task_status_id в исходных данных
+  final hasStatusInConfig = sortedFields.any((f) => f.fieldName == 'task_status_id');
+  debugPrint('🟡 TaskAddFromDeal: task_status_id found in config: $hasStatusInConfig');
+  if (hasStatusInConfig) {
+    final statusField = sortedFields.firstWhere((f) => f.fieldName == 'task_status_id');
+    debugPrint('🟡 TaskAddFromDeal: task_status_id config - position: ${statusField.position}, isActive: ${statusField.isActive}, isCustom: ${statusField.isCustomField}, isDirectory: ${statusField.isDirectory}');
+  } else {
+    debugPrint('🟡 TaskAddFromDeal: ⚠️⚠️⚠️ task_status_id NOT FOUND in sortedFields! ⚠️⚠️⚠️');
+  }
 
   if (kDebugMode) {
     print('TaskAddFromDeal: Total fields from config: ${sortedFields.length}');
@@ -595,9 +671,20 @@ List<Widget> _buildAllRequiredFields() {
   
   // Фильтруем активные поля + обязательные системные поля (даже если неактивны)
   final activeFields = sortedFields.where((config) {
-    return config.isActive || 
-           (requiredSystemFields.containsKey(config.fieldName) && !config.isCustomField && !config.isDirectory);
+    final isActive = config.isActive;
+    final isRequired = requiredSystemFields.containsKey(config.fieldName) && !config.isCustomField && !config.isDirectory;
+    final shouldInclude = isActive || isRequired;
+    
+    if (config.fieldName == 'task_status_id') {
+      debugPrint('🟡 TaskAddFromDeal: Filtering task_status_id - isActive: $isActive, isRequired: $isRequired, shouldInclude: $shouldInclude');
+    }
+    
+    return shouldInclude;
   }).toList();
+  
+  debugPrint('🟡 TaskAddFromDeal: activeFields.length after filtering: ${activeFields.length}');
+  final hasStatusInActive = activeFields.any((f) => f.fieldName == 'task_status_id');
+  debugPrint('🟡 TaskAddFromDeal: task_status_id in activeFields: $hasStatusInActive');
 
   // ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Принудительно добавляем обязательные поля, если их нет
   // И ОБЯЗАТЕЛЬНО исправляем позицию для task_status_id на 2
@@ -605,9 +692,14 @@ List<Widget> _buildAllRequiredFields() {
   
   // Сначала проверяем и исправляем task_status_id, если он уже есть
   final statusFieldIndex = activeFields.indexWhere((f) => f.fieldName == 'task_status_id');
+  debugPrint('🟡 TaskAddFromDeal: statusFieldIndex = $statusFieldIndex');
+  
   if (statusFieldIndex != -1) {
+    debugPrint('🟡 TaskAddFromDeal: task_status_id found at index $statusFieldIndex, fixing position and isActive');
     // Исправляем позицию на 2 и делаем активным
     final existingStatusField = activeFields[statusFieldIndex];
+    debugPrint('🟡 TaskAddFromDeal: Existing status field - position: ${existingStatusField.position}, isActive: ${existingStatusField.isActive}');
+    
     activeFields[statusFieldIndex] = FieldConfiguration(
       id: existingStatusField.id,
       tableName: existingStatusField.tableName,
@@ -625,10 +717,12 @@ List<Widget> _buildAllRequiredFields() {
       showOnTable: existingStatusField.showOnTable,
       originalRequired: existingStatusField.originalRequired,
     );
+    debugPrint('🟡 TaskAddFromDeal: Fixed task_status_id - new position: 2, new isActive: true');
     if (kDebugMode) {
       print('TaskAddFromDeal: Fixed task_status_id position to 2 and set isActive to true');
     }
   } else {
+    debugPrint('🟡 TaskAddFromDeal: task_status_id NOT found in activeFields, adding it now');
     // Добавляем task_status_id, если его нет
     final tempConfig = FieldConfiguration(
       id: 0,
@@ -645,6 +739,7 @@ List<Widget> _buildAllRequiredFields() {
       isDirectory: false,
     );
     activeFields.add(tempConfig);
+    debugPrint('🟡 TaskAddFromDeal: Added missing task_status_id field with position 2');
     if (kDebugMode) {
       print('TaskAddFromDeal: Added missing task_status_id field with position 2');
     }
@@ -676,6 +771,30 @@ List<Widget> _buildAllRequiredFields() {
 
   // Сортируем активные поля по позиции после добавления недостающих
   activeFields.sort((a, b) => a.position.compareTo(b.position));
+  
+  debugPrint('🟡 TaskAddFromDeal: After sorting, activeFields.length = ${activeFields.length}');
+  final statusFieldAfterSort = activeFields.firstWhere(
+    (f) => f.fieldName == 'task_status_id',
+    orElse: () => FieldConfiguration(
+      id: -1,
+      tableName: 'tasks',
+      fieldName: 'NOT_FOUND',
+      position: -1,
+      required: false,
+      isActive: false,
+      isCustomField: false,
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+      showOnTable: false,
+      originalRequired: false,
+      isDirectory: false,
+    ),
+  );
+  if (statusFieldAfterSort.fieldName == 'task_status_id') {
+    debugPrint('🟡 TaskAddFromDeal: After sort - task_status_id found at position ${statusFieldAfterSort.position}, isActive: ${statusFieldAfterSort.isActive}');
+  } else {
+    debugPrint('🟡 TaskAddFromDeal: After sort - task_status_id NOT FOUND!');
+  }
 
   if (kDebugMode) {
     print('TaskAddFromDeal: Active fields count (including required): ${activeFields.length}');
@@ -693,36 +812,100 @@ List<Widget> _buildAllRequiredFields() {
   final List<Widget> widgets = [];
   bool hasStatusWidget = false;
   Widget? statusWidget;
+  int statusWidgetIndex = -1;
   
-  for (var config in activeFields) {
+  debugPrint('🟠🟠🟠 TaskAddFromDeal: Starting to build widgets for ${activeFields.length} active fields 🟠🟠🟠');
+  
+  for (int i = 0; i < activeFields.length; i++) {
+    final config = activeFields[i];
+    debugPrint('🟠 TaskAddFromDeal: [${i + 1}/${activeFields.length}] Processing field: ${config.fieldName}, position: ${config.position}');
+    
     if (kDebugMode) {
       print('TaskAddFromDeal: Building widget for field: ${config.fieldName}');
     }
     // Специальная обработка для task_status_id - всегда показываем
     if (config.fieldName == 'task_status_id') {
+      debugPrint('🟠🟠🟠 TaskAddFromDeal: ⭐⭐⭐ FOUND task_status_id in loop! ⭐⭐⭐');
+      debugPrint('🟠 TaskAddFromDeal: config.isActive: ${config.isActive}, config.position: ${config.position}');
+      debugPrint('🟠 TaskAddFromDeal: config.isCustomField: ${config.isCustomField}, config.isDirectory: ${config.isDirectory}');
+      debugPrint('🟠 TaskAddFromDeal: config.required: ${config.required}');
+      debugPrint('🟠 TaskAddFromDeal: widgets.length BEFORE building: ${widgets.length}');
+      
       if (kDebugMode) {
         print('TaskAddFromDeal: Processing task_status_id field, isActive: ${config.isActive}, position: ${config.position}');
       }
+      
+      debugPrint('🟠 TaskAddFromDeal: Calling _buildFieldWidget for task_status_id...');
       final widget = _buildFieldWidget(config);
+      debugPrint('🟠 TaskAddFromDeal: _buildFieldWidget returned widget type: ${widget.runtimeType}');
+      debugPrint('🟠 TaskAddFromDeal: widget is SizedBox: ${widget is SizedBox}');
+      debugPrint('🟠 TaskAddFromDeal: widget is Column: ${widget is Column}');
+      debugPrint('🟠 TaskAddFromDeal: widget.toString(): ${widget.toString()}');
+      
+      // Проверяем, что виджет не пустой
+      if (widget is SizedBox) {
+        debugPrint('🟠 TaskAddFromDeal: ⚠️⚠️⚠️ WARNING: task_status_id widget is SizedBox! This is a problem! ⚠️⚠️⚠️');
+      }
+      
       if (kDebugMode) {
         print('TaskAddFromDeal: task_status_id widget built successfully, widget type: ${widget.runtimeType}');
       }
       // ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Всегда добавляем виджет для task_status_id
       widgets.add(widget);
+      statusWidgetIndex = widgets.length - 1;
+      debugPrint('🟠 TaskAddFromDeal: ✅✅✅ widget ADDED at index $statusWidgetIndex! widgets.length after add: ${widgets.length} ✅✅✅');
       hasStatusWidget = true;
       statusWidget = widget;
-        // statusWidgetIndex = widgets.length - 1;
+      debugPrint('🟠 TaskAddFromDeal: hasStatusWidget = $hasStatusWidget');
+      debugPrint('🟠 TaskAddFromDeal: statusWidgetIndex = $statusWidgetIndex');
     } else {
+      debugPrint('🟠 TaskAddFromDeal: Processing non-status field: ${config.fieldName}');
       final widget = _buildFieldWidget(config);
-      // Исключаем только пустые SizedBox виджеты для других полей
+      debugPrint('🟠 TaskAddFromDeal: Widget for ${config.fieldName} type: ${widget.runtimeType}, is SizedBox: ${widget is SizedBox}');
+      // ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Исключаем только пустые SizedBox виджеты для других полей
       if (widget is! SizedBox) {
         widgets.add(widget);
+        debugPrint('🟠 TaskAddFromDeal: Added widget for ${config.fieldName} at index ${widgets.length - 1}');
+      } else {
+        debugPrint('🟠 TaskAddFromDeal: Skipped widget for field ${config.fieldName} because it\'s SizedBox');
+        if (kDebugMode) {
+          print('TaskAddFromDeal: Skipped widget for field ${config.fieldName} because it\'s SizedBox');
+        }
       }
     }
   }
+  
+  debugPrint('🟠🟠🟠 TaskAddFromDeal: Finished building widgets. Total widgets: ${widgets.length} 🟠🟠🟠');
+  debugPrint('🟠 TaskAddFromDeal: hasStatusWidget = $hasStatusWidget');
+  debugPrint('🟠 TaskAddFromDeal: statusWidgetIndex = $statusWidgetIndex');
+  debugPrint('🟠 TaskAddFromDeal: statusWidget != null: ${statusWidget != null}');
 
   // ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Если task_status_id не был добавлен, добавляем его принудительно на позицию 2
-  if (!hasStatusWidget || statusWidget == null) {
+  debugPrint('🟣🟣🟣 TaskAddFromDeal: After loop check 🟣🟣🟣');
+  debugPrint('🟣 TaskAddFromDeal: hasStatusWidget: $hasStatusWidget');
+  debugPrint('🟣 TaskAddFromDeal: statusWidget != null: ${statusWidget != null}');
+  debugPrint('🟣 TaskAddFromDeal: statusWidgetIndex: $statusWidgetIndex');
+  debugPrint('🟣 TaskAddFromDeal: widgets.length: ${widgets.length}');
+  
+  // Проверяем, есть ли виджет статуса в списке
+  bool statusWidgetInList = false;
+  int actualStatusIndex = -1;
+  for (int i = 0; i < widgets.length; i++) {
+    final w = widgets[i];
+    if (w is Column && w.children.isNotEmpty) {
+      // Проверяем, содержит ли Column TaskStatusRadioGroupWidget
+      // Это сложно проверить напрямую, но мы можем проверить по структуре
+      debugPrint('🟣 TaskAddFromDeal: Widget $i is Column with ${w.children.length} children');
+    }
+    if (i == statusWidgetIndex) {
+      statusWidgetInList = true;
+      actualStatusIndex = i;
+      debugPrint('🟣 TaskAddFromDeal: Found status widget at expected index $i, type: ${w.runtimeType}');
+    }
+  }
+  
+  if (!hasStatusWidget || statusWidget == null || !statusWidgetInList) {
+    debugPrint('🟣🟣🟣 TaskAddFromDeal: ⚠️⚠️⚠️ task_status_id widget was NOT found! Creating it now... ⚠️⚠️⚠️');
     if (kDebugMode) {
       print('TaskAddFromDeal: task_status_id widget was not found! Creating it now...');
     }
@@ -740,30 +923,63 @@ List<Widget> _buildAllRequiredFields() {
       originalRequired: true,
       isDirectory: false,
     );
+    debugPrint('🟣 TaskAddFromDeal: Calling _buildFieldWidget with forced config...');
     final forcedStatusWidget = _buildFieldWidget(statusConfig);
+    debugPrint('🟣 TaskAddFromDeal: forcedStatusWidget type: ${forcedStatusWidget.runtimeType}');
+    debugPrint('🟣 TaskAddFromDeal: forcedStatusWidget is SizedBox: ${forcedStatusWidget is SizedBox}');
+    debugPrint('🟣 TaskAddFromDeal: forcedStatusWidget is Column: ${forcedStatusWidget is Column}');
+    
+    if (forcedStatusWidget is SizedBox) {
+      debugPrint('🟣 TaskAddFromDeal: ⚠️⚠️⚠️ CRITICAL: forcedStatusWidget is SizedBox! This should not happen! ⚠️⚠️⚠️');
+    }
     
     // Вставляем на позицию 2 (индекс 1, так как name должен быть на позиции 1, индекс 0)
     // Если виджетов меньше 2, просто добавляем в конец и потом отсортируем
+    debugPrint('🟣 TaskAddFromDeal: widgets.length before insert: ${widgets.length}');
     if (widgets.length >= 1) {
       widgets.insert(1, forcedStatusWidget); // Вставляем после первого элемента (name)
+      debugPrint('🟣 TaskAddFromDeal: ✅✅✅ Inserted at index 1, widgets.length after insert: ${widgets.length} ✅✅✅');
     } else {
       widgets.add(forcedStatusWidget);
+      debugPrint('🟣 TaskAddFromDeal: Added to end, widgets.length after add: ${widgets.length}');
     }
     
     if (kDebugMode) {
       print('TaskAddFromDeal: task_status_id widget forced to be added at position 2');
     }
+  } else {
+    debugPrint('🟣 TaskAddFromDeal: ✅ task_status_id widget WAS found at index $actualStatusIndex, no need to force add');
   }
 
+  debugPrint('🟣🟣🟣 TaskAddFromDeal: Final widgets check 🟣🟣🟣');
+  debugPrint('🟣 TaskAddFromDeal: Final widgets.length: ${widgets.length}');
+  debugPrint('🟣 TaskAddFromDeal: statusWidgetIndex in final list: $statusWidgetIndex');
+  
   if (kDebugMode) {
     print('TaskAddFromDeal: Total widgets built: ${widgets.length}');
     for (var i = 0; i < widgets.length; i++) {
       print('TaskAddFromDeal: Widget $i type: ${widgets[i].runtimeType}');
+      if (i == statusWidgetIndex || (statusWidgetIndex == -1 && i == 1)) {
+        print('TaskAddFromDeal: ⭐ This is the status widget at index $i ⭐');
+      }
     }
-    print('TaskAddFromDeal: task_status_id widget is present: ${hasStatusWidget || statusWidget != null}');
+    print('TaskAddFromDeal: task_status_id widget is present: ${hasStatusWidget}');
   }
-
-  return _withVerticalSpacing(widgets, spacing: 8);
+  
+  final finalWidgets = _withVerticalSpacing(widgets, spacing: 8);
+  debugPrint('🟣 TaskAddFromDeal: _withVerticalSpacing returned ${finalWidgets.length} widgets (was ${widgets.length})');
+  debugPrint('🟣 TaskAddFromDeal: Checking finalWidgets for status widget...');
+  for (int i = 0; i < finalWidgets.length; i++) {
+    final w = finalWidgets[i];
+    if (w is SizedBox && w.width == null && w.height == null) {
+      debugPrint('🟣 TaskAddFromDeal: Widget $i is empty SizedBox (spacing)');
+    } else {
+      debugPrint('🟣 TaskAddFromDeal: Widget $i type: ${w.runtimeType}');
+    }
+  }
+  debugPrint('🟡🟡🟡 TaskAddFromDeal: _buildConfiguredFieldWidgets - END 🟡🟡🟡');
+  
+  return finalWidgets;
 }
 
   void _setDefaultValues() {
@@ -2055,11 +2271,27 @@ List<Widget> _buildAllRequiredFields() {
                         },
                         child: SingleChildScrollView(
                           padding: const EdgeInsets.all(16),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              // ✅ НОВОЕ: Всегда показываем обязательные поля
-                              ..._buildConfiguredFieldWidgets(),
+                          child: Builder(
+                            builder: (context) {
+                              debugPrint('🔴🔴🔴 TaskAddFromDeal: build() - Calling _buildConfiguredFieldWidgets() 🔴🔴🔴');
+                              final widgets = _buildConfiguredFieldWidgets();
+                              debugPrint('🔴 TaskAddFromDeal: build() - Received ${widgets.length} widgets from _buildConfiguredFieldWidgets()');
+                              for (int i = 0; i < widgets.length; i++) {
+                                final w = widgets[i];
+                                if (w is SizedBox && w.width == null && w.height == null) {
+                                  debugPrint('🔴 TaskAddFromDeal: build() - Widget $i is spacing SizedBox');
+                                } else {
+                                  debugPrint('🔴 TaskAddFromDeal: build() - Widget $i type: ${w.runtimeType}');
+                                  if (w is Column && w.key != null && w.key.toString().contains('task_status_id')) {
+                                    debugPrint('🔴 TaskAddFromDeal: ⭐⭐⭐⭐⭐ STATUS WIDGET FOUND IN BUILD AT INDEX $i! ⭐⭐⭐⭐⭐');
+                                  }
+                                }
+                              }
+                              return Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  // ✅ НОВОЕ: Всегда показываем обязательные поля
+                                  ...widgets,
 
                               if (customFields.where((field) {
                                 return !fieldConfigurations.any((config) =>
@@ -2116,7 +2348,9 @@ List<Widget> _buildAllRequiredFields() {
                               const SizedBox(height: 16),
                               _buildFileSelection(),
                               const SizedBox(height: 80),
-                            ],
+                                ],
+                              );
+                            },
                           ),
                         ),
                       ),

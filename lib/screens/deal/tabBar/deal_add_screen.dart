@@ -258,7 +258,12 @@ class _DealAddScreenState extends State<DealAddScreen> {
           },
         );
       case 'user_ids':
-        return _hasDealUsers ? UserMultiSelectWidget(
+      case 'users': // ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Добавляем обработку для поля 'users'
+        // ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Всегда показываем поле, если оно активно в конфигурации
+        if (kDebugMode) {
+          print('DealAddScreen: Building users field (field_name: ${config.fieldName})');
+        }
+        return UserMultiSelectWidget(
           selectedUsers: null,
           onSelectUsers: (List<UserData> users) {
             setState(() {
@@ -266,7 +271,7 @@ class _DealAddScreenState extends State<DealAddScreen> {
             });
             print('DealAddScreen: Выбрано пользователей: ${users.length}');
           },
-        ) : SizedBox.shrink();
+        );
       // case 'file':
       //   // Поле выбора файлов: отображаем согласно позиции в конфигурации
       //   return _buildFileSelection();
@@ -451,13 +456,33 @@ class _DealAddScreenState extends State<DealAddScreen> {
         .toList()
       ..sort((a, b) => a.position.compareTo(b.position));
 
+    if (kDebugMode) {
+      print('DealAddScreen: Building widgets for ${sorted.length} active fields');
+      for (var config in sorted) {
+        print('DealAddScreen: Field - name: ${config.fieldName}, position: ${config.position}, isActive: ${config.isActive}');
+      }
+    }
+
     final widgets = <Widget>[];
     for (final config in sorted) {
       final fieldWidget = _buildFieldWidget(config);
-      if (fieldWidget != null) {
+      if (fieldWidget != null && fieldWidget is! SizedBox) {
+        // ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Исключаем пустые SizedBox виджеты
+        if (kDebugMode) {
+          print('DealAddScreen: Added widget for field: ${config.fieldName}, type: ${fieldWidget.runtimeType}');
+        }
         widgets.add(fieldWidget);
+      } else {
+        if (kDebugMode) {
+          print('DealAddScreen: Skipped widget for field: ${config.fieldName}, widget is null or SizedBox');
+        }
       }
     }
+    
+    if (kDebugMode) {
+      print('DealAddScreen: Total widgets built: ${widgets.length}');
+    }
+    
     return _withVerticalSpacing(widgets, spacing: 16);
   }
 
