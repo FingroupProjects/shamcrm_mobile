@@ -11,6 +11,7 @@ class UserMultiSelectWidget extends StatefulWidget {
   final Function(List<UserData>) onSelectUsers;
   final String? customLabelText; // ✅ НОВОЕ: для кастомного заголовка
   final bool hasError; // Флаг для отображения ошибки
+  final bool isRequired; // ✅ НОВОЕ: обязательность поля
 
   UserMultiSelectWidget({
     super.key,
@@ -18,6 +19,7 @@ class UserMultiSelectWidget extends StatefulWidget {
     this.selectedUsers,
     this.customLabelText, // ✅ НОВОЕ
     this.hasError = false,
+    this.isRequired = true,
   });
 
   @override
@@ -106,7 +108,7 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
   Widget build(BuildContext context) {
     return FormField<List<UserData>>(
       validator: (value) {
-        if (selectedUsersData.isEmpty) {
+        if (widget.isRequired && selectedUsersData.isEmpty) {
           return AppLocalizations.of(context)!
               .translate('field_required_project');
         }

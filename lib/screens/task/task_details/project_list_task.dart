@@ -276,16 +276,17 @@ class _ProjectTaskGroupWidgetState extends State<ProjectTaskGroupWidget> {
                   ),
                 ),
               ),
-            if (widget.hasError)
+            // Не показываем дубль сообщения об ошибке:
+            // если сработал validator (field.hasError) — он уже показал errorText.
+            if (widget.hasError && !field.hasError)
               Padding(
                 padding: const EdgeInsets.only(top: 4, left: 0),
                 child: Text(
-                  AppLocalizations.of(context)!.translate('field_required'),
+                  AppLocalizations.of(context)!.translate('field_required_project'),
                   style: const TextStyle(
                     color: Colors.red,
-                    fontSize: 12,
+                    fontSize: 14,
                     fontWeight: FontWeight.w400,
-                    fontFamily: 'Gilroy',
                   ),
                 ),
               ),

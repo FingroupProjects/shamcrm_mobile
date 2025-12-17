@@ -21,33 +21,25 @@ import 'package:crm_task_manager/models/field_configuration.dart';
 import 'package:crm_task_manager/models/dealById_model.dart';
 import 'package:crm_task_manager/models/deal_model.dart';
 import 'package:crm_task_manager/models/file_helper.dart';
-import 'package:crm_task_manager/models/lead_list_model.dart';
 import 'package:crm_task_manager/models/main_field_model.dart';
 import 'package:crm_task_manager/models/manager_model.dart';
 import 'package:crm_task_manager/models/user_data_response.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_status_list_edit.dart';
-import 'package:crm_task_manager/screens/deal/tabBar/lead_list.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/add_custom_directory_dialog.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/lead_create_custom.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/main_field_dropdown_widget.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/manager_list.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/task/task_details/user_list.dart';
-import 'package:file_picker/file_picker.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_details/deal_name_list.dart';
 import 'package:intl/intl.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 import 'package:crm_task_manager/models/directory_model.dart' as directory_model;
-import 'package:crm_task_manager/screens/task/task_details/user_list.dart';
 import 'package:crm_task_manager/bloc/user/client/get_all_client_bloc.dart';
-import 'package:crm_task_manager/models/user_data_response.dart';
-import 'package:crm_task_manager/models/directory_model.dart'
-    as directory_model;
 
 class DealEditScreen extends StatefulWidget {
   final int dealId;
@@ -119,8 +111,6 @@ class _DealEditScreenState extends State<DealEditScreen> {
   bool isSavingFieldOrder = false;
   List<FieldConfiguration>? originalFieldConfigurations;
   final GlobalKey _addFieldButtonKey = GlobalKey();
-  bool _hasDealUsers = false;
-  List<UserData> _selectedUsers = [];
   List<String>? _initialUserIds; // Для хранения начальных ID пользователей
 
   @override
@@ -135,7 +125,6 @@ class _DealEditScreenState extends State<DealEditScreen> {
         _loadFieldConfiguration();
       }
     });
-    _loadHasDealUsersSetting(); // ✅ НОВОЕ
 
     if (widget.files != null) {
       files = widget.files!.map((file) {
@@ -155,29 +144,19 @@ class _DealEditScreenState extends State<DealEditScreen> {
       );
     }
   }
-// ✅ НОВОЕ: Загрузка настройки has_deal_users
-  Future<void> _loadHasDealUsersSetting() async {
-    final prefs = await SharedPreferences.getInstance();
-    final value = prefs.getBool('has_deal_users') ?? false;
-
-    if (mounted) {
-      setState(() {
-        _hasDealUsers = value;
-      });
-    }
-
-    debugPrint('DealEditScreen: has_deal_users = $value');
-  }
 
   void _initializeControllers() {
     titleController.text = widget.dealName;
     _selectedStatuses = widget.statusId;
     descriptionController.text = widget.description ?? '';
     selectedManager = widget.manager;
-    selectedLead = widget.lead;
+    selectedLead = (widget.lead != null && widget.lead!.trim().isNotEmpty)
+        ? widget.lead
+        : null;
     startDateController.text = widget.startDate ?? '';
     endDateController.text = widget.endDate ?? '';
-    sumController.text = widget.sum ?? '';
+    sumController.text =
+        (widget.sum == null || widget.sum == 'null') ? '' : widget.sum!;
 
     // ✅ НОВОЕ: Инициализируем выбранных пользователей из dealById
     if (widget.dealById?.users != null && widget.dealById!.users!.isNotEmpty) {
@@ -533,14 +512,9 @@ class _DealEditScreenState extends State<DealEditScreen> {
           },
         );
       case 'lead_id':
-        return LeadRadioGroupWidget(
-          selectedLead: selectedLead,
-          onSelectLead: (LeadData selectedLeadData) {
-            setState(() {
-              selectedLead = selectedLeadData.id.toString();
-            });
-          },
-        );
+        // Поле "Лид" не показываем в редактировании сделки
+        // (сделка уже привязана к лиду)
+        return const SizedBox.shrink();
       case 'start_date':
         return CustomTextFieldDate(
           controller: startDateController,
@@ -593,8 +567,10 @@ class _DealEditScreenState extends State<DealEditScreen> {
           },
         );
       case 'users': // ✅ НОВОЕ: обработка поля users
+      case 'user_ids': // ✅ Иногда приходит так в конфигурации
         return UserMultiSelectWidget(
           selectedUsers: selectedUsers,
+          isRequired: false, // ✅ Исполнители не обязательны в редактировании сделки
           onSelectUsers: (List<UserData> selectedUsersData) {
             setState(() {
               selectedUsers = selectedUsersData.map((user) => user.id.toString()).toList();
@@ -1495,7 +1471,8 @@ class _DealEditScreenState extends State<DealEditScreen> {
       body: MultiBlocProvider(
         providers: [
           BlocProvider(create: (context) => MainFieldBloc()),
-          BlocProvider(create: (context) => GetAllClientBloc(apiService: ApiService())), // ✅ НОВОЕ: добавляем блок для пользователей
+          // ⚠️ Не создаём локальный GetAllClientBloc здесь.
+          // Используем глобальный, который уже поднят в main.dart с корректным ApiService.
         ],
         child: BlocListener<DealBloc, DealState>(
           listener: (context, state) {
@@ -1564,7 +1541,7 @@ class _DealEditScreenState extends State<DealEditScreen> {
                               // Фильтруем только активные поля и сортируем по позициям
                               ...(() {
                                 final sorted = fieldConfigurations
-                                    .where((config) => config.isActive)
+                                    .where((config) => config.isActive && config.fieldName != 'lead_id')
                                     .toList()
                                   ..sort((a, b) => a.position.compareTo(b.position));
 
@@ -1656,8 +1633,7 @@ class _DealEditScreenState extends State<DealEditScreen> {
                                     textColor: Colors.white,
                                     onPressed: () {
                                       if (_formKey.currentState!.validate() &&
-                                          selectedManager != null &&
-                                          selectedLead != null) {
+                                          selectedManager != null) {
                                         DateTime? parsedStartDate;
                                         DateTime? parsedEndDate;
 
@@ -1756,12 +1732,16 @@ class _DealEditScreenState extends State<DealEditScreen> {
                                           userIds = selectedUsers!.map((id) => int.parse(id)).toList();
                                         }
 
+                                        final parsedLeadId =
+                                            int.tryParse((selectedLead ?? '').trim()) ??
+                                            widget.dealById?.lead?.id;
+
                                         context.read<DealBloc>().add(UpdateDeal(
                                           dealId: widget.dealId,
                                           name: titleController.text,
                                           dealStatusId: _selectedStatuses!.toInt(),
-                                          managerId: selectedManager != null ? int.parse(selectedManager!) : null,
-                                          leadId: selectedLead != null ? int.parse(selectedLead!) : null,
+                                          managerId: int.tryParse((selectedManager ?? '').trim()),
+                                          leadId: parsedLeadId,
                                           description: descriptionController.text.isEmpty ? null : descriptionController.text,
                                           startDate: parsedStartDate,
                                           endDate: parsedEndDate,
