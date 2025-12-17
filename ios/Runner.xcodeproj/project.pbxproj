@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 54;
+	objectVersion = 77;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -107,8 +107,6 @@
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		470C69562DF929F800D05511 /* New Folder */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-			);
 			path = "New Folder";
 			sourceTree = "<group>";
 		};
