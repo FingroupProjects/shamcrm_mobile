@@ -36,7 +36,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 import 'dart:io';
 import '../../lead/tabBar/lead_details/custom_field_model.dart';
@@ -70,7 +69,6 @@ class _DealAddScreenState extends State<DealAddScreen> {
   bool isManagerInvalid = false;
   bool isManagerManuallySelected = false;
   List<FileHelper> files = [];
-  bool _hasDealUsers = false;
   List<UserData> _selectedUsers = [];
 
   // Режим настроек
@@ -95,20 +93,6 @@ class _DealAddScreenState extends State<DealAddScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadFieldConfiguration();
     });
-    _loadHasDealUsersSetting();
-  }
-
-  Future<void> _loadHasDealUsersSetting() async {
-    final prefs = await SharedPreferences.getInstance();
-    final value = prefs.getBool('has_deal_users') ?? false;
-
-    if (mounted) {
-      setState(() {
-        _hasDealUsers = value;
-      });
-    }
-    
-    debugPrint('DealAddScreen: has_deal_users = $value');
   }
 
   Future<void> _loadFieldConfiguration() async {
@@ -265,6 +249,7 @@ class _DealAddScreenState extends State<DealAddScreen> {
         }
         return UserMultiSelectWidget(
           selectedUsers: null,
+          isRequired: false, // ✅ Исполнители не обязательны при создании сделки
           onSelectUsers: (List<UserData> users) {
             setState(() {
               _selectedUsers = users;

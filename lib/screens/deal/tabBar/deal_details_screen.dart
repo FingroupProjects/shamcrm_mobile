@@ -1,6 +1,4 @@
 import 'dart:convert';
-import 'dart:ui' as ui;
-import 'dart:io';
 
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/deal/deal_bloc.dart';
@@ -12,7 +10,6 @@ import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/custom_widget/file_utils.dart';
 import 'package:crm_task_manager/main.dart';
 import 'package:crm_task_manager/models/dealById_model.dart';
-import 'package:crm_task_manager/models/deal_model.dart';
 import 'package:crm_task_manager/models/field_configuration.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_delete.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_details/dropdown_history.dart';
@@ -441,7 +438,7 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
       case 'deal_status_id':
         return AppLocalizations.of(context)!.translate('status_history');
       case 'users':
-        return AppLocalizations.of(context)!.translate('assignees_list');
+        return AppLocalizations.of(context)!.translate('assignees');
       default:
         return '${fc.fieldName}:';
     }
@@ -497,7 +494,7 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
         return formatDate(deal.endDate);
 
       case 'sum':
-        return deal.sum.toString();
+        return deal.sum ?? '';
 
       case 'description':
         return deal.description ?? '';
@@ -562,7 +559,7 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
     }
 
     // Всегда добавляем файлы в конец списка, если они есть
-    if (deal.files != null && deal.files.isNotEmpty) {
+    if (deal.files.isNotEmpty) {
       details.add({
         'label': AppLocalizations.of(context)!.translate('files_details'),
         'value': '${deal.files.length} ${AppLocalizations.of(context)!.translate('files')}',
@@ -590,36 +587,6 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
         });
       }
     }
-  }
-
-  bool _isTextOverflow(String text, TextStyle style, double maxWidth) {
-    final TextPainter textPainter = TextPainter(
-      text: TextSpan(text: text, style: style),
-      maxLines: 1,
-      textDirection: ui.TextDirection.ltr,
-    )..layout(maxWidth: maxWidth);
-
-    return textPainter.didExceedMaxLines;
-  }
-
-  Widget _buildExpandableText(String label, String value, double maxWidth) {
-    final TextStyle style = TextStyle(
-      fontSize: 16,
-      fontFamily: 'Gilroy',
-      fontWeight: FontWeight.w500,
-      color: Color(0xff1E2E52),
-      backgroundColor: Colors.white,
-    );
-
-    return GestureDetector(
-      onTap: () => _showFullTextDialog(label.replaceAll(':', ''), value),
-      child: Text(
-        value,
-        style: style.copyWith(decoration: TextDecoration.underline),
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-      ),
-    );
   }
 
 @override
@@ -811,7 +778,7 @@ Widget build(BuildContext context) {
               startDate: startDateString,
               endDate: endDateString,
               createdAt: createdAtDateString,
-              sum: currentDeal!.sum.toString(),
+              sum: currentDeal!.sum,
               description: currentDeal!.description ?? '',
               // dealCustomFields: currentDeal!.dealCustomFields,
               directoryValues: currentDeal!.directoryValues,
@@ -978,9 +945,9 @@ void _showUsersDialog(String users) {
                 height: 120,
                 child: ListView.builder(
                   scrollDirection: Axis.horizontal,
-                  itemCount: currentDeal?.files?.length ?? 0,
+                  itemCount: currentDeal?.files.length ?? 0,
                   itemBuilder: (context, index) {
-                    final file = currentDeal!.files![index];
+                    final file = currentDeal!.files[index];
                     final fileExtension =
                         file.name.split('.').last.toLowerCase();
 
