@@ -324,15 +324,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                                                   return;
                                                 }
 
-                                                if (profile.phone == null || profile.phone!.isEmpty) {
-                                                  showCustomSnackBar(
-                                                    context: context,
-                                                    message: AppLocalizations.of(context)!.translate('phone_required'),
-                                                    isSuccess: false,
-                                                  );
-                                                  return;
-                                                }
-
+                                              
                                                 try {
                                                   SharedPreferences prefs = await SharedPreferences.getInstance();
                                                   String? userID = prefs.getString('userID');

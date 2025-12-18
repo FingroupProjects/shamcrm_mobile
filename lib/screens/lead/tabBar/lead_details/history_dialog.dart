@@ -181,19 +181,52 @@ class _HistoryDialogState extends State<HistoryDialog> {
         ),
       );
     }
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isSmallScreen = screenWidth < 360; // Маленькие экраны (меньше 360px)
+    
     return SingleChildScrollView(
       child: Column(
-        children: history.map((item) => _buildLeadHistoryItem(item)).toList(),
+        children: history.asMap().entries.map((entry) {
+          final index = entry.key;
+          final item = entry.value;
+          final isLast = index == history.length - 1;
+          
+          return Column(
+            children: [
+              _buildLeadHistoryItem(item, isSmallScreen),
+              // Добавляем разделитель только на маленьких экранах и не после последнего элемента
+              if (isSmallScreen && !isLast)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 8),
+                  child: Divider(
+                    color: Color(0xFFE0E0E0),
+                    height: 1,
+                    thickness: 1,
+                  ),
+                ),
+            ],
+          );
+        }).toList(),
       ),
     );
   }
 
-  Widget _buildLeadHistoryItem(LeadHistory item) {
+  Widget _buildLeadHistoryItem(LeadHistory item, [bool isSmallScreen = false]) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: Container(
         padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(color: const Color(0xFFF4F7FD), borderRadius: BorderRadius.circular(8)),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF4F7FD),
+          borderRadius: BorderRadius.circular(8),
+          // Добавляем границу только на маленьких экранах
+          border: isSmallScreen
+              ? Border.all(
+                  color: const Color(0xFFE0E0E0),
+                  width: 1,
+                )
+              : null,
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
