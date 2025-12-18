@@ -209,6 +209,11 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
         _fieldConfiguration = activeFields;
         _isConfigurationLoaded = true;
       });
+      
+      // ✅ Если данные уже загружены, обновляем детали с новой конфигурацией
+      if (currentTask != null) {
+        _updateDetails(currentTask);
+      }
     } catch (e) {
       // В случае ошибки показываем поля в стандартном порядке
       if (mounted) {
@@ -727,6 +732,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                       ),
                     );
                     if (shouldUpdate == true) {
+                      _loadFieldConfiguration(); // ✅ Обновляем конфигурацию полей
                       context
                           .read<TaskByIdBloc>()
                           .add(FetchTaskByIdEvent(taskId: currentTask!.id));
@@ -785,6 +791,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                       ),
                     );
                     if (shouldUpdate == true) {
+                      _loadFieldConfiguration(); // ✅ Обновляем конфигурацию полей
                       context
                           .read<TaskByIdBloc>()
                           .add(FetchTaskByIdEvent(taskId: currentTask!.id));
