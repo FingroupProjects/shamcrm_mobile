@@ -25,6 +25,7 @@ class Integration {
 
 class Chats {
   final int id;
+  final String? uniqueId;
   final String name;
   final String image;
   final String? taskFrom;
@@ -48,6 +49,7 @@ class Chats {
 
   Chats({
     required this.id,
+    this.uniqueId,
     required this.name,
     required this.image,
     this.taskFrom,
@@ -106,6 +108,7 @@ class Chats {
 
     return Chats(
       id: json['id'] ?? 0,
+      uniqueId: json['unique_id'] as String?,
       name: json['user'] != null
           ? json['user']['name'] ?? 'Без имени'
           : json['task'] != null
@@ -177,6 +180,7 @@ class Chats {
 
   Chats copyWith({
     int? id,
+    String? uniqueId,
     String? name,
     String? image,
     String? taskFrom,
@@ -200,6 +204,7 @@ class Chats {
   }) {
     return Chats(
       id: id ?? this.id,
+      uniqueId: uniqueId ?? this.uniqueId,
       name: name ?? this.name,
       image: image ?? this.image,
       taskFrom: taskFrom ?? this.taskFrom,

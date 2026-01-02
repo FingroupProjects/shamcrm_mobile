@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 class ChatsGetId {
   final int id;
+  final String? uniqueId;
   final String name;
   final bool canSendMessage;
   final String? type;
@@ -13,6 +14,7 @@ class ChatsGetId {
 
   ChatsGetId({
     required this.id,
+    this.uniqueId,
     required this.name,
     required this.canSendMessage,
     this.type,
@@ -124,6 +126,7 @@ factory ChatsGetId.fromJson(Map<String, dynamic> json) {
 
   return ChatsGetId(
     id: data['id'] ?? 0,
+    uniqueId: data['unique_id'] as String?,
     name: name,
     canSendMessage: data["can_send_message"] ?? false,
     type: data['type'],

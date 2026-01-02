@@ -48,6 +48,7 @@ import 'package:table_calendar/table_calendar.dart';
 class ChatSmsScreen extends StatefulWidget {
   final ChatItem chatItem;
   final int chatId;
+  final String? chatUniqueId; // Новое поле для unique_id
   final String endPointInTab;
   final bool canSendMessage;
   final ApiService apiService = ApiService();
@@ -57,6 +58,7 @@ class ChatSmsScreen extends StatefulWidget {
     super.key,
     required this.chatItem,
     required this.chatId,
+    this.chatUniqueId, // Опциональный параметр
     required this.endPointInTab,
     required this.canSendMessage,
   });
@@ -88,6 +90,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
   bool _hasMarkedMessagesAsRead = false;
   bool _isRecordingInProgress = false; // Флаг для отслеживания состояния записи
   String? referralBody; // Новое поле для хранения referral_body всего чата
+  ChatsBloc? _chatsBloc; // Сохраняем ссылку на bloc для использования в dispose
 
 
   void _onSearchChanged(String query) {
@@ -111,9 +114,13 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
   }
 
   @override
+  @override
   void initState() {
     super.initState();
     _checkPermissions();
+    
+    // Сохраняем ссылку на ChatsBloc для использования в dispose
+    _chatsBloc = context.read<ChatsBloc>();
 
     // Сбрасываем состояния
     context.read<ListenSenderFileCubit>().updateValue(false);
@@ -273,11 +280,12 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
 
   Future<void> _initializeSocket() async {
     try {
-      // Используем тот же setUpServices, но с дополнительными проверками
-      setUpServices();
-      debugPrint('ChatSmsScreen: Socket initialization completed');
+      debugPrint('🔌 ChatSmsScreen: Starting socket initialization...');
+      // ИСПРАВЛЕНИЕ: Добавлен await для ожидания завершения инициализации сокета
+      await setUpServices();
+      debugPrint('✅ ChatSmsScreen: Socket initialization completed');
     } catch (e) {
-      debugPrint('ChatSmsScreen: Socket initialization error: $e');
+      debugPrint('❌ ChatSmsScreen: Socket initialization error: $e');
       // Сокет не критичен для работы чата, продолжаем без него
     }
   }
@@ -1472,27 +1480,29 @@ Widget build(BuildContext context) {
     return '${directory.path}/$fileName';
   }
 
-  void setUpServices() async {
+  Future<void> setUpServices() async {
+    debugPrint('🔌 ChatSmsScreen: setUpServices() STARTED');
+    
     // Проверяем, что baseUrl инициализирован
     if (baseUrl.isEmpty || baseUrl == 'null') {
       debugPrint('BaseURL not initialized, fetching...');
       baseUrl = await apiService.getDynamicBaseUrl();
 
       if (baseUrl.isEmpty || baseUrl == 'null') {
-        debugPrint('Failed to get baseURL, aborting socket setup');
+        debugPrint('❌ Failed to get baseURL, aborting socket setup');
         return;
       }
     }
 
-    debugPrint('Setting up socket for chatId: ${widget.chatId} with baseURL: $baseUrl');
+    debugPrint('✅ BaseURL for socket: $baseUrl');
 
-    debugPrint('Setting up socket for chatId: ${widget.chatId}');
     final prefs = await SharedPreferences.getInstance();
     String? token = prefs.getString('token');
     if (token == null || token.isEmpty) {
-      debugPrint('Error: Token is null or empty');
+      debugPrint('❌ Error: Token is null or empty');
       return;
     }
+    debugPrint('✅ Token retrieved successfully');
 
     // Проверяем домены для старой логики
     final enteredDomainMap = await ApiService().getEnteredDomain();
@@ -1501,41 +1511,61 @@ Widget build(BuildContext context) {
 
     // Проверяем домен для email-верификации
     String? verifiedDomain = await ApiService().getVerifiedDomain();
-    debugPrint('Domain parameters: enteredMainDomain=$enteredMainDomain, enteredDomain=$enteredDomain, verifiedDomain=$verifiedDomain');
+    debugPrint('📡 Domain check: enteredMainDomain=$enteredMainDomain, enteredDomain=$enteredDomain, verifiedDomain=$verifiedDomain');
 
-    // Если домены отсутствуют, используем verifiedDomain или резервные значения
+    // ИСПРАВЛЕНИЕ: Используем домен из baseUrl если verifiedDomain null
     if (enteredMainDomain == null || enteredDomain == null) {
       if (verifiedDomain != null && verifiedDomain.isNotEmpty) {
         // Для email-верификации используем verifiedDomain
         enteredMainDomain = verifiedDomain.split('-back.').last;
         enteredDomain = verifiedDomain.split('-back.').first;
-        debugPrint('Using verifiedDomain: $verifiedDomain, parsed mainDomain=$enteredMainDomain, domain=$enteredDomain');
+        debugPrint('✅ Using verifiedDomain: $verifiedDomain → mainDomain=$enteredMainDomain, domain=$enteredDomain');
+      } else if (baseUrl.isNotEmpty && baseUrl != 'null') {
+        // Извлекаем домен из baseUrl
+        // baseUrl формат: https://fingroupcrm-back.shamcrm.com/api
+        final urlPattern = RegExp(r'https://(.+?)-back\.(.+?)(/|$)');
+        final match = urlPattern.firstMatch(baseUrl);
+        if (match != null) {
+          enteredDomain = match.group(1);
+          enteredMainDomain = match.group(2);
+          debugPrint('✅ Extracted from baseUrl: domain=$enteredDomain, mainDomain=$enteredMainDomain');
+          
+          // Сохраняем извлеченные значения
+          await prefs.setString('enteredMainDomain', enteredMainDomain!);
+          await prefs.setString('enteredDomain', enteredDomain!);
       } else {
-        // Резервные значения для отладки
-        enteredMainDomain = 'shamcrm.com'; // Замени на реальный домен
-        enteredDomain = 'info1fingrouptj'; // Замени на реальный поддомен
-        debugPrint('Using fallback domains: enteredMainDomain=$enteredMainDomain, enteredDomain=$enteredDomain');
-        // Сохраняем резервные значения в SharedPreferences
-        await prefs.setString('enteredMainDomain', enteredMainDomain);
-        await prefs.setString('enteredDomain', enteredDomain);
+          debugPrint('❌ Failed to parse baseUrl, aborting socket setup');
+          return;
+        }
+      } else {
+        debugPrint('❌ No domain configuration available, aborting socket setup');
+        return;
       }
     }
 
+    debugPrint('✅ Final domains for socket: $enteredDomain-back.$enteredMainDomain');
+    
+    final socketUrl = 'wss://soketi.$enteredMainDomain/app/app-key';
+    final authUrl = 'https://$enteredDomain-back.$enteredMainDomain/broadcasting/auth';
+    
+    debugPrint('🔌 Socket URL: $socketUrl');
+    debugPrint('🔌 Auth URL: $authUrl');
+
     final customOptions = PusherChannelsOptions.custom(
-      uriResolver: (metadata) => Uri.parse('wss://soketi.$enteredMainDomain/app/app-key'),
+      uriResolver: (metadata) => Uri.parse(socketUrl),
       metadata: PusherChannelsOptionsMetadata.byDefault(),
     );
 
     socketClient = PusherChannelsClient.websocket(
       options: customOptions,
       connectionErrorHandler: (exception, trace, refresh) {
-        debugPrint('Socket connection error: $exception, StackTrace: $trace');
+        debugPrint('❌ Socket connection error: $exception');
         Future.delayed(Duration(seconds: 5), () async {
           try {
             await socketClient.connect();
-            debugPrint('Socket reconnect attempted');
-          } catch (e, stackTrace) {
-            debugPrint('Error reconnecting to socket: $e, StackTrace: $stackTrace');
+            debugPrint('🔄 Socket reconnect attempted');
+          } catch (e) {
+            debugPrint('❌ Error reconnecting to socket: $e');
           }
         });
         refresh();
@@ -1543,36 +1573,117 @@ Widget build(BuildContext context) {
       minimumReconnectDelayDuration: const Duration(seconds: 1),
     );
 
+    // Используем uniqueId если доступен, иначе chatId
+    final chatIdentifier = widget.chatUniqueId ?? widget.chatId.toString();
+    final channelName = 'presence-chat.$chatIdentifier';
+    
+    debugPrint('📱 Chat identifier for socket: $chatIdentifier (uniqueId: ${widget.chatUniqueId}, chatId: ${widget.chatId})');
+    debugPrint('📢 Channel name: $channelName');
+
     final myPresenceChannel = socketClient.presenceChannel(
-      'presence-chat.${widget.chatId}',
+      channelName,
       authorizationDelegate: EndpointAuthorizableChannelTokenAuthorizationDelegate.forPresenceChannel(
-        authorizationEndpoint: Uri.parse('https://$enteredDomain-back.$enteredMainDomain/broadcasting/auth'),
+        authorizationEndpoint: Uri.parse(authUrl),
         headers: {
           'Authorization': 'Bearer $token',
           'X-Tenant': '$enteredDomain-back',
         },
         onAuthFailed: (exception, trace) {
-          debugPrint('Auth failed for presence-chat.${widget.chatId}: $exception, StackTrace: $trace');
+          debugPrint('❌ Auth failed for $channelName: $exception');
         },
       ),
     );
 
     socketClient.onConnectionEstablished.listen((_) {
-      debugPrint('Socket connected successfully for chatId: ${widget.chatId}');
+      debugPrint('✅ Socket connected successfully for chatIdentifier: $chatIdentifier');
       myPresenceChannel.subscribeIfNotUnsubscribed();
-      debugPrint('Subscribed to channel: presence-chat.${widget.chatId}');
+      debugPrint('✅ Subscribed to channel: $channelName');
     });
 
     myPresenceChannel.bind('pusher:subscription_succeeded').listen((event) {
-      debugPrint('Successfully subscribed to presence-chat.${widget.chatId}: ${event.data}');
+      debugPrint('✅✅✅ CHAT_SMS: Successfully subscribed to $channelName');
+      debugPrint('✅✅✅ CHAT_SMS: Subscription data: ${event.data}');
     });
 
     myPresenceChannel.bind('pusher:subscription_error').listen((event) {
-      debugPrint('Subscription error for presence-chat.${widget.chatId}: ${event.data}');
+      debugPrint('❌❌❌ CHAT_SMS: Subscription error for $channelName: ${event.data}');
     });
 
+    // КРИТИЧНО: Подписываемся на ВСЕ события для отладки
+    myPresenceChannel.bind('pusher:member_added').listen((event) {
+      debugPrint('👤👤👤 CHAT_SMS: Member added: ${event.data}');
+    });
+
+    myPresenceChannel.bind('pusher:member_removed').listen((event) {
+      debugPrint('👤👤👤 CHAT_SMS: Member removed: ${event.data}');
+    });
+
+    // КРИТИЧНО: Подписываемся на событие chat.updated (приходит при новых сообщениях)
+    debugPrint('🎯🎯🎯 CHAT_SMS: Registering chat.updated listener for $channelName...');
+    
+    myPresenceChannel.bind('chat.updated').listen((event) async {
+      debugPrint('🔔🔔🔔🔔🔔 CHAT_SMS: ===== RECEIVED chat.updated EVENT =====');
+      debugPrint('🔔🔔🔔 CHAT_SMS: Channel: $channelName');
+      debugPrint('🔔🔔🔔 CHAT_SMS: Event type: ${event.name}');
+      debugPrint('🔔🔔🔔 CHAT_SMS: Event data: ${event.data}');
+      debugPrint('🔔🔔🔔 CHAT_SMS: Widget mounted: $mounted');
+      debugPrint('🔔🔔🔔 CHAT_SMS: Current chatId: ${widget.chatId}');
+      
+      try {
+        final chatData = json.decode(event.data);
+        final eventChatId = chatData['chat']?['id'];
+        
+        debugPrint('🔔🔔🔔 CHAT_SMS: Event chatId: $eventChatId, our chatId: ${widget.chatId}');
+        
+        // Проверяем что событие для нашего чата
+        if (eventChatId != widget.chatId) {
+          debugPrint('⚠️⚠️⚠️ CHAT_SMS: Event is for different chat, ignoring');
+          return;
+        }
+        
+        // Просто перезагружаем сообщения когда приходит обновление
+        if (mounted) {
+          debugPrint('🔔🔔🔔 CHAT_SMS: ✅ RELOADING messages NOW...');
+          context.read<MessagingCubit>().getMessages(widget.chatId);
+          
+          // Прокручиваем вниз после небольшой задержки
+          Future.delayed(Duration(milliseconds: 300), () {
+            if (mounted) {
+              _scrollToBottom();
+              debugPrint('🔔🔔🔔 CHAT_SMS: ✅ Scrolled to bottom');
+            }
+          });
+          
+          // Воспроизводим звук если сообщение не от меня
+          final lastMessage = chatData['chat']?['lastMessage'];
+          final isMyMessage = lastMessage?['is_my_message'] ?? false;
+          
+          debugPrint('🔔🔔🔔 CHAT_SMS: Last message is mine: $isMyMessage');
+          
+          if (!isMyMessage) {
+            try {
+              await _audioPlayer.setAsset('assets/audio/get.mp3');
+              await _audioPlayer.play();
+              debugPrint('🔔🔔🔔 CHAT_SMS: ✅ Played notification sound');
+            } catch (e) {
+              debugPrint('⚠️ CHAT_SMS: Could not play sound: $e');
+            }
+          }
+          
+          debugPrint('✅✅✅ CHAT_SMS: ===== chat.updated handled successfully =====');
+        } else {
+          debugPrint('⚠️⚠️⚠️ CHAT_SMS: Widget NOT MOUNTED, skipping reload');
+        }
+      } catch (e, stackTrace) {
+        debugPrint('❌❌❌ CHAT_SMS: Error handling chat.updated: $e');
+        debugPrint('❌❌❌ CHAT_SMS: StackTrace: $stackTrace');
+      }
+    });
+    
+    debugPrint('✅✅✅ CHAT_SMS: chat.updated listener registered');
+
     chatSubscribtion = myPresenceChannel.bind('chat.message').listen((event) async {
-      debugPrint('Received chat.message event: ${event.data}');
+      debugPrint('📨📨📨 CHAT_SMS: Received chat.message event: ${event.data}');
       try {
         if (event.data == null || event.data.isEmpty) {
           debugPrint('Error: chat.message event data is null or empty');
@@ -1661,12 +1772,169 @@ Widget build(BuildContext context) {
       }
     });
 
-    try {
-      await socketClient.connect();
-      debugPrint('Socket connection initiated');
+    // ДОПОЛНИТЕЛЬНО: Подписываемся на канал пользователя для получения обновлений чата
+    debugPrint('🎯🎯🎯 CHAT_SMS: Setting up USER channel subscription...');
+    final userId = prefs.getString('unique_id') ?? '';
+    if (userId.isNotEmpty) {
+      final userChannelName = 'presence-user.$userId';
+      debugPrint('🎯🎯🎯 CHAT_SMS: User channel: $userChannelName');
+      
+      final userPresenceChannel = socketClient.presenceChannel(
+        userChannelName,
+        authorizationDelegate: EndpointAuthorizableChannelTokenAuthorizationDelegate.forPresenceChannel(
+          authorizationEndpoint: Uri.parse(authUrl),
+          headers: {
+            'Authorization': 'Bearer $token',
+            'X-Tenant': '$enteredDomain-back',
+          },
+          onAuthFailed: (exception, trace) {
+            debugPrint('❌ Auth failed for $userChannelName: $exception');
+          },
+        ),
+      );
+      
+      socketClient.onConnectionEstablished.listen((_) {
+        debugPrint('✅ Subscribing to user channel: $userChannelName');
+        userPresenceChannel.subscribeIfNotUnsubscribed();
+      });
+      
+      // Слушаем события на канале пользователя
+      userPresenceChannel.bind('chat.updated').listen((event) async {
+        debugPrint('🔔🔔🔔 CHAT_SMS (USER CHANNEL): Received chat.updated!');
+        
+        try {
+          final chatData = json.decode(event.data);
+          final eventChatId = chatData['chat']?['id'];
+          
+          debugPrint('🔔🔔🔔 CHAT_SMS (USER CHANNEL): Event chatId: $eventChatId, our chatId: ${widget.chatId}');
+          
+          // Проверяем что событие для нашего чата
+          if (eventChatId == widget.chatId && mounted) {
+            final lastMessage = chatData['chat']?['lastMessage'];
+            final chatUsers = chatData['chat']?['chatUsers'];
+            
+            if (lastMessage != null) {
+              debugPrint('🔔🔔🔔 CHAT_SMS (USER CHANNEL): ✅ Adding new message...');
+              debugPrint('🔔🔔🔔 CHAT_SMS: Full chat data keys: ${chatData['chat']?.keys.toList()}');
+              debugPrint('🔔🔔🔔 CHAT_SMS: lastMessage keys: ${lastMessage.keys.toList()}');
+              debugPrint('🔔🔔🔔 CHAT_SMS: sender in lastMessage: ${lastMessage.containsKey('sender')}');
+              debugPrint('🔔🔔🔔 CHAT_SMS: sender data: ${lastMessage['sender']}');
+              debugPrint('🔔🔔🔔 CHAT_SMS: chatUsers count: ${chatUsers?.length ?? 0}');
+              if (chatUsers != null && chatUsers is List) {
+                for (int i = 0; i < chatUsers.length; i++) {
+                  debugPrint('🔔🔔🔔 CHAT_SMS: chatUsers[$i]: ${chatUsers[i]}');
+                }
+              }
+              
+              // КРИТИЧНО: Определяем правильно кто отправил сообщение
+              final prefs = await SharedPreferences.getInstance();
+              final myUserId = prefs.getString('userID') ?? '';
+              final myUniqueId = prefs.getString('unique_id') ?? '';
+              
+              debugPrint('🔔🔔🔔 CHAT_SMS: My IDs - userID=$myUserId, unique_id=$myUniqueId');
+              
+              // КРИТИЧНО: Ищем ВСЕХ участников чата и определяем кто отправитель
+              String otherUserName = 'Собеседник';
+              String myName = 'Вы';
+              String? senderId;
+              
+              // Получаем имена всех участников
+              if (chatUsers != null && chatUsers is List && chatUsers.isNotEmpty) {
+                debugPrint('🔔🔔🔔 CHAT_SMS: Searching in ${chatUsers.length} chatUsers...');
+                for (var user in chatUsers) {
+                  if (user['participant'] != null) {
+                    final participantId = user['participant']?['id']?.toString() ?? '';
+                    final participantName = user['participant']?['name'] ?? '';
+                    
+                    debugPrint('🔔🔔🔔 CHAT_SMS: Participant: id=$participantId, name=$participantName');
+                    
+                    if (participantId == myUserId) {
+                      myName = participantName;
+                      debugPrint('🔔🔔🔔 CHAT_SMS: This is ME: $myName');
+                    } else if (participantId.isNotEmpty) {
+                      otherUserName = participantName;
+                      senderId = participantId;
+                      debugPrint('🔔🔔🔔 CHAT_SMS: This is OTHER user: $otherUserName');
+                    }
+                  }
+                }
+              }
+              
+              // КРИТИЧНО: Определяем isMyMessage на основе is_my_message из события
+              final isMyMessageFromEvent = lastMessage['is_my_message'] ?? false;
+              
+              debugPrint('🔔🔔🔔 CHAT_SMS: is_my_message from event: $isMyMessageFromEvent');
+              
+              // Если это мое сообщение - используем мое имя, иначе - собеседника
+              final isMyMessage = isMyMessageFromEvent;
+              final senderName = isMyMessage ? myName : otherUserName;
+              
+              debugPrint('🔔🔔🔔 CHAT_SMS: FINAL - isMyMessage=$isMyMessage, senderName=$senderName');
+              
+              // Создаем объект Message из lastMessage
+              final newMessage = Message(
+                id: lastMessage['id'] ?? 0,
+                text: lastMessage['text'] ?? '',
+                type: lastMessage['type'] ?? 'text',
+                filePath: lastMessage['file_path'],
+                isMyMessage: isMyMessage, // Используем правильно определенное значение
+                createMessateTime: lastMessage['created_at'] ?? '',
+                senderName: senderName,
+                duration: Duration(
+                  seconds: lastMessage['voice_duration'] != null 
+                    ? double.tryParse(lastMessage['voice_duration'].toString())?.round() ?? 20
+                    : 20
+                ),
+                isPinned: lastMessage['is_pinned'] ?? false,
+                isChanged: lastMessage['is_changed'] ?? false,
+                isNote: lastMessage['is_note'] ?? false,
+              );
+              
+              debugPrint('🔔🔔🔔 CHAT_SMS (USER CHANNEL): Message created: ${newMessage.text}');
+              
+              // Добавляем сообщение БЕЗ перезагрузки всей страницы
+              context.read<MessagingCubit>().updateMessageFromSocket(newMessage);
+              
+              // Прокручиваем вниз
+              Future.delayed(Duration(milliseconds: 100), () {
+                if (mounted) {
+                  _scrollToBottom();
+                  debugPrint('🔔🔔🔔 CHAT_SMS (USER CHANNEL): ✅ Scrolled to bottom');
+                }
+              });
+              
+              // Воспроизводим звук если сообщение не от меня
+              if (!newMessage.isMyMessage) {
+                try {
+                  await _audioPlayer.setAsset('assets/audio/get.mp3');
+                  await _audioPlayer.play();
+                  debugPrint('🔔🔔🔔 CHAT_SMS (USER CHANNEL): ✅ Played sound');
+                } catch (e) {
+                  debugPrint('⚠️ CHAT_SMS (USER CHANNEL): Sound error: $e');
+                }
+              }
+              
+              debugPrint('✅✅✅ CHAT_SMS (USER CHANNEL): Message added successfully!');
+            }
+          }
     } catch (e, stackTrace) {
-      debugPrint('Error connecting to socket: $e, StackTrace: $stackTrace');
+          debugPrint('❌ CHAT_SMS (USER CHANNEL): Error: $e');
+          debugPrint('❌ CHAT_SMS (USER CHANNEL): StackTrace: $stackTrace');
+        }
+      });
+      
+      debugPrint('✅✅✅ CHAT_SMS: User channel listener registered');
     }
+
+    try {
+      debugPrint('🚀 Initiating socket connection...');
+      await socketClient.connect();
+      debugPrint('✅ Socket connection initiated successfully');
+    } catch (e) {
+      debugPrint('❌ Error connecting to socket: $e');
+    }
+    
+    debugPrint('🔌 ChatSmsScreen: setUpServices() COMPLETED');
   }
 
   void _scrollToBottom() {
@@ -1832,10 +2100,8 @@ Widget build(BuildContext context) {
     socketClient.dispose();
     _focusNode.dispose();
 
-    // ✅ НОВОЕ: Сбрасываем unreadCount конкретного чата БЕЗ полной перезагрузки
-    if (mounted) {
-      context.read<ChatsBloc>().add(ResetUnreadCount(widget.chatId));
-    }
+    // ✅ Используем сохраненную ссылку на bloc вместо context.read
+    _chatsBloc?.add(ResetUnreadCount(widget.chatId));
 
     super.dispose();
   }

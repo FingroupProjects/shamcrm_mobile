@@ -25,73 +25,93 @@ class SalesDashboardBloc extends Bloc<SalesDashboardEvent, SalesDashboardState> 
       debugPrint("📊 Starting parallel data loading...");
       emit(SalesDashboardLoading());
 
-      // Запускаем обе волны параллельно
-      final wave1Future = Future.wait([
-        apiService.getSalesDashboardTopPart(),
-        apiService.getTopSellingGoodsDashboard(),
-        apiService.getIlliquidGoods(),
-      ]);
-
-      final wave2Future = Future.wait([
-        apiService.getNetProfitData(),
-        apiService.getOrderDashboard(),
-        apiService.getExpenseStructure(),
-        apiService.getProfitability(),
-        apiService.getSalesDynamics(),
-      ]);
-
-      try {
-        // Ждем завершения Wave 1, но Wave 2 уже загружается в фоне
-        final wave1Results = await wave1Future;
-
-        final salesDashboardTopResponse = wave1Results[0] as DashboardTopPart;
-        final topSellingData = wave1Results[1] as List<AllTopSellingData>;
-        final illiquidGoodsData = wave1Results[2] as IlliquidGoodsResponse;
-
-        debugPrint("✅ Wave 1: Priority data loaded successfully");
-
-        // Сразу показываем пользователю Wave 1 данные
-        emit(SalesDashboardPriorityLoaded(
-          salesDashboardTopPart: salesDashboardTopResponse,
-          topSellingData: topSellingData,
-          illiquidGoodsData: illiquidGoodsData,
-        ));
-
-        // Показываем индикатор загрузки Wave 2 (которая уже грузится)
-        emit(SalesDashboardLoadingSecondary(
-          salesDashboardTopPart: salesDashboardTopResponse,
-          topSellingData: topSellingData,
-          illiquidGoodsData: illiquidGoodsData,
-        ));
-
-        // Теперь ждем завершения Wave 2
-        final wave2Results = await wave2Future;
-
-        final netProfitData = wave2Results[0] as List<AllNetProfitData>;
-        final orderDashboardData = wave2Results[1] as List<AllOrdersData>;
-        final expenseStructureData = wave2Results[2] as List<AllExpensesData>;
-        final profitabilityData = wave2Results[3] as List<AllProfitabilityData>;
-        final salesData = wave2Results[4] as List<AllSalesDynamicsData>;
-
-        debugPrint("✅ Wave 2: Secondary data loaded successfully");
-
-        // Показываем все данные
-        emit(SalesDashboardFullyLoaded(
-          salesDashboardTopPart: salesDashboardTopResponse,
-          topSellingData: topSellingData,
-          illiquidGoodsData: illiquidGoodsData,
-          netProfitData: netProfitData,
-          orderDashboardData: orderDashboardData,
-          expenseStructureData: expenseStructureData,
-          profitabilityData: profitabilityData,
-          salesData: salesData,
-        ));
-
-      } catch (e, stackTrace) {
-        debugPrint("❌ Error loading dashboard data: $e");
-        debugPrint("Stack trace: $stackTrace");
-        emit(SalesDashboardError("Failed to load dashboard data: $e"));
+      // Helper function to safely load data and catch errors
+      Future<T?> safeLoad<T>(Future<T> Function() loader, String errorKey) async {
+        try {
+          return await loader();
+        } catch (e) {
+          debugPrint("❌ Error loading $errorKey: $e");
+          return null;
+        }
       }
+
+      // Запускаем обе волны параллельно с обработкой ошибок
+      final wave1Results = await Future.wait([
+        safeLoad(() => apiService.getSalesDashboardTopPart(), 'topPart'),
+        safeLoad(() => apiService.getTopSellingGoodsDashboard(), 'topSelling'),
+        safeLoad(() => apiService.getIlliquidGoods(), 'illiquidGoods'),
+      ]);
+
+      final wave2Results = await Future.wait([
+        safeLoad(() => apiService.getNetProfitData(), 'netProfit'),
+        safeLoad(() => apiService.getOrderDashboard(), 'orderDashboard'),
+        safeLoad(() => apiService.getExpenseStructure(), 'expenseStructure'),
+        safeLoad(() => apiService.getProfitability(), 'profitability'),
+        safeLoad(() => apiService.getSalesDynamics(), 'salesDynamics'),
+      ]);
+
+      // Collect errors
+      final Map<String, String> graphErrors = {};
+      
+      final salesDashboardTopResponse = wave1Results[0] as DashboardTopPart?;
+      final topSellingData = wave1Results[1] as List<AllTopSellingData>?;
+      final illiquidGoodsData = wave1Results[2] as IlliquidGoodsResponse?;
+
+      final netProfitData = wave2Results[0] as List<AllNetProfitData>?;
+      final orderDashboardData = wave2Results[1] as List<AllOrdersData>?;
+      final expenseStructureData = wave2Results[2] as List<AllExpensesData>?;
+      final profitabilityData = wave2Results[3] as List<AllProfitabilityData>?;
+      final salesData = wave2Results[4] as List<AllSalesDynamicsData>?;
+
+      // Track errors
+      if (salesDashboardTopResponse == null) graphErrors['topPart'] = 'Ошибка загрузки';
+      if (topSellingData == null) graphErrors['topSelling'] = 'Ошибка загрузки';
+      if (illiquidGoodsData == null) graphErrors['illiquidGoods'] = 'Ошибка загрузки';
+      if (netProfitData == null) graphErrors['netProfit'] = 'Ошибка загрузки';
+      if (orderDashboardData == null) graphErrors['orderDashboard'] = 'Ошибка загрузки';
+      if (expenseStructureData == null) graphErrors['expenseStructure'] = 'Ошибка загрузки';
+      if (profitabilityData == null) graphErrors['profitability'] = 'Ошибка загрузки';
+      if (salesData == null) graphErrors['salesDynamics'] = 'Ошибка загрузки';
+
+      // Проверяем, есть ли хотя бы минимальные данные для показа
+      if (salesDashboardTopResponse == null && topSellingData == null && illiquidGoodsData == null) {
+        debugPrint("❌ All Wave 1 data failed to load");
+        emit(SalesDashboardError("Не удалось загрузить данные дашборда"));
+        return;
+      }
+
+      debugPrint("✅ Wave 1: Priority data loaded (some may have failed)");
+
+      // Сразу показываем пользователю Wave 1 данные (используем значения по умолчанию для null)
+      emit(SalesDashboardPriorityLoaded(
+        salesDashboardTopPart: salesDashboardTopResponse ?? DashboardTopPart(result: null, errors: null),
+        topSellingData: topSellingData ?? [],
+        illiquidGoodsData: illiquidGoodsData ?? IlliquidGoodsResponse(result: null, errors: null),
+        graphErrors: graphErrors,
+      ));
+
+      // Показываем индикатор загрузки Wave 2
+      emit(SalesDashboardLoadingSecondary(
+        salesDashboardTopPart: salesDashboardTopResponse ?? DashboardTopPart(result: null, errors: null),
+        topSellingData: topSellingData ?? [],
+        illiquidGoodsData: illiquidGoodsData ?? IlliquidGoodsResponse(result: null, errors: null),
+        graphErrors: graphErrors,
+      ));
+
+      debugPrint("✅ Wave 2: Secondary data loaded (some may have failed)");
+
+      // Показываем все данные
+      emit(SalesDashboardFullyLoaded(
+        salesDashboardTopPart: salesDashboardTopResponse ?? DashboardTopPart(result: null, errors: null),
+        topSellingData: topSellingData ?? [],
+        illiquidGoodsData: illiquidGoodsData ?? IlliquidGoodsResponse(result: null, errors: null),
+        netProfitData: netProfitData ?? [],
+        orderDashboardData: orderDashboardData ?? [],
+        expenseStructureData: expenseStructureData ?? [],
+        profitabilityData: profitabilityData ?? [],
+        salesData: salesData ?? [],
+        graphErrors: graphErrors,
+      ));
     });
 
     // Wave 2: Load secondary data (fallback for manual trigger)
@@ -110,43 +130,56 @@ class SalesDashboardBloc extends Bloc<SalesDashboardEvent, SalesDashboardState> 
         salesDashboardTopPart: currentState.salesDashboardTopPart,
         topSellingData: currentState.topSellingData,
         illiquidGoodsData: currentState.illiquidGoodsData,
+        graphErrors: currentState.graphErrors,
       ));
 
-      try {
-        // Load remaining data in parallel (Wave 2)
-        final results = await Future.wait([
-          apiService.getNetProfitData(),
-          apiService.getOrderDashboard(),
-          apiService.getExpenseStructure(),
-          apiService.getProfitability(),
-          apiService.getSalesDynamics(),
-        ]);
-
-        final netProfitData = results[0] as List<AllNetProfitData>;
-        final orderDashboardData = results[1] as List<AllOrdersData>;
-        final expenseStructureData = results[2] as List<AllExpensesData>;
-        final profitabilityData = results[3] as List<AllProfitabilityData>;
-        final salesData = results[4] as List<AllSalesDynamicsData>;
-
-        debugPrint("✅ Wave 2: Secondary data loaded successfully");
-
-        // Emit complete data
-        emit(SalesDashboardFullyLoaded(
-          salesDashboardTopPart: currentState.salesDashboardTopPart,
-          topSellingData: currentState.topSellingData,
-          illiquidGoodsData: currentState.illiquidGoodsData,
-          netProfitData: netProfitData,
-          orderDashboardData: orderDashboardData,
-          expenseStructureData: expenseStructureData,
-          profitabilityData: profitabilityData,
-          salesData: salesData,
-        ));
-
-      } catch (e) {
-        debugPrint("⚠️ Wave 2: Error loading secondary data: $e");
-        // Don't emit error - keep showing Wave 1 data
-        // User can retry via pull-to-refresh
+      // Helper function to safely load data and catch errors
+      Future<T?> safeLoad<T>(Future<T> Function() loader, String errorKey) async {
+        try {
+          return await loader();
+        } catch (e) {
+          debugPrint("❌ Error loading $errorKey: $e");
+          return null;
+        }
       }
+
+      // Load remaining data in parallel (Wave 2) with error handling
+      final results = await Future.wait([
+        safeLoad(() => apiService.getNetProfitData(), 'netProfit'),
+        safeLoad(() => apiService.getOrderDashboard(), 'orderDashboard'),
+        safeLoad(() => apiService.getExpenseStructure(), 'expenseStructure'),
+        safeLoad(() => apiService.getProfitability(), 'profitability'),
+        safeLoad(() => apiService.getSalesDynamics(), 'salesDynamics'),
+      ]);
+
+      final netProfitData = results[0] as List<AllNetProfitData>?;
+      final orderDashboardData = results[1] as List<AllOrdersData>?;
+      final expenseStructureData = results[2] as List<AllExpensesData>?;
+      final profitabilityData = results[3] as List<AllProfitabilityData>?;
+      final salesData = results[4] as List<AllSalesDynamicsData>?;
+
+      // Merge errors with existing ones
+      final graphErrors = Map<String, String>.from(currentState.graphErrors);
+      if (netProfitData == null) graphErrors['netProfit'] = 'Ошибка загрузки';
+      if (orderDashboardData == null) graphErrors['orderDashboard'] = 'Ошибка загрузки';
+      if (expenseStructureData == null) graphErrors['expenseStructure'] = 'Ошибка загрузки';
+      if (profitabilityData == null) graphErrors['profitability'] = 'Ошибка загрузки';
+      if (salesData == null) graphErrors['salesDynamics'] = 'Ошибка загрузки';
+
+      debugPrint("✅ Wave 2: Secondary data loaded (some may have failed)");
+
+      // Emit complete data
+      emit(SalesDashboardFullyLoaded(
+        salesDashboardTopPart: currentState.salesDashboardTopPart,
+        topSellingData: currentState.topSellingData,
+        illiquidGoodsData: currentState.illiquidGoodsData,
+        netProfitData: netProfitData ?? [],
+        orderDashboardData: orderDashboardData ?? [],
+        expenseStructureData: expenseStructureData ?? [],
+        profitabilityData: profitabilityData ?? [],
+        salesData: salesData ?? [],
+        graphErrors: graphErrors,
+      ));
     });
 
     // Reload all data (for pull-to-refresh)

@@ -739,7 +739,7 @@ Future<void> setUpServices() async {
   String? verifiedDomain = await ApiService().getVerifiedDomain();
   debugPrint('ChatsScreen: Domain parameters: enteredMainDomain=$enteredMainDomain, enteredDomain=$enteredDomain, verifiedDomain=$verifiedDomain');
 
-  // Если домены отсутствуют, используем verifiedDomain или резервные значения
+  // Если домены отсутствуют, используем verifiedDomain или извлекаем из baseUrl ApiService
   if (enteredMainDomain == null || enteredDomain == null) {
     if (verifiedDomain != null && verifiedDomain.isNotEmpty) {
       // Для email-верификации используем verifiedDomain
@@ -747,13 +747,46 @@ Future<void> setUpServices() async {
       enteredDomain = verifiedDomain.split('-back.').first;
       debugPrint('ChatsScreen: Using verifiedDomain: $verifiedDomain, parsed mainDomain=$enteredMainDomain, domain=$enteredDomain');
     } else {
-      // Резервные значения для отладки
-      enteredMainDomain = 'shamcrm.com'; // Замени на реальный домен
-      enteredDomain = 'info1fingrouptj'; // Замени на реальный поддомен
-      debugPrint('ChatsScreen: Using fallback domains: enteredMainDomain=$enteredMainDomain, enteredDomain=$enteredDomain');
-      // Сохраняем резервные значения в SharedPreferences
-      await prefs.setString('enteredMainDomain', enteredMainDomain);
-      await prefs.setString('enteredDomain', enteredDomain);
+      // Пытаемся извлечь из baseUrl ApiService
+      try {
+        final apiService = ApiService();
+        await apiService.initialize();
+        final baseUrl = await apiService.getDynamicBaseUrl();
+        debugPrint('ChatsScreen: Got baseUrl from ApiService: $baseUrl');
+        
+        if (baseUrl.isNotEmpty && baseUrl != 'null') {
+          // Извлекаем домен из baseUrl (формат: https://fingroupcrm-back.shamcrm.com/api)
+          final urlPattern = RegExp(r'https://(.+?)-back\.(.+?)(/|$)');
+          final match = urlPattern.firstMatch(baseUrl);
+          if (match != null) {
+            enteredDomain = match.group(1);
+            enteredMainDomain = match.group(2);
+            debugPrint('ChatsScreen: Extracted from baseUrl: domain=$enteredDomain, mainDomain=$enteredMainDomain');
+            
+            // Сохраняем извлеченные значения
+            await prefs.setString('enteredMainDomain', enteredMainDomain!);
+            await prefs.setString('enteredDomain', enteredDomain!);
+          } else {
+            debugPrint('ChatsScreen: Failed to parse baseUrl, using fallback');
+            enteredMainDomain = 'shamcrm.com';
+            enteredDomain = 'fingroupcrm'; // Используем правильный домен из логов
+            await prefs.setString('enteredMainDomain', enteredMainDomain);
+            await prefs.setString('enteredDomain', enteredDomain);
+          }
+        } else {
+          debugPrint('ChatsScreen: BaseUrl empty, using fallback');
+          enteredMainDomain = 'shamcrm.com';
+          enteredDomain = 'fingroupcrm';
+          await prefs.setString('enteredMainDomain', enteredMainDomain);
+          await prefs.setString('enteredDomain', enteredDomain);
+        }
+      } catch (e) {
+        debugPrint('ChatsScreen: Error extracting from baseUrl: $e, using fallback');
+        enteredMainDomain = 'shamcrm.com';
+        enteredDomain = 'fingroupcrm';
+        await prefs.setString('enteredMainDomain', enteredMainDomain);
+        await prefs.setString('enteredDomain', enteredDomain);
+      }
     }
   }
 
@@ -1230,6 +1263,7 @@ void onTap(Chats chat) {
         child: ChatSmsScreen(
           chatItem: chat.toChatItem(),
           chatId: chat.id,
+          chatUniqueId: chat.uniqueId, // Передаем unique_id для сокетов
           endPointInTab: widget.endPointInTab,
           canSendMessage: chat.canSendMessage,
         ),
