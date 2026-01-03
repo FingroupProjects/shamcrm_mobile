@@ -48,7 +48,7 @@ import 'package:table_calendar/table_calendar.dart';
 class ChatSmsScreen extends StatefulWidget {
   final ChatItem chatItem;
   final int chatId;
-  final String? chatUniqueId; // Новое поле для unique_id
+  final String? chatUniqueId;
   final String endPointInTab;
   final bool canSendMessage;
   final ApiService apiService = ApiService();
@@ -58,7 +58,7 @@ class ChatSmsScreen extends StatefulWidget {
     super.key,
     required this.chatItem,
     required this.chatId,
-    this.chatUniqueId, // Опциональный параметр
+    this.chatUniqueId,
     required this.endPointInTab,
     required this.canSendMessage,
   });
@@ -85,13 +85,13 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
   bool _isMenuOpen = false;
   bool _isSearching = false;
   String? _searchQuery;
-  String? integrationUsername; // Новое поле для хранения username
-  String? channelName; // Новое поле для хранения channel.name
+  String? integrationUsername;
+  String? channelName;
   bool _hasMarkedMessagesAsRead = false;
-  bool _isRecordingInProgress = false; // Флаг для отслеживания состояния записи
-  String? referralBody; // Новое поле для хранения referral_body всего чата
-  ChatsBloc? _chatsBloc; // Сохраняем ссылку на bloc для использования в dispose
-
+  bool _isRecordingInProgress = false;
+  String? referralBody;
+  ChatsBloc? _chatsBloc;
+  String? _cachedCompanionName; // Кэшированное имя собеседника
 
   void _onSearchChanged(String query) {
     setState(() {
@@ -114,15 +114,12 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
   }
 
   @override
-  @override
   void initState() {
     super.initState();
     _checkPermissions();
     
-    // Сохраняем ссылку на ChatsBloc для использования в dispose
     _chatsBloc = context.read<ChatsBloc>();
 
-    // Сбрасываем состояния
     context.read<ListenSenderFileCubit>().updateValue(false);
     context.read<ListenSenderVoiceCubit>().updateValue(false);
     context.read<ListenSenderTextCubit>().updateValue(false);
@@ -132,8 +129,6 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
     });
   }
 
-
-// Также добавьте метод для повторной попытки
   Future<void> _retryInitialization() async {
     try {
       await _initializeBaseUrl();
@@ -156,23 +151,19 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
 
     final prefs = await SharedPreferences.getInstance();
 
-    // Получаем домены из той же логики, что используется в сокете
     final enteredDomainMap = await ApiService().getEnteredDomain();
     String? enteredMainDomain = enteredDomainMap['enteredMainDomain'];
     String? enteredDomain = enteredDomainMap['enteredDomain'];
 
-    // Проверяем домен для email-верификации
     String? verifiedDomain = await ApiService().getVerifiedDomain();
     debugPrint('BaseUrl init - enteredMainDomain=$enteredMainDomain, enteredDomain=$enteredDomain, verifiedDomain=$verifiedDomain');
 
-    // Если домены отсутствуют, используем verifiedDomain
     if (enteredMainDomain == null || enteredDomain == null) {
       if (verifiedDomain != null && verifiedDomain.isNotEmpty) {
         enteredMainDomain = verifiedDomain.split('-back.').last;
         enteredDomain = verifiedDomain.split('-back.').first;
         debugPrint('BaseUrl init - Using verifiedDomain: $verifiedDomain, parsed mainDomain=$enteredMainDomain, domain=$enteredDomain');
 
-        // Принудительно сохраняем в SharedPreferences
         await prefs.setString('enteredMainDomain', enteredMainDomain);
         await prefs.setString('enteredDomain', enteredDomain);
       } else {
@@ -180,37 +171,70 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
       }
     }
 
-    // Формируем baseUrl по той же логике, что и сокет
     baseUrl = 'https://$enteredDomain-back.$enteredMainDomain';
     debugPrint('BaseUrl initialized: $baseUrl');
 
-    // ВАЖНО: Сохраняем для использования во ВСЕХ экземплярах ApiService
     await prefs.setString('cached_base_url', '$baseUrl/api');
     debugPrint('Cached baseUrl for all ApiService instances: $baseUrl/api');
+  }
+
+  /// ✅ НОВЫЙ МЕТОД: Получает и кэширует имя собеседника
+  Future<void> _cacheCompanionName() async {
+    try {
+      debugPrint('🔍 Кэширование имени собеседника...');
+      
+      final prefs = await SharedPreferences.getInstance();
+      final myUserId = prefs.getString('userID') ?? '';
+      
+      // Получаем данные чата
+      final chatData = await widget.apiService.getChatById(widget.chatId);
+      
+      // Ищем собеседника в chatUsers
+      if (chatData.chatUsers.isNotEmpty) {
+        for (var chatUser in chatData.chatUsers) {
+          final participantId = chatUser.participant.id.toString();
+          
+          if (participantId != myUserId) {
+            // Это собеседник!
+            final participantName = chatUser.participant.name;
+            
+            // Используем имя как есть (в модели нет lastname)
+            String fullName = participantName;
+            
+            setState(() {
+              _cachedCompanionName = fullName;
+            });
+            
+            debugPrint('✅ Имя собеседника закэшировано: $_cachedCompanionName');
+            return;
+          }
+        }
+      }
+      
+      debugPrint('⚠️ Собеседник не найден в chatUsers');
+    } catch (e) {
+      debugPrint('❌ Ошибка кэширования имени собеседника: $e');
+    }
   }
 
   Future<void> _initializeServices() async {
     try {
       debugPrint('ChatSmsScreen: Starting initialization...');
 
-      // Шаг 1: Проверяем и инициализируем домены
       await _ensureDomainConfiguration();
-
-      // Шаг 2: Инициализируем ApiService
       await apiService.initialize();
 
-      // Шаг 3: Получаем базовый URL
       baseUrl = await apiService.getDynamicBaseUrl();
       debugPrint('ChatSmsScreen: BaseURL initialized: $baseUrl');
 
-      // Шаг 4: Инициализируем сокет
+      // ✅ КРИТИЧНО: Кэшируем имя собеседника ДО инициализации сокета
+      await _cacheCompanionName();
+
       await _initializeSocket();
 
-      // Шаг 5: Загружаем сообщения
       context.read<MessagingCubit>().getMessagesWithFallback(widget.chatId);
       _scrollToBottom();
 
-      // Шаг 6: Загружаем интеграцию для лидов
       if (widget.endPointInTab == 'lead') {
         await _fetchIntegration();
       }
@@ -220,11 +244,9 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
       debugPrint('ChatSmsScreen: Initialization error: $e');
       debugPrint('StackTrace: $stackTrace');
 
-      // Показываем ошибку пользователю, но пытаемся загрузить хотя бы сообщения
       if (mounted) {
         _showInitializationError(e.toString());
 
-        // Попытка загрузить сообщения даже при ошибке инициализации
         try {
           context.read<MessagingCubit>().getMessagesWithFallback(widget.chatId);
         } catch (e2) {
@@ -237,36 +259,29 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
   Future<void> _ensureDomainConfiguration() async {
     final prefs = await SharedPreferences.getInstance();
 
-    // Проверяем текущие домены
     final enteredDomainMap = await ApiService().getEnteredDomain();
     String? enteredMainDomain = enteredDomainMap['enteredMainDomain'];
     String? enteredDomain = enteredDomainMap['enteredDomain'];
 
-    // Проверяем email верификацию
     String? verifiedDomain = await ApiService().getVerifiedDomain();
 
     debugPrint('Domain check: enteredMainDomain=$enteredMainDomain, enteredDomain=$enteredDomain, verifiedDomain=$verifiedDomain');
 
-    // Если домены не настроены, используем verifiedDomain или QR данные
     if ((enteredMainDomain == null || enteredDomain == null) && verifiedDomain != null) {
-      // Парсим verifiedDomain
       if (verifiedDomain.contains('-back.')) {
         final parts = verifiedDomain.split('-back.');
         enteredDomain = parts[0];
         enteredMainDomain = parts[1];
       } else {
-        // Fallback для других форматов
         enteredDomain = 'default';
         enteredMainDomain = verifiedDomain;
       }
 
-      // Сохраняем распарсенные домены
       await prefs.setString('enteredMainDomain', enteredMainDomain);
       await prefs.setString('enteredDomain', enteredDomain);
 
       debugPrint('Domain configured from verifiedDomain: $enteredDomain-back.$enteredMainDomain');
     } else if (enteredMainDomain == null || enteredDomain == null) {
-      // Проверяем QR данные
       final qrData = await ApiService().getQrData();
       if (qrData['domain'] != null && qrData['mainDomain'] != null) {
         await prefs.setString('enteredDomain', qrData['domain']!);
@@ -281,12 +296,10 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
   Future<void> _initializeSocket() async {
     try {
       debugPrint('🔌 ChatSmsScreen: Starting socket initialization...');
-      // ИСПРАВЛЕНИЕ: Добавлен await для ожидания завершения инициализации сокета
       await setUpServices();
       debugPrint('✅ ChatSmsScreen: Socket initialization completed');
     } catch (e) {
       debugPrint('❌ ChatSmsScreen: Socket initialization error: $e');
-      // Сокет не критичен для работы чата, продолжаем без него
     }
   }
 
@@ -331,23 +344,20 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
   Future<void> _forceInitializeDomain() async {
     final prefs = await SharedPreferences.getInstance();
 
-    // Получаем verifiedDomain
     String? verifiedDomain = await ApiService().getVerifiedDomain();
 
     if (verifiedDomain != null && verifiedDomain.isNotEmpty) {
-      // Парсим домен
       String enteredMainDomain = verifiedDomain.split('-back.').last;
       String enteredDomain = verifiedDomain.split('-back.').first;
 
-      // Принудительно сохраняем в SharedPreferences
       await prefs.setString('enteredMainDomain', enteredMainDomain);
       await prefs.setString('enteredDomain', enteredDomain);
 
       debugPrint('Force initialized domain: $enteredDomain-back.$enteredMainDomain');
     }
   }
+
   Future<void> _markMessagesAsRead() async {
-    // Проверяем, не был ли метод уже вызван
     if (_hasMarkedMessagesAsRead) {
       if (kDebugMode) {
         //print('ChatSmsScreen: _markMessagesAsRead уже вызван, пропускаем');
@@ -356,28 +366,23 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
     }
 
     final state = context.read<MessagingCubit>().state;
-    // Лог для отладки текущего состояния
     if (kDebugMode) {
       //print('ChatSmsScreen: Текущее состояние в _markMessagesAsRead: $state');
     }
     List<Message> messages = [];
-    // Проверяем оба состояния: MessagesLoadedState и PinnedMessagesState
     if (state is MessagesLoadedState) {
       messages = state.messages;
     } else if (state is PinnedMessagesState) {
       messages = state.messages;
     }
 
-    // Лог для количества сообщений
     if (kDebugMode) {
       //print('ChatSmsScreen: Количество сообщений: ${messages.length}');
     }
 
-    // Проверяем, есть ли непрочитанные сообщения
     bool hasUnreadMessages = messages.any((msg) => !msg.isRead);
     if (messages.isNotEmpty && hasUnreadMessages) {
       final latestMessageId = messages.first.id;
-      // Лог для chatId и messageId
       if (kDebugMode) {
         //print('ChatSmsScreen: Пометка сообщений как прочитанных, chatId: ${widget.chatId}, latestMessageId: $latestMessageId');
       }
@@ -386,42 +391,20 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
         if (kDebugMode) {
           //print('ChatSmsScreen: Сообщения успешно помечены как прочитанные');
         }
-        // Устанавливаем флаг, чтобы предотвратить повторные вызовы
         _hasMarkedMessagesAsRead = true;
       } catch (e) {
-        // Лог для ошибок API
         if (kDebugMode) {
           //print('ChatSmsScreen: Ошибка при пометке сообщений как прочитанных: $e');
         }
-        // ScaffoldMessenger.of(context).showSnackBar(
-        //   // SnackBar(
-        //   //   content: Text(
-        //   //     AppLocalizations.of(context)!.translate('error_marking_messages_read'),
-        //   //     style: const TextStyle(
-        //   //       fontFamily: 'Gilroy',
-        //   //       fontSize: 16,
-        //   //       fontWeight: FontWeight.w500,
-        //   //       color: Colors.white,
-        //   //     ),
-        //   //   ),
-        //   //   backgroundColor: Colors.red,
-        //   //   duration: const Duration(seconds: 3),
-        //   // ),
-        // );
       }
     } else {
       if (kDebugMode) {
         //print('ChatSmsScreen: Нет непрочитанных сообщений или список пуст');
       }
-      // Устанавливаем флаг, даже если сообщений нет, чтобы избежать повторных проверок
       _hasMarkedMessagesAsRead = true;
     }
   }
-// Обновлённый метод для получения интеграции в ChatSmsScreen
 
-
-
-// Исправленный метод для получения интеграции в ChatSmsScreen
   Future<void> _fetchIntegration() async {
     final prefs = await SharedPreferences.getInstance();
 
@@ -431,7 +414,6 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
       final chatData = await widget.apiService.getChatById(widget.chatId);
       debugPrint('ChatSmsScreen: Chat data received');
 
-      // Сохраняем referralBody из chatData
       setState(() {
         referralBody = chatData.referralBody;
         prefs.setString('referral_body_${widget.chatId}', referralBody ?? '');
@@ -478,11 +460,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
     }
   }
 
-// Вспомогательный метод для определения типа канала из интеграции
   String? _determineChannelType(IntegrationForLead integration) {
-    // Здесь можно определить тип канала на основе данных интеграции
-    // Примеры типов: telegram, whatsapp, instagram, facebook, website
-
     if (integration.username != null) {
       final username = integration.username!.toLowerCase();
 
@@ -499,7 +477,6 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
       }
     }
 
-    // По умолчанию возвращаем общий тип
     return 'messenger';
   }
 
@@ -517,30 +494,21 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
   }
 
   Future<void> _showDatePicker(BuildContext context, List<Message> messages) async {
-    final DateTime currentDate = DateTime.now(); // 16:25, 27 июня 2025
+    final DateTime currentDate = DateTime.now();
     DateTime? selectedDate;
 
-    // Преобразуем сообщения в карту дат
     final Map<DateTime, List> events = {};
-    ////print('Начало обработки сообщений. Количество сообщений: ${messages.length}');
     for (var message in messages) {
-      ////print('Обработка сообщения: $message');
       try {
         final date = DateTime.parse(message.createMessateTime).toLocal();
-        ////print('Парсинг даты: ${message.createMessateTime} -> $date');
-        final eventDate = DateTime(date.year, date.month, date.day); // Нормализуем до начала дня
-        ////print('Сформирована дата для события: $eventDate');
+        final eventDate = DateTime(date.year, date.month, date.day);
         if (events[eventDate] == null) {
-          ////print('Добавление нового события для даты: $eventDate');
-          events[eventDate] = [true]; // Добавляем индикатор события
-        } else {
-          ////print('Событие для даты $eventDate уже существует');
+          events[eventDate] = [true];
         }
       } catch (e) {
         ////print('Ошибка парсинга даты ${message.createMessateTime}: $e');
       }
     }
-    ////print('Карта событий после обработки: $events');
 
     await showDialog(
       context: context,
@@ -558,7 +526,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Container(
-                  height: 450, // Увеличиваем высоту для корректного отображения дней недели
+                  height: 450,
                   width: double.maxFinite,
                   color: Colors.white,
                   child: TableCalendar(
@@ -580,7 +548,6 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
                       outsideDaysVisible: true,
                       outsideTextStyle: TextStyle(color: Colors.black.withOpacity(0.3)),
                     ),
-                    // Добавляем стиль для дней недели чтобы они не обрезались
                     daysOfWeekStyle: const DaysOfWeekStyle(
                       weekdayStyle: TextStyle(
                         fontFamily: 'Gilroy',
@@ -600,7 +567,6 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
                       leftChevronVisible: true,
                       rightChevronVisible: true,
                       titleTextStyle: const TextStyle(fontSize: 18, fontFamily: 'Gilroy'),
-                      // Добавляем форматирование заголовка для заглавной буквы
                       titleTextFormatter: (date, locale) {
                         final monthNames = {
                           1: 'Январь',
@@ -623,9 +589,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
                     ),
                     calendarBuilders: CalendarBuilders(
                       markerBuilder: (context, date, events) {
-                        ////print('Проверка даты $date, события: $events');
                         if (events.isNotEmpty) {
-                          ////print('Отображение точки для даты $date');
                           return Positioned(
                             right: 18,
                             bottom: 0,
@@ -639,18 +603,15 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
                             ),
                           );
                         }
-                        ////print('Нет событий для даты $date');
                         return null;
                       },
                     ),
                     eventLoader: (day) {
-                      final normalizedDay = DateTime(day.year, day.month, day.day); // Нормализуем день
-                      ////print('Загрузка событий для дня $normalizedDay: ${events[normalizedDay] ?? []}');
+                      final normalizedDay = DateTime(day.year, day.month, day.day);
                       return events[normalizedDay] ?? [];
                     },
                     onDaySelected: (selectedDay, focusedDay) {
                       final index = _findMessageIndexByDate(messages, selectedDay);
-                      ////print('Выбрана дата $selectedDay, индекс сообщения: $index');
                       if (index != -1) {
                         Navigator.pop(context);
                         WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -683,15 +644,14 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
     );
   }
 
-
   int _findMessageIndexByDate(List<Message> messages, DateTime targetDate) {
     for (int i = messages.length - 1; i >= 0; i--) {
       final messageDate = DateTime.parse(messages[i].createMessateTime).toLocal();
       if (isSameDay(messageDate, targetDate)) {
-        return i; // Возвращаем индекс последнего сообщения за дату
+        return i;
       }
     }
-    return -1; // Если сообщений нет
+    return -1;
   }
 
   void _scrollToMessageIndex(DateTime selectedDate) {
@@ -707,7 +667,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
         debugPrint('Scrolling to index: $messageIndex for date: ${formatDate(selectedDate)}');
         _scrollControllerMessage.scrollTo(
           index: messageIndex,
-          alignment: 0.0, // Позиционируем сообщение вверху экрана
+          alignment: 0.0,
           duration: const Duration(milliseconds: 300),
           curve: Curves.easeInOut,
         );
@@ -741,23 +701,19 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
   }
 
   Widget _buildAvatar(String avatar) {
-    // //print('Avatar path: $avatar'); // Отладочный вывод
     bool isSupportAvatar = avatar == 'assets/icons/Profile/support_chat.png';
-    bool isTaskSection = widget.endPointInTab == 'task'; // Проверка на task
+    bool isTaskSection = widget.endPointInTab == 'task';
 
-    // Для endPointInTab == 'task' используем AvatarTask.png, если avatar не SVG
     if (isTaskSection && !avatar.contains('<svg')) {
       return CircleAvatar(
         backgroundImage: AssetImage('assets/images/AvatarTask.png'),
         radius: ChatSmsStyles.avatarRadius,
         backgroundColor: Colors.white,
         onBackgroundImageError: (exception, stackTrace) {
-          // //print('Error loading asset image: assets/images/AvatarTask.png, $exception');
         },
       );
     }
 
-    // Обработка SVG-аватарок
     if (avatar.contains('<svg')) {
       final imageUrl = extractImageUrlFromSvg(avatar);
       if (imageUrl != null) {
@@ -810,18 +766,15 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
       }
     }
 
-    // Обработка остальных случаев (локальные изображения)
     try {
       return CircleAvatar(
         backgroundImage: AssetImage(avatar),
         radius: ChatSmsStyles.avatarRadius,
         backgroundColor: isSupportAvatar ? Colors.black : Colors.white,
         onBackgroundImageError: (exception, stackTrace) {
-          // //print('Error loading asset image: $avatar, $exception');
         },
       );
     } catch (e) {
-      // //print('Fallback avatar due to error: $e');
       return CircleAvatar(
         backgroundImage: AssetImage(isTaskSection ? 'assets/images/AvatarTask.png' : 'assets/images/AvatarChat.png'),
         radius: ChatSmsStyles.avatarRadius,
@@ -856,225 +809,221 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
     return null;
   }
 
-@override
-Widget build(BuildContext context) {
-  bool isSupportChat = widget.chatItem.avatar == 'assets/icons/Profile/image.png';
-  return BlocListener<MessagingCubit, MessagingState>(
-    // Добавлен BlocListener для вызова _markMessagesAsRead только при первой загрузке
-    listener: (context, state) {
-      if (kDebugMode) {
-        //print('ChatSmsScreen: Слушатель MessagingCubit, текущее состояние: $state');
-      }
-      // Вызываем _markMessagesAsRead только для MessagesLoadedState или PinnedMessagesState
-      if ((state is MessagesLoadedState || state is PinnedMessagesState) && !_hasMarkedMessagesAsRead) {
-        _markMessagesAsRead();
-      }
-    },
-    child: BlocListener<DeleteMessageBloc, DeleteMessageState>(
+  @override
+  Widget build(BuildContext context) {
+    bool isSupportChat = widget.chatItem.avatar == 'assets/icons/Profile/image.png';
+    return BlocListener<MessagingCubit, MessagingState>(
       listener: (context, state) {
-        if (state is DeleteMessageSuccess) {
-          context.read<MessagingCubit>().getMessages(widget.chatId);
-          if (widget.endPointInTab == 'task' || widget.endPointInTab == 'corporate') {
-            final chatsBloc = context.read<ChatsBloc>();
-            chatsBloc.add(ClearChats());
-            chatsBloc.add(FetchChats(endPoint: widget.endPointInTab));
-          }
+        if (kDebugMode) {
+          //print('ChatSmsScreen: Слушатель MessagingCubit, текущее состояние: $state');
+        }
+        if ((state is MessagesLoadedState || state is PinnedMessagesState) && !_hasMarkedMessagesAsRead) {
+          _markMessagesAsRead();
         }
       },
-      child: Scaffold(
-        appBar: AppBar(
-          backgroundColor: Colors.white,
-          forceMaterialTransparency: false,
-          scrolledUnderElevation: 0,
-          elevation: 0,
-          centerTitle: false,
-          leadingWidth: 40,
-          leading: Transform.translate(
-            offset: const Offset(6, 0),
-            child: IconButton(
-              icon: Image.asset(
-                'assets/icons/arrow-left.png',
-                width: 40,
-                height: 40,
-              ),
-              onPressed: () {
-                Navigator.pop(context);
-              },
-            ),
-          ),
-          actions: [
-            Padding(
-              padding: const EdgeInsets.only(right: 10),
+      child: BlocListener<DeleteMessageBloc, DeleteMessageState>(
+        listener: (context, state) {
+          if (state is DeleteMessageSuccess) {
+            context.read<MessagingCubit>().getMessages(widget.chatId);
+            if (widget.endPointInTab == 'task' || widget.endPointInTab == 'corporate') {
+              final chatsBloc = context.read<ChatsBloc>();
+              chatsBloc.add(ClearChats());
+              chatsBloc.add(FetchChats(endPoint: widget.endPointInTab));
+            }
+          }
+        },
+        child: Scaffold(
+          appBar: AppBar(
+            backgroundColor: Colors.white,
+            forceMaterialTransparency: false,
+            scrolledUnderElevation: 0,
+            elevation: 0,
+            centerTitle: false,
+            leadingWidth: 40,
+            leading: Transform.translate(
+              offset: const Offset(6, 0),
               child: IconButton(
-                icon: _isSearching
-                    ? const Icon(Icons.close)
-                    : Image.asset('assets/icons/AppBar/search.png',
-                    width: 24, height: 24),
+                icon: Image.asset(
+                  'assets/icons/arrow-left.png',
+                  width: 40,
+                  height: 40,
+                ),
                 onPressed: () {
-                  setState(() {
-                    _isSearching = !_isSearching;
-                    _searchQuery = null;
-                  });
-                  if (!_isSearching) {
-                    context.read<MessagingCubit>().getMessages(widget.chatId);
-                  }
+                  Navigator.pop(context);
                 },
               ),
             ),
-          ],
-          title: Transform.translate(
-            offset: const Offset(-12, 0),
-            child: _isSearching
-                ? TextField(
-              autofocus: true,
-              decoration: InputDecoration(
-                hintText: AppLocalizations.of(context)!.translate('search_appbar'),
-                border: InputBorder.none,
-                hintStyle: const TextStyle(color: Colors.black, fontFamily: 'Gilroy'),
-              ),
-              onChanged: _onSearchChanged,
-            )
-                : GestureDetector(
-              onTap: (widget.endPointInTab == 'corporate')
-                  ? null  // Блокировка нажатия для corporate
-                  : isSupportChat
-                  ? null
-                  : () async {
-                    if (_isRequestInProgress) return;
+            actions: [
+              Padding(
+                padding: const EdgeInsets.only(right: 10),
+                child: IconButton(
+                  icon: _isSearching
+                      ? const Icon(Icons.close)
+                      : Image.asset('assets/icons/AppBar/search.png',
+                      width: 24, height: 24),
+                  onPressed: () {
                     setState(() {
-                      _isRequestInProgress = true;
+                      _isSearching = !_isSearching;
+                      _searchQuery = null;
                     });
-                    try {
-                      if (widget.endPointInTab == 'lead') {
+                    if (!_isSearching) {
+                      context.read<MessagingCubit>().getMessages(widget.chatId);
+                    }
+                  },
+                ),
+              ),
+            ],
+            title: Transform.translate(
+              offset: const Offset(-12, 0),
+              child: _isSearching
+                  ? TextField(
+                autofocus: true,
+                decoration: InputDecoration(
+                  hintText: AppLocalizations.of(context)!.translate('search_appbar'),
+                  border: InputBorder.none,
+                  hintStyle: const TextStyle(color: Colors.black, fontFamily: 'Gilroy'),
+                ),
+                onChanged: _onSearchChanged,
+              )
+                  : GestureDetector(
+                onTap: (widget.endPointInTab == 'corporate')
+                    ? null
+                    : isSupportChat
+                    ? null
+                    : () async {
+                  if (_isRequestInProgress) return;
+                  setState(() {
+                    _isRequestInProgress = true;
+                  });
+                  try {
+                    if (widget.endPointInTab == 'lead') {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => UserProfileScreen(chatId: widget.chatId),
+                        ),
+                      );
+                    } else if (widget.endPointInTab == 'task') {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => TaskByIdScreen(chatId: widget.chatId),
+                        ),
+                      );
+                    } else if (widget.endPointInTab == 'corporate') {
+                      final getChatById = await widget.apiService.getChatById(widget.chatId);
+                      if (getChatById.chatUsers.length == 2 && getChatById.group == null) {
+                        String userIdCheck = '';
+                        SharedPreferences prefs = await SharedPreferences.getInstance();
+                        userIdCheck = prefs.getString('userID') ?? '';
+                        final participant = getChatById.chatUsers
+                            .firstWhere((user) => user.participant.id.toString() != userIdCheck)
+                            .participant;
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => UserProfileScreen(chatId: widget.chatId),
+                            builder: (context) => ParticipantProfileScreen(
+                              userId: participant.id.toString(),
+                              image: participant.image,
+                              name: participant.name,
+                              email: participant.email,
+                              phone: participant.phone,
+                              login: participant.login,
+                              lastSeen: participant.lastSeen.toString(),
+                              buttonChat: false,
+                            ),
                           ),
                         );
-                      } else if (widget.endPointInTab == 'task') {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => TaskByIdScreen(chatId: widget.chatId),
-                          ),
-                        );
-                      } else if (widget.endPointInTab == 'corporate') {
-                        // Этот блок не выполнится из-за проверки выше, но оставляем для полноты
-                        final getChatById = await widget.apiService.getChatById(widget.chatId);
-                        if (getChatById.chatUsers.length == 2 && getChatById.group == null) {
-                          String userIdCheck = '';
-                          SharedPreferences prefs = await SharedPreferences.getInstance();
-                          userIdCheck = prefs.getString('userID') ?? '';
-                          final participant = getChatById.chatUsers
-                              .firstWhere((user) => user.participant.id.toString() != userIdCheck)
-                              .participant;
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => ParticipantProfileScreen(
-                                userId: participant.id.toString(),
-                                image: participant.image,
-                                name: participant.name,
-                                email: participant.email,
-                                phone: participant.phone,
-                                login: participant.login,
-                                lastSeen: participant.lastSeen.toString(),
-                                buttonChat: false,
-                              ),
-                            ),
-                          );
-                        } else {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => CorporateProfileScreen(
-                                chatId: widget.chatId,
-                                chatItem: widget.chatItem,
-                              ),
-                            ),
-                          );
-                        }
                       } else {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              'ОШИБКА!',
-                              style: const TextStyle(
-                                fontFamily: 'Gilroy',
-                                fontSize: 16,
-                                fontWeight: FontWeight.w500,
-                                color: Colors.white,
-                              ),
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => CorporateProfileScreen(
+                              chatId: widget.chatId,
+                              chatItem: widget.chatItem,
                             ),
-                            backgroundColor: Colors.red,
-                            duration: const Duration(seconds: 3),
                           ),
                         );
                       }
-                    } finally {
-                      setState(() {
-                        _isRequestInProgress = false;
-                      });
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            'ОШИБКА!',
+                            style: const TextStyle(
+                              fontFamily: 'Gilroy',
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.white,
+                            ),
+                          ),
+                          backgroundColor: Colors.red,
+                          duration: const Duration(seconds: 3),
+                        ),
+                      );
                     }
-                  },
-              child: Row(
-                children: [
-                  _buildAvatar(widget.chatItem.avatar),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      isSupportChat
-                          ? AppLocalizations.of(context)!.translate('support_chat_name')
-                          : widget.chatItem.name.isEmpty
-                          ? AppLocalizations.of(context)!.translate('no_name')
-                          : widget.chatItem.name,
-                      style: const TextStyle(
-                        fontSize: 18,
-                        color: ChatSmsStyles.appBarTitleColor,
-                        fontWeight: FontWeight.w600,
-                        fontFamily: 'Gilroy',
+                  } finally {
+                    setState(() {
+                      _isRequestInProgress = false;
+                    });
+                  }
+                },
+                child: Row(
+                  children: [
+                    _buildAvatar(widget.chatItem.avatar),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        isSupportChat
+                            ? AppLocalizations.of(context)!.translate('support_chat_name')
+                            : widget.chatItem.name.isEmpty
+                            ? AppLocalizations.of(context)!.translate('no_name')
+                            : widget.chatItem.name,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          color: ChatSmsStyles.appBarTitleColor,
+                          fontWeight: FontWeight.w600,
+                          fontFamily: 'Gilroy',
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
                       ),
-                      overflow: TextOverflow.ellipsis,
-                      maxLines: 1,
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
-        ),
-        backgroundColor: const Color(0xffF4F7FD),
-        body: Column(
-          children: [
-            Expanded(child: messageListUi()),
-            if (widget.canSendMessage && _canCreateChat)
-              inputWidget()
-            else
-              Padding(
-                padding: const EdgeInsets.only(bottom: 50),
-                child: Center(
-                  child: Text(
-                    widget.canSendMessage
-                        ? AppLocalizations.of(context)!.translate('not_premission_to_send_sms')
-                        : AppLocalizations.of(context)!.translate('24_hour_leads'),
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontFamily: 'Gilroy',
-                      color: AppColors.textPrimary700,
-                      fontWeight: FontWeight.w600,
+          backgroundColor: const Color(0xffF4F7FD),
+          body: Column(
+            children: [
+              Expanded(child: messageListUi()),
+              if (widget.canSendMessage && _canCreateChat)
+                inputWidget()
+              else
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 50),
+                  child: Center(
+                    child: Text(
+                      widget.canSendMessage
+                          ? AppLocalizations.of(context)!.translate('not_premission_to_send_sms')
+                          : AppLocalizations.of(context)!.translate('24_hour_leads'),
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontFamily: 'Gilroy',
+                        color: AppColors.textPrimary700,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ),
-              ),
-          ],
+            ],
+          ),
         ),
       ),
-    ),
-  );
-}
-
+    );
+  }
 
   void _scrollToMessageReply(int messageId) {
     final state = context.read<MessagingCubit>().state;
@@ -1107,14 +1056,11 @@ Widget build(BuildContext context) {
     }
   }
 
-
-// Модифицируйте messageListUi для добавления кнопки повтора
   Widget messageListUi() {
     return BlocBuilder<MessagingCubit, MessagingState>(
       builder: (context, state) {
         debugPrint('messageListUi: Building with state: $state');
 
-        // НОВОЕ: Обработка частичной ошибки
         if (state is MessagesPartialErrorState) {
           return Center(
             child: Column(
@@ -1169,7 +1115,6 @@ Widget build(BuildContext context) {
                     SizedBox(width: 12),
                     TextButton(
                       onPressed: () {
-                        // Показываем пустой чат
                         context.read<MessagingCubit>().showEmptyChat();
                       },
                       child: Text(
@@ -1189,7 +1134,6 @@ Widget build(BuildContext context) {
         }
 
         if (state is MessagesErrorState) {
-          // Специальная обработка ошибки с null URL
           if (state.error.contains('No host specified in URI null')) {
             return Center(
               child: Column(
@@ -1277,7 +1221,7 @@ Widget build(BuildContext context) {
             );
           }
 
-          debugPrint('Rendering messageListUi: integrationUsername=$integrationUsername, channelName=$channelName'); // Лог для отладки
+          debugPrint('Rendering messageListUi: integrationUsername=$integrationUsername, channelName=$channelName');
 
           return Stack(
             children: [
@@ -1350,7 +1294,7 @@ Widget build(BuildContext context) {
                           focusNode: _focusNode,
                           isRead: message.isRead,
                           isFirstMessage: isFirstMessage,
-                          referralBody: referralBody, // Передаем
+                          referralBody: referralBody,
                         ),
                       );
                       return Column(
@@ -1417,6 +1361,7 @@ Widget build(BuildContext context) {
       },
     );
   }
+
   Widget inputWidget() {
     return SafeArea(
       bottom: true,
@@ -1483,7 +1428,6 @@ Widget build(BuildContext context) {
   Future<void> setUpServices() async {
     debugPrint('🔌 ChatSmsScreen: setUpServices() STARTED');
     
-    // Проверяем, что baseUrl инициализирован
     if (baseUrl.isEmpty || baseUrl == 'null') {
       debugPrint('BaseURL not initialized, fetching...');
       baseUrl = await apiService.getDynamicBaseUrl();
@@ -1504,25 +1448,19 @@ Widget build(BuildContext context) {
     }
     debugPrint('✅ Token retrieved successfully');
 
-    // Проверяем домены для старой логики
     final enteredDomainMap = await ApiService().getEnteredDomain();
     String? enteredMainDomain = enteredDomainMap['enteredMainDomain'];
     String? enteredDomain = enteredDomainMap['enteredDomain'];
 
-    // Проверяем домен для email-верификации
     String? verifiedDomain = await ApiService().getVerifiedDomain();
     debugPrint('📡 Domain check: enteredMainDomain=$enteredMainDomain, enteredDomain=$enteredDomain, verifiedDomain=$verifiedDomain');
 
-    // ИСПРАВЛЕНИЕ: Используем домен из baseUrl если verifiedDomain null
     if (enteredMainDomain == null || enteredDomain == null) {
       if (verifiedDomain != null && verifiedDomain.isNotEmpty) {
-        // Для email-верификации используем verifiedDomain
         enteredMainDomain = verifiedDomain.split('-back.').last;
         enteredDomain = verifiedDomain.split('-back.').first;
         debugPrint('✅ Using verifiedDomain: $verifiedDomain → mainDomain=$enteredMainDomain, domain=$enteredDomain');
       } else if (baseUrl.isNotEmpty && baseUrl != 'null') {
-        // Извлекаем домен из baseUrl
-        // baseUrl формат: https://fingroupcrm-back.shamcrm.com/api
         final urlPattern = RegExp(r'https://(.+?)-back\.(.+?)(/|$)');
         final match = urlPattern.firstMatch(baseUrl);
         if (match != null) {
@@ -1530,10 +1468,9 @@ Widget build(BuildContext context) {
           enteredMainDomain = match.group(2);
           debugPrint('✅ Extracted from baseUrl: domain=$enteredDomain, mainDomain=$enteredMainDomain');
           
-          // Сохраняем извлеченные значения
           await prefs.setString('enteredMainDomain', enteredMainDomain!);
           await prefs.setString('enteredDomain', enteredDomain!);
-      } else {
+        } else {
           debugPrint('❌ Failed to parse baseUrl, aborting socket setup');
           return;
         }
@@ -1573,7 +1510,6 @@ Widget build(BuildContext context) {
       minimumReconnectDelayDuration: const Duration(seconds: 1),
     );
 
-    // Используем uniqueId если доступен, иначе chatId
     final chatIdentifier = widget.chatUniqueId ?? widget.chatId.toString();
     final channelName = 'presence-chat.$chatIdentifier';
     
@@ -1609,7 +1545,6 @@ Widget build(BuildContext context) {
       debugPrint('❌❌❌ CHAT_SMS: Subscription error for $channelName: ${event.data}');
     });
 
-    // КРИТИЧНО: Подписываемся на ВСЕ события для отладки
     myPresenceChannel.bind('pusher:member_added').listen((event) {
       debugPrint('👤👤👤 CHAT_SMS: Member added: ${event.data}');
     });
@@ -1618,16 +1553,12 @@ Widget build(BuildContext context) {
       debugPrint('👤👤👤 CHAT_SMS: Member removed: ${event.data}');
     });
 
-    // КРИТИЧНО: Подписываемся на событие chat.updated (приходит при новых сообщениях)
     debugPrint('🎯🎯🎯 CHAT_SMS: Registering chat.updated listener for $channelName...');
     
     myPresenceChannel.bind('chat.updated').listen((event) async {
-      debugPrint('🔔🔔🔔🔔🔔 CHAT_SMS: ===== RECEIVED chat.updated EVENT =====');
+      debugPrint('🔔🔔🔔🔔🔔 CHAT_SMS (CHAT CHANNEL): ===== RECEIVED chat.updated EVENT =====');
       debugPrint('🔔🔔🔔 CHAT_SMS: Channel: $channelName');
-      debugPrint('🔔🔔🔔 CHAT_SMS: Event type: ${event.name}');
       debugPrint('🔔🔔🔔 CHAT_SMS: Event data: ${event.data}');
-      debugPrint('🔔🔔🔔 CHAT_SMS: Widget mounted: $mounted');
-      debugPrint('🔔🔔🔔 CHAT_SMS: Current chatId: ${widget.chatId}');
       
       try {
         final chatData = json.decode(event.data);
@@ -1635,39 +1566,99 @@ Widget build(BuildContext context) {
         
         debugPrint('🔔🔔🔔 CHAT_SMS: Event chatId: $eventChatId, our chatId: ${widget.chatId}');
         
-        // Проверяем что событие для нашего чата
         if (eventChatId != widget.chatId) {
           debugPrint('⚠️⚠️⚠️ CHAT_SMS: Event is for different chat, ignoring');
           return;
         }
         
-        // Просто перезагружаем сообщения когда приходит обновление
         if (mounted) {
-          debugPrint('🔔🔔🔔 CHAT_SMS: ✅ RELOADING messages NOW...');
+          debugPrint('🔔🔔🔔 CHAT_SMS (CHAT CHANNEL): ✅ RELOADING messages NOW...');
           context.read<MessagingCubit>().getMessages(widget.chatId);
           
-          // Прокручиваем вниз после небольшой задержки
           Future.delayed(Duration(milliseconds: 300), () {
             if (mounted) {
               _scrollToBottom();
-              debugPrint('🔔🔔🔔 CHAT_SMS: ✅ Scrolled to bottom');
+              debugPrint('🔔🔔🔔 CHAT_SMS (CHAT CHANNEL): ✅ Scrolled to bottom');
             }
           });
           
-          // Воспроизводим звук если сообщение не от меня
           final lastMessage = chatData['chat']?['lastMessage'];
-          final isMyMessage = lastMessage?['is_my_message'] ?? false;
           
-          debugPrint('🔔🔔🔔 CHAT_SMS: Last message is mine: $isMyMessage');
+          // ✅ ИСПРАВЛЕНИЕ: Используем кэшированное имя собеседника
+          String senderName = _cachedCompanionName ?? 'Собеседник';
+          
+          debugPrint('📝 CHAT CHANNEL: Используем имя собеседника: $senderName (из кэша: $_cachedCompanionName)');
+          
+          final currentPrefs = await SharedPreferences.getInstance();
+          final myUserId = currentPrefs.getString('userID') ?? '';
+          
+          String? messageSenderId;
+          String? messageSenderType;
+          
+          if (lastMessage != null) {
+            if (lastMessage['sender'] != null && lastMessage['sender'] is Map) {
+              messageSenderId = lastMessage['sender']['id']?.toString() ?? '';
+              messageSenderType = lastMessage['sender']['type']?.toString() ?? 'user';
+            } else if (lastMessage['sender_id'] != null) {
+              messageSenderId = lastMessage['sender_id']?.toString() ?? '';
+              messageSenderType = lastMessage['sender_type']?.toString() ?? 'user';
+            } else if (lastMessage['user_id'] != null) {
+              messageSenderId = lastMessage['user_id']?.toString() ?? '';
+              messageSenderType = 'user';
+            }
+          }
+          
+          bool isMyMessage = false;
+          
+          if (messageSenderId != null && messageSenderId.isNotEmpty) {
+            isMyMessage = (messageSenderId == myUserId && messageSenderType == 'user');
+            debugPrint('✅ Путь 1: sender_id НАЙДЕН → используем сравнение sender_id');
+            debugPrint('   Сравнение: "$messageSenderId" == "$myUserId" && "$messageSenderType" == "user"');
+            debugPrint('   Результат: $isMyMessage');
+          } else {
+            // ✅ Путь 2: sender_id НЕ НАЙДЕН → определяем по chatUsers
+            debugPrint('✅ Путь 2: sender_id НЕ НАЙДЕН → определяем по chatUsers');
+            
+            final eventChatUsers = chatData['chat']?['chatUsers'];
+            
+            // Ищем ПЕРВОГО participant с id в chatUsers
+            String? foundParticipantId;
+            if (eventChatUsers != null && eventChatUsers is List) {
+              for (var user in eventChatUsers) {
+                if (user['participant'] != null && user['participant']['id'] != null) {
+                  foundParticipantId = user['participant']['id']?.toString();
+                  debugPrint('   Найден participant с id: $foundParticipantId');
+                  break; // Берем первого найденного
+                }
+              }
+            }
+            
+            if (foundParticipantId != null) {
+              // КРИТИЧЕСКАЯ ЛОГИКА:
+              // Если participant.id == myUserId → это сообщение ОТ СОБЕСЕДНИКА
+              // Если participant.id != myUserId → это МОЕ сообщение
+              isMyMessage = (foundParticipantId != myUserId);
+              debugPrint('   🎯 Сравнение ИНВЕРТИРОВАННОЕ: foundParticipantId($foundParticipantId) != myUserId($myUserId)');
+              debugPrint('   Результат: $isMyMessage');
+            } else {
+              // Fallback
+              isMyMessage = lastMessage?['is_my_message'] ?? false;
+              debugPrint('   ⚠️ Participant не найден, fallback: $isMyMessage');
+            }
+          }
+          
+          debugPrint('🎯 ФИНАЛЬНЫЙ РЕЗУЛЬТАТ isMyMessage: $isMyMessage');
           
           if (!isMyMessage) {
             try {
               await _audioPlayer.setAsset('assets/audio/get.mp3');
               await _audioPlayer.play();
-              debugPrint('🔔🔔🔔 CHAT_SMS: ✅ Played notification sound');
+              debugPrint('🔔🔔🔔 CHAT_SMS: ✅ Played notification sound for INCOMING message');
             } catch (e) {
               debugPrint('⚠️ CHAT_SMS: Could not play sound: $e');
             }
+          } else {
+            debugPrint('🔔🔔🔔 CHAT_SMS: Skipped sound - message is from ME');
           }
           
           debugPrint('✅✅✅ CHAT_SMS: ===== chat.updated handled successfully =====');
@@ -1760,7 +1751,6 @@ Widget build(BuildContext context) {
         _scrollToBottom();
         debugPrint('Scrolled to bottom after receiving message');
 
-        // Опциональная фоновая синхронизация с API без изменения состояния
         try {
           await context.read<MessagingCubit>().syncMessagesInBackground(widget.chatId);
           debugPrint('Synced messages with API in background');
@@ -1772,7 +1762,6 @@ Widget build(BuildContext context) {
       }
     });
 
-    // ДОПОЛНИТЕЛЬНО: Подписываемся на канал пользователя для получения обновлений чата
     debugPrint('🎯🎯🎯 CHAT_SMS: Setting up USER channel subscription...');
     final userId = prefs.getString('unique_id') ?? '';
     if (userId.isNotEmpty) {
@@ -1798,9 +1787,8 @@ Widget build(BuildContext context) {
         userPresenceChannel.subscribeIfNotUnsubscribed();
       });
       
-      // Слушаем события на канале пользователя
       userPresenceChannel.bind('chat.updated').listen((event) async {
-        debugPrint('🔔🔔🔔 CHAT_SMS (USER CHANNEL): Received chat.updated!');
+        debugPrint('🔔🔔🔔 CHAT_SMS (USER CHANNEL): Received chat.updated!'); 
         
         try {
           final chatData = json.decode(event.data);
@@ -1808,78 +1796,124 @@ Widget build(BuildContext context) {
           
           debugPrint('🔔🔔🔔 CHAT_SMS (USER CHANNEL): Event chatId: $eventChatId, our chatId: ${widget.chatId}');
           
-          // Проверяем что событие для нашего чата
           if (eventChatId == widget.chatId && mounted) {
             final lastMessage = chatData['chat']?['lastMessage'];
             final chatUsers = chatData['chat']?['chatUsers'];
             
             if (lastMessage != null) {
-              debugPrint('🔔🔔🔔 CHAT_SMS (USER CHANNEL): ✅ Adding new message...');
-              debugPrint('🔔🔔🔔 CHAT_SMS: Full chat data keys: ${chatData['chat']?.keys.toList()}');
-              debugPrint('🔔🔔🔔 CHAT_SMS: lastMessage keys: ${lastMessage.keys.toList()}');
-              debugPrint('🔔🔔🔔 CHAT_SMS: sender in lastMessage: ${lastMessage.containsKey('sender')}');
-              debugPrint('🔔🔔🔔 CHAT_SMS: sender data: ${lastMessage['sender']}');
-              debugPrint('🔔🔔🔔 CHAT_SMS: chatUsers count: ${chatUsers?.length ?? 0}');
-              if (chatUsers != null && chatUsers is List) {
-                for (int i = 0; i < chatUsers.length; i++) {
-                  debugPrint('🔔🔔🔔 CHAT_SMS: chatUsers[$i]: ${chatUsers[i]}');
-                }
-              }
+              debugPrint('🔔🔔🔔 CHAT_SMS (USER CHANNEL): ✅ Processing new message...');
               
-              // КРИТИЧНО: Определяем правильно кто отправил сообщение
+              debugPrint('═══════════════════════════════════════════════════════');
+              debugPrint('📨 FULL EVENT: ${event.data}');
+              debugPrint('═══════════════════════════════════════════════════════');
+              
               final prefs = await SharedPreferences.getInstance();
               final myUserId = prefs.getString('userID') ?? '';
               final myUniqueId = prefs.getString('unique_id') ?? '';
               
               debugPrint('🔔🔔🔔 CHAT_SMS: My IDs - userID=$myUserId, unique_id=$myUniqueId');
               
-              // КРИТИЧНО: Ищем ВСЕХ участников чата и определяем кто отправитель
-              String otherUserName = 'Собеседник';
+              // ✅ ИСПРАВЛЕНИЕ: Используем кэшированное имя собеседника
+              String senderName = _cachedCompanionName ?? 'Собеседник';
               String myName = 'Вы';
-              String? senderId;
               
-              // Получаем имена всех участников
+              debugPrint('📝 Используем имя собеседника: $senderName (из кэша: $_cachedCompanionName)');
+              
+              // Если в текущем событии есть chatUsers - обновляем имена и кэш
               if (chatUsers != null && chatUsers is List && chatUsers.isNotEmpty) {
-                debugPrint('🔔🔔🔔 CHAT_SMS: Searching in ${chatUsers.length} chatUsers...');
                 for (var user in chatUsers) {
                   if (user['participant'] != null) {
                     final participantId = user['participant']?['id']?.toString() ?? '';
                     final participantName = user['participant']?['name'] ?? '';
+                    final participantLastname = user['participant']?['lastname'] ?? '';
                     
-                    debugPrint('🔔🔔🔔 CHAT_SMS: Participant: id=$participantId, name=$participantName');
+                    String fullName = participantName;
+                    if (participantLastname.isNotEmpty) {
+                      fullName = '$participantName $participantLastname';
+                    }
                     
                     if (participantId == myUserId) {
-                      myName = participantName;
-                      debugPrint('🔔🔔🔔 CHAT_SMS: This is ME: $myName');
-                    } else if (participantId.isNotEmpty) {
-                      otherUserName = participantName;
-                      senderId = participantId;
-                      debugPrint('🔔🔔🔔 CHAT_SMS: This is OTHER user: $otherUserName');
+                      myName = fullName;
+                      debugPrint('   📝 Найдено мое имя: $myName (ID: $participantId)');
+                    } else if (participantId.isNotEmpty && participantName.isNotEmpty) {
+                      senderName = fullName;
+                      // Обновляем кэш
+                      if (_cachedCompanionName != fullName) {
+                        setState(() {
+                          _cachedCompanionName = fullName;
+                        });
+                        debugPrint('   💾 Обновлен кэш имени собеседника: $_cachedCompanionName');
+                      }
                     }
                   }
                 }
               }
               
-              // КРИТИЧНО: Определяем isMyMessage на основе is_my_message из события
-              final isMyMessageFromEvent = lastMessage['is_my_message'] ?? false;
+              String? messageSenderId;
+              String? messageSenderType;
               
-              debugPrint('🔔🔔🔔 CHAT_SMS: is_my_message from event: $isMyMessageFromEvent');
+              if (lastMessage['sender'] != null && lastMessage['sender'] is Map) {
+                messageSenderId = lastMessage['sender']['id']?.toString() ?? '';
+                messageSenderType = lastMessage['sender']['type']?.toString() ?? 'user';
+              } else if (lastMessage['sender_id'] != null) {
+                messageSenderId = lastMessage['sender_id']?.toString() ?? '';
+                messageSenderType = lastMessage['sender_type']?.toString() ?? 'user';
+              } else if (lastMessage['user_id'] != null) {
+                messageSenderId = lastMessage['user_id']?.toString() ?? '';
+                messageSenderType = 'user';
+              }
               
-              // Если это мое сообщение - используем мое имя, иначе - собеседника
-              final isMyMessage = isMyMessageFromEvent;
-              final senderName = isMyMessage ? myName : otherUserName;
+              debugPrint('🔔🔔🔔 CHAT_SMS: Message sender - id=$messageSenderId, type=$messageSenderType');
               
-              debugPrint('🔔🔔🔔 CHAT_SMS: FINAL - isMyMessage=$isMyMessage, senderName=$senderName');
+              bool isMyMessage = false;
               
-              // Создаем объект Message из lastMessage
+              if (messageSenderId != null && messageSenderId.isNotEmpty) {
+                isMyMessage = (messageSenderId == myUserId && messageSenderType == 'user');
+                debugPrint('✅ Путь 1: sender_id НАЙДЕН → используем сравнение sender_id');
+                debugPrint('   Сравнение: "$messageSenderId" == "$myUserId" && "$messageSenderType" == "user"');
+                debugPrint('   Результат: $isMyMessage');
+              } else {
+                // ✅ Путь 2: sender_id НЕ НАЙДЕН → определяем по chatUsers
+                debugPrint('✅ Путь 2: sender_id НЕ НАЙДЕН → определяем по chatUsers');
+                
+                // Ищем ПЕРВОГО participant с id в chatUsers
+                String? foundParticipantId;
+                if (chatUsers != null && chatUsers is List) {
+                  for (var user in chatUsers) {
+                    if (user['participant'] != null && user['participant']['id'] != null) {
+                      foundParticipantId = user['participant']['id']?.toString();
+                      debugPrint('   Найден participant с id: $foundParticipantId');
+                      break; // Берем первого найденного
+                    }
+                  }
+                }
+                
+                if (foundParticipantId != null) {
+                  // КРИТИЧЕСКАЯ ЛОГИКА:
+                  // Если participant.id == myUserId → это сообщение ОТ СОБЕСЕДНИКА
+                  // Если participant.id != myUserId → это МОЕ сообщение
+                  isMyMessage = (foundParticipantId != myUserId);
+                  debugPrint('   🎯 Сравнение ИНВЕРТИРОВАННОЕ: foundParticipantId($foundParticipantId) != myUserId($myUserId)');
+                  debugPrint('   Результат: $isMyMessage');
+                } else {
+                  // Fallback
+                  isMyMessage = lastMessage['is_my_message'] ?? false;
+                  debugPrint('   ⚠️ Participant не найден, fallback: $isMyMessage');
+                }
+              }
+              
+              final displaySenderName = isMyMessage ? myName : senderName;
+              
+              debugPrint('🔔🔔🔔 CHAT_SMS: Final - isMyMessage=$isMyMessage, senderName=$displaySenderName');
+              
               final newMessage = Message(
                 id: lastMessage['id'] ?? 0,
                 text: lastMessage['text'] ?? '',
                 type: lastMessage['type'] ?? 'text',
                 filePath: lastMessage['file_path'],
-                isMyMessage: isMyMessage, // Используем правильно определенное значение
+                isMyMessage: isMyMessage,
                 createMessateTime: lastMessage['created_at'] ?? '',
-                senderName: senderName,
+                senderName: displaySenderName,
                 duration: Duration(
                   seconds: lastMessage['voice_duration'] != null 
                     ? double.tryParse(lastMessage['voice_duration'].toString())?.round() ?? 20
@@ -1890,34 +1924,30 @@ Widget build(BuildContext context) {
                 isNote: lastMessage['is_note'] ?? false,
               );
               
-              debugPrint('🔔🔔🔔 CHAT_SMS (USER CHANNEL): Message created: ${newMessage.text}');
+              debugPrint('🔔🔔🔔 CHAT_SMS (USER CHANNEL): Message created with CORRECT isMyMessage: ${newMessage.isMyMessage}');
               
-              // Добавляем сообщение БЕЗ перезагрузки всей страницы
               context.read<MessagingCubit>().updateMessageFromSocket(newMessage);
               
-              // Прокручиваем вниз
               Future.delayed(Duration(milliseconds: 100), () {
                 if (mounted) {
                   _scrollToBottom();
-                  debugPrint('🔔🔔🔔 CHAT_SMS (USER CHANNEL): ✅ Scrolled to bottom');
                 }
               });
               
-              // Воспроизводим звук если сообщение не от меня
-              if (!newMessage.isMyMessage) {
+              if (!isMyMessage) {
                 try {
                   await _audioPlayer.setAsset('assets/audio/get.mp3');
                   await _audioPlayer.play();
-                  debugPrint('🔔🔔🔔 CHAT_SMS (USER CHANNEL): ✅ Played sound');
+                  debugPrint('🔔🔔🔔 CHAT_SMS (USER CHANNEL): ✅ Played sound for INCOMING message');
                 } catch (e) {
                   debugPrint('⚠️ CHAT_SMS (USER CHANNEL): Sound error: $e');
                 }
+              } else {
+                debugPrint('🔔🔔🔔 CHAT_SMS (USER CHANNEL): Skipped sound - message is from ME');
               }
-              
-              debugPrint('✅✅✅ CHAT_SMS (USER CHANNEL): Message added successfully!');
             }
           }
-    } catch (e, stackTrace) {
+        } catch (e, stackTrace) {
           debugPrint('❌ CHAT_SMS (USER CHANNEL): Error: $e');
           debugPrint('❌ CHAT_SMS (USER CHANNEL): StackTrace: $stackTrace');
         }
@@ -2100,7 +2130,6 @@ Widget build(BuildContext context) {
     socketClient.dispose();
     _focusNode.dispose();
 
-    // ✅ Используем сохраненную ссылку на bloc вместо context.read
     _chatsBloc?.add(ResetUnreadCount(widget.chatId));
 
     super.dispose();
@@ -2125,7 +2154,7 @@ class MessageItemWidget extends StatelessWidget {
   final FocusNode focusNode;
   final bool isRead;
   final bool isFirstMessage;
-  final String? referralBody; // Новый параметр: referral_body чата
+  final String? referralBody;
 
   MessageItemWidget({
     super.key,
@@ -2172,7 +2201,7 @@ class MessageItemWidget extends StatelessWidget {
   Widget _buildMessageContent(BuildContext context) {
     String? replyMessageText;
     if (isFirstMessage && referralBody != null && referralBody!.isNotEmpty) {
-      replyMessageText = referralBody; // Выводим как есть из чата
+      replyMessageText = referralBody;
     } else if (message.forwardedMessage != null) {
       replyMessageText = message.forwardedMessage!.type == 'voice'
           ? "Голосовое сообщение"
@@ -2194,7 +2223,7 @@ class MessageItemWidget extends StatelessWidget {
           isHighlighted: highlightedMessageId == message.id,
           isChanged: message.isChanged,
           isRead: message.isRead,
-          isNote: message.isNote, // Передаем is_note
+          isNote: message.isNote,
         );
       case 'image':
         return ImageMessageBubble(
@@ -2754,6 +2783,3 @@ class MessageItemWidget extends StatelessWidget {
     }
   }
 }
-
-/*
-*/
