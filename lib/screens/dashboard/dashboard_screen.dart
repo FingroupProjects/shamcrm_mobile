@@ -47,6 +47,7 @@ import 'package:crm_task_manager/page_2/dashboard/widgets/charts/sales_dynamics_
 import 'package:crm_task_manager/page_2/dashboard/widgets/charts/net_profit_chart.dart';
 import 'package:crm_task_manager/page_2/dashboard/widgets/charts/expense_structure_chart.dart';
 import 'package:crm_task_manager/page_2/dashboard/widgets/charts/order_quantity_chart.dart';
+import 'package:crm_task_manager/page_2/dashboard/widgets/charts/chart_error_widget.dart';
 import 'package:crm_task_manager/screens/profile/profile_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/utils/TutorialStyleWidget.dart';
@@ -803,7 +804,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
                 // Fade-in animation for Wave 1 charts
                 _FadeInWidget(
-                  child: TopSellingProductsChart(state.topSellingData),
+                  child: state.graphErrors.containsKey('topSelling')
+                      ? ChartErrorWidget(errorMessage: state.graphErrors['topSelling'])
+                      : TopSellingProductsChart(state.topSellingData),
                 ),
                 const SizedBox(height: 16),
 
@@ -875,36 +878,48 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                 ),
                 const SizedBox(height: 16),
-                TopSellingProductsChart(state.topSellingData),
+                state.graphErrors.containsKey('topSelling')
+                    ? ChartErrorWidget(errorMessage: state.graphErrors['topSelling'])
+                    : TopSellingProductsChart(state.topSellingData),
                 const SizedBox(height: 16),
 
                 // Wave 2 data with fade-in animation
                 _FadeInWidget(
-                  child: SalesDynamicsLineChart(state.salesData),
+                  child: state.graphErrors.containsKey('salesDynamics')
+                      ? ChartErrorWidget(errorMessage: state.graphErrors['salesDynamics'])
+                      : SalesDynamicsLineChart(state.salesData),
                 ),
                 const SizedBox(height: 16),
 
                 _FadeInWidget(
                   delay: const Duration(milliseconds: 100),
-                  child: NetProfitChart(state.netProfitData),
+                  child: state.graphErrors.containsKey('netProfit')
+                      ? ChartErrorWidget(errorMessage: state.graphErrors['netProfit'])
+                      : NetProfitChart(state.netProfitData),
                 ),
                 const SizedBox(height: 16),
 
                 _FadeInWidget(
                   delay: const Duration(milliseconds: 200),
-                  child: ProfitabilityChart(profitabilityData: state.profitabilityData),
+                  child: state.graphErrors.containsKey('profitability')
+                      ? ChartErrorWidget(errorMessage: state.graphErrors['profitability'])
+                      : ProfitabilityChart(profitabilityData: state.profitabilityData),
                 ),
                 const SizedBox(height: 16),
 
                 _FadeInWidget(
                   delay: const Duration(milliseconds: 300),
-                  child: ExpenseStructureChart(state.expenseStructureData),
+                  child: state.graphErrors.containsKey('expenseStructure')
+                      ? ChartErrorWidget(errorMessage: state.graphErrors['expenseStructure'])
+                      : ExpenseStructureChart(state.expenseStructureData),
                 ),
                 const SizedBox(height: 16),
 
                 _FadeInWidget(
                   delay: const Duration(milliseconds: 400),
-                  child: OrderQuantityChart(orderDashboardData: state.orderDashboardData),
+                  child: state.graphErrors.containsKey('orderDashboard')
+                      ? ChartErrorWidget(errorMessage: state.graphErrors['orderDashboard'])
+                      : OrderQuantityChart(orderDashboardData: state.orderDashboardData),
                 ),
                 const SizedBox(height: 16),
               ],

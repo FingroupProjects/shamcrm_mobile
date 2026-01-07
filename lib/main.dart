@@ -163,14 +163,14 @@ void main() async {
     final authService = AuthService();
 
     final sessionValidation = await _validateApplicationSession(apiService);
-    
+                                                                  
     String? token;
     String? pin;
     bool isDomainChecked = false;
     
     if (sessionValidation.isValid) {
       token = await apiService.getToken();
-      pin = await authService.getPin();
+      pin = await authService.getPin(); 
       isDomainChecked = await apiService.isDomainChecked();
 
       if (isDomainChecked) {
@@ -544,10 +544,10 @@ class _MyAppState extends State<MyApp> {
     });
   }
 
-  @override
-Widget build(BuildContext context) {
-  return MultiProvider(
-    providers: [
+     @override
+     Widget build(BuildContext context) {
+     return MultiProvider(
+      providers: [
 
         Provider<ApiService>.value(value: widget.apiService),
         Provider<AuthService>.value(value: widget.authService),

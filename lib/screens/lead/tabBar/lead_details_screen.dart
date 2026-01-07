@@ -1070,6 +1070,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                         ),
                       );
                       if (shouldUpdate == true) {
+                        _loadFieldConfiguration(); // ✅ Обновляем конфигурацию полей
                         context.read<LeadByIdBloc>().add(FetchLeadByIdEvent(
                             leadId: int.parse(widget.leadId)));
                         context.read<LeadBloc>().add(FetchLeadStatuses());
@@ -1490,6 +1491,11 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
         _fieldConfiguration = activeFields;
         _isConfigurationLoaded = true;
       });
+      
+      // ✅ Если данные уже загружены, обновляем детали с новой конфигурацией
+      if (currentLead != null) {
+        _updateDetails(currentLead!);
+      }
     } catch (e) {
       // В случае ошибки показываем поля в стандартном порядке
       if (mounted) {

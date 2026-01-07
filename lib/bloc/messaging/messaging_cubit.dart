@@ -13,14 +13,14 @@ class MessagingCubit extends Cubit<MessagingState> {
 
   MessagingCubit(this.apiService) : super(MessagingInitial());
 
-  Future<void> getMessages(int chatId, {String? search}) async {
+  Future<void> getMessages(int chatId, {String? search, String? chatType}) async {
     try {
       emit(MessagesLoadingState());
       
       // Проверяем инициализацию ApiService
       await _ensureApiServiceInitialized();
       
-      final messages = await apiService.getMessages(chatId, search: search);
+      final messages = await apiService.getMessages(chatId, search: search, chatType: chatType);
 
       List<Message> pinnedMessages = [];
       for (var message in messages) {
@@ -40,13 +40,13 @@ class MessagingCubit extends Cubit<MessagingState> {
     }
   }
 
-  Future<void> getMessagesWithFallback(int chatId, {String? search}) async {
+  Future<void> getMessagesWithFallback(int chatId, {String? search, String? chatType}) async {
     emit(MessagesLoadingState());
     
     try {
       // Основная попытка загрузки
       await _ensureApiServiceInitialized();
-      final messages = await apiService.getMessages(chatId, search: search);
+      final messages = await apiService.getMessages(chatId, search: search, chatType: chatType);
 
       List<Message> pinnedMessages = [];
       for (var message in messages) {
@@ -72,7 +72,7 @@ class MessagingCubit extends Cubit<MessagingState> {
         try {
           // Попытка 1: Принудительная инициализация
           await apiService.initialize();
-          final messages = await apiService.getMessages(chatId, search: search);
+          final messages = await apiService.getMessages(chatId, search: search, chatType: chatType);
           
           List<Message> pinnedMessages = [];
           for (var message in messages) {
@@ -144,9 +144,9 @@ class MessagingCubit extends Cubit<MessagingState> {
     debugPrint('MessagingCubit: Showing empty chat interface');
   }
 
-  Future<void> syncMessagesInBackground(int chatId) async {
+  Future<void> syncMessagesInBackground(int chatId, {String? chatType}) async {
     try {
-      final messages = await apiService.getMessages(chatId);
+      final messages = await apiService.getMessages(chatId, chatType: chatType);
       if (state is MessagesLoadedState) {
         final currentMessages = (state as MessagesLoadedState).messages;
         final updatedMessages = _mergeMessages(currentMessages, messages);

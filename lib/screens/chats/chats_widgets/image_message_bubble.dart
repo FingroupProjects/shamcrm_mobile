@@ -14,6 +14,7 @@ class ImageMessageBubble extends StatefulWidget {
   final String? replyMessage;
   final bool isHighlighted;
   final bool isRead;
+  final bool isLeadChat;
 
   const ImageMessageBubble({
     Key? key,
@@ -26,6 +27,7 @@ class ImageMessageBubble extends StatefulWidget {
     this.isHighlighted = false,
     required this.isRead,
     required Message message,
+    this.isLeadChat = false,
   }) : super(key: key);
 
   @override
@@ -90,10 +92,16 @@ class _ImageMessageBubbleState extends State<ImageMessageBubble> {
           crossAxisAlignment: widget.isSender ? CrossAxisAlignment.end : CrossAxisAlignment.start,
           children: [
             const SizedBox(height: 8),
-            if (!widget.isSender)
+            // ✅ Логика отображения имени отправителя:
+            // - В лид-чатах: показываем имя для ОБЕИХ сторон (несколько менеджеров могут отвечать)
+            // - В задачах и корпоративных: показываем имя только для собеседника
+            if (widget.isLeadChat || !widget.isSender)
               Text(
                 widget.senderName,
-                style: const TextStyle(fontWeight: FontWeight.w600),
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: widget.isSender ? Colors.grey.shade600 : Colors.black87,
+                ),
               ),
             GestureDetector(
               onTap: fullUrl != null

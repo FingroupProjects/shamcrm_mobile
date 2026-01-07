@@ -58,6 +58,7 @@ class _ChatsScreenState extends State<ChatsScreen>
 
   bool _showCorporateChat = false;
   bool _showLeadChat = false;
+  bool _showTaskChat = false;
   bool _isPermissionsChecked = false;
   bool _isSearching = false;
   String searchQuery = '';
@@ -87,27 +88,31 @@ class _ChatsScreenState extends State<ChatsScreen>
   Future<void> _checkPermissions() async {
     final LeadChat = await apiService.hasPermission('chat.read');
     final CorporateChat = await apiService.hasPermission('corporateChat.read');
+    final TaskChat = await apiService.hasPermission('task.read');
 
     setState(() {
       _showLeadChat = LeadChat;
       _showCorporateChat = CorporateChat;
+      _showTaskChat = TaskChat;
 
-      if (!_showLeadChat && !_showCorporateChat) {
+      // Определяем начальную вкладку в зависимости от доступных прав
+      // Приоритет: Задачи -> Лиды -> Корпоративный чат
+      if (TaskChat) {
         selectTabIndex = 1;
         endPointInTab = 'task';
         _chatsBlocs['task']!.add(FetchChats(endPoint: 'task'));
-      } else if (!_showLeadChat) {
-        selectTabIndex = 1;
-        endPointInTab = 'task';
-        _chatsBlocs['task']!.add(FetchChats(endPoint: 'task'));
-      } else if (!_showCorporateChat) {
+      } else if (LeadChat) {
         selectTabIndex = 0;
         endPointInTab = 'lead';
         _chatsBlocs['lead']!.add(FetchChats(endPoint: 'lead'));
+      } else if (CorporateChat) {
+        selectTabIndex = 2;
+        endPointInTab = 'corporate';
+        _chatsBlocs['corporate']!.add(FetchChats(endPoint: 'corporate'));
       } else {
+        // Если нет доступа ни к одной вкладке, выбираем первую доступную
         selectTabIndex = 0;
         endPointInTab = 'lead';
-        _chatsBlocs['lead']!.add(FetchChats(endPoint: 'lead'));
       }
       _isPermissionsChecked = true;
     });
@@ -739,7 +744,7 @@ Future<void> setUpServices() async {
   String? verifiedDomain = await ApiService().getVerifiedDomain();
   debugPrint('ChatsScreen: Domain parameters: enteredMainDomain=$enteredMainDomain, enteredDomain=$enteredDomain, verifiedDomain=$verifiedDomain');
 
-  // Если домены отсутствуют, используем verifiedDomain или резервные значения
+  // Если домены отсутствуют, используем verifiedDomain или извлекаем из baseUrl ApiService
   if (enteredMainDomain == null || enteredDomain == null) {
     if (verifiedDomain != null && verifiedDomain.isNotEmpty) {
       // Для email-верификации используем verifiedDomain
@@ -747,13 +752,46 @@ Future<void> setUpServices() async {
       enteredDomain = verifiedDomain.split('-back.').first;
       debugPrint('ChatsScreen: Using verifiedDomain: $verifiedDomain, parsed mainDomain=$enteredMainDomain, domain=$enteredDomain');
     } else {
-      // Резервные значения для отладки
-      enteredMainDomain = 'shamcrm.com'; // Замени на реальный домен
-      enteredDomain = 'info1fingrouptj'; // Замени на реальный поддомен
-      debugPrint('ChatsScreen: Using fallback domains: enteredMainDomain=$enteredMainDomain, enteredDomain=$enteredDomain');
-      // Сохраняем резервные значения в SharedPreferences
-      await prefs.setString('enteredMainDomain', enteredMainDomain);
-      await prefs.setString('enteredDomain', enteredDomain);
+      // Пытаемся извлечь из baseUrl ApiService
+      try {
+        final apiService = ApiService();
+        await apiService.initialize();
+        final baseUrl = await apiService.getDynamicBaseUrl();
+        debugPrint('ChatsScreen: Got baseUrl from ApiService: $baseUrl');
+        
+        if (baseUrl.isNotEmpty && baseUrl != 'null') {
+          // Извлекаем домен из baseUrl (формат: https://fingroupcrm-back.shamcrm.com/api)
+          final urlPattern = RegExp(r'https://(.+?)-back\.(.+?)(/|$)');
+          final match = urlPattern.firstMatch(baseUrl);
+          if (match != null) {
+            enteredDomain = match.group(1);
+            enteredMainDomain = match.group(2);
+            debugPrint('ChatsScreen: Extracted from baseUrl: domain=$enteredDomain, mainDomain=$enteredMainDomain');
+            
+            // Сохраняем извлеченные значения
+            await prefs.setString('enteredMainDomain', enteredMainDomain!);
+            await prefs.setString('enteredDomain', enteredDomain!);
+          } else {
+            debugPrint('ChatsScreen: Failed to parse baseUrl, using fallback');
+            enteredMainDomain = 'shamcrm.com';
+            enteredDomain = 'fingroupcrm'; // Используем правильный домен из логов
+            await prefs.setString('enteredMainDomain', enteredMainDomain);
+            await prefs.setString('enteredDomain', enteredDomain);
+          }
+        } else {
+          debugPrint('ChatsScreen: BaseUrl empty, using fallback');
+          enteredMainDomain = 'shamcrm.com';
+          enteredDomain = 'fingroupcrm';
+          await prefs.setString('enteredMainDomain', enteredMainDomain);
+          await prefs.setString('enteredDomain', enteredDomain);
+        }
+      } catch (e) {
+        debugPrint('ChatsScreen: Error extracting from baseUrl: $e, using fallback');
+        enteredMainDomain = 'shamcrm.com';
+        enteredDomain = 'fingroupcrm';
+        await prefs.setString('enteredMainDomain', enteredMainDomain);
+        await prefs.setString('enteredDomain', enteredDomain);
+      }
     }
   }
 
@@ -1058,6 +1096,7 @@ Future<void> updateFromSocket({required Chats chat}) async {
                           child: Row(
                             children: List.generate(_tabTitles.length, (index) {
                               if ((index == 0 && !_showLeadChat) ||
+                                  (index == 1 && !_showTaskChat) ||
                                   (index == 2 && !_showCorporateChat)) {
                                 return Container();
                               }
@@ -1165,6 +1204,16 @@ Future<void> updateFromSocket({required Chats chat}) async {
               : index == 1
                   ? 'task'
                   : 'corporate';
+          
+          // Скрываем содержимое вкладок, к которым нет доступа
+          bool hasAccess = (index == 0 && _showLeadChat) ||
+                          (index == 1 && _showTaskChat) ||
+                          (index == 2 && _showCorporateChat);
+          
+          if (!hasAccess) {
+            return Container(); // Пустой контейнер для недоступных вкладок
+          }
+          
           return BlocProvider.value(
             value: _chatsBlocs[endPoint]!,
             child: _ChatItemsWidget(
@@ -1230,6 +1279,7 @@ void onTap(Chats chat) {
         child: ChatSmsScreen(
           chatItem: chat.toChatItem(),
           chatId: chat.id,
+          chatUniqueId: chat.uniqueId, // Передаем unique_id для сокетов
           endPointInTab: widget.endPointInTab,
           canSendMessage: chat.canSendMessage,
         ),

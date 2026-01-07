@@ -63,9 +63,11 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   }
 
 // ✅ НОВЫЙ МЕТОД: Получаем имя из socket presence
-  Future<String?> _getChatNameFromSocket(int chatId) async {
+  Future<String?> _getChatNameFromSocket(int chatId, {String? chatUniqueId}) async {
     try {
-      debugPrint('🔌 Getting chat name from socket for chatId: $chatId');
+      // Используем uniqueId если доступен, иначе chatId
+      final chatIdentifier = chatUniqueId ?? chatId.toString();
+      debugPrint('🔌 Getting chat name from socket for chatIdentifier: $chatIdentifier (uniqueId: $chatUniqueId, chatId: $chatId)');
 
       final prefs = await SharedPreferences.getInstance();
       String? token = prefs.getString('token');
@@ -102,8 +104,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           connectionErrorHandler:
               (exception, StackTrace trace, void Function() refresh) {});
 
+      final channelName = 'presence-chat.$chatIdentifier';
       final presenceChannel = tempSocketClient.presenceChannel(
-        'presence-chat.$chatId',
+        channelName,
         authorizationDelegate:
             EndpointAuthorizableChannelTokenAuthorizationDelegate
                 .forPresenceChannel(
@@ -814,6 +817,7 @@ final bool? confirmed = await showDialog<bool>(
       chatScreen = ChatSmsScreen(
         chatItem: Chats(
           id: chatId,
+          uniqueId: getChatById.uniqueId,
           name: chatName,
           image: '',
           channel: "",
@@ -825,6 +829,7 @@ final bool? confirmed = await showDialog<bool>(
           chatUsers: [],
         ).toChatItem(),
         chatId: chatId,
+        chatUniqueId: getChatById.uniqueId,
         endPointInTab: endPointInTab,
         canSendMessage: getChatById.canSendMessage,
       );
@@ -843,6 +848,7 @@ final bool? confirmed = await showDialog<bool>(
       chatScreen = ChatSmsScreen(
         chatItem: Chats(
           id: chatId,
+          uniqueId: getChatById.uniqueId,
           name: chatName,
           image: '',
           channel: "",
@@ -854,6 +860,7 @@ final bool? confirmed = await showDialog<bool>(
           chatUsers: [],
         ).toChatItem(),
         chatId: chatId,
+        chatUniqueId: getChatById.uniqueId,
         endPointInTab: endPointInTab,
         canSendMessage: getChatById.canSendMessage,
       );
@@ -894,7 +901,7 @@ final bool? confirmed = await showDialog<bool>(
         shouldCloseLoader = false; // ✅ Оставляем loader крутиться
 
         try {
-          final socketName = await _getChatNameFromSocket(chatId);
+          final socketName = await _getChatNameFromSocket(chatId, chatUniqueId: getChatById.uniqueId);
 
           if (socketName != null && socketName.isNotEmpty) {
             chatName = socketName;
@@ -917,6 +924,7 @@ final bool? confirmed = await showDialog<bool>(
       chatScreen = ChatSmsScreen(
         chatItem: Chats(
           id: chatId,
+          uniqueId: getChatById.uniqueId,
           image: '',
           name: chatName,
           channel: "",
@@ -928,6 +936,7 @@ final bool? confirmed = await showDialog<bool>(
           chatUsers: [],
         ).toChatItem(),
         chatId: chatId,
+        chatUniqueId: getChatById.uniqueId,
         endPointInTab: endPointInTab,
         canSendMessage: getChatById.canSendMessage,
       );

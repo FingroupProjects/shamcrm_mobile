@@ -16,11 +16,13 @@ class SalesDashboardPriorityLoaded extends SalesDashboardState {
   final DashboardTopPart salesDashboardTopPart;
   final List<AllTopSellingData> topSellingData;
   final IlliquidGoodsResponse illiquidGoodsData;
+  final Map<String, String> graphErrors;
 
   const SalesDashboardPriorityLoaded({
     required this.salesDashboardTopPart,
     required this.topSellingData,
     required this.illiquidGoodsData,
+    this.graphErrors = const {},
   });
 
   @override
@@ -28,6 +30,7 @@ class SalesDashboardPriorityLoaded extends SalesDashboardState {
     salesDashboardTopPart,
     topSellingData,
     illiquidGoodsData,
+    graphErrors,
   ];
 }
 
@@ -36,11 +39,13 @@ class SalesDashboardLoadingSecondary extends SalesDashboardState {
   final DashboardTopPart salesDashboardTopPart;
   final List<AllTopSellingData> topSellingData;
   final IlliquidGoodsResponse illiquidGoodsData;
+  final Map<String, String> graphErrors;
 
   const SalesDashboardLoadingSecondary({
     required this.salesDashboardTopPart,
     required this.topSellingData,
     required this.illiquidGoodsData,
+    this.graphErrors = const {},
   });
 
   @override
@@ -48,6 +53,7 @@ class SalesDashboardLoadingSecondary extends SalesDashboardState {
     salesDashboardTopPart,
     topSellingData,
     illiquidGoodsData,
+    graphErrors,
   ];
 }
 
@@ -61,6 +67,7 @@ class SalesDashboardFullyLoaded extends SalesDashboardState {
   final List<AllOrdersData> orderDashboardData;
   final List<AllExpensesData> expenseStructureData;
   final List<AllProfitabilityData> profitabilityData;
+  final Map<String, String> graphErrors;
 
   const SalesDashboardFullyLoaded({
     required this.salesDashboardTopPart,
@@ -71,6 +78,7 @@ class SalesDashboardFullyLoaded extends SalesDashboardState {
     required this.orderDashboardData,
     required this.expenseStructureData,
     required this.profitabilityData,
+    this.graphErrors = const {},
   });
 
   @override
@@ -83,6 +91,7 @@ class SalesDashboardFullyLoaded extends SalesDashboardState {
     orderDashboardData,
     expenseStructureData,
     profitabilityData,
+    graphErrors,
   ];
 }
 

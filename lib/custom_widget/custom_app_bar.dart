@@ -321,6 +321,8 @@ class _CustomAppBarState extends State<CustomAppBar>
   bool _hasNewNotification = false;
   late PusherChannelsClient socketClient;
   StreamSubscription<ChannelReadEvent>? notificationSubscription;
+  StreamSubscription<RemoteMessage>? _firebaseMessageSubscription;
+  StreamSubscription<RemoteMessage>? _firebaseOpenedAppSubscription;
   final AudioPlayer _audioPlayer = AudioPlayer();
   Timer? _checkOverdueTimer;
   late AnimationController _blinkController;
@@ -407,27 +409,39 @@ class _CustomAppBarState extends State<CustomAppBar>
 
   void _setupFirebaseMessaging() async {
     final prefs = await SharedPreferences.getInstance();
-    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+    
+    // Отписываемся от старых подписок если они есть
+    _firebaseMessageSubscription?.cancel();
+    _firebaseOpenedAppSubscription?.cancel();
+    
+    _firebaseMessageSubscription = FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       debugPrint('Получено push-уведомление: ${message.data}');
       if (message.data['type'] == 'message') {
-        setState(() {
-          _hasNewNotification = true;
-        });
-        prefs.setBool('hasNewNotification', true);
-        _playSound();
+        // Проверяем что виджет еще mounted перед вызовом setState
+        if (mounted) {
+          setState(() {
+            _hasNewNotification = true;
+          });
+          prefs.setBool('hasNewNotification', true);
+          _playSound();
+        }
       }
     });
-    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+    
+    _firebaseOpenedAppSubscription = FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
       debugPrint('Push-уведомление открыто: ${message.data}');
       if (message.data['type'] == 'message') {
-        setState(() {
-          _hasNewNotification = true;
-        });
-        prefs.setBool('hasNewNotification', true);
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => NotificationsScreen()),
-        );
+        // Проверяем что виджет еще mounted перед вызовом setState
+        if (mounted) {
+          setState(() {
+            _hasNewNotification = true;
+          });
+          prefs.setBool('hasNewNotification', true);
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => NotificationsScreen()),
+          );
+        }
       }
     });
   }
@@ -482,11 +496,14 @@ class _CustomAppBarState extends State<CustomAppBar>
   }
 
   @override
+  @override
   void dispose() {
     _blinkController.dispose();
     _checkOverdueTimer?.cancel();
     _timer.cancel();
     notificationSubscription?.cancel();
+    _firebaseMessageSubscription?.cancel();
+    _firebaseOpenedAppSubscription?.cancel();
     socketClient.disconnect();
 
     super.dispose();

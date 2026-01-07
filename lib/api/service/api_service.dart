@@ -6265,6 +6265,7 @@ Future<ChatsGetId> getChatById(int chatId) async {
 Future<List<Message>> getMessages(
   int chatId, {
   String? search,
+  String? chatType,  // Тип чата: 'lead', 'corporate', 'task'
 }) async {
   try {
     final token = await getToken();
@@ -6297,9 +6298,19 @@ Future<List<Message>> getMessages(
       final data = json.decode(response.body);
       if (data['result'] != null) {
         final List<dynamic> messagesList = data['result'] as List<dynamic>;
+        
+        // 🔍 ДИАГНОСТИКА: Логируем первое сообщение для проверки структуры
+        if (messagesList.isNotEmpty) {
+          debugPrint('🔍 API ДИАГНОСТИКА - Структура первого сообщения:');
+          final firstMsg = messagesList[0];
+          debugPrint('   Полное сообщение: $firstMsg');
+          debugPrint('   ---');
+        }
+        
         return messagesList.map((msgData) {
           try {
-            return Message.fromJson(msgData as Map<String, dynamic>);
+            // Передаём chatType при парсинге сообщения
+            return Message.fromJson(msgData as Map<String, dynamic>, chatType: chatType);
           } catch (e) {
             debugPrint('Error parsing message: $e, data: $msgData');
             // Возвращаем пустое сообщение с базовыми полями

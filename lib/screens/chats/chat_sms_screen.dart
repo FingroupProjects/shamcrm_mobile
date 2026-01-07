@@ -48,6 +48,7 @@ import 'package:table_calendar/table_calendar.dart';
 class ChatSmsScreen extends StatefulWidget {
   final ChatItem chatItem;
   final int chatId;
+  final String? chatUniqueId;
   final String endPointInTab;
   final bool canSendMessage;
   final ApiService apiService = ApiService();
@@ -57,6 +58,7 @@ class ChatSmsScreen extends StatefulWidget {
     super.key,
     required this.chatItem,
     required this.chatId,
+    this.chatUniqueId,
     required this.endPointInTab,
     required this.canSendMessage,
   });
@@ -83,18 +85,19 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
   bool _isMenuOpen = false;
   bool _isSearching = false;
   String? _searchQuery;
-  String? integrationUsername; // Новое поле для хранения username
-  String? channelName; // Новое поле для хранения channel.name
+  String? integrationUsername;
+  String? channelName;
   bool _hasMarkedMessagesAsRead = false;
-  bool _isRecordingInProgress = false; // Флаг для отслеживания состояния записи
-  String? referralBody; // Новое поле для хранения referral_body всего чата
-
+  bool _isRecordingInProgress = false;
+  String? referralBody;
+  ChatsBloc? _chatsBloc;
+  String? _cachedCompanionName; // Кэшированное имя собеседника
 
   void _onSearchChanged(String query) {
     setState(() {
       _searchQuery = query;
     });
-    context.read<MessagingCubit>().getMessages(widget.chatId, search: query);
+    context.read<MessagingCubit>().getMessages(widget.chatId, search: query, chatType: widget.endPointInTab);
   }
 
   Future<void> _checkPermissions() async {
@@ -114,8 +117,9 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
   void initState() {
     super.initState();
     _checkPermissions();
+    
+    _chatsBloc = context.read<ChatsBloc>();
 
-    // Сбрасываем состояния
     context.read<ListenSenderFileCubit>().updateValue(false);
     context.read<ListenSenderVoiceCubit>().updateValue(false);
     context.read<ListenSenderTextCubit>().updateValue(false);
@@ -125,12 +129,10 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
     });
   }
 
-
-// Также добавьте метод для повторной попытки
   Future<void> _retryInitialization() async {
     try {
       await _initializeBaseUrl();
-      context.read<MessagingCubit>().getMessages(widget.chatId);
+      context.read<MessagingCubit>().getMessages(widget.chatId, chatType: widget.endPointInTab);
     } catch (e) {
       debugPrint('Retry failed: $e');
       if (mounted) {
@@ -149,61 +151,90 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
 
     final prefs = await SharedPreferences.getInstance();
 
-    // Получаем домены из той же логики, что используется в сокете
     final enteredDomainMap = await ApiService().getEnteredDomain();
     String? enteredMainDomain = enteredDomainMap['enteredMainDomain'];
     String? enteredDomain = enteredDomainMap['enteredDomain'];
 
-    // Проверяем домен для email-верификации
     String? verifiedDomain = await ApiService().getVerifiedDomain();
     debugPrint('BaseUrl init - enteredMainDomain=$enteredMainDomain, enteredDomain=$enteredDomain, verifiedDomain=$verifiedDomain');
 
-    // Если домены отсутствуют, используем verifiedDomain
     if (enteredMainDomain == null || enteredDomain == null) {
       if (verifiedDomain != null && verifiedDomain.isNotEmpty) {
         enteredMainDomain = verifiedDomain.split('-back.').last;
         enteredDomain = verifiedDomain.split('-back.').first;
         debugPrint('BaseUrl init - Using verifiedDomain: $verifiedDomain, parsed mainDomain=$enteredMainDomain, domain=$enteredDomain');
 
-        // Принудительно сохраняем в SharedPreferences
         await prefs.setString('enteredMainDomain', enteredMainDomain);
         await prefs.setString('enteredDomain', enteredDomain);
       } else {
         throw Exception('Cannot determine domain for API calls');
       }
     }
-
-    // Формируем baseUrl по той же логике, что и сокет
+    
     baseUrl = 'https://$enteredDomain-back.$enteredMainDomain';
     debugPrint('BaseUrl initialized: $baseUrl');
 
-    // ВАЖНО: Сохраняем для использования во ВСЕХ экземплярах ApiService
     await prefs.setString('cached_base_url', '$baseUrl/api');
     debugPrint('Cached baseUrl for all ApiService instances: $baseUrl/api');
+  }
+
+  /// ✅ НОВЫЙ МЕТОД: Получает и кэширует имя собеседника
+  Future<void> _cacheCompanionName() async {
+    try {
+      debugPrint('🔍 Кэширование имени собеседника...');
+      
+      final prefs = await SharedPreferences.getInstance();
+      final myUserId = prefs.getString('userID') ?? '';
+      
+      // Получаем данные чата
+      final chatData = await widget.apiService.getChatById(widget.chatId);
+      
+      // Ищем собеседника в chatUsers
+      if (chatData.chatUsers.isNotEmpty) {
+        for (var chatUser in chatData.chatUsers) {
+          final participantId = chatUser.participant.id.toString();
+          
+          if (participantId != myUserId) {
+            // Это собеседник!
+            final participantName = chatUser.participant.name;
+            
+            // Используем имя как есть (в модели нет lastname)
+            String fullName = participantName;
+            
+            setState(() {
+              _cachedCompanionName = fullName;
+            });
+            
+            debugPrint('✅ Имя собеседника закэшировано: $_cachedCompanionName');
+            return;
+          }
+        }
+      }
+      
+      debugPrint('⚠️ Собеседник не найден в chatUsers');
+    } catch (e) {
+      debugPrint('❌ Ошибка кэширования имени собеседника: $e');
+    }
   }
 
   Future<void> _initializeServices() async {
     try {
       debugPrint('ChatSmsScreen: Starting initialization...');
 
-      // Шаг 1: Проверяем и инициализируем домены
       await _ensureDomainConfiguration();
-
-      // Шаг 2: Инициализируем ApiService
       await apiService.initialize();
 
-      // Шаг 3: Получаем базовый URL
       baseUrl = await apiService.getDynamicBaseUrl();
       debugPrint('ChatSmsScreen: BaseURL initialized: $baseUrl');
 
-      // Шаг 4: Инициализируем сокет
+      // ✅ КРИТИЧНО: Кэшируем имя собеседника ДО инициализации сокета
+      await _cacheCompanionName();
+
       await _initializeSocket();
 
-      // Шаг 5: Загружаем сообщения
-      context.read<MessagingCubit>().getMessagesWithFallback(widget.chatId);
+      context.read<MessagingCubit>().getMessagesWithFallback(widget.chatId, chatType: widget.endPointInTab);
       _scrollToBottom();
 
-      // Шаг 6: Загружаем интеграцию для лидов
       if (widget.endPointInTab == 'lead') {
         await _fetchIntegration();
       }
@@ -213,13 +244,11 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
       debugPrint('ChatSmsScreen: Initialization error: $e');
       debugPrint('StackTrace: $stackTrace');
 
-      // Показываем ошибку пользователю, но пытаемся загрузить хотя бы сообщения
       if (mounted) {
         _showInitializationError(e.toString());
 
-        // Попытка загрузить сообщения даже при ошибке инициализации
         try {
-          context.read<MessagingCubit>().getMessagesWithFallback(widget.chatId);
+          context.read<MessagingCubit>().getMessagesWithFallback(widget.chatId, chatType: widget.endPointInTab);
         } catch (e2) {
           debugPrint('ChatSmsScreen: Failed to load messages after init error: $e2');
         }
@@ -230,36 +259,29 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
   Future<void> _ensureDomainConfiguration() async {
     final prefs = await SharedPreferences.getInstance();
 
-    // Проверяем текущие домены
     final enteredDomainMap = await ApiService().getEnteredDomain();
     String? enteredMainDomain = enteredDomainMap['enteredMainDomain'];
     String? enteredDomain = enteredDomainMap['enteredDomain'];
 
-    // Проверяем email верификацию
     String? verifiedDomain = await ApiService().getVerifiedDomain();
 
     debugPrint('Domain check: enteredMainDomain=$enteredMainDomain, enteredDomain=$enteredDomain, verifiedDomain=$verifiedDomain');
 
-    // Если домены не настроены, используем verifiedDomain или QR данные
     if ((enteredMainDomain == null || enteredDomain == null) && verifiedDomain != null) {
-      // Парсим verifiedDomain
       if (verifiedDomain.contains('-back.')) {
         final parts = verifiedDomain.split('-back.');
         enteredDomain = parts[0];
         enteredMainDomain = parts[1];
       } else {
-        // Fallback для других форматов
         enteredDomain = 'default';
         enteredMainDomain = verifiedDomain;
       }
 
-      // Сохраняем распарсенные домены
       await prefs.setString('enteredMainDomain', enteredMainDomain);
       await prefs.setString('enteredDomain', enteredDomain);
 
       debugPrint('Domain configured from verifiedDomain: $enteredDomain-back.$enteredMainDomain');
     } else if (enteredMainDomain == null || enteredDomain == null) {
-      // Проверяем QR данные
       final qrData = await ApiService().getQrData();
       if (qrData['domain'] != null && qrData['mainDomain'] != null) {
         await prefs.setString('enteredDomain', qrData['domain']!);
@@ -273,12 +295,11 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
 
   Future<void> _initializeSocket() async {
     try {
-      // Используем тот же setUpServices, но с дополнительными проверками
-      setUpServices();
-      debugPrint('ChatSmsScreen: Socket initialization completed');
+      debugPrint('🔌 ChatSmsScreen: Starting socket initialization...');
+      await setUpServices();
+      debugPrint('✅ ChatSmsScreen: Socket initialization completed');
     } catch (e) {
-      debugPrint('ChatSmsScreen: Socket initialization error: $e');
-      // Сокет не критичен для работы чата, продолжаем без него
+      debugPrint('❌ ChatSmsScreen: Socket initialization error: $e');
     }
   }
 
@@ -323,23 +344,20 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
   Future<void> _forceInitializeDomain() async {
     final prefs = await SharedPreferences.getInstance();
 
-    // Получаем verifiedDomain
     String? verifiedDomain = await ApiService().getVerifiedDomain();
 
     if (verifiedDomain != null && verifiedDomain.isNotEmpty) {
-      // Парсим домен
       String enteredMainDomain = verifiedDomain.split('-back.').last;
       String enteredDomain = verifiedDomain.split('-back.').first;
 
-      // Принудительно сохраняем в SharedPreferences
       await prefs.setString('enteredMainDomain', enteredMainDomain);
       await prefs.setString('enteredDomain', enteredDomain);
 
       debugPrint('Force initialized domain: $enteredDomain-back.$enteredMainDomain');
     }
   }
+
   Future<void> _markMessagesAsRead() async {
-    // Проверяем, не был ли метод уже вызван
     if (_hasMarkedMessagesAsRead) {
       if (kDebugMode) {
         //print('ChatSmsScreen: _markMessagesAsRead уже вызван, пропускаем');
@@ -348,28 +366,23 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
     }
 
     final state = context.read<MessagingCubit>().state;
-    // Лог для отладки текущего состояния
     if (kDebugMode) {
       //print('ChatSmsScreen: Текущее состояние в _markMessagesAsRead: $state');
     }
     List<Message> messages = [];
-    // Проверяем оба состояния: MessagesLoadedState и PinnedMessagesState
     if (state is MessagesLoadedState) {
       messages = state.messages;
     } else if (state is PinnedMessagesState) {
       messages = state.messages;
     }
 
-    // Лог для количества сообщений
     if (kDebugMode) {
       //print('ChatSmsScreen: Количество сообщений: ${messages.length}');
     }
 
-    // Проверяем, есть ли непрочитанные сообщения
     bool hasUnreadMessages = messages.any((msg) => !msg.isRead);
     if (messages.isNotEmpty && hasUnreadMessages) {
       final latestMessageId = messages.first.id;
-      // Лог для chatId и messageId
       if (kDebugMode) {
         //print('ChatSmsScreen: Пометка сообщений как прочитанных, chatId: ${widget.chatId}, latestMessageId: $latestMessageId');
       }
@@ -378,42 +391,20 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
         if (kDebugMode) {
           //print('ChatSmsScreen: Сообщения успешно помечены как прочитанные');
         }
-        // Устанавливаем флаг, чтобы предотвратить повторные вызовы
         _hasMarkedMessagesAsRead = true;
       } catch (e) {
-        // Лог для ошибок API
         if (kDebugMode) {
           //print('ChatSmsScreen: Ошибка при пометке сообщений как прочитанных: $e');
         }
-        // ScaffoldMessenger.of(context).showSnackBar(
-        //   // SnackBar(
-        //   //   content: Text(
-        //   //     AppLocalizations.of(context)!.translate('error_marking_messages_read'),
-        //   //     style: const TextStyle(
-        //   //       fontFamily: 'Gilroy',
-        //   //       fontSize: 16,
-        //   //       fontWeight: FontWeight.w500,
-        //   //       color: Colors.white,
-        //   //     ),
-        //   //   ),
-        //   //   backgroundColor: Colors.red,
-        //   //   duration: const Duration(seconds: 3),
-        //   // ),
-        // );
       }
     } else {
       if (kDebugMode) {
         //print('ChatSmsScreen: Нет непрочитанных сообщений или список пуст');
       }
-      // Устанавливаем флаг, даже если сообщений нет, чтобы избежать повторных проверок
       _hasMarkedMessagesAsRead = true;
     }
   }
-// Обновлённый метод для получения интеграции в ChatSmsScreen
 
-
-
-// Исправленный метод для получения интеграции в ChatSmsScreen
   Future<void> _fetchIntegration() async {
     final prefs = await SharedPreferences.getInstance();
 
@@ -423,7 +414,6 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
       final chatData = await widget.apiService.getChatById(widget.chatId);
       debugPrint('ChatSmsScreen: Chat data received');
 
-      // Сохраняем referralBody из chatData
       setState(() {
         referralBody = chatData.referralBody;
         prefs.setString('referral_body_${widget.chatId}', referralBody ?? '');
@@ -470,11 +460,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
     }
   }
 
-// Вспомогательный метод для определения типа канала из интеграции
   String? _determineChannelType(IntegrationForLead integration) {
-    // Здесь можно определить тип канала на основе данных интеграции
-    // Примеры типов: telegram, whatsapp, instagram, facebook, website
-
     if (integration.username != null) {
       final username = integration.username!.toLowerCase();
 
@@ -491,7 +477,6 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
       }
     }
 
-    // По умолчанию возвращаем общий тип
     return 'messenger';
   }
 
@@ -509,30 +494,21 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
   }
 
   Future<void> _showDatePicker(BuildContext context, List<Message> messages) async {
-    final DateTime currentDate = DateTime.now(); // 16:25, 27 июня 2025
+    final DateTime currentDate = DateTime.now();
     DateTime? selectedDate;
 
-    // Преобразуем сообщения в карту дат
     final Map<DateTime, List> events = {};
-    ////print('Начало обработки сообщений. Количество сообщений: ${messages.length}');
     for (var message in messages) {
-      ////print('Обработка сообщения: $message');
       try {
         final date = DateTime.parse(message.createMessateTime).toLocal();
-        ////print('Парсинг даты: ${message.createMessateTime} -> $date');
-        final eventDate = DateTime(date.year, date.month, date.day); // Нормализуем до начала дня
-        ////print('Сформирована дата для события: $eventDate');
+        final eventDate = DateTime(date.year, date.month, date.day);
         if (events[eventDate] == null) {
-          ////print('Добавление нового события для даты: $eventDate');
-          events[eventDate] = [true]; // Добавляем индикатор события
-        } else {
-          ////print('Событие для даты $eventDate уже существует');
+          events[eventDate] = [true];
         }
       } catch (e) {
         ////print('Ошибка парсинга даты ${message.createMessateTime}: $e');
       }
     }
-    ////print('Карта событий после обработки: $events');
 
     await showDialog(
       context: context,
@@ -550,7 +526,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Container(
-                  height: 450, // Увеличиваем высоту для корректного отображения дней недели
+                  height: 450,
                   width: double.maxFinite,
                   color: Colors.white,
                   child: TableCalendar(
@@ -572,7 +548,6 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
                       outsideDaysVisible: true,
                       outsideTextStyle: TextStyle(color: Colors.black.withOpacity(0.3)),
                     ),
-                    // Добавляем стиль для дней недели чтобы они не обрезались
                     daysOfWeekStyle: const DaysOfWeekStyle(
                       weekdayStyle: TextStyle(
                         fontFamily: 'Gilroy',
@@ -592,7 +567,6 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
                       leftChevronVisible: true,
                       rightChevronVisible: true,
                       titleTextStyle: const TextStyle(fontSize: 18, fontFamily: 'Gilroy'),
-                      // Добавляем форматирование заголовка для заглавной буквы
                       titleTextFormatter: (date, locale) {
                         final monthNames = {
                           1: 'Январь',
@@ -615,9 +589,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
                     ),
                     calendarBuilders: CalendarBuilders(
                       markerBuilder: (context, date, events) {
-                        ////print('Проверка даты $date, события: $events');
                         if (events.isNotEmpty) {
-                          ////print('Отображение точки для даты $date');
                           return Positioned(
                             right: 18,
                             bottom: 0,
@@ -631,18 +603,15 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
                             ),
                           );
                         }
-                        ////print('Нет событий для даты $date');
                         return null;
                       },
                     ),
                     eventLoader: (day) {
-                      final normalizedDay = DateTime(day.year, day.month, day.day); // Нормализуем день
-                      ////print('Загрузка событий для дня $normalizedDay: ${events[normalizedDay] ?? []}');
+                      final normalizedDay = DateTime(day.year, day.month, day.day);
                       return events[normalizedDay] ?? [];
                     },
                     onDaySelected: (selectedDay, focusedDay) {
                       final index = _findMessageIndexByDate(messages, selectedDay);
-                      ////print('Выбрана дата $selectedDay, индекс сообщения: $index');
                       if (index != -1) {
                         Navigator.pop(context);
                         WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -675,15 +644,14 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
     );
   }
 
-
   int _findMessageIndexByDate(List<Message> messages, DateTime targetDate) {
     for (int i = messages.length - 1; i >= 0; i--) {
       final messageDate = DateTime.parse(messages[i].createMessateTime).toLocal();
       if (isSameDay(messageDate, targetDate)) {
-        return i; // Возвращаем индекс последнего сообщения за дату
+        return i;
       }
     }
-    return -1; // Если сообщений нет
+    return -1;
   }
 
   void _scrollToMessageIndex(DateTime selectedDate) {
@@ -699,7 +667,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
         debugPrint('Scrolling to index: $messageIndex for date: ${formatDate(selectedDate)}');
         _scrollControllerMessage.scrollTo(
           index: messageIndex,
-          alignment: 0.0, // Позиционируем сообщение вверху экрана
+          alignment: 0.0,
           duration: const Duration(milliseconds: 300),
           curve: Curves.easeInOut,
         );
@@ -733,23 +701,19 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
   }
 
   Widget _buildAvatar(String avatar) {
-    // //print('Avatar path: $avatar'); // Отладочный вывод
     bool isSupportAvatar = avatar == 'assets/icons/Profile/support_chat.png';
-    bool isTaskSection = widget.endPointInTab == 'task'; // Проверка на task
+    bool isTaskSection = widget.endPointInTab == 'task';
 
-    // Для endPointInTab == 'task' используем AvatarTask.png, если avatar не SVG
     if (isTaskSection && !avatar.contains('<svg')) {
       return CircleAvatar(
         backgroundImage: AssetImage('assets/images/AvatarTask.png'),
         radius: ChatSmsStyles.avatarRadius,
         backgroundColor: Colors.white,
         onBackgroundImageError: (exception, stackTrace) {
-          // //print('Error loading asset image: assets/images/AvatarTask.png, $exception');
         },
       );
     }
 
-    // Обработка SVG-аватарок
     if (avatar.contains('<svg')) {
       final imageUrl = extractImageUrlFromSvg(avatar);
       if (imageUrl != null) {
@@ -802,18 +766,15 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
       }
     }
 
-    // Обработка остальных случаев (локальные изображения)
     try {
       return CircleAvatar(
         backgroundImage: AssetImage(avatar),
         radius: ChatSmsStyles.avatarRadius,
         backgroundColor: isSupportAvatar ? Colors.black : Colors.white,
         onBackgroundImageError: (exception, stackTrace) {
-          // //print('Error loading asset image: $avatar, $exception');
         },
       );
     } catch (e) {
-      // //print('Fallback avatar due to error: $e');
       return CircleAvatar(
         backgroundImage: AssetImage(isTaskSection ? 'assets/images/AvatarTask.png' : 'assets/images/AvatarChat.png'),
         radius: ChatSmsStyles.avatarRadius,
@@ -852,12 +813,10 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
 Widget build(BuildContext context) {
   bool isSupportChat = widget.chatItem.avatar == 'assets/icons/Profile/image.png';
   return BlocListener<MessagingCubit, MessagingState>(
-    // Добавлен BlocListener для вызова _markMessagesAsRead только при первой загрузке
     listener: (context, state) {
       if (kDebugMode) {
         //print('ChatSmsScreen: Слушатель MessagingCubit, текущее состояние: $state');
       }
-      // Вызываем _markMessagesAsRead только для MessagesLoadedState или PinnedMessagesState
       if ((state is MessagesLoadedState || state is PinnedMessagesState) && !_hasMarkedMessagesAsRead) {
         _markMessagesAsRead();
       }
@@ -865,7 +824,7 @@ Widget build(BuildContext context) {
     child: BlocListener<DeleteMessageBloc, DeleteMessageState>(
       listener: (context, state) {
         if (state is DeleteMessageSuccess) {
-          context.read<MessagingCubit>().getMessages(widget.chatId);
+          context.read<MessagingCubit>().getMessages(widget.chatId, chatType: widget.endPointInTab);
           if (widget.endPointInTab == 'task' || widget.endPointInTab == 'corporate') {
             final chatsBloc = context.read<ChatsBloc>();
             chatsBloc.add(ClearChats());
@@ -908,7 +867,7 @@ Widget build(BuildContext context) {
                     _searchQuery = null;
                   });
                   if (!_isSearching) {
-                    context.read<MessagingCubit>().getMessages(widget.chatId);
+                    context.read<MessagingCubit>().getMessages(widget.chatId, chatType: widget.endPointInTab);
                   }
                 },
               ),
@@ -928,7 +887,7 @@ Widget build(BuildContext context) {
             )
                 : GestureDetector(
               onTap: (widget.endPointInTab == 'corporate')
-                  ? null  // Блокировка нажатия для corporate
+                    ? null
                   : isSupportChat
                   ? null
                   : () async {
@@ -952,7 +911,6 @@ Widget build(BuildContext context) {
                           ),
                         );
                       } else if (widget.endPointInTab == 'corporate') {
-                        // Этот блок не выполнится из-за проверки выше, но оставляем для полноты
                         final getChatById = await widget.apiService.getChatById(widget.chatId);
                         if (getChatById.chatUsers.length == 2 && getChatById.group == null) {
                           String userIdCheck = '';
@@ -1067,7 +1025,6 @@ Widget build(BuildContext context) {
   );
 }
 
-
   void _scrollToMessageReply(int messageId) {
     final state = context.read<MessagingCubit>().state;
     if (state is MessagesLoadedState || state is PinnedMessagesState) {
@@ -1099,14 +1056,11 @@ Widget build(BuildContext context) {
     }
   }
 
-
-// Модифицируйте messageListUi для добавления кнопки повтора
   Widget messageListUi() {
     return BlocBuilder<MessagingCubit, MessagingState>(
       builder: (context, state) {
         debugPrint('messageListUi: Building with state: $state');
 
-        // НОВОЕ: Обработка частичной ошибки
         if (state is MessagesPartialErrorState) {
           return Center(
             child: Column(
@@ -1142,7 +1096,7 @@ Widget build(BuildContext context) {
                   children: [
                     ElevatedButton(
                       onPressed: () {
-                        context.read<MessagingCubit>().getMessagesWithFallback(widget.chatId);
+                        context.read<MessagingCubit>().getMessagesWithFallback(widget.chatId, chatType: widget.endPointInTab);
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.orange,
@@ -1161,7 +1115,6 @@ Widget build(BuildContext context) {
                     SizedBox(width: 12),
                     TextButton(
                       onPressed: () {
-                        // Показываем пустой чат
                         context.read<MessagingCubit>().showEmptyChat();
                       },
                       child: Text(
@@ -1181,7 +1134,6 @@ Widget build(BuildContext context) {
         }
 
         if (state is MessagesErrorState) {
-          // Специальная обработка ошибки с null URL
           if (state.error.contains('No host specified in URI null')) {
             return Center(
               child: Column(
@@ -1201,7 +1153,7 @@ Widget build(BuildContext context) {
                   SizedBox(height: 24),
                   ElevatedButton(
                     onPressed: () {
-                      context.read<MessagingCubit>().getMessagesWithFallback(widget.chatId);
+                      context.read<MessagingCubit>().getMessagesWithFallback(widget.chatId, chatType: widget.endPointInTab);
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.red,
@@ -1228,7 +1180,7 @@ Widget build(BuildContext context) {
                 SizedBox(height: 16),
                 ElevatedButton(
                   onPressed: () {
-                    context.read<MessagingCubit>().getMessagesWithFallback(widget.chatId);
+                    context.read<MessagingCubit>().getMessagesWithFallback(widget.chatId, chatType: widget.endPointInTab);
                   },
                   child: Text("Повторить"),
                 ),
@@ -1269,7 +1221,7 @@ Widget build(BuildContext context) {
             );
           }
 
-          debugPrint('Rendering messageListUi: integrationUsername=$integrationUsername, channelName=$channelName'); // Лог для отладки
+          debugPrint('Rendering messageListUi: integrationUsername=$integrationUsername, channelName=$channelName');
 
           return Stack(
             children: [
@@ -1342,7 +1294,7 @@ Widget build(BuildContext context) {
                           focusNode: _focusNode,
                           isRead: message.isRead,
                           isFirstMessage: isFirstMessage,
-                          referralBody: referralBody, // Передаем
+                          referralBody: referralBody,
                         ),
                       );
                       return Column(
@@ -1409,6 +1361,7 @@ Widget build(BuildContext context) {
       },
     );
   }
+
   Widget inputWidget() {
     return SafeArea(
       bottom: true,
@@ -1472,70 +1425,84 @@ Widget build(BuildContext context) {
     return '${directory.path}/$fileName';
   }
 
-  void setUpServices() async {
-    // Проверяем, что baseUrl инициализирован
+  Future<void> setUpServices() async {
+    debugPrint('🔌 ChatSmsScreen: setUpServices() STARTED');
+    
     if (baseUrl.isEmpty || baseUrl == 'null') {
       debugPrint('BaseURL not initialized, fetching...');
       baseUrl = await apiService.getDynamicBaseUrl();
 
       if (baseUrl.isEmpty || baseUrl == 'null') {
-        debugPrint('Failed to get baseURL, aborting socket setup');
+        debugPrint('❌ Failed to get baseURL, aborting socket setup');
         return;
       }
     }
 
-    debugPrint('Setting up socket for chatId: ${widget.chatId} with baseURL: $baseUrl');
+    debugPrint('✅ BaseURL for socket: $baseUrl');
 
-    debugPrint('Setting up socket for chatId: ${widget.chatId}');
     final prefs = await SharedPreferences.getInstance();
     String? token = prefs.getString('token');
     if (token == null || token.isEmpty) {
-      debugPrint('Error: Token is null or empty');
+      debugPrint('❌ Error: Token is null or empty');
       return;
     }
+    debugPrint('✅ Token retrieved successfully');
 
-    // Проверяем домены для старой логики
     final enteredDomainMap = await ApiService().getEnteredDomain();
     String? enteredMainDomain = enteredDomainMap['enteredMainDomain'];
     String? enteredDomain = enteredDomainMap['enteredDomain'];
 
-    // Проверяем домен для email-верификации
     String? verifiedDomain = await ApiService().getVerifiedDomain();
-    debugPrint('Domain parameters: enteredMainDomain=$enteredMainDomain, enteredDomain=$enteredDomain, verifiedDomain=$verifiedDomain');
+    debugPrint('📡 Domain check: enteredMainDomain=$enteredMainDomain, enteredDomain=$enteredDomain, verifiedDomain=$verifiedDomain');
 
-    // Если домены отсутствуют, используем verifiedDomain или резервные значения
     if (enteredMainDomain == null || enteredDomain == null) {
       if (verifiedDomain != null && verifiedDomain.isNotEmpty) {
-        // Для email-верификации используем verifiedDomain
         enteredMainDomain = verifiedDomain.split('-back.').last;
         enteredDomain = verifiedDomain.split('-back.').first;
-        debugPrint('Using verifiedDomain: $verifiedDomain, parsed mainDomain=$enteredMainDomain, domain=$enteredDomain');
+        debugPrint('✅ Using verifiedDomain: $verifiedDomain → mainDomain=$enteredMainDomain, domain=$enteredDomain');
+      } else if (baseUrl.isNotEmpty && baseUrl != 'null') {
+        final urlPattern = RegExp(r'https://(.+?)-back\.(.+?)(/|$)');
+        final match = urlPattern.firstMatch(baseUrl);
+        if (match != null) {
+          enteredDomain = match.group(1);
+          enteredMainDomain = match.group(2);
+          debugPrint('✅ Extracted from baseUrl: domain=$enteredDomain, mainDomain=$enteredMainDomain');
+          
+          await prefs.setString('enteredMainDomain', enteredMainDomain!);
+          await prefs.setString('enteredDomain', enteredDomain!);
       } else {
-        // Резервные значения для отладки
-        enteredMainDomain = 'shamcrm.com'; // Замени на реальный домен
-        enteredDomain = 'info1fingrouptj'; // Замени на реальный поддомен
-        debugPrint('Using fallback domains: enteredMainDomain=$enteredMainDomain, enteredDomain=$enteredDomain');
-        // Сохраняем резервные значения в SharedPreferences
-        await prefs.setString('enteredMainDomain', enteredMainDomain);
-        await prefs.setString('enteredDomain', enteredDomain);
+          debugPrint('❌ Failed to parse baseUrl, aborting socket setup');
+          return;
+        }
+      } else {
+        debugPrint('❌ No domain configuration available, aborting socket setup');
+        return;
       }
     }
 
+    debugPrint('✅ Final domains for socket: $enteredDomain-back.$enteredMainDomain');
+    
+    final socketUrl = 'wss://soketi.$enteredMainDomain/app/app-key';
+    final authUrl = 'https://$enteredDomain-back.$enteredMainDomain/broadcasting/auth';
+    
+    debugPrint('🔌 Socket URL: $socketUrl');
+    debugPrint('🔌 Auth URL: $authUrl');
+
     final customOptions = PusherChannelsOptions.custom(
-      uriResolver: (metadata) => Uri.parse('wss://soketi.$enteredMainDomain/app/app-key'),
+      uriResolver: (metadata) => Uri.parse(socketUrl),
       metadata: PusherChannelsOptionsMetadata.byDefault(),
     );
 
     socketClient = PusherChannelsClient.websocket(
       options: customOptions,
       connectionErrorHandler: (exception, trace, refresh) {
-        debugPrint('Socket connection error: $exception, StackTrace: $trace');
+        debugPrint('❌ Socket connection error: $exception');
         Future.delayed(Duration(seconds: 5), () async {
           try {
             await socketClient.connect();
-            debugPrint('Socket reconnect attempted');
-          } catch (e, stackTrace) {
-            debugPrint('Error reconnecting to socket: $e, StackTrace: $stackTrace');
+            debugPrint('🔄 Socket reconnect attempted');
+          } catch (e) {
+            debugPrint('❌ Error reconnecting to socket: $e');
           }
         });
         refresh();
@@ -1543,36 +1510,202 @@ Widget build(BuildContext context) {
       minimumReconnectDelayDuration: const Duration(seconds: 1),
     );
 
+    final chatIdentifier = widget.chatUniqueId ?? widget.chatId.toString();
+    final channelName = 'presence-chat.$chatIdentifier';
+    
+    debugPrint('📱 Chat identifier for socket: $chatIdentifier (uniqueId: ${widget.chatUniqueId}, chatId: ${widget.chatId})');
+    debugPrint('📢 Channel name: $channelName');
+
     final myPresenceChannel = socketClient.presenceChannel(
-      'presence-chat.${widget.chatId}',
+      channelName,
       authorizationDelegate: EndpointAuthorizableChannelTokenAuthorizationDelegate.forPresenceChannel(
-        authorizationEndpoint: Uri.parse('https://$enteredDomain-back.$enteredMainDomain/broadcasting/auth'),
+        authorizationEndpoint: Uri.parse(authUrl),
         headers: {
           'Authorization': 'Bearer $token',
           'X-Tenant': '$enteredDomain-back',
         },
         onAuthFailed: (exception, trace) {
-          debugPrint('Auth failed for presence-chat.${widget.chatId}: $exception, StackTrace: $trace');
+          debugPrint('❌ Auth failed for $channelName: $exception');
         },
       ),
     );
 
     socketClient.onConnectionEstablished.listen((_) {
-      debugPrint('Socket connected successfully for chatId: ${widget.chatId}');
+      debugPrint('✅ Socket connected successfully for chatIdentifier: $chatIdentifier');
       myPresenceChannel.subscribeIfNotUnsubscribed();
-      debugPrint('Subscribed to channel: presence-chat.${widget.chatId}');
+      debugPrint('✅ Subscribed to channel: $channelName');
     });
 
     myPresenceChannel.bind('pusher:subscription_succeeded').listen((event) {
-      debugPrint('Successfully subscribed to presence-chat.${widget.chatId}: ${event.data}');
+      debugPrint('✅✅✅ CHAT_SMS: Successfully subscribed to $channelName');
+      debugPrint('✅✅✅ CHAT_SMS: Subscription data: ${event.data}');
     });
 
     myPresenceChannel.bind('pusher:subscription_error').listen((event) {
-      debugPrint('Subscription error for presence-chat.${widget.chatId}: ${event.data}');
+      debugPrint('❌❌❌ CHAT_SMS: Subscription error for $channelName: ${event.data}');
     });
 
+    myPresenceChannel.bind('pusher:member_added').listen((event) {
+      debugPrint('👤👤👤 CHAT_SMS: Member added: ${event.data}');
+    });
+
+    myPresenceChannel.bind('pusher:member_removed').listen((event) {
+      debugPrint('👤👤👤 CHAT_SMS: Member removed: ${event.data}');
+    });
+
+    debugPrint('🎯🎯🎯 CHAT_SMS: Registering chat.updated listener for $channelName...');
+    
+    myPresenceChannel.bind('chat.updated').listen((event) async {
+      debugPrint('🔔🔔🔔🔔🔔 CHAT_SMS (CHAT CHANNEL): ===== RECEIVED chat.updated EVENT =====');
+      debugPrint('🔔🔔🔔 CHAT_SMS: Channel: $channelName');
+      debugPrint('🔔🔔🔔 CHAT_SMS: Event data: ${event.data}');
+      
+      try {
+        final chatData = json.decode(event.data);
+        final eventChatId = chatData['chat']?['id'];
+        
+        debugPrint('🔔🔔🔔 CHAT_SMS: Event chatId: $eventChatId, our chatId: ${widget.chatId}');
+        
+        if (eventChatId != widget.chatId) {
+          debugPrint('⚠️⚠️⚠️ CHAT_SMS: Event is for different chat, ignoring');
+          return;
+        }
+        
+        if (mounted) {
+          debugPrint('🔔🔔🔔 CHAT_SMS (CHAT CHANNEL): ✅ RELOADING messages NOW...');
+          context.read<MessagingCubit>().getMessages(widget.chatId, chatType: widget.endPointInTab);
+          
+          Future.delayed(Duration(milliseconds: 300), () {
+            if (mounted) {
+              _scrollToBottom();
+              debugPrint('🔔🔔🔔 CHAT_SMS (CHAT CHANNEL): ✅ Scrolled to bottom');
+            }
+          });
+          
+          final lastMessage = chatData['chat']?['lastMessage'];
+          
+          // ✅ ИСПРАВЛЕНИЕ: Используем кэшированное имя собеседника
+          String senderName = _cachedCompanionName ?? 'Собеседник';
+          
+          debugPrint('📝 CHAT CHANNEL: Используем имя собеседника: $senderName (из кэша: $_cachedCompanionName)');
+          
+          final currentPrefs = await SharedPreferences.getInstance();
+          final myUserId = currentPrefs.getString('userID') ?? '';
+          
+          // ✅ ПРАВИЛЬНАЯ ЛОГИКА: Проверяем sender из сообщения
+          debugPrint('═══════════════════════════════════════════════════════');
+          debugPrint('🔍 CHAT CHANNEL - Определяем отправителя сообщения');
+          debugPrint('lastMessage[sender]: ${lastMessage?['sender']}');
+          
+          String? messageSenderId;
+          String? messageSenderType;
+          
+          // Извлекаем sender.id и sender.type
+          if (lastMessage != null && lastMessage['sender'] != null && lastMessage['sender'] is Map) {
+            messageSenderId = lastMessage['sender']['id']?.toString();
+            messageSenderType = lastMessage['sender']['type']?.toString();
+            debugPrint('✅ Найден sender: id=$messageSenderId, type=$messageSenderType');
+          }
+          
+          bool isMyMessage = false;
+          final bool isLeadChat = widget.endPointInTab == 'lead';
+          
+          if (isLeadChat && messageSenderType != null) {
+            // ✅ ЛОГИКА ДЛЯ ЛИД-ЧАТОВ:
+            // 1. sender.type == 'user' → сообщение от МЕНЕДЖЕРА (наша сторона) → показываем СПРАВА
+            // 2. sender.type == 'lead' → сообщение от ЛИДА (клиент) → показываем СЛЕВА
+            // ВАЖНО: На одного лида может отвечать несколько менеджеров, поэтому показываем имя
+            
+            debugPrint('╔═══════════════════════════════════════════════════════╗');
+            debugPrint('║  🔄 LEAD CHAT - Обработка chat.updated (обновление чата)  ║');
+            debugPrint('╠═══════════════════════════════════════════════════════╣');
+            debugPrint('║  sender.id: $messageSenderId');
+            debugPrint('║  sender.type: $messageSenderType');
+            debugPrint('║  Мой ID: $myUserId');
+            
+            if (messageSenderType == 'user') {
+              // ЛЮБОЙ менеджер (user) - это НАША сторона
+              isMyMessage = true;
+              debugPrint('║  ✅ РЕЗУЛЬТАТ: sender.type = "user" (МЕНЕДЖЕР)');
+              debugPrint('║  → Показываем СПРАВА (наша сторона)');
+              debugPrint('║  → isMyMessage = TRUE');
+            } else if (messageSenderType == 'lead') {
+              // Лид - это КЛИЕНТ (собеседник)
+              isMyMessage = false;
+              debugPrint('║  ✅ РЕЗУЛЬТАТ: sender.type = "lead" (КЛИЕНТ)');
+              debugPrint('║  → Показываем СЛЕВА (сторона лида)');
+              debugPrint('║  → isMyMessage = FALSE');
+            } else {
+              // Неизвестный тип - проверяем по ID для безопасности
+              isMyMessage = (messageSenderId == myUserId);
+              debugPrint('║  ⚠️ ВНИМАНИЕ: sender.type = "$messageSenderType" (неизвестный)');
+              debugPrint('║  → Используем fallback: проверка по ID');
+              debugPrint('║  → isMyMessage = $isMyMessage');
+            }
+            debugPrint('╚═══════════════════════════════════════════════════════╝');
+          } else if (messageSenderId != null && messageSenderId.isNotEmpty) {
+            // ✅ ЛОГИКА ДЛЯ КОРПОРАТИВНЫХ ЧАТОВ И ЗАДАЧ:
+            // Проверяем по ID отправителя
+            isMyMessage = (messageSenderId == myUserId);
+            debugPrint('⚠️ Путь 1D [CORPORATE/TASK]: sender.type НЕ НАЙДЕН или не лид → проверяем только ID');
+            debugPrint('   Результат isMyMessage: $isMyMessage');
+          } else {
+            // Если sender.id нет - определяем по chatUsers (инвертированная логика)
+            debugPrint('⚠️ Путь 2: sender.id НЕ НАЙДЕН → используем chatUsers');
+            
+            final eventChatUsers = chatData['chat']?['chatUsers'];
+            
+            String? foundParticipantId;
+            if (eventChatUsers != null && eventChatUsers is List) {
+              for (var user in eventChatUsers) {
+                if (user['participant'] != null && user['participant']['id'] != null) {
+                  foundParticipantId = user['participant']['id']?.toString();
+                  debugPrint('   Найден participant.id: $foundParticipantId');
+                  break;
+                }
+              }
+            }
+            
+            if (foundParticipantId != null) {
+              // ИНВЕРТИРОВАННАЯ логика для chatUsers
+              isMyMessage = (foundParticipantId != myUserId);
+              debugPrint('   Сравнение ИНВЕРТИРОВАННОЕ: participant.id($foundParticipantId) != myUserId($myUserId)');
+              debugPrint('   Результат isMyMessage: $isMyMessage');
+            } else {
+              isMyMessage = lastMessage?['is_my_message'] ?? false;
+              debugPrint('   ⚠️ Fallback на is_my_message: $isMyMessage');
+            }
+          }
+          
+          debugPrint('🎯 ФИНАЛЬНЫЙ isMyMessage: $isMyMessage');
+          debugPrint('═══════════════════════════════════════════════════════');
+          
+          if (!isMyMessage) {
+            try {
+              await _audioPlayer.setAsset('assets/audio/get.mp3');
+              await _audioPlayer.play();
+              debugPrint('🔔🔔🔔 CHAT_SMS: ✅ Played notification sound for INCOMING message');
+            } catch (e) {
+              debugPrint('⚠️ CHAT_SMS: Could not play sound: $e');
+            }
+          } else {
+            debugPrint('🔔🔔🔔 CHAT_SMS: Skipped sound - message is from ME');
+          }
+          
+          debugPrint('✅✅✅ CHAT_SMS: ===== chat.updated handled successfully =====');
+        } else {
+          debugPrint('⚠️⚠️⚠️ CHAT_SMS: Widget NOT MOUNTED, skipping reload');
+        }
+      } catch (e, stackTrace) {
+        debugPrint('❌❌❌ CHAT_SMS: Error handling chat.updated: $e');
+        debugPrint('❌❌❌ CHAT_SMS: StackTrace: $stackTrace');
+      }
+    });
+    
+    debugPrint('✅✅✅ CHAT_SMS: chat.updated listener registered');
+
     chatSubscribtion = myPresenceChannel.bind('chat.message').listen((event) async {
-      debugPrint('Received chat.message event: ${event.data}');
+      debugPrint('📨📨📨 CHAT_SMS: Received chat.message event: ${event.data}');
       try {
         if (event.data == null || event.data.isEmpty) {
           debugPrint('Error: chat.message event data is null or empty');
@@ -1594,6 +1727,51 @@ Widget build(BuildContext context) {
         String UUID = prefs.getString('userID') ?? '';
         debugPrint('User UUID: $UUID');
 
+        // ✅ Определяем isMyMessage с учетом типа чата
+        // Специальная логика ТОЛЬКО для лид-чатов
+        bool isMyMessage;
+        final senderType = mm.message?.sender?.type;
+        final senderId = mm.message?.sender?.id.toString();
+        final senderName = mm.message?.sender?.name;
+        final isLeadChat = widget.endPointInTab == 'lead';
+        
+        if (isLeadChat) {
+          // ✅ ЛОГИКА ДЛЯ ЛИД-ЧАТОВ:
+          // sender.type = 'user' → МЕНЕДЖЕР (наша сторона) → показываем СПРАВА
+          // sender.type = 'lead' → КЛИЕНТ (собеседник) → показываем СЛЕВА
+          debugPrint('╔═══════════════════════════════════════════════════════╗');
+          debugPrint('║  📨 LEAD CHAT - Обработка входящего сообщения через сокет  ║');
+          debugPrint('╠═══════════════════════════════════════════════════════╣');
+          debugPrint('║  Отправитель: $senderName (ID: $senderId)');
+          debugPrint('║  Тип отправителя: $senderType');
+          
+          if (senderType == 'user') {
+            isMyMessage = true;
+            debugPrint('║  ✅ РЕЗУЛЬТАТ: sender.type = "user" (МЕНЕДЖЕР)');
+            debugPrint('║  → Показываем СПРАВА (наша сторона)');
+            debugPrint('║  → isMyMessage = TRUE');
+            debugPrint('║  → Имя отображается: ДА (над сообщением)');
+          } else if (senderType == 'lead') {
+            isMyMessage = false;
+            debugPrint('║  ✅ РЕЗУЛЬТАТ: sender.type = "lead" (КЛИЕНТ)');
+            debugPrint('║  → Показываем СЛЕВА (сторона лида)');
+            debugPrint('║  → isMyMessage = FALSE');
+            debugPrint('║  → Имя отображается: ДА (над сообщением)');
+          } else {
+            // Fallback
+            isMyMessage = (UUID == senderId);
+            debugPrint('║  ⚠️ ВНИМАНИЕ: sender.type = "$senderType" (неизвестный)');
+            debugPrint('║  → Используем fallback: проверка по ID');
+            debugPrint('║  → UUID == senderId: $isMyMessage');
+          }
+          debugPrint('╚═══════════════════════════════════════════════════════╝');
+        } else {
+          // ✅ ЛОГИКА ДЛЯ КОРПОРАТИВНЫХ ЧАТОВ И ЗАДАЧ:
+          // Проверяем по ID отправителя
+          isMyMessage = (UUID == senderId);
+          debugPrint('📨 chat.message [CORPORATE/TASK]: Проверяем по ID: UUID=$UUID, senderId=$senderId, isMyMessage=$isMyMessage');
+        }
+        
         Message msg;
         if (mm.message?.type == 'voice' ||
             mm.message?.type == 'file' ||
@@ -1609,8 +1787,7 @@ Widget build(BuildContext context) {
             filePath: mm.message?.filePath.toString() ?? '',
             text: mm.message?.text ?? mm.message?.type ?? '',
             type: mm.message?.type ?? '',
-            isMyMessage: (UUID == mm.message?.sender?.id.toString() &&
-                mm.message?.sender?.type == 'user'),
+            isMyMessage: isMyMessage,
             createMessateTime: mm.message?.createdAt?.toString() ?? '',
             duration: Duration(
                 seconds: (mm.message?.voiceDuration != null)
@@ -1629,8 +1806,7 @@ Widget build(BuildContext context) {
             text: mm.message?.text ?? mm.message?.type ?? '',
             type: mm.message?.type ?? '',
             createMessateTime: mm.message?.createdAt?.toString() ?? '',
-            isMyMessage: (UUID == mm.message?.sender?.id.toString() &&
-                mm.message?.sender?.type == 'user'),
+            isMyMessage: isMyMessage,
             senderName: mm.message?.sender?.name ?? 'Unknown sender',
             forwardedMessage: forwardedMessage,
           );
@@ -1649,7 +1825,6 @@ Widget build(BuildContext context) {
         _scrollToBottom();
         debugPrint('Scrolled to bottom after receiving message');
 
-        // Опциональная фоновая синхронизация с API без изменения состояния
         try {
           await context.read<MessagingCubit>().syncMessagesInBackground(widget.chatId);
           debugPrint('Synced messages with API in background');
@@ -1661,12 +1836,273 @@ Widget build(BuildContext context) {
       }
     });
 
-    try {
-      await socketClient.connect();
-      debugPrint('Socket connection initiated');
-    } catch (e, stackTrace) {
-      debugPrint('Error connecting to socket: $e, StackTrace: $stackTrace');
+    debugPrint('🎯🎯🎯 CHAT_SMS: Setting up USER channel subscription...');
+    final userId = prefs.getString('unique_id') ?? '';
+    if (userId.isNotEmpty) {
+      final userChannelName = 'presence-user.$userId';
+      debugPrint('🎯🎯🎯 CHAT_SMS: User channel: $userChannelName');
+      
+      final userPresenceChannel = socketClient.presenceChannel(
+        userChannelName,
+        authorizationDelegate: EndpointAuthorizableChannelTokenAuthorizationDelegate.forPresenceChannel(
+          authorizationEndpoint: Uri.parse(authUrl),
+          headers: {
+            'Authorization': 'Bearer $token',
+            'X-Tenant': '$enteredDomain-back',
+          },
+          onAuthFailed: (exception, trace) {
+            debugPrint('❌ Auth failed for $userChannelName: $exception');
+          },
+        ),
+      );
+      
+      socketClient.onConnectionEstablished.listen((_) {
+        debugPrint('✅ Subscribing to user channel: $userChannelName');
+        userPresenceChannel.subscribeIfNotUnsubscribed();
+      });
+      
+     userPresenceChannel.bind('chat.updated').listen((event) async {
+  debugPrint('🔔🔔🔔 CHAT_SMS (USER CHANNEL): Received chat.updated!');
+  
+  try {
+    final chatData = json.decode(event.data);
+    final eventChatId = chatData['chat']?['id'];
+    
+    debugPrint('🔔🔔🔔 CHAT_SMS (USER CHANNEL): Event chatId: $eventChatId, our chatId: ${widget.chatId}');
+    
+    if (eventChatId == widget.chatId && mounted) {
+      final lastMessage = chatData['chat']?['lastMessage'];
+      final chatUsers = chatData['chat']?['chatUsers'];
+      
+      if (lastMessage != null) {
+        debugPrint('🔔🔔🔔 CHAT_SMS (USER CHANNEL): ✅ Processing new message...');
+        
+              debugPrint('═══════════════════════════════════════════════════════');
+              debugPrint('📨 FULL EVENT: ${event.data}');
+              debugPrint('═══════════════════════════════════════════════════════');
+              
+        final prefs = await SharedPreferences.getInstance();
+        final myUserId = prefs.getString('userID') ?? '';
+        final myUniqueId = prefs.getString('unique_id') ?? '';
+        
+        debugPrint('🔔🔔🔔 CHAT_SMS: My IDs - userID=$myUserId, unique_id=$myUniqueId');
+        
+              // ✅ ИСПРАВЛЕНИЕ: Используем кэшированное имя собеседника
+              String senderName = _cachedCompanionName ?? 'Собеседник';
+        String myName = 'Вы';
+        
+              debugPrint('📝 Используем имя собеседника: $senderName (из кэша: $_cachedCompanionName)');
+              
+              // Если в текущем событии есть chatUsers - обновляем имена и кэш
+        if (chatUsers != null && chatUsers is List && chatUsers.isNotEmpty) {
+          for (var user in chatUsers) {
+            if (user['participant'] != null) {
+              final participantId = user['participant']?['id']?.toString() ?? '';
+              final participantName = user['participant']?['name'] ?? '';
+                    final participantLastname = user['participant']?['lastname'] ?? '';
+                    
+                    String fullName = participantName;
+                    if (participantLastname.isNotEmpty) {
+                      fullName = '$participantName $participantLastname';
+                    }
+              
+              if (participantId == myUserId) {
+                      myName = fullName;
+                      debugPrint('   📝 Найдено мое имя: $myName (ID: $participantId)');
+                    } else if (participantId.isNotEmpty && participantName.isNotEmpty) {
+                      senderName = fullName;
+                      // Обновляем кэш
+                      if (_cachedCompanionName != fullName) {
+                        setState(() {
+                          _cachedCompanionName = fullName;
+                        });
+                        debugPrint('   💾 Обновлен кэш имени собеседника: $_cachedCompanionName');
+                      }
+                    }
+                  }
+                }
+              }
+              
+              // ✅ ПРАВИЛЬНАЯ ЛОГИКА: Проверяем sender из сообщения
+              debugPrint('═══════════════════════════════════════════════════════');
+              debugPrint('🔍 USER CHANNEL - Определяем отправителя сообщения');
+              debugPrint('lastMessage[sender]: ${lastMessage['sender']}');
+              
+              String? messageSenderId;
+              String? messageSenderType;
+              
+              // Извлекаем sender.id и sender.type
+              if (lastMessage['sender'] != null && lastMessage['sender'] is Map) {
+                messageSenderId = lastMessage['sender']['id']?.toString();
+                messageSenderType = lastMessage['sender']['type']?.toString();
+                debugPrint('✅ Найден sender: id=$messageSenderId, type=$messageSenderType');
+              }
+              
+              bool isMyMessage = false;
+              final bool isLeadChat = widget.endPointInTab == 'lead';
+              
+              if (isLeadChat && messageSenderType != null) {
+                // ✅ ЛОГИКА ДЛЯ ЛИД-ЧАТОВ:
+                // 1. sender.type == 'user' → сообщение от МЕНЕДЖЕРА (наша сторона) → показываем СПРАВА
+                // 2. sender.type == 'lead' → сообщение от ЛИДА (клиент) → показываем СЛЕВА
+                // ВАЖНО: На одного лида может отвечать несколько менеджеров, поэтому показываем имя
+                
+                debugPrint('╔═══════════════════════════════════════════════════════╗');
+                debugPrint('║  🔄 LEAD CHAT - chat.updated (участники чата)            ║');
+                debugPrint('╠═══════════════════════════════════════════════════════╣');
+                debugPrint('║  sender.id: $messageSenderId');
+                debugPrint('║  sender.type: $messageSenderType');
+                debugPrint('║  Мой ID: $myUserId');
+                
+                if (messageSenderType == 'user') {
+                  // ЛЮБОЙ менеджер (user) - это НАША сторона
+                  isMyMessage = true;
+                  debugPrint('║  ✅ РЕЗУЛЬТАТ: sender.type = "user" (МЕНЕДЖЕР)');
+                  debugPrint('║  → Показываем СПРАВА (наша сторона)');
+                  debugPrint('║  → isMyMessage = TRUE');
+                } else if (messageSenderType == 'lead') {
+                  // Лид - это КЛИЕНТ (собеседник)
+                  isMyMessage = false;
+                  debugPrint('║  ✅ РЕЗУЛЬТАТ: sender.type = "lead" (КЛИЕНТ)');
+                  debugPrint('║  → Показываем СЛЕВА (сторона лида)');
+                  debugPrint('║  → isMyMessage = FALSE');
+                } else {
+                  // Неизвестный тип - проверяем по ID для безопасности
+                  isMyMessage = (messageSenderId == myUserId);
+                  debugPrint('║  ⚠️ ВНИМАНИЕ: sender.type = "$messageSenderType" (неизвестный)');
+                  debugPrint('║  → Используем fallback: проверка по ID');
+                  debugPrint('║  → isMyMessage = $isMyMessage');
+                }
+                debugPrint('╚═══════════════════════════════════════════════════════╝');
+              } else if (messageSenderId != null && messageSenderId.isNotEmpty) {
+                // ✅ ЛОГИКА ДЛЯ КОРПОРАТИВНЫХ ЧАТОВ И ЗАДАЧ:
+                // Проверяем по ID отправителя
+                isMyMessage = (messageSenderId == myUserId);
+                debugPrint('⚠️ Путь 1D [CORPORATE/TASK]: sender.type НЕ НАЙДЕН или не лид → проверяем только ID');
+                debugPrint('   Результат isMyMessage: $isMyMessage');
+              } else {
+                // Если sender.id нет - определяем по chatUsers (инвертированная логика)
+                debugPrint('⚠️ Путь 2: sender.id НЕ НАЙДЕН → используем chatUsers');
+                
+                String? foundParticipantId;
+                if (chatUsers != null && chatUsers is List) {
+                  for (var user in chatUsers) {
+                    if (user['participant'] != null && user['participant']['id'] != null) {
+                      foundParticipantId = user['participant']['id']?.toString();
+                      debugPrint('   Найден participant.id: $foundParticipantId');
+                      break;
+                    }
+                  }
+                }
+                
+                if (foundParticipantId != null) {
+                  // ИНВЕРТИРОВАННАЯ логика для chatUsers
+                  isMyMessage = (foundParticipantId != myUserId);
+                  debugPrint('   Сравнение ИНВЕРТИРОВАННОЕ: participant.id($foundParticipantId) != myUserId($myUserId)');
+                  debugPrint('   Результат isMyMessage: $isMyMessage');
+                } else {
+                  isMyMessage = lastMessage['is_my_message'] ?? false;
+                  debugPrint('   ⚠️ Fallback на is_my_message: $isMyMessage');
+                }
+              }
+              
+              debugPrint('🎯 ФИНАЛЬНЫЙ isMyMessage: $isMyMessage');
+              debugPrint('═══════════════════════════════════════════════════════');
+              
+              // ✅ Определяем имя отправителя с учетом типа
+              String displaySenderName;
+              
+              // Сначала пытаемся получить имя из sender в сообщении
+              if (lastMessage['sender'] != null && lastMessage['sender'] is Map) {
+                final senderNameFromMessage = lastMessage['sender']['name']?.toString();
+                
+                if (messageSenderType == 'user' && messageSenderId != null) {
+                  // Для менеджера (user):
+                  if (messageSenderId == myUserId) {
+                    // Это Я - показываем мое имя или "Вы"
+                    displaySenderName = myName;
+                    debugPrint('📝 Имя отправителя: $displaySenderName (я сам)');
+                  } else {
+                    // Это другой менеджер - показываем его имя
+                    displaySenderName = senderNameFromMessage ?? senderName;
+                    debugPrint('📝 Имя отправителя: $displaySenderName (другой менеджер)');
+                  }
+                } else if (messageSenderType == 'lead') {
+                  // Для лида - показываем имя из sender или из кэша
+                  displaySenderName = senderNameFromMessage ?? senderName;
+                  debugPrint('📝 Имя отправителя: $displaySenderName (лид)');
+                } else {
+                  // Для неизвестного типа - обычная логика
+                  displaySenderName = isMyMessage ? myName : (senderNameFromMessage ?? senderName);
+                  debugPrint('📝 Имя отправителя: $displaySenderName (обычная логика)');
+                }
+              } else {
+                // Если нет sender в сообщении - используем старую логику
+                displaySenderName = isMyMessage ? myName : senderName;
+                debugPrint('📝 Имя отправителя: $displaySenderName (из кэша)');
+              }
+        
+        debugPrint('🔔🔔🔔 CHAT_SMS: Final - isMyMessage=$isMyMessage, displaySenderName=$displaySenderName');
+        
+        final newMessage = Message(
+          id: lastMessage['id'] ?? 0,
+          text: lastMessage['text'] ?? '',
+          type: lastMessage['type'] ?? 'text',
+          filePath: lastMessage['file_path'],
+                isMyMessage: isMyMessage,
+          createMessateTime: lastMessage['created_at'] ?? '',
+          senderName: displaySenderName,
+          duration: Duration(
+            seconds: lastMessage['voice_duration'] != null 
+              ? double.tryParse(lastMessage['voice_duration'].toString())?.round() ?? 20
+              : 20
+          ),
+          isPinned: lastMessage['is_pinned'] ?? false,
+          isChanged: lastMessage['is_changed'] ?? false,
+          isNote: lastMessage['is_note'] ?? false,
+        );
+        
+        debugPrint('🔔🔔🔔 CHAT_SMS (USER CHANNEL): Message created with CORRECT isMyMessage: ${newMessage.isMyMessage}');
+        
+        context.read<MessagingCubit>().updateMessageFromSocket(newMessage);
+        
+        Future.delayed(Duration(milliseconds: 100), () {
+          if (mounted) {
+            _scrollToBottom();
+          }
+        });
+        
+        if (!isMyMessage) {
+          try {
+            await _audioPlayer.setAsset('assets/audio/get.mp3');
+            await _audioPlayer.play();
+            debugPrint('🔔🔔🔔 CHAT_SMS (USER CHANNEL): ✅ Played sound for INCOMING message');
+          } catch (e) {
+            debugPrint('⚠️ CHAT_SMS (USER CHANNEL): Sound error: $e');
+          }
+        } else {
+          debugPrint('🔔🔔🔔 CHAT_SMS (USER CHANNEL): Skipped sound - message is from ME');
+        }
+      }
     }
+  } catch (e, stackTrace) {
+    debugPrint('❌ CHAT_SMS (USER CHANNEL): Error: $e');
+    debugPrint('❌ CHAT_SMS (USER CHANNEL): StackTrace: $stackTrace');
+  }
+});
+      
+      debugPrint('✅✅✅ CHAT_SMS: User channel listener registered');
+    }
+
+    try {
+      debugPrint('🚀 Initiating socket connection...');
+      await socketClient.connect();
+      debugPrint('✅ Socket connection initiated successfully');
+    } catch (e) {
+      debugPrint('❌ Error connecting to socket: $e');
+    }
+    
+    debugPrint('🔌 ChatSmsScreen: setUpServices() COMPLETED');
   }
 
   void _scrollToBottom() {
@@ -1832,10 +2268,7 @@ Widget build(BuildContext context) {
     socketClient.dispose();
     _focusNode.dispose();
 
-    // ✅ НОВОЕ: Сбрасываем unreadCount конкретного чата БЕЗ полной перезагрузки
-    if (mounted) {
-      context.read<ChatsBloc>().add(ResetUnreadCount(widget.chatId));
-    }
+    _chatsBloc?.add(ResetUnreadCount(widget.chatId));
 
     super.dispose();
   }
@@ -1859,7 +2292,7 @@ class MessageItemWidget extends StatelessWidget {
   final FocusNode focusNode;
   final bool isRead;
   final bool isFirstMessage;
-  final String? referralBody; // Новый параметр: referral_body чата
+  final String? referralBody;
 
   MessageItemWidget({
     super.key,
@@ -1906,13 +2339,16 @@ class MessageItemWidget extends StatelessWidget {
   Widget _buildMessageContent(BuildContext context) {
     String? replyMessageText;
     if (isFirstMessage && referralBody != null && referralBody!.isNotEmpty) {
-      replyMessageText = referralBody; // Выводим как есть из чата
+      replyMessageText = referralBody;
     } else if (message.forwardedMessage != null) {
       replyMessageText = message.forwardedMessage!.type == 'voice'
           ? "Голосовое сообщение"
           : message.forwardedMessage!.text;
     }
 
+    // Определяем, является ли чат лид-чатом
+    final bool isLeadChat = endPointInTab == 'lead';
+    
     switch (message.type) {
       case 'text':
         return MessageBubble(
@@ -1928,7 +2364,8 @@ class MessageItemWidget extends StatelessWidget {
           isHighlighted: highlightedMessageId == message.id,
           isChanged: message.isChanged,
           isRead: message.isRead,
-          isNote: message.isNote, // Передаем is_note
+          isNote: message.isNote,
+          isLeadChat: isLeadChat,
         );
       case 'image':
         return ImageMessageBubble(
@@ -1941,6 +2378,7 @@ class MessageItemWidget extends StatelessWidget {
           replyMessage: replyMessageText,
           isHighlighted: highlightedMessageId == message.id,
           isRead: message.isRead,
+          isLeadChat: isLeadChat,
         );
       case 'file':
       case 'document':
@@ -1950,6 +2388,7 @@ class MessageItemWidget extends StatelessWidget {
           filePath: message.filePath ?? 'Unknown file format',
           fileName: message.text,
           isHighlighted: highlightedMessageId == message.id,
+          isLeadChat: isLeadChat,
           onTap: (path) async {
             if (message.filePath != null && message.filePath!.isNotEmpty) {
               try {
@@ -1972,6 +2411,7 @@ class MessageItemWidget extends StatelessWidget {
         return VoiceMessageWidget(
           message: message,
           baseUrl: baseUrl,
+          isLeadChat: isLeadChat,
         );
       default:
         return SizedBox();
@@ -2488,6 +2928,3 @@ class MessageItemWidget extends StatelessWidget {
     }
   }
 }
-
-/*
-*/

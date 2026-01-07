@@ -368,6 +368,7 @@ class FirebaseApi {
       screen = ChatSmsScreen(
         chatItem: Chats(
           id: chatId,
+          uniqueId: getChatById.uniqueId,
           name: chatName ?? 'Чат #$chatId',
           canSendMessage: getChatById.canSendMessage,
           image: '',
@@ -378,6 +379,7 @@ class FirebaseApi {
           chatUsers: [],
         ).toChatItem(),
         chatId: chatId,
+        chatUniqueId: getChatById.uniqueId,
         endPointInTab: getChatById.type.toString(),
         canSendMessage: getChatById.canSendMessage,
       );

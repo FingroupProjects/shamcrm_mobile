@@ -579,6 +579,11 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
         _fieldConfiguration = activeFields;
         _isConfigurationLoaded = true;
       });
+      
+      // ✅ Если данные уже загружены, обновляем детали с новой конфигурацией
+      if (currentDeal != null) {
+        _updateDetails(currentDeal!);
+      }
     } catch (e) {
       // В случае ошибки показываем поля в стандартном порядке
       if (mounted) {

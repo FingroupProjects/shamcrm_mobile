@@ -7,11 +7,13 @@ import 'package:crm_task_manager/models/chats_model.dart';
 class VoiceMessageWidget extends StatefulWidget {
   final Message message;
   final String baseUrl;
+  final bool isLeadChat;
 
   const VoiceMessageWidget({
     Key? key,
     required this.message,
     required this.baseUrl,
+    this.isLeadChat = false,
   }) : super(key: key);
 
   @override
@@ -77,10 +79,16 @@ class _VoiceMessageWidgetState extends State<VoiceMessageWidget>
             : CrossAxisAlignment.start,
         children: [
           SizedBox(height: 4),
-          if (widget.message.isMyMessage == false)
+          // ✅ Логика отображения имени отправителя:
+          // - В лид-чатах: показываем имя для ОБЕИХ сторон (несколько менеджеров могут отвечать)
+          // - В задачах и корпоративных: показываем имя только для собеседника
+          if (widget.isLeadChat || !widget.message.isMyMessage)
             Text(
               widget.message.senderName,
-              style: TextStyle(fontWeight: FontWeight.w600),
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                color: widget.message.isMyMessage ? Colors.grey.shade600 : Colors.black87,
+              ),
             ),
           VoiceMessageView(
             innerPadding: 8,
