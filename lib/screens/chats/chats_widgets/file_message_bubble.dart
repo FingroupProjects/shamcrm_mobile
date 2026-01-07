@@ -10,6 +10,7 @@ class FileMessageBubble extends StatelessWidget {
   final Function(String) onTap;
   final bool isHighlighted; 
   final bool isRead;
+  final bool isLeadChat;
 
   const FileMessageBubble({
     Key? key,
@@ -20,7 +21,8 @@ class FileMessageBubble extends StatelessWidget {
     required this.onTap,
     required this.senderName,
     this.isHighlighted = false,
-    required this.isRead, 
+    required this.isRead,
+    this.isLeadChat = false,
   }) : super(key: key);
 
   @override
@@ -96,8 +98,16 @@ class FileMessageBubble extends StatelessWidget {
           crossAxisAlignment: isSender ? CrossAxisAlignment.end : CrossAxisAlignment.start,
           children: [
             const SizedBox(height: 8),
-            if (!isSender)
-              Text( senderName, style: const TextStyle(fontWeight: FontWeight.w600),
+            // ✅ Логика отображения имени отправителя:
+            // - В лид-чатах: показываем имя для ОБЕИХ сторон (несколько менеджеров могут отвечать)
+            // - В задачах и корпоративных: показываем имя только для собеседника
+            if (isLeadChat || !isSender)
+              Text(
+                senderName,
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: isSender ? Colors.grey.shade600 : Colors.black87,
+                ),
               ),
             GestureDetector(
               onTap: () => onTap(filePath),

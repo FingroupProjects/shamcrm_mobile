@@ -27,6 +27,7 @@ class MessageBubble extends StatelessWidget {
   final bool isChanged;
   final bool isRead;
   final bool isNote;
+  final bool isLeadChat;
 
   MessageBubble({
     Key? key,
@@ -41,6 +42,7 @@ class MessageBubble extends StatelessWidget {
     required this.isChanged,
     required this.isRead,
     required this.isNote,
+    this.isLeadChat = false,
   }) : super(key: key);
 
   @override
@@ -67,11 +69,16 @@ class MessageBubble extends StatelessWidget {
                 isSender ? CrossAxisAlignment.end : CrossAxisAlignment.start,
             children: [
               const SizedBox(height: 8),
-              if (!isSender)
+              // ✅ Логика отображения имени отправителя:
+              // - В лид-чатах: показываем имя для ОБЕИХ сторон (несколько менеджеров могут отвечать)
+              // - В задачах и корпоративных: показываем имя только для собеседника
+              if (isLeadChat || !isSender)
                 Text(
                   senderName,
                   style: TextStyle(
-                      fontWeight: FontWeight.w600, color: AppColors.primaryBlue),
+                    fontWeight: FontWeight.w600,
+                    color: isSender ? Colors.grey.shade600 : AppColors.primaryBlue,
+                  ),
                 ),
               if (replyMessage != null && replyMessage!.isNotEmpty)
                 GestureDetector(

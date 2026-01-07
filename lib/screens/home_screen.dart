@@ -664,8 +664,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       inactiveIconsGroup1.add('assets/icons/MyNavBar/deal_OFF.png');
     }
 
-    // Чаты
-    if (hasPermission('chat.read')) {
+    // Чаты - показываем если есть доступ хотя бы к одной из вкладок
+    if (hasPermission('chat.read') || 
+        hasPermission('task.read') || 
+        hasPermission('corporateChat.read')) {
       widgetsGroup1.add(ChatsScreen());
       titleKeysGroup1.add('appbar_chats');
       navBarTitleKeysGroup1.add('appbar_chats');

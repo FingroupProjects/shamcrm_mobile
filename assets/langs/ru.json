@@ -1709,7 +1709,7 @@
   "shortName": "Краткое название",
   "measure_unit_created_successfully": "Единица измерения успешно создана",
   "measure_unit_updated_successfully": "Единица измерения успешно обновлена",
-  "delete_measure_unit": "Удалить единицу измерения",
+  "delete_measure_unit": "Удалить",
   "delete_measure_unit_confirm": "Вы уверены, что хотите удалить эту единицу измерения?",
   "no_cash_registers": "Нет касс",
   "accounting_title": "Учет",

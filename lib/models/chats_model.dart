@@ -440,7 +440,7 @@ class Message {
     );
   }
 
-  factory Message.fromJson(Map<String, dynamic> json) {
+  factory Message.fromJson(Map<String, dynamic> json, {String? chatType}) {
     String text;
     if (json['type'] == 'file') {
       text = json['text'] ?? 'unknown_file';
@@ -460,6 +460,57 @@ class Message {
       debugPrint('Error parsing read_status: $e');
       readStatus = null;
     }
+    
+    // ✅ ПРАВИЛЬНАЯ ЛОГИКА для определения isMyMessage:
+    // Специальная логика ТОЛЬКО для ЛИДОВ (когда chat.type == 'lead')
+    // В корпоративных чатах и задачах используем стандартную логику с сервера
+    bool isMyMessage;
+    
+    // 🔍 ДИАГНОСТИКА: Смотрим что приходит
+    debugPrint('🔍 Message.fromJson ДИАГНОСТИКА:');
+    debugPrint('   json["chat"] = ${json['chat']}');
+    debugPrint('   json["chat"]["type"] = ${json['chat']?['type']}');
+    debugPrint('   json["sender"] = ${json['sender']}');
+    debugPrint('   json["sender"]["type"] = ${json['sender']?['type']}');
+    debugPrint('   json["sender"]["name"] = ${json['sender']?['name']}');
+    debugPrint('   json["is_my_message"] = ${json['is_my_message']}');
+    
+    // ✅ УПРОЩЁННАЯ ЛОГИКА:
+    // Если приходит sender.type, используем его для определения:
+    // - sender.type == 'lead' → это ЛИДНЫЙ чат, сообщение от лида → isMyMessage = FALSE (слева)
+    // - sender.type == 'user' + chatType == 'lead' → ЛИДНЫЙ чат, сообщение от менеджера → isMyMessage = TRUE (справа)
+    // - Иначе → используем is_my_message с сервера (для корпоративных чатов и задач)
+    
+    if (json['sender'] != null && json['sender']['type'] != null) {
+      final senderType = json['sender']['type'].toString();
+      final senderName = json['sender']['name']?.toString() ?? 'Unknown';
+      // Используем переданный chatType или берём из JSON (приоритет у переданного)
+      final effectiveChatType = chatType ?? json['chat']?['type']?.toString();
+      
+      debugPrint('   → senderType = $senderType');
+      debugPrint('   → chatType (переданный) = $chatType');
+      debugPrint('   → json["chat"]["type"] = ${json['chat']?['type']}');
+      debugPrint('   → effectiveChatType (используемый) = $effectiveChatType');
+      
+      if (senderType == 'lead') {
+        // ✅ Если отправитель - ЛИД, это точно лидный чат
+        isMyMessage = false;
+        debugPrint('🎯 [LEAD CHAT] sender.type=lead (клиент: $senderName) → isMyMessage=FALSE (слева)');
+      } else if (senderType == 'user' && effectiveChatType == 'lead') {
+        // ✅ Если отправитель - USER и чат лидный
+        isMyMessage = true;
+        debugPrint('🎯 [LEAD CHAT] sender.type=user + chatType=lead (менеджер: $senderName) → isMyMessage=TRUE (справа)');
+      } else {
+        // ✅ Корпоративный чат или задача - используем стандартную логику
+        isMyMessage = json['is_my_message'] ?? false;
+        debugPrint('🎯 [CORPORATE/TASK] sender.type=$senderType, chatType=$effectiveChatType → is_my_message=$isMyMessage (с сервера)');
+      }
+    } else {
+      // Нет sender.type - используем стандартную логику
+      isMyMessage = json['is_my_message'] ?? false;
+      debugPrint('🎯 [FALLBACK] НЕТ sender.type → is_my_message=$isMyMessage (с сервера)');
+    }
+    
     return Message(
         id: json['id'],
         text: text,
@@ -472,7 +523,7 @@ class Message {
         filePath: json['file_path'],
         isPinned: json['is_pinned'] ?? false,
         isChanged: json['is_changed'] ?? false,
-        isMyMessage: json['is_my_message'] ?? false,
+        isMyMessage: isMyMessage,
         forwardedMessage: forwardedMessage,
         isRead: json['is_read'] ?? false,
         readStatus: readStatus,

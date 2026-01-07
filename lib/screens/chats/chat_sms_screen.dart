@@ -97,7 +97,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
     setState(() {
       _searchQuery = query;
     });
-    context.read<MessagingCubit>().getMessages(widget.chatId, search: query);
+    context.read<MessagingCubit>().getMessages(widget.chatId, search: query, chatType: widget.endPointInTab);
   }
 
   Future<void> _checkPermissions() async {
@@ -132,7 +132,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
   Future<void> _retryInitialization() async {
     try {
       await _initializeBaseUrl();
-      context.read<MessagingCubit>().getMessages(widget.chatId);
+      context.read<MessagingCubit>().getMessages(widget.chatId, chatType: widget.endPointInTab);
     } catch (e) {
       debugPrint('Retry failed: $e');
       if (mounted) {
@@ -170,7 +170,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
         throw Exception('Cannot determine domain for API calls');
       }
     }
-
+    
     baseUrl = 'https://$enteredDomain-back.$enteredMainDomain';
     debugPrint('BaseUrl initialized: $baseUrl');
 
@@ -232,7 +232,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
 
       await _initializeSocket();
 
-      context.read<MessagingCubit>().getMessagesWithFallback(widget.chatId);
+      context.read<MessagingCubit>().getMessagesWithFallback(widget.chatId, chatType: widget.endPointInTab);
       _scrollToBottom();
 
       if (widget.endPointInTab == 'lead') {
@@ -248,7 +248,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
         _showInitializationError(e.toString());
 
         try {
-          context.read<MessagingCubit>().getMessagesWithFallback(widget.chatId);
+          context.read<MessagingCubit>().getMessagesWithFallback(widget.chatId, chatType: widget.endPointInTab);
         } catch (e2) {
           debugPrint('ChatSmsScreen: Failed to load messages after init error: $e2');
         }
@@ -809,221 +809,221 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
     return null;
   }
 
-  @override
-  Widget build(BuildContext context) {
-    bool isSupportChat = widget.chatItem.avatar == 'assets/icons/Profile/image.png';
-    return BlocListener<MessagingCubit, MessagingState>(
+@override
+Widget build(BuildContext context) {
+  bool isSupportChat = widget.chatItem.avatar == 'assets/icons/Profile/image.png';
+  return BlocListener<MessagingCubit, MessagingState>(
+    listener: (context, state) {
+      if (kDebugMode) {
+        //print('ChatSmsScreen: Слушатель MessagingCubit, текущее состояние: $state');
+      }
+      if ((state is MessagesLoadedState || state is PinnedMessagesState) && !_hasMarkedMessagesAsRead) {
+        _markMessagesAsRead();
+      }
+    },
+    child: BlocListener<DeleteMessageBloc, DeleteMessageState>(
       listener: (context, state) {
-        if (kDebugMode) {
-          //print('ChatSmsScreen: Слушатель MessagingCubit, текущее состояние: $state');
-        }
-        if ((state is MessagesLoadedState || state is PinnedMessagesState) && !_hasMarkedMessagesAsRead) {
-          _markMessagesAsRead();
+        if (state is DeleteMessageSuccess) {
+          context.read<MessagingCubit>().getMessages(widget.chatId, chatType: widget.endPointInTab);
+          if (widget.endPointInTab == 'task' || widget.endPointInTab == 'corporate') {
+            final chatsBloc = context.read<ChatsBloc>();
+            chatsBloc.add(ClearChats());
+            chatsBloc.add(FetchChats(endPoint: widget.endPointInTab));
+          }
         }
       },
-      child: BlocListener<DeleteMessageBloc, DeleteMessageState>(
-        listener: (context, state) {
-          if (state is DeleteMessageSuccess) {
-            context.read<MessagingCubit>().getMessages(widget.chatId);
-            if (widget.endPointInTab == 'task' || widget.endPointInTab == 'corporate') {
-              final chatsBloc = context.read<ChatsBloc>();
-              chatsBloc.add(ClearChats());
-              chatsBloc.add(FetchChats(endPoint: widget.endPointInTab));
-            }
-          }
-        },
-        child: Scaffold(
-          appBar: AppBar(
-            backgroundColor: Colors.white,
-            forceMaterialTransparency: false,
-            scrolledUnderElevation: 0,
-            elevation: 0,
-            centerTitle: false,
-            leadingWidth: 40,
-            leading: Transform.translate(
-              offset: const Offset(6, 0),
+      child: Scaffold(
+        appBar: AppBar(
+          backgroundColor: Colors.white,
+          forceMaterialTransparency: false,
+          scrolledUnderElevation: 0,
+          elevation: 0,
+          centerTitle: false,
+          leadingWidth: 40,
+          leading: Transform.translate(
+            offset: const Offset(6, 0),
+            child: IconButton(
+              icon: Image.asset(
+                'assets/icons/arrow-left.png',
+                width: 40,
+                height: 40,
+              ),
+              onPressed: () {
+                Navigator.pop(context);
+              },
+            ),
+          ),
+          actions: [
+            Padding(
+              padding: const EdgeInsets.only(right: 10),
               child: IconButton(
-                icon: Image.asset(
-                  'assets/icons/arrow-left.png',
-                  width: 40,
-                  height: 40,
-                ),
+                icon: _isSearching
+                    ? const Icon(Icons.close)
+                    : Image.asset('assets/icons/AppBar/search.png',
+                    width: 24, height: 24),
                 onPressed: () {
-                  Navigator.pop(context);
+                  setState(() {
+                    _isSearching = !_isSearching;
+                    _searchQuery = null;
+                  });
+                  if (!_isSearching) {
+                    context.read<MessagingCubit>().getMessages(widget.chatId, chatType: widget.endPointInTab);
+                  }
                 },
               ),
             ),
-            actions: [
-              Padding(
-                padding: const EdgeInsets.only(right: 10),
-                child: IconButton(
-                  icon: _isSearching
-                      ? const Icon(Icons.close)
-                      : Image.asset('assets/icons/AppBar/search.png',
-                      width: 24, height: 24),
-                  onPressed: () {
-                    setState(() {
-                      _isSearching = !_isSearching;
-                      _searchQuery = null;
-                    });
-                    if (!_isSearching) {
-                      context.read<MessagingCubit>().getMessages(widget.chatId);
-                    }
-                  },
-                ),
+          ],
+          title: Transform.translate(
+            offset: const Offset(-12, 0),
+            child: _isSearching
+                ? TextField(
+              autofocus: true,
+              decoration: InputDecoration(
+                hintText: AppLocalizations.of(context)!.translate('search_appbar'),
+                border: InputBorder.none,
+                hintStyle: const TextStyle(color: Colors.black, fontFamily: 'Gilroy'),
               ),
-            ],
-            title: Transform.translate(
-              offset: const Offset(-12, 0),
-              child: _isSearching
-                  ? TextField(
-                autofocus: true,
-                decoration: InputDecoration(
-                  hintText: AppLocalizations.of(context)!.translate('search_appbar'),
-                  border: InputBorder.none,
-                  hintStyle: const TextStyle(color: Colors.black, fontFamily: 'Gilroy'),
-                ),
-                onChanged: _onSearchChanged,
-              )
-                  : GestureDetector(
-                onTap: (widget.endPointInTab == 'corporate')
+              onChanged: _onSearchChanged,
+            )
+                : GestureDetector(
+              onTap: (widget.endPointInTab == 'corporate')
                     ? null
-                    : isSupportChat
-                    ? null
-                    : () async {
-                  if (_isRequestInProgress) return;
-                  setState(() {
-                    _isRequestInProgress = true;
-                  });
-                  try {
-                    if (widget.endPointInTab == 'lead') {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => UserProfileScreen(chatId: widget.chatId),
-                        ),
-                      );
-                    } else if (widget.endPointInTab == 'task') {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => TaskByIdScreen(chatId: widget.chatId),
-                        ),
-                      );
-                    } else if (widget.endPointInTab == 'corporate') {
-                      final getChatById = await widget.apiService.getChatById(widget.chatId);
-                      if (getChatById.chatUsers.length == 2 && getChatById.group == null) {
-                        String userIdCheck = '';
-                        SharedPreferences prefs = await SharedPreferences.getInstance();
-                        userIdCheck = prefs.getString('userID') ?? '';
-                        final participant = getChatById.chatUsers
-                            .firstWhere((user) => user.participant.id.toString() != userIdCheck)
-                            .participant;
+                  : isSupportChat
+                  ? null
+                  : () async {
+                    if (_isRequestInProgress) return;
+                    setState(() {
+                      _isRequestInProgress = true;
+                    });
+                    try {
+                      if (widget.endPointInTab == 'lead') {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => ParticipantProfileScreen(
-                              userId: participant.id.toString(),
-                              image: participant.image,
-                              name: participant.name,
-                              email: participant.email,
-                              phone: participant.phone,
-                              login: participant.login,
-                              lastSeen: participant.lastSeen.toString(),
-                              buttonChat: false,
-                            ),
+                            builder: (context) => UserProfileScreen(chatId: widget.chatId),
                           ),
                         );
-                      } else {
+                      } else if (widget.endPointInTab == 'task') {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => CorporateProfileScreen(
-                              chatId: widget.chatId,
-                              chatItem: widget.chatItem,
+                            builder: (context) => TaskByIdScreen(chatId: widget.chatId),
+                          ),
+                        );
+                      } else if (widget.endPointInTab == 'corporate') {
+                        final getChatById = await widget.apiService.getChatById(widget.chatId);
+                        if (getChatById.chatUsers.length == 2 && getChatById.group == null) {
+                          String userIdCheck = '';
+                          SharedPreferences prefs = await SharedPreferences.getInstance();
+                          userIdCheck = prefs.getString('userID') ?? '';
+                          final participant = getChatById.chatUsers
+                              .firstWhere((user) => user.participant.id.toString() != userIdCheck)
+                              .participant;
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => ParticipantProfileScreen(
+                                userId: participant.id.toString(),
+                                image: participant.image,
+                                name: participant.name,
+                                email: participant.email,
+                                phone: participant.phone,
+                                login: participant.login,
+                                lastSeen: participant.lastSeen.toString(),
+                                buttonChat: false,
+                              ),
                             ),
+                          );
+                        } else {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => CorporateProfileScreen(
+                                chatId: widget.chatId,
+                                chatItem: widget.chatItem,
+                              ),
+                            ),
+                          );
+                        }
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              'ОШИБКА!',
+                              style: const TextStyle(
+                                fontFamily: 'Gilroy',
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.white,
+                              ),
+                            ),
+                            backgroundColor: Colors.red,
+                            duration: const Duration(seconds: 3),
                           ),
                         );
                       }
-                    } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            'ОШИБКА!',
-                            style: const TextStyle(
-                              fontFamily: 'Gilroy',
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.white,
-                            ),
-                          ),
-                          backgroundColor: Colors.red,
-                          duration: const Duration(seconds: 3),
-                        ),
-                      );
+                    } finally {
+                      setState(() {
+                        _isRequestInProgress = false;
+                      });
                     }
-                  } finally {
-                    setState(() {
-                      _isRequestInProgress = false;
-                    });
-                  }
-                },
-                child: Row(
-                  children: [
-                    _buildAvatar(widget.chatItem.avatar),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        isSupportChat
-                            ? AppLocalizations.of(context)!.translate('support_chat_name')
-                            : widget.chatItem.name.isEmpty
-                            ? AppLocalizations.of(context)!.translate('no_name')
-                            : widget.chatItem.name,
-                        style: const TextStyle(
-                          fontSize: 18,
-                          color: ChatSmsStyles.appBarTitleColor,
-                          fontWeight: FontWeight.w600,
-                          fontFamily: 'Gilroy',
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                        maxLines: 1,
+                  },
+              child: Row(
+                children: [
+                  _buildAvatar(widget.chatItem.avatar),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      isSupportChat
+                          ? AppLocalizations.of(context)!.translate('support_chat_name')
+                          : widget.chatItem.name.isEmpty
+                          ? AppLocalizations.of(context)!.translate('no_name')
+                          : widget.chatItem.name,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        color: ChatSmsStyles.appBarTitleColor,
+                        fontWeight: FontWeight.w600,
+                        fontFamily: 'Gilroy',
                       ),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           ),
-          backgroundColor: const Color(0xffF4F7FD),
-          body: Column(
-            children: [
-              Expanded(child: messageListUi()),
-              if (widget.canSendMessage && _canCreateChat)
-                inputWidget()
-              else
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 50),
-                  child: Center(
-                    child: Text(
-                      widget.canSendMessage
-                          ? AppLocalizations.of(context)!.translate('not_premission_to_send_sms')
-                          : AppLocalizations.of(context)!.translate('24_hour_leads'),
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontFamily: 'Gilroy',
-                        color: AppColors.textPrimary700,
-                        fontWeight: FontWeight.w600,
-                      ),
+        ),
+        backgroundColor: const Color(0xffF4F7FD),
+        body: Column(
+          children: [
+            Expanded(child: messageListUi()),
+            if (widget.canSendMessage && _canCreateChat)
+              inputWidget()
+            else
+              Padding(
+                padding: const EdgeInsets.only(bottom: 50),
+                child: Center(
+                  child: Text(
+                    widget.canSendMessage
+                        ? AppLocalizations.of(context)!.translate('not_premission_to_send_sms')
+                        : AppLocalizations.of(context)!.translate('24_hour_leads'),
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontFamily: 'Gilroy',
+                      color: AppColors.textPrimary700,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),
-            ],
-          ),
+              ),
+          ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   void _scrollToMessageReply(int messageId) {
     final state = context.read<MessagingCubit>().state;
@@ -1096,7 +1096,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
                   children: [
                     ElevatedButton(
                       onPressed: () {
-                        context.read<MessagingCubit>().getMessagesWithFallback(widget.chatId);
+                        context.read<MessagingCubit>().getMessagesWithFallback(widget.chatId, chatType: widget.endPointInTab);
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.orange,
@@ -1153,7 +1153,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
                   SizedBox(height: 24),
                   ElevatedButton(
                     onPressed: () {
-                      context.read<MessagingCubit>().getMessagesWithFallback(widget.chatId);
+                      context.read<MessagingCubit>().getMessagesWithFallback(widget.chatId, chatType: widget.endPointInTab);
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.red,
@@ -1180,7 +1180,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
                 SizedBox(height: 16),
                 ElevatedButton(
                   onPressed: () {
-                    context.read<MessagingCubit>().getMessagesWithFallback(widget.chatId);
+                    context.read<MessagingCubit>().getMessagesWithFallback(widget.chatId, chatType: widget.endPointInTab);
                   },
                   child: Text("Повторить"),
                 ),
@@ -1470,7 +1470,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
           
           await prefs.setString('enteredMainDomain', enteredMainDomain!);
           await prefs.setString('enteredDomain', enteredDomain!);
-        } else {
+      } else {
           debugPrint('❌ Failed to parse baseUrl, aborting socket setup');
           return;
         }
@@ -1573,7 +1573,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
         
         if (mounted) {
           debugPrint('🔔🔔🔔 CHAT_SMS (CHAT CHANNEL): ✅ RELOADING messages NOW...');
-          context.read<MessagingCubit>().getMessages(widget.chatId);
+          context.read<MessagingCubit>().getMessages(widget.chatId, chatType: widget.endPointInTab);
           
           Future.delayed(Duration(milliseconds: 300), () {
             if (mounted) {
@@ -1592,62 +1592,93 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
           final currentPrefs = await SharedPreferences.getInstance();
           final myUserId = currentPrefs.getString('userID') ?? '';
           
+          // ✅ ПРАВИЛЬНАЯ ЛОГИКА: Проверяем sender из сообщения
+          debugPrint('═══════════════════════════════════════════════════════');
+          debugPrint('🔍 CHAT CHANNEL - Определяем отправителя сообщения');
+          debugPrint('lastMessage[sender]: ${lastMessage?['sender']}');
+          
           String? messageSenderId;
           String? messageSenderType;
           
-          if (lastMessage != null) {
-            if (lastMessage['sender'] != null && lastMessage['sender'] is Map) {
-              messageSenderId = lastMessage['sender']['id']?.toString() ?? '';
-              messageSenderType = lastMessage['sender']['type']?.toString() ?? 'user';
-            } else if (lastMessage['sender_id'] != null) {
-              messageSenderId = lastMessage['sender_id']?.toString() ?? '';
-              messageSenderType = lastMessage['sender_type']?.toString() ?? 'user';
-            } else if (lastMessage['user_id'] != null) {
-              messageSenderId = lastMessage['user_id']?.toString() ?? '';
-              messageSenderType = 'user';
-            }
+          // Извлекаем sender.id и sender.type
+          if (lastMessage != null && lastMessage['sender'] != null && lastMessage['sender'] is Map) {
+            messageSenderId = lastMessage['sender']['id']?.toString();
+            messageSenderType = lastMessage['sender']['type']?.toString();
+            debugPrint('✅ Найден sender: id=$messageSenderId, type=$messageSenderType');
           }
           
           bool isMyMessage = false;
+          final bool isLeadChat = widget.endPointInTab == 'lead';
           
-          if (messageSenderId != null && messageSenderId.isNotEmpty) {
-            isMyMessage = (messageSenderId == myUserId && messageSenderType == 'user');
-            debugPrint('✅ Путь 1: sender_id НАЙДЕН → используем сравнение sender_id');
-            debugPrint('   Сравнение: "$messageSenderId" == "$myUserId" && "$messageSenderType" == "user"');
-            debugPrint('   Результат: $isMyMessage');
+          if (isLeadChat && messageSenderType != null) {
+            // ✅ ЛОГИКА ДЛЯ ЛИД-ЧАТОВ:
+            // 1. sender.type == 'user' → сообщение от МЕНЕДЖЕРА (наша сторона) → показываем СПРАВА
+            // 2. sender.type == 'lead' → сообщение от ЛИДА (клиент) → показываем СЛЕВА
+            // ВАЖНО: На одного лида может отвечать несколько менеджеров, поэтому показываем имя
+            
+            debugPrint('╔═══════════════════════════════════════════════════════╗');
+            debugPrint('║  🔄 LEAD CHAT - Обработка chat.updated (обновление чата)  ║');
+            debugPrint('╠═══════════════════════════════════════════════════════╣');
+            debugPrint('║  sender.id: $messageSenderId');
+            debugPrint('║  sender.type: $messageSenderType');
+            debugPrint('║  Мой ID: $myUserId');
+            
+            if (messageSenderType == 'user') {
+              // ЛЮБОЙ менеджер (user) - это НАША сторона
+              isMyMessage = true;
+              debugPrint('║  ✅ РЕЗУЛЬТАТ: sender.type = "user" (МЕНЕДЖЕР)');
+              debugPrint('║  → Показываем СПРАВА (наша сторона)');
+              debugPrint('║  → isMyMessage = TRUE');
+            } else if (messageSenderType == 'lead') {
+              // Лид - это КЛИЕНТ (собеседник)
+              isMyMessage = false;
+              debugPrint('║  ✅ РЕЗУЛЬТАТ: sender.type = "lead" (КЛИЕНТ)');
+              debugPrint('║  → Показываем СЛЕВА (сторона лида)');
+              debugPrint('║  → isMyMessage = FALSE');
+            } else {
+              // Неизвестный тип - проверяем по ID для безопасности
+              isMyMessage = (messageSenderId == myUserId);
+              debugPrint('║  ⚠️ ВНИМАНИЕ: sender.type = "$messageSenderType" (неизвестный)');
+              debugPrint('║  → Используем fallback: проверка по ID');
+              debugPrint('║  → isMyMessage = $isMyMessage');
+            }
+            debugPrint('╚═══════════════════════════════════════════════════════╝');
+          } else if (messageSenderId != null && messageSenderId.isNotEmpty) {
+            // ✅ ЛОГИКА ДЛЯ КОРПОРАТИВНЫХ ЧАТОВ И ЗАДАЧ:
+            // Проверяем по ID отправителя
+            isMyMessage = (messageSenderId == myUserId);
+            debugPrint('⚠️ Путь 1D [CORPORATE/TASK]: sender.type НЕ НАЙДЕН или не лид → проверяем только ID');
+            debugPrint('   Результат isMyMessage: $isMyMessage');
           } else {
-            // ✅ Путь 2: sender_id НЕ НАЙДЕН → определяем по chatUsers
-            debugPrint('✅ Путь 2: sender_id НЕ НАЙДЕН → определяем по chatUsers');
+            // Если sender.id нет - определяем по chatUsers (инвертированная логика)
+            debugPrint('⚠️ Путь 2: sender.id НЕ НАЙДЕН → используем chatUsers');
             
             final eventChatUsers = chatData['chat']?['chatUsers'];
             
-            // Ищем ПЕРВОГО participant с id в chatUsers
             String? foundParticipantId;
             if (eventChatUsers != null && eventChatUsers is List) {
               for (var user in eventChatUsers) {
                 if (user['participant'] != null && user['participant']['id'] != null) {
                   foundParticipantId = user['participant']['id']?.toString();
-                  debugPrint('   Найден participant с id: $foundParticipantId');
-                  break; // Берем первого найденного
+                  debugPrint('   Найден participant.id: $foundParticipantId');
+                  break;
                 }
               }
             }
             
             if (foundParticipantId != null) {
-              // КРИТИЧЕСКАЯ ЛОГИКА:
-              // Если participant.id == myUserId → это сообщение ОТ СОБЕСЕДНИКА
-              // Если participant.id != myUserId → это МОЕ сообщение
+              // ИНВЕРТИРОВАННАЯ логика для chatUsers
               isMyMessage = (foundParticipantId != myUserId);
-              debugPrint('   🎯 Сравнение ИНВЕРТИРОВАННОЕ: foundParticipantId($foundParticipantId) != myUserId($myUserId)');
-              debugPrint('   Результат: $isMyMessage');
+              debugPrint('   Сравнение ИНВЕРТИРОВАННОЕ: participant.id($foundParticipantId) != myUserId($myUserId)');
+              debugPrint('   Результат isMyMessage: $isMyMessage');
             } else {
-              // Fallback
               isMyMessage = lastMessage?['is_my_message'] ?? false;
-              debugPrint('   ⚠️ Participant не найден, fallback: $isMyMessage');
+              debugPrint('   ⚠️ Fallback на is_my_message: $isMyMessage');
             }
           }
           
-          debugPrint('🎯 ФИНАЛЬНЫЙ РЕЗУЛЬТАТ isMyMessage: $isMyMessage');
+          debugPrint('🎯 ФИНАЛЬНЫЙ isMyMessage: $isMyMessage');
+          debugPrint('═══════════════════════════════════════════════════════');
           
           if (!isMyMessage) {
             try {
@@ -1696,6 +1727,51 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
         String UUID = prefs.getString('userID') ?? '';
         debugPrint('User UUID: $UUID');
 
+        // ✅ Определяем isMyMessage с учетом типа чата
+        // Специальная логика ТОЛЬКО для лид-чатов
+        bool isMyMessage;
+        final senderType = mm.message?.sender?.type;
+        final senderId = mm.message?.sender?.id.toString();
+        final senderName = mm.message?.sender?.name;
+        final isLeadChat = widget.endPointInTab == 'lead';
+        
+        if (isLeadChat) {
+          // ✅ ЛОГИКА ДЛЯ ЛИД-ЧАТОВ:
+          // sender.type = 'user' → МЕНЕДЖЕР (наша сторона) → показываем СПРАВА
+          // sender.type = 'lead' → КЛИЕНТ (собеседник) → показываем СЛЕВА
+          debugPrint('╔═══════════════════════════════════════════════════════╗');
+          debugPrint('║  📨 LEAD CHAT - Обработка входящего сообщения через сокет  ║');
+          debugPrint('╠═══════════════════════════════════════════════════════╣');
+          debugPrint('║  Отправитель: $senderName (ID: $senderId)');
+          debugPrint('║  Тип отправителя: $senderType');
+          
+          if (senderType == 'user') {
+            isMyMessage = true;
+            debugPrint('║  ✅ РЕЗУЛЬТАТ: sender.type = "user" (МЕНЕДЖЕР)');
+            debugPrint('║  → Показываем СПРАВА (наша сторона)');
+            debugPrint('║  → isMyMessage = TRUE');
+            debugPrint('║  → Имя отображается: ДА (над сообщением)');
+          } else if (senderType == 'lead') {
+            isMyMessage = false;
+            debugPrint('║  ✅ РЕЗУЛЬТАТ: sender.type = "lead" (КЛИЕНТ)');
+            debugPrint('║  → Показываем СЛЕВА (сторона лида)');
+            debugPrint('║  → isMyMessage = FALSE');
+            debugPrint('║  → Имя отображается: ДА (над сообщением)');
+          } else {
+            // Fallback
+            isMyMessage = (UUID == senderId);
+            debugPrint('║  ⚠️ ВНИМАНИЕ: sender.type = "$senderType" (неизвестный)');
+            debugPrint('║  → Используем fallback: проверка по ID');
+            debugPrint('║  → UUID == senderId: $isMyMessage');
+          }
+          debugPrint('╚═══════════════════════════════════════════════════════╝');
+        } else {
+          // ✅ ЛОГИКА ДЛЯ КОРПОРАТИВНЫХ ЧАТОВ И ЗАДАЧ:
+          // Проверяем по ID отправителя
+          isMyMessage = (UUID == senderId);
+          debugPrint('📨 chat.message [CORPORATE/TASK]: Проверяем по ID: UUID=$UUID, senderId=$senderId, isMyMessage=$isMyMessage');
+        }
+        
         Message msg;
         if (mm.message?.type == 'voice' ||
             mm.message?.type == 'file' ||
@@ -1711,8 +1787,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
             filePath: mm.message?.filePath.toString() ?? '',
             text: mm.message?.text ?? mm.message?.type ?? '',
             type: mm.message?.type ?? '',
-            isMyMessage: (UUID == mm.message?.sender?.id.toString() &&
-                mm.message?.sender?.type == 'user'),
+            isMyMessage: isMyMessage,
             createMessateTime: mm.message?.createdAt?.toString() ?? '',
             duration: Duration(
                 seconds: (mm.message?.voiceDuration != null)
@@ -1731,8 +1806,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
             text: mm.message?.text ?? mm.message?.type ?? '',
             type: mm.message?.type ?? '',
             createMessateTime: mm.message?.createdAt?.toString() ?? '',
-            isMyMessage: (UUID == mm.message?.sender?.id.toString() &&
-                mm.message?.sender?.type == 'user'),
+            isMyMessage: isMyMessage,
             senderName: mm.message?.sender?.name ?? 'Unknown sender',
             forwardedMessage: forwardedMessage,
           );
@@ -1787,52 +1861,52 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
         userPresenceChannel.subscribeIfNotUnsubscribed();
       });
       
-      userPresenceChannel.bind('chat.updated').listen((event) async {
-        debugPrint('🔔🔔🔔 CHAT_SMS (USER CHANNEL): Received chat.updated!'); 
+     userPresenceChannel.bind('chat.updated').listen((event) async {
+  debugPrint('🔔🔔🔔 CHAT_SMS (USER CHANNEL): Received chat.updated!');
+  
+  try {
+    final chatData = json.decode(event.data);
+    final eventChatId = chatData['chat']?['id'];
+    
+    debugPrint('🔔🔔🔔 CHAT_SMS (USER CHANNEL): Event chatId: $eventChatId, our chatId: ${widget.chatId}');
+    
+    if (eventChatId == widget.chatId && mounted) {
+      final lastMessage = chatData['chat']?['lastMessage'];
+      final chatUsers = chatData['chat']?['chatUsers'];
+      
+      if (lastMessage != null) {
+        debugPrint('🔔🔔🔔 CHAT_SMS (USER CHANNEL): ✅ Processing new message...');
         
-        try {
-          final chatData = json.decode(event.data);
-          final eventChatId = chatData['chat']?['id'];
-          
-          debugPrint('🔔🔔🔔 CHAT_SMS (USER CHANNEL): Event chatId: $eventChatId, our chatId: ${widget.chatId}');
-          
-          if (eventChatId == widget.chatId && mounted) {
-            final lastMessage = chatData['chat']?['lastMessage'];
-            final chatUsers = chatData['chat']?['chatUsers'];
-            
-            if (lastMessage != null) {
-              debugPrint('🔔🔔🔔 CHAT_SMS (USER CHANNEL): ✅ Processing new message...');
-              
               debugPrint('═══════════════════════════════════════════════════════');
               debugPrint('📨 FULL EVENT: ${event.data}');
               debugPrint('═══════════════════════════════════════════════════════');
               
-              final prefs = await SharedPreferences.getInstance();
-              final myUserId = prefs.getString('userID') ?? '';
-              final myUniqueId = prefs.getString('unique_id') ?? '';
-              
-              debugPrint('🔔🔔🔔 CHAT_SMS: My IDs - userID=$myUserId, unique_id=$myUniqueId');
-              
+        final prefs = await SharedPreferences.getInstance();
+        final myUserId = prefs.getString('userID') ?? '';
+        final myUniqueId = prefs.getString('unique_id') ?? '';
+        
+        debugPrint('🔔🔔🔔 CHAT_SMS: My IDs - userID=$myUserId, unique_id=$myUniqueId');
+        
               // ✅ ИСПРАВЛЕНИЕ: Используем кэшированное имя собеседника
               String senderName = _cachedCompanionName ?? 'Собеседник';
-              String myName = 'Вы';
-              
+        String myName = 'Вы';
+        
               debugPrint('📝 Используем имя собеседника: $senderName (из кэша: $_cachedCompanionName)');
               
               // Если в текущем событии есть chatUsers - обновляем имена и кэш
-              if (chatUsers != null && chatUsers is List && chatUsers.isNotEmpty) {
-                for (var user in chatUsers) {
-                  if (user['participant'] != null) {
-                    final participantId = user['participant']?['id']?.toString() ?? '';
-                    final participantName = user['participant']?['name'] ?? '';
+        if (chatUsers != null && chatUsers is List && chatUsers.isNotEmpty) {
+          for (var user in chatUsers) {
+            if (user['participant'] != null) {
+              final participantId = user['participant']?['id']?.toString() ?? '';
+              final participantName = user['participant']?['name'] ?? '';
                     final participantLastname = user['participant']?['lastname'] ?? '';
                     
                     String fullName = participantName;
                     if (participantLastname.isNotEmpty) {
                       fullName = '$participantName $participantLastname';
                     }
-                    
-                    if (participantId == myUserId) {
+              
+              if (participantId == myUserId) {
                       myName = fullName;
                       debugPrint('   📝 Найдено мое имя: $myName (ID: $participantId)');
                     } else if (participantId.isNotEmpty && participantName.isNotEmpty) {
@@ -1849,109 +1923,173 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
                 }
               }
               
+              // ✅ ПРАВИЛЬНАЯ ЛОГИКА: Проверяем sender из сообщения
+              debugPrint('═══════════════════════════════════════════════════════');
+              debugPrint('🔍 USER CHANNEL - Определяем отправителя сообщения');
+              debugPrint('lastMessage[sender]: ${lastMessage['sender']}');
+              
               String? messageSenderId;
               String? messageSenderType;
               
+              // Извлекаем sender.id и sender.type
               if (lastMessage['sender'] != null && lastMessage['sender'] is Map) {
-                messageSenderId = lastMessage['sender']['id']?.toString() ?? '';
-                messageSenderType = lastMessage['sender']['type']?.toString() ?? 'user';
-              } else if (lastMessage['sender_id'] != null) {
-                messageSenderId = lastMessage['sender_id']?.toString() ?? '';
-                messageSenderType = lastMessage['sender_type']?.toString() ?? 'user';
-              } else if (lastMessage['user_id'] != null) {
-                messageSenderId = lastMessage['user_id']?.toString() ?? '';
-                messageSenderType = 'user';
+                messageSenderId = lastMessage['sender']['id']?.toString();
+                messageSenderType = lastMessage['sender']['type']?.toString();
+                debugPrint('✅ Найден sender: id=$messageSenderId, type=$messageSenderType');
               }
               
-              debugPrint('🔔🔔🔔 CHAT_SMS: Message sender - id=$messageSenderId, type=$messageSenderType');
-              
               bool isMyMessage = false;
+              final bool isLeadChat = widget.endPointInTab == 'lead';
               
-              if (messageSenderId != null && messageSenderId.isNotEmpty) {
-                isMyMessage = (messageSenderId == myUserId && messageSenderType == 'user');
-                debugPrint('✅ Путь 1: sender_id НАЙДЕН → используем сравнение sender_id');
-                debugPrint('   Сравнение: "$messageSenderId" == "$myUserId" && "$messageSenderType" == "user"');
-                debugPrint('   Результат: $isMyMessage');
-              } else {
-                // ✅ Путь 2: sender_id НЕ НАЙДЕН → определяем по chatUsers
-                debugPrint('✅ Путь 2: sender_id НЕ НАЙДЕН → определяем по chatUsers');
+              if (isLeadChat && messageSenderType != null) {
+                // ✅ ЛОГИКА ДЛЯ ЛИД-ЧАТОВ:
+                // 1. sender.type == 'user' → сообщение от МЕНЕДЖЕРА (наша сторона) → показываем СПРАВА
+                // 2. sender.type == 'lead' → сообщение от ЛИДА (клиент) → показываем СЛЕВА
+                // ВАЖНО: На одного лида может отвечать несколько менеджеров, поэтому показываем имя
                 
-                // Ищем ПЕРВОГО participant с id в chatUsers
+                debugPrint('╔═══════════════════════════════════════════════════════╗');
+                debugPrint('║  🔄 LEAD CHAT - chat.updated (участники чата)            ║');
+                debugPrint('╠═══════════════════════════════════════════════════════╣');
+                debugPrint('║  sender.id: $messageSenderId');
+                debugPrint('║  sender.type: $messageSenderType');
+                debugPrint('║  Мой ID: $myUserId');
+                
+                if (messageSenderType == 'user') {
+                  // ЛЮБОЙ менеджер (user) - это НАША сторона
+                  isMyMessage = true;
+                  debugPrint('║  ✅ РЕЗУЛЬТАТ: sender.type = "user" (МЕНЕДЖЕР)');
+                  debugPrint('║  → Показываем СПРАВА (наша сторона)');
+                  debugPrint('║  → isMyMessage = TRUE');
+                } else if (messageSenderType == 'lead') {
+                  // Лид - это КЛИЕНТ (собеседник)
+                  isMyMessage = false;
+                  debugPrint('║  ✅ РЕЗУЛЬТАТ: sender.type = "lead" (КЛИЕНТ)');
+                  debugPrint('║  → Показываем СЛЕВА (сторона лида)');
+                  debugPrint('║  → isMyMessage = FALSE');
+                } else {
+                  // Неизвестный тип - проверяем по ID для безопасности
+                  isMyMessage = (messageSenderId == myUserId);
+                  debugPrint('║  ⚠️ ВНИМАНИЕ: sender.type = "$messageSenderType" (неизвестный)');
+                  debugPrint('║  → Используем fallback: проверка по ID');
+                  debugPrint('║  → isMyMessage = $isMyMessage');
+                }
+                debugPrint('╚═══════════════════════════════════════════════════════╝');
+              } else if (messageSenderId != null && messageSenderId.isNotEmpty) {
+                // ✅ ЛОГИКА ДЛЯ КОРПОРАТИВНЫХ ЧАТОВ И ЗАДАЧ:
+                // Проверяем по ID отправителя
+                isMyMessage = (messageSenderId == myUserId);
+                debugPrint('⚠️ Путь 1D [CORPORATE/TASK]: sender.type НЕ НАЙДЕН или не лид → проверяем только ID');
+                debugPrint('   Результат isMyMessage: $isMyMessage');
+              } else {
+                // Если sender.id нет - определяем по chatUsers (инвертированная логика)
+                debugPrint('⚠️ Путь 2: sender.id НЕ НАЙДЕН → используем chatUsers');
+                
                 String? foundParticipantId;
                 if (chatUsers != null && chatUsers is List) {
                   for (var user in chatUsers) {
                     if (user['participant'] != null && user['participant']['id'] != null) {
                       foundParticipantId = user['participant']['id']?.toString();
-                      debugPrint('   Найден participant с id: $foundParticipantId');
-                      break; // Берем первого найденного
+                      debugPrint('   Найден participant.id: $foundParticipantId');
+                      break;
                     }
                   }
                 }
                 
                 if (foundParticipantId != null) {
-                  // КРИТИЧЕСКАЯ ЛОГИКА:
-                  // Если participant.id == myUserId → это сообщение ОТ СОБЕСЕДНИКА
-                  // Если participant.id != myUserId → это МОЕ сообщение
+                  // ИНВЕРТИРОВАННАЯ логика для chatUsers
                   isMyMessage = (foundParticipantId != myUserId);
-                  debugPrint('   🎯 Сравнение ИНВЕРТИРОВАННОЕ: foundParticipantId($foundParticipantId) != myUserId($myUserId)');
-                  debugPrint('   Результат: $isMyMessage');
+                  debugPrint('   Сравнение ИНВЕРТИРОВАННОЕ: participant.id($foundParticipantId) != myUserId($myUserId)');
+                  debugPrint('   Результат isMyMessage: $isMyMessage');
                 } else {
-                  // Fallback
                   isMyMessage = lastMessage['is_my_message'] ?? false;
-                  debugPrint('   ⚠️ Participant не найден, fallback: $isMyMessage');
+                  debugPrint('   ⚠️ Fallback на is_my_message: $isMyMessage');
                 }
               }
               
-              final displaySenderName = isMyMessage ? myName : senderName;
+              debugPrint('🎯 ФИНАЛЬНЫЙ isMyMessage: $isMyMessage');
+              debugPrint('═══════════════════════════════════════════════════════');
               
-              debugPrint('🔔🔔🔔 CHAT_SMS: Final - isMyMessage=$isMyMessage, senderName=$displaySenderName');
+              // ✅ Определяем имя отправителя с учетом типа
+              String displaySenderName;
               
-              final newMessage = Message(
-                id: lastMessage['id'] ?? 0,
-                text: lastMessage['text'] ?? '',
-                type: lastMessage['type'] ?? 'text',
-                filePath: lastMessage['file_path'],
-                isMyMessage: isMyMessage,
-                createMessateTime: lastMessage['created_at'] ?? '',
-                senderName: displaySenderName,
-                duration: Duration(
-                  seconds: lastMessage['voice_duration'] != null 
-                    ? double.tryParse(lastMessage['voice_duration'].toString())?.round() ?? 20
-                    : 20
-                ),
-                isPinned: lastMessage['is_pinned'] ?? false,
-                isChanged: lastMessage['is_changed'] ?? false,
-                isNote: lastMessage['is_note'] ?? false,
-              );
-              
-              debugPrint('🔔🔔🔔 CHAT_SMS (USER CHANNEL): Message created with CORRECT isMyMessage: ${newMessage.isMyMessage}');
-              
-              context.read<MessagingCubit>().updateMessageFromSocket(newMessage);
-              
-              Future.delayed(Duration(milliseconds: 100), () {
-                if (mounted) {
-                  _scrollToBottom();
-                }
-              });
-              
-              if (!isMyMessage) {
-                try {
-                  await _audioPlayer.setAsset('assets/audio/get.mp3');
-                  await _audioPlayer.play();
-                  debugPrint('🔔🔔🔔 CHAT_SMS (USER CHANNEL): ✅ Played sound for INCOMING message');
-                } catch (e) {
-                  debugPrint('⚠️ CHAT_SMS (USER CHANNEL): Sound error: $e');
+              // Сначала пытаемся получить имя из sender в сообщении
+              if (lastMessage['sender'] != null && lastMessage['sender'] is Map) {
+                final senderNameFromMessage = lastMessage['sender']['name']?.toString();
+                
+                if (messageSenderType == 'user' && messageSenderId != null) {
+                  // Для менеджера (user):
+                  if (messageSenderId == myUserId) {
+                    // Это Я - показываем мое имя или "Вы"
+                    displaySenderName = myName;
+                    debugPrint('📝 Имя отправителя: $displaySenderName (я сам)');
+                  } else {
+                    // Это другой менеджер - показываем его имя
+                    displaySenderName = senderNameFromMessage ?? senderName;
+                    debugPrint('📝 Имя отправителя: $displaySenderName (другой менеджер)');
+                  }
+                } else if (messageSenderType == 'lead') {
+                  // Для лида - показываем имя из sender или из кэша
+                  displaySenderName = senderNameFromMessage ?? senderName;
+                  debugPrint('📝 Имя отправителя: $displaySenderName (лид)');
+                } else {
+                  // Для неизвестного типа - обычная логика
+                  displaySenderName = isMyMessage ? myName : (senderNameFromMessage ?? senderName);
+                  debugPrint('📝 Имя отправителя: $displaySenderName (обычная логика)');
                 }
               } else {
-                debugPrint('🔔🔔🔔 CHAT_SMS (USER CHANNEL): Skipped sound - message is from ME');
+                // Если нет sender в сообщении - используем старую логику
+                displaySenderName = isMyMessage ? myName : senderName;
+                debugPrint('📝 Имя отправителя: $displaySenderName (из кэша)');
               }
-            }
+        
+        debugPrint('🔔🔔🔔 CHAT_SMS: Final - isMyMessage=$isMyMessage, displaySenderName=$displaySenderName');
+        
+        final newMessage = Message(
+          id: lastMessage['id'] ?? 0,
+          text: lastMessage['text'] ?? '',
+          type: lastMessage['type'] ?? 'text',
+          filePath: lastMessage['file_path'],
+                isMyMessage: isMyMessage,
+          createMessateTime: lastMessage['created_at'] ?? '',
+          senderName: displaySenderName,
+          duration: Duration(
+            seconds: lastMessage['voice_duration'] != null 
+              ? double.tryParse(lastMessage['voice_duration'].toString())?.round() ?? 20
+              : 20
+          ),
+          isPinned: lastMessage['is_pinned'] ?? false,
+          isChanged: lastMessage['is_changed'] ?? false,
+          isNote: lastMessage['is_note'] ?? false,
+        );
+        
+        debugPrint('🔔🔔🔔 CHAT_SMS (USER CHANNEL): Message created with CORRECT isMyMessage: ${newMessage.isMyMessage}');
+        
+        context.read<MessagingCubit>().updateMessageFromSocket(newMessage);
+        
+        Future.delayed(Duration(milliseconds: 100), () {
+          if (mounted) {
+            _scrollToBottom();
           }
-        } catch (e, stackTrace) {
-          debugPrint('❌ CHAT_SMS (USER CHANNEL): Error: $e');
-          debugPrint('❌ CHAT_SMS (USER CHANNEL): StackTrace: $stackTrace');
+        });
+        
+        if (!isMyMessage) {
+          try {
+            await _audioPlayer.setAsset('assets/audio/get.mp3');
+            await _audioPlayer.play();
+            debugPrint('🔔🔔🔔 CHAT_SMS (USER CHANNEL): ✅ Played sound for INCOMING message');
+          } catch (e) {
+            debugPrint('⚠️ CHAT_SMS (USER CHANNEL): Sound error: $e');
+          }
+        } else {
+          debugPrint('🔔🔔🔔 CHAT_SMS (USER CHANNEL): Skipped sound - message is from ME');
         }
-      });
+      }
+    }
+  } catch (e, stackTrace) {
+    debugPrint('❌ CHAT_SMS (USER CHANNEL): Error: $e');
+    debugPrint('❌ CHAT_SMS (USER CHANNEL): StackTrace: $stackTrace');
+  }
+});
       
       debugPrint('✅✅✅ CHAT_SMS: User channel listener registered');
     }
@@ -2208,6 +2346,9 @@ class MessageItemWidget extends StatelessWidget {
           : message.forwardedMessage!.text;
     }
 
+    // Определяем, является ли чат лид-чатом
+    final bool isLeadChat = endPointInTab == 'lead';
+    
     switch (message.type) {
       case 'text':
         return MessageBubble(
@@ -2224,6 +2365,7 @@ class MessageItemWidget extends StatelessWidget {
           isChanged: message.isChanged,
           isRead: message.isRead,
           isNote: message.isNote,
+          isLeadChat: isLeadChat,
         );
       case 'image':
         return ImageMessageBubble(
@@ -2236,6 +2378,7 @@ class MessageItemWidget extends StatelessWidget {
           replyMessage: replyMessageText,
           isHighlighted: highlightedMessageId == message.id,
           isRead: message.isRead,
+          isLeadChat: isLeadChat,
         );
       case 'file':
       case 'document':
@@ -2245,6 +2388,7 @@ class MessageItemWidget extends StatelessWidget {
           filePath: message.filePath ?? 'Unknown file format',
           fileName: message.text,
           isHighlighted: highlightedMessageId == message.id,
+          isLeadChat: isLeadChat,
           onTap: (path) async {
             if (message.filePath != null && message.filePath!.isNotEmpty) {
               try {
@@ -2267,6 +2411,7 @@ class MessageItemWidget extends StatelessWidget {
         return VoiceMessageWidget(
           message: message,
           baseUrl: baseUrl,
+          isLeadChat: isLeadChat,
         );
       default:
         return SizedBox();

@@ -45,7 +45,7 @@ class WareHouseDeletion extends StatelessWidget {
         title: Center(
           child: Text(
             AppLocalizations.of(context)!.translate('delete_warehouse') ??
-                'Удалить единицу измерения',
+                'Удалить',
             style: const TextStyle(
               fontSize: 20,
               fontFamily: 'Gilroy',

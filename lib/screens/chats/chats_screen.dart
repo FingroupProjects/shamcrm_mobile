@@ -58,6 +58,7 @@ class _ChatsScreenState extends State<ChatsScreen>
 
   bool _showCorporateChat = false;
   bool _showLeadChat = false;
+  bool _showTaskChat = false;
   bool _isPermissionsChecked = false;
   bool _isSearching = false;
   String searchQuery = '';
@@ -87,27 +88,31 @@ class _ChatsScreenState extends State<ChatsScreen>
   Future<void> _checkPermissions() async {
     final LeadChat = await apiService.hasPermission('chat.read');
     final CorporateChat = await apiService.hasPermission('corporateChat.read');
+    final TaskChat = await apiService.hasPermission('task.read');
 
     setState(() {
       _showLeadChat = LeadChat;
       _showCorporateChat = CorporateChat;
+      _showTaskChat = TaskChat;
 
-      if (!_showLeadChat && !_showCorporateChat) {
+      // Определяем начальную вкладку в зависимости от доступных прав
+      // Приоритет: Задачи -> Лиды -> Корпоративный чат
+      if (TaskChat) {
         selectTabIndex = 1;
         endPointInTab = 'task';
         _chatsBlocs['task']!.add(FetchChats(endPoint: 'task'));
-      } else if (!_showLeadChat) {
-        selectTabIndex = 1;
-        endPointInTab = 'task';
-        _chatsBlocs['task']!.add(FetchChats(endPoint: 'task'));
-      } else if (!_showCorporateChat) {
+      } else if (LeadChat) {
         selectTabIndex = 0;
         endPointInTab = 'lead';
         _chatsBlocs['lead']!.add(FetchChats(endPoint: 'lead'));
+      } else if (CorporateChat) {
+        selectTabIndex = 2;
+        endPointInTab = 'corporate';
+        _chatsBlocs['corporate']!.add(FetchChats(endPoint: 'corporate'));
       } else {
+        // Если нет доступа ни к одной вкладке, выбираем первую доступную
         selectTabIndex = 0;
         endPointInTab = 'lead';
-        _chatsBlocs['lead']!.add(FetchChats(endPoint: 'lead'));
       }
       _isPermissionsChecked = true;
     });
@@ -1091,6 +1096,7 @@ Future<void> updateFromSocket({required Chats chat}) async {
                           child: Row(
                             children: List.generate(_tabTitles.length, (index) {
                               if ((index == 0 && !_showLeadChat) ||
+                                  (index == 1 && !_showTaskChat) ||
                                   (index == 2 && !_showCorporateChat)) {
                                 return Container();
                               }
@@ -1198,6 +1204,16 @@ Future<void> updateFromSocket({required Chats chat}) async {
               : index == 1
                   ? 'task'
                   : 'corporate';
+          
+          // Скрываем содержимое вкладок, к которым нет доступа
+          bool hasAccess = (index == 0 && _showLeadChat) ||
+                          (index == 1 && _showTaskChat) ||
+                          (index == 2 && _showCorporateChat);
+          
+          if (!hasAccess) {
+            return Container(); // Пустой контейнер для недоступных вкладок
+          }
+          
           return BlocProvider.value(
             value: _chatsBlocs[endPoint]!,
             child: _ChatItemsWidget(
