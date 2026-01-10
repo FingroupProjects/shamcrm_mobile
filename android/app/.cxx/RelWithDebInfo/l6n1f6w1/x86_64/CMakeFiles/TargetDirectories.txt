@@ -1,0 +1,2 @@
+C:/Users/dilsh/Desktop/PROJ/app/test_new_version_2/shamcrm_mobile/android/app/.cxx/RelWithDebInfo/l6n1f6w1/x86_64/CMakeFiles/edit_cache.dir
+C:/Users/dilsh/Desktop/PROJ/app/test_new_version_2/shamcrm_mobile/android/app/.cxx/RelWithDebInfo/l6n1f6w1/x86_64/CMakeFiles/rebuild_cache.dir

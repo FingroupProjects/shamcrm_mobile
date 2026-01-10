@@ -35,18 +35,15 @@ class DashboardChartBlocManager extends Bloc<DashboardChartEventManager, Dashboa
       List<ChartDataManager>? cachedData = await LeadChartCacheHandlerManager.getLeadChartDataManager();
 
       if (cachedData != null) {
-        print("📦 Найдены данные графика в кеше.");
         emit(DashboardChartLoadedManager(chartData: cachedData)); // Отправка данных из кеша
       }
 
       // 2. Проверка наличия интернет-соединения
       if (await _checkInternetConnection()) {
-        print("🌐 Интернет подключен. Получаем данные с сервера...");
         final chartData = await _apiService.getLeadChartManager(); // Получаем данные с сервера
 
         // Если кешированные данные пусты или данные с сервера отличаются от кешированных, обновляем кеш и UI
         if (cachedData == null || !_areChartDataEqual(chartData, cachedData)) {
-          print("✅ Получены новые данные с сервера. Обновляем кеш и UI.");
 
           // Сохраняем новые данные в кеш
           await LeadChartCacheHandlerManager.saveLeadChartDataManager(chartData);
@@ -54,10 +51,8 @@ class DashboardChartBlocManager extends Bloc<DashboardChartEventManager, Dashboa
           // Отправляем новые данные в UI
           emit(DashboardChartLoadedManager(chartData: chartData));
         } else {
-          print("🔄 КЛИЕНТЫ Данные с сервера совпадают с кешированными. Обновление не требуется.");
         }
       } else {
-        print("🚫 Нет интернет-соединения.");
         if (cachedData == null) {
           emit(DashboardChartErrorManager(message: "Нет данных и нет интернет-соединения.")); // Ошибка при отсутствии данных и соединения
         }

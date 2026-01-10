@@ -1,14 +1,16 @@
+import 'package:crm_task_manager/models/deal_model.dart';
+
 class LeadDeal {
   final int id;
   final String startDate;
   final String lastseen;
-
   final String name;
   final String? description;
   final String sum;
   final String endDate;
   final dynamic contract;
   final OrganizationLeadDeals organization;
+  final DealStatus dealStatus;
 
   LeadDeal({
     required this.id,
@@ -20,6 +22,7 @@ class LeadDeal {
     required this.endDate,
     this.contract,
     required this.organization,
+    required this.dealStatus,
   });
 
   factory LeadDeal.fromJson(Map<String, dynamic> json) {
@@ -33,6 +36,7 @@ class LeadDeal {
       endDate: json['end_date'] ?? '',
       contract: json['contract'],
       organization: OrganizationLeadDeals.fromJson(json['organization']),
+      dealStatus: DealStatus.fromJson(json['deal_status']),
     );
   }
 }

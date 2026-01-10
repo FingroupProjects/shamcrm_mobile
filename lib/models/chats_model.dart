@@ -1,5 +1,26 @@
+import 'package:crm_task_manager/models/integration_model.dart';
 import 'package:crm_task_manager/models/task_model.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/chats_items.dart';
+
+class Integration {
+  final int? id;
+  final String? name;
+  final String? username;
+
+  Integration({
+    this.id,
+    this.name,
+    this.username,
+  });
+
+  factory Integration.fromJson(Map<String, dynamic> json) {
+    return Integration(
+      id: json['id'] as int?,
+      name: json['name'] as String?,
+      username: json['username'] as String?,
+    );
+  }
+}
 
 class Chats {
   final int id;
@@ -8,17 +29,21 @@ class Chats {
   final String? taskFrom;
   final String? taskTo;
   final String? description;
-  final String channel;
+  final String channel; // Это поле будет содержать channel.name
   final String lastMessage;
   final String? messageType;
   final String createDate;
-  final int unredMessage;
+  int unreadCount;
   final bool canSendMessage;
   final String? type;
   final List<ChatUser> chatUsers;
   final Group? group;
   final Task? task;
-  final ChatUser? user; // добавим поле user
+  final ChatUser? user;
+  final String? customName;
+  final String? customImage;
+  final Channel? channelObj; // Новое поле для полного объекта Channel
+  final Integration? integration; // Новое поле для объекта Integration
 
   Chats({
     required this.id,
@@ -31,16 +56,24 @@ class Chats {
     required this.lastMessage,
     this.messageType,
     required this.createDate,
-    required this.unredMessage,
+    required this.unreadCount,
     required this.canSendMessage,
     this.type,
     required this.chatUsers,
     this.group,
     this.task,
-    this.user, // добавим в конструктор
+    this.user,
+    this.customName,
+    this.customImage,
+    this.channelObj,
+    this.integration,
   });
 
-  factory Chats.fromJson(Map<String, dynamic> json) {
+  factory Chats.fromJson(
+    Map<String, dynamic> json, {
+    String? supportChatName,
+    String? supportChatImage,
+  }) {
     List<ChatUser> users = [];
     if (json['chatUsers'] != null) {
       for (var userJson in json['chatUsers']) {
@@ -57,14 +90,23 @@ class Chats {
     if (json['task'] != null) {
       task = Task.fromJson(json['task'], json['task']['status_id'] ?? 0);
     }
+
     ChatUser? user;
     if (json['user'] != null) {
       user = ChatUser.fromJson({'participant': json['user']});
     }
+
+    String? customName;
+    String? customImage;
+    if (json['type'] == 'support') {
+      customName = json['type'];
+      customImage = supportChatImage ?? 'assets/icons/Profile/image.png';
+    }
+
     return Chats(
       id: json['id'] ?? 0,
       name: json['user'] != null
-          ? json['user']['name']
+          ? json['user']['name'] ?? 'Без имени'
           : json['task'] != null
               ? json['task']['name'] ?? ''
               : json['lead'] != null
@@ -72,36 +114,34 @@ class Chats {
                   : '',
       image: json['image'] ?? '',
       user: user,
-      createDate: json['task'] != null
-          ? json['task']['created_at'] ?? ''
-          : json['lead'] != null
-              ? json['lead']['created_at'] ?? ''
-              : '',
-      unredMessage: json['task'] != null
-          ? json['task']['unread_messages_count'] ?? 0
-          : json['lead'] != null
-              ? json['lead']['unread_messages_count'] ?? 0
-              : 0,
+      customName: customName,
+      customImage: customImage,
+      createDate: json['lastMessage'] != null
+          ? json['lastMessage']['created_at'] ?? ''
+          : '',
+      unreadCount: json['unread_count'] ?? 0,
       taskFrom: json['task'] != null ? json['task']['from'] ?? '' : '',
       taskTo: json['task'] != null ? json['task']['to'] ?? '' : '',
-      description:
-          json['task'] != null ? json['task']['description'] ?? '' : '',
+      description: json['task'] != null ? json['task']['description'] ?? '' : '',
       channel: json['channel'] != null ? json['channel']['name'] ?? '' : '',
       lastMessage: json['lastMessage'] != null
           ? _getLastMessageText(json['lastMessage'])
           : '',
-      messageType:
-          json['lastMessage'] != null ? json['lastMessage']['type'] ?? '' : '',
-      canSendMessage: json["can_send_message"] ?? false,
+      messageType: json['lastMessage'] != null ? json['lastMessage']['type'] ?? '' : '',
+      canSendMessage: json['can_send_message'] ?? false,
       type: json['type'],
       chatUsers: users,
       group: group,
       task: task,
+      channelObj: json['channel'] != null ? Channel.fromJson(json['channel']) : null,
+      integration: json['integration'] != null ? Integration.fromJson(json['integration']) : null,
     );
   }
 
   String? get displayName {
-    if (group != null && group!.name.isNotEmpty) {
+    if (type == 'support' && customName != null) {
+      return customName;
+    } else if (group != null && group!.name.isNotEmpty) {
       return group!.name;
     } else if (task != null && task!.name!.isNotEmpty) {
       return task!.name;
@@ -134,22 +174,66 @@ class Chats {
     }
   }
 
-   ChatItem toChatItem() {
+  Chats copyWith({
+    int? id,
+    String? name,
+    String? image,
+    String? taskFrom,
+    String? taskTo,
+    String? description,
+    String? channel,
+    String? lastMessage,
+    String? messageType,
+    String? createDate,
+    int? unreadCount,
+    bool? canSendMessage,
+    String? type,
+    List<ChatUser>? chatUsers,
+    Group? group,
+    Task? task,
+    ChatUser? user,
+    String? customName,
+    String? customImage,
+    Channel? channelObj,
+    Integration? integration,
+  }) {
+    return Chats(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      image: image ?? this.image,
+      taskFrom: taskFrom ?? this.taskFrom,
+      taskTo: taskTo ?? this.taskTo,
+      description: description ?? this.description,
+      channel: channel ?? this.channel,
+      lastMessage: lastMessage ?? this.lastMessage,
+      messageType: messageType ?? this.messageType,
+      createDate: createDate ?? this.createDate,
+      unreadCount: unreadCount ?? this.unreadCount,
+      canSendMessage: canSendMessage ?? this.canSendMessage,
+      type: type ?? this.type,
+      chatUsers: chatUsers ?? this.chatUsers,
+      group: group ?? this.group,
+      task: task ?? this.task,
+      user: user ?? this.user,
+      customName: customName ?? this.customName,
+      customImage: customImage ?? this.customImage,
+      channelObj: channelObj ?? this.channelObj,
+      integration: integration ?? this.integration,
+    );
+  }
+
+  ChatItem toChatItem() {
     String avatar;
-    if (group != null) {
+    if (type == 'support' && customImage != null) {
+      avatar = customImage!;
+    } else if (group != null) {
       avatar = "assets/images/GroupChat.png";
     } else if (chatUsers.isNotEmpty) {
-      // Получаем ID текущего пользователя из поля user
       int currentUserId = user?.id ?? 0;
-      print('Current user ID: $currentUserId'); // для отладки
-      
       if (chatUsers.length > 1) {
         if (chatUsers[1].id == currentUserId) {
-          // Если первый пользователь - это текущий пользователь,
-          // показываем аватар второго
           avatar = chatUsers[1].image;
         } else {
-          // Иначе показываем аватар первого
           avatar = chatUsers[0].image;
         }
       } else {
@@ -158,14 +242,14 @@ class Chats {
     } else {
       avatar = "assets/images/AvatarChat.png";
     }
-    
+
     return ChatItem(
       displayName!,
       lastMessage,
       createDate,
       avatar,
       _mapChannelToIcon(channel),
-      unredMessage,
+      unreadCount,
     );
   }
 
@@ -176,6 +260,7 @@ class Chats {
       'whatsapp': 'assets/icons/leads/whatsapp.png',
       'instagram': 'assets/icons/leads/instagram.png',
       'facebook': 'assets/icons/leads/facebook.png',
+      'email': 'assets/icons/leads/email.png',
     };
     return channelIconMap[channel] ?? 'assets/icons/leads/default.png';
   }
@@ -274,7 +359,13 @@ class Message {
   bool isPause;
   Duration duration;
   Duration position;
-  final ForwardedMessage? forwardedMessage; // Новое поле для forwarded_message_id
+  final ForwardedMessage? forwardedMessage;
+  bool isPinned;
+  bool isChanged;
+  bool isRead;
+  final bool isNote; // Новое поле
+  final ReadStatus? readStatus;
+  final String? referralBody;
 
   Message({
     required this.id,
@@ -288,45 +379,106 @@ class Message {
     this.isPause = false,
     this.duration = const Duration(),
     this.position = const Duration(),
-    this.forwardedMessage, // Добавление поля в конструктор
+    this.forwardedMessage,
+    this.isPinned = false,
+    this.isChanged = false,
+    this.isNote = false, // Инициализация по умолчанию
+    this.isRead = false,
+    this.readStatus,
+    this.referralBody,
   });
+
+  // Метод copyWith
+  Message copyWith({
+    int? id,
+    String? text,
+    String? type,
+    String? filePath,
+    bool? isMyMessage,
+    String? createMessateTime,
+    bool? isPlaying,
+    String? senderName,
+    bool? isPause,
+    Duration? duration,
+    Duration? position,
+    ForwardedMessage? forwardedMessage,
+    bool? isPinned,
+    bool? isChanged,
+    bool? isRead,
+    bool? isNote, // Новое поле
+
+    ReadStatus? readStatus,
+  }) {
+    return Message(
+      id: id ?? this.id,
+      text: text ?? this.text,
+      type: type ?? this.type,
+      filePath: filePath ?? this.filePath,
+      isMyMessage: isMyMessage ?? this.isMyMessage,
+      createMessateTime: createMessateTime ?? this.createMessateTime,
+      isPlaying: isPlaying ?? this.isPlaying,
+      senderName: senderName ?? this.senderName,
+      isPause: isPause ?? this.isPause,
+      duration: duration ?? this.duration,
+      position: position ?? this.position,
+      forwardedMessage: forwardedMessage ?? this.forwardedMessage,
+      isPinned: isPinned ?? this.isPinned,
+      isChanged: isChanged ?? this.isChanged,
+      isRead: isRead ?? this.isRead,
+      readStatus: readStatus ?? this.readStatus,
+      isNote: isNote ?? this.isNote, // Новое поле
+    );
+  }
 
   factory Message.fromJson(Map<String, dynamic> json) {
     String text;
-
-    // Если тип сообщения 'file', используем text напрямую
     if (json['type'] == 'file') {
-      text = json['text'] ?? 'unknown_file'; // Используем text для имени файла
+      text = json['text'] ?? 'unknown_file';
     } else {
       text = json['text'] ?? '';
     }
-
-    // Извлечение forwarded_message_id
     ForwardedMessage? forwardedMessage;
     if (json['forwarded_message'] != null) {
       forwardedMessage = ForwardedMessage.fromJson(json['forwarded_message']);
     }
-
+    ReadStatus? readStatus;
+    try {
+      if (json['read_status'] != null) {
+        readStatus = ReadStatus.fromJson(json['read_status']);
+      }
+    } catch (e) {
+      print('Error parsing read_status: $e');
+      readStatus = null;
+    }
     return Message(
-      id: json['id'],
-      text: text,
-      type: json['type'],
-      senderName: json['sender'] == null
-          ? 'Без имени'
-          : json['sender']['name'] ?? 'Без имени',
-      createMessateTime: json['created_at'] ?? '',
-      filePath: json['file_path'],
-      isMyMessage: json['is_my_message'] ?? false,
-      forwardedMessage: forwardedMessage, // Установка значения forwardedMessage
-    );
+        id: json['id'],
+        text: text,
+        type: json['type'],
+        senderName: json['sender'] == null
+            ? 'Без имени'
+            : json['sender']['name'] ?? 'Без имени',
+        referralBody: json['chat']?['referral_body'],
+        createMessateTime: json['created_at'] ?? '',
+        filePath: json['file_path'],
+        isPinned: json['is_pinned'] ?? false,
+        isChanged: json['is_changed'] ?? false,
+        isMyMessage: json['is_my_message'] ?? false,
+        forwardedMessage: forwardedMessage,
+        isRead: json['is_read'] ?? false,
+        readStatus: readStatus,
+        isNote: json['is_note'] ?? false, // Парсинг is_note
+        duration: Duration(
+          seconds: json['voice_duration'] != null
+              ? double.tryParse(json['voice_duration'].toString())?.round() ?? 0
+              : 20,
+        ));
   }
 
   @override
   String toString() {
-    return 'Message{id: $id, text: $text, type: $type, filePath: $filePath, isMyMessage: $isMyMessage, isPlaying: $isPlaying, isPause: $isPause, duration: $duration, position: $position, forwardedMessage: $forwardedMessage}';
+    return 'Message{id: $id, text: $text, type: $type, filePath: $filePath, isMyMessage: $isMyMessage, isPlaying: $isPlaying, isPause: $isPause, duration: $duration, position: $position, forwardedMessage: $forwardedMessage, isPinned: $isPinned, isChanged: $isChanged, isRead: $isRead, readStatus: $readStatus}';
   }
 }
-
 
 class ForwardedMessage {
   final int id;
@@ -356,6 +508,114 @@ class ForwardedMessage {
   }
 }
 
+class ReadStatus {
+  final List<User> read;
+  final List<User> unread;
 
+  ReadStatus({
+    required this.read,
+    required this.unread,
+  });
 
+  factory ReadStatus.fromJson(Map<String, dynamic> json) {
+    return ReadStatus(
+      read: (json['read'] as List<dynamic>?)?.map((e) {
+            DateTime? readAt =
+                e['read_at'] != null ? DateTime.tryParse(e['read_at']) : null;
+            return User.fromJson(e['user'], readAt);
+          }).toList() ??
+          [],
+      unread: (json['unread'] as List<dynamic>?)
+              ?.map((e) => User.fromJson(e['user'], null))
+              .toList() ??
+          [],
+    );
+  }
+}
 
+class ReadUser {
+  final int userId;
+  final String readAt;
+  final User user;
+
+  ReadUser({
+    required this.userId,
+    required this.readAt,
+    required this.user,
+  });
+
+  @override
+  String toString() {
+    return 'ReadUser{userId: $userId, readAt: $readAt, user: $user}';
+  }
+}
+
+class User {
+  final int id;
+  final String name;
+  final String lastname;
+  final String? login;
+  final String? email;
+  final String? phone;
+  final String? image;
+  final DateTime? lastSeen;
+  final DateTime? deletedAt;
+  final String? telegramUserId;
+  final String? jobTitle;
+  final bool? online;
+  final String fullName;
+  final DateTime? readAt;
+
+  User({
+    required this.id,
+    required this.name,
+    required this.lastname,
+    required this.login,
+    required this.email,
+    required this.phone,
+    required this.image,
+    required this.lastSeen,
+    this.deletedAt,
+    this.telegramUserId,
+    this.jobTitle,
+    this.online,
+    required this.fullName,
+    this.readAt,
+  });
+
+  factory User.fromJson(Map json, [DateTime? readAt]) {
+    DateTime? parsedReadAt;
+
+    if (json['read_at'] != null) {
+      parsedReadAt = DateTime.tryParse(json['read_at']) ?? readAt;
+    } else if (readAt != null) {
+      parsedReadAt = readAt;
+    }
+
+    return User(
+      id: json['id'] ?? 0,
+      name: json['name'] ?? '',
+      lastname: json['lastname'] ?? '',
+      login: json['login'] ?? '',
+      email: json['email'] ?? '',
+      phone: json['phone'] ?? '',
+      image: json['image'] ?? '',
+      lastSeen: json['last_seen'] != null
+          ? DateTime.parse(json['last_seen'])
+          : DateTime.now(),
+      deletedAt: json['deleted_at'] != null
+          ? DateTime.parse(json['deleted_at'])
+          : null,
+      telegramUserId: json['telegram_user_id'],
+      jobTitle: json['job_title'],
+      online: json['online'] ?? false,
+      fullName: json['full_name'] ?? 'Без имени',
+      readAt: parsedReadAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return 'User{id: $id, name: $name, lastname: $lastname, login: $login, email: $email, phone: $phone, image: $image, lastSeen: $lastSeen, deletedAt: $deletedAt, telegramUserId: $telegramUserId, jobTitle: $jobTitle, online: $online, fullName: $fullName,readAt: $readAt}';
+  }
+}

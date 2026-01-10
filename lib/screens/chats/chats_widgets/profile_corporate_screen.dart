@@ -27,7 +27,8 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
   late List<Map<String, String>> memberDetails;
   bool isLoading = true;
   bool isGroupChat = false;
-  // Добавьте эту функцию здесь
+  String userIdCheck = '';
+
   String? extractImageUrlFromSvg(String svg) {
     if (svg.contains('href="')) {
       final start = svg.indexOf('href="') + 6;
@@ -54,9 +55,15 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
     print('USERID: $userIdCheck');
   }
 
-  String userIdCheck = '';
-
   Future<void> _fetchChatData() async {
+    // Для support чата не нужно загружать данные
+    if (widget.chatItem.avatar == 'assets/icons/Profile/image.png') {
+      setState(() {
+        isLoading = false;
+      });
+      return;
+    }
+
     try {
       final getChatById = await ApiService().getChatById(widget.chatId);
 
@@ -96,6 +103,12 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Проверяем, является ли чат типом support
+    bool isSupportChat =
+        widget.chatItem.avatar == 'assets/icons/Profile/image.png';
+    // print(
+    //     'CorporateProfileScreen: avatar = ${widget.chatItem.avatar}, isSupportChat = $isSupportChat');
+
     if (isLoading) {
       return Scaffold(
         backgroundColor: Colors.white,
@@ -109,6 +122,8 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
               fontWeight: FontWeight.w600,
               color: Color(0xff1E2E52),
             ),
+              maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
           ),
           backgroundColor: Colors.white,
           leading: IconButton(
@@ -122,6 +137,49 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
         ),
         body: Center(
           child: CircularProgressIndicator(color: Color(0xff1E2E52)),
+        ),
+      );
+    }
+
+    if (isSupportChat) {
+      return Scaffold(
+        backgroundColor: Color(0xffF4F7FD),
+        appBar: AppBar(
+          forceMaterialTransparency: true,
+          title: null, // Убираем заголовок для support
+          backgroundColor: Colors.white,
+          leading: IconButton(
+            icon: Image.asset('assets/icons/arrow-left.png',
+                width: 24, height: 24),
+            onPressed: () {
+              Navigator.pop(context);
+            },
+          ),
+          centerTitle: false,
+        ),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Image.asset(
+                'assets/icons/Profile/image.png',
+                width: 80,
+                height: 80,
+              ),
+              SizedBox(height: 16),
+              Text(
+                AppLocalizations.of(context)!.translate('support_chat_name'),
+                style: TextStyle(
+                  fontSize: 24,
+                  fontFamily: 'Gilroy',
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xff1E2E52),
+                ),
+                  maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
         ),
       );
     }
@@ -158,10 +216,10 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
           children: [
             SizedBox(height: 10),
             Container(
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(color: Colors.black, width: 6),
-              ),
+              // decoration: BoxDecoration(
+              //   shape: BoxShape.circle,
+              //   border: Border.all(color: Colors.black, width: 6),
+              // ),
               child: CircleAvatar(
                 backgroundColor: Colors.white,
                 backgroundImage: isGroupChat
@@ -174,14 +232,18 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
             Text(
               groupName,
               style: TextStyle(
-                  fontSize: 24,
-                  fontFamily: 'Gilroy',
-                  fontWeight: FontWeight.w600),
+                fontSize: 24,
+                fontFamily: 'Gilroy',
+                fontWeight: FontWeight.w600,
+              ),
             ),
             Text(
               "$memberCount ${(memberCount >= 2 && memberCount <= 4) ? AppLocalizations.of(context)!.translate('participant') : AppLocalizations.of(context)!.translate('participantss')}",
               style: TextStyle(
-                  fontSize: 16, fontFamily: 'Gilroy', color: Colors.grey),
+                fontSize: 16,
+                fontFamily: 'Gilroy',
+                color: Colors.grey,
+              ),
             ),
             SizedBox(height: 10),
             Padding(
@@ -195,11 +257,11 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
                       Text(
                         AppLocalizations.of(context)!.translate('participants'),
                         style: TextStyle(
-                            fontSize: 18,
-                            fontFamily: 'Gilroy',
-                            fontWeight: FontWeight.w600),
+                          fontSize: 18,
+                          fontFamily: 'Gilroy',
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
-                      // Только владельцу разрешено добавлять участников
                       if (userIdCheck == ownerId)
                         ElevatedButton(
                           onPressed: () {
@@ -228,6 +290,8 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
                               fontFamily: 'Gilroy',
                               color: Colors.white,
                             ),
+                              maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                           ),
                         ),
                     ],
@@ -298,7 +362,6 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
                           ),
                           child: Row(
                             children: [
-                              // И изменим часть с отображением аватара в методе build:
                               CircleAvatar(
                                 backgroundColor: Colors.white,
                                 child: isDeletedAccount
@@ -306,7 +369,8 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
                                         'assets/images/delete_user.png',
                                         height: 36,
                                         width: 36,
-                                        fit: BoxFit.cover)
+                                        fit: BoxFit.cover,
+                                      )
                                     : memberDetails[index]['image']!.isEmpty
                                         ? Container(
                                             decoration: BoxDecoration(
@@ -316,10 +380,11 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
                                                   width: 4),
                                             ),
                                             child: Image.asset(
-                                                'assets/images/AvatarChat.png',
-                                                height: 30,
-                                                width: 30,
-                                                fit: BoxFit.cover),
+                                              'assets/images/AvatarChat.png',
+                                              height: 30,
+                                              width: 30,
+                                              fit: BoxFit.cover,
+                                            ),
                                           )
                                         : memberDetails[index]['image']!
                                                 .startsWith('<svg')
@@ -347,9 +412,10 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
                                                     );
                                                   } else {
                                                     return SvgPicture.string(
-                                                        svg,
-                                                        height: 40,
-                                                        width: 40);
+                                                      svg,
+                                                      height: 40,
+                                                      width: 40,
+                                                    );
                                                   }
                                                 },
                                               )
@@ -357,7 +423,8 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
                                                 memberDetails[index]['image']!,
                                                 height: 40,
                                                 width: 40,
-                                                fit: BoxFit.cover),
+                                                fit: BoxFit.cover,
+                                              ),
                               ),
                               const SizedBox(width: 12),
                               Expanded(
@@ -369,6 +436,8 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
                                     fontFamily: 'Gilroy',
                                     color: Colors.black,
                                   ),
+                                    maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                                 ),
                               ),
                               if (isOwner)
@@ -381,6 +450,8 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
                                     fontFamily: 'Gilroy',
                                     color: Color(0xff1E2E52),
                                   ),
+                                    maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                                 )
                               else if (isCurrentUser)
                                 Text(
@@ -397,16 +468,17 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
                                 Transform.rotate(
                                   angle: 3.14159,
                                   child: Image.asset(
-                                      'assets/icons/arrow-left.png',
-                                      width: 16,
-                                      height: 16),
+                                    'assets/icons/arrow-left.png',
+                                    width: 16,
+                                    height: 16,
+                                  ),
                                 ),
                             ],
                           ),
                         ),
                       );
                     },
-                  )
+                  ),
                 ],
               ),
             ),

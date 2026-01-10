@@ -18,8 +18,10 @@ class TaskCard extends StatefulWidget {
   final int? userId; // ID пользователя, создавшего задачу (опционально)
   final List<UserTaskImage>? usersImage;
   final void Function(int newStatusId) onStatusId;
+   final GlobalKey? dropdownStatusKey;
 
   TaskCard({
+    Key? key,
     required this.task,
     required this.name,
     required this.statusId,
@@ -30,29 +32,28 @@ class TaskCard extends StatefulWidget {
     this.usersImage,
     this.userId,
     required this.onStatusId,
-  });
+    this.dropdownStatusKey,
+  }) : super(key: key);
 
   @override
   _TaskCardState createState() => _TaskCardState();
 }
 
 class _TaskCardState extends State<TaskCard> {
-  late String
-      dropdownValue; // Текущее значение выпадающего списка статусов задачи
-  late int statusId;
+  late String dropdownValue; 
+  late int statusIdTask;
 
   @override
   void initState() {
     super.initState();
     dropdownValue = widget.name;
-    statusId = widget.statusId;
+    statusIdTask = widget.statusId;
   }
 
-  /// Форматирование даты в `dd-MM-yyyy`
+  /// Форматирование даты в `dd.MM.yyyy`
   String formatDate(String dateString) {
-    DateTime dateTime =
-        DateTime.parse(dateString); // Преобразование строки в дату
-    return DateFormat('dd.MM.yyyy').format(dateTime); // Форматирование даты
+    DateTime dateTime = DateTime.parse(dateString); 
+    return DateFormat('dd.MM.yyyy').format(dateTime); 
   }
 
   /// Получение количества просроченных дней
@@ -78,7 +79,7 @@ class _TaskCardState extends State<TaskCard> {
       case 3:
         return const Color(0xFFFFEBEE); // Цвет для критического приоритета
       case 2:
-        return const Color(0xFFFFF3E0); // Цвет для сложного приоритета
+        return const Color(0xFFE8F5E9); // Цвет для сложного приоритета
       default:
         return const Color(0xFFE8F5E9); // Цвет по умолчанию
     }
@@ -92,25 +93,25 @@ class _TaskCardState extends State<TaskCard> {
       case 3:
         return const Color(0xFFC62828); // Цвет для критического приоритета
       case 2:
-        return const Color(0xFFEF6C00); // Цвет для сложного приоритета
+        return const Color(0xFF2E7D32); // Цвет для сложного приоритета
       default:
         return const Color(0xFF2E7D32); // Цвет по умолчанию
     }
   }
 
   /// Получение текстового представления приоритета
-String _getPriorityText(int? priority, BuildContext context) {
-  switch (priority) {
-    case 1:
-      return AppLocalizations.of(context)!.translate('normal'); 
-    case 3:
-      return AppLocalizations.of(context)!.translate('urgent'); 
-    case 2:
-      return AppLocalizations.of(context)!.translate('important'); 
-    default:
-      return AppLocalizations.of(context)!.translate('normal');
+  String _getPriorityText(int? priority, BuildContext context) {
+    switch (priority) {
+      case 1:
+        return AppLocalizations.of(context)!.translate('normal');
+      case 3:
+        return AppLocalizations.of(context)!.translate('urgent');
+      case 2:
+        return AppLocalizations.of(context)!.translate('normal');
+      default:
+        return AppLocalizations.of(context)!.translate('normal');
+    }
   }
-}
 
   /// Получение инициалов пользователя из имени
   String _getUserInitials(String name) {
@@ -123,79 +124,79 @@ String _getPriorityText(int? priority, BuildContext context) {
     return '';
   }
 
-
- @override
-Widget build(BuildContext context) {
-  String? extractImageUrlFromSvg(String svg) {
-    if (svg.contains('href="')) {
-      final start = svg.indexOf('href="') + 6;
-      final end = svg.indexOf('"', start);
-      return svg.substring(start, end);
-    }
-    return null;
-  }
-
-  Color? extractBackgroundColorFromSvg(String svg) {
-    final fillMatch = RegExp(r'fill="(#[A-Fa-f0-9]+)"').firstMatch(svg);
-    if (fillMatch != null) {
-      final colorHex = fillMatch.group(1);
-      if (colorHex != null) {
-        final hex = colorHex.replaceAll('#', '');
-        return Color(int.parse('FF$hex', radix: 16));
+  @override
+  Widget build(BuildContext context) {
+    String? extractImageUrlFromSvg(String svg) {
+      if (svg.contains('href="')) {
+        final start = svg.indexOf('href="') + 6;
+        final end = svg.indexOf('"', start);
+        return svg.substring(start, end);
       }
+      return null;
     }
-    return null;
-  }
 
-  Widget buildSvgAvatar(String svg, {double size = 32}) {
-    if (svg.contains('image href=')) {
-      return Container(
-        width: size,
-        height: size,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          image: DecorationImage(
-            image: NetworkImage(extractImageUrlFromSvg(svg) ?? ''),
-            fit: BoxFit.cover,
+    Color? extractBackgroundColorFromSvg(String svg) {
+      final fillMatch = RegExp(r'fill="(#[A-Fa-f0-9]+)"').firstMatch(svg);
+      if (fillMatch != null) {
+        final colorHex = fillMatch.group(1);
+        if (colorHex != null) {
+          final hex = colorHex.replaceAll('#', '');
+          return Color(int.parse('FF$hex', radix: 16));
+        }
+      }
+      return null;
+    }
+
+    Widget buildSvgAvatar(String svg, {double size = 32}) {
+      if (svg.contains('image href=')) {
+        return Container(
+          width: size,
+          height: size,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            image: DecorationImage(
+              image: NetworkImage(extractImageUrlFromSvg(svg) ?? ''),
+              fit: BoxFit.cover,
+            ),
           ),
-        ),
-      );
-    } else {
-      final backgroundColor = extractBackgroundColorFromSvg(svg) ?? Color(0xFF2C2C2C);
-      
-      return Container(
-        width: size,
-        height: size,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: backgroundColor,
-          border: Border.all(
-            color: Colors.white,
-            width: 1,
+        );
+      } else {
+        final backgroundColor =
+            extractBackgroundColorFromSvg(svg) ?? Color(0xFF2C2C2C);
+
+        return Container(
+          width: size,
+          height: size,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: backgroundColor,
+            border: Border.all(
+              color: Colors.white,
+              width: 1,
+            ),
           ),
-        ),
-        child: Center(
-          child: FittedBox(
-            fit: BoxFit.contain,
-            child: Padding(
-              padding: EdgeInsets.all(size * 0.3),
-              child: Text(
-                RegExp(r'>([^<]+)</text>').firstMatch(svg)?.group(1) ?? '',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: size * 0.4,
-                  fontWeight: FontWeight.w500,
-                  height: 1,
-                  letterSpacing: 0,
+          child: Center(
+            child: FittedBox(
+              fit: BoxFit.contain,
+              child: Padding(
+                padding: EdgeInsets.all(size * 0.3),
+                child: Text(
+                  RegExp(r'>([^<]+)</text>').firstMatch(svg)?.group(1) ?? '',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: size * 0.4,
+                    fontWeight: FontWeight.w500,
+                    height: 1,
+                    letterSpacing: 0,
+                  ),
+                  textAlign: TextAlign.center,
                 ),
-                textAlign: TextAlign.center,
               ),
             ),
           ),
-        ),
-      );
+        );
+      }
     }
-  }
 
     // Получаем количество просроченных дней
     int overdueDays = _getOverdueDays(widget.task.endDate);
@@ -207,14 +208,16 @@ Widget build(BuildContext context) {
             MaterialPageRoute(
               builder: (context) => TaskDetailsScreen(
                 taskId: widget.task.id.toString(), // ID задачи для детального экрана
+                taskNumber: widget.task.taskNumber,
                 taskName: widget.task.name ?? AppLocalizations.of(context)!.translate('no_name'), // Название задачи
                 startDate: widget.task.startDate, // Дата начала задачи
                 endDate: widget.task.endDate, // Дата окончания задачи
                 taskStatus: dropdownValue, // Текущий статус задачи
-                statusId: widget.statusId, // ID статуса задачи
+                statusId: statusIdTask, // ID статуса задачи
                 priority: widget.task.priority, // Приоритет задачи
                 description: widget.task.description, // Описание задачи
-                project: widget.task.project?.name ?? widget.project ?? AppLocalizations.of(context)!.translate('no_project'),
+                project: widget.task.project?.name ?? widget.project ??
+                    AppLocalizations.of(context)!.translate('no_project'),
                 taskCustomFields: widget.task.taskCustomFields,
               ),
             ),
@@ -223,41 +226,65 @@ Widget build(BuildContext context) {
         child: Container(
           padding: const EdgeInsets.all(12),
           margin: const EdgeInsets.symmetric(vertical: 0, horizontal: 0),
-          decoration:
-          TaskCardStyles.taskCardDecoration, // Стиль карточки задачи
+          decoration: TaskCardStyles.taskCardDecoration,
           child: Stack(
             children: [
               Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // Check if task has a deal and show client icon
+                    if (widget.task.deal != null)
+                      Padding(
+                        padding: const EdgeInsets.only(right: 6, top: 3),
+                        child: Image.asset(
+                          'assets/icons/MyNavBar/clients_OFF.png',
+                          width: 20,
+                          height: 20,
+                        ),
+                      ),
                     Expanded(
-                      child: Text(
-                        widget.task.name ?? AppLocalizations.of(context)!.translate('no_name'), // Название задачи
-                        style:TaskCardStyles.titleStyle, // Стиль заголовка задачи
-                        overflow: TextOverflow.ellipsis, // Обрезка текста, если не помещается
+                      child: RichText(
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        text: TextSpan(
+                          text: widget.task.name,
+                          style: TaskCardStyles.titleStyle,
+                          children: const <TextSpan>[
+                            TextSpan(
+                              text: '\n\u200B',
+                              style: TaskCardStyles.titleStyle,
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                      horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: _getPriorityBackgroundColor( widget.task.priority), // Цвет фона приоритета
-                        borderRadius: BorderRadius.circular(16), // Радиус скругления
-                      ),
-                      child: Text(
-                        _getPriorityText(widget.task.priority, context),// Текст приоритета
-                        style: TextStyle(
-                          color: _getPriorityTextColor(widget.task.priority), // Цвет текста приоритета
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                          fontFamily: 'Gilroy',
+                    Padding(
+                      padding: const EdgeInsets.only(top: 2),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: _getPriorityBackgroundColor(widget.task.priority),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Text(
+                          _getPriorityText(widget.task.priority, context),
+                          style: TextStyle(
+                            color: _getPriorityTextColor(widget.task.priority),
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            fontFamily: 'Gilroy',
+                          ),
                         ),
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 0), 
+                const SizedBox(
+                  height: 0,
+                  width: 4,
+                ),
                 Text(
                   widget.task.project?.name ?? AppLocalizations.of(context)!.translate('no_project'),
                   style: const TextStyle(
@@ -266,12 +293,14 @@ Widget build(BuildContext context) {
                     fontWeight: FontWeight.w500,
                     color: Color(0xff99A4BA),
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 0),
                 Row(
                   children: [
                     Text(
-                      AppLocalizations.of(context)!.translate('column'), 
+                      AppLocalizations.of(context)!.translate('column'),
                       style: TextStyle(
                         fontSize: 16,
                         fontFamily: 'Gilroy',
@@ -288,7 +317,7 @@ Widget build(BuildContext context) {
                             (String newValue, int newStatusId) {
                               setState(() {
                                 dropdownValue = newValue;
-                                statusId = newStatusId;
+                                statusIdTask = newStatusId;
                               });
                               widget.onStatusId(newStatusId);
                               widget.onStatusUpdated();
@@ -297,6 +326,7 @@ Widget build(BuildContext context) {
                           );
                         },
                         child: Container(
+                          key: widget.dropdownStatusKey,
                           decoration: BoxDecoration(
                             border: Border.all(
                               color: const Color(0xff1E2E52),
@@ -304,14 +334,12 @@ Widget build(BuildContext context) {
                             ),
                             borderRadius: BorderRadius.circular(8),
                           ),
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 4),
+                          padding: const EdgeInsets.symmetric( horizontal: 8, vertical: 4),
                           child: Row(
                             children: [
                               Container(
                                 constraints: BoxConstraints(
-                                    maxWidth:
-                                        200), //Размер колонки Выбора Статуса
+                                maxWidth: 200), 
                                 child: Text(
                                   dropdownValue,
                                   style: const TextStyle(
@@ -397,8 +425,6 @@ Widget build(BuildContext context) {
                             ],
                           )
                         : const SizedBox(),
-
-                    // Display the count of additional users
                     if (widget.task.usersImage != null &&
                         widget.task.usersImage!.length > 2)
                       Padding(
@@ -415,26 +441,22 @@ Widget build(BuildContext context) {
                       ),
                   ],
                 ),
-                // const SizedBox(height: 5),
                 Row(
                   children: [
                     const SizedBox(width: 1),
-                    if (widget.task.user?.name !=
-                        null) // Проверка на наличие имени пользователя
+                    if (widget.task.user?.name != null) 
                       Row(
                         children: [
                           Container(
                             width: 30,
                             height: 30,
                             decoration: BoxDecoration(
-                              color: const Color.fromARGB(255, 51, 65,
-                                  98), // Фон иконки инициалов пользователя
+                              color: const Color.fromARGB(255, 51, 65, 98), 
                               shape: BoxShape.circle,
                             ),
                             alignment: Alignment.center,
                             child: Text(
-                              _getUserInitials(widget.task.user!
-                                  .name), // Отображение инициалов пользователя
+                              _getUserInitials(widget.task.user!.name),
                               style: const TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.bold,
@@ -445,49 +467,40 @@ Widget build(BuildContext context) {
                         ],
                       ),
                     Padding(
-                      padding: const EdgeInsets.all(0), // Отступы
+                      padding: const EdgeInsets.all(3),
                       child: Row(
-                        mainAxisAlignment: MainAxisAlignment
-                            .spaceBetween, // Пространство между элементами
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          // Иконка и текст даты
                           Row(
-                            crossAxisAlignment: CrossAxisAlignment
-                                .center, // Выровнять по центру по вертикали
+                            crossAxisAlignment: CrossAxisAlignment.center,
                             children: [
-                              // Используем ColorFiltered для изменения цвета иконки
                               ColorFiltered(
                                 colorFilter: ColorFilter.mode(
-                                  overdueDays > 0
+                                  widget.task.overdue! > 0
                                       ? const Color.fromARGB(255, 198, 40, 40)
-                                      : const Color(
-                                          0xff99A4BA), // Красный цвет, если просрочено, иначе обычный
+                                      : const Color(0xff99A4BA),
                                   BlendMode.srcIn,
                                 ),
                                 child: Image.asset(
-                                  'assets/icons/tabBar/date.png', // Иконка даты
-                                  width: 24,
-                                  height: 36,
+                                  'assets/icons/tabBar/date.png',
+                                  width: 18,
+                                  height: 20,
                                 ),
                               ),
-                              const SizedBox(
-                                  width: 4), // Отступ между иконкой и текстом
+                              const SizedBox(width: 4, height: 14),
                               Text(
-                                formatDate(widget.task.endDate ??
-                                    DateTime.now().toString()),
+                                formatDate(widget.task.endDate ?? DateTime.now().toString()),
                                 style: TextStyle(
-                                  fontSize: 16,
+                                  fontSize: 14,
                                   fontFamily: 'Gilroy',
                                   fontWeight: FontWeight.w500,
-                                  color: overdueDays > 0
+                                  color: widget.task.overdue! > 0
                                       ? const Color.fromARGB(255, 198, 40, 40)
-                                      : const Color(
-                                          0xff99A4BA), // Красный цвет, если просрочено, иначе обычный
+                                      : const Color(0xff99A4BA),
                                 ),
                               ),
                             ],
                           ),
-
                           if (widget.task.overdue! > 0)
                             Padding(
                               padding: EdgeInsets.only(
@@ -496,8 +509,8 @@ Widget build(BuildContext context) {
                               child: Container(
                                 width: 24,
                                 height: 24,
-                                decoration: BoxDecoration(
-                                  color: const Color.fromARGB(255, 253, 98, 87),
+                                decoration: const BoxDecoration(
+                                  color: Color.fromARGB(255, 253, 98, 87),
                                   shape: BoxShape.circle,
                                 ),
                                 child: Center(

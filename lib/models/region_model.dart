@@ -45,7 +45,6 @@ class RegionsDataResponse {
 
   factory RegionsDataResponse.fromJson(Map<String, dynamic> json) {
   // Print the JSON data for debugging purposes
-  print('JSON data: $json');
 
   return RegionsDataResponse(
     result: json["result"] != null

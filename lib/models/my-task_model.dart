@@ -1,6 +1,7 @@
 class MyTask {
   final int id;
   final String name;
+  final int? taskNumber;
   final String? startDate;
   final String? endDate;
   final String? description;
@@ -8,10 +9,12 @@ class MyTask {
   final MyTaskStatus? taskStatus;
   final MyTaskFile? file;
   final List<MyTaskCustomField> taskCustomFields;
+  final int? overdue;
 
   MyTask({
     required this.id,
     required this.name,
+    this.taskNumber,
     required this.startDate,
     required this.endDate,
     this.description,
@@ -19,6 +22,7 @@ class MyTask {
     this.taskStatus,
     this.file,
     required this.taskCustomFields,
+    this.overdue,
   });
 
   factory MyTask.fromJson(Map<String, dynamic> json, int taskStatusId) {
@@ -26,6 +30,7 @@ class MyTask {
       return MyTask(
         id: json['id'] ?? 0,
         name: json['name'] ?? 'Без имени',
+        taskNumber: json['task_number'] is int ? json['task_number'] : 0,
         startDate: json['from'],
         endDate: json['to'],
         description: json['description'] ?? '',
@@ -41,6 +46,7 @@ class MyTask {
                 .map((field) => MyTaskCustomField.fromJson(field))
                 .toList()
             : [],
+        overdue: json['overdue'] is int ? json['overdue'] : 0,
       );
     } catch (e) {
       print('Error parsing MyTask: $e, JSON: $json');
@@ -60,6 +66,7 @@ class MyTask {
     return {
       'id': id,
       'name': name,
+      'task_number': taskNumber,
       'from': startDate,
       'to': endDate,
       'description': description,
@@ -67,6 +74,7 @@ class MyTask {
       'taskStatus': taskStatus?.toJson(),
       'file': file?.toJson(),
       'task_custom_fields': taskCustomFields.map((e) => e.toJson()).toList(),
+      'overdue': overdue,
     };
   }
 }
@@ -135,6 +143,7 @@ class MyTaskStatus {
   final int position;
   final int tasksCount;
   final int? authorId;
+  final bool finalStep;
 
   MyTaskStatus({
     required this.id,
@@ -144,12 +153,14 @@ class MyTaskStatus {
     required this.position,
     required this.tasksCount,
     this.authorId,
+    required this.finalStep,
   });
 
   factory MyTaskStatus.fromJson(Map<String, dynamic> json) {
     return MyTaskStatus(
       id: json['id'] ?? 0,
       title: json['title'] ?? 'Без статуса',
+      finalStep: json['final_step'] == true || json['final_step'] == 1,
       color: json['color'] ?? '#FFFFFF',
       organizationId: json['organization_id'] as int?,
       position: json['position'] ?? 0,

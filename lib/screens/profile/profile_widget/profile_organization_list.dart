@@ -7,11 +7,13 @@ import 'package:crm_task_manager/bloc/organization/organization_state.dart';
 class OrganizationWidget extends StatefulWidget {
   final String? selectedOrganization;
   final ValueChanged<String?> onChanged;
+  final Key? key;
 
   OrganizationWidget({
+    this.key,
     required this.selectedOrganization,
     required this.onChanged,
-  });
+  }) : super(key: key);
 
   @override
   _OrganizationWidgetState createState() => _OrganizationWidgetState();
@@ -46,7 +48,7 @@ class _OrganizationWidgetState extends State<OrganizationWidget> {
               DropdownMenuItem(
                 value: null,
                 child: Text(
-                localizations.translate('no_organizations'),
+                  localizations.translate('no_organizations'),
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
@@ -100,7 +102,6 @@ class _OrganizationWidgetState extends State<OrganizationWidget> {
 
         String? selectedOrganization = widget.selectedOrganization;
 
-        // Если выбранная организация не в списке, выбираем первую
         if (selectedOrganization != null &&
             !dropdownItems.any((item) => item.value == selectedOrganization)) {
           selectedOrganization =
@@ -123,7 +124,6 @@ class _OrganizationWidgetState extends State<OrganizationWidget> {
               ),
             ),
 
-            // Выпадающий список организаций
             Container(
               margin: const EdgeInsets.symmetric(vertical: 8),
               padding: const EdgeInsets.all(8),
@@ -133,8 +133,7 @@ class _OrganizationWidgetState extends State<OrganizationWidget> {
               ),
               child: DropdownButtonFormField<String>(
                 value: selectedOrganization,
-                hint: Text(
-                localizations.translate('select_organizations'),
+                hint: Text( "",
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
@@ -160,10 +159,17 @@ class _OrganizationWidgetState extends State<OrganizationWidget> {
                   ),
                 ),
                 dropdownColor: Colors.white,
-                icon: Image.asset(
-                  'assets/icons/tabBar/dropdown.png',
-                  width: 16,
-                  height: 16,
+                icon: Transform.translate(
+                  offset: Offset(4, 0), // Смещение влево на 2 пикселя
+                  child: Transform.rotate(
+                    angle: 90 *
+                        (3.1415926535897932 / 180), // Поворот на 90 градусов
+                    child: Image.asset(
+                      'assets/icons/arrow-right.png',
+                      width: 16,
+                      height: 16,
+                    ),
+                  ),
                 ),
               ),
             ),
