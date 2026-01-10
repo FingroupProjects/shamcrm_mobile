@@ -164,7 +164,7 @@ Future<void> _initializeBaseUrl() async {
                     ? ClipRRect(
                         borderRadius: BorderRadius.circular(8),
                         child: Image.network(
-                          '$baseUrl/${category.image}',
+                          '${category.image}',
                           fit: BoxFit.cover,
                           errorBuilder: (_, __, ___) => _buildNoPhotoPlaceholder(),
                         ),

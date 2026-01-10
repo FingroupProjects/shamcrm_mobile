@@ -62,9 +62,9 @@ class Result {
 }
 
 class CashBalance {
-  final double totalBalance; // Changed to double for precision
-  final double previousBalance;
-  final double percentageChange;
+  final num totalBalance; // Changed to double for precision
+  final num previousBalance;
+  final num percentageChange;
   final bool isPositiveChange;
   final String? currency; // Nullable since not always present
   final List<CashRegisterData> cashRegisters;
@@ -163,9 +163,9 @@ class Current {
 }
 
 class OurDebts {
-  final double currentDebts;
-  final double previousDebts;
-  final double percentageChange;
+  final num currentDebts;
+  final num previousDebts;
+  final num percentageChange;
   final bool isPositiveChange;
   final String? currency;
   final List<SupplierData> suppliersList;
@@ -214,9 +214,9 @@ class OurDebts {
 }
 
 class DebtsToUs {
-  final double totalDebtsToUs;
-  final double previousDebtsToUs;
-  final double percentageChange;
+  final num totalDebtsToUs;
+  final num previousDebtsToUs;
+  final num percentageChange;
   final bool isPositiveChange;
   final String? currency;
   final List<Debtors> debtorsList;

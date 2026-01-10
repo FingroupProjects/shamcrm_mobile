@@ -160,7 +160,7 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
               });
             },
             itemBuilder: (context, index) {
-              final imageUrl = '$baseUrl/${sortedFiles[index].path}';
+              final imageUrl = '${sortedFiles[index].path}';
               if (sortedFiles[index].path.isEmpty) {
                 return _buildPlaceholder();
               }
@@ -213,7 +213,7 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
   void _openImageGallery(BuildContext context, List<GoodsFile> files, int initialIndex) {
     final List<String> imageUrls = files
         .where((file) => file.path.isNotEmpty)
-        .map((file) => '$baseUrl/${file.path}')
+        .map((file) => '${file.path}')
         .toList();
 
     if (imageUrls.isEmpty) return;
@@ -481,9 +481,9 @@ AppBar _buildAppBar(BuildContext context, String title) {
     List<Map<String, String>> attributes = uniqueAttributes.take(4).toList();
     String? imageUrl;
     if (variant.files != null && variant.files!.isNotEmpty) {
-      imageUrl = '$baseUrl/${variant.files!.first.path}';
+      imageUrl = '${variant.files!.first.path}';
     } else if (goodsFiles.isNotEmpty) {
-      imageUrl = '$baseUrl/${goodsFiles.first.path}';
+      imageUrl = '${goodsFiles.first.path}';
     }
 
     return GestureDetector(
@@ -750,8 +750,28 @@ AppBar _buildAppBar(BuildContext context, String title) {
       body: BlocConsumer<GoodsByIdBloc, GoodsByIdState>(
         listener: (context, state) {
           if (state is GoodsByIdError) {
-            ScaffoldMessenger.of(context)
-                .showSnackBar(SnackBar(content: Text(state.message)));
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  AppLocalizations.of(context)!.translate(state.message),
+                  style: TextStyle(
+                    fontFamily: 'Gilroy',
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.white,
+                  ),
+                ),
+                behavior: SnackBarBehavior.floating,
+                margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                backgroundColor: Colors.red,
+                elevation: 3,
+                padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                duration: Duration(seconds: 3),
+              ),
+            );
           } else if (state is GoodsByIdDeleted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(

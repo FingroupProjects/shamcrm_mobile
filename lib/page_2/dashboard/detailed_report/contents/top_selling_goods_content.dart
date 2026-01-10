@@ -14,7 +14,7 @@ class TopSellingGoodsContent extends StatefulWidget {
 
 class _TopSellingGoodsContentState extends State<TopSellingGoodsContent> {
   bool isSelectionMode = false;
-  Set<int> selectedTopSellingGoods = {};
+  Set<num> selectedTopSellingGoods = {};
 
   void _onProductTap(TopSellingCardModel product) {
     if (isSelectionMode) {
@@ -22,7 +22,7 @@ class _TopSellingGoodsContentState extends State<TopSellingGoodsContent> {
         if (selectedTopSellingGoods.contains(product.id)) {
           selectedTopSellingGoods.remove(product.id);
         } else {
-          selectedTopSellingGoods.add(product.id);
+          selectedTopSellingGoods.add(product.id.toInt());
         }
       });
     }
@@ -32,7 +32,7 @@ class _TopSellingGoodsContentState extends State<TopSellingGoodsContent> {
     if (!isSelectionMode) {
       setState(() {
         isSelectionMode = true;
-        selectedTopSellingGoods.add(product.id);
+        selectedTopSellingGoods.add(product.id.toInt());
       });
     }
   }

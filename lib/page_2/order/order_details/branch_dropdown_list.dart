@@ -127,19 +127,67 @@ class _BranchRadioGroupWidgetState extends State<BranchRadioGroupWidget> {
                       style: statusTextStyle.copyWith(fontWeight: FontWeight.w400),
                     ),
                     const SizedBox(height: 4),
-                    Container(
-                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF4F7FD),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          width: 1,
+                    GestureDetector(
+                      onTap: () {
+                        showModalBottomSheet(
+                          context: context,
+                          backgroundColor: Colors.transparent,
+                          builder: (context) => Container(
+                            decoration: const BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+                            ),
+                            padding: const EdgeInsets.all(20),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Container(
+                                  width: 40,
+                                  height: 4,
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFE5E7EB),
+                                    borderRadius: BorderRadius.circular(2),
+                                  ),
+                                ),
+                                const SizedBox(height: 20),
+                                Text(
+                                  AppLocalizations.of(context)!.translate('no_data'),
+                                  style: statusTextStyle.copyWith(
+                                    color: const Color(0xff9CA3AF),
+                                  ),
+                                ),
+                                const SizedBox(height: 20),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                        decoration: BoxDecoration(
                           color: const Color(0xFFF4F7FD),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            width: 1,
+                            color: const Color(0xFFF4F7FD),
+                          ),
                         ),
-                      ),
-                      child: Text(
-                        AppLocalizations.of(context)!.translate('no_active_branches'),
-                        style: statusTextStyle.copyWith(fontSize: 14),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              AppLocalizations.of(context)!.translate('select_branch'),
+                              style: statusTextStyle.copyWith(
+                                color: const Color(0xff9CA3AF),
+                                fontSize: 14,
+                              ),
+                            ),
+                            const Icon(
+                              Icons.arrow_drop_down,
+                              color: Color(0xff9CA3AF),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ],

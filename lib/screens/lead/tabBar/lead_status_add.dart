@@ -17,7 +17,7 @@ class CreateStatusDialog extends StatefulWidget {
 class _CreateStatusDialogState extends State<CreateStatusDialog> {
   final TextEditingController _titleController = TextEditingController();
   String? _errorMessage;
-  bool _isSuccess = true; // По умолчанию устанавливаем "Успешно"
+  bool _isSuccess = false; // Галочка "Успешно" выключена по умолчанию
   bool _isFailure = false;
 
   @override

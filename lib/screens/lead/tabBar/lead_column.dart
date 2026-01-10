@@ -1,5 +1,4 @@
 import 'package:crm_task_manager/screens/lead/lead_cache.dart';
-import 'package:crm_task_manager/utils/TutorialStyleWidget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -8,11 +7,8 @@ import 'package:crm_task_manager/bloc/lead/lead_bloc.dart';
 import 'package:crm_task_manager/bloc/lead/lead_event.dart';
 import 'package:crm_task_manager/bloc/lead/lead_state.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
-import 'package:crm_task_manager/screens/lead/tabBar/contact_list_screen.dart';
-import 'package:crm_task_manager/screens/lead/tabBar/lead_add_screen.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_card.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
-import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 
 class LeadColumn extends StatefulWidget {
   final int statusId;

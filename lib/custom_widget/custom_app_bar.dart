@@ -76,11 +76,11 @@ class CustomAppBar extends StatefulWidget {
   final Function(int?, DateTime?, DateTime?)? onStatusAndDateRangeEventSelected;
   final Function(DateTime?, DateTime?)? onNoticeDateRangeEventSelected;
   final Function(int?, DateTime?, DateTime?)?
-  onNoticeStatusAndDateRangeEventSelected;
+      onNoticeStatusAndDateRangeEventSelected;
   final Function(int?, DateTime?, DateTime?, DateTime?, DateTime?)?
-  onDateNoticeStatusAndDateRangeSelected;
+      onDateNoticeStatusAndDateRangeSelected;
   final Function(DateTime?, DateTime?, DateTime?, DateTime?)?
-  onDateNoticeAndDateRangeSelected;
+      onDateNoticeAndDateRangeSelected;
 
   final Function(Map)? onUsersSelected;
   final Function(int?)? onStatusSelected;
@@ -116,6 +116,7 @@ class CustomAppBar extends StatefulWidget {
   initialLeadCustomFields; // Пользовательские поля для фильтра лидов
 
   final List? initialManagersDeal;
+  final List? initialRegionsDeal;
   final List? initialLeadsDeal;
   final int? initialManagerDealStatuses;
   final DateTime? initialManagerDealFromDate;
@@ -150,7 +151,8 @@ class CustomAppBar extends StatefulWidget {
   final List<String>? initialAuthors;
   final String? initialDepartment;
   final List<Map<String, dynamic>>?
-  initialDirectoryValuesTask; // Добавляем начальные значения справочников
+      initialDirectoryValuesTask; // Добавляем начальные значения справочников
+  final List? initialProjects; // Начальные проекты для фильтра
 
   final Function(Map<String, dynamic>)? onChatLeadFiltersApplied; // Для лидов
   final Function(Map<String, dynamic>)? onChatTaskFiltersApplied; // Для задач
@@ -227,6 +229,7 @@ class CustomAppBar extends StatefulWidget {
     this.hasActiveLeadFilters = false,
     this.initialChatFilters,
     this.initialManagersDeal,
+    this.initialRegionsDeal,
     this.initialLeadsDeal,
     this.initialManagerDealStatuses,
     this.initialManagerDealFromDate,
@@ -289,6 +292,7 @@ class CustomAppBar extends StatefulWidget {
     this.initialDeadlineToDate,
     this.initialAuthors,
     this.initialDepartment,
+    this.initialProjects,
     this.onLeadsDealSelected,
     this.initialDirectoryValuesDeal, // Добавляем в конструктор
 
@@ -490,7 +494,7 @@ class _CustomAppBarState extends State<CustomAppBar>
 
 // Обновляем обработчик сброса фильтров
   void _handleChatFiltersReset() {
-    debugPrint('CustomAppBar: Resetting chat filters');
+    // debugPrint('CustomAppBar: Resetting chat filters');
     _setFiltersActive(false);
     widget.onChatLeadFiltersReset?.call();
     widget.onChatTaskFiltersReset?.call();
@@ -517,8 +521,8 @@ class _CustomAppBarState extends State<CustomAppBar>
 
 
   Future<void> _setUpSocketForNotifications() async {
-    debugPrint(
-        '--------------------------- start socket CUSTOM APPBAR:::::::----------------');
+    // debugPrint(
+    //     '--------------------------- start socket CUSTOM APPBAR:::::::----------------');
     final prefs = await SharedPreferences.getInstance();
     String? token = prefs.getString('token');
     final enteredDomainMap = await ApiService().getEnteredDomain();
@@ -553,7 +557,7 @@ class _CustomAppBarState extends State<CustomAppBar>
           'X-Tenant': '$enteredDomain-back'
         },
         onAuthFailed: (exception, trace) {
-          debugPrint('Auth failed: ${exception.toString()}');
+          // debugPrint('Auth failed: ${exception.toString()}');
         },
       ),
     );
@@ -562,17 +566,17 @@ class _CustomAppBarState extends State<CustomAppBar>
       myPresenceChannel.subscribeIfNotUnsubscribed();
       notificationSubscription =
           myPresenceChannel.bind('notification.created').listen((event) {
-            debugPrint('Получено уведомление через сокет: ${event.data}');
+            // debugPrint('Получено уведомление через сокет: ${event.data}');
             try {
               final data = jsonDecode(event.data);
-              debugPrint('Данные уведомления: $data');
+              // debugPrint('Данные уведомления: $data');
               setState(() {
                 _hasNewNotification = true;
               });
               prefs.setBool('hasNewNotification', true);
               _playSound();
             } catch (e) {
-              debugPrint('Ошибка парсинга данных уведомления: $e');
+              // debugPrint('Ошибка парсинга данных уведомления: $e');
             }
           });
     });
@@ -925,10 +929,10 @@ class _CustomAppBarState extends State<CustomAppBar>
                   icon: _isSearching
                       ? Icon(Icons.close)
                       : Image.asset(
-                    'assets/icons/AppBar/search.png',
-                    width: 24,
-                    height: 24,
-                  ),
+                          'assets/icons/AppBar/search.png',
+                          width: 24,
+                          height: 24,
+                        ),
                   onPressed: () {
                     setState(() {
                       _isSearching = !_isSearching;
@@ -1464,7 +1468,10 @@ class _CustomAppBarState extends State<CustomAppBar>
                     position: PopupMenuPosition.under,
                     icon: Stack(
                       children: [
-                        Icon(Icons.more_vert),
+                        Icon(
+                          Icons.more_vert,
+                          color: _areFiltersActive ? _iconColor : Colors.black,
+                        ),
                         if (_hasOverdueTasks)
                           Positioned(
                             right: 0,
@@ -1550,7 +1557,7 @@ class _CustomAppBarState extends State<CustomAppBar>
                                 'assets/icons/AppBar/filter.png',
                                 width: 24,
                                 height: 24,
-                                color: _iconColor,
+                                color: widget.hasActiveLeadFilters ? Colors.blue : _iconColor,
                               ),
                               SizedBox(width: 8),
                               Text(AppLocalizations.of(context)!
@@ -1600,7 +1607,7 @@ class _CustomAppBarState extends State<CustomAppBar>
                                 'assets/icons/AppBar/filter.png',
                                 width: 24,
                                 height: 24,
-                                color: _iconColor,
+                                color: widget.hasActiveTaskFilters ? Colors.blue : _iconColor,
                               ),
                               SizedBox(width: 8),
                               Text(AppLocalizations.of(context)!
@@ -1669,8 +1676,8 @@ class _CustomAppBarState extends State<CustomAppBar>
                                 'assets/icons/AppBar/call_center.png',
                                 width: 24,
                                 height: 24,
-                                color:
-                                _iconColor, // Добавляем изменение цвета иконки
+                                // Иконка колл-центра всегда черная, не реагирует на фильтры
+                                color: Colors.black,
                               ),
                               SizedBox(width: 8),
                               Text(AppLocalizations.of(context)!
@@ -1742,6 +1749,7 @@ class _CustomAppBarState extends State<CustomAppBar>
           onDateRangeSelected: widget.onDateRangeDealSelected,
           onStatusAndDateRangeSelected: widget.onStatusAndDateRangeDealSelected,
           initialManagers: widget.initialManagersDeal,
+          initialRegions: widget.initialRegionsDeal,
           initialLeads: widget.initialLeadsDeal,
           initialHasTasks: widget.initialManagerDealHasTasks,
           initialStatuses: widget.initialManagerDealStatuses,
@@ -1781,7 +1789,8 @@ class _CustomAppBarState extends State<CustomAppBar>
           initialDeadlineFromDate: widget.initialDeadlineFromDate,
           initialDeadlineToDate: widget.initialDeadlineToDate,
           initialDirectoryValues:
-          _safeConvertToMapList(widget.initialDirectoryValuesTask),
+              _safeConvertToMapList(widget.initialDirectoryValuesTask),
+          initialProjects: widget.initialProjects,
         ),
       ),
     );

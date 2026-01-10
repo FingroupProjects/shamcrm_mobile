@@ -43,16 +43,17 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
   String _userName = '';
   String _userNameProfile = '';
   String _userImage = '';
-  bool _isLoading = true; // ✅ Начинаем с true - показываем анимацию сразу
+  bool _isLoading = true;
   bool _isInitialized = false;
+  bool _isPinVerified = false; // ✅ НОВОЕ: Флаг верификации PIN
   final ApiService _apiService = ApiService();
-  
+
   FirebaseApi? _firebaseApi;
 
   @override
   void initState() {
     super.initState();
-    
+
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 500),
       vsync: this,
@@ -68,8 +69,6 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
       }
     });
 
-    // ✅ ИСПРАВЛЕНИЕ: Запускаем инициализацию сразу
-    // Не нужно setState - _isLoading уже true
     _initializeMinimal();
   }
 
@@ -82,44 +81,30 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
     _isInitialized = true;
 
     try {
-      // ✅ НЕ вызываем setState здесь - _isLoading уже true!
-      
       // ШАГ 1: Проверка обновления (быстро, не блокирует)
       _checkForNewVersionSilently();
 
-      // ШАГ 2: Критическая проверка интернета
-      // final hasInternet = await _checkInternetConnectionOnce();
-      // if (!hasInternet) {
-      //   if (mounted) {
-      //     setState(() {
-      //       _isLoading = false;
-      //     });
-      //   }
-      //   return;
-      // }
-
-      // ШАГ 3: Инициализация FirebaseApi
+      // ШАГ 2: Инициализация FirebaseApi
       await _initializeFirebaseApi();
 
-      // ШАГ 4: Загрузка базовой информации (из кэша - быстро)
+      // ШАГ 3: Загрузка базовой информации (из кэша - быстро)
       await _loadUserBasicInfo();
 
-      // ШАГ 5: Проверка PIN
+      // ШАГ 4: Проверка PIN
       await _checkSavedPin();
       
-      // ШАГ 6: Загрузка настройки биометрии
+      // ШАГ 5: Загрузка настройки биометрии
       await _loadBiometricSetting();
       
-      // ШАГ 7: Биометрия (только если включена)
+      // ШАГ 6: Биометрия (только если включена)
       await _initBiometrics();
 
-      // ✅ Только ЗДЕСЬ убираем загрузку
       if (mounted) {
         setState(() {
           _isLoading = false;
         });
       }
-      
+
     } catch (e) {
       if (mounted) {
         setState(() {
@@ -129,11 +114,6 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
       }
     }
   }
-
-  // ==========================================================================
-  // ПРОВЕРКА ИНТЕРНЕТА
-  // ==========================================================================
-
 
   // ==========================================================================
   // ЗАГРУЗКА БАЗОВОЙ ИНФОРМАЦИИ
@@ -171,16 +151,22 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
 
       if (mounted && context.mounted && status != null && status.canUpdate == true) {
         final localizations = AppLocalizations.of(context);
-        
+
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted && context.mounted) {
             UpdateDialog.show(
-              context: context,
-              status: status,
-              title: localizations?.translate('app_update_available_title') ?? 'Обновление',
-              message: localizations?.translate('app_update_available_message') ?? 'Доступна новая версия приложения',
-              updateButton: localizations?.translate('app_update_button') ?? 'Обновить',
-            );
+  context: context,
+  status: status,
+  title: localizations?.translate('app_update_available_title') ?? 'Обновление',
+  message: localizations?.translate('app_update_available_message') ?? 'Доступна новая версия приложения',
+  updateButton: localizations?.translate('app_update_button') ?? 'Обновить',
+  laterButton: localizations?.translate('later') ?? 'Позже', // ← Добавь перевод
+  onLaterPressed: () {
+    // Опционально: можно сохранить, что пользователь отложил обновление
+    // Например: SharedPreferences.setBool('update_later_shown', true);
+    debugPrint('Пользователь отложил обновление');
+  },
+);
           }
         });
       }
@@ -217,7 +203,7 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
       }
 
       _firebaseApi = FirebaseApi();
-      
+
     } catch (e) {
       _firebaseApi = null;
     }
@@ -231,7 +217,7 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
     try {
       final prefs = await SharedPreferences.getInstance();
       final savedPin = prefs.getString('user_pin');
-      
+
       if (savedPin == null) {
         if (mounted) {
           Navigator.of(context).pushReplacementNamed('/pin_setup');
@@ -269,7 +255,7 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
 
       if (_canCheckBiometrics) {
         _availableBiometrics = await _auth.getAvailableBiometrics();
-        
+
         if (_availableBiometrics.isNotEmpty) {
           if (Platform.isIOS && _availableBiometrics.contains(BiometricType.face)) {
             _authenticate();
@@ -302,6 +288,10 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
       );
 
       if (didAuthenticate && mounted) {
+        // ✅ ИСПРАВЛЕНИЕ: Устанавливаем флаг верификации
+        setState(() {
+          _isPinVerified = true;
+        });
         _navigateToHome();
       }
     } on PlatformException catch (e) {
@@ -317,22 +307,26 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
 
   void _navigateToHome() {
     if (!mounted) return;
-    
+
+    // ✅ КРИТИЧНО: Проверяем флаг верификации
+    if (!_isPinVerified) {
+      debugPrint('PinScreen: PIN не верифицирован, отменяем навигацию');
+      return;
+    }
+
+    debugPrint('PinScreen: PIN верифицирован, переход на HomeScreen');
+
+    // ✅ ИСПРАВЛЕНИЕ: Передаем initialMessage через arguments
     Future.delayed(Duration(milliseconds: 50), () {
       if (!mounted) return;
-      
-      WidgetsBinding.instance.addPostFrameCallback((_) async {
-        try {
-          if (widget.initialMessage != null && _firebaseApi != null) {
-            await _firebaseApi!.handleMessage(widget.initialMessage!);
-          }
-        } catch (e) {
-          //print('PinScreen: Ошибка в post frame callback: $e');
-        }
-      });
-      
+
       if (mounted) {
-        Navigator.of(context).pushReplacementNamed('/home');
+        Navigator.of(context).pushReplacementNamed(
+          '/home',
+          arguments: {
+            'initialMessage': widget.initialMessage, // ⬅️ Передаем сообщение
+          },
+        );
       }
     });
   }
@@ -358,10 +352,18 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
         final savedPin = prefs.getString('user_pin');
 
         if (_pin == savedPin) {
+          debugPrint('PinScreen: PIN корректен');
+
+          // ✅ ИСПРАВЛЕНИЕ: Устанавливаем флаг ПЕРЕД навигацией
+          setState(() {
+            _isPinVerified = true;
+          });
+
           if (mounted) {
             _navigateToHome();
           }
         } else {
+          debugPrint('PinScreen: PIN некорректен');
           _triggerErrorEffect();
         }
       }
@@ -374,7 +376,7 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
         Vibration.vibrate(duration: 200);
       }
     } catch (e) {}
-    
+
     setState(() {
       _isWrongPin = true;
       _pin = '';
@@ -409,7 +411,7 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
 
   void _showErrorDialog(String title, String message) {
     if (!mounted) return;
-    
+
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -442,7 +444,7 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
 
   Future<bool> _showNoInternetDialog(BuildContext context) async {
     final localizations = AppLocalizations.of(context);
-    
+
     final result = await showDialog<bool>(
       context: context,
       barrierDismissible: false,
@@ -572,14 +574,13 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
   }
 
   // ==========================================================================
-  // BUILD - БЕЗ БЕЛОГО ЭКРАНА
+  // BUILD
   // ==========================================================================
 
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context);
-    
-    // ✅ ИСПРАВЛЕНИЕ: Показываем анимацию сразу, даже если localizations == null
+
     if (_isLoading) {
       return Scaffold(
         backgroundColor: Colors.white,
@@ -592,7 +593,6 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
       );
     }
 
-    // Если localizations не готов после загрузки - показываем лоадер
     if (localizations == null) {
       return Scaffold(
         backgroundColor: Colors.white,
@@ -605,7 +605,6 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
       );
     }
 
-    // ✅ Основной UI - показывается только когда все готово
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(

@@ -11,7 +11,7 @@ class MainFieldDropdownWidget extends StatefulWidget {
   final Function(MainField) onSelectField;
   final TextEditingController controller;
   final Function(int) onSelectEntryId;
-  final VoidCallback onRemove;
+  final VoidCallback? onRemove;
   final int? initialEntryId;
 
   MainFieldDropdownWidget({
@@ -22,7 +22,7 @@ class MainFieldDropdownWidget extends StatefulWidget {
     this.selectedField,
     required this.controller,
     required this.onSelectEntryId,
-    required this.onRemove,
+    this.onRemove,
     this.initialEntryId,
   });
 
@@ -87,6 +87,7 @@ class _MainFieldDropdownWidgetState extends State<MainFieldDropdownWidget> {
         }
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         errorMessage = e.toString();
         isLoading = false;
@@ -115,7 +116,9 @@ class _MainFieldDropdownWidgetState extends State<MainFieldDropdownWidget> {
                     widget.directoryName,
                     style: fieldTextStyle.copyWith(
                       fontWeight: FontWeight.w400,
-                      fontSize: 14,
+                      fontSize: 16,
+                      fontFamily: 'Gilroy',
+                      color: Color(0xff1E2E52),
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -215,14 +218,13 @@ class _MainFieldDropdownWidgetState extends State<MainFieldDropdownWidget> {
                         ),
                       ),
                     ),
-                  const SizedBox(height: 8),
                 ],
               );
             },
           ),
         ),
         // const SizedBox(height: 8),
-        IconButton(
+        if(widget.onRemove != null) IconButton(
           icon: const Icon(
             Icons.remove_circle,
             color: Color.fromARGB(255, 236, 64, 16),

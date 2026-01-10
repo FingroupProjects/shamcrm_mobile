@@ -290,6 +290,8 @@
   "facebook": "Facebook",
   "enter_telegram_username": "Telegram foydalanuvchi nomini kiriting",
   "telegram": "Telegram",
+  "mini_app": "Mini App",
+  "site": "Internet do'kon",
   "birth_date": "Tug'ilgan sana",
   "enter_valid_birth_date": "To'g'ri tug'ilgan sanani DD/MM/YYYY formatida kiriting",
   "unknow": "Noma'lum",
@@ -718,6 +720,7 @@
   "notes": "Voqealar",
   "deals": "Bitimlar",
   "history": "Tarix",
+  "execution_history": "Bajarish tarixi",
   "tutorial_lead_card_title": "Lead kartasi",
   "tutorial_lead_card_description": "Bu yerda siz yetakchi maʼlumotlarni koʻrishingiz va boshqarishingiz mumkin",
   "tutorial_lead_button_title": "Lead qo‘shish",
@@ -1893,5 +1896,11 @@
   "change_status": "Holatni o'zgartirish",
   "save_hint": "Mahsulotlarni qo'shgandan keyin saqlash uchun 'Asosiy'ga o'ting",
   "users_who_can_view_deals": "Ushbu status bilan bitimlarni ko'rishi mumkin bo'lgan foydalanuvchilar",
-  "users_who_can_change_status": "Bitimni ushbu statusga o'zgartirishi mumkin bo'lgan foydalanuvchilar"
+  "users_who_can_change_status": "Bitimni ushbu statusga o'zgartirishi mumkin bo'lgan foydalanuvchilar",
+  "show_field": "Maydonni ko'rsatish",
+  "show_on_table": "Jadvalda ko'rsatish",
+  "lead_status": "Lid holati",
+  "later": "Keyinroq",
+  "additional_client_info": "Qo'shimcha mijoz ma'lumotlari",
+  "clientreturn": "Mijoz qaytishi"
 }

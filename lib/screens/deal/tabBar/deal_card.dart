@@ -111,7 +111,6 @@ class _DealCardState extends State<DealCard> {
               lead: widget.deal.lead?.name,
               leadId: widget.deal.lead?.id,
               description: widget.deal.description,
-              dealCustomFields: widget.deal.dealCustomFields,
             ),
           ),
         );

@@ -532,26 +532,25 @@ class _MoneyOutcomeScreenState extends State<MoneyOutcomeScreen> {
                   ),
                 ),
               );
-
               if (result == true && mounted) {
                 _moneyOutcomeBloc.add(const FetchMoneyOutcome(forceRefresh: true));
               }
             },
             itemBuilder: (BuildContext context) {
               return [
-                PopupMenuItem<String>(
-                  value: MoneyOutcomeOperationType.client_return.name,
+                 PopupMenuItem<String>(
+                  value: MoneyOutcomeOperationType.supplier_payment.name,
                   child: Row(
                     children: [
                       const Icon(
-                        Icons.person,
+                        Icons.keyboard_return,
                         color: Color(0xff1E2E52),
                         size: 20,
                       ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
-                          localizations.translate(MoneyOutcomeOperationType.client_return.name),
+                          localizations.translate('supplier_payment'),
                           style: const TextStyle(
                             fontSize: 14,
                             fontFamily: 'Gilroy',
@@ -588,18 +587,18 @@ class _MoneyOutcomeScreenState extends State<MoneyOutcomeScreen> {
                   ),
                 ),
                 PopupMenuItem<String>(
-                  value: MoneyOutcomeOperationType.supplier_payment.name,
+                  value: MoneyOutcomeOperationType.client_return.name,
                   child: Row(
                     children: [
                       const Icon(
-                        Icons.keyboard_return,
+                        Icons.person,
                         color: Color(0xff1E2E52),
                         size: 20,
                       ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
-                          localizations.translate('supplier_return'),
+                            localizations.translate('clientreturn'),
                           style: const TextStyle(
                             fontSize: 14,
                             fontFamily: 'Gilroy',

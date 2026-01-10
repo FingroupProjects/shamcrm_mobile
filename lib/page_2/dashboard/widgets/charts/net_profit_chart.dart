@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'dart:math';
 
 import '../../../../bloc/page_2_BLOC/dashboard/sales_dashboard_bloc.dart';
 import '../../detailed_report/detailed_report_screen.dart';
@@ -159,7 +160,7 @@ class _NetProfitChartState extends State<NetProfitChart> {
                         ),
                       );
                     },
-                    reservedSize: 40,
+                    reservedSize: 50,
                     interval: 50,
                   ),
                 ),
@@ -387,7 +388,7 @@ class _NetProfitChartState extends State<NetProfitChart> {
                             ),
                           );
                         },
-                        reservedSize: 40,
+                        reservedSize: 50,
                         interval: _calculateInterval(months),
                       ),
                     ),
@@ -490,54 +491,96 @@ class _NetProfitChartState extends State<NetProfitChart> {
     return maxValue * 1.2;
   }
 
+  // ============================================
+  // НОВАЯ ЛОГИКА РАСЧЁТА ИНТЕРВАЛОВ
+  // Учитывает отрицательные значения
+  // ============================================
   double _calculateInterval(List<NetProfitMonth> months) {
-    if (months.isEmpty) return 10;
+    if (months.isEmpty) return 20;
 
     final values = months.map((m) => _parseNetProfit(m.netProfit)).toList();
     final minValue = values.reduce((a, b) => a < b ? a : b);
     final maxValue = values.reduce((a, b) => a > b ? a : b);
+    
+    // Рассчитываем диапазон (от минимума до максимума)
     final range = (maxValue - minValue).abs();
-
-    // Более детальные интервалы для красивого UI
-    if (range <= 5) return 1;
-    if (range <= 10) return 2;
-    if (range <= 20) return 5;
-    if (range <= 50) return 10;
-    if (range <= 100) return 20;
-    if (range <= 200) return 25;
-    if (range <= 500) return 50;
-    if (range <= 1000) return 100;
-    if (range <= 2000) return 200;
-    if (range <= 5000) return 500;
-    if (range <= 10000) return 1000;
-    if (range <= 20000) return 2000;
-    return 5000;
+    
+    if (range == 0) return 20;
+    
+    // Целевое количество делений - 5
+    const targetDivisions = 5;
+    
+    // Рассчитываем "сырой" интервал
+    double rawInterval = range / targetDivisions;
+    
+    // Находим порядок величины (степень 10)
+    double magnitude = pow(10, (log(rawInterval) / ln10).floor()).toDouble();
+    
+    // Нормализуем интервал к "красивым" числам: 1, 2, 5, 10, 20, 50, 100...
+    double normalizedInterval = rawInterval / magnitude;
+    
+    double niceInterval;
+    if (normalizedInterval <= 1) {
+      niceInterval = 1;
+    } else if (normalizedInterval <= 2) {
+      niceInterval = 2;
+    } else if (normalizedInterval <= 5) {
+      niceInterval = 5;
+    } else {
+      niceInterval = 10;
+    }
+    
+    return niceInterval * magnitude;
   }
 
+  // ============================================
+  // НОВОЕ ФОРМАТИРОВАНИЕ С РУССКИМИ СУФФИКСАМИ
+  // ============================================
   String _formatValue(double value) {
+    if (value == 0) return '0';
+    
     final absValue = value.abs();
     final sign = value < 0 ? '-' : '';
-
-    if (absValue >= 1000000) {
-      return '$sign${(absValue / 1000000).toStringAsFixed(1)}M';
+    
+    if (absValue >= 1000000000) {
+      // Миллиарды
+      return '$sign${(absValue / 1000000000).toStringAsFixed(2)}млрд';
+    } else if (absValue >= 1000000) {
+      // Миллионы
+      return '$sign${(absValue / 1000000).toStringAsFixed(2)}м';
+    } else if (absValue >= 10000) {
+      // Для больших тысяч используем сокращение
+      return '$sign${(absValue / 1000).toStringAsFixed(1)}т';
+    } else if (absValue >= 1000) {
+      // Для малых тысяч можем показать полное число с разделителем
+      final formatted = absValue.toInt().toString().replaceAllMapped(
+        RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+        (Match m) => '${m[1]} ',
+      );
+      return '$sign$formatted';
+    } else {
+      return value.toStringAsFixed(0);
     }
-    if (absValue >= 1000) {
-      return '$sign${(absValue / 1000).toStringAsFixed(1)}k';
-    }
-    return value.toStringAsFixed(0);
   }
 
   String _formatAxisValue(double value) {
+    if (value == 0) return '0';
+    
     final absValue = value.abs();
     final sign = value < 0 ? '-' : '';
-
-    if (absValue >= 1000000) {
-      return '$sign${(absValue / 1000000).toInt()}M';
+    
+    if (absValue >= 1000000000) {
+      // Миллиарды
+      return '$sign${(absValue / 1000000000).toStringAsFixed(absValue % 1000000000 == 0 ? 0 : 1)}млрд';
+    } else if (absValue >= 1000000) {
+      // Миллионы
+      return '$sign${(absValue / 1000000).toStringAsFixed(absValue % 1000000 == 0 ? 0 : 1)}м';
+    } else if (absValue >= 1000) {
+      // Тысячи
+      return '$sign${(absValue / 1000).toStringAsFixed(absValue % 1000 == 0 ? 0 : 1)}т';
+    } else {
+      return '${sign}${absValue.toInt()}';
     }
-    if (absValue >= 1000) {
-      return '$sign${(absValue / 1000).toInt()}k';
-    }
-    return value.toInt().toString();
   }
 
   Widget _buildPeriodDropdown() {

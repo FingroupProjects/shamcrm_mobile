@@ -6,12 +6,12 @@ import 'package:crm_task_manager/bloc/event/event_event.dart';
 import 'package:crm_task_manager/bloc/event/event_state.dart';
 import 'package:crm_task_manager/bloc/manager_list/manager_bloc.dart';
 import 'package:crm_task_manager/bloc/sales_funnel/sales_funnel_bloc.dart';
-import 'package:crm_task_manager/bloc/sales_funnel/sales_funnel_bloc.dart';
 import 'package:crm_task_manager/bloc/sales_funnel/sales_funnel_event.dart';
 import 'package:crm_task_manager/bloc/sales_funnel/sales_funnel_state.dart';
 import 'package:crm_task_manager/models/event_model.dart';
 import 'package:crm_task_manager/models/manager_model.dart';
 import 'package:crm_task_manager/models/sales_funnel_model.dart';
+import 'package:crm_task_manager/screens/event/event_cache.dart';
 import 'package:crm_task_manager/screens/event/event_details/event_add_screen.dart';
 import 'package:crm_task_manager/screens/event/event_details/event_card.dart';
 import 'package:crm_task_manager/utils/TutorialStyleWidget.dart';
@@ -44,8 +44,11 @@ class _EventScreenState extends State<EventScreen> with TickerProviderStateMixin
   List<int>? _selectedManagerIds;
   int? _selectedManagerId;
   bool _showCustomTabBar = true;
+  bool _isFilterLoading = false;
+  bool _shouldShowLoader = false;
+  bool _skipNextTabListener = false; // КРИТИЧНО: Флаг для пропуска TabListener при фильтрации
   final TextEditingController _searchController = TextEditingController();
-  bool _hasPermissionToAddEvent = false; // Изначально false
+  bool _hasPermissionToAddEvent = false;
   final ApiService _apiService = ApiService();
 
   List<ManagerData> _selectedManagers = [];
@@ -92,14 +95,25 @@ int _tutorialStep = 0; // Добавляем шаг туториала
     _tabController = TabController(length: 2, vsync: this);
 
     _tabController.addListener(() {
-      setState(() {
-        _currentTabIndex = _tabController.index;
-        //print('EventScreen: TabController index changed to: $_currentTabIndex');
-      });
-      if (_tabScrollController.hasClients) {
-        _scrollToActiveTab();
+      if (!_tabController.indexIsChanging) {
+        // ← КРИТИЧНО: Проверяем флаг пропуска!
+        if (_skipNextTabListener) {
+          debugPrint('EventScreen: TabController listener - SKIPPED (filter just applied)');
+          setState(() {
+            _skipNextTabListener = false;
+            _currentTabIndex = _tabController.index;
+          });
+          return; // ← ВЫХОДИМ БЕЗ ЗАПРОСА!
+        }
+
+        setState(() {
+          _currentTabIndex = _tabController.index;
+        });
+        if (_tabScrollController.hasClients) {
+          _scrollToActiveTab();
+        }
+        _loadEvents();
       }
-      _loadEvents();
     });
 
     _listScrollController.addListener(() {
@@ -384,119 +398,106 @@ int _tutorialStep = 0; // Добавляем шаг туториала
   ).show(context: context);
 }
 // Новый метод для построения заголовка с выбором воронки
-  Widget _buildTitleWidget(BuildContext context) {
-    //print('EventScreen: Entering _buildTitleWidget');
-    return BlocBuilder<SalesFunnelBloc, SalesFunnelState>(
-      builder: (context, state) {
-        //print('EventScreen: _buildTitleWidget - Current SalesFunnelBloc state: $state');
-        String title = AppLocalizations.of(context)!.translate('events');
-        SalesFunnel? selectedFunnel;
-        if (state is SalesFunnelLoading) {
-          //print('EventScreen: _buildTitleWidget - State is SalesFunnelLoading');
-          title = AppLocalizations.of(context)!.translate('events');
-        } else if (state is SalesFunnelLoaded) {
-          //print('EventScreen: _buildTitleWidget - State is SalesFunnelLoaded, funnels: ${state.funnels}, selectedFunnel: ${state.selectedFunnel}');
-          selectedFunnel = state.selectedFunnel ?? state.funnels.firstOrNull;
-          _selectedFunnel = selectedFunnel; // Обновляем _selectedFunnel
-          //print('EventScreen: _buildTitleWidget - Selected funnel set to: $selectedFunnel');
-          title = selectedFunnel?.name ?? AppLocalizations.of(context)!.translate('events');
-          //print('EventScreen: _buildTitleWidget - Title set to: $title');
-        } else if (state is SalesFunnelError) {
-          //print('EventScreen: _buildTitleWidget - State is SalesFunnelError: ${state.message}');
-          title = 'Ошибка загрузки';
+ Widget _buildTitleWidget(BuildContext context) {
+  return BlocBuilder<SalesFunnelBloc, SalesFunnelState>(
+    builder: (context, state) {
+      // Дефолтный заголовок — всегда "События"
+      String title = AppLocalizations.of(context)!.translate('events');
+      SalesFunnel? selectedFunnel;
+
+      // Только если воронки успешно загружены — пытаемся показать название текущей
+      if (state is SalesFunnelLoaded) {
+        selectedFunnel = state.selectedFunnel ?? state.funnels.firstOrNull;
+        _selectedFunnel = selectedFunnel;
+
+        if (selectedFunnel != null) {
+          title = selectedFunnel.name;
         }
-        //print('EventScreen: _buildTitleWidget - Rendering title: $title');
-        return Row(
-          children: [
-            Expanded(
-              child: Text(
-                title,
-                style: TextStyle(
-                  fontSize: 20,
-                  fontFamily: 'Gilroy',
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xff1E2E52),
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+      }
+      // При Loading, Error, Initial — просто оставляем "События". Пользователь не должен видеть ошибку в шапке.
+
+      return Row(
+        children: [
+          Expanded(
+            child: Text(
+              title,
+              style: const TextStyle(
+                fontSize: 20,
+                fontFamily: 'Gilroy',
+                fontWeight: FontWeight.w600,
+                color: Color(0xff1E2E52),
               ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
-            if (state is SalesFunnelLoaded && state.funnels.length > 1)
-              Padding(
-                padding: const EdgeInsets.only(left: 8.0),
-                child: PopupMenuButton<SalesFunnel>(
-                  icon: Icon(Icons.arrow_drop_down, color: Color(0xff1E2E52)),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12.0),
-                  ),
-                  color: Colors.white,
-                  elevation: 8,
-                  shadowColor: Colors.black.withOpacity(0.2),
-                  offset: Offset(0, 40),
-                  onSelected: (SalesFunnel funnel) async {
-                    //print('EventScreen: _buildTitleWidget - Selected new funnel: ${funnel.name} (ID: ${funnel.id})');
-                    try {
-                      // Сохраняем новую воронку
-                      await _apiService.saveSelectedEventSalesFunnel(funnel.id.toString());
-                      //print('EventScreen: _buildTitleWidget - Saved funnel ID ${funnel.id} to SharedPreferences');
-                      // Сбрасываем фильтры
-                      _resetFilters();
-                      //print('EventScreen: _buildTitleWidget - Reset filters');
-                      setState(() {
-                        _selectedFunnel = funnel;
-                        _isSearching = false;
-                        _searchController.clear();
-                        _lastSearchQuery = '';
-                        //print('EventScreen: _buildTitleWidget - Updated _selectedFunnel: $_selectedFunnel, cleared search');
-                      });
-                      // Обновляем воронку в SalesFunnelBloc
-                      context.read<SalesFunnelBloc>().add(SelectSalesFunnel(funnel));
-                      // Загружаем события для новой воронки
-                      _loadEvents();
-                    } catch (e) {
-                      //print('EventScreen: Error switching funnel: $e');
+          ),
+
+          // Стрелочка переключения воронок — только если есть несколько воронок
+          if (state is SalesFunnelLoaded && state.funnels.length > 1)
+            Padding(
+              padding: const EdgeInsets.only(left: 8.0),
+              child: PopupMenuButton<SalesFunnel>(
+                icon: const Icon(Icons.arrow_drop_down, color: Color(0xff1E2E52)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                color: Colors.white,
+                elevation: 8,
+                offset: const Offset(0, 40),
+                onSelected: (SalesFunnel funnel) async {
+                  try {
+                    // Сохраняем выбор пользователя
+                    await _apiService.saveSelectedEventSalesFunnel(funnel.id.toString());
+
+                    // Очищаем старое состояние
+                    _resetFilters();
+
+                    setState(() {
+                      _selectedFunnel = funnel;
+                      _isSearching = false;
+                      _searchController.clear();
+                      _lastSearchQuery = '';
+                    });
+
+                    // Обновляем глобальный выбор воронки
+                    context.read<SalesFunnelBloc>().add(SelectSalesFunnel(funnel));
+
+                    // Перезагружаем события для новой воронки
+                    _loadEvents();
+                  } catch (e) {
+                    if (mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            'Ошибка при смене воронки',
-                            style: TextStyle(
-                              fontFamily: 'Gilroy',
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.white,
-                            ),
-                          ),
+                        const SnackBar(
+                          content: Text('Ошибка при смене воронки'),
                           backgroundColor: Colors.red,
                         ),
                       );
                     }
-                  },
-                  itemBuilder: (BuildContext context) {
-                    //print('EventScreen: _buildTitleWidget - Building PopupMenu with funnels: ${state.funnels}');
-                    return state.funnels
-                        .map((funnel) => PopupMenuItem<SalesFunnel>(
-                              value: funnel,
-                              child: Text(
-                                funnel.name,
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontFamily: 'Gilroy',
-                                  fontWeight: FontWeight.w500,
-                                  color: Color(0xff1E2E52),
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ))
-                        .toList();
-                  },
-                ),
+                  }
+                },
+                itemBuilder: (_) => state.funnels
+                    .map((f) => PopupMenuItem<SalesFunnel>(
+                          value: f,
+                          child: Text(
+                            f.name,
+                            style: const TextStyle(
+                              fontFamily: 'Gilroy',
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                              color: Color(0xff1E2E52),
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ))
+                    .toList(),
               ),
-          ],
-        );
-      },
-    );
-  }
+            ),
+        ],
+      );
+    },
+  );
+}
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -529,68 +530,166 @@ int _tutorialStep = 0; // Добавляем шаг туториала
   }
 
   Future<void> _searchEvents(String query, int currentStatusId) async {
+    if (mounted) {
+      setState(() {
+        _isFilterLoading = true;
+        _shouldShowLoader = true;
+      });
+    }
+
+    await EventCache.clearEventsForStatus(currentStatusId);
+
     context.read<EventBloc>().add(FetchEvents(
       query: query,
-      managerIds: _selectedManagers.map((manager) => manager.id).toList(),
+      managerIds: _selectedManagers.isNotEmpty
+          ? _selectedManagers.map((manager) => manager.id).toList()
+          : null,
       statusIds: _selectedStatuses ?? currentStatusId,
       fromDate: _fromDate,
       toDate: _toDate,
       noticefromDate: _NoticefromDate,
       noticetoDate: _NoticetoDate,
-      salesFunnelId: _selectedFunnel?.id, // Передаем ID воронки
+      salesFunnelId: _selectedFunnel?.id,
     ));
   }
 
   void _resetFilters() {
-    setState(() {
-      //print('EventScreen: Resetting filters');
-      _showCustomTabBar = true;
-      _selectedManagers = [];
-      _selectedStatuses = null;
-      _fromDate = null;
-      _toDate = null;
-      _NoticefromDate = null;
-      _NoticetoDate = null;
-      _initialselectedManagers = [];
-      _initialSelStatus = null;
-      _intialFromDate = null;
-      _intialToDate = null;
-      _intialNoticeFromDate = null;
-      _intialNoticeToDate = null;
-      _lastSearchQuery = '';
-      _searchController.clear();
-    });
+    if (mounted) {
+      setState(() {
+        _showCustomTabBar = true;
+        _isSearching = false;
+        _selectedManagers = [];
+        _selectedStatuses = null;
+        _fromDate = null;
+        _toDate = null;
+        _NoticefromDate = null;
+        _NoticetoDate = null;
+        _initialselectedManagers = [];
+        _initialSelStatus = null;
+        _intialFromDate = null;
+        _intialToDate = null;
+        _intialNoticeFromDate = null;
+        _intialNoticeToDate = null;
+        _lastSearchQuery = '';
+        _searchController.clear();
+      });
+    }
+    
     _loadEvents();
   }
 
+  Future<void> _onRefresh() async {
+    try {
+      await EventCache.clearAllData();
+      await EventCache.clearPersistentCounts();
+
+      if (mounted) {
+        setState(() {
+          _isSearching = false;
+          _lastSearchQuery = '';
+          _searchController.clear();
+          _showCustomTabBar = true;
+          _isFilterLoading = false;
+          _shouldShowLoader = false;
+
+          _selectedManagers.clear();
+          _selectedStatuses = null;
+          _fromDate = null;
+          _toDate = null;
+          _NoticefromDate = null;
+          _NoticetoDate = null;
+
+          _initialselectedManagers.clear();
+          _initialSelStatus = null;
+          _intialFromDate = null;
+          _intialToDate = null;
+          _intialNoticeFromDate = null;
+          _intialNoticeToDate = null;
+        });
+      }
+
+      final eventBloc = context.read<EventBloc>();
+      await eventBloc.clearAllCountsAndCache();
+      
+      // Загружаем события для текущей вкладки
+      final bool isCompleted = _currentTabIndex == 1;
+      eventBloc.add(FetchEvents(
+        statusIds: isCompleted ? 2 : 1,
+        salesFunnelId: _selectedFunnel?.id,
+        forceRefresh: true,
+      ));
+
+    } catch (e) {
+      // ✅ УБРАНО: Не показываем SnackBar с кнопкой "Повторить"
+      debugPrint('EventScreen: Ошибка при обновлении данных: $e');
+      
+      if (mounted) {
+        final eventBloc = context.read<EventBloc>();
+        final bool isCompleted = _currentTabIndex == 1;
+        eventBloc.add(FetchEvents(
+          statusIds: isCompleted ? 2 : 1,
+          salesFunnelId: _selectedFunnel?.id,
+          forceRefresh: false,
+        ));
+      }
+    }
+  }
+
+  // Метод для проверки наличия активных фильтров
+  bool _hasActiveFilters() {
+    return _selectedManagers.isNotEmpty ||
+        _selectedStatuses != null ||
+        _fromDate != null ||
+        _toDate != null ||
+        _NoticefromDate != null ||
+        _NoticetoDate != null;
+  }
+
   Future<void> _handleManagerSelected(Map managers) async {
-    setState(() {
-      _showCustomTabBar = false;
-      _selectedManagers = managers['managers'];
-      _selectedStatuses = managers['statuses'];
-      _fromDate = managers['fromDate'];
-      _toDate = managers['toDate'];
-      _NoticefromDate = managers['noticefromDate'];
-      _NoticetoDate = managers['noticetoDate'];
+    debugPrint('EventScreen: _handleManagerSelected - START WITH NEW LOGIC');
+    
+    if (mounted) {
+      setState(() {
+        _isFilterLoading = true;
+        _shouldShowLoader = true;
+        _showCustomTabBar = true;
+        _skipNextTabListener = true; // ← КРИТИЧНО: Пропускаем следующий TabListener!
+        _isSearching = false;
+        _searchController.clear();
+        _lastSearchQuery = '';
 
-      _initialselectedManagers = managers['managers'];
-      _initialSelStatus = managers['statuses'];
-      _intialFromDate = managers['fromDate'];
-      _intialToDate = managers['toDate'];
-      _intialNoticeFromDate = managers['noticefromDate'];
-      _intialNoticeToDate = managers['noticetoDate'];
-    });
+        _selectedManagers = managers['managers'];
+        _selectedStatuses = managers['statuses'];
+        _fromDate = managers['fromDate'];
+        _toDate = managers['toDate'];
+        _NoticefromDate = managers['noticefromDate'];
+        _NoticetoDate = managers['noticetoDate'];
 
-    context.read<EventBloc>().add(FetchEvents(
-      managerIds: _selectedManagers.map((manager) => manager.id).toList(),
-      statusIds: _selectedStatuses,
+        // Сохраняем initial значения
+        _initialselectedManagers = managers['managers'];
+        _initialSelStatus = managers['statuses'];
+        _intialFromDate = managers['fromDate'];
+        _intialToDate = managers['toDate'];
+        _intialNoticeFromDate = managers['noticefromDate'];
+        _intialNoticeToDate = managers['noticetoDate'];
+      });
+    }
+
+    await Future.delayed(Duration(milliseconds: 50));
+
+    context.read<EventBloc>().add(FetchEventsWithFilters(
+      managerIds: _selectedManagers.isNotEmpty
+          ? _selectedManagers.map((manager) => manager.id).toList()
+          : null,
+      statusIds: _selectedStatuses ?? (_currentTabIndex == 1 ? 2 : 1),
       fromDate: _fromDate,
       toDate: _toDate,
       noticefromDate: _NoticefromDate,
       noticetoDate: _NoticetoDate,
-      query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
-      salesFunnelId: _selectedFunnel?.id, // Передаем ID воронки
+      salesFunnelId: _selectedFunnel?.id,
     ));
+
+    debugPrint('EventScreen: _handleManagerSelected - Dispatched FetchEventsWithFilters');
   }
 
   void _onSearch(String query) {
@@ -652,12 +751,7 @@ int _tutorialStep = 0; // Добавляем шаг туториала
             initialNoticeManagerEventFromDate: _intialNoticeFromDate,
             initialNoticeManagerEventToDate: _intialNoticeToDate,
             onEventResetFilters: _resetFilters,
-            hasActiveEventFilters: _selectedManagers.isNotEmpty ||
-                _selectedStatuses != null ||
-                _fromDate != null ||
-                _toDate != null ||
-                _NoticefromDate != null ||
-                _NoticetoDate != null,
+            hasActiveEventFilters: _hasActiveFilters(),
             textEditingController: textEditingController,
             focusNode: focusNode,
             showFilterTaskIcon: false,
@@ -670,24 +764,25 @@ int _tutorialStep = 0; // Добавляем шаг туториала
             showFilterIconEvent: true,
             clearButtonClick: (value) {
               if (value == false) {
-                setState(() {
-                  _isSearching = false;
-                  _searchController.clear();
-                  _lastSearchQuery = '';
-                });
+                if (mounted) {
+                  setState(() {
+                    _isSearching = false;
+                    _searchController.clear();
+                    _lastSearchQuery = '';
+                  });
+                }
 
                 if (_searchController.text.isEmpty) {
-                  if (_selectedManagers.isEmpty &&
-                      _selectedStatuses == null &&
-                      _fromDate == null &&
-                      _toDate == null &&
-                      _NoticefromDate == null &&
-                      _NoticetoDate == null) {
-                    setState(() {
-                      _showCustomTabBar = true;
-                    });
+                  if (_hasActiveFilters()) {
+                    // Есть активные фильтры - загружаем с фильтрами
                     _loadEvents();
                   } else {
+                    // Нет фильтров - показываем табы
+                    if (mounted) {
+                      setState(() {
+                        _showCustomTabBar = true;
+                      });
+                    }
                     _loadEvents();
                   }
                 } else if (_selectedManagerIds != null && _selectedManagerIds!.isNotEmpty) {
@@ -720,49 +815,57 @@ int _tutorialStep = 0; // Добавляем шаг туториала
             : Column(
                 children: [
                   const SizedBox(height: 15),
-                  if (!_isSearching &&
-                      _selectedManagers.isEmpty &&
-                      _selectedStatuses == null &&
-                      _fromDate == null &&
-                      _toDate == null &&
-                      _NoticefromDate == null &&
-                      _NoticetoDate == null &&
-                      _showCustomTabBar)
+                  if (!_isSearching && _showCustomTabBar)
                     _buildCustomTabBar(),
                   Expanded(
                     child: RefreshIndicator(
                       color: Color(0xff1E2E52),
                       backgroundColor: Colors.white,
-                      onRefresh: () async {
-                        _loadEvents();
-                        return Future.delayed(Duration(milliseconds: 300));
-                      },
-                      child: BlocBuilder<EventBloc, EventState>(
-                        builder: (context, state) {
-                          if (state is EventLoading) {
-                            return Center(
-                              child: CircularProgressIndicator(
-                                color: Color(0xff1E2E52),
-                              ),
-                            );
+                      onRefresh: () => _onRefresh(),
+                      child: BlocListener<EventBloc, EventState>(
+                        listener: (context, state) {
+                          debugPrint('EventScreen: BlocListener - state: ${state.runtimeType}');
+                          // Сбрасываем флаги когда данные загружены или произошла ошибка
+                          if ((state is EventDataLoaded || state is EventError) &&
+                              mounted &&
+                              (_isFilterLoading || _shouldShowLoader)) {
+                            debugPrint('EventScreen: Resetting loader flags');
+                            setState(() {
+                              _isFilterLoading = false;
+                              _shouldShowLoader = false;
+                            });
                           }
-                          if (state is EventDataLoaded) {
-                            return _buildEventsList(state.events);
-                          }
-                          if (state is EventError) {
-                            return Center(
-                              child: Text(
-                                state.message,
-                                style: TextStyle(
-                                  color: Color(0xff99A4BA),
-                                  fontSize: 14,
-                                  fontFamily: 'Gilroy',
-                                ),
-                              ),
-                            );
-                          }
-                          return Container();
                         },
+                        child: BlocBuilder<EventBloc, EventState>(
+                          builder: (context, state) {
+                            // Показываем лоадер только если флаги активны ИЛИ состояние - EventLoading
+                            if (_shouldShowLoader || _isFilterLoading || state is EventLoading) {
+                              return Center(
+                                child: CircularProgressIndicator(
+                                  color: Color(0xff1E2E52),
+                                ),
+                              );
+                            }
+                            
+                            if (state is EventDataLoaded) {
+                              return _buildEventsList(state.events);
+                            }
+                            
+                            if (state is EventError) {
+                              return Center(
+                                child: Text(
+                                  state.message,
+                                  style: TextStyle(
+                                    color: Color(0xff99A4BA),
+                                    fontSize: 14,
+                                    fontFamily: 'Gilroy',
+                                  ),
+                                ),
+                              );
+                            }
+                            return Container();
+                          },
+                        ),
                       ),
                     ),
                   ),
@@ -775,13 +878,8 @@ int _tutorialStep = 0; // Добавляем шаг туториала
   Widget _buildEventsList(List<NoticeEvent> events) {
     final localizations = AppLocalizations.of(context);
 
-    if (_isSearching ||
-        _selectedManagers.isNotEmpty ||
-        _selectedStatuses != null ||
-        _fromDate != null ||
-        _toDate != null ||
-        _NoticefromDate != null ||
-        _NoticetoDate != null) {
+    // Если есть активные фильтры или поиск - показываем отфильтрованный список
+    if (_isSearching || _hasActiveFilters()) {
       if (events.isEmpty) {
         return Center(
           child: Text(

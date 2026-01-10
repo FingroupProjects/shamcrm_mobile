@@ -111,7 +111,7 @@ class _VariantDetailsScreenState extends State<VariantDetailsScreen> {
               _currentPage = index;
             }),
             itemBuilder: (context, index) {
-              final imageUrl = '$baseUrl/${images[index]}';
+              final imageUrl = '${images[index]}';
               if (images[index].isEmpty) {
                 return _buildPlaceholder();
               }

@@ -332,46 +332,120 @@ class MessageBubble extends StatelessWidget {
       );
     }
 
-    // Оригинальная логика для HTML
-    final document = parse(text);
-    List<TextSpan> spans = [];
+    // Предобработка HTML: убираем служебные теги
+    String cleanedHtml = text
+        // Убираем служебные теги Quill-редактора
+        .replaceAll(RegExp(r'<span class="ql-cursor"[^>]*>.*?</span>', dotAll: true), '')
+        .replaceAll(RegExp(r'<span[^>]*>\s*</span>'), '') // Пустые span
+        // Убираем невидимые символы
+        .replaceAll(RegExp(r'[\u200B-\u200D\uFEFF]'), '');
 
-    void parseNode(dom.Node node, TextStyle currentStyle) {
+    // Оригинальная логика для HTML
+    final document = parse(cleanedHtml);
+    List<TextSpan> spans = [];
+    bool needsLineBreak = false; // Флаг для добавления переноса строки после блочных элементов
+
+    void parseNode(dom.Node node, TextStyle currentStyle, {bool isFirstInBlock = false}) {
       if (node is dom.Text) {
-        // Парсим текстовые узлы на предмет ссылок
-        spans.addAll(_parseTextWithLinks(context, node.text, currentStyle));
+        final textContent = node.text.trim();
+        if (textContent.isNotEmpty) {
+          // Добавляем перенос строки если предыдущий блок закончился
+          if (needsLineBreak && spans.isNotEmpty) {
+            spans.add(TextSpan(text: '\n', style: currentStyle));
+            needsLineBreak = false;
+          }
+          // Парсим текстовые узлы на предмет ссылок
+          spans.addAll(_parseTextWithLinks(context, textContent, currentStyle));
+        }
       } else if (node is dom.Element) {
+        // Игнорируем служебные элементы
+        if (node.localName == 'span' && 
+            (node.attributes['class']?.contains('ql-') ?? false)) {
+          return; // Пропускаем служебные span от Quill
+        }
+        
         TextStyle newStyle = currentStyle;
-        if (node.localName == 'strong') {
+        
+        // Обработка форматирования
+        if (node.localName == 'strong' || node.localName == 'b') {
           newStyle = newStyle.copyWith(fontWeight: FontWeight.bold);
-        } else if (node.localName == 'em') {
+        } else if (node.localName == 'em' || node.localName == 'i') {
           newStyle = newStyle.copyWith(fontStyle: FontStyle.italic);
-        } else if (node.localName == 's') {
+        } else if (node.localName == 's' || node.localName == 'strike' || node.localName == 'del') {
           newStyle = newStyle.copyWith(decoration: TextDecoration.lineThrough);
+        } else if (node.localName == 'u') {
+          newStyle = newStyle.copyWith(decoration: TextDecoration.underline);
         } else if (node.localName == 'a') {
           final url = node.attributes['href'] ?? '';
-          spans.add(
-            TextSpan(
-              text: node.text,
-              style: newStyle.copyWith(
-                color: isSender ? Colors.white : Colors.blue,
-                decoration: TextDecoration.underline,
+          final linkText = node.text.trim();
+          if (linkText.isNotEmpty) {
+            spans.add(
+              TextSpan(
+                text: linkText,
+                style: newStyle.copyWith(
+                  color: isSender ? Colors.white : Colors.blue,
+                  decoration: TextDecoration.underline,
+                ),
+                recognizer: TapGestureRecognizer()
+                  ..onTap = () => _handleLinkTap(context, url),
               ),
-              recognizer: TapGestureRecognizer()
-                ..onTap = () => _handleLinkTap(context, url),
-            ),
-          );
+            );
+          }
+          return;
+        } else if (node.localName == 'br') {
+          // Обработка переноса строки
+          spans.add(TextSpan(text: '\n', style: currentStyle));
+          return;
+        } else if (node.localName == 'p' || 
+                   node.localName == 'div' || 
+                   node.localName == 'h1' || 
+                   node.localName == 'h2' || 
+                   node.localName == 'h3' ||
+                   node.localName == 'blockquote') {
+          // Блочные элементы - обрабатываем их содержимое без самих тегов
+          // Добавляем перенос строки перед блоком если это не первый элемент
+          if (spans.isNotEmpty && !isFirstInBlock) {
+            spans.add(TextSpan(text: '\n', style: currentStyle));
+          }
+          
+          for (var child in node.nodes) {
+            parseNode(child, newStyle);
+          }
+          
+          // Помечаем что после блока нужен перенос
+          needsLineBreak = true;
+          return;
+        } else if (node.localName == 'span') {
+          // Обычный span без служебных классов - просто обрабатываем содержимое
+          for (var child in node.nodes) {
+            parseNode(child, newStyle);
+          }
           return;
         }
 
+        // Обрабатываем дочерние узлы
         for (var child in node.nodes) {
           parseNode(child, newStyle);
         }
       }
     }
 
+    bool isFirst = true;
     for (var node in document.body!.nodes) {
-      parseNode(node, baseStyle);
+      parseNode(node, baseStyle, isFirstInBlock: isFirst);
+      isFirst = false;
+    }
+
+    // Если нет span'ов (только теги без текста), возвращаем пустой текст
+    if (spans.isEmpty) {
+      return Container(
+        constraints: BoxConstraints(maxWidth: maxWidth),
+        child: RichText(
+          text: TextSpan(text: '', style: baseStyle),
+          maxLines: 10000000,
+          overflow: TextOverflow.ellipsis,
+        ),
+      );
     }
 
     return Container(

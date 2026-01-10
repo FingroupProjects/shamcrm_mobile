@@ -179,7 +179,11 @@ class _CustomAppBarState extends State<CustomAppBarPage2>
             widget.currentFilters['status'] != null ||
             widget.currentFilters['paymentMethod'] != null ||
             (widget.currentFilters['managers'] != null &&
-                widget.currentFilters['managers'].isNotEmpty));
+                widget.currentFilters['managers'].isNotEmpty) ||
+            (widget.currentFilters['regions'] != null &&
+                widget.currentFilters['regions'].isNotEmpty) ||
+            (widget.currentFilters['leads'] != null &&
+                widget.currentFilters['leads'].isNotEmpty));
     
     _isIncomeFiltering = widget.currentFilters.isNotEmpty ||
         (widget.currentFilters['date_from'] != null ||
@@ -823,6 +827,9 @@ Future<void> _scanBarcode() async {
   List<String>? initialManagers = widget.currentFilters['managers'] != null
       ? List<String>.from(widget.currentFilters['managers'])
       : null;
+  List<String>? initialRegions = widget.currentFilters['regions'] != null
+      ? List<String>.from(widget.currentFilters['regions'])
+      : null;
   List<String>? initialLeads = widget.currentFilters['leads'] != null
       ? List<String>.from(widget.currentFilters['leads'])
       : null;
@@ -838,6 +845,7 @@ Future<void> _scanBarcode() async {
           setState(() {
             _isOrdersFiltering = filters.isNotEmpty ||
                 (filters['managers'] != null && filters['managers'].isNotEmpty) ||
+                (filters['regions'] != null && filters['regions'].isNotEmpty) ||
                 (filters['leads'] != null && filters['leads'].isNotEmpty) ||
                 filters['fromDate'] != null ||
                 filters['toDate'] != null ||
@@ -863,6 +871,7 @@ Future<void> _scanBarcode() async {
         initialStatus: initialStatus,
         initialPaymentMethod: initialPaymentMethod,
         initialManagers: initialManagers,
+        initialRegions: initialRegions,
         initialLeads: initialLeads,
       ),
     ),

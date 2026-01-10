@@ -291,6 +291,8 @@
   "facebook": "Facebook",
   "enter_telegram_username": "Enter Telegram username",
   "telegram": "Telegram",
+  "mini_app": "Mini App",
+  "site": "Online Store",
   "birth_date": "Birth Date",
   "enter_valid_birth_date": "Enter a valid birth date in the format DD/MM/YYYY",
   "unknow": "Unknown",
@@ -721,6 +723,7 @@
   "notes": "Events",
   "deals": "Deals",
   "history": "History",
+  "execution_history": "Execution History",
   "tutorial_lead_card_title": "Lead card",
   "tutorial_lead_card_description": "Here you can view and manage lead data",
   "tutorial_lead_button_title": "Add lead",
@@ -1894,5 +1897,11 @@
   "change_status": "Change Status",
   "save_hint": "After adding items, go to 'Main' to save",
     "users_who_can_view_deals": "Users who can view deals with this status",
-  "users_who_can_change_status": "Users who can change deal to this status"
+  "users_who_can_change_status": "Users who can change deal to this status",
+  "show_field": "Show field",
+  "show_on_table": "Show in table",
+  "lead_status": "Lead status",
+  "later": "Later",
+  "additional_client_info": "Additional client information",
+  "clientreturn": "Client Return"
 }

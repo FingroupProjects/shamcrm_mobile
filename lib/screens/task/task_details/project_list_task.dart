@@ -10,11 +10,13 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 class ProjectTaskGroupWidget extends StatefulWidget {
   final String? selectedProject;
   final Function(ProjectTask) onSelectProject;
+  final bool hasError; // Флаг для отображения ошибки
 
   ProjectTaskGroupWidget({
     super.key,
     required this.onSelectProject,
     this.selectedProject,
+    this.hasError = false,
   });
 
   @override
@@ -173,13 +175,14 @@ class _ProjectTaskGroupWidgetState extends State<ProjectTaskGroupWidget> {
                 fontSize: 16,
               ),
             ),
+            const SizedBox(height: 8),
             Container(
               decoration: BoxDecoration(
                 color: const Color(0xFFF4F7FD),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  width: 1,
-                  color: field.hasError ? Colors.red : Colors.white,
+                  width: widget.hasError ? 2 : (field.hasError ? 1 : 1),
+                  color: widget.hasError ? Colors.red : (field.hasError ? Colors.red : Colors.white),
                 ),
               ),
               child: BlocConsumer<GetTaskProjectBloc, GetTaskProjectState>(
@@ -266,6 +269,20 @@ class _ProjectTaskGroupWidgetState extends State<ProjectTaskGroupWidget> {
                 padding: const EdgeInsets.only(top: 4, left: 0),
                 child: Text(
                   field.errorText!,
+                  style: const TextStyle(
+                    color: Colors.red,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w400,
+                  ),
+                ),
+              ),
+            // Не показываем дубль сообщения об ошибке:
+            // если сработал validator (field.hasError) — он уже показал errorText.
+            if (widget.hasError && !field.hasError)
+              Padding(
+                padding: const EdgeInsets.only(top: 4, left: 0),
+                child: Text(
+                  AppLocalizations.of(context)!.translate('field_required_project'),
                   style: const TextStyle(
                     color: Colors.red,
                     fontSize: 14,

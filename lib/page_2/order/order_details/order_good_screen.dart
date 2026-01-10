@@ -174,7 +174,7 @@ class _OrderGoodsState extends State<OrderGoodsScreen> {
     return ClipRRect(
       borderRadius: BorderRadius.circular(8),
       child: Image.network(
-        '$baseUrl/${files[0].path}',
+        '${files[0].path}',
         width: 100,
         height: 100,
         fit: BoxFit.cover,

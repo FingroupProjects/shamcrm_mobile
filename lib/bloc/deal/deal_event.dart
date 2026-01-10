@@ -1,18 +1,51 @@
 import 'package:crm_task_manager/models/dealById_model.dart';
+import 'package:crm_task_manager/models/file_helper.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 
 abstract class DealEvent {}
 
  class FetchDealStatuses extends DealEvent {
-  final int? salesFunnelId; // Добавляем параметр
+  final int? salesFunnelId;
+  final bool forceRefresh;
 
-  FetchDealStatuses({this.salesFunnelId});
+  FetchDealStatuses({this.salesFunnelId, this.forceRefresh = false});
+}
+
+class FetchDealStatusesWithFilters extends DealEvent {
+  final List<int>? managerIds;
+  final List<int>? regionsIds;
+  final List<int>? leadIds;
+  final int? statusIds;
+  final DateTime? fromDate;
+  final DateTime? toDate;
+  final int? daysWithoutActivity;
+  final bool? hasTasks;
+  final List<Map<String, dynamic>>? directoryValues;
+  final List<String>? names;
+  final int? salesFunnelId;
+  final Map<String, List<String>>? customFieldFilters;
+
+  FetchDealStatusesWithFilters({
+    this.managerIds,
+    this.regionsIds,
+    this.leadIds,
+    this.statusIds,
+    this.fromDate,
+    this.toDate,
+    this.daysWithoutActivity,
+    this.hasTasks,
+    this.directoryValues,
+    this.names,
+    this.salesFunnelId,
+    this.customFieldFilters,
+  });
 }
 
   class FetchDeals extends DealEvent {
     final int statusId;
     final String? query;
     final List<int>? managerIds;
+    final List<int>? regionsIds;
     final List<int>? leadIds;
     final int? statusIds;
     final DateTime? fromDate;
@@ -22,11 +55,13 @@ abstract class DealEvent {}
     final int? salesFunnelId;
     final List<Map<String, dynamic>>? directoryValues; // Добавляем directory_values
     final List<String>? names; // Новое поле
+    final Map<String, List<String>>? customFieldFilters; // Новое поле
 
     FetchDeals(
       this.statusId, {
       this.query,
       this.managerIds,
+      this.regionsIds,
       this.leadIds,
       this.statusIds,
       this.fromDate,
@@ -36,7 +71,8 @@ abstract class DealEvent {}
       this.directoryValues,
       this.salesFunnelId,
       this.names,
-      
+      this.customFieldFilters,
+
     });
   }
 
@@ -60,7 +96,7 @@ class CreateDealStatus extends DealEvent {
   final bool isSuccess;
   final bool isFailure;
   final AppLocalizations localizations;
-  final List<int>? userIds; 
+  final List<int>? userIds;
   final List<int>? changeStatusUserIds; // ✅ НОВОЕ
 
   CreateDealStatus({
@@ -89,7 +125,7 @@ class CreateDeal extends DealEvent {
   final int? leadId;
   final List<Map<String, dynamic>>? customFields;
   final List<Map<String, int>>? directoryValues;
-  final List<String>? filePaths;
+  final List<FileHelper>? files; // Новое поле для файлов
   final List<int>? userIds; // ✅ НОВОЕ
   final AppLocalizations localizations;
 
@@ -105,8 +141,8 @@ class CreateDeal extends DealEvent {
     this.leadId,
     this.customFields,
     this.directoryValues,
-    this.filePaths,
     this.userIds, // ✅ НОВОЕ
+    this.files, // Добавляем в конструктор
     required this.localizations,
   });
 }
@@ -124,10 +160,11 @@ class UpdateDeal extends DealEvent {
   final List<Map<String, dynamic>>? customFields; // Изменён тип
   final List<Map<String, int>>? directoryValues;
   final AppLocalizations localizations;
-  final List<String>? filePaths;
-  final List<DealFiles> existingFiles;
   final List<int>? dealStatusIds; // ✅ НОВОЕ: массив ID статусов
-    final List<int>? userIds; // ✅ НОВОЕ
+  final List<FileHelper>? files; // Новые файлы (id == 0)
+  final List<int>? existingFiles; // ID существующих файлов (id != 0)
+  final List<int>? userIds; // ✅ НОВОЕ: массив ID пользователей
+
 
   UpdateDeal({
     required this.dealId,
@@ -143,11 +180,10 @@ class UpdateDeal extends DealEvent {
     this.customFields,
     this.directoryValues,
     required this.localizations,
-    this.filePaths,
-    required this.existingFiles,
+    this.files,
     this.dealStatusIds, // ✅ НОВОЕ
-        this.userIds, // ✅ НОВОЕ
-
+    this.existingFiles, // ID существующих файлов
+    this.userIds, // ✅ НОВОЕ
   });
 }
 
@@ -180,7 +216,7 @@ class UpdateDealStatusEdit extends DealEvent {
   final String notificationMessage;
   final bool showOnMainPage;
   final AppLocalizations localizations;
-  final List<int>? userIds; 
+  final List<int>? userIds;
   final List<int>? changeStatusUserIds; // ✅ НОВОЕ
 
   UpdateDealStatusEdit(

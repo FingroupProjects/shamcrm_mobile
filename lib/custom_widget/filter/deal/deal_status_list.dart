@@ -36,7 +36,7 @@ class _DealStatusRadioGroupWidgetState extends State<DealStatusRadioGroupWidget>
   @override
   void initState() {
     super.initState();
-    
+
     // Проверяем, есть ли уже загруженные статусы в блоке
     final currentState = context.read<DealBloc>().state;
     if (currentState is DealLoaded) {
@@ -52,7 +52,7 @@ class _DealStatusRadioGroupWidgetState extends State<DealStatusRadioGroupWidget>
   @override
   void didUpdateWidget(DealStatusRadioGroupWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
-    
+
     // Если selectedStatus изменился, обновляем selectedStatusData
     if (oldWidget.selectedStatus != widget.selectedStatus) {
       _updateSelectedStatus();
@@ -63,7 +63,7 @@ class _DealStatusRadioGroupWidgetState extends State<DealStatusRadioGroupWidget>
     if (widget.selectedStatus != null && statusList.isNotEmpty) {
       try {
         final foundStatus = statusList.firstWhere(
-          (status) => status.id.toString() == widget.selectedStatus,
+              (status) => status.id.toString() == widget.selectedStatus,
         );
         setState(() {
           selectedStatusData = foundStatus;
@@ -108,7 +108,7 @@ class _DealStatusRadioGroupWidgetState extends State<DealStatusRadioGroupWidget>
               });
               _updateSelectedStatus();
             }
-            
+
             if (state is DealError) {
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -143,80 +143,80 @@ class _DealStatusRadioGroupWidgetState extends State<DealStatusRadioGroupWidget>
               ),
             ),
             child: CustomDropdown<DealStatus>.search(
-                    key: ValueKey(selectedStatusData?.id ?? 'no_selection'),
-                    closeDropDownOnClearFilterSearch: true,
-                    items: statusList,
-                    searchHintText: AppLocalizations.of(context)!.translate('search'),
-                    overlayHeight: 400,
-                    decoration: CustomDropdownDecoration(
-                      closedFillColor: const Color(0xffF4F7FD),
-                      expandedFillColor: Colors.white,
-                      closedBorder: Border.all(
-                        color: const Color(0xffF4F7FD),
-                        width: 1,
+              key: ValueKey(selectedStatusData?.id ?? 'no_selection'),
+              closeDropDownOnClearFilterSearch: true,
+              items: statusList,
+              searchHintText: AppLocalizations.of(context)!.translate('search'),
+              overlayHeight: 400,
+              decoration: CustomDropdownDecoration(
+                closedFillColor: const Color(0xffF4F7FD),
+                expandedFillColor: Colors.white,
+                closedBorder: Border.all(
+                  color: const Color(0xffF4F7FD),
+                  width: 1,
+                ),
+                closedBorderRadius: BorderRadius.circular(12),
+                expandedBorder: Border.all(
+                  color: const Color(0xffF4F7FD),
+                  width: 1,
+                ),
+                expandedBorderRadius: BorderRadius.circular(12),
+              ),
+              listItemBuilder:
+                  (context, item, isSelected, onItemSelect) {
+                return Text(
+                  item.title,
+                  style: statusTextStyle,
+                );
+              },
+              headerBuilder: (context, selectedItem, enabled) {
+                if (statusList.isEmpty) {
+                  return const Center(
+                    child: SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
                       ),
-                      closedBorderRadius: BorderRadius.circular(12),
-                      expandedBorder: Border.all(
-                        color: const Color(0xffF4F7FD),
-                        width: 1,
-                      ),
-                      expandedBorderRadius: BorderRadius.circular(12),
                     ),
-                    listItemBuilder:
-                        (context, item, isSelected, onItemSelect) {
-                      return Text(
-                        item.title,
-                        style: statusTextStyle,
-                      );
-                    },
-                    headerBuilder: (context, selectedItem, enabled) {
-                      if (statusList.isEmpty) {
-                        return const Center(
-                          child: SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
-                            ),
-                          ),
-                        );
-                      }
-                      return Text(
-                        selectedItem.title,
-                        style: statusTextStyle,
-                      );
-                    },
-                    hintBuilder: (context, hint, enabled) {
-                      if (statusList.isEmpty) {
-                        return const Center(
-                          child: SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
-                            ),
-                          ),
-                        );
-                      }
-                      return Text(
-                        AppLocalizations.of(context)!.translate('select_status'),
-                        style: statusTextStyle.copyWith(fontSize: 14),
-                      );
-                    },
-                    excludeSelected: false,
-                    initialItem: statusList.contains(selectedStatusData) ? selectedStatusData : null,
-                    onChanged: (value) {
-                      if (value != null) {
-                        widget.onSelectStatus(value);
-                        setState(() {
-                          selectedStatusData = value;
-                        });
-                        FocusScope.of(context).unfocus();
-                      }
-                    },
-                  ),
+                  );
+                }
+                return Text(
+                  selectedItem.title,
+                  style: statusTextStyle,
+                );
+              },
+              hintBuilder: (context, hint, enabled) {
+                if (statusList.isEmpty) {
+                  return const Center(
+                    child: SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
+                      ),
+                    ),
+                  );
+                }
+                return Text(
+                  AppLocalizations.of(context)!.translate('select_status'),
+                  style: statusTextStyle.copyWith(fontSize: 14),
+                );
+              },
+              excludeSelected: false,
+              initialItem: statusList.contains(selectedStatusData) ? selectedStatusData : null,
+              onChanged: (value) {
+                if (value != null) {
+                  widget.onSelectStatus(value);
+                  setState(() {
+                    selectedStatusData = value;
+                  });
+                  FocusScope.of(context).unfocus();
+                }
+              },
+            ),
           ),
         ),
       ],

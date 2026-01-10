@@ -1,6 +1,30 @@
 abstract class OrderEvent {}
 
-class FetchOrderStatuses extends OrderEvent {}
+class FetchOrderStatuses extends OrderEvent {
+  final bool forceRefresh;
+
+  FetchOrderStatuses({this.forceRefresh = false});
+}
+
+class FetchOrderStatusesWithFilters extends OrderEvent {
+  final List<String>? managerIds;
+  final List<String>? regionsIds;
+  final List<String>? leadIds;
+  final DateTime? fromDate;
+  final DateTime? toDate;
+  final String? status;
+  final String? paymentMethod;
+
+  FetchOrderStatusesWithFilters({
+    this.managerIds,
+    this.regionsIds,
+    this.leadIds,
+    this.fromDate,
+    this.toDate,
+    this.status,
+    this.paymentMethod,
+  });
+}
 
 class FetchOrders extends OrderEvent {
   final int? statusId;
@@ -9,6 +33,7 @@ class FetchOrders extends OrderEvent {
   final String? query;
   final bool forceRefresh;
   final List<String>? managerIds;
+  final List<String>? regionsIds;
   final List<String>? leadIds;
   final DateTime? fromDate;
   final DateTime? toDate;
@@ -22,6 +47,7 @@ class FetchOrders extends OrderEvent {
     this.query,
     this.forceRefresh = false,
     this.managerIds,
+    this.regionsIds,
     this.leadIds,
     this.fromDate,
     this.toDate,

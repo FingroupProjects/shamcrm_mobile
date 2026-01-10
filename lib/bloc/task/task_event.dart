@@ -1,9 +1,47 @@
 import 'package:crm_task_manager/models/taskbyId_model.dart';
+import 'package:crm_task_manager/models/file_helper.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 
 abstract class TaskEvent {}
 
-class FetchTaskStatuses extends TaskEvent {}
+class FetchTaskStatuses extends TaskEvent {
+  final bool forceRefresh;
+  FetchTaskStatuses({this.forceRefresh = false});
+}
+
+class FetchTaskStatusesWithFilters extends TaskEvent {
+  final List<int>? userIds;
+  final int? statusIds;
+  final DateTime? fromDate;
+  final DateTime? toDate;
+  final bool? overdue;
+  final bool? hasFile;
+  final bool? hasDeal;
+  final bool? urgent;
+  final DateTime? deadlinefromDate;
+  final DateTime? deadlinetoDate;
+  final List<int>? projectIds;
+  final List<String>? authors;
+  final String? department;
+  final List<Map<String, dynamic>>? directoryValues;
+
+  FetchTaskStatusesWithFilters({
+    this.userIds,
+    this.statusIds,
+    this.fromDate,
+    this.toDate,
+    this.overdue,
+    this.hasFile,
+    this.hasDeal,
+    this.urgent,
+    this.deadlinefromDate,
+    this.deadlinetoDate,
+    this.projectIds,
+    this.authors,
+    this.department,
+    this.directoryValues,
+  });
+}
 
 class FetchTasks extends TaskEvent {
   final int statusId;
@@ -18,7 +56,7 @@ class FetchTasks extends TaskEvent {
   final bool? urgent;
   final DateTime? deadlinefromDate;
   final DateTime? deadlinetoDate;
-  final String? project;
+  final List<int>? projectIds;
   final List<String>? authors;
   final String? department;
   final List<Map<String, dynamic>>? directoryValues; // Добавляем directoryValues
@@ -36,7 +74,7 @@ class FetchTasks extends TaskEvent {
     this.hasFile,
     this.hasDeal,
     this.urgent,
-    this.project,
+    this.projectIds,
     this.authors,
     this.department,
     this.directoryValues, // Добавляем в конструктор
@@ -62,7 +100,7 @@ class FetchMoreTasks extends TaskEvent {
   final bool? urgent;
   final DateTime? deadlinefromDate;
   final DateTime? deadlinetoDate;
-  final String? project;
+  final List<int>? projectIds;
   final List<String>? authors;
   final String? department;
   final List<Map<String, dynamic>>? directoryValues; // Добавляем directoryValues
@@ -81,7 +119,7 @@ class FetchMoreTasks extends TaskEvent {
     this.hasFile,
     this.hasDeal,
     this.urgent,
-    this.project,
+    this.projectIds,
     this.authors,
     this.department,
     this.directoryValues, // Добавляем в конструктор
@@ -98,7 +136,7 @@ class CreateTask extends TaskEvent {
   final List<int>? userId;
   final String? description;
   final List<Map<String, dynamic>>? customFields; // Изменяем тип
-  final List<String>? filePaths;
+  final List<FileHelper>? files; // Изменено с List<String>? filePaths
   final List<Map<String, int>>? directoryValues;
   final AppLocalizations localizations;
 
@@ -113,7 +151,7 @@ class CreateTask extends TaskEvent {
     this.userId,
     this.description,
     this.customFields,
-    this.filePaths,
+    this.files,
     this.directoryValues,
     required this.localizations,
   });

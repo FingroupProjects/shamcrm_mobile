@@ -1,4 +1,6 @@
+import 'package:crm_task_manager/models/file_helper.dart';
 import 'package:crm_task_manager/models/leadById_model.dart';
+import 'package:crm_task_manager/screens/lead/tabBar/lead_edit_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 
 abstract class LeadEvent {}
@@ -31,6 +33,7 @@ class FetchLeads extends LeadEvent {
   final bool? hasOrders;
   final int? daysWithoutActivity;
   final List<Map<String, dynamic>>? directoryValues;
+  final Map<String, List<String>>? customFieldFilters;
   final int? salesFunnelId;
   final bool ignoreCache; // Новый параметр
 
@@ -55,6 +58,7 @@ class FetchLeads extends LeadEvent {
     this.hasOrders,
     this.daysWithoutActivity,
     this.directoryValues,
+    this.customFieldFilters,
     this.salesFunnelId,
     this.ignoreCache = false, // По умолчанию кэш используется
   });
@@ -113,9 +117,12 @@ class CreateLead extends LeadEvent {
   final String? waPhone;
   final List<Map<String, dynamic>>? customFields; // Изменяем тип
   final List<Map<String, int>>? directoryValues;
-  final List<String>? filePaths;
   final AppLocalizations localizations;
   final bool isSystemManager;
+  final List<FileHelper>? files;
+  final String? priceTypeId; // Новое поле
+
+
 
   CreateLead({
     required this.name,
@@ -133,9 +140,10 @@ class CreateLead extends LeadEvent {
     this.waPhone,
     this.customFields,
     this.directoryValues,
-    this.filePaths,
+    this.files,
     this.isSystemManager = false,
     required this.localizations,
+    this.priceTypeId, // Новое поле
   });
 }
 
@@ -164,10 +172,9 @@ class UpdateLead extends LeadEvent {
   final String? waPhone;
   final List<Map<String, dynamic>>? customFields; // Изменён тип
   final List<Map<String, int>>? directoryValues;
-  final List<String>? filePaths;
   final bool isSystemManager;
   final AppLocalizations localizations;
-  final List<LeadFiles> existingFiles;
+  final List<FileHelper>? files;
   final String? priceTypeId; // Новое поле
     final String? salesFunnelId; // ДОБАВЛЕННОЕ ПОЛЕ
     final String? duplicate; // Новое поле
@@ -190,10 +197,9 @@ class UpdateLead extends LeadEvent {
     this.waPhone,
     this.customFields,
     this.directoryValues,
-    this.filePaths,
     required this.localizations,
     this.isSystemManager = false,
-    required this.existingFiles,
+    this.files,
     this.priceTypeId,
         this.salesFunnelId, // ДОБАВЛЕННЫЙ ПАРАМЕТР
     this.duplicate, // Новое поле]  
@@ -221,6 +227,7 @@ class DeleteLeadStatuses extends LeadEvent {
     this.localizations,
   );
 }
+
 
 class UpdateLeadStatusEdit extends LeadEvent {
   final int leadStatusId;
@@ -250,4 +257,46 @@ class RefreshCurrentStatus extends LeadEvent {
   final int? salesFunnelId;
 
   RefreshCurrentStatus(this.statusId, {this.salesFunnelId});
+}
+
+class FetchLeadStatusesWithFilters extends LeadEvent {
+  final List<int>? managerIds;
+  final List<int>? regionsIds;
+  final List<int>? sourcesIds;
+  final DateTime? fromDate;
+  final DateTime? toDate;
+  final bool? hasSuccessDeals;
+  final bool? hasInProgressDeals;
+  final bool? hasFailureDeals;
+  final bool? hasNotices;
+  final bool? hasContact;
+  final bool? hasChat;
+  final bool? hasNoReplies;
+  final bool? hasUnreadMessages;
+  final bool? hasDeal;
+  final bool? hasOrders;
+  final int? daysWithoutActivity;
+  final List<Map<String, dynamic>>? directoryValues;
+  final int? salesFunnelId;
+
+  FetchLeadStatusesWithFilters({
+    this.managerIds,
+    this.regionsIds,
+    this.sourcesIds,
+    this.fromDate,
+    this.toDate,
+    this.hasSuccessDeals,
+    this.hasInProgressDeals,
+    this.hasFailureDeals,
+    this.hasNotices,
+    this.hasContact,
+    this.hasChat,
+    this.hasNoReplies,
+    this.hasUnreadMessages,
+    this.hasDeal,
+    this.hasOrders,
+    this.daysWithoutActivity,
+    this.directoryValues,
+    this.salesFunnelId,
+  });
 }

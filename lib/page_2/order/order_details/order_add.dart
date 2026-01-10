@@ -7,7 +7,8 @@ import 'package:crm_task_manager/bloc/page_2_BLOC/deliviry_adress/delivery_addre
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_state.dart';
-import 'package:crm_task_manager/custom_widget/custom_phone_for_edit.dart';
+import 'package:crm_task_manager/custom_widget/country_data_list.dart';
+import 'package:crm_task_manager/custom_widget/custom_phone_number_input.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/models/lead_list_model.dart';
 import 'package:crm_task_manager/models/manager_model.dart';
@@ -34,8 +35,9 @@ class OrderAddScreen extends StatefulWidget {
   final Order? order;
   final int? organizationId;
   final int? leadId;
+  final String? clientPhone; // Телефон клиента для автозаполнения
 
-  const OrderAddScreen({this.order, this.organizationId, this.leadId, super.key});
+  const OrderAddScreen({this.order, this.organizationId, this.leadId, this.clientPhone, super.key});
 
   @override
   State<OrderAddScreen> createState() => _OrderAddScreenState();
@@ -58,11 +60,12 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
   String? baseUrl;
   String? selectedManager;
   bool isManagerInvalid = false;
-    final ApiService _apiService = ApiService();
+  final ApiService _apiService = ApiService();
 
   bool isManagerManuallySelected = false;
   int? currencyId; // Поле для хранения currency_id
   final Map<int, TextEditingController> _quantityControllers = {};
+  Country? _initialCountry; // Для автоопределения страны из телефона клиента
 
   @override
   void initState() {
@@ -70,19 +73,44 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
     if (widget.leadId != null) {
       selectedLead = widget.leadId.toString();
     }
-    _phoneController = TextEditingController(text: widget.order?.phone ?? '');
+    
+    // Автозаполнение телефона: приоритет - заказ, затем телефон клиента, затем пусто
+    String phoneToSet = widget.order?.phone ?? widget.clientPhone ?? '';
+    
+    // Разбираем телефон на код страны и номер для правильного отображения
+    String phoneNumber = '';
+    if (phoneToSet.isNotEmpty) {
+      // Определяем страну и код из списка доступных стран
+      for (var country in countries) {
+        if (phoneToSet.startsWith(country.dialCode)) {
+          phoneNumber = phoneToSet.substring(country.dialCode.length);
+          selectedDialCode = phoneToSet; // Полный номер с кодом
+          _initialCountry = country; // Сохраняем страну для виджета
+          debugPrint('OrderAddScreen: Detected country: ${country.name}, code: ${country.dialCode}, phone: $phoneNumber');
+          break;
+        }
+      }
+      
+      // Если код не найден, используем весь номер
+      if (phoneNumber.isEmpty) {
+        phoneNumber = phoneToSet;
+        selectedDialCode = phoneToSet;
+      }
+    }
+    
+    _phoneController = TextEditingController(text: phoneNumber);
     _deliveryAddressController =
         TextEditingController(text: widget.order?.deliveryAddress ?? '');
 
     if (widget.order != null) {
       _items = widget.order!.goods
           .map((good) => {
-                'id': good.goodId,
-                'name': good.goodName,
-                'price': good.price,
-                'quantity': good.quantity,
-                'imagePath': null,
-              })
+        'id': good.goodId,
+        'name': good.goodName,
+        'price': good.price,
+        'quantity': good.quantity,
+        'imagePath': null,
+      })
           .toList();
       selectedLead = widget.order!.lead.id.toString();
       _deliveryMethod = widget.order!.delivery
@@ -91,13 +119,13 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
       selectedDialCode = widget.order!.phone;
       _selectedDeliveryAddress = widget.order!.deliveryAddress != null
           ? DeliveryAddress(
-              id: widget.order!.deliveryAddressId ?? 0,
-              address: widget.order!.deliveryAddress ?? '',
-              leadId: widget.order!.lead.id,
-              isActive: 0,
-              createdAt: '',
-              updatedAt: '',
-            )
+        id: widget.order!.deliveryAddressId ?? 0,
+        address: widget.order!.deliveryAddress ?? '',
+        leadId: widget.order!.lead.id,
+        isActive: 0,
+        createdAt: '',
+        updatedAt: '',
+      )
           : null;
     }
 
@@ -106,6 +134,11 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
       _loadStatuses();
       _loadCurrencyId(); // Загружаем currencyId
       context.read<BranchBloc>().add(FetchBranches());
+      
+      // Убедимся что selectedDialCode установлен сразу после инициализации
+      if (phoneToSet.isNotEmpty && selectedDialCode != null) {
+        debugPrint('OrderAddScreen: Auto-filled phone: $selectedDialCode');
+      }
     });
   }
 
@@ -224,18 +257,18 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
     }
   }
 
-Future<void> _initializeBaseUrl() async {
-  try {
-    final staticBaseUrl = await _apiService.getStaticBaseUrl();
-    setState(() {
-      baseUrl = staticBaseUrl;
-    });
-  } catch (error) {
-    setState(() {
-      baseUrl = 'https://shamcrm.com/storage';
-    });
+  Future<void> _initializeBaseUrl() async {
+    try {
+      final staticBaseUrl = await _apiService.getStaticBaseUrl();
+      setState(() {
+        baseUrl = staticBaseUrl;
+      });
+    } catch (error) {
+      setState(() {
+        baseUrl = 'https://shamcrm.com/storage';
+      });
+    }
   }
-}
 
   @override
   void dispose() {
@@ -255,7 +288,7 @@ Future<void> _initializeBaseUrl() async {
       height: 48,
       color: Colors.grey[200],
       child:
-          const Center(child: Icon(Icons.image, color: Colors.grey, size: 24)),
+      const Center(child: Icon(Icons.image, color: Colors.grey, size: 24)),
     );
   }
 
@@ -278,26 +311,26 @@ Future<void> _initializeBaseUrl() async {
           orderStatus: OrderStatusName(id: 0, name: ''),
           goods: _items
               .map((item) => Good(
-                    good: GoodItem(
-                      id: item['id'],
-                      name: item['name'],
-                      description: '',
-                      quantity: item['quantity'],
-                      files: item['imagePath'] != null
-                          ? [
-                              GoodFile(
-                                id: 0,
-                                name: '',
-                                path: item['imagePath'],
-                              )
-                            ]
-                          : [],
-                    ),
-                    goodId: item['id'],
-                    goodName: item['name'],
-                    price: item['price'],
-                    quantity: item['quantity'],
-                  ))
+            good: GoodItem(
+              id: item['id'],
+              name: item['name'],
+              description: '',
+              quantity: item['quantity'],
+              files: item['imagePath'] != null
+                  ? [
+                GoodFile(
+                  id: 0,
+                  name: '',
+                  path: item['imagePath'],
+                )
+              ]
+                  : [],
+            ),
+            goodId: item['id'],
+            goodName: item['name'],
+            price: item['price'],
+            quantity: item['quantity'],
+          ))
               .toList(),
           organizationId: widget.organizationId,
         );
@@ -311,12 +344,12 @@ Future<void> _initializeBaseUrl() async {
     if (result != null && result is List<Map<String, dynamic>> && mounted) {
       setState(() {
         _items.addAll(result.map((item) => {
-              'id': item['id'],
-              'name': item['name'],
-              'price': item['price'],
-              'quantity': item['quantity'],
-              'imagePath': item['imagePath'],
-            }));
+          'id': item['id'],
+          'name': item['name'],
+          'price': item['price'],
+          'quantity': item['quantity'],
+          'imagePath': item['imagePath'],
+        }));
       });
     }
   }
@@ -400,7 +433,7 @@ Future<void> _initializeBaseUrl() async {
 
   void _showAddAddressDialog(BuildContext context) {
     final TextEditingController addressController = TextEditingController();
-    
+
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -444,16 +477,16 @@ Future<void> _initializeBaseUrl() async {
                 );
                 return;
               }
-              
+
               Navigator.of(dialogContext).pop();
-              
+
               // Вызываем bloc событие для добавления адреса
               context.read<OrderBloc>().add(
-                    AddMiniAppAddress(
-                      address: addressController.text.trim(),
-                      leadId: int.parse(selectedLead ?? '0'),
-                    ),
-                  );
+                AddMiniAppAddress(
+                  address: addressController.text.trim(),
+                  leadId: int.parse(selectedLead ?? '0'),
+                ),
+              );
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xff4759FF),
@@ -517,10 +550,10 @@ Future<void> _initializeBaseUrl() async {
               );
               // Обновляем список адресов доставки
               context.read<DeliveryAddressBloc>().add(
-                    FetchDeliveryAddresses(
-                      leadId: int.parse(selectedLead ?? '0'),
-                    ),
-                  );
+                FetchDeliveryAddresses(
+                  leadId: int.parse(selectedLead ?? '0'),
+                ),
+              );
             } else if (state is OrderCreateAddressError) {
               showCustomSnackBar(
                 context: context,
@@ -538,14 +571,14 @@ Future<void> _initializeBaseUrl() async {
                   _quantityControllers.clear();
                   _items = state.orderDetails!.goods
                       .map((good) => {
-                            'id': good.goodId,
-                            'name': good.goodName,
-                            'price': good.price,
-                            'quantity': good.quantity,
-                            'imagePath': good.good.files.isNotEmpty
-                                ? good.good.files[0].path
-                                : null,
-                          })
+                    'id': good.goodId,
+                    'name': good.goodName,
+                    'price': good.price,
+                    'quantity': good.quantity,
+                    'imagePath': good.good.files.isNotEmpty
+                        ? good.good.files[0].path
+                        : null,
+                  })
                       .toList();
                   _phoneController.text = state.orderDetails!.phone;
                   selectedDialCode = state.orderDetails!.phone;
@@ -556,16 +589,16 @@ Future<void> _initializeBaseUrl() async {
                       ? AppLocalizations.of(context)!.translate('delivery')
                       : AppLocalizations.of(context)!.translate('self_delivery');
                   _selectedDeliveryAddress =
-                      state.orderDetails!.deliveryAddress != null
-                          ? DeliveryAddress(
-                              id: state.orderDetails!.deliveryAddressId ?? 0,
-                              address: state.orderDetails!.deliveryAddress ?? '',
-                              leadId: state.orderDetails!.lead.id,
-                              isActive: 0,
-                              createdAt: '',
-                              updatedAt: '',
-                            )
-                          : null;
+                  state.orderDetails!.deliveryAddress != null
+                      ? DeliveryAddress(
+                    id: state.orderDetails!.deliveryAddressId ?? 0,
+                    address: state.orderDetails!.deliveryAddress ?? '',
+                    leadId: state.orderDetails!.lead.id,
+                    isActive: 0,
+                    createdAt: '',
+                    updatedAt: '',
+                  )
+                      : null;
                 });
               });
             }
@@ -582,7 +615,7 @@ Future<void> _initializeBaseUrl() async {
                     child: SingleChildScrollView(
                       key: const Key('order_add_scroll_view'),
                       padding:
-                          const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -605,8 +638,8 @@ Future<void> _initializeBaseUrl() async {
                                           managerBlocState.dataManager.result ?? [];
                                       try {
                                         final matchingManager = managers.firstWhere(
-                                          (manager) =>
-                                              manager.id == selectedLeadData.managerId,
+                                              (manager) =>
+                                          manager.id == selectedLeadData.managerId,
                                         );
                                         selectedManager = matchingManager.id.toString();
                                       } catch (e) {
@@ -620,6 +653,7 @@ Future<void> _initializeBaseUrl() async {
                           if (widget.leadId == null) const SizedBox(height: 8),
                           CustomPhoneNumberInput(
                             controller: _phoneController,
+                            initialCountry: _initialCountry, // Передаем определенную страну
                             onInputChanged: (String number) {
                               WidgetsBinding.instance.addPostFrameCallback((_) {
                                 if (mounted) {
@@ -861,26 +895,26 @@ Future<void> _initializeBaseUrl() async {
             height: 48,
             child: item['imagePath'] != null && baseUrl != null
                 ? ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: Image.network(
-                      '$baseUrl/${item['imagePath']}',
-                      width: 48,
-                      height: 48,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) =>
-                          _buildPlaceholderImage(),
-                      loadingBuilder: (context, child, loadingProgress) {
-                        if (loadingProgress == null) return child;
-                        return const Center(
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor:
-                                AlwaysStoppedAnimation<Color>(Color(0xff4759FF)),
-                          ),
-                        );
-                      },
+              borderRadius: BorderRadius.circular(8),
+              child: Image.network(
+                '${item['imagePath']}',
+                width: 48,
+                height: 48,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) =>
+                    _buildPlaceholderImage(),
+                loadingBuilder: (context, child, loadingProgress) {
+                  if (loadingProgress == null) return child;
+                  return const Center(
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor:
+                      AlwaysStoppedAnimation<Color>(Color(0xff4759FF)),
                     ),
-                  )
+                  );
+                },
+              ),
+            )
                 : _buildPlaceholderImage(),
           ),
           const SizedBox(width: 12),
@@ -1095,7 +1129,7 @@ Future<void> _initializeBaseUrl() async {
                     return;
                   }
                   if (_deliveryMethod ==
-                          AppLocalizations.of(context)!.translate('delivery') &&
+                      AppLocalizations.of(context)!.translate('delivery') &&
                       _selectedDeliveryAddress == null) {
                     showCustomSnackBar(
                       context: context,
@@ -1115,14 +1149,14 @@ Future<void> _initializeBaseUrl() async {
                     leadId: widget.leadId ?? int.parse(selectedLead ?? '0'),
                     delivery: !isPickup,
                     deliveryAddress:
-                        isPickup ? null : _selectedDeliveryAddress?.address,
+                    isPickup ? null : _selectedDeliveryAddress?.address,
                     deliveryAddressId: isPickup ? null : _selectedDeliveryAddress?.id,
                     goods: _items
                         .map((item) => {
-                              'variant_id': item['id'].toString(),
-                              'quantity': item['quantity'] ?? 1,
-                              'price': item['price'].toString(),
-                            })
+                      'variant_id': item['id'].toString(),
+                      'quantity': item['quantity'] ?? 1,
+                      'price': item['price'].toString(),
+                    })
                         .toList(),
                     organizationId: widget.organizationId ?? 1,
                     statusId: selectedStatusId ?? 1,

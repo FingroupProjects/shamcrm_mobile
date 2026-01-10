@@ -395,7 +395,12 @@ class Goods {
         orElse: () => files.first,
       );
 
-      // Формируем полный URL
+      // Проверяем, является ли путь уже полным URL
+      if (mainFile.path.startsWith('http://') || mainFile.path.startsWith('https://')) {
+        return mainFile.path;
+      }
+
+      // Формируем полный URL из относительного пути
       return 'https://shamcrm.com/storage/${mainFile.path}';
     } catch (e) {
       //print('Ошибка получения главного изображения: $e');

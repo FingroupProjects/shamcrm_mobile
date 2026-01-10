@@ -89,7 +89,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
   isActive = widget.goods.isActive ?? false;
   selectedUnit = widget.goods.unit?.id?.toString();
   _imagePaths =
-      widget.sortedFiles.map((file) => '$baseUrl/${file.path}').toList();
+      widget.sortedFiles.map((file) => '${file.path}').toList();
   mainImageIndex = widget.initialMainImageIndex ?? 0;
   isService = widget.goods.isService ?? false;
 
@@ -117,7 +117,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
       if (mounted && widget.sortedFiles.isNotEmpty) {
         setState(() {
           _imagePaths = widget.sortedFiles
-              .map((file) => '$baseUrl/${file.path}')
+              .map((file) => '${file.path}')
               .toList();
         });
       }
@@ -244,7 +244,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
         }
 
         newRow['images'] =
-            variant.files?.map((file) => '$baseUrl/${file.path}').toList() ??
+            variant.files?.map((file) => '${file.path}').toList() ??
                 [];
         tableAttributes.add(newRow);
       }

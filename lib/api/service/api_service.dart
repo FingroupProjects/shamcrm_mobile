@@ -1,10 +1,15 @@
 import 'dart:async';
+import 'dart:collection';
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/services.dart';
 import 'package:crm_task_manager/models/LeadStatusForFilter.dart';
 import 'package:crm_task_manager/models/api_exception_model.dart';
 import 'package:crm_task_manager/models/author_data_response.dart';
 import 'package:crm_task_manager/models/calendar_model.dart';
+import 'package:crm_task_manager/models/file_helper.dart';
+import 'package:crm_task_manager/models/localization_model.dart';
+import 'package:crm_task_manager/models/task_overdue_history_model.dart';
 import 'package:crm_task_manager/models/money/add_cash_desk_model.dart';
 import 'package:crm_task_manager/models/money/cash_register_model.dart';
 import 'package:crm_task_manager/models/money/expense_model.dart';
@@ -127,6 +132,7 @@ import 'package:crm_task_manager/models/user_model.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_dropdown_bottom_dialog.dart';
 import 'package:crm_task_manager/screens/lead/lead_cache.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_dropdown_bottom_dialog.dart';
+import 'package:crm_task_manager/screens/lead/tabBar/lead_edit_screen.dart';
 import 'package:crm_task_manager/screens/my-task/my_task_details/my_task_dropdown_bottom_dialog.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/task/task_details/task_dropdown_bottom_dialog.dart';
@@ -403,6 +409,26 @@ Future<String> getDynamicBaseUrl() async {
 
     // Очищаем новые данные email-flow
     await clearEmailVerificationData();
+
+    // Clear widget permissions on iOS (via App Groups)
+    await _clearWidgetPermissions();
+  }
+
+  // Clear widget permissions on logout
+  Future<void> _clearWidgetPermissions() async {
+    try {
+      // Import is at the top of the file, but we need to call the static method
+      // This will be handled by the WidgetService
+      const platform = MethodChannel('com.softtech.crm_task_manager/widget');
+      if (Platform.isIOS) {
+        await platform.invokeMethod('syncPermissionsToWidget', {
+          'permissions': <String>[],
+        });
+        debugPrint('ApiService: Cleared widget permissions on logout');
+      }
+    } catch (e) {
+      debugPrint('ApiService: Error clearing widget permissions: $e');
+    }
   }
 
 // Метод для получения информации о пользователе по email
@@ -776,94 +802,106 @@ Future<http.Response> _patchRequest(
 
   //_________________________________ START___API__METHOD__POST__DEVICE__TOKEN_________________________________________________//
 
-  // Добавление метода для отправки токена устройства
-Future<void> sendDeviceToken(String deviceToken) async {
-  try {
-    debugPrint('sendDeviceToken: Начало отправки токена');
-    
-    // ← ДОБАВЬ ПРОВЕРКУ
-    if (baseUrl == null || baseUrl!.isEmpty) {
-      debugPrint('sendDeviceToken: baseUrl не инициализирован! Пропускаем отправку.');
-      await _savePendingToken(deviceToken); // ← сохраняем на потом
+// ОТЛОЖЕННЫЙ ТОКЕН — ОДИН РАЗ, НАДЁЖНО
+  static const String _pendingFcmKey = 'pending_fcm_token';
+
+  Future<void> sendDeviceToken(String deviceToken) async {
+    try {
+      debugPrint('═══════════════════════════════════════════════════════════');
+      debugPrint('sendDeviceToken: Начало отправки FCM-токена');
+      debugPrint('sendDeviceToken: Token: ${deviceToken.substring(0, 20)}...');
+
+      // 1. Ждём, пока всё инициализировано
+      await ensureInitialized();
+      if (baseUrl == null || baseUrl!.isEmpty) {
+        debugPrint('sendDeviceToken: baseUrl не готов → сохраняем как отложенный');
+        await _savePendingToken(deviceToken);
+        return;
+      }
+
+      final token = await getToken();
+      if (token == null || token.isEmpty) {
+        debugPrint('sendDeviceToken: Нет авторизационного токена → отложенный');
+        await _savePendingToken(deviceToken);
+        return;
+      }
+
+      final organizationId = await getSelectedOrganization();
+      final url = '$baseUrl/add-fcm-token${organizationId != null ? '?organization_id=$organizationId' : ''}';
+
+      debugPrint('sendDeviceToken: URL: $url');
+
+      final response = await http.post(
+        Uri.parse(url),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Authorization': 'Bearer $token',
+          'Device': 'mobile',
+        },
+        body: json.encode({
+          'type': 'mobile',
+          'token': deviceToken,
+        }),
+      );
+
+      debugPrint('sendDeviceToken: Ответ: ${response.statusCode} ${response.body}');
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        debugPrint('sendDeviceToken: УСПЕШНО отправлен');
+        await _removePendingToken(); // Удаляем только при успехе
+      } else {
+        debugPrint('sendDeviceToken: Ошибка ${response.statusCode} → отложенный');
+        await _savePendingToken(deviceToken);
+      }
+    } catch (e, s) {
+      debugPrint('sendDeviceToken: Исключение: $e\n$s');
+      await _savePendingToken(deviceToken);
+    } finally {
+      debugPrint('═══════════════════════════════════════════════════════════');
+    }
+  }
+
+  // Сохранение отложенного токена
+  Future<void> _savePendingToken(String token) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_pendingFcmKey, token);
+    debugPrint('sendDeviceToken: Токен сохранён как отложенный');
+  }
+
+  // Удаление отложенного токена ТОЛЬКО при успехе
+  Future<void> _removePendingToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    final hadToken = prefs.containsKey(_pendingFcmKey);
+    await prefs.remove(_pendingFcmKey);
+    if (hadToken) debugPrint('sendDeviceToken: Отложенный токен удалён');
+  }
+
+  // ЕДИНАЯ точка отправки отложенного токена
+  Future<void> sendPendingFCMTokenIfNeeded() async {
+    final prefs = await SharedPreferences.getInstance();
+    final pending = prefs.getString(_pendingFcmKey);
+
+    if (pending == null || pending.isEmpty) {
+      debugPrint('sendPendingFCMTokenIfNeeded: Нет отложенного токена');
       return;
     }
 
-    final token = await getToken();
-    final organizationId = await getSelectedOrganization();
-    
-    final url = '$baseUrl/add-fcm-token${organizationId != null ? '?organization_id=$organizationId' : ''}';
-    debugPrint('sendDeviceToken: Full URL: $url');
+    debugPrint('sendPendingFCMTokenIfNeeded: Найден отложенный токен → отправляем');
+    await sendDeviceToken(pending); // ← внутри уже всё обработается
+    // НЕ удаляем здесь! Удаление только в sendDeviceToken при успехе
+  }
 
-    final response = await http.post(
-      Uri.parse(url),
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        if (token != null) 'Authorization': 'Bearer $token',
-        'Device': 'mobile'
-      },
-      body: json.encode({
-        'type': 'mobile',
-        'token': deviceToken,
-      }),
-    );
+  // Гарантируем, что baseUrl готов (вызывать везде, где нужен ApiService)
+  Future<void> ensureInitialized() async {
+    if (baseUrl != null && baseUrl!.isNotEmpty) return;
 
-    if (response.statusCode == 200) {
-      debugPrint('sendDeviceToken: FCM-токен успешно отправлен!');
-    } else {
-      debugPrint('sendDeviceToken: Ошибка ${response.statusCode}: ${response.body}');
-      await _savePendingToken(deviceToken);
+    await initialize(); // твой текущий initialize()
+    if (baseUrl == null || baseUrl!.isEmpty) {
+      await _initializeIfDomainExists(); // если есть сохранённый домен
     }
-  } catch (e, stackTrace) {
-    debugPrint('sendDeviceToken: Exception: $e');
-    await _savePendingToken(deviceToken); // ← сохраняем при ошибке
-    rethrow;
   }
-}
 
-// ← ДОБАВЬ ЭТОТ МЕТОД
-Future<void> _savePendingToken(String token) async {
-  final prefs = await SharedPreferences.getInstance();
-  await prefs.setString('pending_fcm_token', token);
-  debugPrint('sendDeviceToken: Токен сохранён как отложенный');
-}
-
-Future<void> ensureInitialized() async {
-  if (baseUrl == null) {
-    await _initializeIfDomainExists();
-  }
-}
-
-Future<void> sendPendingFCMToken() async {
-  try {
-    debugPrint('ApiService: Проверка отложенного FCM токена');
-    
-    final prefs = await SharedPreferences.getInstance();
-    final pendingToken = prefs.getString('pending_fcm_token');
-    
-    if (pendingToken != null && pendingToken.isNotEmpty) {
-      debugPrint('ApiService: Найден отложенный FCM токен, отправляем на сервер');
-      
-      // Проверяем что baseUrl инициализирован
-      // if (baseUrl.isEmpty) {
-      //   debugPrint('ApiService: baseUrl не инициализирован, пропускаем отправку');
-      //   return;
-      // }
-      
-      await sendDeviceToken(pendingToken);
-      
-      // Удаляем токен после успешной отправки
-      await prefs.remove('pending_fcm_token');
-      debugPrint('ApiService: FCM токен успешно отправлен и удалён из локального хранилища');
-      
-    } else {
-      debugPrint('ApiService: Отложенный FCM токен не найден');
-    }
-    
-  } catch (e) {
-    debugPrint('ApiService: Ошибка отправки отложенного FCM токена: $e');
-  }
-}
 //_________________________________ END___API__METHOD__POST__DEVICE__TOKEN_________________________________________________//
   // Новый метод для получения домена из QR данных
   Future<String?> _getQrDomain() async {
@@ -1073,6 +1111,9 @@ Future<String> getStaticBaseUrl() async {
 
 // Метод для получения полного URL файла
   Future<String> getFileUrl(String filePath) async {
+    if (filePath.startsWith('http://') || filePath.startsWith('https://')) {
+      return filePath;
+    }
     final baseUrl = await getStaticBaseUrl();
     // Убираем лишние слеши, если они есть в начале filePath
     final cleanPath =
@@ -1270,15 +1311,15 @@ Future<ForgotPinResponse> forgotPin(LoginModel loginModel) async {
       } else {
         throw Exception('Не удалось получить временный PIN.');
       }
-    } 
+    }
     // 🔴 Ошибка валидации (422)
     else if (response.statusCode == 422) {
       final Map<String, dynamic> decodedJson = json.decode(response.body);
-      
+
       // Приоритет 1: message
       if (decodedJson['message'] != null && decodedJson['message'].toString().isNotEmpty) {
         throw Exception(decodedJson['message']);
-      } 
+      }
       // Приоритет 2: errors.login[0]
       else if (decodedJson['errors'] != null) {
         if (decodedJson['errors']['login'] != null) {
@@ -1289,7 +1330,7 @@ Future<ForgotPinResponse> forgotPin(LoginModel loginModel) async {
         }
         // Общая ошибка из errors
         throw Exception('Проверьте введённые данные');
-      } 
+      }
       // Fallback
       else {
         throw Exception('Неверный логин или пользователь не найден');
@@ -1298,7 +1339,7 @@ Future<ForgotPinResponse> forgotPin(LoginModel loginModel) async {
     // 🔴 Некорректный запрос (400)
     else if (response.statusCode == 400) {
       throw Exception('Некорректные данные запроса');
-    } 
+    }
     // 🔴 Другие ошибки
     else {
       throw Exception('Ошибка сервера (${response.statusCode})');
@@ -1333,30 +1374,31 @@ Future<ForgotPinResponse> forgotPin(LoginModel loginModel) async {
 
 // Метод для получения списка Лидов с пагинацией
   Future<List<Lead>> getLeads(
-    int? leadStatusId, {
-    int page = 1,
-    int perPage = 20,
-    String? search,
-    List<int>? managers,
-    List<int>? regions,
-    List<int>? sources,
-    int? statuses,
-    DateTime? fromDate,
-    DateTime? toDate,
-    bool? hasSuccessDeals,
-    bool? hasInProgressDeals,
-    bool? hasFailureDeals,
-    bool? hasNotices,
-    bool? hasContact,
-    bool? hasChat,
-    bool? hasDeal,
-    bool? hasOrders,
-    int? daysWithoutActivity,
-    bool? hasNoReplies,
-    bool? hasUnreadMessages,
-    List<Map<String, dynamic>>? directoryValues,
-    int? salesFunnelId, // Новый параметр
-  }) async {
+      int? leadStatusId, {
+        int page = 1,
+        int perPage = 20,
+        String? search,
+        List<int>? managers,
+        List<int>? regions,
+        List<int>? sources,
+        int? statuses,
+        DateTime? fromDate,
+        DateTime? toDate,
+        bool? hasSuccessDeals,
+        bool? hasInProgressDeals,
+        bool? hasFailureDeals,
+        bool? hasNotices,
+        bool? hasContact,
+        bool? hasChat,
+        bool? hasDeal,
+        bool? hasOrders,
+        int? daysWithoutActivity,
+        bool? hasNoReplies,
+        bool? hasUnreadMessages,
+        List<Map<String, dynamic>>? directoryValues,
+        Map<String, List<String>>? customFieldFilters,
+        int? salesFunnelId, // Новый параметр
+      }) async {
     // Формируем базовый путь
     String path = '/lead?page=$page&per_page=$perPage';
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
@@ -1365,10 +1407,10 @@ Future<ForgotPinResponse> forgotPin(LoginModel loginModel) async {
       //debugPrint('ApiService: getLeads - After _appendQueryParams: $path');
     }
 
-    // Добавляем sales_funnel_id из аргумента, если он передан
-    if (salesFunnelId != null) {
-      path += '&sales_funnel_id=$salesFunnelId';
-    }
+    // // Добавляем sales_funnel_id из аргумента, если он передан
+    // if (salesFunnelId != null) {
+    //   path += '&sales_funnel_id=$salesFunnelId';
+    // }
 
     bool hasFilters = (search != null && search.isNotEmpty) ||
         (managers != null && managers.isNotEmpty) ||
@@ -1388,7 +1430,8 @@ Future<ForgotPinResponse> forgotPin(LoginModel loginModel) async {
         (hasUnreadMessages == true) ||
         (daysWithoutActivity != null) ||
         (statuses != null) ||
-        (directoryValues != null && directoryValues.isNotEmpty);
+        (directoryValues != null && directoryValues.isNotEmpty) ||
+        (customFieldFilters != null && customFieldFilters.isNotEmpty);
 
     if (leadStatusId != null && !hasFilters) {
       path += '&lead_status_id=$leadStatusId';
@@ -1455,12 +1498,71 @@ Future<ForgotPinResponse> forgotPin(LoginModel loginModel) async {
       path += '&lastUpdate=$daysWithoutActivity';
     }
     if (directoryValues != null && directoryValues.isNotEmpty) {
-      for (int i = 0; i < directoryValues.length; i++) {
-        final directoryId = directoryValues[i]['directory_id'];
-        final entryId = directoryValues[i]['entry_id'];
-        path += '&directory_values[$i][directory_id]=$directoryId';
-        path += '&directory_values[$i][entry_id]=$entryId';
+      final Map<String, LinkedHashSet<String>> groupedDirectoryValues = {};
+
+      for (final dynamic rawValue in directoryValues) {
+        if (rawValue is! Map) {
+          continue;
+        }
+
+        final Map value = rawValue;
+        final directoryIdRaw = value['directory_id'];
+        final entryIdRaw = value['entry_id'];
+
+        if (directoryIdRaw == null || entryIdRaw == null) {
+          continue;
+        }
+
+        final directoryId = directoryIdRaw.toString();
+        final Iterable<String> entryIds = entryIdRaw is List
+            ? entryIdRaw
+            .where((entry) => entry != null && entry.toString().isNotEmpty)
+            .map((entry) => entry.toString())
+            : [entryIdRaw.toString()];
+
+        if (entryIds.isEmpty) {
+          continue;
+        }
+
+        final entries = groupedDirectoryValues.putIfAbsent(
+          directoryId,
+              () => LinkedHashSet<String>(),
+        );
+        entries.addAll(entryIds);
       }
+
+      if (groupedDirectoryValues.isNotEmpty) {
+        var directoryIndex = 0;
+        groupedDirectoryValues.forEach((directoryId, entryIds) {
+          if (entryIds.isEmpty) {
+            return;
+          }
+          path += '&directory_values[$directoryIndex][directory_id]=$directoryId';
+
+          var entryIndex = 0;
+          for (final entryId in entryIds) {
+            path += '&directory_values[$directoryIndex][entry_id][$entryIndex]=$entryId';
+            entryIndex++;
+          }
+
+          directoryIndex++;
+        });
+      }
+    }
+    if (customFieldFilters != null && customFieldFilters.isNotEmpty) {
+      int index = 0;
+      customFieldFilters.forEach((fieldKey, values) {
+        if (values.isEmpty) {
+          return;
+        }
+        final encodedKey = Uri.encodeQueryComponent(fieldKey);
+        path += '&custom_fields[$index][key]=$encodedKey';
+        for (int i = 0; i < values.length; i++) {
+          final encodedValue = Uri.encodeQueryComponent(values[i]);
+          path += '&custom_fields[$index][value][$i]=$encodedValue';
+        }
+        index++;
+      });
     }
 
     if (kDebugMode) {
@@ -1482,156 +1584,146 @@ Future<ForgotPinResponse> forgotPin(LoginModel loginModel) async {
     }
   }
 
-Future<List<LeadStatus>> getLeadStatuses() async {
+Future<List<LeadStatus>> getLeadStatuses({
+  List<int>? managers,
+  List<int>? regions,
+  List<int>? sources,
+  DateTime? fromDate,
+  DateTime? toDate,
+  bool? hasSuccessDeals,
+  bool? hasInProgressDeals,
+  bool? hasFailureDeals,
+  bool? hasNotices,
+  bool? hasContact,
+  bool? hasChat,
+  bool? hasNoReplies,
+  bool? hasUnreadMessages,
+  bool? hasDeal,
+  bool? hasOrders,
+  int? daysWithoutActivity,
+  List<Map<String, dynamic>>? directoryValues,
+}) async {
   final SharedPreferences prefs = await SharedPreferences.getInstance();
   final organizationId = await getSelectedOrganization();
   final salesFunnelId = await getSelectedSalesFunnel();
 
-  // ⚠️ КРИТИЧНО: Проверяем наличие обязательного параметра
   if (organizationId == null || organizationId.isEmpty || organizationId == 'null') {
     throw Exception('Organization ID is required but missing');
   }
 
   if (kDebugMode) {
-    debugPrint('🔍 getLeadStatuses - START');
+    debugPrint('🔍 getLeadStatuses - START WITH FILTERS');
     debugPrint('🔍 getLeadStatuses - organizationId: $organizationId');
     debugPrint('🔍 getLeadStatuses - salesFunnelId: ${salesFunnelId ?? "NULL"}');
   }
 
-  // Формируем ключ кэша с учётом воронки
   final cacheKey = 'cachedLeadStatuses_${organizationId}_funnel_${salesFunnelId ?? "null"}';
-  
-  if (kDebugMode) {
-    debugPrint('🔍 getLeadStatuses - cacheKey: $cacheKey');
-  }
 
   try {
-    // КРИТИЧНО: Формируем путь ЯВНО с гарантией параметров
     String path = '/lead/statuses?organization_id=$organizationId';
-    
-    // КРИТИЧНО: ВСЕГДА добавляем sales_funnel_id (даже если null)
+
     if (salesFunnelId != null && salesFunnelId.isNotEmpty && salesFunnelId != 'null') {
       path += '&sales_funnel_id=$salesFunnelId';
-      if (kDebugMode) {
-        debugPrint('✅ getLeadStatuses - Added sales_funnel_id: $salesFunnelId');
+    }
+
+    // Добавляем фильтры к запросу статусов
+    if (managers != null && managers.isNotEmpty) {
+      for (int i = 0; i < managers.length; i++) {
+        path += '&managers[$i]=${managers[i]}';
       }
-    } else {
-      if (kDebugMode) {
-        debugPrint('⚠️ getLeadStatuses - No funnel selected, will load ALL statuses from backend');
+    }
+    if (regions != null && regions.isNotEmpty) {
+      for (int i = 0; i < regions.length; i++) {
+        path += '&regions[$i]=${regions[i]}';
       }
-      // ОПЦИОНАЛЬНО: Если бэкенд требует явного значения:
-      // path += '&sales_funnel_id=0';
+    }
+    if (sources != null && sources.isNotEmpty) {
+      for (int i = 0; i < sources.length; i++) {
+        path += '&sources[$i]=${sources[i]}';
+      }
+    }
+    if (fromDate != null && toDate != null) {
+      final formattedFromDate = DateFormat('yyyy-MM-dd').format(fromDate);
+      final formattedToDate = DateFormat('yyyy-MM-dd').format(toDate);
+      path += '&from=$formattedFromDate&to=$formattedToDate';
+    }
+    if (hasSuccessDeals == true) path += '&hasSuccessDeals=1';
+    if (hasInProgressDeals == true) path += '&hasInProgressDeals=1';
+    if (hasFailureDeals == true) path += '&hasFailureDeals=1';
+    if (hasNotices == true) path += '&hasNotices=1';
+    if (hasContact == true) path += '&hasContact=1';
+    if (hasChat == true) path += '&hasChat=1';
+    if (hasNoReplies == true) path += '&hasNoReplies=1';
+    if (hasUnreadMessages == true) path += '&hasUnreadMessages=1';
+    if (hasDeal == true) path += '&withoutDeal=1';
+    if (hasOrders == true) path += '&hasOrders=1';
+    if (daysWithoutActivity != null) path += '&lastUpdate=$daysWithoutActivity';
+    if (directoryValues != null && directoryValues.isNotEmpty) {
+      for (int i = 0; i < directoryValues.length; i++) {
+        final directoryId = directoryValues[i]['directory_id'];
+        final entryId = directoryValues[i]['entry_id'];
+        path += '&directory_values[$i][directory_id]=$directoryId';
+        path += '&directory_values[$i][entry_id]=$entryId';
+      }
     }
 
     if (kDebugMode) {
-      debugPrint('📤 getLeadStatuses - Final path: $path');
+      debugPrint('📤 getLeadStatuses WITH FILTERS - Final path: $path');
     }
 
-    final response = await _getRequest(path);
+      final response = await _getRequest(path);
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
-      
-      if (kDebugMode) {
-        debugPrint('✅ getLeadStatuses - Response received');
-        debugPrint('🔍 getLeadStatuses - Response type: ${data.runtimeType}');
-      }
 
-      List<dynamic>? statusList;
+        List<dynamic>? statusList;
 
-      // Определяем структуру ответа
       if (data is List) {
         statusList = data;
-        if (kDebugMode) {
-          debugPrint('✅ getLeadStatuses - Data is direct List');
-        }
       } else if (data is Map) {
         if (data['result'] != null) {
           statusList = data['result'] as List;
-          if (kDebugMode) {
-            debugPrint('✅ getLeadStatuses - Data found in "result" field');
-          }
         } else if (data['data'] != null) {
           statusList = data['data'] as List;
-          if (kDebugMode) {
-            debugPrint('✅ getLeadStatuses - Data found in "data" field');
-          }
         } else if (data['statuses'] != null) {
           statusList = data['statuses'] as List;
-          if (kDebugMode) {
-            debugPrint('✅ getLeadStatuses - Data found in "statuses" field');
-          }
         }
       }
 
-      // Обрабатываем найденные данные
       if (statusList != null && statusList.isNotEmpty) {
-        // Проверяем старый кэш
-        final cachedStatuses = prefs.getString(cacheKey);
-        if (cachedStatuses != null && kDebugMode) {
-          debugPrint('⚠️ getLeadStatuses - Old cache data found, will be replaced');
-        }
-
-        // Обновляем кэш новыми данными
         await prefs.setString(cacheKey, json.encode(statusList));
 
-        if (kDebugMode) {
-          debugPrint('✅ getLeadStatuses - Cached ${statusList.length} statuses with key: $cacheKey');
-        }
-
-        // Парсим статусы
         final statuses = statusList
             .map((status) => LeadStatus.fromJson(status))
             .toList();
 
-        // КРИТИЧНО: Обновляем постоянные счетчики
         await LeadCache.updatePersistentCountsFromStatuses(statuses);
-        
+
         if (kDebugMode) {
-          debugPrint('✅ getLeadStatuses - Updated persistent counts from API');
-          for (var status in statuses) {
-            debugPrint('   Status ID: ${status.id}, Count: ${status.leadsCount}');
-          }
+          debugPrint('✅ getLeadStatuses WITH FILTERS - Got ${statuses.length} statuses');
         }
 
         return statuses;
       } else {
-        if (kDebugMode) {
-          debugPrint('❌ getLeadStatuses - No valid data in response');
-          debugPrint('   Available keys: ${data is Map ? data.keys.toList() : "N/A"}');
-        }
         throw Exception('Результат отсутствует в ответе или пустой');
       }
     } else {
-      if (kDebugMode) {
-        debugPrint('❌ getLeadStatuses - Failed with status code: ${response.statusCode}');
-      }
       throw Exception('Ошибка ${response.statusCode}!');
     }
   } catch (e) {
     if (kDebugMode) {
-      debugPrint('⚠️ getLeadStatuses - Error occurred: $e');
-      debugPrint('⚠️ getLeadStatuses - Trying to load from cache');
+      debugPrint('❌ getLeadStatuses WITH FILTERS - Error: $e');
     }
 
-    // Пытаемся загрузить из кэша
     final cachedStatuses = prefs.getString(cacheKey);
     if (cachedStatuses != null) {
       final decodedData = json.decode(cachedStatuses);
       final cachedList = (decodedData as List)
           .map((status) => LeadStatus.fromJson(status))
           .toList();
-
-      if (kDebugMode) {
-        debugPrint('✅ getLeadStatuses - Loaded ${cachedList.length} statuses from cache');
-      }
       return cachedList;
     } else {
-      if (kDebugMode) {
-        debugPrint('❌ getLeadStatuses - No cache data available');
-      }
-      throw Exception(
-          'Ошибка загрузки статусов лидов и отсутствуют кэшированные данные!');
+      throw Exception('Ошибка загрузки статусов лидов и отсутствуют кэшированные данные!');
     }
   }
 }
@@ -1640,7 +1732,7 @@ Future<List<LeadStatus>> getLeadStatuses() async {
     try {
       // Получаем список лидов для указанного статуса, берем только первую страницу
       final List<Lead> leads =
-          await getLeads(leadStatusId, page: 1, perPage: 1);
+      await getLeads(leadStatusId, page: 1, perPage: 1);
 
       // Если список лидов не пуст, значит статус содержит элементы
       return leads.isNotEmpty;
@@ -1947,72 +2039,81 @@ Future<List<LeadStatus>> getLeadStatuses() async {
   }
 
 // Обновленный метод createLead
- Future<Map<String, dynamic>> createLeadWithData(
-  Map<String, dynamic> data, {
-  List<String>? filePaths,
-}) async {
-  // Формируем путь с query-параметрами
-  final updatedPath = await _appendQueryParams('/lead');
-  if (kDebugMode) {
-    debugPrint('ApiService: createLeadWithData - Generated path: $updatedPath');
-  }
-  
-  final token = await getToken();
-  var request = http.MultipartRequest('POST', Uri.parse('$baseUrl$updatedPath'));
-  
-  request.headers.addAll({
-    'Authorization': 'Bearer $token',
-    'Accept': 'application/json',
-    'Device': 'mobile',
-  });
+  Future<Map<String, dynamic>> createLeadWithData(Map<String, dynamic> data) async {
+    // Формируем путь с query-параметрами
+    final updatedPath = await _appendQueryParams('/lead');
+    if (kDebugMode) {
+      debugPrint('ApiService: createLeadWithData - Generated path: $updatedPath');
+    }
 
-  // Добавляем обычные поля
-  data.forEach((key, value) {
-    // Пропускаем массивы - их обработаем отдельно
-    if (key != 'lead_custom_fields' && key != 'directory_values') {
-      if (value != null) {
-        request.fields[key] = value.toString();
+    final token = await getToken();
+    var request = http.MultipartRequest('POST', Uri.parse('$baseUrl$updatedPath'));
+
+    request.headers.addAll({
+      'Authorization': 'Bearer $token',
+      'Accept': 'application/json',
+      'Device': 'mobile',
+    });
+
+    // Добавляем обычные поля
+    data.forEach((key, value) {
+      // Пропускаем массивы - их обработаем отдельно
+      if (key != 'lead_custom_fields' && key != 'directory_values') {
+        if (value != null) {
+          request.fields[key] = value.toString();
+        }
+      }
+    });
+
+    // Обрабатываем lead_custom_fields как массив объектов
+    if (data['lead_custom_fields'] != null &&
+        data['lead_custom_fields'] is List &&
+        (data['lead_custom_fields'] as List).isNotEmpty) {
+      List<Map<String, dynamic>> customFields =
+      List<Map<String, dynamic>>.from(data['lead_custom_fields']);
+      for (int i = 0; i < customFields.length; i++) {
+        request.fields['lead_custom_fields[$i][key]'] =
+            customFields[i]['key']?.toString() ?? '';
+        request.fields['lead_custom_fields[$i][value]'] =
+            customFields[i]['value']?.toString() ?? '';
+        request.fields['lead_custom_fields[$i][type]'] =
+            customFields[i]['type']?.toString() ?? 'string';
       }
     }
-  });
 
-  // Обрабатываем lead_custom_fields как массив объектов
-  if (data['lead_custom_fields'] != null &&
-      data['lead_custom_fields'] is List &&
-      (data['lead_custom_fields'] as List).isNotEmpty) {
-    List<Map<String, dynamic>> customFields =
-        List<Map<String, dynamic>>.from(data['lead_custom_fields']);
-    for (int i = 0; i < customFields.length; i++) {
-      request.fields['lead_custom_fields[$i][key]'] =
-          customFields[i]['key']?.toString() ?? '';
-      request.fields['lead_custom_fields[$i][value]'] =
-          customFields[i]['value']?.toString() ?? '';
-      request.fields['lead_custom_fields[$i][type]'] =
-          customFields[i]['type']?.toString() ?? 'string';
+    // ВАЖНО: Обрабатываем directory_values как массив объектов
+    if (data['directory_values'] != null &&
+        data['directory_values'] is List &&
+        (data['directory_values'] as List).isNotEmpty) {
+      List<Map<String, dynamic>> directoryValues =
+      List<Map<String, dynamic>>.from(data['directory_values']);
+      for (int i = 0; i < directoryValues.length; i++) {
+        request.fields['directory_values[$i][directory_id]'] =
+            directoryValues[i]['directory_id'].toString();
+        request.fields['directory_values[$i][entry_id]'] =
+            directoryValues[i]['entry_id'].toString();
+      }
     }
-  }
+    // Добавляем файлы
+    if (data['files'] != null && (data['files'] as List).isNotEmpty) {
+      final filesList = data['files'] as List<FileHelper>;
+      for (var fileData in filesList) {
+        try {
+          final file = await http.MultipartFile.fromPath(
+            'files[]',
+            fileData.path,
+            filename: fileData.name,
+          );
+          request.files.add(file);
+        } catch (e) {
+          debugPrint("Error adding file ${fileData.name}: $e");
+        }
+      }
+    }
 
-  // ВАЖНО: Обрабатываем directory_values как массив объектов
-  if (data['directory_values'] != null &&
-      data['directory_values'] is List &&
-      (data['directory_values'] as List).isNotEmpty) {
-    List<Map<String, dynamic>> directoryValues =
-        List<Map<String, dynamic>>.from(data['directory_values']);
-    for (int i = 0; i < directoryValues.length; i++) {
-      request.fields['directory_values[$i][directory_id]'] =
-          directoryValues[i]['directory_id'].toString();
-      request.fields['directory_values[$i][entry_id]'] =
-          directoryValues[i]['entry_id'].toString();
+    if (data['price_type_id'] != null) {
+      request.fields['price_type_id'] = data['price_type_id'].toString();
     }
-  }
-
-  // Добавляем файлы
-  if (filePaths != null && filePaths.isNotEmpty) {
-    for (var filePath in filePaths) {
-      final file = await http.MultipartFile.fromPath('files[]', filePath);
-      request.files.add(file);
-    }
-  }
 
   if (kDebugMode) {
     debugPrint('ApiService: createLeadWithData - Request fields:');
@@ -2021,61 +2122,64 @@ Future<List<LeadStatus>> getLeadStatuses() async {
     });
   }
 
-  final streamedResponse = await request.send();
-  final response = await http.Response.fromStream(streamedResponse);
+    final streamedResponse = await request.send();
+    final response = await http.Response.fromStream(streamedResponse);
 
   if (kDebugMode) {
     debugPrint('ApiService: createLeadWithData - Response status: ${response.statusCode}');
     debugPrint('ApiService: createLeadWithData - Response body: ${response.body}');
   }
 
-  if (response.statusCode == 200 || response.statusCode == 201) {
-    return {'success': true, 'message': 'lead_created_successfully'};
-  } else if (response.statusCode == 422) {
-    if (response.body.contains('The phone has already been taken.')) {
-      return {'success': false, 'message': 'phone_already_exists'};
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return {'success': true, 'message': 'lead_created_successfully'};
+    } else if (response.statusCode == 422) {
+      if (response.body.contains('The phone has already been taken.')) {
+        return {'success': false, 'message': 'phone_already_exists'};
+      }
+      if (response.body.contains('validation.phone')) {
+        return {'success': false, 'message': 'invalid_phone_format'};
+      }
+      if (response.body
+          .contains('The email field must be a valid email address.')) {
+        return {'success': false, 'message': 'error_enter_email'};
+      }
+      if (response.body.contains('name')) {
+        return {'success': false, 'message': 'invalid_name_length'};
+      }
+      if (response.body.contains('insta_login')) {
+        return {'success': false, 'message': 'instagram_login_exists'};
+      }
+      if (response.body.contains('facebook_login')) {
+        return {'success': false, 'message': 'facebook_login_exists'};
+      }
+      if (response.body.contains('tg_nick')) {
+        return {'success': false, 'message': 'telegram_nick_exists'};
+      }
+      if (response.body.contains('birthday')) {
+        return {'success': false, 'message': 'invalid_birthday'};
+      }
+      if (response.body.contains('wa_phone')) {
+        return {'success': false, 'message': 'whatsapp_number_exists'};
+      }
+      if (response.body.contains('type')) {
+        return {'success': false, 'message': 'invalid_field_type'};
+      }
+      if (response.body.contains('lead_custom_fields')) {
+        return {'success': false, 'message': 'invalid_custom_fields'};
+      }
+      if (response.body.contains('price_type_id')) {
+        return {'success': false, 'message': 'invalid_price_type_id'};
+      }
+      if (response.body.contains('directory_values')) {
+        return {'success': false, 'message': 'invalid_directory_values'};
+      }
+      return {'success': false, 'message': 'unknown_error'};
+    } else if (response.statusCode == 500) {
+      return {'success': false, 'message': 'error_server_text'};
+    } else {
+      return {'success': false, 'message': 'lead_creation_error'};
     }
-    if (response.body.contains('validation.phone')) {
-      return {'success': false, 'message': 'invalid_phone_format'};
-    }
-    if (response.body
-        .contains('The email field must be a valid email address.')) {
-      return {'success': false, 'message': 'error_enter_email'};
-    }
-    if (response.body.contains('name')) {
-      return {'success': false, 'message': 'invalid_name_length'};
-    }
-    if (response.body.contains('insta_login')) {
-      return {'success': false, 'message': 'instagram_login_exists'};
-    }
-    if (response.body.contains('facebook_login')) {
-      return {'success': false, 'message': 'facebook_login_exists'};
-    }
-    if (response.body.contains('tg_nick')) {
-      return {'success': false, 'message': 'telegram_nick_exists'};
-    }
-    if (response.body.contains('birthday')) {
-      return {'success': false, 'message': 'invalid_birthday'};
-    }
-    if (response.body.contains('wa_phone')) {
-      return {'success': false, 'message': 'whatsapp_number_exists'};
-    }
-    if (response.body.contains('type')) {
-      return {'success': false, 'message': 'invalid_field_type'};
-    }
-    if (response.body.contains('lead_custom_fields')) {
-      return {'success': false, 'message': 'invalid_custom_fields'};
-    }
-    if (response.body.contains('directory_values')) {
-      return {'success': false, 'message': 'invalid_directory_values'};
-    }
-    return {'success': false, 'message': 'unknown_error'};
-  } else if (response.statusCode == 500) {
-    return {'success': false, 'message': 'error_server_text'};
-  } else {
-    return {'success': false, 'message': 'lead_creation_error'};
   }
-}
 
   Future<Map<String, dynamic>> updateLead({
     required int leadId,
@@ -2174,7 +2278,6 @@ Future<List<LeadStatus>> getLeadStatuses() async {
   Future<Map<String, dynamic>> updateLeadWithData({
     required int leadId,
     required Map<String, dynamic> data,
-    List<String>? filePaths,
   }) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/lead/$leadId');
@@ -2229,9 +2332,30 @@ Future<List<LeadStatus>> getLeadStatuses() async {
       request.fields['price_type_id'] =
           data['price_type_id'].toString(); // Добавляем price_type_id
     }
-    if (data['existing_file_ids'] != null) {
-      request.fields['existing_files'] = jsonEncode(data['existing_file_ids']);
+
+    if (data['files'] != null && (data['files'] as List).isNotEmpty) {
+      final filesList = data['files'] as List<FileHelper>;
+      for (var fileData in filesList) {
+        try {
+          if (fileData.path.startsWith('http')) {
+            // If it's a URL, you need to download it first or send as URL
+            // For now, skip URLs
+            debugPrint("Skipping URL file: ${fileData.path}");
+            continue;
+          }
+
+          final file = await http.MultipartFile.fromPath(
+            'files[]',
+            fileData.path,
+            filename: fileData.name,
+          );
+          request.files.add(file);
+        } catch (e) {
+          debugPrint("Error adding file ${fileData.name}: $e");
+        }
+      }
     }
+
     // Добавляем sales_funnel_id из данных, если он присутствует
     if (data['sales_funnel_id'] != null) {
       request.fields['sales_funnel_id'] = data['sales_funnel_id'].toString();
@@ -2263,13 +2387,6 @@ Future<List<LeadStatus>> getLeadStatuses() async {
             value['directory_id'].toString();
         request.fields['directory_values[$i][entry_id]'] =
             value['entry_id'].toString();
-      }
-    }
-
-    if (filePaths != null && filePaths.isNotEmpty) {
-      for (var filePath in filePaths) {
-        final file = await http.MultipartFile.fromPath('files[]', filePath);
-        request.files.add(file);
       }
     }
 
@@ -2943,6 +3060,7 @@ Future<List<Deal>> getDeals(
   int perPage = 20,
   String? search,
   List<int>? managers,
+  List<int>? regions,
   List<int>? leads,
   int? statuses,
   DateTime? fromDate,
@@ -2952,10 +3070,11 @@ Future<List<Deal>> getDeals(
   List<Map<String, dynamic>>? directoryValues,
   List<String>? names,
   int? salesFunnelId, // ← КРИТИЧНО: Явный параметр
+      Map<String, List<String>>? customFieldFilters,
 }) async {
   // ✅ КРИТИЧНО: Формируем базовый путь БЕЗ _appendQueryParams
   String path = '/deal?page=$page&per_page=$perPage';
-  
+
   // ✅ ПЕРВЫМ делом добавляем organization_id
   final organizationId = await getSelectedOrganization();
   if (organizationId != null && organizationId.isNotEmpty && organizationId != 'null') {
@@ -2978,6 +3097,7 @@ Future<List<Deal>> getDeals(
   // Проверяем наличие фильтров
   bool hasFilters = (search != null && search.isNotEmpty) ||
       (managers != null && managers.isNotEmpty) ||
+      (regions != null && regions.isNotEmpty) ||
       (leads != null && leads.isNotEmpty) ||
       (fromDate != null) ||
       (toDate != null) ||
@@ -2985,7 +3105,8 @@ Future<List<Deal>> getDeals(
       (hasTasks == true) ||
       (statuses != null) ||
       (directoryValues != null && directoryValues.isNotEmpty) ||
-      (names != null && names.isNotEmpty);
+      (names != null && names.isNotEmpty) ||
+      (customFieldFilters != null && customFieldFilters.isNotEmpty); // Учитываем кастомные поля
 
   // ✅ Добавляем dealStatusId только если нет фильтров
   if (dealStatusId != null && !hasFilters) {
@@ -3000,6 +3121,12 @@ Future<List<Deal>> getDeals(
   if (managers != null && managers.isNotEmpty) {
     for (int i = 0; i < managers.length; i++) {
       path += '&managers[$i]=${managers[i]}';
+    }
+  }
+
+  if (regions != null && regions.isNotEmpty) {
+    for (int i = 0; i < regions.length; i++) {
+      path += '&regions[$i]=${regions[i]}';
     }
   }
 
@@ -3030,9 +3157,55 @@ Future<List<Deal>> getDeals(
   }
 
   if (directoryValues != null && directoryValues.isNotEmpty) {
-    for (int i = 0; i < directoryValues.length; i++) {
-      path += '&directory_values[$i][directory_id]=${directoryValues[i]['directory_id']}';
-      path += '&directory_values[$i][entry_id]=${directoryValues[i]['entry_id']}';
+    final Map<String, LinkedHashSet<String>> groupedDirectoryValues = {};
+
+    for (final dynamic rawValue in directoryValues) {
+      if (rawValue is! Map) {
+        continue;
+      }
+
+      final Map value = rawValue;
+      final directoryIdRaw = value['directory_id'];
+      final entryIdRaw = value['entry_id'];
+
+      if (directoryIdRaw == null || entryIdRaw == null) {
+        continue;
+      }
+
+      final directoryId = directoryIdRaw.toString();
+      final Iterable<String> entryIds = entryIdRaw is List
+          ? entryIdRaw
+          .where((entry) => entry != null && entry.toString().isNotEmpty)
+          .map((entry) => entry.toString())
+          : [entryIdRaw.toString()];
+
+      if (entryIds.isEmpty) {
+        continue;
+      }
+
+      final entries = groupedDirectoryValues.putIfAbsent(
+        directoryId,
+            () => LinkedHashSet<String>(),
+      );
+      entries.addAll(entryIds);
+    }
+
+    if (groupedDirectoryValues.isNotEmpty) {
+      var directoryIndex = 0;
+      groupedDirectoryValues.forEach((directoryId, entryIds) {
+        if (entryIds.isEmpty) {
+          return;
+        }
+        path += '&directory_values[$directoryIndex][directory_id]=$directoryId';
+
+        var entryIndex = 0;
+        for (final entryId in entryIds) {
+          path += '&directory_values[$directoryIndex][entry_id][$entryIndex]=$entryId';
+          entryIndex++;
+        }
+
+        directoryIndex++;
+      });
     }
   }
 
@@ -3043,18 +3216,18 @@ Future<List<Deal>> getDeals(
   }
 
   debugPrint("ApiService: getDeals - Final path: $path");
-  
+
   final response = await _getRequest(path);
   debugPrint("ApiService: getDeals - Response status: ${response.statusCode}");
 
   if (response.statusCode == 200) {
     final data = json.decode(response.body);
-    
+
     if (data['result'] != null && data['result']['data'] != null) {
       final deals = (data['result']['data'] as List)
           .map((json) => Deal.fromJson(json, dealStatusId ?? -1))
           .toList();
-      
+
       debugPrint("ApiService: getDeals - Loaded ${deals.length} deals");
       return deals;
     } else {
@@ -3078,7 +3251,7 @@ Future<List<DealStatus>> getDealStatuses({
 
   // ✅ ПРИОРИТЕТ: Сначала используем переданный параметр
   String? funnelId = salesFunnelId?.toString();
-  
+
   // ✅ FALLBACK: Если не передан - читаем из SharedPreferences
   if (funnelId == null || funnelId.isEmpty || funnelId == 'null') {
     funnelId = await getSelectedDealSalesFunnel();
@@ -3105,7 +3278,7 @@ Future<List<DealStatus>> getDealStatuses({
     // ✅ КРИТИЧНО: Формируем путь БЕЗ использования _appendQueryParams
     // Потому что _appendQueryParams может перезаписать наш salesFunnelId
     String path = '$basePath?organization_id=$organizationId';
-    
+
     // ВСЕГДА добавляем sales_funnel_id если он есть
     if (funnelId != null && funnelId.isNotEmpty && funnelId != 'null') {
       path += '&sales_funnel_id=$funnelId';
@@ -3138,8 +3311,8 @@ Future<List<DealStatus>> getDealStatuses({
         statusList = data;
       } else if (data is Map) {
         if (data['result'] != null) {
-          statusList = data['result'] is List 
-              ? data['result'] 
+          statusList = data['result'] is List
+              ? data['result']
               : (data['result']['data'] as List?);
         } else if (data['data'] != null) {
           statusList = data['data'] as List;
@@ -3159,7 +3332,7 @@ Future<List<DealStatus>> getDealStatuses({
 
         // Обновляем кэш
         await prefs.setString(cacheKey, json.encode(statusList));
-        
+
         if (kDebugMode) {
           debugPrint('✅ getDealStatuses - Loaded ${statusList.length} statuses');
         }
@@ -3196,7 +3369,7 @@ Future<List<DealStatus>> getDealStatuses({
     try {
       // Получаем список лидов для указанного статуса, берем только первую страницу
       final List<Deal> deals =
-          await getDeals(dealStatusId, page: 1, perPage: 1);
+      await getDeals(dealStatusId, page: 1, perPage: 1);
 
       // Если список лидов не пуст, значит статус содержит элементы
       return deals.isNotEmpty;
@@ -3207,54 +3380,54 @@ Future<List<DealStatus>> getDealStatuses({
   }
 
 // Метод для создания Статуса Сделки
-Future<Map<String, dynamic>> createDealStatus(
-  String title,
-  String color,
-  int? day,
-  String? notificationMessage,
-  bool showOnMainPage,
-  bool isSuccess,
-  bool isFailure,
-  List<int>? userIds,
-  List<int>? changeStatusUserIds, // ✅ НОВОЕ
-) async {
-  final path = await _appendQueryParams('/deal/statuses');
-  
-  if (kDebugMode) {
-    debugPrint('ApiService: createDealStatus - userIds: $userIds');
-    debugPrint('ApiService: createDealStatus - changeStatusUserIds: $changeStatusUserIds'); // ✅ НОВОЕ
+  Future<Map<String, dynamic>> createDealStatus(
+      String title,
+      String color,
+      int? day,
+      String? notificationMessage,
+      bool showOnMainPage,
+      bool isSuccess,
+      bool isFailure,
+      List<int>? userIds,
+      List<int>? changeStatusUserIds, // ✅ НОВОЕ
+      ) async {
+    final path = await _appendQueryParams('/deal/statuses');
+
+    if (kDebugMode) {
+      debugPrint('ApiService: createDealStatus - userIds: $userIds');
+      debugPrint('ApiService: createDealStatus - changeStatusUserIds: $changeStatusUserIds'); // ✅ НОВОЕ
+    }
+
+    final organizationId = await getSelectedOrganization();
+    final salesFunnelId = await getSelectedSalesFunnel();
+
+    final body = {
+      'title': title,
+      'day': day,
+      'color': color,
+      'notification_message': notificationMessage,
+      'show_on_main_page': showOnMainPage ? 1 : 0,
+      'is_success': isSuccess ? 1 : 0,
+      'is_failure': isFailure ? 1 : 0,
+      'organization_id': organizationId?.toString() ?? '',
+      if (salesFunnelId != null) 'sales_funnel_id': salesFunnelId.toString(),
+      if (userIds != null && userIds.isNotEmpty) 'users': userIds,
+      if (changeStatusUserIds != null && changeStatusUserIds.isNotEmpty)
+        'change_status_users': changeStatusUserIds, // ✅ НОВОЕ
+    };
+
+    if (kDebugMode) {
+      debugPrint('ApiService: createDealStatus request body: $body');
+    }
+
+    final response = await _postRequest(path, body);
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return {'success': true, 'message': 'Статус сделки успешно создан'};
+    } else {
+      return {'success': false, 'message': 'Ошибка создания статуса сделки!'};
+    }
   }
-  
-  final organizationId = await getSelectedOrganization();
-  final salesFunnelId = await getSelectedSalesFunnel();
-  
-  final body = {
-    'title': title,
-    'day': day,
-    'color': color,
-    'notification_message': notificationMessage,
-    'show_on_main_page': showOnMainPage ? 1 : 0,
-    'is_success': isSuccess ? 1 : 0,
-    'is_failure': isFailure ? 1 : 0,
-    'organization_id': organizationId?.toString() ?? '',
-    if (salesFunnelId != null) 'sales_funnel_id': salesFunnelId.toString(),
-    if (userIds != null && userIds.isNotEmpty) 'users': userIds,
-    if (changeStatusUserIds != null && changeStatusUserIds.isNotEmpty) 
-      'change_status_users': changeStatusUserIds, // ✅ НОВОЕ
-  };
-  
-  if (kDebugMode) {
-    debugPrint('ApiService: createDealStatus request body: $body');
-  }
-  
-  final response = await _postRequest(path, body);
-  
-  if (response.statusCode == 200 || response.statusCode == 201) {
-    return {'success': true, 'message': 'Статус сделки успешно создан'};
-  } else {
-    return {'success': false, 'message': 'Ошибка создания статуса сделки!'};
-  }
-}
 // Метод для получения Истории Сделки
   Future<List<DealHistory>> getDealHistory(int dealId) async {
     try {
@@ -3426,145 +3599,158 @@ Future<Map<String, dynamic>> createDealStatus(
   }
 
 // Метод для создания Сделки
- Future<Map<String, dynamic>> createDeal({
-  required String name,
-  required int dealStatusId,
-  required int? managerId,
-  required DateTime? startDate,
-  required DateTime? endDate,
-  required String sum,
-  String? description,
-  int? dealtypeId,
-  int? leadId,
-  List<Map<String, dynamic>>? customFields,
-  List<Map<String, int>>? directoryValues,
-  List<String>? filePaths,
-  List<int>? userIds, // ✅ НОВОЕ
-}) async {
-  try {
-    final updatedPath = await _appendQueryParams('/deal');
-    if (kDebugMode) {
-      debugPrint('ApiService: createDeal - Generated path: $updatedPath');
-      debugPrint('ApiService: createDeal - userIds: $userIds'); // ✅ НОВОЕ
-    }
-    
-    var request = http.MultipartRequest('POST', Uri.parse('$baseUrl$updatedPath'));
+  Future<Map<String, dynamic>> createDeal({
+    required String name,
+    required int dealStatusId,
+    required int? managerId,
+    required DateTime? startDate,
+    required DateTime? endDate,
+    required String sum,
+    String? description,
+    int? dealtypeId,
+    int? leadId,
+    List<Map<String, dynamic>>? customFields,
+    List<Map<String, int>>? directoryValues,
+    List<FileHelper>? files,
+    List<int>? userIds, // ✅ НОВОЕ
+  }) async {
+    try {
+      final updatedPath = await _appendQueryParams('/deal');
+      if (kDebugMode) {
+        debugPrint('ApiService: createDeal - Generated path: $updatedPath');
+        debugPrint('ApiService: createDeal - userIds: $userIds'); // ✅ НОВОЕ
+      }
 
-    request.fields['name'] = name;
-    request.fields['deal_status_id'] = dealStatusId.toString();
-    request.fields['deal_status_ids[0]'] = dealStatusId.toString();
-    request.fields['position'] = '1';
-    
-    if (managerId != null) {
-      request.fields['manager_id'] = managerId.toString();
-    }
-    if (startDate != null) {
-      request.fields['start_date'] = DateFormat('yyyy-MM-dd').format(startDate);
-    }
-    if (endDate != null) {
-      request.fields['end_date'] = DateFormat('yyyy-MM-dd').format(endDate);
-    }
-    
-    request.fields['sum'] = sum;
-    
-    if (description != null) {
-      request.fields['description'] = description;
-    }
-    if (dealtypeId != null) {
-      request.fields['deal_type_id'] = dealtypeId.toString();
-    }
-    if (leadId != null) {
-      request.fields['lead_id'] = leadId.toString();
-    }
+      var request = http.MultipartRequest('POST', Uri.parse('$baseUrl$updatedPath'));
 
-    // ✅ НОВОЕ: Добавляем user_ids
-    if (userIds != null && userIds.isNotEmpty) {
-      for (int i = 0; i < userIds.length; i++) {
-        request.fields['users[$i]'] = userIds[i].toString();
-      }
-      debugPrint('ApiService: createDeal - Added user_ids: $userIds');
-    }
+      request.fields['name'] = name;
+      request.fields['deal_status_id'] = dealStatusId.toString();
+      request.fields['deal_status_ids[0]'] = dealStatusId.toString();
+      request.fields['position'] = '1';
 
-    if (customFields != null && customFields.isNotEmpty) {
-      for (int i = 0; i < customFields.length; i++) {
-        var field = customFields[i];
-        request.fields['deal_custom_fields[$i][key]'] = field['key'] ?? '';
-        request.fields['deal_custom_fields[$i][value]'] = field['value'] ?? '';
-        request.fields['deal_custom_fields[$i][type]'] = field['type'] ?? 'string';
+      if (managerId != null) {
+        request.fields['manager_id'] = managerId.toString();
       }
-    }
+      if (startDate != null) {
+        request.fields['start_date'] = DateFormat('yyyy-MM-dd').format(startDate);
+      }
+      if (endDate != null) {
+        request.fields['end_date'] = DateFormat('yyyy-MM-dd').format(endDate);
+      }
 
-    if (directoryValues != null && directoryValues.isNotEmpty) {
-      for (int i = 0; i < directoryValues.length; i++) {
-        var directoryValue = directoryValues[i];
-        request.fields['directory_values[$i][entry_id]'] = directoryValue['entry_id'].toString();
-        request.fields['directory_values[$i][directory_id]'] = directoryValue['directory_id'].toString();
-      }
-    }
+      request.fields['sum'] = sum;
 
-    if (filePaths != null && filePaths.isNotEmpty) {
-      for (var filePath in filePaths) {
-        final file = await http.MultipartFile.fromPath('files[]', filePath);
-        request.files.add(file);
+      if (description != null) {
+        request.fields['description'] = description;
       }
-    }
+      if (dealtypeId != null) {
+        request.fields['deal_type_id'] = dealtypeId.toString();
+      }
+      if (leadId != null) {
+        request.fields['lead_id'] = leadId.toString();
+      }
 
-    final response = await _multipartPostRequest('/deal', request);
+      // ✅ НОВОЕ: Добавляем user_ids
+      if (userIds != null && userIds.isNotEmpty) {
+        for (int i = 0; i < userIds.length; i++) {
+          request.fields['users[$i]'] = userIds[i].toString();
+        }
+        debugPrint('ApiService: createDeal - Added user_ids: $userIds');
+      }
 
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      return {
-        'success': true,
-        'message': 'deal_created_successfully',
-      };
-    } else if (response.statusCode == 422) {
-      if (response.body.contains('name')) {
-        return {'success': false, 'message': 'invalid_name_length'};
+      if (customFields != null && customFields.isNotEmpty) {
+        for (int i = 0; i < customFields.length; i++) {
+          var field = customFields[i];
+          request.fields['deal_custom_fields[$i][key]'] = field['key'] ?? '';
+          request.fields['deal_custom_fields[$i][value]'] =
+              field['value'] ?? '';
+          request.fields['deal_custom_fields[$i][type]'] =
+              field['type'] ?? 'string';
+        }
       }
-      if (response.body.contains('directory_values')) {
-        return {'success': false, 'message': 'error_directory_values'};
+
+      if (directoryValues != null && directoryValues.isNotEmpty) {
+        for (int i = 0; i < directoryValues.length; i++) {
+          var directoryValue = directoryValues[i];
+          request.fields['directory_values[$i][entry_id]'] =
+              directoryValue['entry_id'].toString();
+          request.fields['directory_values[$i][directory_id]'] =
+              directoryValue['directory_id'].toString();
+        }
       }
-      if (response.body.contains('type')) {
-        return {'success': false, 'message': 'invalid_field_type'};
+
+      if (files != null && files.isNotEmpty) {
+        for (var fileData in files) {
+          try {
+            final file = await http.MultipartFile.fromPath(
+              'files[]',
+              fileData.path,
+              filename: fileData.name,
+            );
+            request.files.add(file);
+          } catch (e) {
+            debugPrint("Error adding file ${fileData.name}: $e");
+          }
+        }
       }
-      if (response.body.contains('deal_custom_fields')) {
-        return {'success': false, 'message': 'invalid_deal_custom_fields'};
+
+      final response = await _multipartPostRequest('/deal', request);
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return {
+          'success': true,
+          'message': 'deal_created_successfully',
+        };
+      } else if (response.statusCode == 422) {
+        if (response.body.contains('name')) {
+          return {'success': false, 'message': 'invalid_name_length'};
+        }
+        if (response.body.contains('directory_values')) {
+          return {'success': false, 'message': 'error_directory_values'};
+        }
+        if (response.body.contains('type')) {
+          return {'success': false, 'message': 'invalid_field_type'};
+        }
+        if (response.body.contains('deal_custom_fields')) {
+          return {'success': false, 'message': 'invalid_deal_custom_fields'};
+        }
+        return {'success': false, 'message': 'unknown_error'};
+      } else if (response.statusCode == 500) {
+        return {'success': false, 'message': 'error_server_text'};
+      } else {
+        return {'success': false, 'message': 'error_deal_create_successfully'};
       }
-      return {'success': false, 'message': 'unknown_error'};
-    } else if (response.statusCode == 500) {
-      return {'success': false, 'message': 'error_server_text'};
-    } else {
+    } catch (e) {
       return {'success': false, 'message': 'error_deal_create_successfully'};
     }
-  } catch (e) {
-    return {'success': false, 'message': 'error_deal_create_successfully'};
   }
-}
 
   Future<Map<String, dynamic>> updateDeal({
-  required int dealId,
-  required String name,
-  required int dealStatusId,
-  required int? managerId,
-  required DateTime? startDate,
-  required DateTime? endDate,
-  required String sum,
-  String? description,
-  int? dealtypeId,
-  required int? leadId,
-  List<Map<String, dynamic>>? customFields,
-  List<Map<String, int>>? directoryValues,
-  List<String>? filePaths,
-  List<int>? dealStatusIds,
-  List<DealFiles>? existingFiles,
-  List<int>? userIds, // ✅ НОВОЕ
-}) async {
-  final updatedPath = await _appendQueryParams('/deal/$dealId');
-  if (kDebugMode) {
-    debugPrint('ApiService: updateDeal - Generated path: $updatedPath');
-    debugPrint('ApiService: updateDeal - userIds: $userIds'); // ✅ НОВОЕ
-  }
-  
-  var request = http.MultipartRequest('POST', Uri.parse('$baseUrl$updatedPath'));
+    required int dealId,
+    required String name,
+    required int dealStatusId,
+    required int? managerId,
+    required DateTime? startDate,
+    required DateTime? endDate,
+    required String sum,
+    String? description,
+    int? dealtypeId,
+    required int? leadId,
+    List<Map<String, dynamic>>? customFields,
+    List<Map<String, int>>? directoryValues,
+    List<FileHelper>? files,
+    List<int>? dealStatusIds, // ✅ НОВОЕ
+    List<int>? existingFiles, // ID существующих файлов
+    List<int>? userIds, // ✅ НОВОЕ: массив ID пользователей
+  }) async {
+    // Формируем путь с query-параметрами
+    final updatedPath = await _appendQueryParams('/deal/$dealId');
+    if (kDebugMode) {
+      debugPrint('ApiService: updateDeal - Generated path: $updatedPath');
+      debugPrint('ApiService: updateDeal - userIds: $userIds'); // ✅ НОВОЕ
+    }
+    var request =
+        http.MultipartRequest('POST', Uri.parse('$baseUrl$updatedPath'));
 
   request.fields['name'] = name;
   request.fields['deal_status_id'] = dealStatusId.toString();
@@ -3619,15 +3805,27 @@ Future<Map<String, dynamic>> createDealStatus(
     }
   }
 
-  if (existingFiles != null && existingFiles.isNotEmpty) {
-    final existingFileIds = existingFiles.map((file) => file.id).toList();
-    request.fields['existing_files'] = jsonEncode(existingFileIds);
+  // Добавляем ID существующих файлов
+    if (existingFiles != null && existingFiles.isNotEmpty) {
+      for (int i = 0; i < existingFiles.length; i++) {
+        request.fields['existing_files[$i]'] = existingFiles[i].toString();
+      }
   }
 
-  if (filePaths != null && filePaths.isNotEmpty) {
-    for (var filePath in filePaths) {
-      final file = await http.MultipartFile.fromPath('files[]', filePath);
-      request.files.add(file);
+  // Отправляем только новые файлы (id == 0)
+    if (files != null && files.isNotEmpty) {
+      final newFiles = files.where((f) => f.id == 0).toList();
+    for (var fileData in newFiles) {
+        try {
+          final file = await http.MultipartFile.fromPath(
+            'files[]',
+            fileData.path,
+            filename: fileData.name,
+          );
+          request.files.add(file);
+        } catch (e) {
+          debugPrint("Error adding file ${fileData.name}: $e");
+        }
     }
   }
 
@@ -3725,15 +3923,15 @@ Future<Map<String, dynamic>> updateDealStatusEdit(
   List<int>? changeStatusUserIds, // ✅ НОВОЕ: пользователи, которые могут ИЗМЕНЯТЬ статус
 ) async {
   final path = await _appendQueryParams('/deal/statuses/$dealStatusId');
-  
+
   if (kDebugMode) {
     debugPrint('ApiService: updateDealStatusEdit - userIds: $userIds');
     debugPrint('ApiService: updateDealStatusEdit - changeStatusUserIds: $changeStatusUserIds'); // ✅ НОВОЕ
   }
-  
+
   final organizationId = await getSelectedOrganization();
   final salesFunnelId = await getSelectedSalesFunnel();
-  
+
   final payload = {
     "title": title,
     "day": day,
@@ -3746,7 +3944,7 @@ Future<Map<String, dynamic>> updateDealStatusEdit(
     if (salesFunnelId != null) "sales_funnel_id": salesFunnelId.toString(),
     // ✅ Добавляем оба массива пользователей
     if (userIds != null && userIds.isNotEmpty) "users": userIds,
-    if (changeStatusUserIds != null && changeStatusUserIds.isNotEmpty) 
+    if (changeStatusUserIds != null && changeStatusUserIds.isNotEmpty)
       "change_status_users": changeStatusUserIds, // ✅ НОВОЕ
   };
   
@@ -3820,25 +4018,25 @@ Future<Map<String, dynamic>> updateDealStatusEdit(
 
 // API Service
   Future<List<Task>> getTasks(
-    int? taskStatusId, {
-    int page = 1,
-    int perPage = 20,
-    String? search,
-    List<int>? users,
-    int? statuses,
-    DateTime? fromDate,
-    DateTime? toDate,
-    bool? overdue,
-    bool? hasFile,
-    bool? hasDeal,
-    bool? urgent,
-    DateTime? deadlinefromDate,
-    DateTime? deadlinetoDate,
-    String? project,
-    List<String>? authors,
-    String? department,
-    List<Map<String, dynamic>>? directoryValues, // Добавляем directoryValues
-  }) async {
+      int? taskStatusId, {
+        int page = 1,
+        int perPage = 20,
+        String? search,
+        List<int>? users,
+        int? statuses,
+        DateTime? fromDate,
+        DateTime? toDate,
+        bool? overdue,
+        bool? hasFile,
+        bool? hasDeal,
+        bool? urgent,
+        DateTime? deadlinefromDate,
+        DateTime? deadlinetoDate,
+        List<int>? projectIds,
+        List<String>? authors,
+        String? department,
+        List<Map<String, dynamic>>? directoryValues, // Добавляем directoryValues
+      }) async {
     // Формируем базовый путь
     String path = '/task?page=$page&per_page=$perPage';
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
@@ -3858,7 +4056,7 @@ Future<Map<String, dynamic>> updateDealStatusEdit(
         urgent == true ||
         (deadlinefromDate != null) ||
         (deadlinetoDate != null) ||
-        (project != null && project.isNotEmpty) ||
+        (projectIds != null && projectIds.isNotEmpty) ||
         (authors != null && authors.isNotEmpty) ||
         (department != null && department.isNotEmpty) ||
         (directoryValues != null &&
@@ -3897,12 +4095,14 @@ Future<Map<String, dynamic>> updateDealStatusEdit(
     }
     if (deadlinefromDate != null && deadlinetoDate != null) {
       final formattedFromDate =
-          DateFormat('yyyy-MM-dd').format(deadlinefromDate);
+      DateFormat('yyyy-MM-dd').format(deadlinefromDate);
       final formattedToDate = DateFormat('yyyy-MM-dd').format(deadlinetoDate);
       path += '&deadline_from=$formattedFromDate&deadline_to=$formattedToDate';
     }
-    if (project != null && project.isNotEmpty) {
-      path += '&project=$project';
+    if (projectIds != null && projectIds.isNotEmpty) {
+      for (int projectId in projectIds) {
+        path += '&project_ids[]=$projectId';
+      }
     }
     if (authors != null && authors.isNotEmpty) {
       for (int i = 0; i < authors.length; i++) {
@@ -3913,11 +4113,55 @@ Future<Map<String, dynamic>> updateDealStatusEdit(
       path += '&department_id=$department';
     }
     if (directoryValues != null && directoryValues.isNotEmpty) {
-      for (int i = 0; i < directoryValues.length; i++) {
-        path +=
-            '&directory_values[$i][directory_id]=${directoryValues[i]['directory_id']}';
-        path +=
-            '&directory_values[$i][entry_id]=${directoryValues[i]['entry_id']}';
+      final Map<String, LinkedHashSet<String>> groupedDirectoryValues = {};
+
+      for (final dynamic rawValue in directoryValues) {
+        if (rawValue is! Map) {
+          continue;
+        }
+
+        final Map value = rawValue;
+        final directoryIdRaw = value['directory_id'];
+        final entryIdRaw = value['entry_id'];
+
+        if (directoryIdRaw == null || entryIdRaw == null) {
+          continue;
+        }
+
+        final directoryId = directoryIdRaw.toString();
+        final Iterable<String> entryIds = entryIdRaw is List
+            ? entryIdRaw
+            .where((entry) => entry != null && entry.toString().isNotEmpty)
+            .map((entry) => entry.toString())
+            : [entryIdRaw.toString()];
+
+        if (entryIds.isEmpty) {
+          continue;
+        }
+
+        final entries = groupedDirectoryValues.putIfAbsent(
+          directoryId,
+              () => LinkedHashSet<String>(),
+        );
+        entries.addAll(entryIds);
+      }
+
+      if (groupedDirectoryValues.isNotEmpty) {
+        var directoryIndex = 0;
+        groupedDirectoryValues.forEach((directoryId, entryIds) {
+          if (entryIds.isEmpty) {
+            return;
+          }
+          path += '&directory_values[$directoryIndex][directory_id]=$directoryId';
+
+          var entryIndex = 0;
+          for (final entryId in entryIds) {
+            path += '&directory_values[$directoryIndex][entry_id][$entryIndex]=$entryId';
+            entryIndex++;
+          }
+
+          directoryIndex++;
+        });
       }
     }
 
@@ -3938,44 +4182,118 @@ Future<Map<String, dynamic>> updateDealStatusEdit(
   }
 
 // Метод для получения статусов задач
-  Future<List<TaskStatus>> getTaskStatuses() async {
+  Future<List<TaskStatus>> getTaskStatuses({
+    List<int>? users,
+    int? statuses,
+    DateTime? fromDate,
+    DateTime? toDate,
+    bool? overdue,
+    bool? hasFile,
+    bool? hasDeal,
+    bool? urgent,
+    DateTime? deadlinefromDate,
+    DateTime? deadlinetoDate,
+    List<int>? projectIds,
+    List<String>? authors,
+    String? department,
+    List<Map<String, dynamic>>? directoryValues,
+  }) async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
     final organizationId = await getSelectedOrganization();
 
+    if (kDebugMode) {
+      debugPrint('🔍 getTaskStatuses - START WITH FILTERS');
+      debugPrint('🔍 getTaskStatuses - organizationId: $organizationId');
+    }
+
     try {
-      // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
-      final path = await _appendQueryParams('/task-status');
+      String path = '/task-status';
+      path = await _appendQueryParams(path);
+      
+      // Добавляем фильтры к запросу статусов
+      if (users != null && users.isNotEmpty) {
+        for (int i = 0; i < users.length; i++) {
+          path += '&users[$i]=${users[i]}';
+        }
+      }
+      if (statuses != null) {
+        path += '&task_status_id=$statuses';
+      }
+      if (fromDate != null && toDate != null) {
+        final formattedFromDate = DateFormat('yyyy-MM-dd').format(fromDate);
+        final formattedToDate = DateFormat('yyyy-MM-dd').format(toDate);
+        path += '&from=$formattedFromDate&to=$formattedToDate';
+      }
+      if (overdue == true) path += '&overdue=1';
+      if (hasFile == true) path += '&hasFile=1';
+      if (hasDeal == true) path += '&hasDeal=1';
+      if (urgent == true) path += '&urgent=1';
+      if (deadlinefromDate != null && deadlinetoDate != null) {
+        final formattedDeadlineFrom = DateFormat('yyyy-MM-dd').format(deadlinefromDate);
+        final formattedDeadlineTo = DateFormat('yyyy-MM-dd').format(deadlinetoDate);
+        path += '&deadline_from=$formattedDeadlineFrom&deadline_to=$formattedDeadlineTo';
+      }
+      if (projectIds != null && projectIds.isNotEmpty) {
+        for (int i = 0; i < projectIds.length; i++) {
+          path += '&project_ids[$i]=${projectIds[i]}';
+        }
+      }
+      if (authors != null && authors.isNotEmpty) {
+        for (int i = 0; i < authors.length; i++) {
+          path += '&authors[$i]=${Uri.encodeQueryComponent(authors[i])}';
+        }
+      }
+      if (department != null && department.isNotEmpty) {
+        path += '&department=${Uri.encodeQueryComponent(department)}';
+      }
+      if (directoryValues != null && directoryValues.isNotEmpty) {
+        for (int i = 0; i < directoryValues.length; i++) {
+          final directoryId = directoryValues[i]['directory_id'];
+          final entryId = directoryValues[i]['entry_id'];
+          path += '&directory_values[$i][directory_id]=$directoryId';
+          path += '&directory_values[$i][entry_id]=$entryId';
+        }
+      }
+
       if (kDebugMode) {
-        //debugPrint('ApiService: getTaskStatuses - Generated path: $path');
+        debugPrint('📤 getTaskStatuses WITH FILTERS - Final path: $path');
       }
 
       final response = await _getRequest(path);
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        if (data['result'] != null) {
-          // Принт старых кэшированных данных (если они есть)
-          final cachedStatuses =
-              prefs.getString('cachedTaskStatuses_$organizationId');
-          if (cachedStatuses != null) {
-            final decodedData = json.decode(cachedStatuses);
-            // ////debugPrint(
-            //     '------------------------------ Старые данные в кэше ------------------------------');
-            // ////debugPrint(decodedData); // Старые данные
+        
+        List<dynamic>? statusList;
+        
+        if (data is List) {
+          statusList = data;
+        } else if (data is Map) {
+          if (data['result'] != null) {
+            statusList = data['result'] as List;
+          } else if (data['data'] != null) {
+            statusList = data['data'] as List;
+          } else if (data['statuses'] != null) {
+            statusList = data['statuses'] as List;
           }
+        }
 
+        if (statusList != null && statusList.isNotEmpty) {
           // Обновляем кэш новыми данными
           await prefs.setString('cachedTaskStatuses_$organizationId',
-              json.encode(data['result']));
-          // ////debugPrint(
-          //     '------------------------------------ Новые данные, которые сохраняются в кэш ---------------------------------');
-          // ////debugPrint(data['result']); // Новые данные, которые будут сохранены в кэш
+              json.encode(statusList));
 
-          return (data['result'] as List)
+          final statuses = statusList
               .map((status) => TaskStatus.fromJson(status))
               .toList();
+
+          if (kDebugMode) {
+            debugPrint('✅ getTaskStatuses WITH FILTERS - Got ${statuses.length} statuses');
+          }
+
+          return statuses;
         } else {
-          throw Exception('Результат отсутствует в ответе');
+          throw Exception('Результат отсутствует в ответе или пустой');
         }
       } else {
         throw Exception('Ошибка ${response.statusCode}!');
@@ -3984,7 +4302,7 @@ Future<Map<String, dynamic>> updateDealStatusEdit(
       ////debugPrint('Ошибка загрузки статусов задач. Используем кэшированные данные.');
       // Если запрос не удался, пытаемся загрузить данные из кэша
       final cachedStatuses =
-          prefs.getString('cachedTaskStatuses_$organizationId');
+      prefs.getString('cachedTaskStatuses_$organizationId');
       if (cachedStatuses != null) {
         final decodedData = json.decode(cachedStatuses);
         final cachedList = (decodedData as List)
@@ -4002,7 +4320,7 @@ Future<Map<String, dynamic>> updateDealStatusEdit(
     try {
       // Получаем список лидов для указанного статуса, берем только первую страницу
       final List<Task> tasks =
-          await getTasks(taskStatusId, page: 1, perPage: 1);
+      await getTasks(taskStatusId, page: 1, perPage: 1);
 
       // Если список лидов не пуст, значит статус содержит элементы
       return tasks.isNotEmpty;
@@ -4020,23 +4338,23 @@ Future<Map<String, dynamic>> updateDealStatusEdit(
     //debugPrint('ApiService: updateTaskStatus - Generated path: $path');
   }
 
-  final response = await _postRequest(path, {
-    'position': 1,
-    'status_id': statusId,
-  });
+    final response = await _postRequest(path, {
+      'position': 1,
+      'status_id': statusId,
+    });
 
-  if (response.statusCode == 200) {
-    ////debugPrint('Статус задачи успешно обновлен');
-  } else if (response.statusCode == 422) {
-    // ПАРСИМ JSON ОТВЕТ ОТ СЕРВЕРА
-    final jsonResponse = json.decode(response.body);
-    // БЕРЁМ message ИЗ ОТВЕТА СЕРВЕРА
-    final errorMessage = jsonResponse['message'] ?? 'Вы не можете переместить задачу на этот статус';
-    throw TaskStatusUpdateException(422, errorMessage);
-  } else {
-    throw Exception('Ошибка обновления задач сделки!');
+    if (response.statusCode == 200) {
+      ////debugPrint('Статус задачи успешно обновлен');
+    } else if (response.statusCode == 422) {
+      // ПАРСИМ JSON ОТВЕТ ОТ СЕРВЕРА
+      final jsonResponse = json.decode(response.body);
+      // БЕРЁМ message ИЗ ОТВЕТА СЕРВЕРА
+      final errorMessage = jsonResponse['message'] ?? 'Вы не можете переместить задачу на этот статус';
+      throw TaskStatusUpdateException(422, errorMessage);
+    } else {
+      throw Exception('Ошибка обновления задач сделки!');
+    }
   }
-}
 
   Map<String, dynamic> _handleTaskResponse(
       http.Response response, String operation) {
@@ -4054,7 +4372,7 @@ Future<Map<String, dynamic>> updateDealStatusEdit(
       return {
         'success': true,
         'message':
-            'Задача ${operation == 'создания' ? 'создана' : 'обновлена'} успешно.',
+        'Задача ${operation == 'создания' ? 'создана' : 'обновлена'} успешно.',
         'data': data['result'],
       };
     }
@@ -4087,7 +4405,7 @@ Future<Map<String, dynamic>> updateDealStatusEdit(
         return {
           'success': true,
           'message':
-              'Задача ${operation == 'создания' ? 'создана' : 'обновлена'} успешно.',
+          'Задача ${operation == 'создания' ? 'создана' : 'обновлена'} успешно.',
         };
       }
 
@@ -4372,7 +4690,7 @@ Future<Map<String, dynamic>> updateDealStatusEdit(
     List<int>? userId,
     String? description,
     List<Map<String, dynamic>>? customFields,
-    List<String>? filePaths,
+    List<FileHelper>? files,
     List<Map<String, int>>? directoryValues,
     int position = 1,
   }) async {
@@ -4425,10 +4743,10 @@ Future<Map<String, dynamic>> updateDealStatusEdit(
       if (customFields != null && customFields.isNotEmpty) {
         for (int i = 0; i < customFields.length; i++) {
           var field = customFields[i];
-          request.fields['task_custom_fields[$i][key]'] = field['key'] ?? '';
-          request.fields['task_custom_fields[$i][value]'] =
+          request.fields['custom_fields[$i][key]'] = field['key'] ?? '';
+          request.fields['custom_fields[$i][value]'] =
               field['value'] ?? '';
-          request.fields['task_custom_fields[$i][type]'] =
+          request.fields['custom_fields[$i][type]'] =
               field['type'] ?? 'string';
         }
       }
@@ -4443,10 +4761,20 @@ Future<Map<String, dynamic>> updateDealStatusEdit(
         }
       }
 
-      if (filePaths != null && filePaths.isNotEmpty) {
-        for (var filePath in filePaths) {
-          final file = await http.MultipartFile.fromPath('files[]', filePath);
-          request.files.add(file);
+      // Отправляем файлы (все файлы при создании новые, id == 0)
+      if (files != null && files.isNotEmpty) {
+        final newFiles = files.where((f) => f.id == 0).toList();
+        for (var fileData in newFiles) {
+          try {
+            final file = await http.MultipartFile.fromPath(
+              'files[]',
+              fileData.path,
+              filename: fileData.name,
+            );
+            request.files.add(file);
+          } catch (e) {
+            debugPrint("Error adding file ${fileData.name}: $e");
+          }
         }
       }
 
@@ -4592,11 +4920,11 @@ Future<Map<String, dynamic>> updateDealStatusEdit(
       if (customFields != null && customFields.isNotEmpty) {
         for (int i = 0; i < customFields.length; i++) {
           var field = customFields[i];
-          request.fields['task_custom_fields[$i][key]'] =
+          request.fields['custom_fields[$i][key]'] =
               field['key']!.toString();
-          request.fields['task_custom_fields[$i][value]'] =
+          request.fields['custom_fields[$i][value]'] =
               field['value']!.toString();
-          request.fields['task_custom_fields[$i][type]'] =
+          request.fields['custom_fields[$i][type]'] =
               field['type']?.toString() ?? 'string';
         }
       }
@@ -4708,6 +5036,45 @@ Future<Map<String, dynamic>> updateDealStatusEdit(
     } catch (e) {
       ////debugPrint('Error occurred!');
       throw Exception('Ошибка загрузки истории задач!');
+    }
+  }
+
+  /// Получить историю выполнения задачи (overdue history)
+  /// GET /api/task/overdue-history/{taskId}?organization_id=1&sales_funnel_id=1
+  Future<TaskOverdueHistoryResponse?> getTaskOverdueHistory(int taskId) async {
+    try {
+      final path = await _appendQueryParams('/task/overdue-history/$taskId');
+      if (kDebugMode) {
+        debugPrint('ApiService: getTaskOverdueHistory - Path: $path');
+      }
+
+      final response = await _getRequest(path);
+
+      if (kDebugMode) {
+        debugPrint('ApiService: getTaskOverdueHistory - Status: ${response.statusCode}');
+      }
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = json.decode(response.body);
+        final historyResponse = TaskOverdueHistoryResponse.fromJson(data);
+        
+        if (kDebugMode) {
+          debugPrint('ApiService: История выполнения получена - ${historyResponse.result?.length ?? 0} записей');
+        }
+        
+        return historyResponse;
+      } else {
+        if (kDebugMode) {
+          debugPrint('ApiService: Ошибка получения истории выполнения: ${response.statusCode}');
+        }
+        return null;
+      }
+    } catch (e, stackTrace) {
+      if (kDebugMode) {
+        debugPrint('ApiService: Исключение при получении истории выполнения: $e');
+        debugPrint('ApiService: StackTrace: $stackTrace');
+      }
+      return null;
     }
   }
 
@@ -5134,7 +5501,7 @@ Future<Map<String, dynamic>> updateDealStatusEdit(
       },
     );
 
-    if (response.statusCode != 200) {
+    if (response.statusCode != 200 && response.statusCode != 201) {
       throw ('Ошибка при связывании справочника: ${response.statusCode}');
     }
 
@@ -5812,9 +6179,8 @@ Future<ChatsGetId> getChatById(int chatId) async {
   String path = '/v2/chat/$chatId';
   path = await _appendQueryParams(path);
 
-  if (kDebugMode) {
-    //debugPrint('ApiService.getChatById: Generated path: $path');
-  }
+  debugPrint('════════════════════════════════════════════════════════');
+  debugPrint('🔍 [getChatById] Requesting: $baseUrl$path');
 
   final response = await http.get(
     Uri.parse('$baseUrl$path'),
@@ -5827,16 +6193,37 @@ Future<ChatsGetId> getChatById(int chatId) async {
     },
   );
 
-  if (kDebugMode) {
-    //debugPrint('ApiService.getChatById: Response status: ${response.statusCode}');
-    //debugPrint('ApiService.getChatById: Response body: ${response.body}');
-  }
+  debugPrint('📥 [getChatById] Status: ${response.statusCode}');
+  debugPrint('📥 [getChatById] Full Response: ${response.body}');
 
   if (response.statusCode == 200) {
     final data = json.decode(response.body);
+
+    // ✅ ЛОГИРУЕМ СТРУКТУРУ ВЕРХНЕГО УРОВНЯ
+    debugPrint('📊 [getChatById] Top-level keys: ${data.keys.toList()}');
+
     if (data['result'] != null) {
-      // Передаём именно result в fromJson
-      return ChatsGetId.fromJson(data['result']);
+      final result = data['result'];
+
+      // ✅ ЛОГИРУЕМ СТРУКТУРУ result
+      debugPrint('📊 [getChatById] Result keys: ${result.keys.toList()}');
+      debugPrint('📊 [getChatById] Result type: ${result['type']}');
+      debugPrint('📊 [getChatById] Result name: "${result['name']}"');
+      debugPrint('📊 [getChatById] Result group: ${result['group']}');
+      debugPrint('📊 [getChatById] Result chatUsers type: ${result['chatUsers']?.runtimeType}');
+      debugPrint('📊 [getChatById] Result chatUsers length: ${result['chatUsers']?.length}');
+
+      if (result['chatUsers'] != null && result['chatUsers'] is List) {
+        debugPrint('📊 [getChatById] ChatUsers content:');
+        for (var i = 0; i < (result['chatUsers'] as List).length; i++) {
+          final user = result['chatUsers'][i];
+          debugPrint('   [$i] type: ${user['type']}, participant: ${user['participant']?['name']}');
+        }
+      }
+
+      debugPrint('════════════════════════════════════════════════════════');
+
+      return ChatsGetId.fromJson(result);
     } else {
       throw Exception('Результат отсутствует в ответе');
     }
@@ -6939,7 +7326,7 @@ Future<void> _removeOrganizationId() async {
   debugPrint('🔍 ApiService: Getting selected sales funnel from SharedPreferences');
   final prefs = await SharedPreferences.getInstance();
   final funnelId = prefs.getString('selected_sales_funnel');
-  
+
   if (funnelId == null || funnelId.isEmpty || funnelId == 'null') {
     debugPrint('⚠️ ApiService: No valid funnel ID found in SharedPreferences');
     return null;
@@ -6951,15 +7338,14 @@ Future<void> _removeOrganizationId() async {
 // Существующий метод для сохранения выбранной воронки
  Future<void> saveSelectedSalesFunnel(String funnelId) async {
   debugPrint('🔧 ApiService: Saving selected sales funnel ID: $funnelId');
-  
   if (funnelId.isEmpty || funnelId == 'null') {
     debugPrint('⚠️ ApiService: Attempting to save invalid funnelId: $funnelId');
     return;
   }
-  
+
   final prefs = await SharedPreferences.getInstance();
   await prefs.setString('selected_sales_funnel', funnelId);
-  
+
   // Проверяем, что сохранилось
   final saved = prefs.getString('selected_sales_funnel');
   if (saved == funnelId) {
@@ -7118,22 +7504,21 @@ Future<String> _appendQueryParams(String path) async {
     final uri = Uri.parse(path);
     // Используем queryParametersAll для сохранения всех значений (включая повторяющиеся ключи)
     final existingParamsAll = Map<String, List<String>>.from(uri.queryParametersAll);
-    
     // Получаем ID из SharedPreferences
     final organizationId = await getSelectedOrganization();
     final salesFunnelId = await getSelectedSalesFunnel();
 
     // ✅ Добавляем organization_id ТОЛЬКО если его нет
-    if (organizationId != null && 
-        organizationId.isNotEmpty && 
+    if (organizationId != null &&
+        organizationId.isNotEmpty &&
         organizationId != 'null' &&
         !existingParamsAll.containsKey('organization_id')) {
       existingParamsAll['organization_id'] = [organizationId];
     }
 
     // ✅ Добавляем sales_funnel_id ТОЛЬКО если его нет
-    if (salesFunnelId != null && 
-        salesFunnelId.isNotEmpty && 
+    if (salesFunnelId != null &&
+        salesFunnelId.isNotEmpty &&
         salesFunnelId != 'null' &&
         !existingParamsAll.containsKey('sales_funnel_id')) {
       existingParamsAll['sales_funnel_id'] = [salesFunnelId];
@@ -7146,13 +7531,13 @@ Future<String> _appendQueryParams(String path) async {
         queryParts.add('${Uri.encodeComponent(key)}=${Uri.encodeComponent(value)}');
       }
     });
-    
+
     final queryString = queryParts.isNotEmpty ? '?${queryParts.join('&')}' : '';
     final result = '${uri.path}$queryString';
-    
+
     debugPrint('✅ _appendQueryParams: $path → $result');
     return result;
-    
+
   } catch (e) {
     debugPrint('❌ _appendQueryParams error: $e');
     return path;
@@ -7197,27 +7582,31 @@ Future<String> _appendQueryParams(String path) async {
     }
   }
 
-// Метод для прочтения всех Уведомлений
-  Future<int> DeleteAllNotifications() async {
-    // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
-    String path = await _appendQueryParams('/notification/readAll');
-    if (kDebugMode) {
-      //debugPrint('ApiService: DeleteAllNotifications - Generated path: $path');
-    }
 
-    ////debugPrint('Sending POST request to API with path: $path');
 
-    final response = await _postRequest(path, {});
+// Замените метод DeleteAllNotifications на это:
 
-    // Успешные коды: 200, 201, 204, 429
-    final successCodes = [200, 201, 204, 429];
-    if (successCodes.contains(response.statusCode)) {
-      return response.statusCode;
-    } else {
-      throw Exception('Ошибка удаления уведомлений!');
-    }
+Future<int> DeleteAllNotifications() async {
+  // Используем эндпоинт /notification/readAll с POST методом
+  String path = await _appendQueryParams('/notification/readAll');
+
+  if (kDebugMode) {
+    debugPrint('ApiService: DeleteAllNotifications - Generated path: $path');
   }
 
+  debugPrint('Sending POST request to API with path: $path');
+
+  // Используем POST метод как и раньше
+  final response = await _postRequest(path, {});
+
+  final successCodes = [200, 201, 204, 429];
+  if (successCodes.contains(response.statusCode)) {
+    debugPrint('✅ All notifications deleted successfully. Status: ${response.statusCode}');
+    return response.statusCode;
+  } else {
+    throw Exception('Ошибка удаления уведомлений! Status: ${response.statusCode}');
+  }
+}
 // Метод для удаления Уведомлений
   Future<int> DeleteNotifications({int? notificationId}) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
@@ -7427,11 +7816,11 @@ Future<String> _appendQueryParams(String path) async {
   }
 
   Future<List<MyTask>> getMyTasks(
-    int? taskStatusId, {
-    int page = 1,
-    int perPage = 20,
-    String? search,
-  }) async {
+      int? taskStatusId, {
+        int page = 1,
+        int perPage = 20,
+        String? search,
+      }) async {
     // Формируем базовый путь
     String path = '/my-task?page=$page&per_page=$perPage';
 
@@ -7531,7 +7920,7 @@ Future<String> _appendQueryParams(String path) async {
     try {
       // Получаем список лидов для указанного статуса, берем только первую страницу
       final List<MyTask> tasks =
-          await getMyTasks(taskStatusId, page: 1, perPage: 1);
+      await getMyTasks(taskStatusId, page: 1, perPage: 1);
 
       // Если список лидов не пуст, значит статус содержит элементы
       return tasks.isNotEmpty;
@@ -7581,7 +7970,7 @@ Future<String> _appendQueryParams(String path) async {
       return {
         'success': true,
         'message':
-            'Задача ${operation == 'создания' ? 'создана' : 'обновлена'} успешно.',
+        'Задача ${operation == 'создания' ? 'создана' : 'обновлена'} успешно.',
         'data': data['result'],
       };
     }
@@ -7614,7 +8003,7 @@ Future<String> _appendQueryParams(String path) async {
         return {
           'success': true,
           'message':
-              'Задача ${operation == 'создания' ? 'создана' : 'обновлена'} успешно.',
+          'Задача ${operation == 'создания' ? 'создана' : 'обновлена'} успешно.',
         };
       }
 
@@ -7871,7 +8260,7 @@ Future<String> _appendQueryParams(String path) async {
 
       if (endDate != null) {
         request.fields['to'] =
-            '${endDate.year}-${endDate.month.toString().padLeft(2, '0')}-${endDate.day.toString().padLeft(2, '0')}';
+        '${endDate.year}-${endDate.month.toString().padLeft(2, '0')}-${endDate.day.toString().padLeft(2, '0')}';
       }
       if (description != null) {
         request.fields['description'] = description;
@@ -9029,10 +9418,10 @@ Future<String> _appendQueryParams(String path) async {
 
     if (response.statusCode == 200) {
       final Map<String, dynamic> data = json.decode(response.body);
-      ////debugPrint('Response data: $data'); // Debug: //debugPrint the response
+      ////debugPrint('Response data: $data'); // Debug: //print the response
       if (data.containsKey('data')) {
         return (data['data'] as List).map((item) {
-          ////debugPrint('Item: $item'); // Debug: //debugPrint each item
+          ////debugPrint('Item: $item'); // Debug: //print each item
           return SubCategoryAttributesData.fromJson(
               item as Map<String, dynamic>);
         }).toList();
@@ -9518,6 +9907,7 @@ Future<String> _appendQueryParams(String path) async {
     int? statusId,
     String? query,
     List<String>? managerIds,
+    List<String>? regionsIds,
     List<String>? leadIds,
     DateTime? fromDate,
     DateTime? toDate,
@@ -9535,6 +9925,11 @@ Future<String> _appendQueryParams(String path) async {
     if (managerIds != null && managerIds.isNotEmpty) {
       for (int i = 0; i < managerIds.length; i++) {
         url += '&managers[$i]=${managerIds[i]}';
+      }
+    }
+    if (regionsIds != null && regionsIds.isNotEmpty) {
+      for (int i = 0; i < regionsIds.length; i++) {
+        url += '&regions[$i]=${regionsIds[i]}';
       }
     }
     if (leadIds != null && leadIds.isNotEmpty) {
@@ -10126,6 +10521,7 @@ Future<String> _appendQueryParams(String path) async {
 
     if (userIds != null && userIds.isNotEmpty) {
       url += userIds
+      // TODO check if users[] or user_id[]
           .map((userId) => '&user_id[]=$userId')
           .join(); // Append user IDs
     }
@@ -16241,166 +16637,175 @@ Future<List<ExpenseArticleDashboardWarehouse>> getExpenseArticleDashboardWarehou
 // В секции API__SCREEN__LEAD
 
 // Метод для получения конфигурации полей (уже есть)
-// Future<FieldConfigurationResponse> getFieldPositions({
-//   required String tableName,
-// }) async {
-//   try {
-//     final path = await _appendQueryParams('/field-position?table=$tableName');
-//
-//     if (kDebugMode) {
-//       debugPrint('ApiService: getFieldPositions - Generated path: $path');
-//     }
-//
-//     final response = await _getRequest(path);
-//
-//     if (response.statusCode == 200) {
-//       final data = json.decode(response.body);
-//       return FieldConfigurationResponse.fromJson(data);
-//     } else {
-//       throw Exception('Ошибка загрузки конфигурации полей: ${response.statusCode}');
-//     }
-//   } catch (e) {
-//     if (kDebugMode) {
-//       debugPrint('ApiService: getFieldPositions - Error: $e');
-//     }
-//     throw Exception('Ошибка загрузки конфигурации полей!');
-//   }
-// }
+  Future<FieldConfigurationResponse> getFieldPositions({
+    required String tableName,
+  }) async {
+    try {
+      final path = await _appendQueryParams('/field-position?table=$tableName');
 
-// Новый метод для сохранения конфигурации в кэш
-Future<void> cacheFieldConfiguration({
-  required String tableName,
-  required FieldConfigurationResponse configuration,
-}) async {
-  try {
-    final prefs = await SharedPreferences.getInstance();
-    final organizationId = await getSelectedOrganization();
-    final cacheKey = 'field_config_${tableName}_org_${organizationId}';
-    
-    final jsonData = json.encode(configuration.toJson()); 
-    await prefs.setString(cacheKey, jsonData);
-    
-    // Сохраняем timestamp последнего обновления
-    await prefs.setInt('${cacheKey}_timestamp', DateTime.now().millisecondsSinceEpoch);
-    
-    if (kDebugMode) {
-      debugPrint('ApiService: Cached field configuration for $tableName');
-    }
-  } catch (e) {
-    if (kDebugMode) {
-      debugPrint('ApiService: Error caching field configuration: $e');
-    }
-  }
-}
-
-// Новый метод для получения конфигурации из кэша
-Future<FieldConfigurationResponse?> getCachedFieldConfiguration({
-  required String tableName,
-}) async {
-  try {
-    final prefs = await SharedPreferences.getInstance();
-    final organizationId = await getSelectedOrganization();
-    final cacheKey = 'field_config_${tableName}_org_${organizationId}';
-    
-    final cachedData = prefs.getString(cacheKey);
-    
-    if (cachedData != null) {
-      final jsonData = json.decode(cachedData);
-      final config = FieldConfigurationResponse.fromJson(jsonData);
-      
       if (kDebugMode) {
-        debugPrint('ApiService: Loaded cached field configuration for $tableName');
+        debugPrint('ApiService: getFieldPositions - Generated path: $path');
       }
-      
-      return config;
-    }
-    
-    return null;
-  } catch (e) {
-    if (kDebugMode) {
-      debugPrint('ApiService: Error loading cached field configuration: $e');
-    }
-    return null;
-  }
-}
 
+      final response = await _getRequest(path);
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return FieldConfigurationResponse.fromJson(data);
+      } else {
+        throw Exception('Ошибка загрузки конфигурации полей: ${response.statusCode}');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('ApiService: getFieldPositions - Error: $e');
+      }
+      throw Exception('Ошибка загрузки конфигурации полей!');
+    }
+  }
+
+  // not used
+// Новый метод для сохранения конфигурации в кэш
+  Future<void> cacheFieldConfiguration({
+    required String tableName,
+    required FieldConfigurationResponse configuration,
+  }) async {
+    // Кэширование конфигурации временно отключено.
+    // try {
+    //   final prefs = await SharedPreferences.getInstance();
+    //   final organizationId = await getSelectedOrganization();
+    //   final cacheKey = 'field_config_${tableName}_org_${organizationId}';
+    //
+    //   final jsonData = json.encode(configuration.toJson());
+    //   await prefs.setString(cacheKey, jsonData);
+    //
+    //   // Сохраняем timestamp последнего обновления
+    //   await prefs.setInt('${cacheKey}_timestamp', DateTime.now().millisecondsSinceEpoch);
+    //
+    //   if (kDebugMode) {
+    //     debugPrint('ApiService: Cached field configuration for $tableName');
+    //   }
+    // } catch (e) {
+    //   if (kDebugMode) {
+    //     debugPrint('ApiService: Error caching field configuration: $e');
+    //   }
+    // }
+  }
+
+  // not used
+// Новый метод для получения конфигурации из кэша
+  Future<FieldConfigurationResponse?> getCachedFieldConfiguration({
+    required String tableName,
+  }) async {
+    // Кэширование конфигурации временно отключено, всегда возвращаем null.
+    return null;
+    // try {
+    //   final prefs = await SharedPreferences.getInstance();
+    //   final organizationId = await getSelectedOrganization();
+    //   final cacheKey = 'field_config_${tableName}_org_${organizationId}';
+    //
+    //   final cachedData = prefs.getString(cacheKey);
+    //
+    //   if (cachedData != null) {
+    //     final jsonData = json.decode(cachedData);
+    //     final config = FieldConfigurationResponse.fromJson(jsonData);
+    //
+    //     if (kDebugMode) {
+    //       debugPrint('ApiService: Loaded cached field configuration for $tableName');
+    //     }
+    //
+    //     return config;
+    //   }
+    //
+    //   return null;
+    // } catch (e) {
+    //   if (kDebugMode) {
+    //     debugPrint('ApiService: Error loading cached field configuration: $e');
+    //   }
+    //   return null;
+    // }
+  }
+
+  // not used
 // Метод для загрузки и кэширования всех конфигураций
-Future<void> loadAndCacheAllFieldConfigurations() async {
-  try {
-    if (kDebugMode) {
-      debugPrint('ApiService: Loading all field configurations');
-    }
-    
-    final tables = ['leads', 'tasks', 'deals'];
-    
-    for (final tableName in tables) {
-      try {
-        // final config = await getFieldPositions(tableName: tableName);
-        // await cacheFieldConfiguration(tableName: tableName, configuration: config);
-        
-        if (kDebugMode) {
-          debugPrint('ApiService: Successfully cached configuration for $tableName');
-        }
-      } catch (e) {
-        if (kDebugMode) {
-          debugPrint('ApiService: Error loading configuration for $tableName: $e');
+  Future<void> loadAndCacheAllFieldConfigurations() async {
+    try {
+      if (kDebugMode) {
+        debugPrint('ApiService: Loading all field configurations');
+      }
+
+      final tables = ['leads', 'tasks', 'deals'];
+
+      for (final tableName in tables) {
+        try {
+          final config = await getFieldPositions(tableName: tableName);
+          // not used as this method is not used
+          await cacheFieldConfiguration(tableName: tableName, configuration: config);
+
+          if (kDebugMode) {
+            debugPrint('ApiService: Successfully cached configuration for $tableName');
+          }
+        } catch (e) {
+          if (kDebugMode) {
+            debugPrint('ApiService: Error loading configuration for $tableName: $e');
+          }
         }
       }
-    }
-    
-    if (kDebugMode) {
-      debugPrint('ApiService: Finished loading all field configurations');
-    }
-  } catch (e) {
-    if (kDebugMode) {
-      debugPrint('ApiService: Error in loadAndCacheAllFieldConfigurations: $e');
+
+      if (kDebugMode) {
+        debugPrint('ApiService: Finished loading all field configurations');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('ApiService: Error in loadAndCacheAllFieldConfigurations: $e');
+      }
     }
   }
-}
 
+  // not used
 // Метод для очистки кэша конфигураций (при смене организации)
-Future<void> clearFieldConfigurationCache() async {
-  try {
-    final prefs = await SharedPreferences.getInstance();
-    final organizationId = await getSelectedOrganization();
-    
-    final tables = ['leads', 'tasks', 'deals'];
-    
-    for (final tableName in tables) {
-      final cacheKey = 'field_config_${tableName}_org_${organizationId}';
+  Future<void> clearFieldConfigurationCache() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final organizationId = await getSelectedOrganization();
+
+      final tables = ['leads', 'tasks', 'deals'];
+
+      for (final tableName in tables) {
+        final cacheKey = 'field_config_${tableName}_org_${organizationId}';
+        await prefs.remove(cacheKey);
+        await prefs.remove('${cacheKey}_timestamp');
+      }
+
+      if (kDebugMode) {
+        debugPrint('ApiService: Cleared all field configuration cache');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('ApiService: Error clearing field configuration cache: $e');
+      }
+    }
+  }
+
+  // not used
+// Метод для очистки кэша конфигурации конкретной таблицы
+  Future<void> clearFieldConfigurationCacheForTable(String tableName) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final organizationId = await getSelectedOrganization();
+
+      final cacheKey = 'field_config_${tableName}_org_$organizationId';
       await prefs.remove(cacheKey);
       await prefs.remove('${cacheKey}_timestamp');
-    }
-    
-    if (kDebugMode) {
-      debugPrint('ApiService: Cleared all field configuration cache');
-    }
-  } catch (e) {
-    if (kDebugMode) {
-      debugPrint('ApiService: Error clearing field configuration cache: $e');
+
+      if (kDebugMode) {
+        debugPrint('ApiService: Cleared field configuration cache for $tableName');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('ApiService: Error clearing field configuration cache for $tableName: $e');
+      }
     }
   }
-}
-
-// Метод для очистки кэша конфигурации конкретной таблицы
-Future<void> clearFieldConfigurationCacheForTable(String tableName) async {
-  try {
-    final prefs = await SharedPreferences.getInstance();
-    final organizationId = await getSelectedOrganization();
-
-    final cacheKey = 'field_config_${tableName}_org_$organizationId';
-    await prefs.remove(cacheKey);
-    await prefs.remove('${cacheKey}_timestamp');
-
-    if (kDebugMode) {
-      debugPrint('ApiService: Cleared field configuration cache for $tableName');
-    }
-  } catch (e) {
-    if (kDebugMode) {
-      debugPrint('ApiService: Error clearing field configuration cache for $tableName: $e');
-    }
-  }
-}
 
 // Метод для обновления позиций полей
   Future<Map<String, dynamic>> updateFieldPositions({
@@ -16471,6 +16876,172 @@ Future<void> clearFieldConfigurationCacheForTable(String tableName) async {
       rethrow;
     }
   }
+
+  // GET lead custom fields
+  // lead/get/custom-fields?organization_id=1&sales_funnel_id=1
+  // response.result is list of strings
+  Future<List<String>> getLeadCustomFields() async {
+    final path = await _appendQueryParams('/lead/get/custom-fields');
+
+    if (kDebugMode) {
+      debugPrint('ApiService: getLeadCustomFields - Generated path: $path');
+    }
+
+    final response = await _getRequest(path);
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      final resultList = data['result'] as List?;
+      if (resultList == null) {
+        return [];
+      }
+      return resultList.map((field) => field.toString()).toList();
+    } else {
+      final message = _extractErrorMessageFromResponse(response);
+      throw ApiException(
+        message ?? 'Ошибка загрузки пользовательских полей лидов',
+        response.statusCode,
+      );
+    }
+  }
+
+  // GET custom field values by key (we get key from getLeadCustomFields)
+  // lead/get/custom-field-values?key=aa&organization_id=1&sales_funnel_id=1
+  // response.result is list of strings
+  Future<List<String>> getLeadCustomFieldValues(String key) async {
+    final path = await _appendQueryParams('/lead/get/custom-field-values?key=$key');
+    if (kDebugMode) {
+      debugPrint('ApiService: getLeadCustomFieldValues - Generated path: $path');
+    }
+    final response = await _getRequest(path);
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      final resultList = data['result'] as List?;
+      if (resultList == null) {
+        return [];
+      }
+      return resultList.map((value) => value.toString()).toList();
+    } else {
+      final message = _extractErrorMessageFromResponse(response);
+      throw ApiException(
+        message ?? 'Ошибка загрузки значений пользовательского поля лидов',
+        response.statusCode,
+      );
+    }
+  }
+
+
+  // GET deal custom fields
+  // lead/get/custom-fields?organization_id=1&sales_funnel_id=1
+  // response.result is list of strings
+  Future<List<String>> getDealCustomFields() async {
+    final path = await _appendQueryParams('/deal/get/custom-fields');
+
+    if (kDebugMode) {
+      debugPrint('ApiService: getLeadCustomFields - Generated path: $path');
+    }
+
+    final response = await _getRequest(path);
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      final resultList = data['result'] as List?;
+      if (resultList == null) {
+        return [];
+      }
+      return resultList.map((field) => field.toString()).toList();
+    } else {
+      final message = _extractErrorMessageFromResponse(response);
+      throw ApiException(
+        message ?? 'Ошибка загрузки пользовательских полей лидов',
+        response.statusCode,
+      );
+    }
+  }
+
+  // GET custom field values by key (we get key from getLeadCustomFields)
+  // lead/get/custom-field-values?key=aa&organization_id=1&sales_funnel_id=1
+  // response.result is list of strings
+  Future<List<String>> getDealCustomFieldValues(String key) async {
+    final path = await _appendQueryParams('/deal/get/custom-field-values?key=$key');
+    if (kDebugMode) {
+      debugPrint('ApiService: getLeadCustomFieldValues - Generated path: $path');
+    }
+    final response = await _getRequest(path);
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      final resultList = data['result'] as List?;
+      if (resultList == null) {
+        return [];
+      }
+      return resultList.map((value) => value.toString()).toList();
+    } else {
+      final message = _extractErrorMessageFromResponse(response);
+      throw ApiException(
+        message ?? 'Ошибка загрузки значений пользовательского поля лидов',
+        response.statusCode,
+      );
+    }
+  }
+  //  ================================= TASK CUSTOM FIELDS ================================
+
+  Future<List<String>> getTaskCustomFields() async {
+    final path = await _appendQueryParams('/field-position?table=tasks');
+
+    if (kDebugMode) {
+      debugPrint('ApiService: getTaskCustomFields - Generated path: $path');
+    }
+
+    final response = await _getRequest(path);
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      final resultList = data['result'] as List<dynamic>?;
+      final ls = resultList
+          ?.where((e) => e['is_custom_field'] == true)
+          .map((e) => e['field_name'] as String)
+          .toList()
+          ?? <String>[];
+
+      if (kDebugMode) {
+        debugPrint('ApiService: getTaskCustomFields - Response status: ${response.statusCode}');
+        debugPrint('ApiService: getTaskCustomFields - Response ls: $ls');
+      }
+
+      return ls;
+    } else {
+      final message = _extractErrorMessageFromResponse(response);
+      throw ApiException(
+        message ?? 'Ошибка загрузки пользовательских полей задач',
+        response.statusCode,
+      );
+    }
+  }
+
+  // GET custom field values by key (we get key from getLeadCustomFields)
+  // lead/get/custom-field-values?key=aa&organization_id=1&sales_funnel_id=1
+  // response.result is list of strings
+  Future<List<String>> getTaskCustomFieldValues(String key) async {
+    final path = await _appendQueryParams('/task/get/custom-field-values?key=$key');
+    if (kDebugMode) {
+      debugPrint('ApiService: getTaskCustomFieldValues - Generated path: $path');
+    }
+    final response = await _getRequest(path);
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      final resultList = data['result'] as List?;
+      if (resultList == null) {
+        return [];
+      }
+      return resultList.map((value) => value.toString()).toList();
+    } else {
+      final message = _extractErrorMessageFromResponse(response);
+      throw ApiException(
+        message ?? 'Ошибка загрузки значений пользовательского поля задач',
+          response.statusCode,
+        );
+      }
+    }
 
 // _______________________________END SECTION FOR FIELD CONFIGURATION _______________________________
 
@@ -17127,6 +17698,96 @@ Future<void> clearFieldConfigurationCacheForTable(String tableName) async {
         debugPrint('ApiService: Ошибка загрузки вариантов товаров: ${response.statusCode}');
       }
       throw Exception('Ошибка загрузки вариантов товаров: ${response.statusCode}');
+    }
+  }
+
+  // ======================================== LOCALIZATION API ========================================
+  
+  /// Получить настройки локализации с сервера
+  /// GET /api/localization?organization_id=1&sales_funnel_id=1
+  Future<LocalizationResponse?> getLocalization() async {
+    try {
+      // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+      String path = await _appendQueryParams('/localization');
+      
+      if (kDebugMode) {
+        debugPrint('ApiService: getLocalization - Path: $path');
+      }
+
+      final response = await _getRequest(path);
+      
+      if (kDebugMode) {
+        debugPrint('ApiService: getLocalization - Status: ${response.statusCode}');
+        debugPrint('ApiService: getLocalization - Response: ${response.body}');
+      }
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = json.decode(response.body);
+        final localizationResponse = LocalizationResponse.fromJson(data);
+        
+        if (kDebugMode) {
+          debugPrint('ApiService: Локализация получена успешно');
+          debugPrint('  - Language: ${localizationResponse.result?.language}');
+          debugPrint('  - Phone code: ${localizationResponse.result?.countryPhoneCodes}');
+        }
+        
+        return localizationResponse;
+      } else {
+        if (kDebugMode) {
+          debugPrint('ApiService: Ошибка получения локализации: ${response.statusCode}');
+        }
+        return null;
+      }
+    } catch (e, stackTrace) {
+      if (kDebugMode) {
+        debugPrint('ApiService: Исключение при получении локализации: $e');
+        debugPrint('ApiService: StackTrace: $stackTrace');
+      }
+      return null;
+    }
+  }
+
+  /// Изменить язык на сервере
+  /// POST /api/localization/change-language
+  Future<bool> changeLanguage(String language) async {
+    try {
+      final organizationId = await getSelectedOrganization();
+      final salesFunnelId = await getSelectedSalesFunnel();
+      
+      final Map<String, dynamic> body = {
+        'language': language,
+        'organization_id': organizationId != null ? int.parse(organizationId) : null,
+        'sales_funnel_id': salesFunnelId != null ? int.parse(salesFunnelId) : null,
+      };
+      
+      if (kDebugMode) {
+        debugPrint('ApiService: changeLanguage - Body: $body');
+      }
+
+      final response = await _postRequest('/localization/change-language', body);
+      
+      if (kDebugMode) {
+        debugPrint('ApiService: changeLanguage - Status: ${response.statusCode}');
+        debugPrint('ApiService: changeLanguage - Response: ${response.body}');
+      }
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        if (kDebugMode) {
+          debugPrint('ApiService: Язык успешно изменён на сервере: $language');
+        }
+        return true;
+      } else {
+        if (kDebugMode) {
+          debugPrint('ApiService: Ошибка изменения языка: ${response.statusCode}');
+        }
+        return false;
+      }
+    } catch (e, stackTrace) {
+      if (kDebugMode) {
+        debugPrint('ApiService: Исключение при изменении языка: $e');
+        debugPrint('ApiService: StackTrace: $stackTrace');
+      }
+      return false;
     }
   }
 

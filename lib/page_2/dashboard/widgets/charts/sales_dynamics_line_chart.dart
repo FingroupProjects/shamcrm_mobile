@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'dart:math';
 
 import '../../../../bloc/page_2_BLOC/dashboard/sales_dashboard_bloc.dart';
 import '../../detailed_report/detailed_report_screen.dart';
@@ -254,7 +255,7 @@ class _SalesDynamicsLineChartState extends State<SalesDynamicsLineChart> {
                             ),
                           );
                         },
-                        reservedSize: 40,
+                        reservedSize: 50,
                         interval: _calculateInterval(),
                       ),
                     ),
@@ -387,36 +388,89 @@ class _SalesDynamicsLineChartState extends State<SalesDynamicsLineChart> {
     return maxValue * 1.2;
   }
 
+  // ============================================
+  // НОВАЯ ЛОГИКА РАСЧЁТА ИНТЕРВАЛОВ
+  // ============================================
   double _calculateInterval() {
     final maxY = _calculateMaxY();
-    // Более детальные интервалы для красивого UI
-    if (maxY <= 5) return 1;
-    if (maxY <= 10) return 2;
-    if (maxY <= 20) return 5;
-    if (maxY <= 50) return 10;
-    if (maxY <= 100) return 20;
-    if (maxY <= 200) return 25;
-    if (maxY <= 500) return 50;
-    if (maxY <= 1000) return 100;
-    if (maxY <= 2000) return 200;
-    if (maxY <= 5000) return 500;
-    if (maxY <= 10000) return 1000;
-    if (maxY <= 20000) return 2000;
-    return 5000;
-  }
-
-  String _formatValue(double value) {
-    if (value >= 1000) {
-      return '${(value / 1000).toStringAsFixed(1)}k';
+    
+    if (maxY == 0) return 20;
+    
+    // Целевое количество делений - 5
+    // (это даст нам 6 линий включая 0)
+    const targetDivisions = 5;
+    
+    // Рассчитываем "сырой" интервал
+    double rawInterval = maxY / targetDivisions;
+    
+    // Находим порядок величины (степень 10)
+    double magnitude = pow(10, (log(rawInterval) / ln10).floor()).toDouble();
+    
+    // Нормализуем интервал к "красивым" числам: 1, 2, 5, 10, 20, 50, 100...
+    double normalizedInterval = rawInterval / magnitude;
+    
+    double niceInterval;
+    if (normalizedInterval <= 1) {
+      niceInterval = 1;
+    } else if (normalizedInterval <= 2) {
+      niceInterval = 2;
+    } else if (normalizedInterval <= 5) {
+      niceInterval = 5;
+    } else {
+      niceInterval = 10;
     }
-    return value.toStringAsFixed(0);
+    
+    return niceInterval * magnitude;
   }
 
+  // ============================================
+  // НОВОЕ ФОРМАТИРОВАНИЕ ДЛЯ ОСИ Y
+  // ============================================
   String _formatAxisValue(double value) {
-    if (value >= 1000) {
-      return '${(value / 1000).toInt()}k';
+    if (value == 0) return '0';
+    
+    final absValue = value.abs();
+    
+    if (absValue >= 1000000000) {
+      // Миллиарды
+      return '${(value / 1000000000).toStringAsFixed(value % 1000000000 == 0 ? 0 : 1)}млрд';
+    } else if (absValue >= 1000000) {
+      // Миллионы
+      return '${(value / 1000000).toStringAsFixed(value % 1000000 == 0 ? 0 : 1)}м';
+    } else if (absValue >= 1000) {
+      // Тысячи
+      return '${(value / 1000).toStringAsFixed(value % 1000 == 0 ? 0 : 1)}т';
+    } else {
+      return value.toInt().toString();
     }
-    return value.toInt().toString();
+  }
+
+  // ============================================
+  // НОВОЕ ФОРМАТИРОВАНИЕ ДЛЯ TOOLTIP
+  // ============================================
+  String _formatValue(double value) {
+    if (value == 0) return '0';
+    
+    final absValue = value.abs();
+    
+    if (absValue >= 1000000000) {
+      // Миллиарды
+      return '${(value / 1000000000).toStringAsFixed(2)}млрд';
+    } else if (absValue >= 1000000) {
+      // Миллионы
+      return '${(value / 1000000).toStringAsFixed(2)}м';
+    } else if (absValue >= 10000) {
+      // Для больших тысяч используем сокращение
+      return '${(value / 1000).toStringAsFixed(1)}т';
+    } else if (absValue >= 1000) {
+      // Для малых тысяч можем показать полное число с разделителем
+      return value.toInt().toString().replaceAllMapped(
+        RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+        (Match m) => '${m[1]} ',
+      );
+    } else {
+      return value.toStringAsFixed(0);
+    }
   }
 
   Widget _buildPeriodDropdown() {

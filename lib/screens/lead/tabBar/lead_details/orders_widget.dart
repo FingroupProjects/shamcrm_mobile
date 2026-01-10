@@ -14,9 +14,10 @@ import 'package:intl/intl.dart';
 
 class OrdersWidget extends StatefulWidget {
   final int leadId;
+  final String? clientPhone; // Телефон клиента для автозаполнения
   final GlobalKey? key;
 
-  OrdersWidget({required this.leadId, this.key});
+  OrdersWidget({required this.leadId, this.clientPhone, this.key});
 
   @override
   _OrdersWidgetState createState() => _OrdersWidgetState();
@@ -217,6 +218,7 @@ Widget _buildOrderItem(Order order) {
               MaterialPageRoute(
                 builder: (context) => OrderAddScreen(
                   leadId: widget.leadId,
+                  clientPhone: widget.clientPhone, // Передаем телефон клиента
                 ),
               ),
             ).then((_) {

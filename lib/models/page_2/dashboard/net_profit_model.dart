@@ -45,7 +45,7 @@ class NetProfitDashboard {
 class NetProfitResult {
   final int year;
   final List<NetProfitMonth> months;
-  final int totalNetProfit;
+  final num totalNetProfit;
 
   NetProfitResult({
     required this.year,

@@ -2,7 +2,9 @@ import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/filter/deal/lead_manager_list.dart';
 import 'package:crm_task_manager/custom_widget/filter/lead/multi_manager_list.dart';
+import 'package:crm_task_manager/custom_widget/filter/lead/multi_region_list.dart';
 import 'package:crm_task_manager/models/manager_model.dart';
+import 'package:crm_task_manager/models/region_model.dart';
 import 'package:crm_task_manager/models/lead_multi_model.dart';
 import 'package:crm_task_manager/page_2/order/order_details/payment_method_dropdown.dart';
 import 'package:crm_task_manager/page_2/order/order_details/status_method_dropdown.dart';
@@ -20,6 +22,7 @@ class OrdersFilterScreen extends StatefulWidget {
   final String? initialStatus;
   final String? initialPaymentMethod;
   final List<String>? initialManagers;
+  final List<String>? initialRegions;
   final List<String>? initialLeads;
 
   const OrdersFilterScreen({
@@ -32,6 +35,7 @@ class OrdersFilterScreen extends StatefulWidget {
     this.initialStatus,
     this.initialPaymentMethod,
     this.initialManagers,
+    this.initialRegions,
     this.initialLeads,
   }) : super(key: key);
 
@@ -46,6 +50,7 @@ class _OrdersFilterScreenState extends State<OrdersFilterScreen> {
   String? _selectedStatus;
   String? _selectedPaymentMethod;
   List<ManagerData> _selectedManagers = [];
+  List<RegionData> _selectedRegions = [];
   List<LeadData> _selectedLeads = [];
   Key _paymentDropdownKey = UniqueKey();
   Key _statusDropdownKey = UniqueKey();
@@ -60,6 +65,7 @@ class _OrdersFilterScreenState extends State<OrdersFilterScreen> {
     _selectedStatus = widget.initialStatus;
     _selectedPaymentMethod = widget.initialPaymentMethod;
     _selectedManagers = widget.initialManagers?.map((id) => ManagerData(id: int.parse(id), name: '')).toList() ?? [];
+    _selectedRegions = widget.initialRegions?.map((id) => RegionData(id: int.parse(id), name: '')).toList() ?? [];
     _selectedLeads = widget.initialLeads?.map((id) => LeadData(id: int.parse(id), name: '')).toList() ?? [];
     _loadFilterState();
   }
@@ -75,10 +81,16 @@ class _OrdersFilterScreenState extends State<OrdersFilterScreen> {
       _selectedStatus = prefs.getString('order_status') ?? widget.initialStatus;
       _selectedPaymentMethod = prefs.getString('order_payment_method') ?? widget.initialPaymentMethod;
       final managersJson = prefs.getString('order_managers');
+      final regionsJson = prefs.getString('order_regions');
       final leadsJson = prefs.getString('order_leads');
       if (managersJson != null) {
         _selectedManagers = (jsonDecode(managersJson) as List)
             .map((item) => ManagerData(id: int.parse(item['id'].toString()), name: item['name'] ?? ''))
+            .toList();
+      }
+      if (regionsJson != null) {
+        _selectedRegions = (jsonDecode(regionsJson) as List)
+            .map((item) => RegionData(id: int.parse(item['id'].toString()), name: item['name'] ?? ''))
             .toList();
       }
       if (leadsJson != null) {
@@ -125,6 +137,8 @@ class _OrdersFilterScreenState extends State<OrdersFilterScreen> {
     }
     await prefs.setString('order_managers', jsonEncode(_selectedManagers.map((m) => {'id': m.id, 'name': m.name}).toList()));
     ////print('Saved order_managers: ${_selectedManagers.map((m) => {'id': m.id, 'name': m.name}).toList()}');
+    await prefs.setString('order_regions', jsonEncode(_selectedRegions.map((r) => {'id': r.id, 'name': r.name}).toList()));
+    ////print('Saved order_regions: ${_selectedRegions.map((r) => {'id': r.id, 'name': r.name}).toList()}');
     await prefs.setString('order_leads', jsonEncode(_selectedLeads.map((l) => {'id': l.id, 'name': l.name}).toList()));
     ////print('Saved order_leads: ${_selectedLeads.map((l) => {'id': l.id, 'name': l.name}).toList()}');
   }
@@ -138,6 +152,7 @@ class _OrdersFilterScreenState extends State<OrdersFilterScreen> {
       _selectedStatus = null;
       _selectedPaymentMethod = null;
       _selectedManagers.clear();
+      _selectedRegions.clear();
       _selectedLeads.clear();
       _paymentDropdownKey = UniqueKey();
       _statusDropdownKey = UniqueKey();
@@ -190,6 +205,7 @@ class _OrdersFilterScreenState extends State<OrdersFilterScreen> {
         _selectedStatus != null ||
         _selectedPaymentMethod != null ||
         _selectedManagers.isNotEmpty ||
+        _selectedRegions.isNotEmpty ||
         _selectedLeads.isNotEmpty;
   }
 
@@ -218,6 +234,9 @@ class _OrdersFilterScreenState extends State<OrdersFilterScreen> {
         'paymentMethod': _selectedPaymentMethod,
         'managers': _selectedManagers.isNotEmpty
             ? _selectedManagers.map((manager) => manager.id.toString()).toList()
+            : null,
+        'regions': _selectedRegions.isNotEmpty
+            ? _selectedRegions.map((region) => region.id.toString()).toList()
             : null,
         'leads': _selectedLeads.isNotEmpty
             ? _selectedLeads.map((lead) => lead.id.toString()).toList()
@@ -346,6 +365,24 @@ class _OrdersFilterScreenState extends State<OrdersFilterScreen> {
                           onSelectManagers: (List<ManagerData> selectedUsersData) {
                             setState(() {
                               _selectedManagers = selectedUsersData;
+                            });
+                          },
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Card(
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                      color: Colors.white,
+                      child: Padding(
+                        padding: const EdgeInsets.all(8),
+                        child: RegionsMultiSelectWidget(
+                          selectedRegions: _selectedRegions
+                              .map((region) => region.id.toString()).toList(),
+                          onSelectRegions: (List<RegionData> selectedRegionsData) {
+                            setState(() {
+                              _selectedRegions = selectedRegionsData;
                             });
                           },
                         ),

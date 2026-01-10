@@ -16,6 +16,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import '../../../../utils/global_fun.dart';
+import '../../../../custom_widget/price_input_formatter.dart';
 import '../money_outcome_operation_type.dart';
 
 class EditMoneyOutcomeSupplierReturn extends StatefulWidget {
@@ -44,6 +45,7 @@ class _EditMoneyOutcomeSupplierReturnState extends State<EditMoneyOutcomeSupplie
   bool _isApproveLoading = false; // НОВОЕ
   late bool _isApproved;
   bool _isStatusChanged = false; // Для отслеживания изменений
+  bool _isSupplierInvalid = false; // Флаг для отображения ошибки валидации
 
   @override
   void initState() {
@@ -118,8 +120,11 @@ class _EditMoneyOutcomeSupplierReturnState extends State<EditMoneyOutcomeSupplie
     if (!_formKey.currentState!.validate()) return;
 
     if (_selectedSupplier == null) {
+      setState(() {
+        _isSupplierInvalid = true;
+      });
       _showSnackBar(
-        AppLocalizations.of(context)!.translate('select_supplier') ?? 
+        AppLocalizations.of(context)!.translate('select_supplier') ??
         'Пожалуйста, выберите поставщика',
         false,
       );
@@ -304,7 +309,10 @@ class _EditMoneyOutcomeSupplierReturnState extends State<EditMoneyOutcomeSupplie
               decoration: CustomDropdownDecoration(
                 closedFillColor: const Color(0xffF4F7FD),
                 expandedFillColor: Colors.white,
-                closedBorder: Border.all(color: const Color(0xffF4F7FD), width: 1),
+                closedBorder: Border.all(
+                  color: _isSupplierInvalid ? Colors.red : const Color(0xffF4F7FD), 
+                  width: _isSupplierInvalid ? 2 : 1,
+                ),
                 closedBorderRadius: BorderRadius.circular(12),
                 expandedBorder: Border.all(color: const Color(0xffF4F7FD), width: 1),
                 expandedBorderRadius: BorderRadius.circular(12),
@@ -352,6 +360,7 @@ class _EditMoneyOutcomeSupplierReturnState extends State<EditMoneyOutcomeSupplie
                 if (value != null && mounted) {
                   setState(() {
                     _selectedSupplier = value;
+                    _isSupplierInvalid = false; // Сбрасываем ошибку при выборе
                   });
                   FocusScope.of(context).unfocus();
                 }
@@ -359,6 +368,19 @@ class _EditMoneyOutcomeSupplierReturnState extends State<EditMoneyOutcomeSupplie
             );
           },
         ),
+        if (_isSupplierInvalid)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Text(
+              AppLocalizations.of(context)!.translate('field_required') ?? 'Поле обязательно для заполнения',
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w400,
+                fontFamily: 'Gilroy',
+                color: Colors.red,
+              ),
+            ),
+          ),
       ],
     );
   }
@@ -534,14 +556,14 @@ class _EditMoneyOutcomeSupplierReturnState extends State<EditMoneyOutcomeSupplie
   Widget _buildAmountField(AppLocalizations localizations) {
     return CustomTextField(
         inputFormatters: [
-          MoneyInputFormatter(),
+          PriceInputFormatter(),
         ],
         controller: _amountController,
         label: AppLocalizations.of(context)!.translate('amount') ?? 'Сумма',
         hintText: AppLocalizations.of(context)!.translate('enter_amount') ?? 
         'Введите сумму',
         maxLines: 1,
-        keyboardType: TextInputType.number,
+        keyboardType: const TextInputType.numberWithOptions(decimal: true),
         validator: (value) {
           if (value == null || value.isEmpty) {
             return AppLocalizations.of(context)!.translate('enter_amount') ?? 

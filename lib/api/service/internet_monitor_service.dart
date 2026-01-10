@@ -1,204 +1,263 @@
-import 'dart:async';
-import 'dart:io';
-import 'package:connectivity_plus/connectivity_plus.dart';
-import 'package:flutter/foundation.dart';
-import 'package:flutter/widgets.dart';
+// import 'dart:async';
+// import 'dart:io';
+// import 'package:connectivity_plus/connectivity_plus.dart';
+// import 'package:flutter/foundation.dart';
+// import 'package:flutter/widgets.dart';
 
-class InternetMonitorService with WidgetsBindingObserver {
-  static final InternetMonitorService _instance = InternetMonitorService._internal();
-  factory InternetMonitorService() => _instance;
-  InternetMonitorService._internal();
+// /// 🌐 Улучшенный сервис мониторинга интернета
+// /// 
+// /// Исправлены проблемы:
+// /// ✅ Увеличены таймауты для мобильных сетей
+// /// ✅ Умная дебаунс-логика для предотвращения ложных срабатываний
+// /// ✅ Раздельная логика для iOS/Android
+// /// ✅ HTTP-проверка вместо Socket (надежнее)
+// /// ✅ Exponential backoff для повторных проверок
+// class InternetMonitorService with WidgetsBindingObserver {
+//   static final InternetMonitorService _instance = InternetMonitorService._internal();
+//   factory InternetMonitorService() => _instance;
+//   InternetMonitorService._internal();
 
-  final _internetStatusController = StreamController<bool>.broadcast();
-  Stream<bool> get internetStatus => _internetStatusController.stream;
+//   final _internetStatusController = StreamController<bool>.broadcast();
+//   Stream<bool> get internetStatus => _internetStatusController.stream;
 
-  bool _isConnected = true;
-  bool get isConnected => _isConnected;
+//   bool _isConnected = true;
+//   bool get isConnected => _isConnected;
 
-  Timer? _checkTimer;
-  StreamSubscription? _connectivitySubscription;
+//   Timer? _checkTimer;
+//   Timer? _debounceTimer; // ✅ НОВОЕ: Дебаунс таймер
+//   StreamSubscription? _connectivitySubscription;
   
-  bool _isAppInForeground = true; // ✅ Флаг состояния приложения
+//   bool _isAppInForeground = true;
+//   bool _isChecking = false; // ✅ НОВОЕ: Флаг активной проверки
 
-  final List<InternetAddress> _checkHosts = [
-    InternetAddress('8.8.8.8', type: InternetAddressType.IPv4),
-    InternetAddress('1.1.1.1', type: InternetAddressType.IPv4),
-  ];
+//   // ✅ ИЗМЕНЕНО: HTTP endpoints вместо raw sockets
+//   final List<String> _checkUrls = [
+//     'https://www.google.com/generate_204',  // Google Captive Portal (самый быстрый)
+//     'https://connectivitycheck.gstatic.com/generate_204', // Google CDN
+//     'https://www.cloudflare.com/cdn-cgi/trace', // Cloudflare
+//   ];
 
-  /// Инициализация мониторинга
-  Future<void> initialize() async {
-    debugPrint('🌐 InternetMonitor: Инициализация...');
+//   // ✅ НОВОЕ: Exponential backoff для retry
+//   int _failureCount = 0;
+//   static const int _maxRetries = 3;
+//   static const Duration _baseRetryDelay = Duration(seconds: 2);
+
+//   /// Инициализация мониторинга
+//   Future<void> initialize() async {
+//     debugPrint('🌐 InternetMonitor: Инициализация...');
     
-    // ✅ Регистрируем observer для отслеживания состояния приложения
-    WidgetsBinding.instance.addObserver(this);
+//     WidgetsBinding.instance.addObserver(this);
     
-    // ✅ МГНОВЕННАЯ первая проверка
-    _isConnected = await _checkInternetConnectionSync();
-    _internetStatusController.add(_isConnected);
+//     // ✅ ПЕРВАЯ проверка с retry
+//     _isConnected = await _checkWithRetry();
+//     _internetStatusController.add(_isConnected);
 
-    // Подписка на изменения connectivity
-    _connectivitySubscription = Connectivity().onConnectivityChanged.listen(
-      (List<ConnectivityResult> results) {
-        debugPrint('🌐 InternetMonitor: Connectivity изменился: $results');
-        // ✅ Проверяем только если приложение активно
-        if (_isAppInForeground) {
-          _checkInternetConnection();
-        }
-      },
-    );
-
-    // Периодическая проверка каждые 5 секунд
-    _startPeriodicChecks();
-
-    debugPrint('🌐 InternetMonitor: Инициализирован успешно');
-  }
-
-  // ✅ НОВЫЙ МЕТОД: Отслеживание состояния приложения
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    debugPrint('🌐 InternetMonitor: App lifecycle changed to $state');
-    
-    if (state == AppLifecycleState.resumed) {
-      // ✅ Приложение вернулось - ВОЗОБНОВЛЯЕМ проверки
-      _isAppInForeground = true;
-      debugPrint('🌐 InternetMonitor: Приложение resumed - возобновляем проверки');
-      
-      // Мгновенная проверка при возврате
-      _checkInternetConnection();
-      
-      // Возобновляем периодические проверки
-      _startPeriodicChecks();
-      
-    } else if (state == AppLifecycleState.paused || 
-               state == AppLifecycleState.inactive) {
-      // ✅ Приложение в фоне - ОСТАНАВЛИВАЕМ проверки
-      _isAppInForeground = false;
-      debugPrint('🌐 InternetMonitor: Приложение paused - останавливаем проверки');
-      
-      // Останавливаем таймер
-      _stopPeriodicChecks();
-    }
-  }
-
-  // ✅ НОВЫЙ МЕТОД: Запуск периодических проверок
-  void _startPeriodicChecks() {
-    _stopPeriodicChecks(); // Сначала останавливаем старый таймер
-    
-    _checkTimer = Timer.periodic(
-      const Duration(seconds: 5),
-      (_) {
-        // ✅ Проверяем только если приложение активно
-        if (_isAppInForeground) {
-          _checkInternetConnection();
-        }
-      },
-    );
-  }
-
-  // ✅ НОВЫЙ МЕТОД: Остановка периодических проверок
-  void _stopPeriodicChecks() {
-    _checkTimer?.cancel();
-    _checkTimer = null;
-  }
-
-  /// Синхронная быстрая проверка (БЕЗ задержки)
-  Future<bool> _checkInternetConnectionSync() async {
-    try {
-      final connectivityResults = await Connectivity().checkConnectivity();
-      
-      if (connectivityResults.contains(ConnectivityResult.none)) {
-        return false;
-      }
-      
-      // Быстрая проверка одного хоста
-      try {
-        final result = await InternetAddress.lookup('8.8.8.8')
-            .timeout(const Duration(seconds: 2));
+//     // ✅ Подписка на connectivity с дебаунсом
+//     _connectivitySubscription = Connectivity().onConnectivityChanged.listen(
+//       (List<ConnectivityResult> results) {
+//         debugPrint('🌐 InternetMonitor: Connectivity изменился: $results');
         
-        if (result.isNotEmpty && result[0].rawAddress.isNotEmpty) {
-          return true;
-        }
-      } catch (e) {
-        return false;
-      }
+//         if (_isAppInForeground) {
+//           // ✅ НЕ проверяем сразу - ждем 2 секунды (дебаунс)
+//           _scheduleDebounceCheck();
+//         }
+//       },
+//     );
+
+//     // ✅ ИЗМЕНЕНО: Более редкие проверки (каждые 15 секунд)
+//     _startPeriodicChecks();
+
+//     debugPrint('🌐 InternetMonitor: Инициализирован успешно');
+//   }
+
+//   @override
+//   void didChangeAppLifecycleState(AppLifecycleState state) {
+//     debugPrint('🌐 InternetMonitor: App lifecycle changed to $state');
+    
+//     if (state == AppLifecycleState.resumed) {
+//       _isAppInForeground = true;
+//       debugPrint('🌐 InternetMonitor: Приложение resumed - жду 3 сек перед проверкой');
       
-      return false;
-    } catch (e) {
-      debugPrint('🌐 InternetMonitor: Ошибка быстрой проверки: $e');
-      return false;
-    }
-  }
-
-  /// Реальная проверка доступности интернета
-  Future<void> _checkInternetConnection() async {
-    // ✅ НЕ проверяем если приложение в фоне
-    if (!_isAppInForeground) {
-      debugPrint('🌐 InternetMonitor: Пропускаем проверку - приложение в фоне');
-      return;
-    }
-
-    bool hasConnection = false;
-
-    try {
-      final connectivityResults = await Connectivity().checkConnectivity();
+//       // ✅ КРИТИЧНО: Ждем 3 секунды перед проверкой (iOS нужно время на восстановление сокетов)
+//       Future.delayed(const Duration(seconds: 3), () {
+//         if (_isAppInForeground) {
+//           _checkInternetConnection();
+//         }
+//       });
       
-      if (connectivityResults.contains(ConnectivityResult.none)) {
-        hasConnection = false;
-      } else {
-        hasConnection = await _pingHosts();
-      }
-    } catch (e) {
-      debugPrint('🌐 InternetMonitor: Ошибка проверки: $e');
-      hasConnection = false;
-    }
-
-    if (_isConnected != hasConnection) {
-      _isConnected = hasConnection;
-      _internetStatusController.add(_isConnected);
+//       _startPeriodicChecks();
       
-      debugPrint('🌐 InternetMonitor: Статус изменился -> ${_isConnected ? "ПОДКЛЮЧЕН ✅" : "ОТКЛЮЧЕН ❌"}');
-    }
-  }
+//     } else if (state == AppLifecycleState.paused || 
+//                state == AppLifecycleState.inactive) {
+//       _isAppInForeground = false;
+//       debugPrint('🌐 InternetMonitor: Приложение paused - останавливаем проверки');
+//       _stopPeriodicChecks();
+//       _failureCount = 0; // Сброс счетчика
+//     }
+//   }
 
-  /// Проверка доступности хостов
-  Future<bool> _pingHosts() async {
-    for (final host in _checkHosts) {
-      try {
-        final result = await InternetAddress.lookup(host.address)
-            .timeout(const Duration(seconds: 5));
+//   // ✅ НОВОЕ: Дебаунс-проверка (избегаем множественных вызовов)
+//   void _scheduleDebounceCheck() {
+//     _debounceTimer?.cancel();
+    
+//     _debounceTimer = Timer(const Duration(seconds: 2), () {
+//       if (_isAppInForeground) {
+//         _checkInternetConnection();
+//       }
+//     });
+//   }
+
+//   void _startPeriodicChecks() {
+//     _stopPeriodicChecks();
+    
+//     // ✅ ИЗМЕНЕНО: 15 секунд вместо 5 (меньше нагрузки)
+//     _checkTimer = Timer.periodic(
+//       const Duration(seconds: 15),
+//       (_) {
+//         if (_isAppInForeground && !_isChecking) {
+//           _checkInternetConnection();
+//         }
+//       },
+//     );
+//   }
+
+//   void _stopPeriodicChecks() {
+//     _checkTimer?.cancel();
+//     _checkTimer = null;
+//     _debounceTimer?.cancel();
+//     _debounceTimer = null;
+//   }
+
+//   // ✅ НОВОЕ: Проверка с retry логикой
+//   Future<bool> _checkWithRetry() async {
+//     for (int attempt = 0; attempt < _maxRetries; attempt++) {
+//       final result = await _checkInternetConnectionInternal();
+      
+//       if (result) {
+//         _failureCount = 0;
+//         return true;
+//       }
+      
+//       // Exponential backoff: 2s, 4s, 8s
+//       if (attempt < _maxRetries - 1) {
+//         final delay = _baseRetryDelay * (1 << attempt);
+//         debugPrint('🌐 InternetMonitor: Retry ${attempt + 1}/$_maxRetries через ${delay.inSeconds}s');
+//         await Future.delayed(delay);
+//       }
+//     }
+    
+//     _failureCount++;
+//     return false;
+//   }
+
+//   /// Реальная проверка доступности интернета
+//   Future<void> _checkInternetConnection() async {
+//     if (!_isAppInForeground || _isChecking) {
+//       return;
+//     }
+
+//     _isChecking = true;
+    
+//     try {
+//       final hasConnection = await _checkWithRetry();
+
+//       // ✅ ИЗМЕНЕНО: Обновляем статус только если уверены в изменении
+//       if (_isConnected != hasConnection) {
+//         // ✅ Дополнительная проверка через 1 секунду для уверенности
+//         await Future.delayed(const Duration(seconds: 1));
+//         final confirmCheck = await _checkInternetConnectionInternal();
         
-        if (result.isNotEmpty && result[0].rawAddress.isNotEmpty) {
-          final socket = await Socket.connect(
-            host.address,
-            53,
-            timeout: const Duration(seconds: 5),
-          );
-          socket.destroy();
+//         if (hasConnection == confirmCheck) {
+//           _isConnected = hasConnection;
+//           _internetStatusController.add(_isConnected);
           
-          debugPrint('🌐 InternetMonitor: Ping успешен к ${host.address}');
-          return true;
-        }
-      } catch (e) {
-        debugPrint('🌐 InternetMonitor: Ping неудачен к ${host.address}: $e');
-        continue;
-      }
-    }
+//           debugPrint('🌐 InternetMonitor: ✅ ПОДТВЕРЖДЕННОЕ изменение -> ${_isConnected ? "ПОДКЛЮЧЕН" : "ОТКЛЮЧЕН"}');
+//         } else {
+//           debugPrint('🌐 InternetMonitor: ⚠️ Противоречивые результаты - игнорируем');
+//         }
+//       }
+//     } finally {
+//       _isChecking = false;
+//     }
+//   }
+
+//   /// ✅ НОВОЕ: Внутренний метод проверки (HTTP вместо Socket)
+//   Future<bool> _checkInternetConnectionInternal() async {
+//     try {
+//       // 1️⃣ Сначала проверяем connectivity (быстро)
+//       final connectivityResults = await Connectivity()
+//           .checkConnectivity()
+//           .timeout(const Duration(seconds: 3));
+      
+//       if (connectivityResults.contains(ConnectivityResult.none)) {
+//         debugPrint('🌐 InternetMonitor: Connectivity = none');
+//         return false;
+//       }
+
+//       // 2️⃣ Реальная HTTP-проверка
+//       return await _httpCheck();
+      
+//     } catch (e) {
+//       debugPrint('🌐 InternetMonitor: ❌ Ошибка проверки: $e');
+//       return false;
+//     }
+//   }
+
+//   /// ✅ НОВОЕ: HTTP-проверка (надежнее чем Socket)
+//   Future<bool> _httpCheck() async {
+//     final client = HttpClient();
     
-    return false;
-  }
+//     // ✅ УВЕЛИЧЕНЫ таймауты для мобильных сетей
+//     client.connectionTimeout = const Duration(seconds: 10); // было 5
+    
+//     try {
+//       // Пробуем подключиться к первому доступному endpoint
+//       for (final url in _checkUrls) {
+//         try {
+//           final uri = Uri.parse(url);
+//           final request = await client
+//               .getUrl(uri)
+//               .timeout(const Duration(seconds: 10)); // было 5
+          
+//           final response = await request.close()
+//               .timeout(const Duration(seconds: 10)); // было 5
+          
+//           // 204 No Content = успешное подключение
+//           if (response.statusCode == 204 || response.statusCode == 200) {
+//             debugPrint('🌐 InternetMonitor: ✅ HTTP успешен к $url');
+//             client.close();
+//             return true;
+//           }
+          
+//         } catch (e) {
+//           debugPrint('🌐 InternetMonitor: ⚠️ HTTP неудачен к $url: $e');
+//           continue;
+//         }
+//       }
+      
+//       return false;
+      
+//     } finally {
+//       client.close(force: true);
+//     }
+//   }
 
-  /// Ручная проверка (можно вызвать из UI)
-  Future<bool> checkNow() async {
-    await _checkInternetConnection();
-    return _isConnected;
-  }
+//   /// Ручная проверка (для использования в UI)
+//   Future<bool> checkNow() async {
+//     if (_isChecking) {
+//       debugPrint('🌐 InternetMonitor: Проверка уже идет - пропуск');
+//       return _isConnected;
+//     }
+    
+//     await _checkInternetConnection();
+//     return _isConnected;
+//   }
 
-  /// Очистка ресурсов
-  void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    _stopPeriodicChecks();
-    _connectivitySubscription?.cancel();
-    _internetStatusController.close();
-    debugPrint('🌐 InternetMonitor: Disposed');
-  }
-}
+//   void dispose() {
+//     WidgetsBinding.instance.removeObserver(this);
+//     _stopPeriodicChecks();
+//     _connectivitySubscription?.cancel();
+//     _internetStatusController.close();
+//     debugPrint('🌐 InternetMonitor: Disposed');
+//   }
+// }

@@ -40,17 +40,21 @@ class _LeadNavigateToChatDialogState extends State<LeadNavigateToChat> {
   final Map<String, String> sourceIcons = {
     'telegram_account': 'assets/icons/leads/telegram.png',
     'telegram_bot': 'assets/icons/leads/telegram.png',
+    'mini_app': 'assets/icons/leads/telegram.png',
     'whatsapp': 'assets/icons/leads/whatsapp.png',
     'facebook': 'assets/icons/leads/messenger.png',
     'instagram': 'assets/icons/leads/instagram.png',
+    'site': '', // Будет использоваться Flutter иконка
   };
 
   final Map<String, String> customChannelNames = {
     'telegram_account': 'Telegram',
     'telegram_bot': 'Telegram бот',
+    'mini_app': 'Mini App',
     'whatsapp': 'WhatsApp',
     'facebook': 'Facebook',
     'instagram': 'Instagram',
+    'site': 'Интернет магазин',
   };
 
   @override
@@ -192,11 +196,17 @@ class _LeadNavigateToChatDialogState extends State<LeadNavigateToChat> {
                                             .translate('no_name_chat'));
                             //print('LeadNavigateToChat: Building chat item $index - Channel: $channelName, DisplayName: $displayName');
                             return ListTile(
-                              leading: Image.asset(
-                                iconPath,
-                                width: 30,
-                                height: 30,
-                              ),
+                              leading: channelName == 'site'
+                                  ? Icon(
+                                      Icons.language,
+                                      size: 30,
+                                      color: Color(0xff1E2E52),
+                                    )
+                                  : Image.asset(
+                                      iconPath,
+                                      width: 30,
+                                      height: 30,
+                                    ),
                               title: Text(
                                 displayName,
                                 style: TextStyle(

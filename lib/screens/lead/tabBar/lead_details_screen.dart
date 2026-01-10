@@ -14,6 +14,7 @@ import 'package:crm_task_manager/bloc/page_2_BLOC/order_by_lead/order_bloc.dart'
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_by_lead/order_event.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/custom_widget/file_utils.dart';
+import 'package:crm_task_manager/models/field_configuration.dart';
 import 'package:crm_task_manager/models/leadById_model.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/history_dialog.dart';
 import 'package:crm_task_manager/screens/lead/export_lead_to_contact.dart';
@@ -36,9 +37,6 @@ import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:dio/dio.dart';
-import 'package:open_file/open_file.dart';
-import 'package:path_provider/path_provider.dart';
 
 class LeadDetailsScreen extends StatefulWidget {
   final String leadId;
@@ -194,6 +192,10 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
   Set<String> _normalizedContactPhones = {};
   bool _isLoadingContacts = true;
 
+  // Field configuration
+  List<FieldConfiguration> _fieldConfiguration = [];
+  bool _isConfigurationLoaded = false;
+
   @override
   void initState() {
     super.initState();
@@ -214,6 +216,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
     });
     _fetchTutorialProgress();
     _listenToPrefsChanges();
+    _loadFieldConfiguration();
   }
 
   Future<void> _loadContactsToCache() async {
@@ -226,13 +229,13 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       }
 
       List<Contact> contacts =
-          await FlutterContacts.getContacts(withProperties: true);
+      await FlutterContacts.getContacts(withProperties: true);
 
       Set<String> normalizedPhones = {};
       for (var contact in contacts) {
         for (var phone in contact.phones) {
           String normalizedPhone =
-              phone.number.replaceAll(RegExp(r'[^\d+]'), '');
+          phone.number.replaceAll(RegExp(r'[^\d+]'), '');
           normalizedPhones.add(normalizedPhone);
         }
       }
@@ -274,13 +277,13 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     _prefsSubscription =
         Stream.periodic(Duration(seconds: 1)).listen((_) async {
-      bool newValue = prefs.getBool('switchContact') ?? false;
-      if (newValue != _isExportContactEnabled) {
-        setState(() {
-          _isExportContactEnabled = newValue;
+          bool newValue = prefs.getBool('switchContact') ?? false;
+          if (newValue != _isExportContactEnabled) {
+            setState(() {
+              _isExportContactEnabled = newValue;
+            });
+          }
         });
-      }
-    });
   }
 
   Future<void> _fetchTutorialProgress() async {
@@ -385,7 +388,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
             .translate('tutorial_lead_details_chat_description'),
         align: ContentAlign.top,
         extraSpacing:
-            SizedBox(height: MediaQuery.of(context).size.height * 0.3),
+        SizedBox(height: MediaQuery.of(context).size.height * 0.3),
         context: context,
       ),
       if (_canReadNotes)
@@ -398,7 +401,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
               .translate('tutorial_lead_details_notice_description'),
           align: ContentAlign.top,
           extraSpacing:
-              SizedBox(height: MediaQuery.of(context).size.height * 0.2),
+          SizedBox(height: MediaQuery.of(context).size.height * 0.2),
           context: context,
         ),
       if (_canReadDeal)
@@ -411,7 +414,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
               .translate('tutorial_lead_details_deal_description'),
           align: ContentAlign.top,
           extraSpacing:
-              SizedBox(height: MediaQuery.of(context).size.height * 0.2),
+          SizedBox(height: MediaQuery.of(context).size.height * 0.2),
           context: context,
         ),
       createTarget(
@@ -423,7 +426,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
             .translate('tutorial_lead_details_contact_description'),
         align: ContentAlign.top,
         extraSpacing:
-            SizedBox(height: MediaQuery.of(context).size.height * 0.2),
+        SizedBox(height: MediaQuery.of(context).size.height * 0.2),
         context: context,
       ),
     ]);
@@ -518,98 +521,291 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
     });
   }
 
-  void _updateDetails(LeadById lead) {
-    currentLead = lead;
-    details = [
-      {
-        'label': AppLocalizations.of(context)!.translate('lead_name'),
-        'value': lead.name
-      },
-      {
-        'label': AppLocalizations.of(context)!.translate('phone_use'),
-        'value': lead.phone ?? ''
-      },
-      if (lead.manager != null)
-        {
-          'label':
-              '${AppLocalizations.of(context)!.translate('manager_details')}',
-          'value': '${lead.manager!.name} ${lead.manager!.lastname ?? ''}'
-        }
-      else
-        {'label': '', 'value': 'become_manager'},
-      {
-        'label': '${AppLocalizations.of(context)!.translate('region_details')}',
-        'value': lead.region?.name ?? ''
-      },
-      {
-        'label': '${AppLocalizations.of(context)!.translate('source_details')}',
-        'value': lead.source?.name ?? ''
-      },
-      {'label': 'WhatsApp:', 'value': lead.whatsApp ?? ''},
-      {'label': 'Instagram:', 'value': lead.instagram ?? ''},
-      {'label': 'Facebook:', 'value': lead.facebook ?? ''},
-      {'label': 'Telegram:', 'value': lead.telegram ?? ''},
-      {
-        'label': '${AppLocalizations.of(context)!.translate('email_details')}',
-        'value': lead.email ?? ''
-      },
-      if (lead.phone_verified_at != null)
-        {
-          'label': '${AppLocalizations.of(context)!.translate('birthday_details')}',
-          'value': formatDate(lead.birthday)
-        },
-      if (lead.phone_verified_at != null)
-        {
-          'label': '${AppLocalizations.of(context)!.translate('price_type_details')}',
-          'value': lead.priceType?.name ?? ''
-        },
-      {
-        'label':
-            '${AppLocalizations.of(context)!.translate('description_details_lead')}',
-        'value': lead.description ?? ''
-      },
-      {
-        'label': '${AppLocalizations.of(context)!.translate('author_details')}',
-        'value': lead.author?.name ?? ''
-      },
-       {
-        'label': '${AppLocalizations.of(context)!.translate('sales_funnel_details')}',
-        'value': lead.salesFunnel?.name ?? ''
-      },
-      {
-        'label':
-            '${AppLocalizations.of(context)!.translate('created_at_details')}',
-        'value': formatDate(lead.createdAt)
-      },
-      {
-        'label': '${AppLocalizations.of(context)!.translate('status_details')}',
-        'value': lead.leadStatus?.title ?? ''
-      },
-      if (lead.files != null && lead.files!.isNotEmpty)
-        {
-          'label': AppLocalizations.of(context)!.translate('files_details'),
-          'value':
-              '${lead.files!.length} ${AppLocalizations.of(context)!.translate('files')}'
-        },
-    ];
-    for (var field in lead.leadCustomFields) {
-      // print(
-      //     'LeadDetailsScreen: Adding custom field - key: ${field.key}, value: ${field.value}');
-      details.add({'label': '${field.key}:', 'value': field.value});
+  // void _updateDetails(LeadById lead) {
+  //   currentLead = lead;
+  // details = [
+  //   {
+  //     'label': AppLocalizations.of(context)!.translate('lead_name'),
+  //     'value': lead.name
+  //   },
+  //   {
+  //     'label': AppLocalizations.of(context)!.translate('phone_use'),
+  //     'value': lead.phone ?? ''
+  //   },
+  //   if (lead.manager != null)
+  //     {
+  //       'label':
+  //       '${AppLocalizations.of(context)!.translate('manager_details')}',
+  //       'value': '${lead.manager!.name} ${lead.manager!.lastname ?? ''}'
+  //     }
+  //   else
+  //     {'label': '', 'value': 'become_manager'},
+  //   {
+  //     'label': '${AppLocalizations.of(context)!.translate('region_details')}',
+  //     'value': lead.region?.name ?? ''
+  //   },
+  //   {
+  //     'label': '${AppLocalizations.of(context)!.translate('source_details')}',
+  //     'value': lead.source?.name ?? ''
+  //   },
+  //   {'label': 'WhatsApp:', 'value': lead.whatsApp ?? ''},
+  //   {'label': 'Instagram:', 'value': lead.instagram ?? ''},
+  //   {'label': 'Facebook:', 'value': lead.facebook ?? ''},
+  //   {'label': 'Telegram:', 'value': lead.telegram ?? ''},
+  //   {
+  //     'label': '${AppLocalizations.of(context)!.translate('email_details')}',
+  //     'value': lead.email ?? ''
+  //   },
+  //   if (lead.phone_verified_at != null)
+  //     {
+  //       'label': '${AppLocalizations.of(context)!.translate('birthday_details')}',
+  //       'value': formatDate(lead.birthday)
+  //     },
+  //   if (lead.phone_verified_at != null)
+  //     {
+  //       'label': '${AppLocalizations.of(context)!.translate('price_type_details')}',
+  //       'value': lead.priceType?.name ?? ''
+  //     },
+  //   {
+  //     'label':
+  //     '${AppLocalizations.of(context)!.translate('description_details_lead')}',
+  //     'value': lead.description ?? ''
+  //   },
+  //   {
+  //     'label': '${AppLocalizations.of(context)!.translate('author_details')}',
+  //     'value': lead.author?.name ?? ''
+  //   },
+  //   {
+  //     'label': '${AppLocalizations.of(context)!.translate('sales_funnel_details')}',
+  //     'value': lead.salesFunnel?.name ?? ''
+  //   },
+  //   {
+  //     'label':
+  //     '${AppLocalizations.of(context)!.translate('created_at_details')}',
+  //     'value': formatDate(lead.createdAt)
+  //   },
+  //   {
+  //     'label': '${AppLocalizations.of(context)!.translate('status_details')}',
+  //     'value': lead.leadStatus?.title ?? ''
+  //   },
+  //   if (lead.files != null && lead.files!.isNotEmpty)
+  //     {
+  //       'label': AppLocalizations.of(context)!.translate('files_details'),
+  //       'value':
+  //       '${lead.files!.length} ${AppLocalizations.of(context)!.translate('files')}'
+  //     },
+  // ];
+  // for (var field in lead.leadCustomFields) {
+  //   details.add({'label': '${field.key}:', 'value': field.value});
+  // }
+  // for (var dirValue in lead.directoryValues) {
+  //   if (dirValue.entry != null) {
+  //     final directoryName = dirValue.entry!.directory.name;
+  //
+  //     // Проходим по всем полям в values
+  //     for (var fieldValue in dirValue.entry!.values) {
+  //       details.add({
+  //         'label': '$directoryName',
+  //         'value': fieldValue.value
+  //       });
+  //     }
+  //   }
+  // }
+  // }
+
+
+  String _getFieldName(FieldConfiguration fc) {
+    if (fc.isCustomField || fc.isDirectory) {
+      return '${fc.fieldName}:';
     }
-   for (var dirValue in lead.directoryValues) {
-  if (dirValue.entry != null) {
-    final directoryName = dirValue.entry!.directory.name;
-    
-    // Проходим по всем полям в values
-    for (var fieldValue in dirValue.entry!.values) {
-      details.add({
-        'label': '$directoryName',
-        'value': fieldValue.value
-      });
+
+    switch (fc.fieldName) {
+      case 'name':
+        return AppLocalizations.of(context)!.translate('lead_name');
+      case 'phone':
+        return AppLocalizations.of(context)!.translate('phone_use');
+      case 'manager_id':
+        return AppLocalizations.of(context)!.translate('manager_details');
+      case 'region_id':
+        return AppLocalizations.of(context)!.translate('region_details');
+      case 'source_id':
+        return AppLocalizations.of(context)!.translate('source_details');
+      case 'wa_phone':
+        return 'WhatsApp:';
+      case 'insta_login':
+        return 'Instagram:';
+      case 'facebook_login':
+        return 'Facebook:';
+      case 'tg_nick':
+        return 'Telegram:';
+      case 'email':
+        return AppLocalizations.of(context)!.translate('email_details');
+      case 'birthday':
+        return AppLocalizations.of(context)!.translate('birthday_details');
+      case 'price_type':
+        return AppLocalizations.of(context)!.translate('price_type_details');
+      case 'description':
+        return AppLocalizations.of(context)!.translate('description_details_lead');
+      case 'author':
+        return AppLocalizations.of(context)!.translate('author_details');
+      case 'sales_funnel':
+        return AppLocalizations.of(context)!.translate('sales_funnel_details');
+      case 'created_at':
+        return AppLocalizations.of(context)!.translate('created_at_details');
+      case 'lead_status_id':
+        return AppLocalizations.of(context)!.translate('status_details');
+      default:
+        return '${fc.fieldName}:';
     }
   }
-}
+
+  String _getFieldValue(FieldConfiguration fc, LeadById lead) {
+    if (fc.isCustomField && fc.customFieldId != null) {
+      for (final field in lead.leadCustomFieldValues) {
+        if (field.value == fc.fieldName) {
+          if (field.value.isNotEmpty) {
+            return field.value;
+          }
+          break;
+        }
+      }
+
+      for (final field in lead.leadCustomFieldValues) {
+        if (field.id == fc.customFieldId) {
+          if (field.value.isNotEmpty) {
+            return field.value;
+          }
+          break;
+        }
+      }
+      return '';
+    }
+
+    if (fc.isDirectory && fc.directoryId != null) {
+      for (var dirValue in lead.directoryValues) {
+        if (dirValue.entry != null && dirValue.entry!.directory.id == fc.directoryId) {
+
+          List<String> values = [];
+          for (var fieldValue in dirValue.entry!.values) {
+            if (fieldValue.value.isNotEmpty) {
+              values.add(fieldValue.value);
+            }
+          }
+
+          if (values.isNotEmpty) {
+            return values.join(', ');
+          }
+        }
+      }
+      return '';
+    }
+
+    switch (fc.fieldName) {
+      case 'name':
+        return lead.name;
+
+      case 'phone':
+        return lead.phone ?? '';
+
+      case 'manager_id':
+        if (lead.manager != null) {
+          return '${lead.manager!.name} ${lead.manager!.lastname ?? ''}';
+        }
+        return 'become_manager';
+
+      case 'region_id':
+        return lead.region?.name ?? '';
+
+      case 'source_id':
+        return lead.source?.name ?? '';
+
+      case 'wa_phone':
+        return lead.whatsApp ?? '';
+
+      case 'insta_login':
+        return lead.instagram ?? '';
+
+      case 'facebook_login':
+        return lead.facebook ?? '';
+
+      case 'tg_nick':
+        return lead.telegram ?? '';
+
+      case 'email':
+        return lead.email ?? '';
+
+      case 'birthday':
+      // Only show birthday if phone is verified
+        if (lead.phone_verified_at != null) {
+          return formatDate(lead.birthday);
+        }
+        return '';
+
+      case 'price_type':
+      // Only show price type if phone is verified
+        if (lead.phone_verified_at != null) {
+          return lead.priceType?.name ?? '';
+        }
+        return '';
+
+      case 'description':
+        return lead.description ?? '';
+
+      case 'author':
+        return lead.author?.name ?? '';
+
+      case 'sales_funnel':
+        return lead.salesFunnel?.name ?? '';
+
+      case 'created_at':
+        return formatDate(lead.createdAt);
+
+      case 'lead_status_id':
+        return lead.leadStatus?.title ?? '';
+
+      default:
+        return '';
+    }
+  }
+
+  void _updateDetails(LeadById lead) {
+    currentLead = lead;
+    details.clear();
+
+    if (!_isConfigurationLoaded) {
+      return;
+    }
+
+    debugPrint("Lead custom fields:");
+    for (var field in lead.leadCustomFieldValues) {
+      debugPrint("Custom Field - ID: ${field.id}, Value: ${field.value}");
+    }
+
+    for (var fc in _fieldConfiguration) {
+      // Пропускаем поле 'files', так как оно всегда показывается в конце
+      if (fc.fieldName == 'files') {
+        continue;
+      }
+
+      debugPrint("Processing field: ${fc.fieldName}");
+      final fieldValue = _getFieldValue(fc, lead);
+
+      final fieldName = _getFieldName(fc);
+      debugPrint("Adding field: $fieldName with value: $fieldValue");
+
+      details.add({
+        'label': fieldName,
+        'value': fieldValue,
+      });
+    }
+
+    // Всегда добавляем файлы в конец списка, если они есть
+    if (lead.files != null && lead.files!.isNotEmpty) {
+      details.add({
+        'label': AppLocalizations.of(context)!.translate('files_details'),
+        'value': '${lead.files!.length} ${AppLocalizations.of(context)!.translate('files')}',
+      });
+    }
   }
 
   Widget _buildExpandableText(String label, String value, double maxWidth) {
@@ -661,7 +857,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                 showCustomSnackBar(
                   context: context,
                   message:
-                      AppLocalizations.of(context)!.translate(state.message),
+                  AppLocalizations.of(context)!.translate(state.message),
                   isSuccess: false,
                 );
               });
@@ -678,7 +874,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                 // print('LeadDetailsScreen: Lead chats: ${lead.chats}');
                 return Padding(
                   padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   child: ListView(
                     controller: _scrollController,
                     children: [
@@ -690,16 +886,16 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                         leadName: widget.leadName,
                         chats: state.lead.chats
                             .map((chat) => {
-                                  'id': chat.id,
-                                  'integration': chat.integration != null
-                                      ? {
-                                          'id': chat.integration!.id,
-                                          'name': chat.integration!.name,
-                                          'username':
-                                              chat.integration!.username,
-                                        }
-                                      : null,
-                                })
+                          'id': chat.id,
+                          'integration': chat.integration != null
+                              ? {
+                            'id': chat.integration!.id,
+                            'name': chat.integration!.name,
+                            'username':
+                            chat.integration!.username,
+                          }
+                              : null,
+                        })
                             .toList(),
                       ),
                       const SizedBox(height: 8),
@@ -725,6 +921,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                       if (_canReadOrders)
                         OrdersWidget(
                           leadId: int.parse(widget.leadId),
+                          clientPhone: widget.phone, // Передаем телефон клиента для автозаполнения
                           key: GlobalKey(),
                         ),
                       ContactPersonWidget(
@@ -825,14 +1022,14 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                   onPressed: () async {
                     if (currentLead != null) {
                       final birthdayString = currentLead!.birthday != null &&
-                              currentLead!.birthday!.isNotEmpty
+                          currentLead!.birthday!.isNotEmpty
                           ? DateFormat('dd/MM/yyyy')
-                              .format(DateTime.parse(currentLead!.birthday!))
+                          .format(DateTime.parse(currentLead!.birthday!))
                           : null;
                       final createdAtString = currentLead!.createdAt != null &&
-                              currentLead!.createdAt!.isNotEmpty
+                          currentLead!.createdAt!.isNotEmpty
                           ? DateFormat('dd/MM/yyyy')
-                              .format(DateTime.parse(currentLead!.createdAt!))
+                          .format(DateTime.parse(currentLead!.createdAt!))
                           : null;
                       final shouldUpdate = await Navigator.push(
                         context,
@@ -862,9 +1059,9 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                             whatsApp: currentLead!.whatsApp,
                             email: currentLead!.email,
                             description: currentLead!.description,
-                            leadCustomFields: currentLead!.leadCustomFields,
+                            leadCustomFieldValues: currentLead!.leadCustomFieldValues,
                             directoryValues: currentLead!.directoryValues,
-                            files: currentLead!.files,
+                            existedFiles: currentLead!.files,
                             // phoneVerifiedAt: currentLead!.phone_verified_at,
                             // verificationCode: currentLead!.verification_code,
                             priceTypeId: currentLead!.priceType?.id.toString(),
@@ -873,6 +1070,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                         ),
                       );
                       if (shouldUpdate == true) {
+                        _loadFieldConfiguration(); // ✅ Обновляем конфигурацию полей
                         context.read<LeadByIdBloc>().add(FetchLeadByIdEvent(
                             leadId: int.parse(widget.leadId)));
                         context.read<LeadBloc>().add(FetchLeadStatuses());
@@ -956,7 +1154,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                   itemBuilder: (context, index) {
                     final file = currentLead!.files![index];
                     final fileExtension =
-                        file.name.split('.').last.toLowerCase();
+                    file.name.split('.').last.toLowerCase();
 
                     return Padding(
                       padding: EdgeInsets.only(right: 16),
@@ -998,7 +1196,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                                       value: _downloadProgress[file.id],
                                       strokeWidth: 3,
                                       backgroundColor:
-                                          Colors.grey.withOpacity(0.3),
+                                      Colors.grey.withOpacity(0.3),
                                       valueColor: AlwaysStoppedAnimation<Color>(
                                         Color(0xff1E2E52),
                                       ),
@@ -1056,12 +1254,12 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                   else
                     Expanded(
                       child: (label.contains(
-                                  AppLocalizations.of(context)!
-                                      .translate('lead')) ||
-                              label.contains(AppLocalizations.of(context)!
-                                  .translate('description_details_lead')))
+                          AppLocalizations.of(context)!
+                              .translate('lead')) ||
+                          label.contains(AppLocalizations.of(context)!
+                              .translate('description_details_lead')))
                           ? _buildExpandableText(
-                              label, value, constraints.maxWidth)
+                          label, value, constraints.maxWidth)
                           : _buildValue(value, label),
                     ),
                   if (label == AppLocalizations.of(context)!.translate('phone_use') &&
@@ -1069,26 +1267,26 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                       _isExportContactEnabled)
                     _isLoadingContacts
                         ? SizedBox(
-                            width: 24,
-                            height: 24,
-                            child: CircularProgressIndicator(
-                              color: Color(0xFF1E2E52),
-                              strokeWidth: 2,
-                            ),
-                          )
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(
+                        color: Color(0xFF1E2E52),
+                        strokeWidth: 2,
+                      ),
+                    )
                         : !_isPhoneInContacts(value)
-                            ? Padding(
-                                padding: const EdgeInsets.only(left: 8),
-                                child: GestureDetector(
-                                  onTap: () => _addContact(widget.leadName, value),
-                                  child: Icon(
-                                    Icons.contacts,
-                                    size: 24,
-                                    color: Color(0xFF1E2E52),
-                                  ),
-                                ),
-                              )
-                            : Container(),
+                        ? Padding(
+                      padding: const EdgeInsets.only(left: 8),
+                      child: GestureDetector(
+                        onTap: () => _addContact(widget.leadName, value),
+                        child: Icon(
+                          Icons.contacts,
+                          size: 24,
+                          color: Color(0xFF1E2E52),
+                        ),
+                      ),
+                    )
+                        : Container(),
                 ],
               ),
             ),
@@ -1146,6 +1344,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
         ],
       );
     }
+
     if (label == 'WhatsApp:') {
       return GestureDetector(
         onTap: () => _openWhatsApp(value),
@@ -1162,58 +1361,45 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       );
     }
 
-    if (label == '' && value == 'become_manager') {
-      return Padding(
-        padding: EdgeInsets.only(left: 0),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.start,
-          children: [
-            Text(
-              '${AppLocalizations.of(context)!.translate('manager_details')}  ',
-              style: TextStyle(
-                fontSize: 16,
-                fontFamily: 'Gilroy',
-                fontWeight: FontWeight.w400,
-                color: Color(0xff99A4BA),
-              ),
+    if (value == 'become_manager') {
+      return Align(
+        alignment: Alignment.centerLeft,
+        child: GestureDetector(
+          onTap: () {
+            _assignManager();
+          },
+          child: Container(
+            padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: Color(0xff1E2E52),
+              borderRadius: BorderRadius.circular(8),
             ),
-            GestureDetector(
-              onTap: () {
-                _assignManager();
-              },
-              child: Container(
-                padding: EdgeInsets.symmetric(horizontal: 5, vertical: 5),
-                decoration: BoxDecoration(
-                  color: Color(0xff1E2E52),
-                  borderRadius: BorderRadius.circular(10),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.person_add_alt_1,
+                  color: Colors.white,
+                  size: 18,
                 ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.person_add_alt_1,
-                      color: Colors.white,
-                      size: 20,
-                    ),
-                    SizedBox(width: 12),
-                    Text(
-                      AppLocalizations.of(context)!.translate('become_manager'),
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontFamily: 'Gilroy',
-                        fontWeight: FontWeight.w500,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ],
+                SizedBox(width: 6),
+                Text(
+                  AppLocalizations.of(context)!.translate('become_manager'),
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontFamily: 'Gilroy',
+                    fontWeight: FontWeight.w500,
+                    color: Colors.white,
+                  ),
                 ),
-              ),
+              ],
             ),
-          ],
+          ),
         ),
       );
     }
+
     return Text(
       value,
       style: TextStyle(
@@ -1292,6 +1478,34 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
     });
   }
 
+  Future<void> _loadFieldConfiguration() async {
+    try {
+      final response = await _apiService.getFieldPositions(tableName: 'leads');
+      if (!mounted) return;
+
+      // Фильтруем только активные поля и сортируем по position
+      final activeFields = response.result.where((field) => field.isActive).toList()
+        ..sort((a, b) => a.position.compareTo(b.position));
+
+      setState(() {
+        _fieldConfiguration = activeFields;
+        _isConfigurationLoaded = true;
+      });
+      
+      // ✅ Если данные уже загружены, обновляем детали с новой конфигурацией
+      if (currentLead != null) {
+        _updateDetails(currentLead!);
+      }
+    } catch (e) {
+      // В случае ошибки показываем поля в стандартном порядке
+      if (mounted) {
+        setState(() {
+          _isConfigurationLoaded = true;
+        });
+      }
+    }
+  }
+
   Future<void> _makePhoneCall(String phoneNumber) async {
     final Uri launchUri = Uri(
       scheme: 'tel',
@@ -1322,7 +1536,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
         showCustomSnackBar(
           context: context,
           message:
-              AppLocalizations.of(context)!.translate('whatsapp_not_installed'),
+          AppLocalizations.of(context)!.translate('whatsapp_not_installed'),
           isSuccess: false,
         );
       }
@@ -1330,7 +1544,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       showCustomSnackBar(
         context: context,
         message:
-            AppLocalizations.of(context)!.translate('whatsapp_open_failed'),
+        AppLocalizations.of(context)!.translate('whatsapp_open_failed'),
         isSuccess: false,
       );
     }
@@ -1434,7 +1648,9 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
         managerId: parsedUserId,
         leadStatusId: currentLead?.leadStatus?.id ?? 0,
         localizations: localizations,
-        existingFiles: currentLead!.files ?? [], customFields: [], directoryValues: [], isSystemManager: false, filePaths: [],
+        // existingFiles: currentLead!.files ?? [],
+        customFields: [], directoryValues: [], isSystemManager: false,
+        // filePaths: [],
       ));
 
       await completer.future;
@@ -1446,14 +1662,14 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       showCustomSnackBar(
         context: context,
         message:
-            AppLocalizations.of(context)!.translate('manager_assigned_success'),
+        AppLocalizations.of(context)!.translate('manager_assigned_success'),
         isSuccess: true,
       );
     } catch (e) {
       showCustomSnackBar(
         context: context,
         message:
-            AppLocalizations.of(context)!.translate('manager_assign_failed'),
+        AppLocalizations.of(context)!.translate('manager_assign_failed'),
         isSuccess: false,
       );
     }

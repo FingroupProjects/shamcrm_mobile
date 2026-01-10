@@ -1,7 +1,6 @@
 import 'package:app_tracking_transparency/app_tracking_transparency.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/api/service/firebase_api.dart';
-import 'package:crm_task_manager/api/service/internet_monitor_service.dart';
 import 'package:crm_task_manager/api/service/secure_storage_service.dart';
 import 'package:crm_task_manager/api/service/widget_service.dart';
 import 'package:crm_task_manager/bloc/My-Task_Status_Name/statusName_bloc.dart';
@@ -116,6 +115,7 @@ import 'package:crm_task_manager/bloc/source_list/source_bloc.dart';
 import 'package:crm_task_manager/bloc/task/task_bloc.dart';
 import 'package:crm_task_manager/bloc/task_add_from_deal/task_add_from_deal_bloc.dart';
 import 'package:crm_task_manager/bloc/task_by_id/taskById_bloc.dart';
+import 'package:crm_task_manager/bloc/task_overdue_history/task_overdue_history_bloc.dart';
 import 'package:crm_task_manager/bloc/task_status_add/task_bloc.dart';
 import 'package:crm_task_manager/bloc/user/client/get_all_client_bloc.dart';
 import 'package:crm_task_manager/bloc/user/create_cleant/create_client_bloc.dart';
@@ -129,7 +129,8 @@ import 'package:crm_task_manager/screens/profile/languages/app_localizations.dar
 import 'package:crm_task_manager/screens/profile/languages/local_manager_lang.dart';
 import 'package:crm_task_manager/screens/profile/profile_screen.dart';
 import 'package:crm_task_manager/update_dialog.dart';
-import 'package:crm_task_manager/widgets/internet_aware_wrapper.dart';
+import 'package:crm_task_manager/widgets/native_internet_aware_wrapper_WITH_GAME.dart';
+import 'package:crm_task_manager/widgets/native_internet_monitor_simple.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
@@ -145,26 +146,28 @@ import 'screens/auth/login_screen.dart';
 import 'screens/home_screen.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
+
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
     GlobalKey<ScaffoldMessengerState>();
+    
 void main() async {
   try {
     WidgetsFlutterBinding.ensureInitialized();
     WidgetService.initialize();
-        await InternetMonitorService().initialize();
-
+       await NativeInternetMonitor().initialize();
+          
     await _initializeFirebase();
 
     final apiService = ApiService();
     final authService = AuthService();
 
     final sessionValidation = await _validateApplicationSession(apiService);
-
+    
     String? token;
     String? pin;
     bool isDomainChecked = false;
-
+    
     if (sessionValidation.isValid) {
       token = await apiService.getToken();
       pin = await authService.getPin();
@@ -201,7 +204,7 @@ void main() async {
     final Locale savedLocale = savedLanguageCode != null
         ? Locale(savedLanguageCode)
         : const Locale('ru');
-
+    
     runApp(MyApp(
       apiService: apiService,
       authService: authService,
@@ -215,7 +218,7 @@ void main() async {
   } catch (e, stackTrace) {
     runApp(ErrorApp(error: e.toString()));
   }
-}
+} 
 
 Future<void> _initializeFirebase() async {
   try {
@@ -269,30 +272,26 @@ Future<void> _initializeFirebaseMessaging(ApiService apiService) async {
       badge: true,
       sound: true,
     );
+    
+    // ✅ УБРАНО: НЕ обрабатываем getInitialMessage здесь!
+    // FirebaseMessaging.instance.getInitialMessage() - УДАЛЕНО
 
-    // ✅ КРИТИЧНО: Обработка initial message
-    FirebaseMessaging.instance.getInitialMessage().then((RemoteMessage? message) {
-      if (message != null) {
-        debugPrint('_initializeFirebaseMessaging: Got initial message: ${message.data}');
-        // Сохраняем сообщение для обработки после инициализации
-        _handleInitialMessage(message);
-      }
-    });
-
-    // ✅ Обработка сообщений когда приложение в foreground
+    // ✅ Обработка foreground сообщений
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       debugPrint('_initializeFirebaseMessaging: onMessage: ${message.data}');
       debugPrint('Push-уведомление получено в foreground: {id: ${message.data['id']}, type: ${message.data['type']}}');
     });
 
-    // ✅ КРИТИЧНО: Обработка нажатия на уведомление когда приложение в background
+    // ✅ КРИТИЧНО: Обработка background tap
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
       debugPrint('_initializeFirebaseMessaging: onMessageOpenedApp: ${message.data}');
       debugPrint('Push-уведомление открыто из background: {id: ${message.data['id']}, type: ${message.data['type']}}');
-      FirebaseApi().handleMessage(message);
+      
+      // ⚠️ НЕ вызываем handleMessage здесь - пусть HomeScreen обработает!
+      // FirebaseApi().handleMessage(message); - УДАЛЕНО
     });
 
-    await getFCMTokens(apiService);
+    // await getFCMTokens(apiService);
 
     try {
       FirebaseApi firebaseApi = FirebaseApi();
@@ -311,44 +310,45 @@ Future<void> _initializeFirebaseMessaging(ApiService apiService) async {
   }
 }
 
-// ✅ НОВЫЙ МЕТОД: Обработка initial message
-Future<void> _handleInitialMessage(RemoteMessage message) async {
-  debugPrint('_handleInitialMessage: ${message.data}');
+
+// // ✅ НОВЫЙ МЕТОД: Обработка initial message
+// Future<void> _handleInitialMessage(RemoteMessage message) async {
+//   debugPrint('_handleInitialMessage: ${message.data}');
   
-  // Ждем инициализации приложения
-  await Future.delayed(Duration(seconds: 2));
+//   // Ждем инициализации приложения
+//   await Future.delayed(Duration(seconds: 2));
   
-  try {
-    await FirebaseApi().handleMessage(message);
-  } catch (e) {
-    debugPrint('_handleInitialMessage: Error: $e');
-  }
-}
+//   try {
+//     await FirebaseApi().handleMessage(message);
+//   } catch (e) {
+//     debugPrint('_handleInitialMessage: Error: $e');
+//   }
+// }
 
-Future<void> getFCMTokens(ApiService apiService) async {
-  try {
-    if (Firebase.apps.isEmpty) return;
+// Future<void> getFCMTokens(ApiService apiService) async {
+//   try {
+//     if (Firebase.apps.isEmpty) return;
 
-    try {
-      Firebase.app();
-    } catch (e) {
-      return;
-    }
+//     try {
+//       Firebase.app();
+//     } catch (e) {
+//       return;
+//     }
 
-    final String? fcmToken = await FirebaseMessaging.instance.getToken();
+//     final String? fcmToken = await FirebaseMessaging.instance.getToken();
     
-    if (fcmToken != null && fcmToken.isNotEmpty) {
-      try {
-        await apiService.sendDeviceToken(fcmToken);
-      } catch (e) {
-        //print('FCM Token: Ошибка отправки: $e');
-      }
-    }
+//     if (fcmToken != null && fcmToken.isNotEmpty) {
+//       try {
+//         await apiService.sendDeviceToken(fcmToken);
+//       } catch (e) {
+//         //print('FCM Token: Ошибка отправки: $e');
+//       }
+//     }
     
-  } catch (e) {
-    //print('FCM Token: Ошибка: $e');
-  }
-}
+//   } catch (e) {
+//     //print('FCM Token: Ошибка: $e');
+//   }
+// }
 
 class SessionValidationResult {
   final bool isValid;
@@ -509,6 +509,8 @@ class _MyAppState extends State<MyApp> {
   }
 
   Future<void> checkForNewVersion(BuildContext context) async {
+    // TODO remove on building ipa or apk files
+    return;
     try {
       final newVersionPlus = NewVersionPlus();
       final status = await newVersionPlus.getVersionStatus();
@@ -519,12 +521,18 @@ class _MyAppState extends State<MyApp> {
       final localizations = AppLocalizations.of(context);
 
       await UpdateDialog.show(
-        context: context,
-        status: status,
-        title: localizations?.translate('app_update_available_title') ?? 'Обновление',
-        message: localizations?.translate('app_update_available_message') ?? 'Доступна новая версия приложения',
-        updateButton: localizations?.translate('app_update_button') ?? 'Обновить',
-      );
+  context: context,
+  status: status,
+  title: localizations?.translate('app_update_available_title') ?? 'Обновление',
+  message: localizations?.translate('app_update_available_message') ?? 'Доступна новая версия приложения',
+  updateButton: localizations?.translate('app_update_button') ?? 'Обновить',
+  laterButton: localizations?.translate('later') ?? 'Позже', // ← Добавь перевод
+  onLaterPressed: () {
+    // Опционально: можно сохранить, что пользователь отложил обновление
+    // Например: SharedPreferences.setBool('update_later_shown', true);
+    debugPrint('Пользователь отложил обновление');
+  },
+);
     } catch (e) {
       // print('MyApp: Error checking version: $e');
     }
@@ -564,6 +572,7 @@ Widget build(BuildContext context) {
         BlocProvider(create: (context) => GetAllProjectBloc()),
         BlocProvider(create: (context) => UserTaskBloc(widget.apiService)),
         BlocProvider(create: (context) => HistoryBlocTask(widget.apiService)),
+        BlocProvider(create: (context) => TaskOverdueHistoryBloc(widget.apiService)),
         BlocProvider(create: (context) => HistoryLeadsBloc(widget.apiService)),
         BlocProvider(create: (context) => HistoryBlocMyTask(widget.apiService)),
         BlocProvider(create: (context) => RoleBloc(widget.apiService)),
@@ -697,9 +706,9 @@ Widget build(BuildContext context) {
         }
         return supportedLocales.first;
       },
-      // ✅ InternetAwareWrapper ЗДЕСЬ, в builder MaterialApp
+      // ✅ ДОБАВЬТЕ/РАСКОММЕНТИРУЙТЕ builder
       builder: (context, child) {
-        return InternetAwareWrapper(
+        return NativeInternetAwareWrapper( // ← НОВОЕ ИМЯ
           child: child ?? const SizedBox.shrink(),
         );
       },

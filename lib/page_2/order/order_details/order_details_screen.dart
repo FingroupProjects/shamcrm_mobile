@@ -220,9 +220,9 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
             : AppLocalizations.of(context)!.translate('branch_order'),
         'value': order.delivery
             ? (order.deliveryAddress ??
-                AppLocalizations.of(context)!.translate(''))
+            AppLocalizations.of(context)!.translate(''))
             : (order.branchName ??
-                AppLocalizations.of(context)!.translate('')),
+            AppLocalizations.of(context)!.translate('')),
       },
       {
         'label': AppLocalizations.of(context)!.translate('comment_client'),
@@ -332,7 +332,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
               }
               _updateDetails(state.orderDetails!);
             }
-            
+
             return Scaffold(
               backgroundColor: Colors.white,
               appBar: _buildAppBar(context, orderForAppBar),
@@ -538,9 +538,9 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                   fontWeight: FontWeight.w500,
                   color: const Color(0xff1E2E52),
                   decoration: value.isNotEmpty &&
-                          value !=
-                              AppLocalizations.of(context)!
-                                  .translate('no_comment')
+                      value !=
+                          AppLocalizations.of(context)!
+                              .translate('no_comment')
                       ? TextDecoration.underline
                       : null,
                 ),
