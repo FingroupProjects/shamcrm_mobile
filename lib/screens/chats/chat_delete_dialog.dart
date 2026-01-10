@@ -20,6 +20,7 @@ class _DeleteChatDialogState extends State<DeleteChatDialog> {
   String? dialogTitle;
   String? dialogContent;
   bool? isGroupChat;
+    bool? isSupportChat;
 
   @override
   void initState() {
@@ -28,27 +29,39 @@ class _DeleteChatDialogState extends State<DeleteChatDialog> {
   }
 
 Future<void> _fetchChatData() async {
-  final chatData = await ApiService().getChatById(widget.chatId);
-  setState(() {
-    if (chatData.chatUsers.length == 2 && chatData.group == null) {
-      isGroupChat = false;
-      dialogTitle = AppLocalizations.of(context)!.translate('delete_chat');
-      dialogContent = AppLocalizations.of(context)!.translate('comfirm_delete_chat');
-    } else if (chatData.group != null) {
-      isGroupChat = true;
-      dialogTitle = AppLocalizations.of(context)!.translate('delete_chat_group');
-      dialogContent = AppLocalizations.of(context)!.translate('comfirm_delete_chat_group');
-    } else {
-      isGroupChat = false;
-      dialogTitle = AppLocalizations.of(context)!.translate('delete_chat');
-      dialogContent = AppLocalizations.of(context)!.translate('comfirm_delete_chat');
-    }
-  });
-}
-
+    final chatData = await ApiService().getChatById(widget.chatId);
+    setState(() {
+      isSupportChat = chatData.type == 'support';
+      
+      if (isSupportChat == true) {
+        return;
+      }
+      
+      if (chatData.chatUsers.length == 2 && chatData.group == null) {
+        isGroupChat = false;
+        dialogTitle = AppLocalizations.of(context)!.translate('delete_chat');
+        dialogContent = AppLocalizations.of(context)!.translate('comfirm_delete_chat');
+      } else if (chatData.group != null) {
+        isGroupChat = true;
+        dialogTitle = AppLocalizations.of(context)!.translate('delete_chat_group');
+        dialogContent = AppLocalizations.of(context)!.translate('comfirm_delete_chat_group');
+      } else {
+        isGroupChat = false;
+        dialogTitle = AppLocalizations.of(context)!.translate('delete_chat');
+        dialogContent = AppLocalizations.of(context)!.translate('comfirm_delete_chat');
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
+    if (isSupportChat == true) {
+      Future.delayed(Duration.zero, () {
+        Navigator.of(context).pop();
+      });
+      return Container();
+    }
+
     return isGroupChat == null
         ? Stack(
             children: [

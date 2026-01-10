@@ -6,10 +6,9 @@ import 'package:crm_task_manager/bloc/role/role_bloc.dart';
 import 'package:crm_task_manager/bloc/role/role_event.dart';
 import 'package:crm_task_manager/bloc/task/task_bloc.dart';
 import 'package:crm_task_manager/bloc/task/task_event.dart';
-import 'package:crm_task_manager/bloc/task_status_add/task_bloc.dart'
-    as task_status_add;
-import 'package:crm_task_manager/bloc/task_status_add/task_event.dart'
-    as task_status_add;
+import 'package:crm_task_manager/bloc/task_status_add/task_bloc.dart' as task_status_add;
+import 'package:crm_task_manager/bloc/task_status_add/task_event.dart' as task_status_add;
+import 'package:crm_task_manager/custom_widget/custom_chat_styles.dart';
 import 'package:crm_task_manager/models/project_task_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/task/task_details/project_list_task.dart';
@@ -60,17 +59,15 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const SizedBox(height: 16),
             StatusList(
-              selectedTaskStatus:
-                  selectedStatusNameId?.toString(), // Передаем строку
+              selectedTaskStatus:selectedStatusNameId?.toString(), 
               onChanged: (String? statusName, int? statusId) {
                 setState(() {
-                  selectedStatusNameId = statusId; // Обновляем статус
+                  selectedStatusNameId = statusId; 
                 });
               },
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 4),
             ProjectTaskGroupWidget(
               selectedProject: selectedProjectId,
               onSelectProject: (ProjectTask selectedProjectData) {
@@ -80,11 +77,11 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
               },
             ),
             Container(
-              padding: EdgeInsets.symmetric(vertical: 8),
+              padding: EdgeInsets.symmetric(vertical: 0),
               child: Column(
                 children: [
                   Container(
-                    padding: EdgeInsets.symmetric(vertical: 8),
+                    padding: EdgeInsets.symmetric(vertical: 0),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -107,20 +104,15 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
                             });
                           },
                           activeColor: const Color.fromARGB(255, 255, 255, 255),
-                          inactiveTrackColor:
-                              const Color.fromARGB(255, 179, 179, 179)
-                                  .withOpacity(0.5),
-                          activeTrackColor:
-                              const Color.fromARGB(255, 51, 65, 98)
-                                  .withOpacity(0.5),
-                          inactiveThumbColor:
-                              const Color.fromARGB(255, 255, 255, 255),
+                          inactiveTrackColor: const Color.fromARGB(255, 179, 179, 179).withOpacity(0.5),
+                          activeTrackColor: ChatSmsStyles.messageBubbleSenderColor,
+                          inactiveThumbColor: const Color.fromARGB(255, 255, 255, 255),
                         ),
                       ],
                     ),
                   ),
                   Container(
-                    padding: EdgeInsets.symmetric(vertical: 8),
+                    padding: EdgeInsets.symmetric(vertical: 0),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -140,14 +132,9 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
                             });
                           },
                           activeColor: const Color.fromARGB(255, 255, 255, 255),
-                          inactiveTrackColor:
-                              const Color.fromARGB(255, 179, 179, 179)
-                                  .withOpacity(0.5),
-                          activeTrackColor:
-                              const Color.fromARGB(255, 51, 65, 98)
-                                  .withOpacity(0.5),
-                          inactiveThumbColor:
-                              const Color.fromARGB(255, 255, 255, 255),
+                          inactiveTrackColor: const Color.fromARGB(255, 179, 179, 179).withOpacity(0.5),
+                          activeTrackColor: ChatSmsStyles.messageBubbleSenderColor,
+                          inactiveThumbColor: const Color.fromARGB(255, 255, 255, 255),
                         ),
                       ],
                     ),
@@ -156,10 +143,9 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
               ),
             ),
             if (needsPermission) ...[
-              const SizedBox(height: 2),
               Container(
                 margin: const EdgeInsets.only(top: 4),
-                padding: const EdgeInsets.symmetric(vertical: 8),
+                padding: const EdgeInsets.symmetric(vertical: 0),
                 child: RoleSelectionWidget(
                   selectedRoleIds: selectedRoleIds,
                   onRolesChanged: (roleIds) {
@@ -172,7 +158,7 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
             ],
             if (_errorMessage != null)
               Padding(
-                padding: const EdgeInsets.only(top: 8.0),
+                padding: const EdgeInsets.only(top: 8),
                 child: Text(
                   _errorMessage!,
                   style: TextStyle(
@@ -188,7 +174,7 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
       ),
       actions: [
         Padding(
-          padding: const EdgeInsets.all(16.0),
+          padding: EdgeInsets.only(),
           child: Row(
             children: [
               Expanded(
@@ -212,7 +198,7 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
                   ),
                 ),
               ),
-              SizedBox(width: 16),
+              SizedBox(width: 10),
               Expanded(
                 child: ElevatedButton(
                   onPressed: _createStatus,
@@ -253,7 +239,6 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
       _errorMessage = null;
     });
 
-    // Создаем новый статус
     context.read<task_status_add.TaskStatusBloc>().add(
           task_status_add.CreateTaskStatusAdd(
             taskStatusNameId: selectedStatusNameId!,

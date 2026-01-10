@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/screens/auth/pin_change_screen.dart'; // ✅ НОВЫЙ ИМПОРТ
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 
@@ -9,7 +10,13 @@ class PinChangeWidget extends StatelessWidget {
     final localizations = AppLocalizations.of(context)!;
     return GestureDetector(
       onTap: () {
-        Navigator.pushReplacementNamed(context, '/pin_setup');
+        // ✅ ИЗМЕНЕНО: теперь открываем PinChangeScreen
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const PinChangeScreen(),
+          ),
+        );
       },
       child: _buildPinOption(localizations),
     );
@@ -25,7 +32,6 @@ class PinChangeWidget extends StatelessWidget {
       ),
       child: Row(
         children: [
-          // Pin icon container
           Container(
             width: 40,
             height: 40,
@@ -36,15 +42,15 @@ class PinChangeWidget extends StatelessWidget {
             child: const Center(
               child: Icon(
                 Icons.lock_outline,
-                color: Color.fromARGB(255, 91,77,235),
+                color: Color.fromARGB(255, 91, 77, 235),
                 size: 24,
               ),
             ),
           ),
           const SizedBox(width: 16),
-        Expanded(
+          Expanded(
             child: Text(
-              localizations.translate('change_pin_code'), 
+              localizations.translate('change_pin_code'),
               style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
@@ -53,7 +59,7 @@ class PinChangeWidget extends StatelessWidget {
               ),
             ),
           ),
-         Image.asset(
+          Image.asset(
             'assets/icons/arrow-right.png',
             width: 16,
             height: 16,

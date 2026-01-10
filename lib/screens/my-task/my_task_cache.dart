@@ -59,11 +59,11 @@ class MyTaskCache {
     // Удаляем все ключи, связанные с задачами
     for (var key in taskKeys) {
       await prefs.remove(key);
-      print('Удалены задачи для ключа: $key');
+      //print('Удалены задачи для ключа: $key');
     }
 
-    print('-----------------------------------------------');
-    print('УДАЛЕНЫ ВСЕ ЗАДАЧИ ИЗ КЕША !!!');
+    //print('-----------------------------------------------');
+    //print('УДАЛЕНЫ ВСЕ ЗАДАЧИ ИЗ КЕША !!!');
   }
 
   // Очистить кэшированные статусы задач и задачи
@@ -75,13 +75,9 @@ class MyTaskCache {
 
     if (cachedStatuses != null) {
       decodedData = json.decode(cachedStatuses);
-      print('-----------------------------------------------');
-      print('Статусы, которые были в кэше:');
       for (var status in decodedData) {
-        print('ID: ${status['id']}, Название: ${status['name']}');
       }
     } else {
-      print('Нет кэшированных статусов для удаления.');
     }
 
     // Удаляем кэшированные статусы
@@ -91,12 +87,11 @@ class MyTaskCache {
     final Set<int> statusIds = decodedData.map<int>((status) => status['id']).toSet();
     for (var statusId in statusIds) {
       await prefs.remove('cachedMyTasks_$statusId');
-      print('Удалены задачи для статуса с ID: $statusId');
     }
 
     // Выводим сообщение об удалении всех статусов и задач
-    print('-----------------------------------------------');
-    print('УДАЛЕНЫ ВСЕ СТАТУСЫ И ЗАДАЧИ ИЗ КЕША !!!');
+    //print('-----------------------------------------------');
+    //print('УДАЛЕНЫ ВСЕ СТАТУСЫ И ЗАДАЧИ ИЗ КЕША !!!');
   }
 
   // Очистить все кэшированные данные

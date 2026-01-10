@@ -134,24 +134,26 @@ class _UpdateWidget1CState extends State<UpdateWidget1C>
                 iconPath: 'assets/icons/1c/5.png',
                 text: localizations.translate('update_1c_data'),
               ),
-            ValueListenableBuilder<String?>(
-              valueListenable: lastUpdatedNotifier,
-              builder: (context, lastUpdated, child) {
-                return lastUpdated != null
-                    ? Center(
-                        child: Text(
-                          '${localizations.translate('last_update_1c')}: $lastUpdated',
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w400,
-                            fontFamily: 'Gilroy',
-                            color: Color(0xFF1E1E1E),
-                          ),
-                        ),
-                      )
-                    : Container();
-              },
-            ),
+          ValueListenableBuilder<String?>(
+          valueListenable: lastUpdatedNotifier,
+          builder: (context, lastUpdated, child) {
+            if (organization.is1cIntegration && lastUpdated != null) {
+              return Center(
+                child: Text(
+                  '${localizations.translate('last_update_1c')}: $lastUpdated',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w400,
+                    fontFamily: 'Gilroy',
+                    color: Color(0xFF1E1E1E),
+                  ),
+                ),
+              );
+            } else {
+              return Container();
+            }
+          },
+        ),
           ],
         ),
       ),
