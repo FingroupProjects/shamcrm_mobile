@@ -287,10 +287,13 @@ class _AnimatedTextFieldState extends State<AnimatedTextField>
       builder: (context, child) {
         return Container(
           height: _heightAnimation.value,
-          decoration: BoxDecoration(
-            color: widget.fillColor,
-            borderRadius: widget.borderRadius,
-          ),
+          // ✅ ОБНОВЛЕНО: Если fillColor прозрачный, не добавляем фон (для glass effect)
+          decoration: widget.fillColor != null && widget.fillColor != Colors.transparent
+              ? BoxDecoration(
+                  color: widget.fillColor,
+                  borderRadius: widget.borderRadius,
+                )
+              : null, // Позволяем внешнему Container управлять фоном
           child: Listener(
             onPointerDown: _handlePointerDown,
             onPointerUp: _handlePointerUp,

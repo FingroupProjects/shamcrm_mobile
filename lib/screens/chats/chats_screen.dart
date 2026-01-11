@@ -38,7 +38,7 @@ class ChatsScreen extends StatefulWidget {
 }
 
 class _ChatsScreenState extends State<ChatsScreen>
-    with TickerProviderStateMixin {
+    with TickerProviderStateMixin, WidgetsBindingObserver {
   final ApiService apiService = ApiService();
   bool isNavigating = false;
   late Future<List<Chats>> futureChats;
@@ -213,6 +213,10 @@ class _ChatsScreenState extends State<ChatsScreen>
   @override
   void initState() {
     super.initState();
+    
+    // ✅ ДОБАВЛЕНО: Подписываемся на lifecycle events для обработки сворачивания приложения
+    WidgetsBinding.instance.addObserver(this);
+    
     //print('ChatsScreen: initState started');
     _checkPermissions().then((_) {
       if (_isPermissionsChecked) {
@@ -1228,7 +1232,31 @@ Future<void> updateFromSocket({required Chats chat}) async {
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    
+    if (state == AppLifecycleState.paused) {
+      // ✅ Приложение свернулось - логируем для отладки
+      debugPrint('ChatsScreen: App paused, active chats will be deactivated by ActiveChatTracker');
+    } else if (state == AppLifecycleState.resumed) {
+      // ✅ Приложение вернулось - обновляем список чатов
+      debugPrint('ChatsScreen: App resumed, refreshing chats');
+      
+      // ✅ Небольшая задержка, чтобы UI успел восстановиться
+      Future.delayed(const Duration(milliseconds: 300), () {
+        if (mounted) {
+          final chatsBloc = _chatsBlocs[endPointInTab]!;
+          chatsBloc.add(RefreshChats());
+        }
+      });
+    }
+  }
+
+  @override
   void dispose() {
+    // ✅ ДОБАВЛЕНО: Отписываемся от lifecycle events
+    WidgetsBinding.instance.removeObserver(this);
+    
     _tabController.dispose();
     chatSubscribtion.cancel();
     socketClient.dispose();

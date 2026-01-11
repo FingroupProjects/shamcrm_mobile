@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/lead_list/lead_list_bloc.dart';
 import 'package:crm_task_manager/bloc/lead_list/lead_list_state.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
@@ -32,6 +33,10 @@ class _AddMoneyOutcomeFromClientState extends State<AddMoneyOutcomeFromClient> {
   CashRegisterData? selectedCashRegister;
   bool _isLoading = false;
 
+  // ✅ НОВОЕ: Флаг разрешения на проведение документа
+  bool _hasApprovePermission = false;
+  final ApiService _apiService = ApiService();
+
   @override
   void initState() {
     super.initState();
@@ -40,6 +45,26 @@ class _AddMoneyOutcomeFromClientState extends State<AddMoneyOutcomeFromClient> {
     // Предзагружаем данные если их еще нет
     // ✅ УДАЛЕНО: _preloadDataIfNeeded() чтобы избежать race condition
     // LeadRadioGroupWidget сам загрузит leads при необходимости
+    _checkApprovePermission();
+  }
+
+  // ✅ НОВОЕ: Проверка разрешения на проведение документа
+  Future<void> _checkApprovePermission() async {
+    try {
+      final hasPermission = await _apiService.hasPermission('checking_account_rko.approve');
+      if (mounted) {
+        setState(() {
+          _hasApprovePermission = hasPermission;
+        });
+      }
+    } catch (e) {
+      debugPrint('Ошибка при проверке права на проведение документа: $e');
+      if (mounted) {
+        setState(() {
+          _hasApprovePermission = false;
+        });
+      }
+    }
   }
 
   void _createDocument({bool approve = false}) async {
@@ -318,46 +343,48 @@ class _AddMoneyOutcomeFromClientState extends State<AddMoneyOutcomeFromClient> {
       ),
       child: Column(
         children: [
-          // Кнопка "Сохранить и провести"
-          Container(
-            width: double.infinity,
-            height: 48,
-            decoration: BoxDecoration(
-              border: Border.all(color: const Color(0xff4CAF50), width: 1.5),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
+          // ✅ НОВОЕ: Показываем кнопку "Провести" только если есть разрешение
+          if (_hasApprovePermission) ...[
+            Container(
+              width: double.infinity,
+              height: 48,
+              decoration: BoxDecoration(
+                border: Border.all(color: const Color(0xff4CAF50), width: 1.5),
                 borderRadius: BorderRadius.circular(12),
-                onTap: _isLoading ? null : _createAndApproveDocument,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.check_circle_outline,
-                        size: 20,
-                        color: _isLoading ? const Color(0xff99A4BA) : const Color(0xff4CAF50),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        localizations.translate('save_and_approve') ?? 'Сохранить и провести',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontFamily: 'Gilroy',
-                          fontWeight: FontWeight.w600,
+              ),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(12),
+                  onTap: _isLoading ? null : _createAndApproveDocument,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.check_circle_outline,
+                          size: 20,
                           color: _isLoading ? const Color(0xff99A4BA) : const Color(0xff4CAF50),
                         ),
-                      ),
-                    ],
+                        const SizedBox(width: 8),
+                        Text(
+                          localizations.translate('save_and_approve') ?? 'Сохранить и провести',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontFamily: 'Gilroy',
+                            fontWeight: FontWeight.w600,
+                            color: _isLoading ? const Color(0xff99A4BA) : const Color(0xff4CAF50),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
-          const SizedBox(height: 16),
+            const SizedBox(height: 16),
+          ],
           // Ряд кнопок "Отмена" и "Сохранить"
           Row(
             children: [

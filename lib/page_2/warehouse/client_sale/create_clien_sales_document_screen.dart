@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/client_sale/bloc/client_sale_bloc.dart';
 import 'package:crm_task_manager/custom_widget/compact_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
@@ -58,6 +59,12 @@ class CreateClienSalesDocumentScreenState
 
   late TabController _tabController;
 
+  // ✅ НОВОЕ: Флаг разрешения на изменение цены
+  bool _hasPriceUpdatePermission = false;
+  // ✅ НОВОЕ: Флаг разрешения на проведение документа
+  bool _hasApprovePermission = false;
+  final ApiService _apiService = ApiService();
+
   @override
   void initState() {
     super.initState();
@@ -79,6 +86,46 @@ class CreateClienSalesDocumentScreenState
     });
 
     _tabController = TabController(length: 2, vsync: this);
+    _checkPriceUpdatePermission();
+    _checkApprovePermission();
+  }
+
+  // ✅ НОВОЕ: Проверка разрешения на изменение цены
+  Future<void> _checkPriceUpdatePermission() async {
+    try {
+      final hasPermission = await _apiService.hasPermission('expense_document_price.update');
+      if (mounted) {
+        setState(() {
+          _hasPriceUpdatePermission = hasPermission;
+        });
+      }
+    } catch (e) {
+      debugPrint('Ошибка при проверке права на изменение цены: $e');
+      if (mounted) {
+        setState(() {
+          _hasPriceUpdatePermission = false;
+        });
+      }
+    }
+  }
+
+  // ✅ НОВОЕ: Проверка разрешения на проведение документа
+  Future<void> _checkApprovePermission() async {
+    try {
+      final hasPermission = await _apiService.hasPermission('expense_document.approve');
+      if (mounted) {
+        setState(() {
+          _hasApprovePermission = hasPermission;
+        });
+      }
+    } catch (e) {
+      debugPrint('Ошибка при проверке права на проведение документа: $e');
+      if (mounted) {
+        setState(() {
+          _hasApprovePermission = false;
+        });
+      }
+    }
   }
 
   void _handleVariantSelection(Map<String, dynamic>? newItem) {
@@ -253,6 +300,11 @@ class CreateClienSalesDocumentScreenState
 
 // ✅ ИСПРАВЛЕНО: функция _updateItemPrice
   void _updateItemPrice(int variantId, String value) {
+    // ✅ НОВОЕ: Проверка разрешения на изменение цены
+    if (!_hasPriceUpdatePermission) {
+      return;
+    }
+
     final inputPrice = double.tryParse(value);
     if (inputPrice != null && inputPrice >= 0) {
       setState(() {
@@ -1033,15 +1085,19 @@ class CreateClienSalesDocumentScreenState
                             inputFormatters: [
                               PriceInputFormatter(),
                             ],
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 13,
                               fontFamily: 'Gilroy',
                               fontWeight: FontWeight.w600,
-                              color: Color(0xff1E2E52),
+                              color: _hasPriceUpdatePermission 
+                                  ? const Color(0xff1E2E52)
+                                  : const Color(0xff99A4BA),
                             ),
                             hasError: _priceErrors[variantId] == true,
-                            onChanged: (value) =>
-                                _updateItemPrice(variantId, value),
+                            enabled: _hasPriceUpdatePermission,
+                            onChanged: _hasPriceUpdatePermission
+                                ? (value) => _updateItemPrice(variantId, value)
+                                : null,
                             onDone: _moveToNextEmptyField,
                           ),
                         ]),
@@ -1058,51 +1114,54 @@ class CreateClienSalesDocumentScreenState
   Widget _buildActionButtons(AppLocalizations localizations) {
     return Row(
       children: [
-        Expanded(
-          child: Container(
-            height: 48,
-            decoration: BoxDecoration(
-              border: Border.all(color: const Color(0xff4CAF50), width: 1.5),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
+        // ✅ НОВОЕ: Показываем кнопку "Провести" только если есть разрешение
+        if (_hasApprovePermission) ...[
+          Expanded(
+            child: Container(
+              height: 48,
+              decoration: BoxDecoration(
+                border: Border.all(color: const Color(0xff4CAF50), width: 1.5),
                 borderRadius: BorderRadius.circular(12),
-                onTap: _isLoading ? null : _createAndApproveDocument,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.check_circle_outline,
-                        size: 18,
-                        color: _isLoading
-                            ? const Color(0xff99A4BA)
-                            : const Color(0xff4CAF50),
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        localizations.translate('save_and_approve') ??
-                            'Провести',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontFamily: 'Gilroy',
-                          fontWeight: FontWeight.w600,
+              ),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(12),
+                  onTap: _isLoading ? null : _createAndApproveDocument,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.check_circle_outline,
+                          size: 18,
                           color: _isLoading
                               ? const Color(0xff99A4BA)
                               : const Color(0xff4CAF50),
                         ),
-                      ),
-                    ],
+                        const SizedBox(width: 6),
+                        Text(
+                          localizations.translate('save_and_approve') ??
+                              'Провести',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontFamily: 'Gilroy',
+                            fontWeight: FontWeight.w600,
+                            color: _isLoading
+                                ? const Color(0xff99A4BA)
+                                : const Color(0xff4CAF50),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
             ),
           ),
-        ),
-        const SizedBox(width: 12),
+          const SizedBox(width: 12),
+        ],
         Expanded(
           child: SizedBox(
             height: 48,

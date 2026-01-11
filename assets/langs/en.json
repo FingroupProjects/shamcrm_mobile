@@ -1251,6 +1251,7 @@
   "total_quantity": "Total quantity",
   "total_sum": "Total sum",
   "quantity": "Quantity",
+  "out_of_stock": "Out of stock",
   "view_document": "View document",
   "warehouse_accounting": "Trade accounting",
   "warehouse_documents": "Warehouse documents",

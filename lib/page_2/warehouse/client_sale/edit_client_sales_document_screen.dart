@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/client_sale/bloc/client_sale_bloc.dart';
 import 'package:crm_task_manager/custom_widget/compact_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
@@ -66,11 +67,35 @@ class _EditClientSalesDocumentScreenState extends State<EditClientSalesDocumentS
 
   late TabController _tabController;
 
+  // ✅ НОВОЕ: Флаг разрешения на изменение цены
+  bool _hasPriceUpdatePermission = false;
+  final ApiService _apiService = ApiService();
+
   @override
   void initState() {
     super.initState();
     _initializeFormData();
     _tabController = TabController(length: 2, vsync: this);
+    _checkPriceUpdatePermission();
+  }
+
+  // ✅ НОВОЕ: Проверка разрешения на изменение цены
+  Future<void> _checkPriceUpdatePermission() async {
+    try {
+      final hasPermission = await _apiService.hasPermission('expense_document_price.update');
+      if (mounted) {
+        setState(() {
+          _hasPriceUpdatePermission = hasPermission;
+        });
+      }
+    } catch (e) {
+      debugPrint('Ошибка при проверке права на изменение цены: $e');
+      if (mounted) {
+        setState(() {
+          _hasPriceUpdatePermission = false;
+        });
+      }
+    }
   }
 
   void _initializeFormData() {
@@ -279,6 +304,11 @@ class _EditClientSalesDocumentScreenState extends State<EditClientSalesDocumentS
 
 // ✅ ИСПРАВЛЕНО: функция _updateItemPrice
   void _updateItemPrice(int variantId, String value) {
+    // ✅ НОВОЕ: Проверка разрешения на изменение цены
+    if (!_hasPriceUpdatePermission) {
+      return;
+    }
+
     final inputPrice = double.tryParse(value);
     if (inputPrice != null && inputPrice >= 0) {
       setState(() {
@@ -1060,15 +1090,19 @@ class _EditClientSalesDocumentScreenState extends State<EditClientSalesDocumentS
                             inputFormatters: [
                               PriceInputFormatter(),
                             ],
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 13,
                               fontFamily: 'Gilroy',
                               fontWeight: FontWeight.w600,
-                              color: Color(0xff1E2E52),
+                              color: _hasPriceUpdatePermission 
+                                  ? const Color(0xff1E2E52)
+                                  : const Color(0xff99A4BA),
                             ),
                             hasError: _priceErrors[variantId] == true,
-                            onChanged: (value) =>
-                                _updateItemPrice(variantId, value),
+                            enabled: _hasPriceUpdatePermission,
+                            onChanged: _hasPriceUpdatePermission
+                                ? (value) => _updateItemPrice(variantId, value)
+                                : null,
                             onDone: _moveToNextEmptyField,
                           ),
                         ]),

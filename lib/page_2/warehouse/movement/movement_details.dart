@@ -47,6 +47,9 @@ class _MovementDocumentDetailsScreenState extends State<MovementDocumentDetailsS
   String? baseUrl;
   bool _documentUpdated = false;
   bool _goodMeasurementEnabled = true;
+
+  // ✅ НОВОЕ: Флаг разрешения на проведение документа
+  bool _hasApprovePermission = false;
   
   final Map<int, String> _unitMap = {
     23: 'шт',
@@ -58,6 +61,26 @@ class _MovementDocumentDetailsScreenState extends State<MovementDocumentDetailsS
     _initializeBaseUrl();
     _fetchDocumentDetails();
     _loadGoodMeasurementSetting();
+    _checkApprovePermission();
+  }
+
+  // ✅ НОВОЕ: Проверка разрешения на проведение документа
+  Future<void> _checkApprovePermission() async {
+    try {
+      final hasPermission = await _apiService.hasPermission('movement_document.approve');
+      if (mounted) {
+        setState(() {
+          _hasApprovePermission = hasPermission;
+        });
+      }
+    } catch (e) {
+      debugPrint('Ошибка при проверке права на проведение документа: $e');
+      if (mounted) {
+        setState(() {
+          _hasApprovePermission = false;
+        });
+      }
+    }
   }
 
   Future<void> _loadGoodMeasurementSetting() async {
@@ -313,6 +336,11 @@ class _MovementDocumentDetailsScreenState extends State<MovementDocumentDetailsS
 
     // НОВОЕ: Кнопки провести/отменить проведение требуют права UPDATE
     if (!widget.hasUpdatePermission) {
+      return const SizedBox.shrink();
+    }
+
+    // ✅ НОВОЕ: Дополнительная проверка разрешения на проведение
+    if (!_hasApprovePermission) {
       return const SizedBox.shrink();
     }
 

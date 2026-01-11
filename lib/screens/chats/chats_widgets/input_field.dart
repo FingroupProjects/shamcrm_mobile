@@ -866,7 +866,9 @@ class _InputFieldState extends State<InputField>
                                   color: Color(0xff1E2E52)),
                             )
                           : Container(
-                              padding: const EdgeInsets.only(left: 16),
+                              // ✅ ОБНОВЛЕНО: Современный glass morphism эффект как в Telegram
+                              decoration: ChatSmsStyles.inputFieldDecoration,
+                              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
                               child: AnimatedTextField(
                                 controller: widget.messageController,
                                 focusNode: widget.focusNode,
@@ -875,23 +877,26 @@ class _InputFieldState extends State<InputField>
                                 onLongPress: _showFormattingPanelOnLongPress,
                                 hintText: AppLocalizations.of(context)!
                                     .translate('enter_your_sms'),
-                                style: ChatSmsStyles.messageTextStyle,
+                                style: ChatSmsStyles.messageTextStyle.copyWith(
+                                  color: const Color(0xFF1A202C), // Темный текст для контраста
+                                ),
                                 hintStyle: TextStyle(
-                                  fontSize: 14,
+                                  fontSize: 15,
                                   color: ChatSmsStyles.hintTextColor,
-                                  fontWeight: FontWeight.w500,
+                                  fontWeight: FontWeight.w400,
                                   fontFamily: 'Gilroy',
                                 ),
-                                fillColor: ChatSmsStyles.inputBackgroundColor,
+                                // ✅ Прозрачный фон для glass effect (внутри уже есть декорация)
+                                fillColor: Colors.transparent,
                                 borderRadius: ChatSmsStyles.inputBorderRadius,
                                 contentPadding: widget.isLeadChat
                                     ? EdgeInsets.only(
-                                        left: 10,
+                                        left: 16, // ✅ Увеличен padding для лучшего UX
                                         right: 65,
                                         top: 12,
                                         bottom: 12)
                                     : EdgeInsets.only(
-                                        left: 10,
+                                        left: 16, // ✅ Увеличен padding для лучшего UX
                                         right: 40,
                                         top: 12,
                                         bottom: 12),
@@ -985,9 +990,17 @@ class _InputFieldState extends State<InputField>
                         icon: Container(
                           width: 48,
                           height: 48,
+                          // ✅ ОБНОВЛЕНО: Более скругленная кнопка отправки как в Telegram
                           decoration: BoxDecoration(
                             color: const Color(0xfff4F40EC),
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: BorderRadius.circular(24), // ✅ Круглая кнопка (24px)
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xfff4F40EC).withOpacity(0.3),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
                           ),
                           padding: const EdgeInsets.all(12),
                           child: Image.asset(

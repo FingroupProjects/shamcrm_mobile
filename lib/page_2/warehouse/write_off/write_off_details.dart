@@ -48,12 +48,35 @@ class _WriteOffDocumentDetailsScreenState extends State<WriteOffDocumentDetailsS
   bool _documentUpdated = false;
   bool _goodMeasurementEnabled = true;
 
+  // ✅ НОВОЕ: Флаг разрешения на проведение документа
+  bool _hasApprovePermission = false;
+
   @override
   void initState() {
     super.initState();
     _initializeBaseUrl();
     _fetchDocumentDetails();
     _loadGoodMeasurementSetting();
+    _checkApprovePermission();
+  }
+
+  // ✅ НОВОЕ: Проверка разрешения на проведение документа
+  Future<void> _checkApprovePermission() async {
+    try {
+      final hasPermission = await _apiService.hasPermission('write_off_document.approve');
+      if (mounted) {
+        setState(() {
+          _hasApprovePermission = hasPermission;
+        });
+      }
+    } catch (e) {
+      debugPrint('Ошибка при проверке права на проведение документа: $e');
+      if (mounted) {
+        setState(() {
+          _hasApprovePermission = false;
+        });
+      }
+    }
   }
 
   Future<void> _loadGoodMeasurementSetting() async {
@@ -349,6 +372,11 @@ class _WriteOffDocumentDetailsScreenState extends State<WriteOffDocumentDetailsS
 
     // НОВОЕ: approve/unapprove только с update-правом
     if (!widget.hasUpdatePermission) {
+      return const SizedBox.shrink();
+    }
+
+    // ✅ НОВОЕ: Дополнительная проверка разрешения на проведение
+    if (!_hasApprovePermission) {
       return const SizedBox.shrink();
     }
 

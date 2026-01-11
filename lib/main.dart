@@ -164,7 +164,7 @@ void main() async {
 
     final sessionValidation = await _validateApplicationSession(apiService);
                                                                   
-    String? token;
+    String? token;  
     String? pin;
     bool isDomainChecked = false;
     

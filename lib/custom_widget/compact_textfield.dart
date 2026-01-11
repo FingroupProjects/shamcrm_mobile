@@ -17,6 +17,7 @@ class CompactTextField extends StatefulWidget {
   final VoidCallback? onDone; // ✅ НОВОЕ: Callback при нажатии "Готово"
   final EdgeInsets? contentPadding; // ✅ НОВОЕ: Параметр для контроля padding
   final bool? isDense; // ✅ НОВОЕ: Параметр для контроля плотности
+  final bool enabled; // ✅ НОВОЕ: Параметр для блокировки редактирования
 
   const CompactTextField({
     required this.controller,
@@ -32,6 +33,7 @@ class CompactTextField extends StatefulWidget {
     this.onDone, // ✅ НОВОЕ
     this.contentPadding, // ✅ НОВОЕ
     this.isDense, // ✅ НОВОЕ
+    this.enabled = true, // ✅ НОВОЕ
     super.key,
   });
 
@@ -159,6 +161,7 @@ class _CompactTextFieldState extends State<CompactTextField> {
       onChanged: widget.onChanged,
       textAlign: widget.textAlign,
       style: widget.style,
+      enabled: widget.enabled, // ✅ НОВОЕ: Поддержка блокировки редактирования
       decoration: widget.decoration ??
           InputDecoration(
             hintText: widget.hintText,

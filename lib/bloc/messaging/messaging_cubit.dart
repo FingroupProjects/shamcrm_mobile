@@ -13,6 +13,26 @@ class MessagingCubit extends Cubit<MessagingState> {
 
   MessagingCubit(this.apiService) : super(MessagingInitial());
 
+  /// ✅ НОВЫЙ МЕТОД: Показать кэшированные сообщения (без загрузки с API)
+  /// Используется для мгновенной загрузки чата из кэша, пока идут запросы к серверу
+  void showCachedMessages(List<Message> cachedMessages) {
+    debugPrint('✅ MessagingCubit: Showing ${cachedMessages.length} cached messages');
+    
+    List<Message> pinnedMessages = [];
+    for (var message in cachedMessages) {
+      if (message.isPinned) {
+        pinnedMessages.add(message);
+      }
+    }
+
+    if (pinnedMessages.isNotEmpty) {
+      // Для закрепленных сообщений нужен специальный стейт, но пока используем обычный
+      emit(MessagesLoadedState(messages: cachedMessages, isFromCache: true));
+    } else {
+      emit(MessagesLoadedState(messages: cachedMessages, isFromCache: true));
+    }
+  }
+
   Future<void> getMessages(int chatId, {String? search, String? chatType}) async {
     try {
       emit(MessagesLoadingState());
@@ -32,7 +52,7 @@ class MessagingCubit extends Cubit<MessagingState> {
       if (pinnedMessages.isNotEmpty) {
         emit(PinnedMessagesState(pinnedMessages: pinnedMessages, messages: messages));
       } else {
-        emit(MessagesLoadedState(messages: messages));
+        emit(MessagesLoadedState(messages: messages, isFromCache: false)); // ✅ Явно указываем что не из кэша
       }
     } catch (e) {
       debugPrint('MessagingCubit: getMessages error: $e');
@@ -58,7 +78,7 @@ class MessagingCubit extends Cubit<MessagingState> {
       if (pinnedMessages.isNotEmpty) {
         emit(PinnedMessagesState(pinnedMessages: pinnedMessages, messages: messages));
       } else {
-        emit(MessagesLoadedState(messages: messages));
+        emit(MessagesLoadedState(messages: messages, isFromCache: false)); // ✅ Явно указываем что не из кэша
       }
       
       debugPrint('MessagingCubit: Successfully loaded ${messages.length} messages');

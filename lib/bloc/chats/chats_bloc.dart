@@ -4,6 +4,7 @@ import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/models/chats_model.dart';
 import 'package:crm_task_manager/models/pagination_dto.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/utils/active_chat_tracker.dart'; // ✅ ДОБАВЛЕНО: Импорт для отслеживания активного чата
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter/foundation.dart';
@@ -13,6 +14,7 @@ part 'chats_state.dart';
 
 class ChatsBloc extends Bloc<ChatsEvent, ChatsState> {
   final ApiService apiService;
+  final ActiveChatTracker _chatTracker = ActiveChatTracker(); // ✅ ДОБАВЛЕНО: Трекер активного чата
   String endPoint = '';
   PaginationDTO<Chats>? chatsPagination;
   int _lastFetchedPage = 0;
@@ -25,6 +27,13 @@ class ChatsBloc extends Bloc<ChatsEvent, ChatsState> {
   final Set<int> _prefetchedPages = {};
   bool _isPrefetching = false;
   static const int _prefetchCount = 3; // Количество страниц для предзагрузки
+  
+  // ✅ ИСПРАВЛЕНО: Отслеживание времени обнуления счетчика для каждого чата
+  // Используется как дополнительная защита после выхода из чата (cooldown 2 секунды)
+  // Ключ: chatId, Значение: timestamp когда счетчик был обнулен
+  final Map<int, DateTime> _resetUnreadCountTimestamps = {};
+  static const Duration _resetCooldownDuration = Duration(seconds: 2); // 2 секунды для скрытия счетчика
+  
 
   ChatsBloc(this.apiService) : super(ChatsInitial()) {
     on<FetchChats>(_fetchChatsEvent);
@@ -98,8 +107,21 @@ class ChatsBloc extends Bloc<ChatsEvent, ChatsState> {
 
         final sortedChats = _sortChatsIfNeeded(pagination.data, event.endPoint);
         
+        // ✅ ИСПРАВЛЕНО: Если счетчик был недавно обнулен (в течение 2 секунд), обнуляем его снова
+        // Это гарантирует, что счетчик остается скрытым в течение 2 секунд после выхода из чата
+        final now = DateTime.now();
+        final updatedChats = sortedChats.map((chat) {
+          final resetTimestamp = _resetUnreadCountTimestamps[chat.id];
+          if (resetTimestamp != null && now.difference(resetTimestamp) < _resetCooldownDuration) {
+            // Счетчик был недавно обнулен - обнуляем его снова, даже если сервер прислал значение > 0
+            debugPrint('ChatsBloc: Chat ID ${chat.id} was recently reset, keeping unreadCount at 0 for 2s cooldown');
+            return chat.copyWith(unreadCount: 0);
+          }
+          return chat;
+        }).toList();
+        
         chatsPagination = PaginationDTO(
-          data: sortedChats,
+          data: updatedChats,
           count: pagination.count,
           total: pagination.total,
           perPage: pagination.perPage,
@@ -137,8 +159,20 @@ class ChatsBloc extends Bloc<ChatsEvent, ChatsState> {
         
         final sortedChats = _sortChatsIfNeeded(chatsPagination!.data, endPoint);
         
+        // ✅ ИСПРАВЛЕНО: Если счетчик был недавно обнулен (в течение 2 секунд), обнуляем его снова
+        final now = DateTime.now();
+        final updatedChats = sortedChats.map((chat) {
+          final resetTimestamp = _resetUnreadCountTimestamps[chat.id];
+          if (resetTimestamp != null && now.difference(resetTimestamp) < _resetCooldownDuration) {
+            // Счетчик был недавно обнулен - обнуляем его снова
+            debugPrint('ChatsBloc: Chat ID ${chat.id} was recently reset, keeping unreadCount at 0 for 2s cooldown');
+            return chat.copyWith(unreadCount: 0);
+          }
+          return chat;
+        }).toList();
+        
         chatsPagination = PaginationDTO(
-          data: sortedChats,
+          data: updatedChats,
           count: chatsPagination!.count,
           total: chatsPagination!.total,
           perPage: chatsPagination!.perPage,
@@ -289,6 +323,12 @@ class ChatsBloc extends Bloc<ChatsEvent, ChatsState> {
       return;
     }
     
+    // ✅ ИСПРАВЛЕНО: Очищаем старые записи из Map (старше 3 секунд)
+    // Это предотвращает накопление памяти (оставляем немного больше времени чем cooldown)
+    final now = DateTime.now();
+    _resetUnreadCountTimestamps.removeWhere((chatId, timestamp) => 
+        now.difference(timestamp) > Duration(seconds: 3));
+    
     if (state is ChatsLoaded) {
       final currentState = state as ChatsLoaded;
       final currentChats = currentState.chatsPagination.data;
@@ -304,21 +344,65 @@ class ChatsBloc extends Bloc<ChatsEvent, ChatsState> {
         // 🔹 Проверяем, изменилось ли сообщение
         final isNewMessage = oldChat.lastMessage != event.chat.lastMessage;
         
-        // 🔹 Определяем новый счётчик
+        // ✅ НОВАЯ ПРОВЕРКА: Этот чат сейчас открыт?
+        // Это ключевое решение - если чат открыт, пользователь читает сообщения в реальном времени
+        // и не нужно инкрементировать счетчик для них
+        final bool isChatCurrentlyOpen = _chatTracker.isChatActive(event.chat.id);
+        debugPrint('ChatsBloc: Chat ${event.chat.id} currently open: $isChatCurrentlyOpen');
+        
+        // 🔹 НОВАЯ ЛОГИКА: Определяем новый счётчик
         int newUnreadCount;
         
-        if (event.chat.unreadCount > 0) {
-          // Если сервер прислал счётчик > 0, используем его
-          newUnreadCount = event.chat.unreadCount;
-          debugPrint('ChatsBloc: Using unreadCount from server: $newUnreadCount for chat ID: ${event.chat.id}');
-        } else if (isNewMessage) {
-          // Если сообщение изменилось, но сервер прислал 0, инкрементируем локально
-          newUnreadCount = oldChat.unreadCount + 1;
-          debugPrint('ChatsBloc: New message detected, incremented unreadCount from ${oldChat.unreadCount} to $newUnreadCount for chat ID: ${event.chat.id}');
+        if (isChatCurrentlyOpen) {
+          // ✅ ЧАТ ОТКРЫТ → ВСЕГДА ДЕРЖИМ СЧЁТЧИК НА 0
+          // Пользователь находится внутри чата и читает сообщения в реальном времени
+          // Не нужно показывать счетчик непрочитанных для сообщений, которые он видит прямо сейчас
+          newUnreadCount = 0;
+          debugPrint('ChatsBloc: Chat ${event.chat.id} is OPEN, forcing unreadCount to 0');
+          
+          // ✅ ВАЖНО: Очищаем timestamp, если он есть
+          // Когда чат открыт, нам не нужен cooldown
+          _resetUnreadCountTimestamps.remove(event.chat.id);
+          
         } else {
-          // Сообщение не изменилось, оставляем старый счётчик
-          newUnreadCount = oldChat.unreadCount;
-          debugPrint('ChatsBloc: No changes detected, keeping unreadCount: $newUnreadCount for chat ID: ${event.chat.id}');
+          // ✅ ЧАТ ЗАКРЫТ → Проверяем cooldown и применяем обычную логику
+          
+          final resetTimestamp = _resetUnreadCountTimestamps[event.chat.id];
+          final now = DateTime.now();
+          final isRecentlyReset = resetTimestamp != null && 
+              now.difference(resetTimestamp) < _resetCooldownDuration;
+          
+          if (isRecentlyReset) {
+            // ✅ Только что вышли из чата (в течение 2 секунд) → держим 0
+            // Это защита от "мерцания" счетчика сразу после выхода
+            newUnreadCount = 0;
+            final elapsed = now.difference(resetTimestamp).inMilliseconds;
+            debugPrint('ChatsBloc: Chat ${event.chat.id} recently exited (${elapsed}ms ago), keeping 0');
+            
+          } else {
+            // ✅ Прошло больше 2 секунд - нормальная логика обновления счетчика
+            
+            // Очищаем старый timestamp
+            _resetUnreadCountTimestamps.remove(event.chat.id);
+            
+            if (event.chat.unreadCount > 0) {
+              // ✅ Сервер прислал счётчик > 0 → используем его
+              // Это означает, что на сервере есть непрочитанные сообщения
+              newUnreadCount = event.chat.unreadCount;
+              debugPrint('ChatsBloc: Using server unreadCount: $newUnreadCount');
+              
+            } else if (isNewMessage) {
+              // ✅ Новое сообщение, но сервер прислал 0 → инкрементируем локально
+              // Это означает, что пришло новое сообщение, но сервер еще не обновил счетчик
+              newUnreadCount = oldChat.unreadCount + 1;
+              debugPrint('ChatsBloc: New message detected, incremented to $newUnreadCount');
+              
+            } else {
+              // ✅ Без изменений → оставляем старое значение или используем значение с сервера
+              newUnreadCount = event.chat.unreadCount >= 0 ? event.chat.unreadCount : oldChat.unreadCount;
+              debugPrint('ChatsBloc: No changes, keeping unreadCount: $newUnreadCount');
+            }
+          }
         }
 
         // 🔹 Обновляем чат, сохраняя старое имя и аватар
@@ -429,10 +513,16 @@ class ChatsBloc extends Bloc<ChatsEvent, ChatsState> {
       if (chatIndex != -1) {
         final oldUnreadCount = updatedChats[chatIndex].unreadCount;
         
-        // Обновляем только конкретный чат
+        // ✅ ИСПРАВЛЕНО: Обновляем только конкретный чат, обнуляем счетчик локально
+        // Это скрывает счетчик на 0.5 секунды после выхода из чата
         updatedChats[chatIndex] = updatedChats[chatIndex].copyWith(unreadCount: 0);
         
-        debugPrint('ChatsBloc._resetUnreadCount: Reset unreadCount for chat ID: ${event.chatId} from $oldUnreadCount to 0');
+        // ✅ ИСПРАВЛЕНО: Сохраняем timestamp обнуления счетчика
+        // Это нужно, чтобы в течение 2 секунд после выхода скрывать счетчик,
+        // даже если приходит новое сообщение или обновляется список чатов. После 2 секунд показываем индикатор
+        _resetUnreadCountTimestamps[event.chatId] = DateTime.now();
+        
+        debugPrint('ChatsBloc._resetUnreadCount: Reset unreadCount for chat ID: ${event.chatId} from $oldUnreadCount to 0. Timestamp saved for 2s cooldown.');
         
         // НЕ пересортировываем, сохраняем порядок
         chatsPagination = PaginationDTO(

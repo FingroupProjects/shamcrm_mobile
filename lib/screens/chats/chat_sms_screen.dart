@@ -9,6 +9,8 @@ import 'package:crm_task_manager/bloc/cubit/listen_sender_file_cubit.dart';
 import 'package:crm_task_manager/bloc/cubit/listen_sender_text_cubit.dart';
 import 'package:crm_task_manager/bloc/cubit/listen_sender_voice_cubit.dart';
 import 'package:crm_task_manager/bloc/messaging/messaging_cubit.dart';
+import 'package:crm_task_manager/utils/active_chat_tracker.dart'; // ✅ ДОБАВЛЕНО: Импорт для отслеживания активного чата
+import 'package:crm_task_manager/services/message_cache_service.dart'; // ✅ ДОБАВЛЕНО: Импорт для кэширования сообщений
 import 'package:crm_task_manager/models/integration_model.dart';
 import 'package:crm_task_manager/models/msg_data_in_socket.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/chatById_screen.dart';
@@ -91,6 +93,12 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
   bool _isRecordingInProgress = false;
   String? referralBody;
   ChatsBloc? _chatsBloc;
+  MessagingCubit? _messagingCubit; // Сохраняем ссылку на MessagingCubit для использования в dispose
+  final ActiveChatTracker _chatTracker = ActiveChatTracker(); // ✅ ДОБАВЛЕНО: Трекер активного чата
+  final MessageCacheService _cacheService = MessageCacheService(); // ✅ ДОБАВЛЕНО: Сервис кэширования сообщений
+  bool _isDisposing = false; // ✅ Флаг для предотвращения двойного вызова dispose
+  bool _isLoadingFromCache = false; // ✅ Флаг загрузки из кэша
+  bool _isLoadingFromApi = false; // ✅ Флаг загрузки с API
   String? _cachedCompanionName; // Кэшированное имя собеседника
 
   void _onSearchChanged(String query) {
@@ -119,13 +127,24 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
     _checkPermissions();
     
     _chatsBloc = context.read<ChatsBloc>();
+    _messagingCubit = context.read<MessagingCubit>(); // Сохраняем ссылку для использования в dispose
+
+    // ✅ КРИТИЧНО: Устанавливаем этот чат как активный
+    // Это нужно, чтобы при обновлении через сокет не инкрементировать счетчик
+    // для сообщений, которые пользователь читает в реальном времени
+    _chatTracker.setActiveChat(widget.chatId);
 
     context.read<ListenSenderFileCubit>().updateValue(false);
     context.read<ListenSenderVoiceCubit>().updateValue(false);
     context.read<ListenSenderTextCubit>().updateValue(false);
 
+    // ✅ КРИТИЧНО: Используем addPostFrameCallback для оптимистичной параллельной загрузки
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      await _initializeServices();
+      // ✅ ШАГ 1: Загружаем кэш МГНОВЕННО (без await, не блокируем UI)
+      _loadCachedMessagesOptimistically();
+      
+      // ✅ ШАГ 2: Параллельно инициализируем сервисы и загружаем свежие данные
+      _initializeServicesOptimized();
     });
   }
 
@@ -217,43 +236,142 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
     }
   }
 
-  Future<void> _initializeServices() async {
+  /// ✅ НОВЫЙ МЕТОД: Оптимистичная загрузка из кэша (мгновенно, без await)
+  Future<void> _loadCachedMessagesOptimistically() async {
     try {
-      debugPrint('ChatSmsScreen: Starting initialization...');
+      setState(() {
+        _isLoadingFromCache = true;
+      });
 
-      await _ensureDomainConfiguration();
-      await apiService.initialize();
+      debugPrint('🚀 ChatSmsScreen: Loading cached messages...');
+      
+      final cachedMessages = await _cacheService.getCachedMessages(widget.chatId);
+      
+      if (cachedMessages != null && cachedMessages.isNotEmpty && mounted) {
+        debugPrint('✅ ChatSmsScreen: Loaded ${cachedMessages.length} messages from CACHE');
+        
+        // ✅ Показываем кэшированные сообщения МГНОВЕННО (не ждем API)
+        context.read<MessagingCubit>().showCachedMessages(cachedMessages);
+        
+        setState(() {
+          _isLoadingFromCache = false;
+        });
+        
+        // ✅ Скроллим вниз после небольшой задержки (чтобы UI успел отрисоваться)
+        Future.delayed(const Duration(milliseconds: 100), () {
+          if (mounted) _scrollToBottom();
+        });
+      } else {
+        debugPrint('⚠️ ChatSmsScreen: No cached messages found');
+        setState(() {
+          _isLoadingFromCache = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('❌ ChatSmsScreen: Error loading cache: $e');
+      setState(() {
+        _isLoadingFromCache = false;
+      });
+    }
+  }
+
+  /// ✅ ОПТИМИЗИРОВАННЫЙ МЕТОД: Параллельная инициализация (без блокировки UI)
+  Future<void> _initializeServicesOptimized() async {
+    setState(() {
+      _isLoadingFromApi = true;
+    });
+
+    try {
+      debugPrint('🔧 ChatSmsScreen: Starting optimized parallel initialization...');
+
+      // ✅ Запускаем ВСЁ параллельно (Future.wait)
+      await Future.wait([
+        _ensureDomainConfiguration(),
+        apiService.initialize(),
+        // ✅ Имя собеседника можно загрузить в фоне (не блокирует показ сообщений)
+        _cacheCompanionName().catchError((e) {
+          debugPrint('⚠️ ChatSmsScreen: Name cache error (non-critical): $e');
+        }),
+      ], eagerError: false);
 
       baseUrl = await apiService.getDynamicBaseUrl();
-      debugPrint('ChatSmsScreen: BaseURL initialized: $baseUrl');
+      debugPrint('✅ ChatSmsScreen: BaseURL initialized: $baseUrl');
 
-      // ✅ КРИТИЧНО: Кэшируем имя собеседника ДО инициализации сокета
-      await _cacheCompanionName();
+      // ✅ Сокет подключается В ФОНЕ (не блокирует показ сообщений)
+      _initializeSocket().catchError((e) {
+        debugPrint('⚠️ ChatSmsScreen: Socket init error (non-critical): $e');
+      });
 
-      await _initializeSocket();
+      // ✅ Загружаем свежие сообщения с API (обновляет кэш)
+      await _loadMessagesFromApi();
 
-      context.read<MessagingCubit>().getMessagesWithFallback(widget.chatId, chatType: widget.endPointInTab);
-      _scrollToBottom();
-
+      // ✅ Интеграцию для лидов загружаем в фоне (не блокирует UI)
       if (widget.endPointInTab == 'lead') {
-        await _fetchIntegration();
+        _fetchIntegration().catchError((e) {
+          debugPrint('⚠️ ChatSmsScreen: Integration error (non-critical): $e');
+        });
       }
 
-      debugPrint('ChatSmsScreen: Initialization completed successfully');
+      debugPrint('✅ ChatSmsScreen: Optimized initialization completed');
+      
     } catch (e, stackTrace) {
-      debugPrint('ChatSmsScreen: Initialization error: $e');
+      debugPrint('❌ ChatSmsScreen: Initialization error: $e');
       debugPrint('StackTrace: $stackTrace');
-
+      
       if (mounted) {
         _showInitializationError(e.toString());
 
+        // ✅ Пытаемся загрузить сообщения даже при ошибке инициализации
         try {
-          context.read<MessagingCubit>().getMessagesWithFallback(widget.chatId, chatType: widget.endPointInTab);
+          await _loadMessagesFromApi();
         } catch (e2) {
-          debugPrint('ChatSmsScreen: Failed to load messages after init error: $e2');
+          debugPrint('❌ ChatSmsScreen: Failed to load messages after init error: $e2');
         }
       }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoadingFromApi = false;
+        });
+      }
     }
+  }
+
+  /// ✅ НОВЫЙ МЕТОД: Загрузка сообщений с API + кэширование
+  Future<void> _loadMessagesFromApi() async {
+    try {
+      debugPrint('🌐 ChatSmsScreen: Fetching fresh messages from API...');
+      
+      final messagingCubit = context.read<MessagingCubit>();
+      await messagingCubit.getMessagesWithFallback(
+        widget.chatId, 
+        chatType: widget.endPointInTab
+      );
+      
+      // ✅ Сохраняем в кэш после успешной загрузки
+      final state = messagingCubit.state;
+      if (state is MessagesLoadedState && state.messages.isNotEmpty) {
+        await _cacheService.cacheMessages(widget.chatId, state.messages);
+        debugPrint('✅ ChatSmsScreen: Cached ${state.messages.length} fresh messages');
+      } else if (state is PinnedMessagesState && state.messages.isNotEmpty) {
+        await _cacheService.cacheMessages(widget.chatId, state.messages);
+        debugPrint('✅ ChatSmsScreen: Cached ${state.messages.length} fresh messages (with pins)');
+      }
+      
+      // ✅ Скроллим вниз после небольшой задержки
+      Future.delayed(const Duration(milliseconds: 100), () {
+        if (mounted) _scrollToBottom();
+      });
+      
+    } catch (e) {
+      debugPrint('❌ ChatSmsScreen: Error loading messages from API: $e');
+    }
+  }
+
+  /// ✅ СТАРЫЙ МЕТОД: Оставлен для совместимости (можно использовать для retry)
+  Future<void> _initializeServices() async {
+    // Перенаправляем на оптимизированную версию
+    await _initializeServicesOptimized();
   }
 
   Future<void> _ensureDomainConfiguration() async {
@@ -2253,24 +2371,93 @@ Widget build(BuildContext context) {
 
   @override
   void dispose() {
+    // ✅ Защита от двойного вызова dispose
+    if (_isDisposing) {
+      debugPrint('⚠️ ChatSmsScreen.dispose already in progress for chat ${widget.chatId}');
+      return;
+    }
+    _isDisposing = true;
+    
+    debugPrint('🗑️ ChatSmsScreen.dispose START for chat ${widget.chatId}');
+    
+    // ✅ ШАГ 1: Убираем флаг активности (ВАЖНО: передаём chatId для проверки)
+    // Это нужно сделать ДО пометки сообщений как прочитанных,
+    // чтобы обновления через сокет не инкрементировали счетчик
+    _chatTracker.clearActiveChat(widget.chatId);
+
+    // ✅ ШАГ 2: Закрываем сокет-соединение для текущего чата
     apiService.closeChatSocket(widget.chatId);
 
+    // ✅ ШАГ 3: Закрываем WebSocket соединение, если оно открыто
     if (_webSocket != null && _webSocket!.readyState != WebSocket.closed) {
       _webSocket?.close();
     }
+    
+    // ✅ ШАГ 4: Отменяем подписку на события чата через сокет
     if (chatSubscribtion != null) {
       chatSubscribtion?.cancel();
       chatSubscribtion = null;
     }
+    
+    // ✅ ШАГ 5: Освобождаем ресурсы контроллеров и фокус-ноды
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
     _messageController.dispose();
     socketClient.dispose();
     _focusNode.dispose();
 
+    // ✅ ШАГ 6: Помечаем сообщения как прочитанные на сервере
+    // Это гарантирует, что сервер знает, что пользователь прочитал все сообщения в этом чате
+    // После этого сервер будет правильно отправлять счетчик непрочитанных (начиная с 1 для новых сообщений)
+    _markMessagesAsReadOnExit();
+
+    // ✅ ШАГ 7: Обнуляем счетчик непрочитанных сообщений локально
+    // Это скрывает счетчик до момента прихода нового сообщения от сервера
     _chatsBloc?.add(ResetUnreadCount(widget.chatId));
 
+    debugPrint('✅ ChatSmsScreen.dispose COMPLETED for chat ${widget.chatId}');
+    
     super.dispose();
+  }
+
+  // ✅ НОВЫЙ МЕТОД: Помечает сообщения как прочитанные при выходе из чата и обновляет список чатов
+  Future<void> _markMessagesAsReadOnExit() async {
+    try {
+      // ✅ Используем сохраненную ссылку на MessagingCubit, так как context может быть недоступен в dispose
+      if (_messagingCubit == null) {
+        debugPrint('ChatSmsScreen: MessagingCubit is null, skipping mark as read');
+        return;
+      }
+
+      final state = _messagingCubit!.state;
+      List<Message> messages = [];
+      
+      if (state is MessagesLoadedState) {
+        messages = state.messages;
+      } else if (state is PinnedMessagesState) {
+        messages = state.messages;
+      }
+
+      // ✅ Если есть сообщения, помечаем все как прочитанные на сервере
+      if (messages.isNotEmpty) {
+        final latestMessageId = messages.first.id;
+        debugPrint('ChatSmsScreen: Marking messages as read on exit, chatId: ${widget.chatId}, latestMessageId: $latestMessageId');
+        
+        // ✅ Отправляем запрос на сервер, что этот чат полностью прочитан
+        await widget.apiService.readMessages(widget.chatId, latestMessageId);
+        debugPrint('ChatSmsScreen: Messages marked as read on server successfully');
+      } else {
+        debugPrint('ChatSmsScreen: No messages to mark as read on exit');
+      }
+
+      // ✅ ИСПРАВЛЕНО: НЕ обновляем список чатов сразу после выхода
+      // Список чатов будет обновляться через сокет естественным образом
+      // ActiveChatTracker уже убран в dispose, поэтому обновления через сокет будут правильно обрабатываться
+      debugPrint('ChatSmsScreen: Messages marked as read, chats list will update via socket naturally');
+    } catch (e) {
+      debugPrint('ChatSmsScreen: Error marking messages as read on exit: $e');
+      // Не критично, продолжаем работу
+    }
   }
 }
 

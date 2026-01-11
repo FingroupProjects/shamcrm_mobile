@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/movement/movement_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/movement/movement_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/movement/movement_state.dart';
@@ -47,12 +48,36 @@ class CreateMovementDocumentScreenState extends State<CreateMovementDocumentScre
 
   late TabController _tabController;
 
+  // ✅ НОВОЕ: Флаг разрешения на проведение документа
+  bool _hasApprovePermission = false;
+  final ApiService _apiService = ApiService();
+
   @override
   void initState() {
     super.initState();
     _dateController.text = DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now());
 
     _tabController = TabController(length: 2, vsync: this);
+    _checkApprovePermission();
+  }
+
+  // ✅ НОВОЕ: Проверка разрешения на проведение документа
+  Future<void> _checkApprovePermission() async {
+    try {
+      final hasPermission = await _apiService.hasPermission('movement_document.approve');
+      if (mounted) {
+        setState(() {
+          _hasApprovePermission = hasPermission;
+        });
+      }
+    } catch (e) {
+      debugPrint('Ошибка при проверке права на проведение документа: $e');
+      if (mounted) {
+        setState(() {
+          _hasApprovePermission = false;
+        });
+      }
+    }
   }
 
   void _handleVariantSelection(Map<String, dynamic>? newItem) {
@@ -603,50 +628,53 @@ class CreateMovementDocumentScreenState extends State<CreateMovementDocumentScre
   Widget _buildActionButtons(AppLocalizations localizations) {
     return Row(
       children: [
-        Expanded(
-          child: Container(
-            height: 48,
-            decoration: BoxDecoration(
-              border: Border.all(color: const Color(0xff4CAF50), width: 1.5),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
+        // ✅ НОВОЕ: Показываем кнопку "Провести" только если есть разрешение
+        if (_hasApprovePermission) ...[
+          Expanded(
+            child: Container(
+              height: 48,
+              decoration: BoxDecoration(
+                border: Border.all(color: const Color(0xff4CAF50), width: 1.5),
                 borderRadius: BorderRadius.circular(12),
-                onTap: _isLoading ? null : _createAndApproveDocument,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.check_circle_outline,
-                        size: 18,
-                        color: _isLoading
-                            ? const Color(0xff99A4BA)
-                            : const Color(0xff4CAF50),
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        localizations.translate('save_and_approve') ?? 'Провести',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontFamily: 'Gilroy',
-                          fontWeight: FontWeight.w600,
+              ),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(12),
+                  onTap: _isLoading ? null : _createAndApproveDocument,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.check_circle_outline,
+                          size: 18,
                           color: _isLoading
                               ? const Color(0xff99A4BA)
                               : const Color(0xff4CAF50),
                         ),
-                      ),
-                    ],
+                        const SizedBox(width: 6),
+                        Text(
+                          localizations.translate('save_and_approve') ?? 'Провести',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontFamily: 'Gilroy',
+                            fontWeight: FontWeight.w600,
+                            color: _isLoading
+                                ? const Color(0xff99A4BA)
+                                : const Color(0xff4CAF50),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
             ),
           ),
-        ),
-        const SizedBox(width: 12),
+          const SizedBox(width: 12),
+        ],
         Expanded(
           child: SizedBox(
             height: 48,

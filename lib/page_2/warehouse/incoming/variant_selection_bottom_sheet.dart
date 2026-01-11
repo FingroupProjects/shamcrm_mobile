@@ -828,6 +828,10 @@ class _VariantSelectionBottomSheetState extends State<VariantSelectionBottomShee
                           ),
                         ),
                       ),
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: _buildRemainderText(variant, localizations),
+                    ),
                   ],
                 ),
               ),
@@ -839,6 +843,27 @@ class _VariantSelectionBottomSheetState extends State<VariantSelectionBottomShee
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildRemainderText(Variant variant, AppLocalizations localizations) {
+    final remainder = variant.remainder;
+    final hasStock = remainder != null && remainder > 0;
+    final quantityText = localizations.translate('quantity');
+    final outOfStockText = localizations.translate('out_of_stock');
+    
+    return Text(
+      hasStock
+          ? '$quantityText: $remainder'
+          : outOfStockText,
+      style: TextStyle(
+        fontSize: 12,
+        fontFamily: 'Gilroy',
+        fontWeight: FontWeight.w500,
+        color: hasStock
+            ? const Color(0xff99A4BA)
+            : const Color(0xffff5722),
       ),
     );
   }

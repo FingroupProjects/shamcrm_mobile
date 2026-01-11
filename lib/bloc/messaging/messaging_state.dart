@@ -13,11 +13,15 @@ final class MessagesLoadingState extends MessagingState {}
 
 final class MessagesLoadedState extends MessagingState {
   final List<Message> messages;
+  final bool isFromCache; // ✅ ДОБАВЛЕНО: Флаг указывающий что сообщения из кэша
 
-  const MessagesLoadedState({required this.messages});
+  const MessagesLoadedState({
+    required this.messages,
+    this.isFromCache = false, // По умолчанию false (сообщения с сервера)
+  });
 
   @override
-  List<Object?> get props => [messages];
+  List<Object?> get props => [messages, isFromCache];
 }
 
 final class MessagesErrorState extends MessagingState {

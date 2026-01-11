@@ -1249,6 +1249,7 @@
   "error_loading_document": "Ошибка загрузки документа",
   "document_data_unavailable": "Данные документа недоступны",
   "quantity": "Количество",
+  "out_of_stock": "Нет в наличии",
   "no_incoming": "Нет приходов",
   "no_supplier": "Нет поставщика",
   "unapprove_document": "Отменить проведение",
