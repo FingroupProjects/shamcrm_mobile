@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:html/parser.dart' show parse;
 import 'package:crm_task_manager/bloc/messaging/messaging_cubit.dart';
 import 'package:crm_task_manager/bloc/notifications/notifications_bloc.dart';
 import 'package:crm_task_manager/bloc/notifications/notifications_event.dart';
@@ -22,6 +23,21 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+// Функция для удаления HTML тегов и получения чистого текста
+String _stripHtmlTags(String html) {
+  if (!html.contains('<') || !html.contains('>')) {
+    return html; // Если нет HTML тегов, возвращаем как есть
+  }
+  
+  try {
+    final document = parse(html);
+    return document.body?.text ?? html.replaceAll(RegExp(r'<[^>]*>'), '');
+  } catch (e) {
+    // Если парсинг не удался, используем регулярное выражение
+    return html.replaceAll(RegExp(r'<[^>]*>'), '').trim();
+  }
+}
 
 class NotificationsScreen extends StatefulWidget {
   @override
@@ -664,7 +680,7 @@ final bool? confirmed = await showDialog<bool>(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      notification.message,
+                                      _stripHtmlTags(notification.message),
                                       maxLines: 2,
                                       style: const TextStyle(
                                         fontSize: 14,

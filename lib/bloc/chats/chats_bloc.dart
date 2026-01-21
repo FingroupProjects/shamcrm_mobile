@@ -25,13 +25,20 @@ class ChatsBloc extends Bloc<ChatsEvent, ChatsState> {
   
   // 🚀 УМНАЯ ПАГИНАЦИЯ: Предзагрузка страниц
   final Set<int> _prefetchedPages = {};
+  // ✅ ИСПРАВЛЕНИЕ: Отключены неиспользуемые переменные prefetch
   bool _isPrefetching = false;
-  static const int _prefetchCount = 3; // Количество страниц для предзагрузки
+  // static const int _prefetchCount = 3; // Количество страниц для предзагрузки
+  
+  // ✅ ИСПРАВЛЕНИЕ: Защита от бесконечных запросов
+  final Set<int> _loadingPages = {}; // Страницы, которые сейчас загружаются
+  DateTime? _lastPageLoadTime; // Время последней загрузки страницы
+  static const Duration _pageLoadCooldown = Duration(milliseconds: 500); // Защита от слишком частых запросов
   
   // ✅ ИСПРАВЛЕНО: Отслеживание времени обнуления счетчика для каждого чата
   // Используется как дополнительная защита после выхода из чата (cooldown 2 секунды)
-  // Ключ: chatId, Значение: timestamp когда счетчик был обнулен
-  final Map<int, DateTime> _resetUnreadCountTimestamps = {};
+  // Ключ: chatUniqueId (String), Значение: timestamp когда счетчик был обнулен
+  // ✅ ИСПРАВЛЕНО: Используем uniqueId вместо id для привязки
+  final Map<String, DateTime> _resetUnreadCountTimestamps = {};
   static const Duration _resetCooldownDuration = Duration(seconds: 2); // 2 секунды для скрытия счетчика
   
 
@@ -83,7 +90,7 @@ class ChatsBloc extends Bloc<ChatsEvent, ChatsState> {
   // Начальная загрузка чатов
   Future<void> _fetchChatsEvent(FetchChats event, Emitter<ChatsState> emit) async {
     if (_isFetching) {
-      debugPrint('ChatsBloc._fetchChatsEvent: Skipping fetch, another fetch is in progress');
+      debugPrint('=================-=== ChatsBloc._fetchChatsEvent: Skipping fetch, another fetch is in progress');
       return;
     }
     _isFetching = true;
@@ -92,6 +99,8 @@ class ChatsBloc extends Bloc<ChatsEvent, ChatsState> {
     _updateFetchParameters(event);
     _lastFetchedPage = 0;
     _prefetchedPages.clear(); // Очищаем кеш предзагрузки
+    _loadingPages.clear(); // ✅ ИСПРАВЛЕНИЕ: Очищаем список загружающихся страниц
+    _lastPageLoadTime = null; // ✅ ИСПРАВЛЕНИЕ: Сбрасываем время последней загрузки
     emit(ChatsLoading());
 
     if (await _checkInternetConnection()) {
@@ -103,7 +112,7 @@ class ChatsBloc extends Bloc<ChatsEvent, ChatsState> {
           event.salesFunnelId,
           event.filters,
         );
-        debugPrint('ChatsBloc._fetchChatsEvent: Fetched ${pagination.data.length} chats for endpoint ${event.endPoint}, page 1');
+        debugPrint('=================-=== ChatsBloc._fetchChatsEvent: Fetched ${pagination.data.length} chats for endpoint ${event.endPoint}, page 1');
 
         final sortedChats = _sortChatsIfNeeded(pagination.data, event.endPoint);
         
@@ -111,10 +120,12 @@ class ChatsBloc extends Bloc<ChatsEvent, ChatsState> {
         // Это гарантирует, что счетчик остается скрытым в течение 2 секунд после выхода из чата
         final now = DateTime.now();
         final updatedChats = sortedChats.map((chat) {
-          final resetTimestamp = _resetUnreadCountTimestamps[chat.id];
+          // ✅ ИСПРАВЛЕНО: Используем uniqueId для привязки, fallback на id если uniqueId null
+          final chatKey = chat.uniqueId ?? chat.id.toString();
+          final resetTimestamp = _resetUnreadCountTimestamps[chatKey];
           if (resetTimestamp != null && now.difference(resetTimestamp) < _resetCooldownDuration) {
             // Счетчик был недавно обнулен - обнуляем его снова, даже если сервер прислал значение > 0
-            debugPrint('ChatsBloc: Chat ID ${chat.id} was recently reset, keeping unreadCount at 0 for 2s cooldown');
+            debugPrint('=================-=== ChatsBloc: Chat ${chat.uniqueId ?? chat.id} was recently reset, keeping unreadCount at 0 for 2s cooldown');
             return chat.copyWith(unreadCount: 0);
           }
           return chat;
@@ -132,10 +143,10 @@ class ChatsBloc extends Bloc<ChatsEvent, ChatsState> {
         _prefetchedPages.add(1);
         emit(ChatsLoaded(chatsPagination!));
         
-        // 🚀 УМНАЯ ПАГИНАЦИЯ: Запускаем предзагрузку следующих 3 страниц фоново
-        _prefetchNextPages(2, emit);
+        // ✅ ИСПРАВЛЕНИЕ: Отключена автоматическая предзагрузка для предотвращения бесконечных запросов
+        // _prefetchNextPages(2, emit);
       } catch (e) {
-        debugPrint('ChatsBloc._fetchChatsEvent: Error: $e, Type: ${e.runtimeType}');
+        debugPrint('=================-=== ChatsBloc._fetchChatsEvent: Error: $e, Type: ${e.runtimeType}');
         emit(ChatsError(e.toString()));
       }
     } else {
@@ -149,6 +160,8 @@ class ChatsBloc extends Bloc<ChatsEvent, ChatsState> {
   Future<void> _refetchChatsEvent(RefreshChats event, Emitter<ChatsState> emit) async {
     _lastFetchedPage = 0;
     _prefetchedPages.clear(); // Очищаем кеш предзагрузки
+    _loadingPages.clear(); // ✅ ИСПРАВЛЕНИЕ: Очищаем список загружающихся страниц
+    _lastPageLoadTime = null; // ✅ ИСПРАВЛЕНИЕ: Сбрасываем время последней загрузки
     emit(ChatsLoading());
 
     if (await _checkInternetConnection()) {
@@ -162,10 +175,12 @@ class ChatsBloc extends Bloc<ChatsEvent, ChatsState> {
         // ✅ ИСПРАВЛЕНО: Если счетчик был недавно обнулен (в течение 2 секунд), обнуляем его снова
         final now = DateTime.now();
         final updatedChats = sortedChats.map((chat) {
-          final resetTimestamp = _resetUnreadCountTimestamps[chat.id];
+          // ✅ ИСПРАВЛЕНО: Используем uniqueId для привязки, fallback на id если uniqueId null
+          final chatKey = chat.uniqueId ?? chat.id.toString();
+          final resetTimestamp = _resetUnreadCountTimestamps[chatKey];
           if (resetTimestamp != null && now.difference(resetTimestamp) < _resetCooldownDuration) {
             // Счетчик был недавно обнулен - обнуляем его снова
-            debugPrint('ChatsBloc: Chat ID ${chat.id} was recently reset, keeping unreadCount at 0 for 2s cooldown');
+            debugPrint('=================-=== ChatsBloc: Chat ${chat.uniqueId ?? chat.id} was recently reset, keeping unreadCount at 0 for 2s cooldown');
             return chat.copyWith(unreadCount: 0);
           }
           return chat;
@@ -183,8 +198,8 @@ class ChatsBloc extends Bloc<ChatsEvent, ChatsState> {
         _prefetchedPages.add(1);
         emit(ChatsLoaded(chatsPagination!));
         
-        // 🚀 УМНАЯ ПАГИНАЦИЯ: Запускаем предзагрузку следующих 3 страниц фоново
-        _prefetchNextPages(2, emit);
+        // ✅ ИСПРАВЛЕНИЕ: Отключена автоматическая предзагрузка для предотвращения бесконечных запросов
+        // _prefetchNextPages(2, emit);
       } catch (e) {
         emit(ChatsError(e.toString()));
       }
@@ -199,15 +214,40 @@ class ChatsBloc extends Bloc<ChatsEvent, ChatsState> {
       final state = this.state as ChatsLoaded;
       final nextPage = state.chatsPagination.currentPage + 1;
 
-      if (nextPage <= state.chatsPagination.totalPage && nextPage > _lastFetchedPage) {
+      // ✅ ИСПРАВЛЕНИЕ: Защита от повторных запросов одной страницы
+      if (_loadingPages.contains(nextPage)) {
+        debugPrint('=================-=== ChatsBloc._getNextPageChatsEvent: Page $nextPage is already loading, skipping');
+        return;
+      }
+      
+      // ✅ ИСПРАВЛЕНИЕ: Защита от слишком частых запросов
+      if (_lastPageLoadTime != null) {
+        final timeSinceLastLoad = DateTime.now().difference(_lastPageLoadTime!);
+        if (timeSinceLastLoad < _pageLoadCooldown) {
+          debugPrint('ChatsBloc._getNextPageChatsEvent: Too soon since last load (${timeSinceLastLoad.inMilliseconds}ms), skipping');
+          return;
+        }
+      }
+
+      // ✅ ИСПРАВЛЕНИЕ: Проверяем, не загружена ли страница уже
+      if (_prefetchedPages.contains(nextPage) || nextPage <= _lastFetchedPage) {
+        debugPrint('=================-=== ChatsBloc._getNextPageChatsEvent: Page $nextPage already loaded (prefetched: ${_prefetchedPages.contains(nextPage)}, lastFetched: $_lastFetchedPage), skipping');
+        return;
+      }
+      
+      if (nextPage <= state.chatsPagination.totalPage) {
         debugPrint('ChatsBloc._getNextPageChatsEvent: Loading page $nextPage for endpoint $endPoint');
+        
+        // ✅ ИСПРАВЛЕНИЕ: Помечаем страницу как загружающуюся
+        _loadingPages.add(nextPage);
+        _lastPageLoadTime = DateTime.now();
 
         if (await _checkInternetConnection()) {
           try {
             final nextPageChats = await apiService.getAllChats(
               endPoint, nextPage, _currentQuery, _currentSalesFunnelId, _currentFilters
             );
-            debugPrint('ChatsBloc._getNextPageChatsEvent: Fetched ${nextPageChats.data.length} chats for page ${nextPageChats.currentPage}');
+            debugPrint('=================-=== ChatsBloc._getNextPageChatsEvent: Fetched ${nextPageChats.data.length} chats for page ${nextPageChats.currentPage}');
 
             chatsPagination = state.chatsPagination.merge(nextPageChats);
             
@@ -223,29 +263,46 @@ class ChatsBloc extends Bloc<ChatsEvent, ChatsState> {
             );
             _lastFetchedPage = nextPage;
             _prefetchedPages.add(nextPage);
+            
+            // ✅ ИСПРАВЛЕНИЕ: Убираем страницу из списка загружающихся
+            _loadingPages.remove(nextPage);
+            
             emit(ChatsLoaded(chatsPagination!));
             
-            // 🚀 УМНАЯ ПАГИНАЦИЯ: Предзагружаем следующие 3 страницы
-            _prefetchNextPages(nextPage + 1, emit);
+            // ✅ ИСПРАВЛЕНИЕ: Отключена автоматическая предзагрузка для предотвращения бесконечных запросов
+            // _prefetchNextPages(nextPage + 1, emit);
           } catch (e) {
             debugPrint('ChatsBloc._getNextPageChatsEvent: Error: $e');
+            // ✅ ИСПРАВЛЕНИЕ: Убираем страницу из списка загружающихся при ошибке
+            _loadingPages.remove(nextPage);
             emit(ChatsError(e.toString()));
           }
         } else {
+          // ✅ ИСПРАВЛЕНИЕ: Убираем страницу из списка загружающихся при отсутствии интернета
+          _loadingPages.remove(nextPage);
           emit(ChatsError('Нет подключения к интернету'));
         }
       } else {
-        debugPrint('ChatsBloc._getNextPageChatsEvent: No more pages to load');
+        debugPrint('=================-=== ChatsBloc._getNextPageChatsEvent: No more pages to load');
       }
     }
   }
 
   // 🚀 УМНАЯ ПАГИНАЦИЯ: Фоновая предзагрузка следующих страниц
+  // ✅ ИСПРАВЛЕНО: Отключена автоматическая предзагрузка, чтобы избежать бесконечных запросов
+  // Предзагрузка теперь происходит только по запросу через _getNextPageChatsEvent
   Future<void> _prefetchNextPages(int startPage, Emitter<ChatsState> emit) async {
+    // ✅ ИСПРАВЛЕНИЕ: Отключаем автоматический prefetch для предотвращения бесконечных запросов
+    // Prefetch будет происходить только когда пользователь прокручивает список
+    debugPrint('ChatsBloc._prefetchNextPages: Prefetch disabled to prevent infinite loops');
+    return;
+    
+    // ЗАКОММЕНТИРОВАНО: Старая логика prefetch вызывала бесконечные запросы
+    /*
     if (_isPrefetching || chatsPagination == null) return;
     
     _isPrefetching = true;
-    debugPrint('ChatsBloc._prefetchNextPages: Starting prefetch from page $startPage for endpoint $endPoint');
+    debugPrint('=================-=== ChatsBloc._prefetchNextPages: Starting prefetch from page $startPage for endpoint $endPoint');
 
     try {
       for (int i = 0; i < _prefetchCount; i++) {
@@ -253,7 +310,7 @@ class ChatsBloc extends Bloc<ChatsEvent, ChatsState> {
         
         // Проверяем что страница существует и еще не загружена
         if (pageToFetch > chatsPagination!.totalPage) {
-          debugPrint('ChatsBloc._prefetchNextPages: Page $pageToFetch exceeds totalPage ${chatsPagination!.totalPage}, stopping prefetch');
+          debugPrint('=================-=== ChatsBloc._prefetchNextPages: Page $pageToFetch exceeds totalPage ${chatsPagination!.totalPage}, stopping prefetch');
           break;
         }
         
@@ -264,7 +321,7 @@ class ChatsBloc extends Bloc<ChatsEvent, ChatsState> {
 
         // Проверяем интернет перед каждым запросом
         if (!await _checkInternetConnection()) {
-          debugPrint('ChatsBloc._prefetchNextPages: No internet connection, stopping prefetch');
+          debugPrint('=================-=== ChatsBloc._prefetchNextPages: No internet connection, stopping prefetch');
           break;
         }
 
@@ -294,7 +351,7 @@ class ChatsBloc extends Bloc<ChatsEvent, ChatsState> {
             );
             
             _prefetchedPages.add(pageToFetch);
-            debugPrint('ChatsBloc._prefetchNextPages: Successfully prefetched page $pageToFetch (${prefetchedData.data.length} chats)');
+            debugPrint('=================-=== ChatsBloc._prefetchNextPages: Successfully prefetched page $pageToFetch (${prefetchedData.data.length} chats)');
             
             // НЕ вызываем emit, чтобы UI не обновлялся и пользователь не заметил
           }
@@ -308,32 +365,42 @@ class ChatsBloc extends Bloc<ChatsEvent, ChatsState> {
         }
       }
       
-      debugPrint('ChatsBloc._prefetchNextPages: Prefetch completed. Total prefetched pages: ${_prefetchedPages.length}');
+      debugPrint('=================-=== ChatsBloc._prefetchNextPages: Prefetch completed. Total prefetched pages: ${_prefetchedPages.length}');
     } finally {
       _isPrefetching = false;
     }
+    */
   }
 
   // 🔹 ИСПРАВЛЕННЫЙ МЕТОД
   Future<void> _updateChatsFromSocketFetch(UpdateChatsFromSocket event, Emitter<ChatsState> emit) async {
-    debugPrint('ChatsBloc._updateChatsFromSocketFetch: Updating chat via socket: ${event.chat.id}, type: ${event.chat.type}, unreadCount from event: ${event.chat.unreadCount}');
+    // ✅ ИСПРАВЛЕНО: Используем uniqueId для логирования и привязки
+    final eventChatKey = event.chat.uniqueId ?? event.chat.id.toString();
+    debugPrint('=================-=== ChatsBloc._updateChatsFromSocketFetch: Updating chat via socket: uniqueId=${event.chat.uniqueId}, id=${event.chat.id}, type: ${event.chat.type}, unreadCount from event: ${event.chat.unreadCount}');
     
     if (event.chat.id == 0 || event.chat.type == null) {
-      debugPrint('ChatsBloc: Invalid chat from socket, skipping');
+      debugPrint('=================-=== ChatsBloc: Invalid chat from socket, skipping');
       return;
     }
     
     // ✅ ИСПРАВЛЕНО: Очищаем старые записи из Map (старше 3 секунд)
     // Это предотвращает накопление памяти (оставляем немного больше времени чем cooldown)
     final now = DateTime.now();
-    _resetUnreadCountTimestamps.removeWhere((chatId, timestamp) => 
+    _resetUnreadCountTimestamps.removeWhere((chatKey, timestamp) => 
         now.difference(timestamp) > Duration(seconds: 3));
     
     if (state is ChatsLoaded) {
       final currentState = state as ChatsLoaded;
       final currentChats = currentState.chatsPagination.data;
       final updatedChats = List<Chats>.from(currentChats);
-      final chatIndex = updatedChats.indexWhere((chat) => chat.id == event.chat.id);
+      // ✅ ИСПРАВЛЕНО: Используем uniqueId для поиска чата, fallback на id если uniqueId null
+      final chatIndex = updatedChats.indexWhere((chat) {
+        if (event.chat.uniqueId != null && chat.uniqueId != null) {
+          return chat.uniqueId == event.chat.uniqueId;
+        }
+        // Fallback на id если uniqueId не доступен
+        return chat.id == event.chat.id;
+      });
 
       if (chatIndex != -1) {
         final oldChat = updatedChats[chatIndex];
@@ -347,8 +414,9 @@ class ChatsBloc extends Bloc<ChatsEvent, ChatsState> {
         // ✅ НОВАЯ ПРОВЕРКА: Этот чат сейчас открыт?
         // Это ключевое решение - если чат открыт, пользователь читает сообщения в реальном времени
         // и не нужно инкрементировать счетчик для них
-        final bool isChatCurrentlyOpen = _chatTracker.isChatActive(event.chat.id);
-        debugPrint('ChatsBloc: Chat ${event.chat.id} currently open: $isChatCurrentlyOpen');
+        // ✅ ИСПРАВЛЕНО: Используем uniqueId для проверки активного чата
+        final bool isChatCurrentlyOpen = _chatTracker.isChatActive(event.chat.uniqueId);
+        debugPrint('=================-=== ChatsBloc: Chat ${event.chat.uniqueId ?? event.chat.id} currently open: $isChatCurrentlyOpen');
         
         // 🔹 НОВАЯ ЛОГИКА: Определяем новый счётчик
         int newUnreadCount;
@@ -358,16 +426,16 @@ class ChatsBloc extends Bloc<ChatsEvent, ChatsState> {
           // Пользователь находится внутри чата и читает сообщения в реальном времени
           // Не нужно показывать счетчик непрочитанных для сообщений, которые он видит прямо сейчас
           newUnreadCount = 0;
-          debugPrint('ChatsBloc: Chat ${event.chat.id} is OPEN, forcing unreadCount to 0');
+          debugPrint('ChatsBloc: Chat ${event.chat.uniqueId ?? event.chat.id} is OPEN, forcing unreadCount to 0');
           
           // ✅ ВАЖНО: Очищаем timestamp, если он есть
           // Когда чат открыт, нам не нужен cooldown
-          _resetUnreadCountTimestamps.remove(event.chat.id);
+          _resetUnreadCountTimestamps.remove(eventChatKey);
           
         } else {
           // ✅ ЧАТ ЗАКРЫТ → Проверяем cooldown и применяем обычную логику
           
-          final resetTimestamp = _resetUnreadCountTimestamps[event.chat.id];
+          final resetTimestamp = _resetUnreadCountTimestamps[eventChatKey];
           final now = DateTime.now();
           final isRecentlyReset = resetTimestamp != null && 
               now.difference(resetTimestamp) < _resetCooldownDuration;
@@ -377,30 +445,30 @@ class ChatsBloc extends Bloc<ChatsEvent, ChatsState> {
             // Это защита от "мерцания" счетчика сразу после выхода
             newUnreadCount = 0;
             final elapsed = now.difference(resetTimestamp).inMilliseconds;
-            debugPrint('ChatsBloc: Chat ${event.chat.id} recently exited (${elapsed}ms ago), keeping 0');
+            debugPrint('=================-=== ChatsBloc: Chat ${event.chat.uniqueId ?? event.chat.id} recently exited (${elapsed}ms ago), keeping 0');
             
           } else {
             // ✅ Прошло больше 2 секунд - нормальная логика обновления счетчика
             
             // Очищаем старый timestamp
-            _resetUnreadCountTimestamps.remove(event.chat.id);
+            _resetUnreadCountTimestamps.remove(eventChatKey);
             
             if (event.chat.unreadCount > 0) {
               // ✅ Сервер прислал счётчик > 0 → используем его
               // Это означает, что на сервере есть непрочитанные сообщения
               newUnreadCount = event.chat.unreadCount;
-              debugPrint('ChatsBloc: Using server unreadCount: $newUnreadCount');
+              debugPrint('=================-=== ChatsBloc: Using server unreadCount: $newUnreadCount');
               
             } else if (isNewMessage) {
               // ✅ Новое сообщение, но сервер прислал 0 → инкрементируем локально
               // Это означает, что пришло новое сообщение, но сервер еще не обновил счетчик
               newUnreadCount = oldChat.unreadCount + 1;
-              debugPrint('ChatsBloc: New message detected, incremented to $newUnreadCount');
+              debugPrint('=================-=== ChatsBloc: New message detected, incremented to $newUnreadCount');
               
             } else {
               // ✅ Без изменений → оставляем старое значение или используем значение с сервера
               newUnreadCount = event.chat.unreadCount >= 0 ? event.chat.unreadCount : oldChat.unreadCount;
-              debugPrint('ChatsBloc: No changes, keeping unreadCount: $newUnreadCount');
+              debugPrint('=================-=== ChatsBloc: No changes, keeping unreadCount: $newUnreadCount');
             }
           }
         }
@@ -414,12 +482,12 @@ class ChatsBloc extends Bloc<ChatsEvent, ChatsState> {
         );
 
         updatedChats[chatIndex] = updatedChat;
-        debugPrint('ChatsBloc._updateChatsFromSocketFetch: Updated existing chat ID: ${event.chat.id}, final unreadCount: $newUnreadCount');
+        debugPrint('ChatsBloc._updateChatsFromSocketFetch: Updated existing chat uniqueId: ${event.chat.uniqueId ?? event.chat.id}, final unreadCount: $newUnreadCount');
 
       } else {
         // Новый чат
         updatedChats.insert(0, event.chat);
-        debugPrint('ChatsBloc._updateChatsFromSocketFetch: Added new chat ID: ${event.chat.id}, unreadCount: ${event.chat.unreadCount}');
+        debugPrint('=================-=== ChatsBloc._updateChatsFromSocketFetch: Added new chat uniqueId: ${event.chat.uniqueId ?? event.chat.id}, unreadCount: ${event.chat.unreadCount}');
       }
 
       // ПРИМЕНЯЕМ УСЛОВНУЮ СОРТИРОВКУ
@@ -433,12 +501,24 @@ class ChatsBloc extends Bloc<ChatsEvent, ChatsState> {
         currentPage: currentState.chatsPagination.currentPage,
         totalPage: currentState.chatsPagination.totalPage,
       );
-
-      emit(ChatsLoaded(chatsPagination!));
+      
+      // ✅ ИСПРАВЛЕНИЕ: Эмитим состояние только если действительно есть изменения
+      // Это предотвращает лишние обновления UI и повторные запросы
+      final hasRealChanges = chatIndex == -1 || // Новый чат
+          (chatIndex != -1 && (
+            currentChats[chatIndex].unreadCount != updatedChats[chatIndex].unreadCount ||
+            currentChats[chatIndex].lastMessage != updatedChats[chatIndex].lastMessage
+          ));
+      
+      if (hasRealChanges) {
+        emit(ChatsLoaded(chatsPagination!));
+      } else {
+        debugPrint('ChatsBloc._updateChatsFromSocketFetch: No real changes detected, skipping emit to prevent unnecessary updates');
+      }
       
     } else if (state is ChatsInitial || state is ChatsError) {
       if (_isFetching) {
-        debugPrint('ChatsBloc._updateChatsFromSocketFetch: Skipping fetch, another fetch is in progress');
+        debugPrint('=================-=== ChatsBloc._updateChatsFromSocketFetch: Skipping fetch, another fetch is in progress');
         return;
       }
       _isFetching = true;
@@ -493,7 +573,7 @@ class ChatsBloc extends Bloc<ChatsEvent, ChatsState> {
 
   // Очистка чатов
   Future<void> _clearChatsEvent(ClearChats event, Emitter<ChatsState> emit) async {
-    debugPrint('ChatsBloc._clearChatsEvent: Clearing chats and resetting chatsPagination for endpoint $endPoint');
+    debugPrint('=================-=== ChatsBloc._clearChatsEvent: Clearing chats and resetting chatsPagination for endpoint $endPoint');
     chatsPagination = null;
     _lastFetchedPage = 0;
     _prefetchedPages.clear(); // Очищаем кеш предзагрузки
@@ -503,26 +583,29 @@ class ChatsBloc extends Bloc<ChatsEvent, ChatsState> {
 
   // 🔹 ИСПРАВЛЕННЫЙ МЕТОД - Сброс счётчика непрочитанных
   Future<void> _resetUnreadCount(ResetUnreadCount event, Emitter<ChatsState> emit) async {
-    debugPrint('ChatsBloc._resetUnreadCount: Resetting unreadCount for chat ID: ${event.chatId}');
+    debugPrint('=================-=== ChatsBloc._resetUnreadCount: Resetting unreadCount for chat ID: ${event.chatId}');
     
     if (state is ChatsLoaded) {
       final currentState = state as ChatsLoaded;
       final updatedChats = List<Chats>.from(currentState.chatsPagination.data);
+      // ✅ ИСПРАВЛЕНО: Ищем чат по id (event.chatId это int), но сохраняем по uniqueId
       final chatIndex = updatedChats.indexWhere((chat) => chat.id == event.chatId);
 
       if (chatIndex != -1) {
-        final oldUnreadCount = updatedChats[chatIndex].unreadCount;
+        final oldChat = updatedChats[chatIndex];
+        final oldUnreadCount = oldChat.unreadCount;
         
         // ✅ ИСПРАВЛЕНО: Обновляем только конкретный чат, обнуляем счетчик локально
         // Это скрывает счетчик на 0.5 секунды после выхода из чата
-        updatedChats[chatIndex] = updatedChats[chatIndex].copyWith(unreadCount: 0);
+        updatedChats[chatIndex] = oldChat.copyWith(unreadCount: 0);
         
-        // ✅ ИСПРАВЛЕНО: Сохраняем timestamp обнуления счетчика
+        // ✅ ИСПРАВЛЕНО: Сохраняем timestamp обнуления счетчика по uniqueId
         // Это нужно, чтобы в течение 2 секунд после выхода скрывать счетчик,
         // даже если приходит новое сообщение или обновляется список чатов. После 2 секунд показываем индикатор
-        _resetUnreadCountTimestamps[event.chatId] = DateTime.now();
+        final chatKey = oldChat.uniqueId ?? event.chatId.toString();
+        _resetUnreadCountTimestamps[chatKey] = DateTime.now();
         
-        debugPrint('ChatsBloc._resetUnreadCount: Reset unreadCount for chat ID: ${event.chatId} from $oldUnreadCount to 0. Timestamp saved for 2s cooldown.');
+        debugPrint('ChatsBloc._resetUnreadCount: Reset unreadCount for chat uniqueId: ${oldChat.uniqueId ?? event.chatId} from $oldUnreadCount to 0. Timestamp saved for 2s cooldown.');
         
         // НЕ пересортировываем, сохраняем порядок
         chatsPagination = PaginationDTO(
@@ -535,10 +618,10 @@ class ChatsBloc extends Bloc<ChatsEvent, ChatsState> {
         );
         emit(ChatsLoaded(chatsPagination!));
       } else {
-        debugPrint('ChatsBloc._resetUnreadCount: Chat ID ${event.chatId} not found in current state');
+        debugPrint('=================-=== ChatsBloc._resetUnreadCount: Chat ID ${event.chatId} not found in current state');
       }
     } else {
-      debugPrint('ChatsBloc._resetUnreadCount: State is not ChatsLoaded, cannot reset unreadCount');
+      debugPrint('=================-=== ChatsBloc._resetUnreadCount: State is not ChatsLoaded, cannot reset unreadCount');
     }
   }
 }

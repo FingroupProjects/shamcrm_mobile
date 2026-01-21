@@ -72,6 +72,11 @@ class _ChatsScreenState extends State<ChatsScreen>
 
   bool _isTabControllerInitialized = false;
   SalesFunnel? _selectedFunnel;
+  
+  // ✅ ИСПРАВЛЕНИЕ: Защита от бесконечных запросов через addPageRequestListener
+  final Map<String, DateTime?> _lastPageRequestTime = {}; // Время последнего запроса страницы для каждого endpoint
+  final Map<String, int?> _lastRequestedPage = {}; // Последняя запрошенная страница для каждого endpoint
+  static const Duration _pageRequestCooldown = Duration(milliseconds: 1000); // Задержка между запросами
 
   final Map<String, PagingController<int, Chats>> _pagingControllers = {
     'lead': PagingController(firstPageKey: 0),
@@ -96,15 +101,15 @@ class _ChatsScreenState extends State<ChatsScreen>
       _showTaskChat = TaskChat;
 
       // Определяем начальную вкладку в зависимости от доступных прав
-      // Приоритет: Задачи -> Лиды -> Корпоративный чат
-      if (TaskChat) {
-        selectTabIndex = 1;
-        endPointInTab = 'task';
-        _chatsBlocs['task']!.add(FetchChats(endPoint: 'task'));
-      } else if (LeadChat) {
+      // Приоритет: Лиды -> Задачи -> Корпоративный чат
+      if (LeadChat) {
         selectTabIndex = 0;
         endPointInTab = 'lead';
         _chatsBlocs['lead']!.add(FetchChats(endPoint: 'lead'));
+      } else if (TaskChat) {
+        selectTabIndex = 1;
+        endPointInTab = 'task';
+        _chatsBlocs['task']!.add(FetchChats(endPoint: 'task'));
       } else if (CorporateChat) {
         selectTabIndex = 2;
         endPointInTab = 'corporate';
@@ -294,8 +299,35 @@ class _ChatsScreenState extends State<ChatsScreen>
         //print( 'ChatsScreen: Page request for endpoint $endPoint, pageKey: $pageKey');
         if (pageKey == 0) {
           controller.refresh();
+          return;
         }
+        
+        // ✅ ИСПРАВЛЕНИЕ: Защита от слишком частых запросов
         if (endPointInTab == endPoint) {
+          final now = DateTime.now();
+          final lastRequestTime = _lastPageRequestTime[endPoint];
+          final lastRequestedPage = _lastRequestedPage[endPoint];
+          
+          // Проверяем, не слишком ли часто запрашиваем страницы
+          if (lastRequestTime != null) {
+            final timeSinceLastRequest = now.difference(lastRequestTime);
+            if (timeSinceLastRequest < _pageRequestCooldown) {
+              debugPrint('=================-=== ChatsScreen: Page request too soon (${timeSinceLastRequest.inMilliseconds}ms), skipping for endpoint $endPoint');
+              return;
+            }
+          }
+          
+          // Проверяем, не запрашиваем ли мы ту же страницу
+          if (lastRequestedPage == pageKey) {
+            debugPrint('=================-=== ChatsScreen: Same page requested ($pageKey), skipping for endpoint $endPoint');
+            return;
+          }
+          
+          // Обновляем время и номер страницы
+          _lastPageRequestTime[endPoint] = now;
+          _lastRequestedPage[endPoint] = pageKey;
+          
+          debugPrint('=================-=== ChatsScreen: Requesting page $pageKey for endpoint $endPoint');
           _chatsBlocs[endPoint]!.add(GetNextPageChats());
         }
       });
@@ -729,7 +761,7 @@ class _ChatsScreenState extends State<ChatsScreen>
   }
 
 Future<void> setUpServices() async {
-  debugPrint('ChatsScreen: Starting socket setup');
+  debugPrint('=================-=== ChatsScreen: Starting socket setup');
   final prefs = await SharedPreferences.getInstance();
   String? token = prefs.getString('token');
   String? userId = prefs.getString('unique_id');
@@ -746,7 +778,7 @@ Future<void> setUpServices() async {
 
   // Проверяем домен для email-верификации
   String? verifiedDomain = await ApiService().getVerifiedDomain();
-  debugPrint('ChatsScreen: Domain parameters: enteredMainDomain=$enteredMainDomain, enteredDomain=$enteredDomain, verifiedDomain=$verifiedDomain');
+  debugPrint('=================-=== ChatsScreen: Domain parameters: enteredMainDomain=$enteredMainDomain, enteredDomain=$enteredDomain, verifiedDomain=$verifiedDomain');
 
   // Если домены отсутствуют, используем verifiedDomain или извлекаем из baseUrl ApiService
   if (enteredMainDomain == null || enteredDomain == null) {
@@ -761,7 +793,7 @@ Future<void> setUpServices() async {
         final apiService = ApiService();
         await apiService.initialize();
         final baseUrl = await apiService.getDynamicBaseUrl();
-        debugPrint('ChatsScreen: Got baseUrl from ApiService: $baseUrl');
+        debugPrint('=================-=== ChatsScreen: Got baseUrl from ApiService: $baseUrl');
         
         if (baseUrl.isNotEmpty && baseUrl != 'null') {
           // Извлекаем домен из baseUrl (формат: https://fingroupcrm-back.shamcrm.com/api)
@@ -776,7 +808,7 @@ Future<void> setUpServices() async {
             await prefs.setString('enteredMainDomain', enteredMainDomain!);
             await prefs.setString('enteredDomain', enteredDomain!);
           } else {
-            debugPrint('ChatsScreen: Failed to parse baseUrl, using fallback');
+            debugPrint('=================-=== ChatsScreen: Failed to parse baseUrl, using fallback');
             enteredMainDomain = 'shamcrm.com';
             enteredDomain = 'fingroupcrm'; // Используем правильный домен из логов
             await prefs.setString('enteredMainDomain', enteredMainDomain);
@@ -790,7 +822,7 @@ Future<void> setUpServices() async {
           await prefs.setString('enteredDomain', enteredDomain);
         }
       } catch (e) {
-        debugPrint('ChatsScreen: Error extracting from baseUrl: $e, using fallback');
+        debugPrint('=================-=== ChatsScreen: Error extracting from baseUrl: $e, using fallback');
         enteredMainDomain = 'shamcrm.com';
         enteredDomain = 'fingroupcrm';
         await prefs.setString('enteredMainDomain', enteredMainDomain);
@@ -830,23 +862,23 @@ Future<void> setUpServices() async {
         'X-Tenant': '$enteredDomain-back',
       },
       onAuthFailed: (exception, trace) {
-        debugPrint('ChatsScreen: Auth failed for presence-user.$userId: $exception, StackTrace: $trace');
+        debugPrint('=================-=== ChatsScreen: Auth failed for presence-user.$userId: $exception, StackTrace: $trace');
       },
     ),
   );
 
   socketClient.onConnectionEstablished.listen((_) {
-    debugPrint('ChatsScreen: Socket connected successfully for userId: $userId');
+    debugPrint('=================-=== ChatsScreen: Socket connected successfully for userId: $userId');
     myPresenceChannel.subscribeIfNotUnsubscribed();
-    debugPrint('ChatsScreen: Subscribed to channel: presence-user.$userId');
+    debugPrint('=================-=== ChatsScreen: Subscribed to channel: presence-user.$userId');
   });
 
   myPresenceChannel.bind('pusher:subscription_succeeded').listen((event) {
-    debugPrint('ChatsScreen: Successfully subscribed to presence-user.$userId: ${event.data}');
+    debugPrint('=================-=== ChatsScreen: Successfully subscribed to presence-user.$userId: ${event.data}');
   });
 
   myPresenceChannel.bind('pusher:subscription_error').listen((event) {
-    debugPrint('ChatsScreen: Subscription error for presence-user.$userId: ${event.data}');
+    debugPrint('=================-=== ChatsScreen: Subscription error for presence-user.$userId: ${event.data}');
   });
 
   // Используем список подписок, чтобы избежать перезаписи
@@ -854,34 +886,34 @@ Future<void> setUpServices() async {
 
   subscriptions.add(
     myPresenceChannel.bind('chat.created').listen((event) async {
-      debugPrint('ChatsScreen: Received chat.created event: ${event.data}');
+      debugPrint('=================-=== ChatsScreen: Received chat.created event: ${event.data}');
       try {
         final chatData = json.decode(event.data);
         if (chatData.containsKey('chat') && chatData['chat'] is Map<String, dynamic>) {
           final chat = Chats.fromJson(chatData['chat']);
           await updateFromSocket(chat: chat);
         } else {
-          debugPrint('ChatsScreen: Invalid chat.created data format: ${event.data}');
+          debugPrint('=================-=== ChatsScreen: Invalid chat.created data format: ${event.data}');
         }
       } catch (e, stackTrace) {
-        debugPrint('ChatsScreen: Error processing chat.created event: $e, StackTrace: $stackTrace');
+        debugPrint('=================-=== ChatsScreen: Error processing chat.created event: $e, StackTrace: $stackTrace');
       }
     }),
   );
 
   subscriptions.add(
     myPresenceChannel.bind('chat.updated').listen((event) async {
-      debugPrint('ChatsScreen: Received chat.updated event: ${event.data}');
+      debugPrint('=================-=== ChatsScreen: Received chat.updated event: ${event.data}');
       try {
         final chatData = json.decode(event.data);
         if (chatData.containsKey('chat') && chatData['chat'] is Map<String, dynamic>) {
           final chat = Chats.fromJson(chatData['chat']);
           await updateFromSocket(chat: chat);
         } else {
-          debugPrint('ChatsScreen: Invalid chat.updated data format: ${event.data}');
+          debugPrint('=================-=== ChatsScreen: Invalid chat.updated data format: ${event.data}');
         }
       } catch (e, stackTrace) {
-        debugPrint('ChatsScreen: Error processing chat.updated event: $e, StackTrace: $stackTrace');
+        debugPrint('=================-=== ChatsScreen: Error processing chat.updated event: $e, StackTrace: $stackTrace');
       }
     }),
   );
@@ -891,17 +923,17 @@ Future<void> setUpServices() async {
 
   try {
     await socketClient.connect();
-    debugPrint('ChatsScreen: Socket connection initiated');
+    debugPrint('=================-=== ChatsScreen: Socket connection initiated');
   } catch (e, stackTrace) {
-    debugPrint('ChatsScreen: Error connecting to socket: $e, StackTrace: $stackTrace');
+    debugPrint('=================-=== ChatsScreen: Error connecting to socket: $e, StackTrace: $stackTrace');
   }
 }
 
 Future<void> updateFromSocket({required Chats chat}) async {
-  debugPrint('ChatsScreen: updateFromSocket called for chat ID: ${chat.id}, type: ${chat.type}, unreadCount: ${chat.unreadCount}, lastMessage: "${chat.lastMessage}", current endPointInTab: $endPointInTab');
+  debugPrint('=================-=== ChatsScreen: updateFromSocket called for chat ID: ${chat.id}, type: ${chat.type}, unreadCount: ${chat.unreadCount}, lastMessage: "${chat.lastMessage}", current endPointInTab: $endPointInTab');
   
   if (chat.type == null) {
-    debugPrint('ChatsScreen: Skipping update due to null chat type');
+    debugPrint('=================-=== ChatsScreen: Skipping update due to null chat type');
     return;
   }
   
@@ -914,27 +946,27 @@ Future<void> updateFromSocket({required Chats chat}) async {
   } else if (chat.type == 'corporate') {
     chatEndpoint = 'corporate';
   } else {
-    debugPrint('ChatsScreen: Unknown chat type: ${chat.type}, skipping update');
+    debugPrint('=================-=== ChatsScreen: Unknown chat type: ${chat.type}, skipping update');
     return;
   }
   
   // Обновляем соответствующий блок
   if (_chatsBlocs.containsKey(chatEndpoint)) {
-    debugPrint('ChatsScreen: Updating chat ID: ${chat.id} for endpoint $chatEndpoint');
+    debugPrint('=================-=== ChatsScreen: Updating chat ID: ${chat.id} for endpoint $chatEndpoint');
     _chatsBlocs[chatEndpoint]!.add(UpdateChatsFromSocket(chat: chat));
     
     // Если обновляется текущая вкладка, обновляем UI
     if (chatEndpoint == endPointInTab) {
-      debugPrint('ChatsScreen: Chat update for active tab $chatEndpoint, refreshing UI');
+      debugPrint('=================-=== ChatsScreen: Chat update for active tab $chatEndpoint, refreshing UI');
       // НЕ вызываем refresh, чтобы не перезагружать данные
       // _pagingControllers[chatEndpoint]!.refresh();
     } else {
       // Для неактивной вкладки очищаем данные, чтобы они загрузились заново при переключении
-      debugPrint('ChatsScreen: Chat update for inactive tab $chatEndpoint, marking for refresh');
+      debugPrint('=================-=== ChatsScreen: Chat update for inactive tab $chatEndpoint, marking for refresh');
       _pagingControllers[chatEndpoint]!.itemList = null;
     }
   } else {
-    debugPrint('ChatsScreen: No bloc found for endpoint $chatEndpoint');
+    debugPrint('=================-=== ChatsScreen: No bloc found for endpoint $chatEndpoint');
   }
 }
   void updateChats() {
@@ -1237,10 +1269,10 @@ Future<void> updateFromSocket({required Chats chat}) async {
     
     if (state == AppLifecycleState.paused) {
       // ✅ Приложение свернулось - логируем для отладки
-      debugPrint('ChatsScreen: App paused, active chats will be deactivated by ActiveChatTracker');
+      debugPrint('=================-=== ChatsScreen: App paused, active chats will be deactivated by ActiveChatTracker');
     } else if (state == AppLifecycleState.resumed) {
       // ✅ Приложение вернулось - обновляем список чатов
-      debugPrint('ChatsScreen: App resumed, refreshing chats');
+      debugPrint('=================-=== ChatsScreen: App resumed, refreshing chats');
       
       // ✅ Небольшая задержка, чтобы UI успел восстановиться
       Future.delayed(const Duration(milliseconds: 300), () {
@@ -1334,7 +1366,28 @@ bool _shouldRefreshData(List<Chats> current, List<Chats> updated) {
     return false;
   }
   
+  // ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Если current пуст, а updated не пуст - это первая загрузка, НЕ merge!
+  if (current.isEmpty && updated.isNotEmpty) {
+    debugPrint('=================-=== _ChatItemsWidget._shouldRefreshData: First load detected (0 -> ${updated.length}), must refresh');
+    return true;
+  }
+  
+  // ✅ ИСПРАВЛЕНИЕ: Если длина изменилась, проверяем, не из-за ли это merge (добавления новых страниц)
   if (current.length != updated.length) {
+    // Если обновленный список содержит все элементы текущего списка + новые - это merge
+    final currentIds = current.map((c) => c.id).toSet();
+    final updatedIds = updated.map((c) => c.id).toSet();
+    
+    // ✅ ИСПРАВЛЕНИЕ: Проверяем, является ли currentIds подмножеством updatedIds
+    final isSubset = currentIds.every((id) => updatedIds.contains(id));
+    
+    // Если все текущие ID есть в обновленном списке, и обновленный список больше - это merge
+    // НО только если current НЕ пуст (если пуст - это первая загрузка, уже обработано выше)
+    if (isSubset && updated.length > current.length && current.isNotEmpty) {
+      debugPrint('=================-=== _ChatItemsWidget._shouldRefreshData: Length increased from ${current.length} to ${updated.length} (merge detected), allowing refresh for pagination');
+      return true; // ✅ ИСПРАВЛЕНИЕ: Возвращаем true при merge, чтобы listener мог обработать пагинацию
+    }
+    
     debugPrint('_ChatItemsWidget._shouldRefreshData: Length changed from ${current.length} to ${updated.length}');
     return true;
   }
@@ -1343,7 +1396,7 @@ bool _shouldRefreshData(List<Chats> current, List<Chats> updated) {
   final updatedIds = updated.map((c) => c.id).toSet();
   
   if (!currentIds.containsAll(updatedIds) || !updatedIds.containsAll(currentIds)) {
-    debugPrint('_ChatItemsWidget._shouldRefreshData: Chat IDs changed');
+    debugPrint('=================-=== _ChatItemsWidget._shouldRefreshData: Chat IDs changed');
     return true;
   }
   
@@ -1361,14 +1414,14 @@ bool _shouldRefreshData(List<Chats> current, List<Chats> updated) {
     }
     
     if (currentChat.lastMessage != updatedChat.lastMessage) {
-      debugPrint('_ChatItemsWidget._shouldRefreshData: lastMessage changed for chat ID ${updatedChat.id}');
+      debugPrint('=================-=== _ChatItemsWidget._shouldRefreshData: lastMessage changed for chat ID ${updatedChat.id}');
       return true;
     }
   }
   
   // Проверяем изменение порядка
   if (_isOrderChanged(current, updated)) {
-    debugPrint('_ChatItemsWidget._shouldRefreshData: Order changed');
+    debugPrint('=================-=== _ChatItemsWidget._shouldRefreshData: Order changed');
     return true;
   }
   
@@ -1403,15 +1456,64 @@ bool _shouldRefreshData(List<Chats> current, List<Chats> updated) {
         return;
       }
       
-      // Обновляем данные
-      widget.pagingController.itemList = null;
+      // ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Если currentItems пуст, это первая загрузка, НЕ merge!
+      if (currentItems.isEmpty && newChats.isNotEmpty) {
+        debugPrint('_ChatItemsWidget: First load detected (empty -> ${newChats.length}), appending page $currentPage');
+        if (currentPage >= totalPage) {
+          widget.pagingController.appendLastPage(newChats);
+        } else {
+          widget.pagingController.appendPage(newChats, currentPage);
+        }
+        return;
+      }
       
-      if (currentPage >= totalPage) {
-        //print('_ChatItemsWidget: Appending last page with ${newChats.length} chats');
-        widget.pagingController.appendLastPage(newChats);
+      // ✅ ИСПРАВЛЕНИЕ: Проверяем, не является ли это merge (добавление новых страниц)
+      // Если текущий список является подмножеством нового - это merge, обновляем без сброса
+      final currentIds = currentItems.map((c) => c.id).toSet();
+      final newIds = newChats.map((c) => c.id).toSet();
+      final isSubset = currentIds.every((id) => newIds.contains(id));
+      // ✅ ИСПРАВЛЕНИЕ: Merge только если currentItems НЕ пуст
+      final isMerge = isSubset && newChats.length > currentItems.length && currentItems.isNotEmpty;
+      
+      if (isMerge) {
+        // ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: При merge извлекаем только НОВЫЕ элементы для добавления
+        // newChats содержит все элементы (старые + новые), нужно добавить только новые
+        final newItemsOnly = newChats.where((chat) => !currentIds.contains(chat.id)).toList();
+        
+        debugPrint('_ChatItemsWidget: Merge detected - current: ${currentItems.length}, new total: ${newChats.length}, new items only: ${newItemsOnly.length}, appending page $currentPage');
+        
+        // ✅ ИСПРАВЛЕНИЕ: Проверяем, не добавляем ли мы уже эту страницу
+        if (newItemsOnly.isEmpty) {
+          debugPrint('_ChatItemsWidget: No new items to append (page $currentPage already loaded), skipping');
+          return;
+        }
+        
+        if (currentPage >= totalPage) {
+          widget.pagingController.appendLastPage(newItemsOnly);
+        } else {
+          widget.pagingController.appendPage(newItemsOnly, currentPage);
+        }
       } else {
-        //print('_ChatItemsWidget: Appending page $currentPage with ${newChats.length} chats');
-        widget.pagingController.appendPage(newChats, currentPage);
+        // ✅ Обычное обновление (изменения в существующих чатах)
+        // ✅ ИСПРАВЛЕНИЕ: Проверяем, действительно ли нужно обновлять
+        if (currentItems.length == newChats.length && currentIds.containsAll(newIds) && newIds.containsAll(currentIds)) {
+          // Только изменения в данных, не в структуре - обновляем без сброса
+          debugPrint('=================-=== _ChatItemsWidget: Only data changes detected, updating without reset');
+          if (currentPage >= totalPage) {
+            widget.pagingController.appendLastPage(newChats);
+          } else {
+            widget.pagingController.appendPage(newChats, currentPage);
+          }
+        } else {
+          // Структурные изменения - нужен полный сброс
+          widget.pagingController.itemList = null;
+          
+          if (currentPage >= totalPage) {
+            widget.pagingController.appendLastPage(newChats);
+          } else {
+            widget.pagingController.appendPage(newChats, currentPage);
+          }
+        }
       }
       
     } else if (state is ChatsError) {

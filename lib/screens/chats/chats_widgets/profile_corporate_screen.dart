@@ -8,6 +8,7 @@ import 'package:crm_task_manager/screens/profile/languages/app_localizations.dar
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class CorporateProfileScreen extends StatefulWidget {
@@ -65,9 +66,25 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
     }
 
     try {
-      final getChatById = await ApiService().getChatById(widget.chatId);
+      debugPrint('════════════════════════════════════════════════════════');
+      debugPrint('🔍 [CorporateProfileScreen] Запрос данных для чата ID: ${widget.chatId}');
+      
+      // Используем ApiService из Provider вместо создания нового экземпляра
+      final apiService = Provider.of<ApiService>(context, listen: false);
+      final getChatById = await apiService.getChatById(widget.chatId);
 
+      debugPrint('📊 [CorporateProfileScreen] Получены данные:');
+      debugPrint('   chatUsers.length: ${getChatById.chatUsers.length}');
+      debugPrint('   group: ${getChatById.group}');
+      debugPrint('   name: ${getChatById.name}');
+      debugPrint('   type: ${getChatById.type}');
+      
       if (getChatById.chatUsers.isNotEmpty) {
+        debugPrint('✅ [CorporateProfileScreen] Найдено ${getChatById.chatUsers.length} участников');
+        for (var i = 0; i < getChatById.chatUsers.length; i++) {
+          debugPrint('   [$i] ${getChatById.chatUsers[i].participant.name} (ID: ${getChatById.chatUsers[i].participant.id})');
+        }
+        
         setState(() {
           groupName = widget.chatItem.name;
           memberCount = getChatById.chatUsers.length;
@@ -88,13 +105,25 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
           isGroupChat = getChatById.group != null;
           isLoading = false;
         });
+        
+        debugPrint('✅ [CorporateProfileScreen] Установлено memberCount: $memberCount');
+        debugPrint('════════════════════════════════════════════════════════');
       } else {
+        debugPrint('⚠️ [CorporateProfileScreen] chatUsers пустой!');
+        debugPrint('════════════════════════════════════════════════════════');
         setState(() {
+          // Синхронизируем списки, чтобы избежать RangeError
+          members = [];
+          memberDetails = [];
+          memberCount = 0;
           isLoading = false;
         });
       }
-    } catch (e) {
-      debugPrint("Ошибка загрузки данных Корп чата!");
+    } catch (e, stackTrace) {
+      debugPrint("❌ [CorporateProfileScreen] Ошибка загрузки данных Корп чата!");
+      debugPrint("   Ошибка: $e");
+      debugPrint("   StackTrace: $stackTrace");
+      debugPrint("════════════════════════════════════════════════════════");
       setState(() {
         isLoading = false;
       });
@@ -302,6 +331,11 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
                     physics: NeverScrollableScrollPhysics(),
                     itemCount: members.length,
                     itemBuilder: (context, index) {
+                      // Проверяем, что индекс не выходит за границы массива
+                      if (index >= memberDetails.length) {
+                        return SizedBox.shrink();
+                      }
+                      
                       bool isDeletedAccount = memberDetails[index]['name'] ==
                           AppLocalizations.of(context)!
                               .translate('deleted_account');

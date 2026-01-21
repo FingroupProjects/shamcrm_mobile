@@ -2,6 +2,22 @@ import 'package:crm_task_manager/custom_widget/custom_chat_styles.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:html/parser.dart' show parse;
+
+// Функция для удаления HTML тегов и получения чистого текста
+String _stripHtmlTags(String html) {
+  if (!html.contains('<') || !html.contains('>')) {
+    return html; // Если нет HTML тегов, возвращаем как есть
+  }
+  
+  try {
+    final document = parse(html);
+    return document.body?.text ?? html.replaceAll(RegExp(r'<[^>]*>'), '');
+  } catch (e) {
+    // Если парсинг не удался, используем регулярное выражение
+    return html.replaceAll(RegExp(r'<[^>]*>'), '').trim();
+  }
+}
 
 class PinnedMessageWidget extends StatelessWidget {
   final String message;
@@ -53,7 +69,7 @@ class PinnedMessageWidget extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    message,
+                    _stripHtmlTags(message),
                     style: TextStyle(
                       fontWeight: FontWeight.w500,
                       color: Colors.black,

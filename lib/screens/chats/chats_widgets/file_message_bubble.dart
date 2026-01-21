@@ -11,6 +11,7 @@ class FileMessageBubble extends StatelessWidget {
   final bool isHighlighted; 
   final bool isRead;
   final bool isLeadChat;
+  final bool? isGroupChat;
 
   const FileMessageBubble({
     Key? key,
@@ -23,6 +24,7 @@ class FileMessageBubble extends StatelessWidget {
     this.isHighlighted = false,
     required this.isRead,
     this.isLeadChat = false,
+    this.isGroupChat,
   }) : super(key: key);
 
   @override
@@ -100,8 +102,9 @@ class FileMessageBubble extends StatelessWidget {
             const SizedBox(height: 8),
             // ✅ Логика отображения имени отправителя:
             // - В лид-чатах: показываем имя для ОБЕИХ сторон (несколько менеджеров могут отвечать)
-            // - В задачах и корпоративных: показываем имя только для собеседника
-            if (isLeadChat || !isSender)
+            // - В корпоративных группах: показываем имя только для собеседника
+            // - В корпоративных чатах (не группа): НЕ показываем имя
+            if (isLeadChat || (isGroupChat == true && !isSender))
               Text(
                 senderName,
                 style: TextStyle(

@@ -182,6 +182,11 @@ class ApiService {
     '/checkDomain',
     // '/add-fcm-token',
   ];
+  
+  // ОПТИМИЗАЦИЯ: Флаги для предотвращения повторной инициализации
+  bool _isInitializing = false;
+  bool _isInitialized = false;
+  
   ApiService() {
     _initializeIfDomainExists();
   }
@@ -237,6 +242,22 @@ String? _extractErrorMessageFromResponse(http.Response response) {
   }
 
  Future<void> initialize() async {
+  // ОПТИМИЗАЦИЯ: Пропускаем если уже инициализирован
+  if (_isInitialized && baseUrl != null) {
+    return;
+  }
+  
+  // ОПТИМИЗАЦИЯ: Пропускаем если уже идет инициализация
+  if (_isInitializing) {
+    // Ждем завершения текущей инициализации
+    while (_isInitializing) {
+      await Future.delayed(Duration(milliseconds: 50));
+    }
+    return;
+  }
+  
+  _isInitializing = true;
+  
   try {
     debugPrint('ApiService: Starting initialization');
 
@@ -249,6 +270,7 @@ String? _extractErrorMessageFromResponse(http.Response response) {
     }
 
     baseUrl = dynamicBaseUrl;
+    _isInitialized = true;
     debugPrint('ApiService: Initialized with baseUrl: $baseUrl');
 
   } catch (e) {
@@ -258,11 +280,14 @@ String? _extractErrorMessageFromResponse(http.Response response) {
     try {
       await _setFallbackDomain();
       baseUrl = await getDynamicBaseUrl();
+      _isInitialized = true;
       debugPrint('ApiService: Fallback initialization successful: $baseUrl');
     } catch (fallbackError) {
       debugPrint('ApiService: Fallback initialization failed: $fallbackError');
       throw Exception('Не удалось инициализировать ApiService: $e');
     }
+  } finally {
+    _isInitializing = false;
   }
 }
 // Вспомогательный метод для установки резервного домена
@@ -7058,6 +7083,15 @@ Future<List<Message>> getMessages(
 
   Future<TemplateResponse> getTemplates() async {
     final token = await getToken();
+    
+    // Проверяем инициализацию baseUrl
+    if (baseUrl == null || baseUrl!.isEmpty || baseUrl == 'null') {
+      await initialize();
+      if (baseUrl == null || baseUrl!.isEmpty || baseUrl == 'null') {
+        throw Exception('Base URL не может быть инициализирован');
+      }
+    }
+    
     final path = await _appendQueryParams('/v2/chat/templates');
     if (kDebugMode) {
       //debugPrint('ApiService: getTemplates - Generated path: $path');

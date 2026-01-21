@@ -416,7 +416,7 @@ class Message {
     bool? isChanged,
     bool? isRead,
     bool? isNote, // Новое поле
-
+    
     ReadStatus? readStatus,
   }) {
     return Message(

@@ -61,9 +61,50 @@ Future<void> _fetchTaskStatuses(FetchTaskStatuses event, Emitter<TaskState> emit
 
     // При forceRefresh = true делаем РАДИКАЛЬНУЮ перезагрузку
     if (event.forceRefresh) {
-      if (!await _checkInternetConnection()) {
-        emit(TaskError('Нет подключения к интернету для обновления данных'));
-        return;
+      final hasInternet = await _checkInternetConnection();
+      
+      if (!hasInternet) {
+        // При отсутствии интернета загружаем из кэша вместо ошибки
+        final cachedStatuses = await TaskCache.getTaskStatuses();
+        if (cachedStatuses.isNotEmpty) {
+          if (kDebugMode) {
+            debugPrint('⚠️ TaskBloc: forceRefresh without internet, loading from cache');
+          }
+          
+          // Восстанавливаем счетчики из persistent cache
+          _taskCounts.clear();
+          final allPersistentCounts = await TaskCache.getPersistentTaskCounts();
+          for (String statusIdStr in allPersistentCounts.keys) {
+            int statusId = int.parse(statusIdStr);
+            int count = allPersistentCounts[statusIdStr] ?? 0;
+            _taskCounts[statusId] = count;
+          }
+          
+          // Создаём TaskStatus объекты из кэша
+          final List<TaskStatus> minimalStatuses = cachedStatuses.map((status) {
+            final statusId = status['id'] as int;
+            final count = _taskCounts[statusId] ?? 0;
+            return TaskStatus(
+              id: statusId,
+              color: '#000000',
+              tasksCount: count.toString(),
+              needsPermission: false,
+              finalStep: false,
+              checkingStep: false,
+              roles: [],
+              taskStatus: TaskStatusName(
+                id: statusId,
+                name: status['title'] as String,
+              ),
+            );
+          }).toList();
+          
+          emit(TaskLoaded(minimalStatuses, taskCounts: Map.from(_taskCounts)));
+          return;
+        } else {
+          emit(TaskError('Нет подключения к интернету для обновления данных'));
+          return;
+        }
       }
       
       // РАДИКАЛЬНАЯ очистка всех локальных данных блока
@@ -88,8 +129,13 @@ Future<void> _fetchTaskStatuses(FetchTaskStatuses event, Emitter<TaskState> emit
       _currentDepartment = null;
       _currentDirectoryValues = null;
 
-      // Загружаем статусы с сервера
-      response = await apiService.getTaskStatuses();
+      // ОПТИМИЗАЦИЯ: Загружаем статусы с сервера с timeout
+      response = await apiService.getTaskStatuses().timeout(
+        Duration(seconds: 15),
+        onTimeout: () {
+          throw TimeoutException('Превышено время ожидания загрузки статусов');
+        },
+      );
       
       // ПОЛНОСТЬЮ перезаписываем кэш новыми данными
       await TaskCache.clearEverything();
@@ -106,11 +152,16 @@ Future<void> _fetchTaskStatuses(FetchTaskStatuses event, Emitter<TaskState> emit
       
     } else {
       // Стандартная логика для обычной загрузки
-      if (!await _checkInternetConnection()) {
-  final cachedStatuses = await TaskCache.getTaskStatuses();
+      final hasInternet = await _checkInternetConnection();
+      
+      if (!hasInternet) {
+        // При отсутствии интернета пытаемся загрузить из кэша
+        final cachedStatuses = await TaskCache.getTaskStatuses();
         if (cachedStatuses.isNotEmpty) {
-          // При отсутствии интернета загружаем минимальные данные из кэша
-          // но это будет работать только для отображения табов
+          if (kDebugMode) {
+            debugPrint('⚠️ TaskBloc: No internet, loading from cache');
+          }
+          
           // Счётчики восстанавливаем из persistent cache
           _taskCounts.clear();
           final allPersistentCounts = await TaskCache.getPersistentTaskCounts();
@@ -140,14 +191,46 @@ Future<void> _fetchTaskStatuses(FetchTaskStatuses event, Emitter<TaskState> emit
           }).toList();
           
           emit(TaskLoaded(minimalStatuses, taskCounts: Map.from(_taskCounts)));
-    } else {
+          
+          if (kDebugMode) {
+            debugPrint('✅ TaskBloc: Loaded ${minimalStatuses.length} statuses from cache');
+          }
+          return;
+        } else {
+          if (kDebugMode) {
+            debugPrint('❌ TaskBloc: No internet and no cache available');
+          }
           emit(TaskError('Нет подключения к интернету и нет кэшированных данных'));
-    }
-    return;
-  }
+          return;
+        }
+      }
 
-      // ВСЕГДА загружаем с API для получения актуальных счётчиков
-      response = await apiService.getTaskStatuses();
+      // ОПТИМИЗАЦИЯ: ВСЕГДА загружаем с009 API для получения актуальных счётчиков с timeout
+      response = await apiService.getTaskStatuses().timeout(
+        Duration(seconds: 15),
+        onTimeout: () async {
+          // При timeout возвращаем кэшированные данные
+          final cachedStatuses = await TaskCache.getTaskStatuses();
+          if (cachedStatuses.isNotEmpty) {
+            return cachedStatuses.map((status) {
+              return TaskStatus(
+                id: status['id'] as int,
+                color: '#000000',
+                tasksCount: '0',
+                needsPermission: false,
+                finalStep: false,
+                checkingStep: false,
+                roles: [],
+                taskStatus: TaskStatusName(
+                  id: status['id'] as int,
+                  name: status['title'] as String,
+                ),
+              );
+            }).toList();
+          }
+          throw TimeoutException('Превышено время ожидания загрузки статусов');
+        },
+      );
     await TaskCache.cacheTaskStatuses(response
         .map((status) => {'id': status.id, 'title': status.taskStatus?.name ?? ""})
         .toList());
@@ -163,11 +246,12 @@ Future<void> _fetchTaskStatuses(FetchTaskStatuses event, Emitter<TaskState> emit
 
     emit(TaskLoaded(response, taskCounts: Map.from(_taskCounts)));
 
+    // ОПТИМИЗАЦИЯ: Убираем автоматическую загрузку задач - пусть TaskScreen сам решит когда загружать
     // При обычной загрузке автоматически загружаем задачи для первого статуса
-    if (response.isNotEmpty && !event.forceRefresh && !_hasActiveFilters()) {
-      final firstStatusId = response.first.id;
-      add(FetchTasks(firstStatusId));
-    }
+    // if (response.isNotEmpty && !event.forceRefresh && !_hasActiveFilters()) {
+    //   final firstStatusId = response.first.id;
+    //   add(FetchTasks(firstStatusId));
+    // }
 
   } catch (e) {
     emit(TaskError('Не удалось загрузить статусы: $e'));
@@ -175,8 +259,11 @@ Future<void> _fetchTaskStatuses(FetchTaskStatuses event, Emitter<TaskState> emit
 }
 
 Future<void> _fetchTasks(FetchTasks event, Emitter<TaskState> emit) async {
+  // ОПТИМИЗАЦИЯ: Улучшенная проверка на параллельные запросы
   if (isFetching) {
-    debugPrint('⚠️ TaskBloc: _fetchTasks - Already fetching, skipping');
+    if (kDebugMode) {
+      debugPrint('⚠️ TaskBloc: _fetchTasks - Already fetching, skipping');
+    }
     return;
   }
 
@@ -188,8 +275,12 @@ Future<void> _fetchTasks(FetchTasks event, Emitter<TaskState> emit) async {
   }
 
   try {
-    if (state is! TaskDataLoaded) {
-  emit(TaskLoading());
+    // ОПТИМИЗАЦИЯ: Показываем загрузку только если нет кэшированных данных
+    final cachedTasks = await TaskCache.getTasksForStatus(event.statusId);
+    if (cachedTasks.isEmpty) {
+      if (state is! TaskDataLoaded) {
+        emit(TaskLoading());
+      }
     }
 
     // Сохраняем параметры текущего запроса
@@ -222,78 +313,109 @@ Future<void> _fetchTasks(FetchTasks event, Emitter<TaskState> emit) async {
     }
 
     List<Task> tasks = [];
+    bool hasCachedData = false;
 
-    // Попытка загрузить из кэша
-    tasks = await TaskCache.getTasksForStatus(event.statusId);
-    if (tasks.isNotEmpty) {
+    // ОПТИМИЗАЦИЯ: Сначала загружаем из кэша для быстрого отображения (уже загружено выше)
+    if (cachedTasks.isNotEmpty) {
+      tasks = cachedTasks;
+      hasCachedData = true;
       if (kDebugMode) {
-        debugPrint('✅ TaskBloc: _fetchTasks - Emitting ${tasks.length} cached tasks for status ${event.statusId}');
+        debugPrint('✅ TaskBloc: _fetchTasks - Found ${tasks.length} cached tasks for status ${event.statusId}');
       }
+      // Сразу показываем кэшированные данные
       emit(TaskDataLoaded(tasks, currentPage: 1, taskCounts: Map.from(_taskCounts)));
-  }
+    }
 
-    if (await _checkInternetConnection()) {
+    // ОПТИМИЗАЦИЯ: Проверяем интернет только если нужно обновить данные
+    final hasInternet = await _checkInternetConnection();
+    
+    if (hasInternet) {
       if (kDebugMode) {
         debugPrint('📡 TaskBloc: Internet available, fetching from API');
       }
 
-      tasks = await apiService.getTasks(
-      event.statusId,
-      page: 1,
-      perPage: 20,
-      search: event.query,
-      users: event.userIds,
-      statuses: event.statusIds,
-      fromDate: event.fromDate,
-      toDate: event.toDate,
-      overdue: event.overdue,
-      hasFile: event.hasFile,
-      hasDeal: event.hasDeal,
-      urgent: event.urgent,
-      projectIds: event.projectIds,
-      authors: event.authors,
-      deadlinefromDate: event.deadlinefromDate,
-      deadlinetoDate: event.deadlinetoDate,
-      department: event.department,
-      directoryValues: event.directoryValues,
-      );
+      try {
+        // ОПТИМИЗАЦИЯ: Загружаем задачи с timeout
+        final freshTasks = await apiService.getTasks(
+          event.statusId,
+          page: 1,
+          perPage: 20,
+          search: event.query,
+          users: event.userIds,
+          statuses: event.statusIds,
+          fromDate: event.fromDate,
+          toDate: event.toDate,
+          overdue: event.overdue,
+          hasFile: event.hasFile,
+          hasDeal: event.hasDeal,
+          urgent: event.urgent,
+          projectIds: event.projectIds,
+          authors: event.authors,
+          deadlinefromDate: event.deadlinefromDate,
+          deadlinetoDate: event.deadlinetoDate,
+          department: event.department,
+          directoryValues: event.directoryValues,
+        ).timeout(
+          Duration(seconds: 20),
+          onTimeout: () {
+            // При timeout возвращаем пустой список, кэшированные данные уже показаны
+            if (kDebugMode) {
+              debugPrint('⚠️ TaskBloc: getTasks timeout, using cached data');
+            }
+            return <Task>[];
+          },
+        );
 
-      if (kDebugMode) {
-        debugPrint('✅ TaskBloc: Fetched ${tasks.length} tasks from API for status ${event.statusId}');
-      }
+        if (freshTasks.isNotEmpty) {
+          tasks = freshTasks;
+          if (kDebugMode) {
+            debugPrint('✅ TaskBloc: Fetched ${tasks.length} fresh tasks from API for status ${event.statusId}');
+          }
 
-      // КЛЮЧЕВОЙ МОМЕНТ: Берём реальный счётчик из _taskCounts
-      final int? realTotalCount = _taskCounts[event.statusId];
-      
-      if (kDebugMode) {
-        debugPrint('🔍 TaskBloc: Real total count for status ${event.statusId}: $realTotalCount');
-      }
+          // КЛЮЧЕВОЙ МОМЕНТ: Берём реальный счётчик из _taskCounts
+          final int? realTotalCount = _taskCounts[event.statusId];
+          
+          if (kDebugMode) {
+            debugPrint('🔍 TaskBloc: Real total count for status ${event.statusId}: $realTotalCount');
+          }
 
-      // Кэшируем задачи с РЕАЛЬНЫМ общим счётчиком
-      await TaskCache.cacheTasksForStatus(
-        event.statusId,
-        tasks,
-        updatePersistentCount: true,
-        actualTotalCount: realTotalCount,
-      );
-      
-      if (kDebugMode) {
-        debugPrint('✅ TaskBloc: Cached ${tasks.length} tasks for status ${event.statusId}');
+          // Кэшируем свежие задачи с РЕАЛЬНЫМ общим счётчиком
+          await TaskCache.cacheTasksForStatus(
+            event.statusId,
+            tasks,
+            updatePersistentCount: true,
+            actualTotalCount: realTotalCount,
+          );
+          
+          if (kDebugMode) {
+            debugPrint('✅ TaskBloc: Cached ${tasks.length} tasks for status ${event.statusId}');
+          }
+        } else if (kDebugMode) {
+          debugPrint('⚠️ TaskBloc: API returned empty list, keeping cached data');
+        }
+      } catch (e) {
+        if (kDebugMode) {
+          debugPrint('❌ TaskBloc: Error fetching from API: $e, using cached data');
+        }
+        // При ошибке продолжаем использовать кэшированные данные
       }
     } else {
       if (kDebugMode) {
-        debugPrint('❌ TaskBloc: No internet connection');
-    }
+        debugPrint('❌ TaskBloc: No internet connection, using cached data');
+      }
     }
 
-    allTasksFetched = tasks.isEmpty;
+    allTasksFetched = tasks.isEmpty && !hasCachedData;
 
     if (kDebugMode) {
-      debugPrint('✅ TaskBloc: _fetchTasks - Emitting TaskDataLoaded with ${tasks.length} tasks');
+      debugPrint('✅ TaskBloc: _fetchTasks - Final: ${tasks.length} tasks (cached: $hasCachedData)');
       debugPrint('✅ TaskBloc: Final taskCounts: $_taskCounts');
     }
 
-    emit(TaskDataLoaded(tasks, currentPage: 1, taskCounts: Map.from(_taskCounts)));
+    // Финальное состояние (если не было показано ранее из кэша)
+    if (!hasCachedData || tasks.isNotEmpty) {
+      emit(TaskDataLoaded(tasks, currentPage: 1, taskCounts: Map.from(_taskCounts)));
+    }
   } catch (e) {
     if (kDebugMode) {
       debugPrint('❌ TaskBloc: _fetchTasks - Error: $e');
@@ -319,6 +441,7 @@ Future<void> _fetchTasks(FetchTasks event, Emitter<TaskState> emit) async {
     }
 
     try {
+      // ОПТИМИЗАЦИЯ: Загружаем дополнительные задачи с timeout
       final tasks = await apiService.getTasks(
         event.statusId,
         page: event.currentPage + 1,
@@ -337,7 +460,10 @@ Future<void> _fetchTasks(FetchTasks event, Emitter<TaskState> emit) async {
         deadlinefromDate: event.deadlinefromDate ?? _currentDeadlineFromDate,
         deadlinetoDate: event.deadlinetoDate ?? _currentDeadlineToDate,
         department: event.department ?? _currentDepartment,
-        directoryValues: event.directoryValues ?? _currentDirectoryValues, // Передаем directoryValues
+        directoryValues: event.directoryValues ?? _currentDirectoryValues,
+      ).timeout(
+        Duration(seconds: 20),
+        onTimeout: () => <Task>[],
       );
 
       if (tasks.isEmpty) {
@@ -439,12 +565,84 @@ Future<void> _fetchTasks(FetchTasks event, Emitter<TaskState> emit) async {
         (_currentDirectoryValues != null && _currentDirectoryValues!.isNotEmpty);
   }
 
+  // Кэш статуса интернет-соединения
+  bool _cachedInternetStatus = true;
+  DateTime? _lastInternetCheck;
+  static const Duration _internetCheckInterval = Duration(seconds: 10);
+
   Future<bool> _checkInternetConnection() async {
+    // ОПТИМИЗАЦИЯ: Используем кэшированный результат если проверка была недавно
+    if (_lastInternetCheck != null && 
+        DateTime.now().difference(_lastInternetCheck!) < _internetCheckInterval) {
+      if (kDebugMode) {
+        debugPrint('🔄 TaskBloc: Using cached internet status: $_cachedInternetStatus');
+      }
+      return _cachedInternetStatus;
+    }
+    
+    if (kDebugMode) {
+      debugPrint('🌐 TaskBloc: Checking internet connection...');
+    }
+    
     try {
-      final result = await InternetAddress.lookup('example.com');
-      return result.isNotEmpty && result[0].rawAddress.isNotEmpty;
-    } on SocketException {
+      // ИСПРАВЛЕНО: Проверяем несколькими способами для надежности
+      // Способ 1: Быстрая проверка через DNS
+      try {
+        final result = await InternetAddress.lookup('google.com')
+            .timeout(Duration(seconds: 3), onTimeout: () => []);
+        
+        if (result.isNotEmpty && result[0].rawAddress.isNotEmpty) {
+          if (kDebugMode) {
+            debugPrint('✅ TaskBloc: Internet check OK (DNS)');
+          }
+          _cachedInternetStatus = true;
+          _lastInternetCheck = DateTime.now();
+          return true;
+        }
+      } catch (e) {
+        if (kDebugMode) {
+          debugPrint('⚠️ TaskBloc: DNS lookup failed: $e');
+        }
+      }
+      
+      // Способ 2: Пробуем создать сокет
+      try {
+        final socket = await Socket.connect('8.8.8.8', 53, timeout: Duration(seconds: 2));
+        socket.destroy();
+        if (kDebugMode) {
+          debugPrint('✅ TaskBloc: Internet check OK (Socket)');
+        }
+        _cachedInternetStatus = true;
+        _lastInternetCheck = DateTime.now();
+        return true;
+      } catch (e) {
+        if (kDebugMode) {
+          debugPrint('⚠️ TaskBloc: Socket connect failed: $e');
+        }
+      }
+      
+      // Оба способа не сработали - считаем что нет интернета
+      if (kDebugMode) {
+        debugPrint('❌ TaskBloc: No internet connection detected');
+      }
+      _cachedInternetStatus = false;
+      _lastInternetCheck = DateTime.now();
       return false;
+    } on SocketException catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ TaskBloc: SocketException: $e');
+      }
+      _cachedInternetStatus = false;
+      _lastInternetCheck = DateTime.now();
+      return false;
+    } catch (e) {
+      // При любой другой ошибке считаем что интернет есть, чтобы попытаться сделать запрос
+      if (kDebugMode) {
+        debugPrint('⚠️ TaskBloc: Internet check error: $e, assuming online');
+      }
+      _cachedInternetStatus = true;
+      _lastInternetCheck = DateTime.now();
+      return true;
     }
   }
 
@@ -519,7 +717,7 @@ Future<void> _fetchTaskStatusesWithFilters(
   emit(TaskLoading());
 
   try {
-    // 1. Получаем статусы с учётом фильтров
+    // ОПТИМИЗАЦИЯ: 1. Получаем статусы с учётом фильтров с timeout
     final statuses = await apiService.getTaskStatuses(
       users: event.userIds,
       statuses: event.statusIds,
@@ -535,6 +733,11 @@ Future<void> _fetchTaskStatusesWithFilters(
       authors: event.authors,
       department: event.department,
       directoryValues: event.directoryValues,
+    ).timeout(
+      Duration(seconds: 15),
+      onTimeout: () {
+        throw TimeoutException('Превышено время ожидания загрузки статусов с фильтрами');
+      },
     );
 
     if (kDebugMode) {
@@ -558,10 +761,10 @@ Future<void> _fetchTaskStatusesWithFilters(
     // 4. Эмитим состояние со статусами
     emit(TaskLoaded(statuses, taskCounts: Map.from(_taskCounts)));
 
-    // 5. СОХРАНЯЕМ ФИЛЬТРЫ В БЛОКЕ ПЕРЕД ПАРАЛЛЕЛЬНОЙ ЗАГРУЗКОЙ
+    // 5. СОХРАНЯЕМ ФИЛЬТРЫ В БЛОКЕ БЕЗ АВТОМАТИЧЕСКОЙ ЗАГРУЗКИ ВСЕХ СТАТУСОВ
     if (statuses.isNotEmpty) {
       if (kDebugMode) {
-        debugPrint('🚀 TaskBloc: Starting parallel fetch for ${statuses.length} statuses');
+        debugPrint('🚀 TaskBloc: Received ${statuses.length} statuses with filters');
         debugPrint('🔍 TaskBloc: SAVING FILTERS TO BLOC STATE');
       }
 
@@ -586,42 +789,46 @@ Future<void> _fetchTaskStatusesWithFilters(
         debugPrint('✅ TaskBloc: Filters saved to bloc state');
       }
 
-      // Создаём список Future для параллельной загрузки
-      final List<Future<void>> fetchTasks = statuses.map((status) {
-        return _fetchTasksForStatusWithFilters(
-          status.id,
-          event.userIds,
-          event.statusIds,
-          event.fromDate,
-          event.toDate,
-          event.overdue,
-          event.hasFile,
-          event.hasDeal,
-          event.urgent,
-          event.deadlinefromDate,
-          event.deadlinetoDate,
-          event.projectIds,
-          event.authors,
-          event.department,
-          event.directoryValues,
-        );
-      }).toList();
+      // ОПТИМИЗАЦИЯ: Загружаем только ПЕРВЫЙ статус, остальные по требованию
+      if (statuses.isNotEmpty) {
+        if (kDebugMode) {
+          debugPrint('🔄 TaskBloc: Loading tasks for first status only: ${statuses.first.id}');
+        }
+        
+        try {
+          await _fetchTasksForStatusWithFilters(
+            statuses.first.id,
+            event.userIds,
+            event.statusIds,
+            event.fromDate,
+            event.toDate,
+            event.overdue,
+            event.hasFile,
+            event.hasDeal,
+            event.urgent,
+            event.deadlinefromDate,
+            event.deadlinetoDate,
+            event.projectIds,
+            event.authors,
+            event.department,
+            event.directoryValues,
+          );
 
-      // Запускаем все запросы параллельно
-      await Future.wait(fetchTasks);
-
-      if (kDebugMode) {
-        debugPrint('✅ TaskBloc: All parallel fetches completed');
+          // После загрузки первого статуса эмитим состояние
+          final firstStatusTasks = await TaskCache.getTasksForStatus(statuses.first.id);
+          emit(TaskDataLoaded(firstStatusTasks, currentPage: 1, taskCounts: Map.from(_taskCounts)));
+          
+          if (kDebugMode) {
+            debugPrint('✅ TaskBloc: First status tasks loaded and emitted');
+          }
+        } catch (e) {
+          if (kDebugMode) {
+            debugPrint('❌ TaskBloc: Error loading first status tasks: $e');
+          }
+          // Эмитим пустое состояние если не удалось загрузить
+          emit(TaskDataLoaded([], currentPage: 1, taskCounts: Map.from(_taskCounts)));
+        }
       }
-
-      // После загрузки всех данных эмитим финальное состояние
-      final allTasks = <Task>[];
-      for (var status in statuses) {
-        final tasksForStatus = await TaskCache.getTasksForStatus(status.id);
-        allTasks.addAll(tasksForStatus);
-      }
-
-      emit(TaskDataLoaded(allTasks, currentPage: 1, taskCounts: Map.from(_taskCounts)));
     }
   } catch (e) {
     if (kDebugMode) {
@@ -661,6 +868,7 @@ Future<void> _fetchTasksForStatusWithFilters(
       debugPrint('🔍 TaskBloc: _fetchTasksForStatusWithFilters for status $statusId');
     }
 
+    // ОПТИМИЗАЦИЯ: Загружаем задачи для статуса с timeout
     final tasks = await apiService.getTasks(
       null, // taskStatusId = null, используем statuses параметр
       page: 1,
@@ -679,6 +887,9 @@ Future<void> _fetchTasksForStatusWithFilters(
       authors: authors,
       department: department,
       directoryValues: directoryValues,
+    ).timeout(
+      Duration(seconds: 20),
+      onTimeout: () => <Task>[],
     );
 
     if (kDebugMode) {
@@ -735,26 +946,4 @@ Future<void> _fetchTasksForStatusWithFilters(
     _taskCounts.clear();
     await TaskCache.clearPersistentCounts();
   }
-  
-  /// Вызывать перед переходом между табами
-  Future<void> _preserveCurrentCounts() async {
-    if (_taskCounts.isNotEmpty) {
-      for (int statusId in _taskCounts.keys) {
-        int currentCount = _taskCounts[statusId] ?? 0;
-        await TaskCache.setPersistentTaskCount(statusId, currentCount);
-      }
-    }
-  }
-  
-  /// Метод для восстановления всех счетчиков из постоянного кэша
-  Future<void> _restoreAllCounts() async {
-    final allPersistentCounts = await TaskCache.getPersistentTaskCounts();
-    _taskCounts.clear();
-    
-    for (String statusIdStr in allPersistentCounts.keys) {
-      int statusId = int.parse(statusIdStr);
-      int count = allPersistentCounts[statusIdStr] ?? 0;
-      _taskCounts[statusId] = count;
-  }
-}
 }

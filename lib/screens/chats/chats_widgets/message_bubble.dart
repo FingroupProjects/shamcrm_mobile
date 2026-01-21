@@ -15,6 +15,21 @@ final RegExp _urlRegex = RegExp(
   caseSensitive: false,
 );
 
+// Функция для удаления HTML тегов и получения чистого текста
+String _stripHtmlTags(String html) {
+  if (!html.contains('<') || !html.contains('>')) {
+    return html; // Если нет HTML тегов, возвращаем как есть
+  }
+  
+  try {
+    final document = parse(html);
+    return document.body?.text ?? html.replaceAll(RegExp(r'<[^>]*>'), '');
+  } catch (e) {
+    // Если парсинг не удался, используем регулярное выражение
+    return html.replaceAll(RegExp(r'<[^>]*>'), '').trim();
+  }
+}
+
 class MessageBubble extends StatelessWidget {
   final String message;
   final String time;
@@ -28,6 +43,7 @@ class MessageBubble extends StatelessWidget {
   final bool isRead;
   final bool isNote;
   final bool isLeadChat;
+  final bool? isGroupChat;
 
   MessageBubble({
     Key? key,
@@ -43,6 +59,7 @@ class MessageBubble extends StatelessWidget {
     required this.isRead,
     required this.isNote,
     this.isLeadChat = false,
+    this.isGroupChat,
   }) : super(key: key);
 
   @override
@@ -71,8 +88,9 @@ class MessageBubble extends StatelessWidget {
               const SizedBox(height: 8),
               // ✅ Логика отображения имени отправителя:
               // - В лид-чатах: показываем имя для ОБЕИХ сторон (несколько менеджеров могут отвечать)
-              // - В задачах и корпоративных: показываем имя только для собеседника
-              if (isLeadChat || !isSender)
+              // - В корпоративных группах: показываем имя только для собеседника
+              // - В корпоративных чатах (не группа): НЕ показываем имя
+              if (isLeadChat || (isGroupChat == true && !isSender))
                 Text(
                   senderName,
                   style: TextStyle(
@@ -98,7 +116,7 @@ class MessageBubble extends StatelessWidget {
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
-                      replyMessage!,
+                      _stripHtmlTags(replyMessage!),
                       style: const TextStyle(
                         fontSize: 12,
                         fontFamily: 'Gilroy',

@@ -56,8 +56,8 @@ class _InputFieldState extends State<InputField>
   String _htmlContent = '';
   String _displayText = '';
   bool _wasKeyboardVisible = false;
+  bool _hasText = false;
 
-  // НОВОЕ: Таймеры для дебаунсинга
   Timer? _selectionDebounce;
 
   @override
@@ -73,8 +73,11 @@ class _InputFieldState extends State<InputField>
     );
 
     widget.messageController.addListener(_handleSelectionChange);
+    widget.messageController.addListener(_updateTextState);
+    
     _htmlContent = widget.messageController.text;
     _displayText = _htmlToDisplayText(_htmlContent);
+    _hasText = widget.messageController.text.isNotEmpty;
 
     WidgetsBinding.instance.addObserver(this);
   }
@@ -86,8 +89,18 @@ class _InputFieldState extends State<InputField>
     _animationController.dispose();
     _selectionDebounce?.cancel();
     widget.messageController.removeListener(_handleSelectionChange);
+    widget.messageController.removeListener(_updateTextState);
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
+  }
+
+  void _updateTextState() {
+    final hasText = widget.messageController.text.trim().isNotEmpty;
+    if (_hasText != hasText) {
+      setState(() {
+        _hasText = hasText;
+      });
+    }
   }
 
   @override
@@ -141,7 +154,6 @@ class _InputFieldState extends State<InputField>
     });
   }
 
-  // ОПТИМИЗИРОВАННЫЙ метод с дебаунсингом
   void _handleSelectionChange() {
     final selection = widget.messageController.selection;
 
@@ -152,7 +164,6 @@ class _InputFieldState extends State<InputField>
         widget.focusNode.hasFocus) {
       _selectionDebounce = Timer(const Duration(milliseconds: 100), () {
         if (mounted) {
-          // ИСПРАВЛЕНО: Скрываем только системный тулбар, НЕ клавиатуру
           SystemChannels.textInput.invokeMethod('TextInput.hideToolbar');
 
           setState(() {
@@ -167,11 +178,8 @@ class _InputFieldState extends State<InputField>
     }
   }
 
-  // Метод для показа панели при долгом нажатии
   void _showFormattingPanelOnLongPress() {
-    // ИСПРАВЛЕНО: hideToolbar вместо hide
     SystemChannels.textInput.invokeMethod('TextInput.hideToolbar');
-    // Обновляем overlay вне setState для корректной работы
     _showFormattingPanel = true;
     _updateFormattingOverlay();
     setState(() {
@@ -241,7 +249,7 @@ class _InputFieldState extends State<InputField>
             child: Container(
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(16), // Скруглённые углы
+                borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withOpacity(0.15),
@@ -337,9 +345,9 @@ class _InputFieldState extends State<InputField>
 
     return OverlayEntry(
       builder: (context) => Positioned(
-        left: offset.dx + 8, // Отступ от краёв
+        left: offset.dx + 8,
         right: MediaQuery.of(context).size.width - (offset.dx + size.width - 8),
-        top: offset.dy - 70, // Немного выше
+        top: offset.dy - 70,
         child: FadeTransition(
           opacity: _fadeAnimation,
           child: Material(
@@ -347,8 +355,7 @@ class _InputFieldState extends State<InputField>
             child: Container(
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius:
-                    BorderRadius.circular(16), // Более скруглённые углы
+                borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withOpacity(0.15),
@@ -389,7 +396,7 @@ class _InputFieldState extends State<InputField>
       color: Colors.transparent,
       child: InkWell(
         onTap: isEnabled ? onTap : null,
-        borderRadius: BorderRadius.circular(12), // Скруглённые углы
+        borderRadius: BorderRadius.circular(12),
         child: Container(
           padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           decoration: BoxDecoration(
@@ -853,190 +860,237 @@ class _InputFieldState extends State<InputField>
                   ],
                 ),
               ),
-            Row(
-              children: [
-                Expanded(
-                  child: Stack(
-                    alignment: Alignment.centerRight,
-                    children: [
-                      (context.watch<ListenSenderFileCubit>().state)
-                          ? Padding(
-                              padding: const EdgeInsets.all(8.0),
-                              child: CircularProgressIndicator(
-                                  color: Color(0xff1E2E52)),
-                            )
-                          : Container(
-                              // ✅ ОБНОВЛЕНО: Современный glass morphism эффект как в Telegram
-                              decoration: ChatSmsStyles.inputFieldDecoration,
-                              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-                              child: AnimatedTextField(
-                                controller: widget.messageController,
-                                focusNode: widget.focusNode,
-                                onChanged: _handleTextChange,
-                                htmlContent: _htmlContent,
-                                onLongPress: _showFormattingPanelOnLongPress,
-                                hintText: AppLocalizations.of(context)!
-                                    .translate('enter_your_sms'),
-                                style: ChatSmsStyles.messageTextStyle.copyWith(
-                                  color: const Color(0xFF1A202C), // Темный текст для контраста
-                                ),
-                                hintStyle: TextStyle(
-                                  fontSize: 15,
-                                  color: ChatSmsStyles.hintTextColor,
-                                  fontWeight: FontWeight.w400,
-                                  fontFamily: 'Gilroy',
-                                ),
-                                // ✅ Прозрачный фон для glass effect (внутри уже есть декорация)
-                                fillColor: Colors.transparent,
-                                borderRadius: ChatSmsStyles.inputBorderRadius,
-                                contentPadding: widget.isLeadChat
-                                    ? EdgeInsets.only(
-                                        left: 16, // ✅ Увеличен padding для лучшего UX
-                                        right: 65,
-                                        top: 12,
-                                        bottom: 12)
-                                    : EdgeInsets.only(
-                                        left: 16, // ✅ Увеличен padding для лучшего UX
-                                        right: 40,
-                                        top: 12,
-                                        bottom: 12),
-                                maxVisibleLines: 6,
-                                lineHeight: 20.0,
-                              ),
-                            ),
-                      if (widget.isLeadChat)
-                        Positioned(
-                          right: 35,
-                          child: IconButton(
-                            icon: Image.asset(
-                                'assets/icons/chats/menu-button.png',
-                                width: 24,
-                                height: 24),
-                            onPressed: () {
-                              _showTemplatesPanel(context);
-                            },
-                          ),
-                        ),
-                      Positioned(
-                        right: widget.isLeadChat ? 0 : 0,
-                        child: IconButton(
-                          icon: Image.asset('assets/icons/chats/file.png',
-                              width: 24, height: 24),
-                          onPressed: widget.onAttachFile,
-                        ),
-                      ),
-                    ],
+              
+            // ✅ НОВАЯ КОМПАКТНАЯ СТРУКТУРА - ВСЕ ВНУТРИ ОДНОГО КОНТЕЙНЕРА
+          // ✅ ИСПРАВЛЕННАЯ КОМПАКТНАЯ СТРУКТУРА
+Padding(
+  padding: const EdgeInsets.symmetric(horizontal: 12),
+  child: (context.watch<ListenSenderFileCubit>().state)
+      ? Container(
+          height: 42,
+          alignment: Alignment.center,
+          child: CircularProgressIndicator(
+            color: Color(0xff1E2E52),
+            strokeWidth: 2.5,
+          ),
+        )
+      : Container(
+          decoration: ChatSmsStyles.inputFieldDecoration,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center, // ✅ ВАЖНО: Центрируем все элементы
+            children: [
+              // ✅ Кнопка меню (если isLeadChat)
+              if (widget.isLeadChat)
+                IconButton(
+                  icon: Image.asset(
+                    'assets/icons/chats/menu-button.png',
+                    width: 20,
+                    height: 20,
                   ),
+                  iconSize: 20,
+                  padding: EdgeInsets.all(8),
+                  constraints: BoxConstraints(
+                    minWidth: 36,
+                    minHeight: 36,
+                  ),
+                  onPressed: () {
+                    _showTemplatesPanel(context);
+                  },
                 ),
-                SizedBox(width: 8),
-                (context.watch<ListenSenderVoiceCubit>().state)
-                    ? Row(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.all(8),
-                            child: CircularProgressIndicator(
-                                color: Color(0xff1E2E52)),
-                          ),
-                        ],
-                      )
-                    : MediaQuery(
-                        data: MediaQueryData(size: Size(330, 400)),
-                        child: SocialMediaRecorder(
-                          maxRecordTimeInSecond: 180,
-                          initRecordPackageWidth: 48,
-                          fullRecordPackageHeight: 48,
-                          startRecording: () {},
-                          stopRecording: (_time) {},
-                          sendRequestFunction: widget.sendRequestFunction,
-                          cancelText:
-                              AppLocalizations.of(context)!.translate('cancel'),
-                          cancelTextStyle: TextStyle(
-                            fontSize: 16,
-                            fontFamily: 'Gilroy',
-                            fontWeight: FontWeight.w500,
-                          ),
-                          slideToCancelText: AppLocalizations.of(context)!
-                              .translate('cancel_chat_sms'),
-                          slideToCancelTextStyle: TextStyle(
-                            fontSize: 16,
-                            fontFamily: 'Gilroy',
-                            fontWeight: FontWeight.w500,
-                          ),
-                          recordIconBackGroundColor: Color(0xfff4F40EC),
-                          counterTextStyle: TextStyle(
-                            fontSize: 14,
-                            fontFamily: 'Gilroy',
-                            fontWeight: FontWeight.w500,
-                          ),
-                          encode: AudioEncoderType.AAC,
-                          radius: BorderRadius.circular(8),
-                        ),
-                      ),
-                (context.watch<ListenSenderTextCubit>().state)
-                    ? Row(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.all(8.0),
-                            child: CircularProgressIndicator(
-                                color: Color(0xff1E2E52)),
-                          ),
-                        ],
-                      )
-                    : IconButton(
-                        icon: Container(
-                          width: 48,
-                          height: 48,
-                          // ✅ ОБНОВЛЕНО: Более скругленная кнопка отправки как в Telegram
-                          decoration: BoxDecoration(
-                            color: const Color(0xfff4F40EC),
-                            borderRadius: BorderRadius.circular(24), // ✅ Круглая кнопка (24px)
-                            boxShadow: [
-                              BoxShadow(
-                                color: const Color(0xfff4F40EC).withOpacity(0.3),
-                                blurRadius: 8,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          padding: const EdgeInsets.all(12),
-                          child: Image.asset(
-                            'assets/icons/chats/send.png',
-                            width: 20,
-                            height: 20,
-                          ),
-                        ),
-                        onPressed: () {
-                          if (widget.messageController.text.isNotEmpty) {
-                            if (editingMessage != null) {
-                              messagingCubit.editMessage(_getHtmlContent());
-                            } else {
-                              widget.onSend(_getHtmlContent(), replyMsgId);
-                              messagingCubit.clearReplyMessage();
-                            }
-                            widget.messageController.clear();
-                            _htmlContent = '';
-                            _displayText = '';
-                            setState(() {
-                              _showTemplates = false;
-                              _showFormattingPanel = false;
-                              _animationController.reverse().then((_) {
-                                _removeOverlay();
-                                _removeFormattingOverlay();
-                              });
-                            });
-                          }
-                        },
-                      ),
-              ],
-            ),
+              
+              // ✅ Текстовое поле с явным выравниванием
+             Expanded(
+  child: AnimatedTextField(
+    controller: widget.messageController,
+    focusNode: widget.focusNode,
+    onChanged: _handleTextChange,
+    htmlContent: _htmlContent,
+    onLongPress: _showFormattingPanelOnLongPress,
+    hintText: AppLocalizations.of(context)!
+        .translate('enter_your_sms'),
+    style: ChatSmsStyles.messageTextStyle.copyWith(
+      color: const Color(0xFF1A202C),
+      fontSize: 15,
+      height: 1.3, // ✅ Межстрочный интервал
+    ),
+    hintStyle: TextStyle(
+      fontSize: 15,
+      color: ChatSmsStyles.hintTextColor,
+      fontWeight: FontWeight.w400,
+      fontFamily: 'Gilroy',
+      height: 1.3, // ✅ Такой же интервал для hint
+    ),
+    fillColor: Colors.transparent,
+    borderRadius: ChatSmsStyles.inputBorderRadius,
+    contentPadding: EdgeInsets.symmetric(
+      horizontal: 12,
+      vertical: 15, // ✅ Увеличен для лучшего центрирования
+    ),
+    maxVisibleLines: 5,
+    lineHeight: 20.0,
+  ),
+),
+              
+              // ✅ Кнопка прикрепления файла
+              IconButton(
+                icon: Image.asset(
+                  'assets/icons/chats/file.png',
+                  width: 20,
+                  height: 20,
+                ),
+                iconSize: 20,
+                padding: EdgeInsets.all(8),
+                constraints: BoxConstraints(
+                  minWidth: 36,
+                  minHeight: 36,
+                ),
+                onPressed: widget.onAttachFile,
+              ),
+              
+              // ✅ Умная кнопка (микрофон/отправить)
+              AnimatedSwitcher(
+                duration: Duration(milliseconds: 250),
+                transitionBuilder: (Widget child, Animation<double> animation) {
+                  return FadeTransition(
+                    opacity: animation,
+                    child: ScaleTransition(
+                      scale: animation,
+                      child: child,
+                    ),
+                  );
+                },
+                child: _hasText
+                    ? _buildSendButton(messagingCubit, editingMessage, replyMsgId)
+                    : _buildVoiceRecorder(),
+              ),
+              
+              SizedBox(width: 4),
+            ],
+          ),
+        ),
+),
           ],
         ),
       ),
     );
+  }
+
+  // ✅ КОМПАКТНАЯ кнопка отправки
+  Widget _buildSendButton(MessagingCubit messagingCubit, editingMessage, String? replyMsgId) {
+    return (context.watch<ListenSenderTextCubit>().state)
+        ? Container(
+            key: ValueKey('loading'),
+            width: 36,
+            height: 36,
+            alignment: Alignment.center,
+            child: SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(
+                color: Color(0xff1E2E52),
+                strokeWidth: 2,
+              ),
+            ),
+          )
+        : Material(
+            key: ValueKey('send'),
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () {
+                if (widget.messageController.text.isNotEmpty) {
+                  if (editingMessage != null) {
+                    messagingCubit.editMessage(_getHtmlContent());
+                  } else {
+                    widget.onSend(_getHtmlContent(), replyMsgId);
+                    messagingCubit.clearReplyMessage();
+                  }
+                  widget.messageController.clear();
+                  _htmlContent = '';
+                  _displayText = '';
+                  setState(() {
+                    _showTemplates = false;
+                    _showFormattingPanel = false;
+                    _animationController.reverse().then((_) {
+                      _removeOverlay();
+                      _removeFormattingOverlay();
+                    });
+                  });
+                }
+              },
+              borderRadius: BorderRadius.circular(18),
+              child: Ink(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: const Color(0xfff4F40EC),
+                  borderRadius: BorderRadius.circular(18),
+                ),
+                child: Center(
+                  child: Image.asset(
+                    'assets/icons/chats/send.png',
+                    width: 18,
+                    height: 18,
+                  ),
+                ),
+              ),
+            ),
+          );
+  }
+
+  // ✅ КОМПАКТНАЯ кнопка записи голоса
+  Widget _buildVoiceRecorder() {
+    return (context.watch<ListenSenderVoiceCubit>().state)
+        ? Container(
+            key: ValueKey('voice_loading'),
+            width: 36,
+            height: 36,
+            alignment: Alignment.center,
+            child: SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(
+                color: Color(0xff1E2E52),
+                strokeWidth: 2,
+              ),
+            ),
+          )
+        : Container(
+            key: ValueKey('voice_recorder'),
+            width: 36,
+            height: 36,
+            child: MediaQuery(
+              data: MediaQueryData(size: Size(36, 36)),
+              child: SocialMediaRecorder(
+                maxRecordTimeInSecond: 180,
+                initRecordPackageWidth: 36,
+                fullRecordPackageHeight: 36,
+                startRecording: () {},
+                stopRecording: (_time) {},
+                sendRequestFunction: widget.sendRequestFunction,
+                cancelText: AppLocalizations.of(context)!.translate('cancel'),
+                cancelTextStyle: TextStyle(
+                  fontSize: 14,
+                  fontFamily: 'Gilroy',
+                  fontWeight: FontWeight.w500,
+                ),
+                slideToCancelText: AppLocalizations.of(context)!
+                    .translate('cancel_chat_sms'),
+                slideToCancelTextStyle: TextStyle(
+                  fontSize: 14,
+                  fontFamily: 'Gilroy',
+                  fontWeight: FontWeight.w500,
+                ),
+                recordIconBackGroundColor: Color(0xfff4F40EC),
+                counterTextStyle: TextStyle(
+                  fontSize: 12,
+                  fontFamily: 'Gilroy',
+                  fontWeight: FontWeight.w500,
+                ),
+                encode: AudioEncoderType.AAC,
+                radius: BorderRadius.circular(18),
+              ),
+            ),
+          );
   }
 
   void _showTemplatesPanel(BuildContext context) {

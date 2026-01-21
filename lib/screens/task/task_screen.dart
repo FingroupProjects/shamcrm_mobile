@@ -1,4 +1,4 @@
-import 'dart:convert';
+import 'dart:async';
 
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/task/task_bloc.dart';
@@ -104,6 +104,10 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
 
   bool _isTaskScreenTutorialCompleted = false;
   Map<String, dynamic>? tutorialProgress;
+  
+  // ОПТИМИЗАЦИЯ: Debounce timer для поиска
+  Timer? _searchDebounceTimer;
+  static const Duration _searchDebounce = Duration(milliseconds: 500);
 
   @override
   void initState() {
@@ -112,64 +116,30 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
     // ← КРИТИЧНО: Инициализируем пустой TabController
     _tabController = TabController(length: 0, vsync: this);
     
+    // ОПТИМИЗАЦИЯ: Запускаем GetAllClientBloc асинхронно, не блокируя UI
+    Future.microtask(() {
+      if (mounted) {
     context.read<GetAllClientBloc>().add(GetAllClientEv());
+      }
+    });
+    
     _scrollController = ScrollController();
     _scrollController.addListener(_onScroll);
+    
+    // ОПТИМИЗАЦИЯ: Загружаем роли и разрешения асинхронно
+    Future.microtask(() {
+      if (mounted) {
     _loadUserRoles();
+        _checkPermissions();
+      }
+    });
+    
     // НЕ загружаем состояние фильтров - каждый раз начинаем с чистого листа
     
     // Запускаем загрузку статусов
     BlocProvider.of<TaskBloc>(context).add(FetchTaskStatuses());
-    
-    _checkPermissions();
   }
 
-  Future<void> _loadFilterState() async {
-    final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      _selectedUsers = (jsonDecode(prefs.getString('task_selected_users') ?? '[]') as List)
-          .map((u) => UserData.fromJson(u))
-          .toList();
-      _selectedStatuses = prefs.getInt('task_selected_statuses');
-      _fromDate = prefs.getString('task_from_date') != null
-          ? DateTime.parse(prefs.getString('task_from_date')!)
-          : null;
-      _toDate = prefs.getString('task_to_date') != null
-          ? DateTime.parse(prefs.getString('task_to_date')!)
-          : null;
-      _deadlinefromDate = prefs.getString('task_deadline_from_date') != null
-          ? DateTime.parse(prefs.getString('task_deadline_from_date')!)
-          : null;
-      _deadlinetoDate = prefs.getString('task_deadline_to_date') != null
-          ? DateTime.parse(prefs.getString('task_deadline_to_date')!)
-          : null;
-      _isOverdue = prefs.getBool('task_is_overdue') ?? false;
-      _hasFile = prefs.getBool('task_has_file') ?? false;
-      _hasDeal = prefs.getBool('task_has_deal') ?? false;
-      _isUrgent = prefs.getBool('task_is_urgent') ?? false;
-      _selectedProject = prefs.getString('task_selected_project');
-      _selectedAuthors = (jsonDecode(prefs.getString('task_selected_authors') ?? '[]') as List).cast<String>();
-      _selectedDepartment = prefs.getString('task_selected_department');
-      _selectedDirectoryValues = (jsonDecode(prefs.getString('task_selected_directory_values') ?? '[]') as List)
-          .map((d) => Map<String, dynamic>.from(d))
-          .toList();
-
-      _initialselectedUsers = List.from(_selectedUsers);
-      _initialSelStatus = _selectedStatuses;
-      _intialFromDate = _fromDate;
-      _intialToDate = _toDate;
-      _intialDeadlineFromDate = _deadlinefromDate;
-      _intialDeadlineToDate = _deadlinetoDate;
-      _initialOverdue = _isOverdue;
-      _initialHasFile = _hasFile;
-      _initialHasDeal = _hasDeal;
-      _initialUrgent = _isUrgent;
-      _initialSelectedAuthors = List.from(_selectedAuthors);
-      _initialSelectedDepartment = _selectedDepartment;
-      _initialDirectoryValues = List.from(_selectedDirectoryValues);
-
-    });
-  }
 void _onScroll() {
   if (_scrollController.position.pixels == _scrollController.position.maxScrollExtent) {
     final taskBloc = BlocProvider.of<TaskBloc>(context);
@@ -180,7 +150,7 @@ void _onScroll() {
         // Преобразуем project_ids в List<int>
         List<int>? projectIdsList = _selectedProjects.isNotEmpty
             ? _selectedProjects.map((id) => int.parse(id)).toList()
-            : (_selectedProject != null ? [int.parse(_selectedProject!)] : null);
+            : null;
         taskBloc.add(FetchMoreTasks(
           currentStatusId,
           state.currentPage,
@@ -203,26 +173,10 @@ void _onScroll() {
       }
     }
   }
-}
-Future<void> _saveFilterState() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('task_selected_users', jsonEncode(_selectedUsers.map((u) => u.toJson()).toList()));
-    await prefs.setInt('task_selected_statuses', _selectedStatuses ?? 0);
-    await prefs.setString('task_from_date', _fromDate?.toIso8601String() ?? '');
-    await prefs.setString('task_to_date', _toDate?.toIso8601String() ?? '');
-    await prefs.setString('task_deadline_from_date', _deadlinefromDate?.toIso8601String() ?? '');
-    await prefs.setString('task_deadline_to_date', _deadlinetoDate?.toIso8601String() ?? '');
-    await prefs.setBool('task_is_overdue', _isOverdue);
-    await prefs.setBool('task_has_file', _hasFile);
-    await prefs.setBool('task_has_deal', _hasDeal);
-    await prefs.setBool('task_is_urgent', _isUrgent);
-    await prefs.setString('task_selected_project', _selectedProject ?? '');
-    await prefs.setString('task_selected_authors', jsonEncode(_selectedAuthors));
-    await prefs.setString('task_selected_department', _selectedDepartment ?? '');
-    await prefs.setString('task_selected_directory_values', jsonEncode(_selectedDirectoryValues));
   }
   @override
   void dispose() {
+    _searchDebounceTimer?.cancel();
     _scrollController.dispose();
     _tabController.dispose();
     _searchController.dispose();
@@ -232,19 +186,49 @@ Future<void> _saveFilterState() async {
   Future<void> _loadUserRoles() async {
     try {
       SharedPreferences prefs = await SharedPreferences.getInstance();
-      String userId = prefs.getString('userID') ?? '';
-      if (userId.isEmpty) {
-        setState(() { userRoles = ['No user ID found']; });
+      
+      // ОПТИМИЗАЦИЯ: Проверяем кэш ролей
+      final cachedRoles = prefs.getStringList('cached_user_roles');
+      final cacheTime = prefs.getInt('cached_user_roles_time');
+      final now = DateTime.now().millisecondsSinceEpoch;
+      
+      // Если кэш свежий (< 1 часа), используем его
+      if (cachedRoles != null && cacheTime != null && (now - cacheTime) < 3600000) {
+        if (mounted) {
+          setState(() {
+            userRoles = cachedRoles;
+          });
+        }
         return;
       }
-      UserByIdProfile userProfile = await ApiService().getUserById(int.parse(userId));
+      
+      String userId = prefs.getString('userID') ?? '';
+      if (userId.isEmpty) {
+        if (mounted) {
+        setState(() { userRoles = ['No user ID found']; });
+        }
+        return;
+      }
+      
+      // Загружаем с сервера с timeout
+      UserByIdProfile userProfile = await ApiService()
+          .getUserById(int.parse(userId))
+          .timeout(Duration(seconds: 5), onTimeout: () {
+        throw Exception('Timeout loading user profile');
+      });
+      
+      final roles = userProfile.role?.map((role) => role.name).toList() ?? ['No role assigned'];
+      
+      // Сохраняем в кэш
+      await prefs.setStringList('cached_user_roles', roles);
+      await prefs.setInt('cached_user_roles_time', now);
+      
       if (mounted) {
         setState(() {
-          userRoles = userProfile.role?.map((role) => role.name).toList() ?? ['No role assigned'];
+          userRoles = roles;
         });
       }
     } catch (e) {
-      //print('Error loading user roles: $e');
       if (mounted) {
         setState(() { userRoles = ['Error loading roles']; });
       }
@@ -252,12 +236,65 @@ Future<void> _saveFilterState() async {
   }
 
   Future<void> _checkPermissions() async {
-    final canRead = await _apiService.hasPermission('taskStatus.read');
-    final canCreate = await _apiService.hasPermission('taskStatus.create');
-    final canUpdate = await _apiService.hasPermission('taskStatus.update');
-    final canDelete = await _apiService.hasPermission('taskStatus.delete');
-    final hasPermission = await _apiService.hasPermission('task.create');
-    final progress = await _apiService.getTutorialProgress();
+    try {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      
+      // ОПТИМИЗАЦИЯ: Проверяем кэш разрешений
+      final cacheTime = prefs.getInt('cached_permissions_time');
+      final now = DateTime.now().millisecondsSinceEpoch;
+      
+      // Если кэш свежий (< 30 минут), используем его
+      if (cacheTime != null && (now - cacheTime) < 1800000) {
+        if (!mounted) return;
+        setState(() {
+          _canReadTaskStatus = prefs.getBool('cached_canReadTaskStatus') ?? false;
+          _canCreateTaskStatus = prefs.getBool('cached_canCreateTaskStatus') ?? false;
+          _canUpdateTaskStatus = prefs.getBool('cached_canUpdateTaskStatus') ?? false;
+          _canDeleteTaskStatus = prefs.getBool('cached_canDeleteTaskStatus') ?? false;
+          _hasPermissionToAddTask = prefs.getBool('cached_hasPermissionToAddTask') ?? false;
+          showFilter = _hasPermissionToAddTask;
+        });
+        
+        bool isTutorialShown = prefs.getBool('isTutorialShownTaskSearchIconAppBar') ?? false;
+        setState(() { _isTutorialShown = isTutorialShown; });
+        return;
+      }
+      
+      // Загружаем с сервера с timeout
+      final results = await Future.wait([
+        _apiService.hasPermission('taskStatus.read'),
+        _apiService.hasPermission('taskStatus.create'),
+        _apiService.hasPermission('taskStatus.update'),
+        _apiService.hasPermission('taskStatus.delete'),
+        _apiService.hasPermission('task.create'),
+        _apiService.getTutorialProgress(),
+      ]).timeout(Duration(seconds: 10), onTimeout: () {
+        // Возвращаем кэшированные значения при timeout
+        return [
+          prefs.getBool('cached_canReadTaskStatus') ?? false,
+          prefs.getBool('cached_canCreateTaskStatus') ?? false,
+          prefs.getBool('cached_canUpdateTaskStatus') ?? false,
+          prefs.getBool('cached_canDeleteTaskStatus') ?? false,
+          prefs.getBool('cached_hasPermissionToAddTask') ?? false,
+          {'result': null},
+        ];
+      });
+      
+      final canRead = results[0] as bool;
+      final canCreate = results[1] as bool;
+      final canUpdate = results[2] as bool;
+      final canDelete = results[3] as bool;
+      final hasPermission = results[4] as bool;
+      final progress = results[5] as Map<String, dynamic>;
+      
+      // Сохраняем в кэш
+      await prefs.setBool('cached_canReadTaskStatus', canRead);
+      await prefs.setBool('cached_canCreateTaskStatus', canCreate);
+      await prefs.setBool('cached_canUpdateTaskStatus', canUpdate);
+      await prefs.setBool('cached_canDeleteTaskStatus', canDelete);
+      await prefs.setBool('cached_hasPermissionToAddTask', hasPermission);
+      await prefs.setInt('cached_permissions_time', now);
+      
     if (!mounted) return;
     setState(() {
       _canReadTaskStatus = canRead;
@@ -269,7 +306,6 @@ Future<void> _saveFilterState() async {
       tutorialProgress = progress['result'];
     });
 
-    SharedPreferences prefs = await SharedPreferences.getInstance();
     bool isTutorialShown = prefs.getBool('isTutorialShownTaskSearchIconAppBar') ?? false;
     setState(() { _isTutorialShown = isTutorialShown; });
 
@@ -279,6 +315,19 @@ Future<void> _saveFilterState() async {
         if (mounted) {
           //showTutorial();
         }
+        });
+      }
+    } catch (e) {
+      // При ошибке используем кэшированные значения
+      if (!mounted) return;
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      setState(() {
+        _canReadTaskStatus = prefs.getBool('cached_canReadTaskStatus') ?? false;
+        _canCreateTaskStatus = prefs.getBool('cached_canCreateTaskStatus') ?? false;
+        _canUpdateTaskStatus = prefs.getBool('cached_canUpdateTaskStatus') ?? false;
+        _canDeleteTaskStatus = prefs.getBool('cached_canDeleteTaskStatus') ?? false;
+        _hasPermissionToAddTask = prefs.getBool('cached_hasPermissionToAddTask') ?? false;
+        showFilter = _hasPermissionToAddTask;
       });
     }
   }
@@ -524,7 +573,8 @@ Future<void> _saveFilterState() async {
       });
     }
 
-    await Future.delayed(Duration(milliseconds: 50));
+    // ОПТИМИЗАЦИЯ: Убираем задержку - она не нужна
+    // await Future.delayed(Duration(milliseconds: 50));
 
     final taskBloc = BlocProvider.of<TaskBloc>(context);
     
@@ -680,8 +730,24 @@ Future<void> _saveFilterState() async {
 
   void _onSearch(String query) {
     _lastSearchQuery = query;
+    
+    // ОПТИМИЗАЦИЯ: Отменяем предыдущий таймер debounce
+    _searchDebounceTimer?.cancel();
+    
+    // Если строка пустая, выполняем поиск сразу
+    if (query.isEmpty) {
     final currentStatusId = _tabTitles[_currentTabIndex]['id'];
     _searchTasks(query, currentStatusId);
+      return;
+    }
+    
+    // ОПТИМИЗАЦИЯ: Используем debounce для непустых запросов
+    _searchDebounceTimer = Timer(_searchDebounce, () {
+      if (mounted && _tabTitles.isNotEmpty) {
+        final currentStatusId = _tabTitles[_currentTabIndex]['id'];
+        _searchTasks(query, currentStatusId);
+      }
+    });
   }
 
   FocusNode focusNode = FocusNode();
@@ -933,7 +999,7 @@ Future<void> _saveFilterState() async {
               : 0;
 
           // Показываем лоадер только если флаги активны ИЛИ состояние - TaskLoading
-          if (_shouldShowLoader || _isFilterLoading || state is TaskLoading) {
+          if (state is TaskLoading) {
             return const Center(
               child: PlayStoreImageLoading(
                 size: 80.0,
@@ -943,6 +1009,18 @@ Future<void> _saveFilterState() async {
           }
 
           if (state is TaskDataLoaded) {
+            // ИСПРАВЛЕНО: Принудительно сбрасываем флаги если данные загружены
+            if (_shouldShowLoader || _isFilterLoading) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted) {
+                  setState(() {
+                    _shouldShowLoader = false;
+                    _isFilterLoading = false;
+                  });
+                }
+              });
+            }
+            
             final List<Task> tasks = state.tasks;
             final statusId = _tabTitles[_tabController.index]['id'];
             final filteredTasks = tasks
@@ -1058,8 +1136,7 @@ Future<void> _saveFilterState() async {
     );
 
     if (result == true) {
-      BlocProvider.of<TaskBloc>(context).add(FetchTaskStatuses());
-
+      // ОПТИМИЗАЦИЯ: Убираем дублирование вызова FetchTaskStatuses
       final taskBloc = BlocProvider.of<TaskBloc>(context);
       taskBloc.add(FetchTaskStatuses());
 
@@ -1311,7 +1388,7 @@ Widget _buildTabBarView() {
             _tabTitles = state.taskStatuses
                 .where((status) => _canReadTaskStatus)
                 .map((status) =>
-            {'id': status.id, 'title': status.taskStatus!.name ?? ""})
+            {'id': status.id, 'title': status.taskStatus?.name ?? ""})
                 .toList();
             _tabKeys = List.generate(_tabTitles.length, (_) => GlobalKey());
 
@@ -1342,20 +1419,27 @@ Widget _buildTabBarView() {
                   }
 
                   debugPrint('TaskScreen: TabController listener triggered, new index: ${_tabController.index}');
+                  
+                  final currentStatusId = _tabTitles[_tabController.index]['id'];
+                  bool hasActiveFilters = _hasActiveFilters();
+                  
+                  // ИСПРАВЛЕНО: Устанавливаем флаг загрузки при переключении табов
                   setState(() {
                     _currentTabIndex = _tabController.index;
+                    // Показываем лоадер только если есть активные фильтры или поиск
+                    if (hasActiveFilters || _lastSearchQuery.isNotEmpty) {
+                      _shouldShowLoader = true;
+                    }
                   });
-                  final currentStatusId = _tabTitles[_currentTabIndex]['id'];
+                  
                   if (_scrollController.hasClients) {
                     _scrollToActiveTab();
                   }
-
-                  bool hasActiveFilters = _hasActiveFilters();
                   
                   // Преобразуем project_ids в List<int>
                   List<int>? projectIdsList = _selectedProjects.isNotEmpty
                       ? _selectedProjects.map((id) => int.parse(id)).toList()
-                      : (_selectedProject != null ? [int.parse(_selectedProject!)] : null);
+                      : null;
 
                   context.read<TaskBloc>().add(FetchTasks(
                     currentStatusId,
@@ -1436,22 +1520,40 @@ Widget _buildTabBarView() {
                 }
               }
 
-              // Автоматически загружаем задачи для активного статуса после refresh
-              Future.delayed(Duration(milliseconds: 150), () {
-                if (mounted && _tabTitles.isNotEmpty) {
-                  final activeStatusId = _tabTitles[_currentTabIndex]['id'];
+              // ОПТИМИЗАЦИЯ: Убираем задержку и проверяем состояние перед загрузкой
+              // Автоматически загружаем задачи для активного статуса после refresh только если нет активных фильтров
+              if (_tabTitles.isNotEmpty) {
+                final activeStatusId = _tabTitles[_currentTabIndex]['id'];
+                final bool hasActiveFilters = _hasActiveFilters();
+                final taskBloc = context.read<TaskBloc>();
 
-                  final bool hasActiveFilters = _hasActiveFilters();
-
-                  if (!hasActiveFilters) {
-                    context.read<TaskBloc>().add(FetchTasks(
-                      activeStatusId,
-                    ));
+                // Загружаем только если нет активных фильтров И нет уже загруженных данных
+                if (!hasActiveFilters) {
+                  // Проверяем есть ли уже данные для этого статуса
+                  if (taskBloc.state is TaskDataLoaded) {
+                    final currentState = taskBloc.state as TaskDataLoaded;
+                    final hasTasksForStatus = currentState.tasks.any((task) => task.statusId == activeStatusId);
+                    
+                    // Загружаем только если нет данных
+                    if (!hasTasksForStatus) {
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        if (mounted) {
+                          taskBloc.add(FetchTasks(activeStatusId));
+                        }
+                      });
+                    }
                   } else {
-                    debugPrint('TaskScreen: Skip auto FetchTasks due to active filters');
+                    // Если нет состояния TaskDataLoaded, загружаем
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      if (mounted) {
+                        taskBloc.add(FetchTasks(activeStatusId));
+                      }
+                    });
                   }
+                } else {
+                  debugPrint('TaskScreen: Skip auto FetchTasks due to active filters');
                 }
-              });
+              }
 
             } else {
               // Если табы пустые, создаем пустой контроллер

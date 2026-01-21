@@ -280,57 +280,56 @@ class _AnimatedTextFieldState extends State<AnimatedTextField>
     _longPressTimer?.cancel();
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _heightAnimation,
-      builder: (context, child) {
-        return Container(
-          height: _heightAnimation.value,
-          // ✅ ОБНОВЛЕНО: Если fillColor прозрачный, не добавляем фон (для glass effect)
-          decoration: widget.fillColor != null && widget.fillColor != Colors.transparent
-              ? BoxDecoration(
-                  color: widget.fillColor,
-                  borderRadius: widget.borderRadius,
-                )
-              : null, // Позволяем внешнему Container управлять фоном
-          child: Listener(
-            onPointerDown: _handlePointerDown,
-            onPointerUp: _handlePointerUp,
-            onPointerCancel: _handlePointerCancel,
-            child: TextField(
-              controller: widget.controller,
-              focusNode: widget.focusNode,
-              scrollController: _scrollController,
-              onChanged: widget.onChanged,
-              maxLines: null,
-              style: widget.style,
-              // ВАЖНО: Кастомный билдер для TextSpan с форматированием
-              inputFormatters: [
-                TextInputFormatter.withFunction((oldValue, newValue) {
-                  // Apply custom formatting logic here if needed
-                  return newValue;
-                }),
-              ],
-              decoration: InputDecoration(
-                hintText: widget.hintText,
-                hintStyle: widget.hintStyle,
-                border: InputBorder.none,
-                contentPadding: widget.contentPadding,
-                isDense: true,
-              ),
-              keyboardType: TextInputType.multiline,
-              textInputAction: TextInputAction.newline,
-              enableInteractiveSelection: true,
-              contextMenuBuilder: (context, editableTextState) {
-                return const SizedBox.shrink();
-              },
+ @override
+Widget build(BuildContext context) {
+  return AnimatedBuilder(
+    animation: _heightAnimation,
+    builder: (context, child) {
+      return Container(
+        height: _heightAnimation.value,
+        decoration: widget.fillColor != null && widget.fillColor != Colors.transparent
+            ? BoxDecoration(
+                color: widget.fillColor,
+                borderRadius: widget.borderRadius,
+              )
+            : null,
+        child: Listener(
+          onPointerDown: _handlePointerDown,
+          onPointerUp: _handlePointerUp,
+          onPointerCancel: _handlePointerCancel,
+          child: TextField(
+            controller: widget.controller,
+            focusNode: widget.focusNode,
+            scrollController: _scrollController,
+            onChanged: widget.onChanged,
+            maxLines: null,
+            style: widget.style,
+            textAlignVertical: TextAlignVertical.center, // ✅ ДОБАВЛЕНО: Центрирует текст вертикально
+            inputFormatters: [
+              TextInputFormatter.withFunction((oldValue, newValue) {
+                return newValue;
+              }),
+            ],
+            decoration: InputDecoration(
+              hintText: widget.hintText,
+              hintStyle: widget.hintStyle,
+              border: InputBorder.none,
+              contentPadding: widget.contentPadding,
+              isDense: true,
+              isCollapsed: false, // ✅ ДОБАВЛЕНО: Позволяет использовать textAlignVertical
             ),
+            keyboardType: TextInputType.multiline,
+            textInputAction: TextInputAction.newline,
+            enableInteractiveSelection: true,
+            contextMenuBuilder: (context, editableTextState) {
+              return const SizedBox.shrink();
+            },
           ),
-        );
-      },
-    );
-  }
+        ),
+      );
+    },
+  );
+}
 
 
   @override

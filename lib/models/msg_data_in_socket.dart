@@ -71,7 +71,7 @@ factory MessageSocket.fromJson(Map<String, dynamic> json) {
     filePath: json["file_path"],
     isLeadMessage: json["is_lead_message"] == false, 
     sender: json["sender"] == null ? null : Sender.fromJson(json["sender"]),
-    isMyMessage: json["is_my_message"] == false, 
+    isMyMessage: json["is_my_message"] ?? false, 
     voiceDuration: json["voice_duration"],
     forwardedMessage: json['forwarded_message'],
     isChanged: json['is_changed'] ?? false, 

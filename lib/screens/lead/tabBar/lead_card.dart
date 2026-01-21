@@ -117,7 +117,7 @@ Color _hexToColor(String hexColor) {
     'Инстаграм': Color(0xFFE1306C), // Instagram розово-красный
     'Телефон': Color(0xFF4CAF50), // Зеленый для телефона
     'Электронная почта': Color(0xFFFF5722), // Оранжево-красный для почты
-    'Messenger': Color(0xFF0084FF), // Messenger синий
+    'Messenger': Color.fromARGB(255, 217, 31, 205), // Messenger фиолетово-синий (соответствует цвету иконки)
   };
 
   Color getBorderColor(String? sourceName) {

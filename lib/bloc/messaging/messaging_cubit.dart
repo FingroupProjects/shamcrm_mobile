@@ -16,7 +16,7 @@ class MessagingCubit extends Cubit<MessagingState> {
   /// ✅ НОВЫЙ МЕТОД: Показать кэшированные сообщения (без загрузки с API)
   /// Используется для мгновенной загрузки чата из кэша, пока идут запросы к серверу
   void showCachedMessages(List<Message> cachedMessages) {
-    debugPrint('✅ MessagingCubit: Showing ${cachedMessages.length} cached messages');
+    debugPrint('=================-=== ✅ MessagingCubit: Showing ${cachedMessages.length} cached messages');
     
     List<Message> pinnedMessages = [];
     for (var message in cachedMessages) {
@@ -81,13 +81,13 @@ class MessagingCubit extends Cubit<MessagingState> {
         emit(MessagesLoadedState(messages: messages, isFromCache: false)); // ✅ Явно указываем что не из кэша
       }
       
-      debugPrint('MessagingCubit: Successfully loaded ${messages.length} messages');
+      debugPrint('=================-=== MessagingCubit: Successfully loaded ${messages.length} messages');
     } catch (e) {
       debugPrint('MessagingCubit: Primary getMessages failed: $e');
       
       // Если ошибка связана с URL, пытаемся инициализировать заново
       if (_isUrlError(e.toString())) {
-        debugPrint('MessagingCubit: URL error detected, attempting recovery...');
+        debugPrint('=================-=== MessagingCubit: URL error detected, attempting recovery...');
         
         try {
           // Попытка 1: Принудительная инициализация
@@ -110,7 +110,7 @@ class MessagingCubit extends Cubit<MessagingState> {
           debugPrint('MessagingCubit: Recovery attempt successful!');
           return;
         } catch (e2) {
-          debugPrint('MessagingCubit: Recovery attempt failed: $e2');
+          debugPrint('=================-=== MessagingCubit: Recovery attempt failed: $e2');
         }
         
         // Показываем частичную ошибку с возможностью повтора
@@ -135,7 +135,7 @@ class MessagingCubit extends Cubit<MessagingState> {
         await apiService.initialize();
       }
     } catch (e) {
-      debugPrint('MessagingCubit: Error ensuring API initialization: $e');
+      debugPrint('=================-=== MessagingCubit: Error ensuring API initialization: $e');
       throw Exception('Не удалось инициализировать подключение к серверу');
     }
   }
@@ -171,7 +171,7 @@ class MessagingCubit extends Cubit<MessagingState> {
         final currentMessages = (state as MessagesLoadedState).messages;
         final updatedMessages = _mergeMessages(currentMessages, messages);
         emit(MessagesLoadedState(messages: updatedMessages));
-        debugPrint('MessagingCubit: Synced messages in background, new count: ${updatedMessages.length}');
+        debugPrint('=================-=== MessagingCubit: Synced messages in background, new count: ${updatedMessages.length}');
       }
     } catch (e, stackTrace) {
       debugPrint('Error syncing messages in background: $e, StackTrace: $stackTrace');
@@ -211,86 +211,126 @@ class MessagingCubit extends Cubit<MessagingState> {
   }
 
   void updateMessageFromSocket(Message updatedMessage) {
-    if (state is MessagesLoadedState) {
-      final currentState = state as MessagesLoadedState;
-      final messages = List<Message>.from(currentState.messages);
+  debugPrint('=================-=== 🔄 MessagingCubit.updateMessageFromSocket: Processing message id=${updatedMessage.id}, isMyMessage=${updatedMessage.isMyMessage}');
+  
+  if (state is MessagesLoadedState) {
+    final currentState = state as MessagesLoadedState;
+    final messages = List<Message>.from(currentState.messages);
 
-      final localMessageIndex = messages.indexWhere((msg) => msg.id < 0);
+    // ✅ ШАГ 1: Ищем локальное временное сообщение (id < 0)
+    final localMessageIndex = messages.indexWhere((msg) => msg.id < 0);
 
-      if (localMessageIndex != -1) {
-        messages[localMessageIndex] = updatedMessage;
+    if (localMessageIndex != -1) {
+      debugPrint('=================-=== 🔄 MessagingCubit: Replacing local temp message at index $localMessageIndex');
+      messages[localMessageIndex] = updatedMessage;
+      emit(MessagesLoadedState(messages: messages));
+    } else {
+      // ✅ ШАГ 2: Ищем существующее сообщение по id
+      final index = messages.indexWhere((msg) => msg.id == updatedMessage.id);
+      
+      if (index != -1) {
+        debugPrint('=================-=== 🔄 MessagingCubit: Updating existing message at index $index');
+        
+        // ✅ КРИТИЧНО: Проверяем, изменилось ли isMyMessage
+        final oldMessage = messages[index];
+        if (oldMessage.isMyMessage != updatedMessage.isMyMessage) {
+          debugPrint('=================-=== ⚠️ MessagingCubit: isMyMessage CHANGED from ${oldMessage.isMyMessage} to ${updatedMessage.isMyMessage}');
+        }
+        
+        messages[index] = updatedMessage;
         emit(MessagesLoadedState(messages: messages));
       } else {
-        final index = messages.indexWhere((msg) => msg.id == updatedMessage.id);
-        if (index != -1) {
-          messages[index] = updatedMessage;
-          emit(MessagesLoadedState(messages: messages));
-        } else {
-          messages.insert(0, updatedMessage);
-          emit(MessagesLoadedState(messages: messages));
-        }
+        // ✅ ШАГ 3: Добавляем новое сообщение в начало списка
+        debugPrint('=================-=== 🔄 MessagingCubit: Adding new message to list');
+        messages.insert(0, updatedMessage);
+        emit(MessagesLoadedState(messages: messages));
       }
-    } else if (state is PinnedMessagesState) {
-      final currentState = state as PinnedMessagesState;
-      final messages = List<Message>.from(currentState.messages);
+    }
+    
+    debugPrint('=================-=== ✅ MessagingCubit.updateMessageFromSocket: Completed, total messages: ${messages.length}');
+  } else if (state is PinnedMessagesState) {
+    final currentState = state as PinnedMessagesState;
+    final messages = List<Message>.from(currentState.messages);
 
-      final localMessageIndex = messages.indexWhere((msg) => msg.id < 0);
+    final localMessageIndex = messages.indexWhere((msg) => msg.id < 0);
 
-      if (localMessageIndex != -1) {
-        messages[localMessageIndex] = updatedMessage;
+    if (localMessageIndex != -1) {
+      debugPrint('=================-=== 🔄 MessagingCubit (Pinned): Replacing local temp message');
+      messages[localMessageIndex] = updatedMessage;
+      emit(PinnedMessagesState(
+        pinnedMessages: currentState.pinnedMessages,
+        messages: messages,
+      ));
+    } else {
+      final index = messages.indexWhere((msg) => msg.id == updatedMessage.id);
+      
+      if (index != -1) {
+        debugPrint('🔄 MessagingCubit (Pinned): Updating existing message');
+        
+        final oldMessage = messages[index];
+        if (oldMessage.isMyMessage != updatedMessage.isMyMessage) {
+          debugPrint('⚠️ MessagingCubit (Pinned): isMyMessage CHANGED from ${oldMessage.isMyMessage} to ${updatedMessage.isMyMessage}');
+        }
+        
+        messages[index] = updatedMessage;
         emit(PinnedMessagesState(
           pinnedMessages: currentState.pinnedMessages,
           messages: messages,
         ));
       } else {
-        final index = messages.indexWhere((msg) => msg.id == updatedMessage.id);
-        if (index != -1) {
-          messages[index] = updatedMessage;
-          emit(PinnedMessagesState(
-            pinnedMessages: currentState.pinnedMessages,
-            messages: messages,
-          ));
-        } else {
-          messages.insert(0, updatedMessage);
-          emit(PinnedMessagesState(
-            pinnedMessages: currentState.pinnedMessages,
-            messages: messages,
-          ));
-        }
+        debugPrint('=================-=== 🔄 MessagingCubit (Pinned): Adding new message');
+        messages.insert(0, updatedMessage);
+        emit(PinnedMessagesState(
+          pinnedMessages: currentState.pinnedMessages,
+          messages: messages,
+        ));
       }
-    } else if (state is EditingMessageState) {
-      final currentState = state as EditingMessageState;
-      final messages = List<Message>.from(currentState.messages);
+    }
+  } else if (state is EditingMessageState) {
+    final currentState = state as EditingMessageState;
+    final messages = List<Message>.from(currentState.messages);
 
-      final localMessageIndex = messages.indexWhere((msg) => msg.id < 0);
+    final localMessageIndex = messages.indexWhere((msg) => msg.id < 0);
 
-      if (localMessageIndex != -1) {
-        messages[localMessageIndex] = updatedMessage;
+    if (localMessageIndex != -1) {
+      debugPrint('=================-=== 🔄 MessagingCubit (Editing): Replacing local temp message');
+      messages[localMessageIndex] = updatedMessage;
+      emit(EditingMessageState(
+        editingMessage: currentState.editingMessage,
+        messages: messages,
+        pinnedMessages: currentState.pinnedMessages,
+      ));
+    } else {
+      final index = messages.indexWhere((msg) => msg.id == updatedMessage.id);
+      
+      if (index != -1) {
+        debugPrint('🔄 MessagingCubit (Editing): Updating existing message');
+        
+        final oldMessage = messages[index];
+        if (oldMessage.isMyMessage != updatedMessage.isMyMessage) {
+          debugPrint('⚠️ MessagingCubit (Editing): isMyMessage CHANGED from ${oldMessage.isMyMessage} to ${updatedMessage.isMyMessage}');
+        }
+        
+        messages[index] = updatedMessage;
         emit(EditingMessageState(
           editingMessage: currentState.editingMessage,
           messages: messages,
           pinnedMessages: currentState.pinnedMessages,
         ));
       } else {
-        final index = messages.indexWhere((msg) => msg.id == updatedMessage.id);
-        if (index != -1) {
-          messages[index] = updatedMessage;
-          emit(EditingMessageState(
-            editingMessage: currentState.editingMessage,
-            messages: messages,
-            pinnedMessages: currentState.pinnedMessages,
-          ));
-        } else {
-          messages.insert(0, updatedMessage);
-          emit(EditingMessageState(
-            editingMessage: currentState.editingMessage,
-            messages: messages,
-            pinnedMessages: currentState.pinnedMessages,
-          ));
-        }
+        debugPrint('=================-=== 🔄 MessagingCubit (Editing): Adding new message');
+        messages.insert(0, updatedMessage);
+        emit(EditingMessageState(
+          editingMessage: currentState.editingMessage,
+          messages: messages,
+          pinnedMessages: currentState.pinnedMessages,
+        ));
       }
     }
+  } else {
+    debugPrint('=================-=== ⚠️ MessagingCubit.updateMessageFromSocket: Invalid state: ${state.runtimeType}');
   }
+}
 
   void startEditingMessage(Message message) {
     _editingMessage = message;

@@ -76,6 +76,19 @@ class _TemplatesPanelState extends State<TemplatesPanel> with SingleTickerProvid
                         if (state is TemplateLoading) {
                           return Center(child: CircularProgressIndicator());
                         } else if (state is TemplateLoaded) {
+                          if (state.templates.isEmpty) {
+                            return Center(
+                              child: Text(
+                                AppLocalizations.of(context)!.translate('no_templates'),
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontFamily: 'Gilroy',
+                                  fontWeight: FontWeight.w500,
+                                  color: Color(0xff99A4BA),
+                                ),
+                              ),
+                            );
+                          }
                           return ListView.builder(
                             shrinkWrap: true,
                             itemCount: state.templates.length,

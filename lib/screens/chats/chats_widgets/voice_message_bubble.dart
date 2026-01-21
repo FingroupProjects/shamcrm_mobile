@@ -8,12 +8,14 @@ class VoiceMessageWidget extends StatefulWidget {
   final Message message;
   final String baseUrl;
   final bool isLeadChat;
+  final bool? isGroupChat;
 
   const VoiceMessageWidget({
     Key? key,
     required this.message,
     required this.baseUrl,
     this.isLeadChat = false,
+    this.isGroupChat,
   }) : super(key: key);
 
   @override
@@ -79,10 +81,7 @@ class _VoiceMessageWidgetState extends State<VoiceMessageWidget>
             : CrossAxisAlignment.start,
         children: [
           SizedBox(height: 4),
-          // ✅ Логика отображения имени отправителя:
-          // - В лид-чатах: показываем имя для ОБЕИХ сторон (несколько менеджеров могут отвечать)
-          // - В задачах и корпоративных: показываем имя только для собеседника
-          if (widget.isLeadChat || !widget.message.isMyMessage)
+          if (widget.isLeadChat || (widget.isGroupChat == true && !widget.message.isMyMessage))
             Text(
               widget.message.senderName,
               style: TextStyle(

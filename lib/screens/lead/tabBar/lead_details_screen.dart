@@ -631,13 +631,13 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       case 'source_id':
         return AppLocalizations.of(context)!.translate('source_details');
       case 'wa_phone':
-        return 'WhatsApp:';
+        return '${AppLocalizations.of(context)!.translate('whatsApp')}:';
       case 'insta_login':
-        return 'Instagram:';
+        return '${AppLocalizations.of(context)!.translate('instagram')}:';
       case 'facebook_login':
-        return 'Facebook:';
+        return '${AppLocalizations.of(context)!.translate('facebook')}:';
       case 'tg_nick':
-        return 'Telegram:';
+        return '${AppLocalizations.of(context)!.translate('telegram')}:';
       case 'email':
         return AppLocalizations.of(context)!.translate('email_details');
       case 'birthday':
@@ -649,6 +649,8 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       case 'author':
         return AppLocalizations.of(context)!.translate('author_details');
       case 'sales_funnel':
+        return AppLocalizations.of(context)!.translate('sales_funnel_details');
+      case 'sales_funnel_id':
         return AppLocalizations.of(context)!.translate('sales_funnel_details');
       case 'created_at':
         return AppLocalizations.of(context)!.translate('created_at_details');
@@ -756,6 +758,8 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
 
       case 'sales_funnel':
         return lead.salesFunnel?.name ?? '';
+      case 'sales_funnel_id':
+        return lead.salesFunnel?.name ?? '';
 
       case 'created_at':
         return formatDate(lead.createdAt);
@@ -796,6 +800,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       details.add({
         'label': fieldName,
         'value': fieldValue,
+        'fieldName': fc.fieldName, // Добавляем fieldName для проверки типа поля
       });
     }
 
@@ -804,6 +809,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       details.add({
         'label': AppLocalizations.of(context)!.translate('files_details'),
         'value': '${lead.files!.length} ${AppLocalizations.of(context)!.translate('files')}',
+        'fieldName': 'files',
       });
     }
   }
@@ -1110,7 +1116,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 8),
             child: Text(
-              'Код верификации: ${currentLead!.verification_code}',
+              '${AppLocalizations.of(context)!.translate('confirmation_code_label')}: ${currentLead!.verification_code}',
               style: TextStyle(
                 fontSize: 18,
                 fontFamily: 'Gilroy',
@@ -1129,6 +1135,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
               child: _buildDetailItem(
                 details[index]['label']!,
                 details[index]['value']!,
+                details[index]['fieldName'] ?? '',
               ),
             );
           },
@@ -1137,7 +1144,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
     );
   }
 
-  Widget _buildDetailItem(String label, String value) {
+  Widget _buildDetailItem(String label, String value, String fieldName) {
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
         if (label == AppLocalizations.of(context)!.translate('files_details')) {
@@ -1260,7 +1267,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                               .translate('description_details_lead')))
                           ? _buildExpandableText(
                           label, value, constraints.maxWidth)
-                          : _buildValue(value, label),
+                          : _buildValue(value, label, fieldName),
                     ),
                   if (label == AppLocalizations.of(context)!.translate('phone_use') &&
                       _canExportContact &&
@@ -1319,7 +1326,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
     );
   }
 
-  Widget _buildValue(String value, String label) {
+  Widget _buildValue(String value, String label, String fieldName) {
     if (value.isEmpty) {
       return Container();
     }
@@ -1345,7 +1352,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       );
     }
 
-    if (label == 'WhatsApp:') {
+    if (fieldName == 'wa_phone') {
       return GestureDetector(
         onTap: () => _openWhatsApp(value),
         child: Text(
