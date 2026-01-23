@@ -11,6 +11,7 @@ class SupplierDialogBloc extends Bloc<SupplierDialogEvent, SupplierDialogState> 
 
   SupplierDialogBloc() : super(SupplierDialogInitial()) {
     on<LoadSuppliersForDialog>(_onLoadSuppliersForDialog);
+    on<SearchSuppliersForDialog>(_onSearchSuppliersForDialog);
   }
 
   Future<void> _onLoadSuppliersForDialog(
@@ -20,7 +21,22 @@ class SupplierDialogBloc extends Bloc<SupplierDialogEvent, SupplierDialogState> 
     try {
       emit(SupplierDialogLoading());
       
-      final suppliers = await _apiService.getOpeningsSuppliers();
+      final suppliers = await _apiService.getOpeningsSuppliers(search: event.search);
+      
+      emit(SupplierDialogLoaded(suppliers: suppliers.result ?? []));
+    } catch (e) {
+      emit(SupplierDialogError(message: e.toString()));
+    }
+  }
+
+  Future<void> _onSearchSuppliersForDialog(
+    SearchSuppliersForDialog event,
+    Emitter<SupplierDialogState> emit,
+  ) async {
+    try {
+      emit(SupplierDialogLoading());
+      
+      final suppliers = await _apiService.getOpeningsSuppliers(search: event.search);
       
       emit(SupplierDialogLoaded(suppliers: suppliers.result ?? []));
     } catch (e) {

@@ -85,6 +85,16 @@ class MainActivity : FlutterFragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
+        // ✅ Фильтруем предупреждения BLASTBufferQueue из логов
+        // Это предупреждение Android системы о буферах рендеринга, не критично
+        // Устанавливаем уровень логирования для подавления избыточных предупреждений
+        try {
+            System.setProperty("log.tag.BLASTBufferQueue", "ASSERT") // ASSERT = самый высокий уровень, скрывает все
+            System.setProperty("log.tag.SurfaceView", "ASSERT")
+        } catch (e: Exception) {
+            // Игнорируем ошибки при настройке фильтра
+        }
+        
         Log.d("MainActivity", "=== onCreate ===")
 
         if (Build.VERSION.SDK_INT >= 35) {

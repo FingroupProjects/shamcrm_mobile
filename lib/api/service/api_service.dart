@@ -12681,27 +12681,88 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
 
     final path = await _appendQueryParams(url);
     if (kDebugMode) {
-      debugPrint('ApiService: getCashRegister - Generated path: $path');
+      debugPrint('🔵 ApiService: getCashRegister - path: $path');
     }
 
     try {
       final response = await _getRequest(path);
+      
+      if (kDebugMode) {
+        debugPrint('🔵 ApiService: getCashRegister - statusCode: ${response.statusCode}');
+        debugPrint('🔵 ApiService: getCashRegister - body length: ${response.body.length}');
+      }
+
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
+        
+        if (kDebugMode) {
+          debugPrint('🔵 ApiService: getCashRegister - JSON decoded');
+          debugPrint('🔵 ApiService: getCashRegister - keys: ${data is Map ? (data as Map).keys.toList() : "not a map"}');
+          if (data is Map && data['result'] != null) {
+            final result = data['result'];
+            debugPrint('🔵 ApiService: getCashRegister - result type: ${result.runtimeType}');
+            if (result is Map) {
+              debugPrint('🔵 ApiService: getCashRegister - result keys: ${result.keys.toList()}');
+              if (result['data'] != null) {
+                debugPrint('🔵 ApiService: getCashRegister - data type: ${result['data'].runtimeType}');
+                if (result['data'] is List) {
+                  debugPrint('🔵 ApiService: getCashRegister - data length: ${(result['data'] as List).length}');
+                  if ((result['data'] as List).isNotEmpty) {
+                    final first = (result['data'] as List)[0];
+                    if (first is Map) {
+                      debugPrint('🔵 ApiService: getCashRegister - first item keys: ${first.keys.toList()}');
+                      if (first['users'] != null) {
+                        debugPrint('🔵 ApiService: getCashRegister - first item users type: ${first['users'].runtimeType}');
+                        if (first['users'] is List && (first['users'] as List).isNotEmpty) {
+                          final firstUser = (first['users'] as List)[0];
+                          if (firstUser is Map) {
+                            debugPrint('🔵 ApiService: getCashRegister - first user keys: ${firstUser.keys.toList()}');
+                            debugPrint('🔵 ApiService: getCashRegister - first user job_title: ${firstUser['job_title']} (type: ${firstUser['job_title'].runtimeType})');
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+              if (result['pagination'] != null) {
+                debugPrint('🔵 ApiService: getCashRegister - pagination keys: ${(result['pagination'] as Map).keys.toList()}');
+              }
+            }
+          }
+        }
+
         if (data['result'] != null) {
-          return CashRegisterResponseModel.fromJson(data['result']);
+          if (kDebugMode) {
+            debugPrint('🔵 ApiService: getCashRegister - calling CashRegisterResponseModel.fromJson');
+          }
+          final parsed = CashRegisterResponseModel.fromJson(data['result']);
+          if (kDebugMode) {
+            debugPrint('🔵 ApiService: getCashRegister - parsed successfully, count: ${parsed.data.length}');
+          }
+          return parsed;
         } else {
+          if (kDebugMode) {
+            debugPrint('🔴 ApiService: getCashRegister - data["result"] is null');
+          }
           throw Exception('Нет данных по кассе');
         }
       } else {
         final data = json.decode(response.body);
+        if (kDebugMode) {
+          debugPrint('🔴 ApiService: getCashRegister - error status: ${response.statusCode}');
+        }
         if (data['errors'] != null) {
           throw Exception(data['errors'] ?? 'Ошибка загрузки кассы');
         } else {
           throw Exception('Ошибка загрузки кассы: ${response.body}');
         }
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      if (kDebugMode) {
+        debugPrint('🔴 ApiService: getCashRegister - EXCEPTION: $e');
+        debugPrint('🔴 ApiService: getCashRegister - STACK: $stackTrace');
+      }
       throw Exception('Ошибка получения данных кассы: $e');
     }
   }
@@ -17094,10 +17155,15 @@ Future<List<ExpenseArticleDashboardWarehouse>> getExpenseArticleDashboardWarehou
 
   //==================== OPENING GOOD SECTION ================
   /// Получить первоначальные остатки по товарам
-  Future<GoodsOpeningsResponse> getGoodsOpenings() async {
+  Future<GoodsOpeningsResponse> getGoodsOpenings({String? search}) async {
     String path = await _appendQueryParams('/good-initial-balance');
 
     path += '&is_service=0';
+    
+    // Добавляем параметр search, если он передан
+    if (search != null && search.trim().isNotEmpty) {
+      path += '&search=${Uri.encodeComponent(search.trim())}';
+    }
 
     if (kDebugMode) {
       debugPrint('ApiService: getGoodsOpenings - path: $path');
@@ -17253,8 +17319,13 @@ Future<List<ExpenseArticleDashboardWarehouse>> getExpenseArticleDashboardWarehou
   //========= OPENING CLIENT SECTION ==========
 
   /// Получить первоначальные остатки по клиентам
-  Future<ClientOpeningsResponse> getClientOpenings() async {
+  Future<ClientOpeningsResponse> getClientOpenings({String? search}) async {
     String path = await _appendQueryParams('/initial-balance/lead');
+    
+    // Добавляем параметр search, если он передан
+    if (search != null && search.trim().isNotEmpty) {
+      path += '&search=${Uri.encodeComponent(search.trim())}';
+    }
 
     if (kDebugMode) {
       debugPrint('ApiService: getClientOpenings - path: $path');
@@ -17276,9 +17347,12 @@ Future<List<ExpenseArticleDashboardWarehouse>> getExpenseArticleDashboardWarehou
 
 
   /// Получить список клиентов/лидов для диалога выбора
-  Future<List<opening_lead.Lead>> getClientOpeningsForDialog() async {
+  Future<List<opening_lead.Lead>> getClientOpeningsForDialog({String? search}) async {
     try {
       String path = await _appendQueryParams('/initial-balance/get/leads');
+      if (search != null && search.trim().isNotEmpty) {
+        path += '&search=${Uri.encodeComponent(search.trim())}';
+      }
       final response = await _getRequest(path);
 
       if (response.statusCode == 200) {
@@ -17403,8 +17477,13 @@ Future<List<ExpenseArticleDashboardWarehouse>> getExpenseArticleDashboardWarehou
   //========= OPENING SUPPLIER SECTION ==========
 
   /// Получить первоначальные остатки по поставщикам
-  Future<SupplierOpeningsResponse> getSupplierOpenings() async {
+  Future<SupplierOpeningsResponse> getSupplierOpenings({String? search}) async {
     String path = await _appendQueryParams('/initial-balance/supplier');
+    
+    // Добавляем параметр search, если он передан
+    if (search != null && search.trim().isNotEmpty) {
+      path += '&search=${Uri.encodeComponent(search.trim())}';
+    }
 
     if (kDebugMode) {
       debugPrint('ApiService: getSupplierOpenings - path: $path');
@@ -17521,9 +17600,12 @@ Future<List<ExpenseArticleDashboardWarehouse>> getExpenseArticleDashboardWarehou
   }
 
   /// Получить список поставщиков для диалога выбора
-  Future<opening_supplier.SuppliersForOpeningsResponse> getOpeningsSuppliers() async {
+  Future<opening_supplier.SuppliersForOpeningsResponse> getOpeningsSuppliers({String? search}) async {
     try {
       String path = await _appendQueryParams('/initial-balance/get/suppliers');
+      if (search != null && search.trim().isNotEmpty) {
+        path += '&search=${Uri.encodeComponent(search.trim())}';
+      }
       final response = await _getRequest(path);
 
       if (response.statusCode == 200) {
@@ -17555,31 +17637,86 @@ Future<List<ExpenseArticleDashboardWarehouse>> getExpenseArticleDashboardWarehou
 
   // ========== OPENING Cash Register =========
   /// Получить первоначальные остатки по кассам/складам
-  Future<openings.CashRegisterOpeningsResponse> getCashRegisterOpenings() async {
+  Future<openings.CashRegisterOpeningsResponse> getCashRegisterOpenings({String? search}) async {
     String path = await _appendQueryParams('/cash-register-initial-balance');
-
-    if (kDebugMode) {
-      debugPrint('ApiService: getCashRegisterOpenings - path: $path');
+    
+    // Добавляем параметр search, если он передан
+    if (search != null && search.trim().isNotEmpty) {
+      path += '&search=${Uri.encodeComponent(search.trim())}';
     }
 
-    final response = await _getRequest(path);
+    if (kDebugMode) {
+      debugPrint('🔵 ApiService: getCashRegisterOpenings - path: $path');
+    }
 
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      return openings.CashRegisterOpeningsResponse.fromJson(data);
-    } else {
-      final message = _extractErrorMessageFromResponse(response);
-      throw ApiException(
-        message ?? 'Ошибка получения первоначальных остатков по кассам/складам',
-        response.statusCode,
-      );
+    try {
+      final response = await _getRequest(path);
+
+      if (kDebugMode) {
+        debugPrint('🔵 ApiService: getCashRegisterOpenings - statusCode: ${response.statusCode}');
+        debugPrint('🔵 ApiService: getCashRegisterOpenings - body length: ${response.body.length}');
+      }
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        
+        if (kDebugMode) {
+          debugPrint('🔵 ApiService: getCashRegisterOpenings - JSON decoded successfully');
+          debugPrint('🔵 ApiService: getCashRegisterOpenings - JSON keys: ${data is Map ? (data as Map).keys.toList() : "not a map"}');
+          if (data is Map && data["result"] != null) {
+            final result = data["result"];
+            debugPrint('🔵 ApiService: getCashRegisterOpenings - result type: ${result.runtimeType}');
+            if (result is Map) {
+              debugPrint('🔵 ApiService: getCashRegisterOpenings - result keys: ${result.keys.toList()}');
+              if (result["data"] != null) {
+                debugPrint('🔵 ApiService: getCashRegisterOpenings - data type: ${result["data"].runtimeType}');
+                if (result["data"] is List) {
+                  debugPrint('🔵 ApiService: getCashRegisterOpenings - data length: ${(result["data"] as List).length}');
+                  if ((result["data"] as List).isNotEmpty) {
+                    debugPrint('🔵 ApiService: getCashRegisterOpenings - first item keys: ${(result["data"] as List)[0] is Map ? ((result["data"] as List)[0] as Map).keys.toList() : "not a map"}');
+                  }
+                }
+              }
+            } else if (result is List) {
+              debugPrint('🔵 ApiService: getCashRegisterOpenings - result is List, length: ${result.length}');
+            }
+          }
+        }
+
+        final parsedResponse = openings.CashRegisterOpeningsResponse.fromJson(data);
+        
+        if (kDebugMode) {
+          debugPrint('🔵 ApiService: getCashRegisterOpenings - parsed successfully');
+          debugPrint('🔵 ApiService: getCashRegisterOpenings - result count: ${parsedResponse.result?.length ?? 0}');
+        }
+        
+        return parsedResponse;
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        if (kDebugMode) {
+          debugPrint('🔴 ApiService: getCashRegisterOpenings - error status: ${response.statusCode}, message: $message');
+        }
+        throw ApiException(
+          message ?? 'Ошибка получения первоначальных остатков по кассам/складам',
+          response.statusCode,
+        );
+      }
+    } catch (e, stackTrace) {
+      if (kDebugMode) {
+        debugPrint('🔴 ApiService: getCashRegisterOpenings - EXCEPTION: $e');
+        debugPrint('🔴 ApiService: getCashRegisterOpenings - STACK: $stackTrace');
+      }
+      rethrow;
     }
   }
 
   /// Получить список касс для выбора при создании остатка кассы
-  Future<List<openings.CashRegister>> getCashRegisters() async {
+  Future<List<openings.CashRegister>> getCashRegisters({String? search}) async {
     try {
       String path = await _appendQueryParams('/initial-balance/get/cash-registers');
+      if (search != null && search.trim().isNotEmpty) {
+        path += '&search=${Uri.encodeComponent(search.trim())}';
+      }
 
       if (kDebugMode) {
         debugPrint('ApiService: getCashRegisters - path: $path');

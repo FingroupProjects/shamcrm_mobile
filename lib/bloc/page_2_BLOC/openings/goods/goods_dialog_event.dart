@@ -2,7 +2,15 @@ import '../../../../models/page_2/good_variants_model.dart';
 
 abstract class GoodsDialogEvent {}
 
-class LoadGoodVariantsForDialog extends GoodsDialogEvent {}
+class LoadGoodVariantsForDialog extends GoodsDialogEvent {
+  final String? search;
+  LoadGoodVariantsForDialog({this.search});
+}
+
+class SearchGoodVariantsForDialog extends GoodsDialogEvent {
+  final String? search;
+  SearchGoodVariantsForDialog({this.search});
+}
 
 class RefreshGoodVariantsForDialog extends GoodsDialogEvent {}
 

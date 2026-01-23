@@ -24,11 +24,11 @@ class ClientOpeningsBloc extends Bloc<ClientOpeningsEvent, ClientOpeningsState> 
     try {
       emit(ClientOpeningsLoading());
 
-      final response = await _apiService.getClientOpenings();
+      final response = await _apiService.getClientOpenings(search: event.search);
 
       final clients = response.result ?? [];
       
-      emit(ClientOpeningsLoaded(clients: clients));
+      emit(ClientOpeningsLoaded(clients: clients, search: event.search));
     } catch (e) {
       emit(ClientOpeningsError(message: e.toString()));
     }
@@ -38,7 +38,13 @@ class ClientOpeningsBloc extends Bloc<ClientOpeningsEvent, ClientOpeningsState> 
     RefreshClientOpenings event,
     Emitter<ClientOpeningsState> emit,
   ) async {
-    add(LoadClientOpenings());
+    // Сохраняем текущий search при обновлении
+    final currentState = state;
+    String? currentSearch;
+    if (currentState is ClientOpeningsLoaded) {
+      currentSearch = currentState.search;
+    }
+    add(LoadClientOpenings(search: currentSearch));
   }
 
   Future<void> _onDeleteClientOpening(
@@ -51,8 +57,13 @@ class ClientOpeningsBloc extends Bloc<ClientOpeningsEvent, ClientOpeningsState> 
       // Emit success state
       emit(ClientOpeningDeleteSuccess());
       
-      // Reload the list after successful deletion
-      add(LoadClientOpenings());
+      // Reload the list after successful deletion, сохраняем search
+      final currentState = state;
+      String? currentSearch;
+      if (currentState is ClientOpeningsLoaded) {
+        currentSearch = currentState.search;
+      }
+      add(LoadClientOpenings(search: currentSearch));
     } catch (e) {
       // Сохраняем текущее состояние и эмитим операционную ошибку
       emit(ClientOpeningsOperationError(
@@ -79,8 +90,13 @@ class ClientOpeningsBloc extends Bloc<ClientOpeningsEvent, ClientOpeningsState> 
       // Эмитим состояние успешного создания
       emit(ClientOpeningCreateSuccess());
       
-      // Reload the list after successful creation
-      add(LoadClientOpenings());
+      // Reload the list after successful creation, сохраняем search
+      final currentState = state;
+      String? currentSearch;
+      if (currentState is ClientOpeningsLoaded) {
+        currentSearch = currentState.search;
+      }
+      add(LoadClientOpenings(search: currentSearch));
     } catch (e) {
       // Эмитим ошибку создания
       emit(ClientOpeningCreateError(
@@ -106,8 +122,13 @@ class ClientOpeningsBloc extends Bloc<ClientOpeningsEvent, ClientOpeningsState> 
       
       emit(ClientOpeningUpdateSuccess());
       
-      // Reload the list after successful update
-      add(LoadClientOpenings());
+      // Reload the list after successful update, сохраняем search
+      final currentState = state;
+      String? currentSearch;
+      if (currentState is ClientOpeningsLoaded) {
+        currentSearch = currentState.search;
+      }
+      add(LoadClientOpenings(search: currentSearch));
     } catch (e) {
       // Эмитим ошибку обновления для показа в snackbar
       emit(ClientOpeningUpdateError(

@@ -11,6 +11,7 @@ class ClientDialogBloc extends Bloc<ClientDialogEvent, ClientDialogState> {
 
   ClientDialogBloc() : super(ClientDialogInitial()) {
     on<LoadLeadsForDialog>(_onLoadLeadsForDialog);
+    on<SearchLeadsForDialog>(_onSearchLeadsForDialog);
   }
 
   Future<void> _onLoadLeadsForDialog(
@@ -20,7 +21,22 @@ class ClientDialogBloc extends Bloc<ClientDialogEvent, ClientDialogState> {
     try {
       emit(ClientDialogLoading());
       
-      final leads = await _apiService.getClientOpeningsForDialog();
+      final leads = await _apiService.getClientOpeningsForDialog(search: event.search);
+      
+      emit(ClientDialogLoaded(leads: leads));
+    } catch (e) {
+      emit(ClientDialogError(message: e.toString()));
+    }
+  }
+
+  Future<void> _onSearchLeadsForDialog(
+    SearchLeadsForDialog event,
+    Emitter<ClientDialogState> emit,
+  ) async {
+    try {
+      emit(ClientDialogLoading());
+      
+      final leads = await _apiService.getClientOpeningsForDialog(search: event.search);
       
       emit(ClientDialogLoaded(leads: leads));
     } catch (e) {

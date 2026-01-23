@@ -1,8 +1,9 @@
 abstract class ClientOpeningsEvent {}
 
 class LoadClientOpenings extends ClientOpeningsEvent {
-
-  LoadClientOpenings();
+  final String? search;
+  
+  LoadClientOpenings({this.search});
 }
 
 class RefreshClientOpenings extends ClientOpeningsEvent {

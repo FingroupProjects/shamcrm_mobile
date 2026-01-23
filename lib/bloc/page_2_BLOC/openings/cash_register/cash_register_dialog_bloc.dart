@@ -11,6 +11,7 @@ class CashRegisterDialogBloc extends Bloc<CashRegisterDialogEvent, CashRegisterD
 
   CashRegisterDialogBloc() : super(CashRegisterDialogInitial()) {
     on<LoadCashRegistersForDialog>(_onLoadCashRegistersForDialog);
+    on<SearchCashRegistersForDialog>(_onSearchCashRegistersForDialog);
   }
 
   Future<void> _onLoadCashRegistersForDialog(
@@ -20,7 +21,22 @@ class CashRegisterDialogBloc extends Bloc<CashRegisterDialogEvent, CashRegisterD
     try {
       emit(CashRegisterDialogLoading());
       
-      final cashRegisters = await _apiService.getCashRegisters();
+      final cashRegisters = await _apiService.getCashRegisters(search: event.search);
+      
+      emit(CashRegisterDialogLoaded(cashRegisters: cashRegisters));
+    } catch (e) {
+      emit(CashRegisterDialogError(message: e.toString()));
+    }
+  }
+
+  Future<void> _onSearchCashRegistersForDialog(
+    SearchCashRegistersForDialog event,
+    Emitter<CashRegisterDialogState> emit,
+  ) async {
+    try {
+      emit(CashRegisterDialogLoading());
+      
+      final cashRegisters = await _apiService.getCashRegisters(search: event.search);
       
       emit(CashRegisterDialogLoaded(cashRegisters: cashRegisters));
     } catch (e) {

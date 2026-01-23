@@ -26,7 +26,7 @@ class CreateClientOpeningDialog extends StatelessWidget {
   }
 }
 
-class ClientLeadsDialog extends StatelessWidget {
+class ClientLeadsDialog extends StatefulWidget {
   final ClientOpeningsBloc clientOpeningsBloc;
   
   const ClientLeadsDialog({
@@ -34,11 +34,30 @@ class ClientLeadsDialog extends StatelessWidget {
     required this.clientOpeningsBloc,
   });
 
+  @override
+  State<ClientLeadsDialog> createState() => _ClientLeadsDialogState();
+}
+
+class _ClientLeadsDialogState extends State<ClientLeadsDialog> {
+  final TextEditingController _searchController = TextEditingController();
+  bool _isSearching = false;
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
   String _translate(BuildContext context, String key, String fallback) {
     return AppLocalizations.of(context)?.translate(key) ?? fallback;
   }
 
-  Widget _buildLeadsList(BuildContext context, List<Lead> items) {
+  void _onSearch(String input) {
+    final query = input.trim().isEmpty ? null : input.trim();
+    context.read<ClientDialogBloc>().add(SearchLeadsForDialog(search: query));
+  }
+
+  Widget _buildLeadsList(List<Lead> items) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -61,12 +80,12 @@ class ClientLeadsDialog extends StatelessWidget {
             ),
           )
         else
-          ...items.map((item) => _buildLeadCard(context, item)).toList(),
+          ...items.map((item) => _buildLeadCard(item)).toList(),
       ],
     );
   }
 
-  Widget _buildLeadCard(BuildContext context, Lead item) {
+  Widget _buildLeadCard(Lead item) {
     return GestureDetector(
       onTap: () {
         // Закрываем диалог
@@ -77,7 +96,7 @@ class ClientLeadsDialog extends StatelessWidget {
           context,
           MaterialPageRoute(
             builder: (newContext) => BlocProvider.value(
-              value: clientOpeningsBloc,
+              value: widget.clientOpeningsBloc,
               child: AddClientOpeningScreen(
                 clientName: item.name ?? 'N/A',
                 leadId: item.id ?? 0,
@@ -158,35 +177,84 @@ class ClientLeadsDialog extends StatelessWidget {
                   topRight: Radius.circular(20),
                 ),
               ),
-              child: Row(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Icon(
-                      Icons.people_outline,
-                      color: Colors.white,
-                      size: 20,
-                    ),
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(
+                          Icons.people_outline,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          _translate(context, 'select_client', 'Выберите клиента'),
+                          style: const TextStyle(
+                            fontFamily: 'Gilroy',
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                            letterSpacing: 0.3,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      IconButton(
+                        icon: Icon(
+                          _isSearching ? Icons.close : Icons.search,
+                          color: Colors.white,
+                          size: 24,
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            _isSearching = !_isSearching;
+                            if (!_isSearching) {
+                              _searchController.clear();
+                              context.read<ClientDialogBloc>().add(LoadLeadsForDialog(search: null));
+                            }
+                          });
+                        },
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      _translate(context, 'select_client', 'Выберите клиента'),
+                  if (_isSearching) ...[
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: _searchController,
+                      autofocus: true,
                       style: const TextStyle(
                         fontFamily: 'Gilroy',
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
+                        fontSize: 16,
                         color: Colors.white,
-                        letterSpacing: 0.3,
                       ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
+                      decoration: InputDecoration(
+                        hintText: _translate(context, 'search', 'Поиск...'),
+                        hintStyle: TextStyle(
+                          fontFamily: 'Gilroy',
+                          fontSize: 16,
+                          color: Colors.white.withOpacity(0.7),
+                        ),
+                        filled: true,
+                        fillColor: Colors.white.withOpacity(0.2),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide.none,
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      ),
+                      onChanged: _onSearch,
                     ),
-                  ),
+                  ],
                 ],
               ),
             ),
@@ -280,7 +348,7 @@ class ClientLeadsDialog extends StatelessWidget {
                   if (state is ClientDialogLoaded) {
                     return SingleChildScrollView(
                       padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
-                      child: _buildLeadsList(context, state.leads),
+                      child: _buildLeadsList(state.leads),
                     );
                   }
 

@@ -8,16 +8,20 @@ class ClientOpeningsLoading extends ClientOpeningsState {}
 
 class ClientOpeningsLoaded extends ClientOpeningsState {
   final List<ClientOpening> clients;
+  final String? search;
 
   ClientOpeningsLoaded({
     required this.clients,
+    this.search,
   });
 
   ClientOpeningsLoaded copyWith({
     List<ClientOpening>? clients,
+    String? search,
   }) {
     return ClientOpeningsLoaded(
       clients: clients ?? this.clients,
+      search: search ?? this.search,
     );
   }
 }

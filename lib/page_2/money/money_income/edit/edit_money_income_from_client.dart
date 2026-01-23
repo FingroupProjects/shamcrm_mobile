@@ -1,5 +1,6 @@
 import '../../../../bloc/page_2_BLOC/money_income/money_income_bloc.dart';
 import 'package:crm_task_manager/bloc/lead_list/lead_list_bloc.dart';
+import 'package:crm_task_manager/bloc/lead_list/lead_list_event.dart';
 import 'package:crm_task_manager/bloc/lead_list/lead_list_state.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
@@ -48,8 +49,15 @@ class _EditMoneyIncomeFromClientState extends State<EditMoneyIncomeFromClient> {
     super.initState();
     _initializeFields();
 
-    // ✅ УДАЛЕНО: _preloadDataIfNeeded() чтобы избежать race condition
-    // LeadRadioGroupWidget сам загрузит leads при необходимости
+    // ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Принудительно загружаем лиды с долгом
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        // Принудительно загружаем заново (даже если есть кэш)
+        context.read<GetAllLeadBloc>().add(GetAllLeadEv(
+          showDebt: true,
+        ));
+      }
+    });
   }
 
   void _initializeFields() {

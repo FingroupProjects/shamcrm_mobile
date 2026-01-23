@@ -24,11 +24,11 @@ class GoodsOpeningsBloc extends Bloc<GoodsOpeningsEvent, GoodsOpeningsState> {
     try {
       emit(GoodsOpeningsLoading());
 
-      final response = await _apiService.getGoodsOpenings();
+      final response = await _apiService.getGoodsOpenings(search: event.search);
 
       final goods = response.result ?? [];
       
-      emit(GoodsOpeningsLoaded(goods: goods));
+      emit(GoodsOpeningsLoaded(goods: goods, search: event.search));
     } catch (e) {
       emit(GoodsOpeningsError(message: e.toString()));
     }
@@ -38,7 +38,13 @@ class GoodsOpeningsBloc extends Bloc<GoodsOpeningsEvent, GoodsOpeningsState> {
     RefreshGoodsOpenings event,
     Emitter<GoodsOpeningsState> emit,
   ) async {
-    add(LoadGoodsOpenings());
+    // Сохраняем текущий search при обновлении
+    final currentState = state;
+    String? currentSearch;
+    if (currentState is GoodsOpeningsLoaded) {
+      currentSearch = currentState.search;
+    }
+    add(LoadGoodsOpenings(search: currentSearch));
   }
 
   Future<void> _onDeleteGoodsOpening(
@@ -51,8 +57,13 @@ class GoodsOpeningsBloc extends Bloc<GoodsOpeningsEvent, GoodsOpeningsState> {
       // Emit success state
       emit(GoodsOpeningDeleteSuccess());
       
-      // Reload the list after successful deletion
-      add(LoadGoodsOpenings());
+      // Reload the list after successful deletion, сохраняем search
+      final currentState = state;
+      String? currentSearch;
+      if (currentState is GoodsOpeningsLoaded) {
+        currentSearch = currentState.search;
+      }
+      add(LoadGoodsOpenings(search: currentSearch));
     } catch (e) {
       // Сохраняем текущее состояние и эмитим операционную ошибку
       emit(GoodsOpeningsOperationError(
@@ -82,8 +93,13 @@ class GoodsOpeningsBloc extends Bloc<GoodsOpeningsEvent, GoodsOpeningsState> {
       // Эмитим состояние успешного создания
       emit(GoodsOpeningCreateSuccess());
       
-      // Reload the list after successful creation
-      add(LoadGoodsOpenings());
+      // Reload the list after successful creation, сохраняем search
+      final currentState = state;
+      String? currentSearch;
+      if (currentState is GoodsOpeningsLoaded) {
+        currentSearch = currentState.search;
+      }
+      add(LoadGoodsOpenings(search: currentSearch));
     } catch (e) {
       // Эмитим ошибку создания
       emit(GoodsOpeningCreateError(
@@ -112,8 +128,13 @@ class GoodsOpeningsBloc extends Bloc<GoodsOpeningsEvent, GoodsOpeningsState> {
       
       emit(GoodsOpeningUpdateSuccess());
       
-      // Reload the list after successful update
-      add(LoadGoodsOpenings());
+      // Reload the list after successful update, сохраняем search
+      final currentState = state;
+      String? currentSearch;
+      if (currentState is GoodsOpeningsLoaded) {
+        currentSearch = currentState.search;
+      }
+      add(LoadGoodsOpenings(search: currentSearch));
     } catch (e) {
       // Эмитим ошибку обновления для показа в snackbar
       emit(GoodsOpeningUpdateError(

@@ -25,11 +25,11 @@ class SupplierOpeningsBloc extends Bloc<SupplierOpeningsEvent, SupplierOpeningsS
     try {
       emit(SupplierOpeningsLoading());
 
-      final response = await _apiService.getSupplierOpenings();
+      final response = await _apiService.getSupplierOpenings(search: event.search);
 
       final suppliers = response.result ?? [];
       
-      emit(SupplierOpeningsLoaded(suppliers: suppliers));
+      emit(SupplierOpeningsLoaded(suppliers: suppliers, search: event.search));
     } catch (e) {
       emit(SupplierOpeningsError(message: e.toString()));
     }
@@ -39,7 +39,13 @@ class SupplierOpeningsBloc extends Bloc<SupplierOpeningsEvent, SupplierOpeningsS
     RefreshSupplierOpenings event,
     Emitter<SupplierOpeningsState> emit,
   ) async {
-    add(LoadSupplierOpenings());
+    // Сохраняем текущий search при обновлении
+    final currentState = state;
+    String? currentSearch;
+    if (currentState is SupplierOpeningsLoaded) {
+      currentSearch = currentState.search;
+    }
+    add(LoadSupplierOpenings(search: currentSearch));
   }
 
   Future<void> _onDeleteSupplierOpening(
@@ -54,8 +60,13 @@ class SupplierOpeningsBloc extends Bloc<SupplierOpeningsEvent, SupplierOpeningsS
       // Emit success state
       emit(SupplierOpeningDeleteSuccess());
       
-      // Reload the list after successful deletion
-      add(LoadSupplierOpenings());
+      // Reload the list after successful deletion, сохраняем search
+      final currentState = state;
+      String? currentSearch;
+      if (currentState is SupplierOpeningsLoaded) {
+        currentSearch = currentState.search;
+      }
+      add(LoadSupplierOpenings(search: currentSearch));
     } catch (e) {
       // Сохраняем текущее состояние и эмитим операционную ошибку
       emit(SupplierOpeningDeleteError(
@@ -81,8 +92,13 @@ class SupplierOpeningsBloc extends Bloc<SupplierOpeningsEvent, SupplierOpeningsS
       // Эмитим состояние успешного создания
       emit(SupplierOpeningCreateSuccess());
       
-      // Reload the list after successful creation
-      add(LoadSupplierOpenings());
+      // Reload the list after successful creation, сохраняем search
+      final currentState = state;
+      String? currentSearch;
+      if (currentState is SupplierOpeningsLoaded) {
+        currentSearch = currentState.search;
+      }
+      add(LoadSupplierOpenings(search: currentSearch));
     } catch (e) {
       // Эмитим ошибку создания
       emit(SupplierOpeningCreateError(
@@ -108,8 +124,13 @@ class SupplierOpeningsBloc extends Bloc<SupplierOpeningsEvent, SupplierOpeningsS
       
       emit(SupplierOpeningUpdateSuccess());
       
-      // Reload the list after successful edit
-      add(LoadSupplierOpenings());
+      // Reload the list after successful edit, сохраняем search
+      final currentState = state;
+      String? currentSearch;
+      if (currentState is SupplierOpeningsLoaded) {
+        currentSearch = currentState.search;
+      }
+      add(LoadSupplierOpenings(search: currentSearch));
     } catch (e) {
       // Эмитим ошибку обновления для показа в snackbar
       emit(SupplierOpeningUpdateError(

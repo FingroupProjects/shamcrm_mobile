@@ -1,5 +1,6 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/lead_list/lead_list_bloc.dart';
+import 'package:crm_task_manager/bloc/lead_list/lead_list_event.dart';
 import 'package:crm_task_manager/bloc/lead_list/lead_list_state.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
@@ -42,9 +43,16 @@ class _AddMoneyIncomeFromClientState extends State<AddMoneyIncomeFromClient> {
     super.initState();
     _dateController.text = DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now());
 
-    // Предзагружаем данные если их еще нет
-    // ✅ УДАЛЕНО: _preloadDataIfNeeded() чтобы избежать race condition
-    // LeadRadioGroupWidget сам загрузит leads при необходимости
+    // ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Принудительно загружаем лиды с долгом
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        // Принудительно загружаем заново (даже если есть кэш)
+        context.read<GetAllLeadBloc>().add(GetAllLeadEv(
+          showDebt: true,
+        ));
+      }
+    });
+
     _checkApprovePermission();
   }
 

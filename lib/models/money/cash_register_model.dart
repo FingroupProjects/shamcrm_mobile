@@ -8,11 +8,20 @@ class CashRegisterResponseModel {
   });
 
   factory CashRegisterResponseModel.fromJson(Map<String, dynamic> json) {
+    final rawData = json['data'];
+    final rawPagination = json['pagination'];
+    if (rawData is! List || rawPagination is! Map<String, dynamic>) {
+      throw FormatException(
+        'CashRegisterResponseModel: ожидаются data (List) и pagination (Map). '
+        'data: ${rawData.runtimeType}, pagination: ${rawPagination.runtimeType}',
+      );
+    }
     return CashRegisterResponseModel(
-      data: (json['data'] as List)
+      data: rawData
+          .whereType<Map<String, dynamic>>()
           .map((item) => CashRegisterModel.fromJson(item))
           .toList(),
-      pagination: PaginationModel.fromJson(json['pagination']),
+      pagination: PaginationModel.fromJson(rawPagination),
     );
   }
 }
@@ -33,12 +42,19 @@ class PaginationModel {
   });
 
   factory PaginationModel.fromJson(Map<String, dynamic> json) {
+    int _int(dynamic v) {
+      if (v == null) return 0;
+      if (v is int) return v;
+      if (v is num) return v.toInt();
+      if (v is String) return int.tryParse(v) ?? 0;
+      return 0;
+    }
     return PaginationModel(
-      total: json['total'],
-      count: json['count'],
-      perPage: json['per_page'],
-      currentPage: json['current_page'],
-      totalPages: json['total_pages'],
+      total: _int(json['total']),
+      count: _int(json['count']),
+      perPage: _int(json['per_page']),
+      currentPage: _int(json['current_page']),
+      totalPages: _int(json['total_pages']),
     );
   }
 }
@@ -59,15 +75,35 @@ class CashRegisterModel {
   });
 
   factory CashRegisterModel.fromJson(Map<String, dynamic> json) {
+    int _int(dynamic v) {
+      if (v == null) throw FormatException('CashRegisterModel: id обязательно');
+      if (v is int) return v;
+      if (v is num) return v.toInt();
+      if (v is String) return int.tryParse(v) ?? 0;
+      throw FormatException('CashRegisterModel: неверный id');
+    }
+    final rawUsers = json['users'];
+    final usersList = rawUsers is List
+        ? (rawUsers)
+            .whereType<Map<String, dynamic>>()
+            .map((e) => UserModel.fromJson(e))
+            .toList()
+        : <UserModel>[];
     return CashRegisterModel(
-      id: json['id'],
-      name: json['name'],
-      users: (json['users'] as List<dynamic>)
-          .map((e) => UserModel.fromJson(e))
-          .toList(),
-      createdAt: DateTime.parse(json['created_at']),
-      updatedAt: DateTime.parse(json['updated_at']),
+      id: _int(json['id']),
+      name: _str(json['name']),
+      users: usersList,
+      createdAt: _date(json['created_at']),
+      updatedAt: _date(json['updated_at']),
     );
+  }
+
+  static String _str(dynamic v) => v == null ? '' : (v is String ? v : v.toString());
+  static DateTime _date(dynamic v) {
+    if (v == null) throw FormatException('CashRegisterModel: дата обязательна');
+    if (v is DateTime) return v;
+    if (v is String) return DateTime.parse(v);
+    throw FormatException('CashRegisterModel: неверная дата');
   }
 
   Map<String, dynamic> toJson() => {
@@ -115,22 +151,31 @@ class UserModel {
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
+    int _int(dynamic v) {
+      if (v == null) return 0;
+      if (v is int) return v;
+      if (v is num) return v.toInt();
+      if (v is String) return int.tryParse(v) ?? 0;
+      return 0;
+    }
+    String _str(dynamic v) => v == null ? '' : (v is String ? v : v.toString());
+    String? _strOpt(dynamic v) => v == null ? null : (v is String ? v : v.toString());
     return UserModel(
-      id: json['id'],
-      name: json['name'],
-      lastname: json['lastname'],
-      login: json['login'],
-      email: json['email'],
-      phone: json['phone'],
-      image: json['image'],
-      lastSeen: json['last_seen'],
-      deletedAt: json['deleted_at'],
-      telegramUserId: json['telegram_user_id'],
-      jobTitle: json['job_title'],
-      online: json['online'] ?? false,
-      fullName: json['full_name'],
-      isFirstLogin: json['is_first_login'],
-      uniqueId: json['unique_id'],
+      id: _int(json['id']),
+      name: _str(json['name']),
+      lastname: _str(json['lastname']),
+      login: _str(json['login']),
+      email: _str(json['email']),
+      phone: _str(json['phone']),
+      image: _str(json['image']),
+      lastSeen: _strOpt(json['last_seen']),
+      deletedAt: _strOpt(json['deleted_at']),
+      telegramUserId: _strOpt(json['telegram_user_id']),
+      jobTitle: _str(json['job_title']),
+      online: json['online'] == true,
+      fullName: _str(json['full_name']),
+      isFirstLogin: _int(json['is_first_login']),
+      uniqueId: _str(json['unique_id']),
     );
   }
 

@@ -25,6 +25,7 @@ class GoodsDialogBloc extends Bloc<GoodsDialogEvent, GoodsDialogState> {
     on<LoadGoodVariantsForDialog>(_onLoadGoodVariantsForDialog);
     on<RefreshGoodVariantsForDialog>(_onRefreshGoodVariants);
     on<UpdateGoodVariantsInBackground>(_updateVariantsInBackground);
+    on<SearchGoodVariantsForDialog>(_onSearchGoodVariantsForDialog);
   }
 
   bool get _isCacheValid {
@@ -38,6 +39,12 @@ class GoodsDialogBloc extends Bloc<GoodsDialogEvent, GoodsDialogState> {
     LoadGoodVariantsForDialog event,
     Emitter<GoodsDialogState> emit,
   ) async {
+    // Если есть поиск, не используем кэш
+    if (event.search != null && event.search!.isNotEmpty) {
+      await _loadVariantsProgressive(emit, search: event.search);
+      return;
+    }
+    
     // Если у нас есть валидный кэш, используем его
     if (_isCacheValid && _cachedVariants != null) {
       if (kDebugMode) {
@@ -54,6 +61,18 @@ class GoodsDialogBloc extends Bloc<GoodsDialogEvent, GoodsDialogState> {
     await _loadVariantsProgressive(emit);
   }
 
+  Future<void> _onSearchGoodVariantsForDialog(
+    SearchGoodVariantsForDialog event,
+    Emitter<GoodsDialogState> emit,
+  ) async {
+    // При поиске очищаем кэш
+    _cachedVariants = null;
+    _lastLoadTime = null;
+    _currentPage = 1;
+    _totalPages = 1;
+    await _loadVariantsProgressive(emit, search: event.search);
+  }
+
   Future<void> _onRefreshGoodVariants(
     RefreshGoodVariantsForDialog event,
     Emitter<GoodsDialogState> emit,
@@ -65,7 +84,7 @@ class GoodsDialogBloc extends Bloc<GoodsDialogEvent, GoodsDialogState> {
     await _loadVariantsProgressive(emit);
   }
 
-  Future<void> _loadVariantsProgressive(Emitter<GoodsDialogState> emit) async {
+  Future<void> _loadVariantsProgressive(Emitter<GoodsDialogState> emit, {String? search}) async {
     if (!await _checkInternetConnection()) {
       emit(GoodsDialogError(
         message: 'Ошибка подключения к интернету. Проверьте ваше соединение и попробуйте снова.',
@@ -81,7 +100,7 @@ class GoodsDialogBloc extends Bloc<GoodsDialogEvent, GoodsDialogState> {
       }
 
       // Загружаем только первую страницу
-      var firstPageResponse = await _apiService.getGoodVariantsForDropdown(page: 1, perPage: 20);
+      var firstPageResponse = await _apiService.getGoodVariantsForDropdown(page: 1, perPage: 20, search: search);
       var firstPageVariants = firstPageResponse.result?.data ?? [];
 
       if (kDebugMode) {
@@ -104,7 +123,8 @@ class GoodsDialogBloc extends Bloc<GoodsDialogEvent, GoodsDialogState> {
       // Проверяем, есть ли еще страницы из пагинации
       final hasMorePages = _currentPage < _totalPages;
 
-      if (hasMorePages && !_isBackgroundLoading) {
+      // Если есть поиск, не загружаем остальные страницы в фоне
+      if (hasMorePages && !_isBackgroundLoading && search == null) {
         if (kDebugMode) {
           //print('GoodsDialogBloc: Starting background loading of remaining pages...');
         }
@@ -149,7 +169,7 @@ class GoodsDialogBloc extends Bloc<GoodsDialogEvent, GoodsDialogState> {
             //print('GoodsDialogBloc: Loading page $currentPage in background...');
           }
 
-          final pageResponse = await _apiService.getGoodVariantsForDropdown(page: currentPage, perPage: 20);
+          final pageResponse = await _apiService.getGoodVariantsForDropdown(page: currentPage, perPage: 20, search: null);
           final pageVariants = pageResponse.result?.data ?? [];
           final pagination = pageResponse.result?.pagination;
 

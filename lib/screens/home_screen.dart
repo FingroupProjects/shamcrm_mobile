@@ -604,18 +604,79 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     final permissionsBloc = context.read<PermissionsBloc>();
 
     // Если разрешения еще не загружены, загружаем их
-    if (permissionsBloc.state is! PermissionsLoaded) {
+    if (permissionsBloc.state is! PermissionsLoaded && 
+        permissionsBloc.state is! PermissionsNoAccess) {
       permissionsBloc.add(FetchPermissionsEvent());
-      // Ждем загрузки разрешений
+      // Ждем загрузки разрешений (включая новые состояния)
       await permissionsBloc.stream.firstWhere(
-            (state) => state is PermissionsLoaded || state is PermissionsError,
+            (state) => state is PermissionsLoaded || 
+                       state is PermissionsError || 
+                       state is PermissionsNoAccess ||
+                       state is PermissionsNetworkError,
       );
     }
 
     if (!mounted) return;
 
-    // Проверяем разрешения из PermissionsBloc
-    bool hasPermission(String permission) => permissionsBloc.hasPermission(permission);
+    // ✅ КЛЮЧЕВАЯ ЛОГИКА: Если нет доступа (пустой массив) - показываем экран
+    if (permissionsBloc.state is PermissionsNoAccess) {
+      if (mounted) {
+        setState(() {
+          _widgetOptionsGroup1 = [NoAccessScreen()];
+          _widgetOptionsGroup2 = [];
+          _navBarTitleKeysGroup1 = [''];
+          _navBarTitleKeysGroup2 = [];
+          _activeIconsGroup1 = [''];
+          _activeIconsGroup2 = [];
+          _inactiveIconsGroup1 = [''];
+          _inactiveIconsGroup2 = [];
+          _isInitialized = true;
+          _selectedIndexGroup1 = 0;
+          _selectedIndexGroup2 = -1;
+        });
+      }
+      return;
+    }
+
+    // ✅ Если сетевая ошибка - не показываем экран "нет доступа", используем сохраненные permissions
+    bool isNetworkError = permissionsBloc.state is PermissionsNetworkError;
+    List<String> savedPermissions = [];
+    
+    if (isNetworkError) {
+      if (kDebugMode) {
+        debugPrint('HomeScreen: Сетевая ошибка, используем сохраненные permissions');
+      }
+      // Загружаем сохраненные permissions из SharedPreferences
+      final apiService = context.read<ApiService>();
+      savedPermissions = await apiService.getPermissions();
+      if (savedPermissions.isEmpty) {
+        // Если нет сохраненных permissions, показываем загрузку
+        if (kDebugMode) {
+          debugPrint('HomeScreen: Нет сохраненных permissions, показываем загрузку');
+        }
+        if (mounted) {
+          setState(() {
+            _widgetOptionsGroup1 = [EmptyScreen()];
+            _widgetOptionsGroup2 = [];
+            _isInitialized = true;
+          });
+        }
+        return;
+      } else {
+        if (kDebugMode) {
+          debugPrint('HomeScreen: Используем ${savedPermissions.length} сохраненных permissions');
+        }
+      }
+    }
+
+    // Проверяем разрешения из PermissionsBloc или сохраненные permissions
+    bool hasPermission(String permission) {
+      if (isNetworkError && savedPermissions.isNotEmpty) {
+        // При сетевой ошибке используем сохраненные permissions
+        return savedPermissions.contains(permission);
+      }
+      return permissionsBloc.hasPermission(permission);
+    }
 
     List<Widget> widgetsGroup1 = [];
     List<Widget> widgetsGroup2 = [];
@@ -711,7 +772,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     }
 
     // ✅ ИСПРАВЛЕНИЕ: Если нет экранов вообще - показываем экран с сообщением об отсутствии доступа
-    if (widgetsGroup1.isEmpty && widgetsGroup2.isEmpty) {
+    // НО только если это не сетевая ошибка (при сетевой ошибке используем сохраненные permissions)
+    if (widgetsGroup1.isEmpty && widgetsGroup2.isEmpty && !isNetworkError) {
       widgetsGroup1.add(NoAccessScreen());
       titleKeysGroup1.add('');
       navBarTitleKeysGroup1.add('');
@@ -788,7 +850,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     return BlocListener<PermissionsBloc, PermissionsState>(
       listener: (context, state) {
         // При изменении состояния разрешений пересоздаем экраны
-        if (state is PermissionsLoaded || state is PermissionsError) {
+        if (state is PermissionsLoaded || 
+            state is PermissionsError || 
+            state is PermissionsNoAccess ||
+            state is PermissionsNetworkError) {
           if (_isInitialized && mounted) {
             // Вызываем асинхронно, чтобы не блокировать listener
             initializeScreensWithPermissions();

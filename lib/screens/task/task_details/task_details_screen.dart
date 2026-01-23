@@ -618,7 +618,67 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
     }
   }
 
+  // ✅ Адаптивные размеры на основе ширины экрана
+  Map<String, double> _getAdaptiveSizes(BuildContext context) {
+    final MediaQueryData mediaQuery = MediaQuery.of(context);
+    final double screenWidth = mediaQuery.size.width;
+    
+    // Определяем размеры на основе ширины экрана
+    // Это более надежный метод, чем вычисление диагонали
+    double fontSize;
+    double iconSize;
+    double leadingIconSize;
+    double iconPadding;
+    double titleOffset;
+    
+    if (screenWidth < 360) {
+      // Очень маленькие экраны (< 360px) - например, iPhone SE
+      fontSize = 16;
+      iconSize = 20;
+      leadingIconSize = 32;
+      iconPadding = 4;
+      titleOffset = -8;
+    } else if (screenWidth < 400) {
+      // Маленькие экраны (360-400px)
+      fontSize = 17;
+      iconSize = 22;
+      leadingIconSize = 36;
+      iconPadding = 6;
+      titleOffset = -9;
+    } else if (screenWidth < 480) {
+      // Средние экраны (400-480px)
+      fontSize = 18;
+      iconSize = 24;
+      leadingIconSize = 38;
+      iconPadding = 8;
+      titleOffset = -10;
+    } else {
+      // Большие экраны (> 480px)
+      fontSize = 20;
+      iconSize = 24;
+      leadingIconSize = 40;
+      iconPadding = 8;
+      titleOffset = -10;
+    }
+    
+    return {
+      'fontSize': fontSize,
+      'iconSize': iconSize,
+      'leadingIconSize': leadingIconSize,
+      'iconPadding': iconPadding,
+      'titleOffset': titleOffset,
+    };
+  }
+
   AppBar _buildAppBar(BuildContext context, String title) {
+    // ✅ Получаем адаптивные размеры
+    final adaptiveSizes = _getAdaptiveSizes(context);
+    final double fontSize = adaptiveSizes['fontSize']!;
+    final double iconSize = adaptiveSizes['iconSize']!;
+    final double leadingIconSize = adaptiveSizes['leadingIconSize']!;
+    final double iconPadding = adaptiveSizes['iconPadding']!;
+    final double titleOffset = adaptiveSizes['titleOffset']!;
+    
     // Закомментирован код туториала
     // if (!_isTutorialShown) {
     //   WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -633,7 +693,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
       forceMaterialTransparency: true,
       elevation: 0,
       centerTitle: false,
-      leadingWidth: 40,
+      leadingWidth: leadingIconSize,
       leading: Padding(
         padding: const EdgeInsets.only(left: 0),
         child: Transform.translate(
@@ -641,8 +701,8 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
           child: IconButton(
             icon: Image.asset(
               'assets/icons/arrow-left.png',
-              width: 40,
-              height: 40,
+              width: leadingIconSize,
+              height: leadingIconSize,
             ),
             onPressed: () {
               Navigator.pop(context, widget.statusId);
@@ -651,15 +711,17 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
         ),
       ),
       title: Transform.translate(
-        offset: const Offset(-10, 0),
+        offset: Offset(titleOffset, 0),
         child: Text(
           title,
-          style: const TextStyle(
-            fontSize: 20,
+          style: TextStyle(
+            fontSize: fontSize,
             fontFamily: 'Gilroy',
             fontWeight: FontWeight.w600,
             color: Color(0xff1E2E52),
           ),
+          overflow: TextOverflow.ellipsis,
+          maxLines: 1,
         ),
       ),
       actions: [
@@ -670,9 +732,9 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
             IconButton(
               padding: EdgeInsets.zero,
               constraints: BoxConstraints(),
-              icon: const Icon(
+              icon: Icon(
                 Icons.history_outlined,
-                size: 30,
+                size: iconSize + 2, // Немного больше для истории
                 color: Color(0xff1E2E52),
               ),
               onPressed: () {
@@ -692,8 +754,8 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                 constraints: BoxConstraints(),
                 icon: Image.asset(
                   'assets/icons/copy.png',
-                  width: 24,
-                  height: 24,
+                  width: iconSize,
+                  height: iconSize,
                 ),
                 onPressed: () async {
                   final createdAtString = currentTask?.createdAt != null &&
@@ -751,8 +813,8 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                 constraints: BoxConstraints(),
                 icon: Image.asset(
                   'assets/icons/edit.png',
-                  width: 24,
-                  height: 24,
+                  width: iconSize,
+                  height: iconSize,
                 ),
                 onPressed: () async {
                   final createdAtString = currentTask?.createdAt != null &&
@@ -806,12 +868,12 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
             if (_canDeleteTask || (_hasTaskCreateForMySelfPermission && _isAuthor))
               IconButton(
                 key: keyTaskDelete,
-                padding: EdgeInsets.only(right: 8),
+                padding: EdgeInsets.only(right: iconPadding),
                 constraints: BoxConstraints(),
                 icon: Image.asset(
                   'assets/icons/delete.png',
-                  width: 24,
-                  height: 24,
+                  width: iconSize,
+                  height: iconSize,
                 ),
                 onPressed: () {
                   showDialog(
