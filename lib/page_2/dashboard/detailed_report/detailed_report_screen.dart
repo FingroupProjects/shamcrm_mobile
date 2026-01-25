@@ -8,7 +8,7 @@ import 'package:crm_task_manager/page_2/dashboard/detailed_report/contents/sales
 import 'package:crm_task_manager/page_2/dashboard/detailed_report/contents/net_profit_content.dart';
 import 'package:crm_task_manager/page_2/dashboard/detailed_report/contents/profitability_content.dart';
 import 'package:crm_task_manager/page_2/dashboard/detailed_report/contents/expense_structure_content.dart';
-import 'package:crm_task_manager/page_2/dashboard/detailed_report/contents/order_quantity_content.dart';
+// import 'package:crm_task_manager/page_2/dashboard/detailed_report/contents/order_quantity_content.dart'; // ЗАКОММЕНТИРОВАНО: Вкладка "Количество заказов" отключена
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/dashboard/goods/sales_dashboard_goods_bloc.dart';
@@ -20,7 +20,7 @@ import '../../../bloc/page_2_BLOC/dashboard/sales_dynamics/sales_dashboard_sales
 import '../../../bloc/page_2_BLOC/dashboard/net_profit/sales_dashboard_net_profit_bloc.dart';
 import '../../../bloc/page_2_BLOC/dashboard/profitability/sales_dashboard_profitability_bloc.dart';
 import '../../../bloc/page_2_BLOC/dashboard/expense_structure/sales_dashboard_expense_structure_bloc.dart';
-import '../../../bloc/page_2_BLOC/dashboard/order_quantity/sales_dashboard_order_quantity_bloc.dart';
+// import '../../../bloc/page_2_BLOC/dashboard/order_quantity/sales_dashboard_order_quantity_bloc.dart'; // ЗАКОММЕНТИРОВАНО: Вкладка "Количество заказов" отключена
 import '../../../custom_widget/custom_app_bar_reports.dart';
 import '../../../screens/profile/languages/app_localizations.dart';
 import '../../../screens/profile/profile_screen.dart';
@@ -84,7 +84,7 @@ class _DetailedReportScreenState extends State<DetailedReportScreen> with Ticker
     {'id': 7, 'titleKey': 'tab_net_profit'},
     {'id': 8, 'titleKey': 'tab_profitability_sales'},
     {'id': 9, 'titleKey': 'tab_expense_structure'},
-    {'id': 10, 'titleKey': 'tab_order_quantity'},
+    // {'id': 10, 'titleKey': 'tab_order_quantity'}, // ЗАКОММЕНТИРОВАНО: Вкладка "Количество заказов" отключена
   ];
   late List<GlobalKey> _tabKeys;
   late int _currentTabIndex;
@@ -105,7 +105,7 @@ class _DetailedReportScreenState extends State<DetailedReportScreen> with Ticker
   late SalesDashboardNetProfitBloc _netProfitBloc;
   late SalesDashboardProfitabilityBloc _profitabilityBloc;
   late SalesDashboardExpenseStructureBloc _expenseStructureBloc;
-  late SalesDashboardOrderQuantityBloc _orderQuantityBloc;
+  // late SalesDashboardOrderQuantityBloc _orderQuantityBloc; // ЗАКОММЕНТИРОВАНО: Вкладка "Количество заказов" отключена
   late SalesDashboardReconciliationActBloc _reconciliationActBloc;
   late SalesDashboardGoodsMovementBloc _goodsMovementBloc;
 
@@ -123,7 +123,7 @@ class _DetailedReportScreenState extends State<DetailedReportScreen> with Ticker
     _netProfitBloc = SalesDashboardNetProfitBloc()..add(LoadNetProfitReport());
     _profitabilityBloc = SalesDashboardProfitabilityBloc()..add(LoadProfitabilityReport());
     _expenseStructureBloc = SalesDashboardExpenseStructureBloc()..add(LoadExpenseStructureReport());
-    _orderQuantityBloc = SalesDashboardOrderQuantityBloc()..add(LoadOrderQuantityReport());
+    // _orderQuantityBloc = SalesDashboardOrderQuantityBloc()..add(LoadOrderQuantityReport()); // ЗАКОММЕНТИРОВАНО: Вкладка "Количество заказов" отключена
     _reconciliationActBloc = SalesDashboardReconciliationActBloc();
     _goodsMovementBloc = SalesDashboardGoodsMovementBloc()..add(LoadGoodsMovementReport());
 
@@ -165,7 +165,7 @@ class _DetailedReportScreenState extends State<DetailedReportScreen> with Ticker
     _netProfitBloc.close();
     _profitabilityBloc.close();
     _expenseStructureBloc.close();
-    _orderQuantityBloc.close();
+    // _orderQuantityBloc.close(); // ЗАКОММЕНТИРОВАНО: Вкладка "Количество заказов" отключена
     _reconciliationActBloc.close();
     _goodsMovementBloc.close();
 
@@ -190,7 +190,8 @@ class _DetailedReportScreenState extends State<DetailedReportScreen> with Ticker
   void _reloadCurrentTabData() {
     final id = _tabTitles[_currentTabIndex]['id'];
     final filter = _filters[_currentTabIndex] ?? {};
-    final search = _currentSearch;
+    // Нормализуем поиск: пустая строка становится null
+    final search = (_currentSearch.isEmpty || _currentSearch.trim().isEmpty) ? null : _currentSearch.trim();
 
     debugPrint("DetailedReportScreen._reloadCurrentTabData: filter: $filter and search: $search");
 
@@ -216,9 +217,10 @@ class _DetailedReportScreenState extends State<DetailedReportScreen> with Ticker
       _profitabilityBloc.add(LoadProfitabilityReport(filter: filter, search: search));
     } else if (id == 9) {
       _expenseStructureBloc.add(LoadExpenseStructureReport(filter: filter, search: search));
-    } else if (id == 10) {
-      _orderQuantityBloc.add(LoadOrderQuantityReport(filter: filter, search: search));
     }
+    // else if (id == 10) {
+    //   _orderQuantityBloc.add(LoadOrderQuantityReport(filter: filter, search: search));
+    // } // ЗАКОММЕНТИРОВАНО: Вкладка "Количество заказов" отключена
   }
 
   void _handleFilterSelected(Map<String, dynamic> selectedFilters) {
@@ -257,7 +259,7 @@ class _DetailedReportScreenState extends State<DetailedReportScreen> with Ticker
           BlocProvider<SalesDashboardNetProfitBloc>.value(value: _netProfitBloc),
           BlocProvider<SalesDashboardProfitabilityBloc>.value(value: _profitabilityBloc),
           BlocProvider<SalesDashboardExpenseStructureBloc>.value(value: _expenseStructureBloc),
-          BlocProvider<SalesDashboardOrderQuantityBloc>.value(value: _orderQuantityBloc),
+          // BlocProvider<SalesDashboardOrderQuantityBloc>.value(value: _orderQuantityBloc), // ЗАКОММЕНТИРОВАНО: Вкладка "Количество заказов" отключена
           BlocProvider<SalesDashboardReconciliationActBloc>.value(value: _reconciliationActBloc),
           BlocProvider<SalesDashboardGoodsMovementBloc>.value(value: _goodsMovementBloc),
         ],
@@ -385,9 +387,11 @@ class _DetailedReportScreenState extends State<DetailedReportScreen> with Ticker
       return ProfitabilityContent();
     } else if (id == 9) {
       return ExpenseStructureContent();
-    } else if (id == 10) {
-      return OrderQuantityContent();
-    } else {
+    }
+    // else if (id == 10) {
+    //   return OrderQuantityContent();
+    // } // ЗАКОММЕНТИРОВАНО: Вкладка "Количество заказов" отключена
+    else {
       return Container();
     }
   }

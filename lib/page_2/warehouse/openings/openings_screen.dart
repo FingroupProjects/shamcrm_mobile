@@ -105,7 +105,11 @@ class _OpeningsScreenState extends State<OpeningsScreen> with TickerProviderStat
       if (_tabController.indexIsChanging) return;
       setState(() {
         _currentTabIndex = _tabController.index;
-        // Не сбрасываем поиск при переключении вкладок - поиск работает на всех вкладках
+        // Если переключились на вкладку Касса (id == 3), очищаем поиск
+        if (_tabTitles[_tabController.index]['id'] == 3) {
+          _currentSearch = null;
+          _searchController.clear();
+        }
       });
       _scrollToActiveTab();
       // Reload data when tab changes
@@ -170,7 +174,7 @@ class _OpeningsScreenState extends State<OpeningsScreen> with TickerProviderStat
                 isClickAvatarIcon = !isClickAvatarIcon;
               });
             },
-            showSearchIcon: !isClickAvatarIcon, // Показываем поиск на всех вкладках
+            showSearchIcon: !isClickAvatarIcon && _currentTabIndex != 3, // Показываем поиск на всех вкладках кроме Кассы (id=3)
             onChangedSearchInput: _onSearch,
             textEditingController: _searchController,
             focusNode: _searchFocusNode,
@@ -180,7 +184,10 @@ class _OpeningsScreenState extends State<OpeningsScreen> with TickerProviderStat
                   _currentSearch = null;
                   _searchController.clear();
                 });
-                _loadDataForCurrentTab();
+                // Не применяем поиск на вкладке Касса (id == 3)
+                if (_tabTitles[_currentTabIndex]['id'] != 3) {
+                  _loadDataForCurrentTab();
+                }
               }
             },
           ),
@@ -286,6 +293,11 @@ class _OpeningsScreenState extends State<OpeningsScreen> with TickerProviderStat
   }
 
   void _onSearch(String query) {
+    // Не применяем поиск на вкладке Касса (id == 3)
+    if (_tabTitles[_currentTabIndex]['id'] == 3) {
+      return;
+    }
+    
     setState(() {
       _currentSearch = query.trim().isNotEmpty ? query : null;
     });
@@ -307,8 +319,8 @@ class _OpeningsScreenState extends State<OpeningsScreen> with TickerProviderStat
       // Goods tab - передаем текущий search
       _goodsBloc.add(LoadGoodsOpenings(search: _currentSearch));
     } else if (id == 3) {
-      // Cash register tab - передаем текущий search
-      _cashRegisterBloc.add(LoadCashRegisterOpenings(search: _currentSearch));
+      // Cash register tab - поиск не используется, всегда null
+      _cashRegisterBloc.add(LoadCashRegisterOpenings(search: null));
     }
   }
 

@@ -43,16 +43,33 @@ class SalesDashboardGoodsMovementBloc extends Bloc<SalesDashboardGoodsMovementEv
     Emitter<SalesDashboardGoodsMovementState> emit,
   ) async {
     try {
-      // Сохраняем текущие параметры запроса
-      _currentFilter = event.filter;
-      _currentSearch = event.search;
+      // Нормализуем поиск: пустая строка становится null
+      final normalizedSearch = event.search?.trim().isEmpty ?? true ? null : event.search?.trim();
+
+      if (kDebugMode) {
+        debugPrint('🔵 SalesDashboardGoodsMovementBloc: LoadGoodsMovementReport - page: ${event.page}, search: "$normalizedSearch", filter: ${event.filter}');
+        debugPrint('🔵 SalesDashboardGoodsMovementBloc: Current search: "$_currentSearch", cache valid: $_isCacheValid');
+      }
 
       // Initial load (page 1)
       if (event.page == 1) {
-        // Если параметры изменились, сбрасываем кэш
-        if (!_isCacheValid || 
-            _filterChanged(event.filter) || 
-            _searchChanged(event.search)) {
+        // Проверяем изменение параметров ДО обновления _currentSearch/_currentFilter,
+        // иначе searchChanged/filterChanged всегда false и кэш не сбрасывается при поиске
+        final filterChanged = _filterChanged(event.filter);
+        final searchChanged = _searchChanged(normalizedSearch);
+
+        // Сохраняем текущие параметры запроса после проверки
+        _currentFilter = event.filter;
+        _currentSearch = normalizedSearch;
+        
+        if (kDebugMode) {
+          debugPrint('🔵 SalesDashboardGoodsMovementBloc: filterChanged: $filterChanged, searchChanged: $searchChanged');
+        }
+        
+        if (!_isCacheValid || filterChanged || searchChanged) {
+          if (kDebugMode) {
+            debugPrint('🔵 SalesDashboardGoodsMovementBloc: Resetting cache due to changed parameters');
+          }
           _cachedVariants = null;
           _lastLoadTime = null;
           _currentPage = 1;
@@ -87,10 +104,13 @@ class SalesDashboardGoodsMovementBloc extends Bloc<SalesDashboardGoodsMovementEv
         }
 
         // Загружаем только первую страницу
+        if (kDebugMode) {
+          debugPrint('🔵 SalesDashboardGoodsMovementBloc: Calling API with search: "$normalizedSearch"');
+        }
         var firstPageResponse = await _apiService.getGoodVariantsForDropdown(
           page: event.page,
           perPage: event.perPage,
-          search: event.search,
+          search: normalizedSearch,
         );
         var firstPageVariants = firstPageResponse.result?.data ?? [];
 
@@ -120,17 +140,21 @@ class SalesDashboardGoodsMovementBloc extends Bloc<SalesDashboardGoodsMovementEv
           if (kDebugMode) {
             debugPrint('SalesDashboardGoodsMovementBloc: Starting background loading of remaining pages...');
           }
-          // Загружаем остальные страницы в фоне
-          _loadRemainingPagesInBackground(event.perPage, event.search);
+          // Загружаем остальные страницы в фоне (используем нормализованный поиск)
+          _loadRemainingPagesInBackground(event.perPage, normalizedSearch);
         }
       } else {
-        // Pagination load (page 2+)
+        // Pagination load (page 2+): используем search из события или сохранённый _currentSearch
         final currentState = state;
         if (currentState is SalesDashboardGoodsMovementLoaded) {
+          final searchForRequest = normalizedSearch ?? _currentSearch;
+          if (kDebugMode) {
+            debugPrint('🔵 SalesDashboardGoodsMovementBloc: Loading page ${event.page} with search: "$searchForRequest"');
+          }
           final response = await _apiService.getGoodVariantsForDropdown(
             page: event.page,
             perPage: event.perPage,
-            search: event.search,
+            search: searchForRequest,
           );
 
           final newVariants = response.result?.data ?? [];
@@ -311,7 +335,16 @@ class SalesDashboardGoodsMovementBloc extends Bloc<SalesDashboardGoodsMovementEv
   }
 
   bool _searchChanged(String? newSearch) {
-    return _currentSearch != newSearch;
+    // Нормализуем оба значения для корректного сравнения
+    final currentNormalized = _currentSearch?.trim().isEmpty ?? true ? null : _currentSearch?.trim();
+    final newNormalized = newSearch?.trim().isEmpty ?? true ? null : newSearch?.trim();
+    final changed = currentNormalized != newNormalized;
+    
+    if (kDebugMode) {
+      debugPrint('🔵 SalesDashboardGoodsMovementBloc: _searchChanged - current: "$currentNormalized", new: "$newNormalized", changed: $changed');
+    }
+    
+    return changed;
   }
 
   List<GoodVariantItem>? getCachedVariants() {

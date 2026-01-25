@@ -38,12 +38,13 @@ class CashRegisterLeadsDialog extends StatefulWidget {
 }
 
 class _CashRegisterLeadsDialogState extends State<CashRegisterLeadsDialog> {
-  final TextEditingController _searchController = TextEditingController();
-  bool _isSearching = false;
+  // ЗАКОММЕНТИРОВАНО: Поиск в модальном окне выбора кассы отключен
+  // final TextEditingController _searchController = TextEditingController();
+  // bool _isSearching = false;
 
   @override
   void dispose() {
-    _searchController.dispose();
+    // _searchController.dispose(); // ЗАКОММЕНТИРОВАНО: Поиск отключен
     super.dispose();
   }
 
@@ -51,10 +52,11 @@ class _CashRegisterLeadsDialogState extends State<CashRegisterLeadsDialog> {
     return AppLocalizations.of(context)?.translate(key) ?? fallback;
   }
 
-  void _onSearch(String input) {
-    final query = input.trim().isEmpty ? null : input.trim();
-    context.read<CashRegisterDialogBloc>().add(SearchCashRegistersForDialog(search: query));
-  }
+  // ЗАКОММЕНТИРОВАНО: Поиск в модальном окне выбора кассы отключен
+  // void _onSearch(String input) {
+  //   final query = input.trim().isEmpty ? null : input.trim();
+  //   context.read<CashRegisterDialogBloc>().add(SearchCashRegistersForDialog(search: query));
+  // }
 
   Widget _buildCashRegistersList(BuildContext context, List<CashRegister> cashRegisters) {
     if (cashRegisters.isEmpty) {
@@ -201,52 +203,54 @@ class _CashRegisterLeadsDialogState extends State<CashRegisterLeadsDialog> {
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      IconButton(
-                        icon: Icon(
-                          _isSearching ? Icons.close : Icons.search,
-                          color: Colors.white,
-                          size: 24,
-                        ),
-                        onPressed: () {
-                          setState(() {
-                            _isSearching = !_isSearching;
-                            if (!_isSearching) {
-                              _searchController.clear();
-                              context.read<CashRegisterDialogBloc>().add(LoadCashRegistersForDialog(search: null));
-                            }
-                          });
-                        },
-                      ),
+                      // ЗАКОММЕНТИРОВАНО: Иконка поиска в модальном окне выбора кассы отключена
+                      // IconButton(
+                      //   icon: Icon(
+                      //     _isSearching ? Icons.close : Icons.search,
+                      //     color: Colors.white,
+                      //     size: 24,
+                      //   ),
+                      //   onPressed: () {
+                      //     setState(() {
+                      //       _isSearching = !_isSearching;
+                      //       if (!_isSearching) {
+                      //         _searchController.clear();
+                      //         context.read<CashRegisterDialogBloc>().add(LoadCashRegistersForDialog(search: null));
+                      //       }
+                      //     });
+                      //   },
+                      // ),
                     ],
                   ),
-                  if (_isSearching) ...[
-                    const SizedBox(height: 12),
-                    TextField(
-                      controller: _searchController,
-                      autofocus: true,
-                      style: const TextStyle(
-                        fontFamily: 'Gilroy',
-                        fontSize: 16,
-                        color: Colors.white,
-                      ),
-                      decoration: InputDecoration(
-                        hintText: _translate(context, 'search', 'Поиск...'),
-                        hintStyle: TextStyle(
-                          fontFamily: 'Gilroy',
-                          fontSize: 16,
-                          color: Colors.white.withOpacity(0.7),
-                        ),
-                        filled: true,
-                        fillColor: Colors.white.withOpacity(0.2),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide.none,
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                      ),
-                      onChanged: _onSearch,
-                    ),
-                  ],
+                  // ЗАКОММЕНТИРОВАНО: Поле поиска в модальном окне выбора кассы отключено
+                  // if (_isSearching) ...[
+                  //   const SizedBox(height: 12),
+                  //   TextField(
+                  //     controller: _searchController,
+                  //     autofocus: true,
+                  //     style: const TextStyle(
+                  //       fontFamily: 'Gilroy',
+                  //       fontSize: 16,
+                  //       color: Colors.white,
+                  //     ),
+                  //     decoration: InputDecoration(
+                  //       hintText: _translate(context, 'search', 'Поиск...'),
+                  //       hintStyle: TextStyle(
+                  //         fontFamily: 'Gilroy',
+                  //         fontSize: 16,
+                  //         color: Colors.white.withOpacity(0.7),
+                  //       ),
+                  //       filled: true,
+                  //       fillColor: Colors.white.withOpacity(0.2),
+                  //       border: OutlineInputBorder(
+                  //         borderRadius: BorderRadius.circular(12),
+                  //         borderSide: BorderSide.none,
+                  //       ),
+                  //       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  //     ),
+                  //     onChanged: _onSearch,
+                  //   ),
+                  // ],
                 ],
               ),
             ),

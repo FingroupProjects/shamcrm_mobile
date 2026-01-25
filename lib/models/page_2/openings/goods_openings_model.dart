@@ -1,3 +1,10 @@
+// Вспомогательная функция для безопасного преобразования в String?
+String? _toStringOrNull(dynamic value) {
+  if (value == null) return null;
+  if (value is String) return value.isEmpty ? null : value;
+  return value.toString();
+}
+
 class GoodsOpeningsResponse {
   final List<GoodsOpeningDocument>? result;
   final dynamic errors;
@@ -94,19 +101,19 @@ class GoodsOpeningDocument {
   factory GoodsOpeningDocument.fromJson(Map<String, dynamic> json) {
     return GoodsOpeningDocument(
       id: json['id'],
-      date: json['date'],
-      docNumber: json['doc_number'],
-      modelType: json['model_type'],
+      date: _toStringOrNull(json['date']),
+      docNumber: _toStringOrNull(json['doc_number']),
+      modelType: _toStringOrNull(json['model_type']),
       modelId: json['model_id'],
       counterpartyAgreementId: json['counterparty_agreement_id'],
       organizationId: json['organization_id'],
       storageId: json['storage_id'],
-      comment: json['comment'],
+      comment: _toStringOrNull(json['comment']),
       currencyId: json['currency_id'],
-      deletedAt: json['deleted_at'],
-      createdAt: json['created_at'],
-      updatedAt: json['updated_at'],
-      type: json['type'],
+      deletedAt: _toStringOrNull(json['deleted_at']),
+      createdAt: _toStringOrNull(json['created_at']),
+      updatedAt: _toStringOrNull(json['updated_at']),
+      type: _toStringOrNull(json['type']),
       approved: json['approved'],
       authorId: json['author_id'],
       checkBySuppliers: json['checkBySuppliers'],
@@ -161,12 +168,12 @@ class DocumentGood {
       id: json['id'],
       documentId: json['document_id'],
       goodVariantId: json['good_variant_id'],
-      quantity: json['quantity'],
-      price: json['price'],
+      quantity: _toStringOrNull(json['quantity']),
+      price: _toStringOrNull(json['price']),
       unitId: json['unit_id'],
-      createdAt: json['created_at'],
-      updatedAt: json['updated_at'],
-      sum: json['sum'],
+      createdAt: _toStringOrNull(json['created_at']),
+      updatedAt: _toStringOrNull(json['updated_at']),
+      sum: _toStringOrNull(json['sum']),
       goodVariant: json['good_variant'] == null
           ? null
           : GoodVariant.fromJson(json['good_variant'] as Map<String, dynamic>),
@@ -207,11 +214,11 @@ class GoodVariant {
       id: json['id'],
       goodId: json['good_id'],
       isActive: json['is_active'],
-      createdAt: json['created_at'],
-      updatedAt: json['updated_at'],
-      oneCUid: json['one_c_uid'],
-      barcode: json['barcode'],
-      fullName: json['full_name'],
+      createdAt: _toStringOrNull(json['created_at']),
+      updatedAt: _toStringOrNull(json['updated_at']),
+      oneCUid: _toStringOrNull(json['one_c_uid']),
+      barcode: _toStringOrNull(json['barcode']),
+      fullName: _toStringOrNull(json['full_name']),
       good: json['good'] == null
           ? null
           : Good.fromJson(json['good'] as Map<String, dynamic>),
@@ -271,22 +278,22 @@ class Good {
   factory Good.fromJson(Map<String, dynamic> json) {
     return Good(
       id: json['id'],
-      oneCId: json['one_c_id'],
-      name: json['name'],
+      oneCId: _toStringOrNull(json['one_c_id']),
+      name: _toStringOrNull(json['name']),
       categoryId: json['category_id'],
-      description: json['description'],
-      price: json['price'],
+      description: _toStringOrNull(json['description']),
+      price: _toStringOrNull(json['price']),
       unitId: json['unit_id'],
       quantity: json['quantity'],
-      deletedAt: json['deleted_at'],
-      createdAt: json['created_at'],
-      updatedAt: json['updated_at'],
+      deletedAt: _toStringOrNull(json['deleted_at']),
+      createdAt: _toStringOrNull(json['created_at']),
+      updatedAt: _toStringOrNull(json['updated_at']),
       isActive: json['is_active'],
-      article: json['article'],
+      article: _toStringOrNull(json['article']),
       labelId: json['label_id'],
       getImage: json['get_image'],
-      cip: json['cip'],
-      packageCode: json['package_code'],
+      cip: _toStringOrNull(json['cip']),
+      packageCode: _toStringOrNull(json['package_code']),
       category: json['category'] == null
           ? null
           : Category.fromJson(json['category'] as Map<String, dynamic>),
@@ -326,14 +333,14 @@ class Category {
   factory Category.fromJson(Map<String, dynamic> json) {
     return Category(
       id: json['id'],
-      name: json['name'],
-      image: json['image'],
+      name: _toStringOrNull(json['name']),
+      image: _toStringOrNull(json['image']),
       parentId: json['parent_id'],
-      createdAt: json['created_at'],
-      updatedAt: json['updated_at'],
+      createdAt: _toStringOrNull(json['created_at']),
+      updatedAt: _toStringOrNull(json['updated_at']),
       isActive: json['is_active'],
       hasPriceCharacteristics: json['has_price_characteristics'],
-      displayType: json['display_type'],
+      displayType: _toStringOrNull(json['display_type']),
       isParent: json['is_parent'],
     );
   }
@@ -357,10 +364,10 @@ class Unit {
   factory Unit.fromJson(Map<String, dynamic> json) {
     return Unit(
       id: json['id'],
-      name: json['name'],
-      createdAt: json['created_at'],
-      updatedAt: json['updated_at'],
-      shortName: json['short_name'],
+      name: _toStringOrNull(json['name']),
+      createdAt: _toStringOrNull(json['created_at']),
+      updatedAt: _toStringOrNull(json['updated_at']),
+      shortName: _toStringOrNull(json['short_name']),
     );
   }
 }
@@ -392,10 +399,10 @@ class AttributeValue {
     return AttributeValue(
       id: json['id'],
       categoryAttributeId: json['category_attribute_id'],
-      value: json['value'],
+      value: _toStringOrNull(json['value']),
       unitId: json['unit_id'],
-      createdAt: json['created_at'],
-      updatedAt: json['updated_at'],
+      createdAt: _toStringOrNull(json['created_at']),
+      updatedAt: _toStringOrNull(json['updated_at']),
       variantAttributeId: json['variant_attribute_id'],
       variantId: json['variant_id'],
       categoryAttribute: json['category_attribute'] == null
@@ -458,9 +465,9 @@ class Attribute {
   factory Attribute.fromJson(Map<String, dynamic> json) {
     return Attribute(
       id: json['id'],
-      name: json['name'],
-      createdAt: json['created_at'],
-      updatedAt: json['updated_at'],
+      name: _toStringOrNull(json['name']),
+      createdAt: _toStringOrNull(json['created_at']),
+      updatedAt: _toStringOrNull(json['updated_at']),
     );
   }
 }
@@ -487,12 +494,12 @@ class Counterparty {
   factory Counterparty.fromJson(Map<String, dynamic> json) {
     return Counterparty(
       id: json['id'],
-      name: json['name'],
-      phone: json['phone'],
-      inn: json['inn'],
-      note: json['note'],
-      createdAt: json['created_at'],
-      updatedAt: json['updated_at'],
+      name: _toStringOrNull(json['name']),
+      phone: _toStringOrNull(json['phone']),
+      inn: json['inn'] is int ? json['inn'] : (json['inn'] is String ? int.tryParse(json['inn']) : json['inn']),
+      note: _toStringOrNull(json['note']),
+      createdAt: _toStringOrNull(json['created_at']),
+      updatedAt: _toStringOrNull(json['updated_at']),
     );
   }
 }
@@ -523,14 +530,14 @@ class Storage {
   factory Storage.fromJson(Map<String, dynamic> json) {
     return Storage(
       id: json['id'],
-      name: json['name'],
-      createdAt: json['created_at'],
-      updatedAt: json['updated_at'],
-      address: json['address'],
+      name: _toStringOrNull(json['name']),
+      createdAt: _toStringOrNull(json['created_at']),
+      updatedAt: _toStringOrNull(json['updated_at']),
+      address: _toStringOrNull(json['address']),
       isActive: json['is_active'],
       deliveryServiceId: json['delivery_service_id'],
       showOnSite: json['show_on_site'],
-      coordinates: json['coordinates'],
+      coordinates: json['coordinates'] is int ? json['coordinates'] : (json['coordinates'] is String ? int.tryParse(json['coordinates']) : json['coordinates']),
     );
   }
 }
@@ -591,29 +598,29 @@ class Author {
   factory Author.fromJson(Map<String, dynamic> json) {
     return Author(
       id: json['id'],
-      name: json['name'],
-      lastname: json['lastname'],
-      login: json['login'],
-      email: json['email'],
-      phone: json['phone'],
-      telegramUserId: json['telegram_user_id'],
-      emailVerifiedAt: json['email_verified_at'],
-      image: json['image'],
-      lastSeen: json['last_seen'],
-      deletedAt: json['deleted_at'],
-      createdAt: json['created_at'],
-      updatedAt: json['updated_at'],
+      name: _toStringOrNull(json['name']),
+      lastname: _toStringOrNull(json['lastname']),
+      login: _toStringOrNull(json['login']),
+      email: _toStringOrNull(json['email']),
+      phone: _toStringOrNull(json['phone']),
+      telegramUserId: _toStringOrNull(json['telegram_user_id']),
+      emailVerifiedAt: _toStringOrNull(json['email_verified_at']),
+      image: _toStringOrNull(json['image']),
+      lastSeen: _toStringOrNull(json['last_seen']),
+      deletedAt: _toStringOrNull(json['deleted_at']),
+      createdAt: _toStringOrNull(json['created_at']),
+      updatedAt: _toStringOrNull(json['updated_at']),
       managerId: json['manager_id'],
-      jobTitle: json['job_title'],
+      jobTitle: _toStringOrNull(json['job_title']),
       hasImage: json['has_image'],
       isFirstLogin: json['is_first_login'],
-      internalNumber: json['internal_number'],
+      internalNumber: _toStringOrNull(json['internal_number']),
       departmentId: json['department_id'],
-      uniqueId: json['unique_id'],
+      uniqueId: _toStringOrNull(json['unique_id']),
       shiftId: json['shift_id'],
       weekendPatternId: json['weekend_pattern_id'],
       workBreakId: json['work_break_id'],
-      oneCId: json['one_c_id'],
+      oneCId: _toStringOrNull(json['one_c_id']),
     );
   }
 }

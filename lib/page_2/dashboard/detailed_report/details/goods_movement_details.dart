@@ -78,12 +78,19 @@ class _GoodsMovementDetailsDialogState extends State<GoodsMovementDetailsDialog>
   }
 
   String _formatDate(DateTime date) {
-    return DateFormat('dd.MM.yyyy HH:mm').format(date);
+    return DateFormat('dd.MM.yyyy').format(date);
+  }
+
+  String _getDefaultValue(String? value) {
+    if (value == null || value.isEmpty || value.trim().isEmpty || value == 'N/A' || value == 'not_specified') {
+      return 'Не указано';
+    }
+    return value;
   }
 
   String _getDocumentTypeDisplay(String? documentType) {
     if (documentType == null || documentType.isEmpty) {
-      return AppLocalizations.of(context)!.translate('not_specified');
+      return 'Не указано';
     }
     if (documentType.toLowerCase() == 'income') {
       return AppLocalizations.of(context)!.translate('income_document');
@@ -169,7 +176,7 @@ class _GoodsMovementDetailsDialogState extends State<GoodsMovementDetailsDialog>
                 Expanded(
                   child: _buildInfoBox(
                     label: AppLocalizations.of(context)!.translate('counterparty_label'),
-                    value: movement.counterparty ?? AppLocalizations.of(context)!.translate('not_specified'),
+                    value: _getDefaultValue(movement.counterparty),
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -177,7 +184,7 @@ class _GoodsMovementDetailsDialogState extends State<GoodsMovementDetailsDialog>
                 Expanded(
                   child: _buildInfoBox(
                     label: AppLocalizations.of(context)!.translate('storage_label'),
-                    value: movement.storage,
+                    value: _getDefaultValue(movement.storage),
                   ),
                 ),
               ],

@@ -17847,7 +17847,7 @@ Future<List<ExpenseArticleDashboardWarehouse>> getExpenseArticleDashboardWarehou
   }) async {
     String path = '/good/get/variant?page=$page&per_page=$perPage';
     if (search != null && search.isNotEmpty) {
-      path += '&search=$search';
+      path += '&search=${Uri.encodeComponent(search)}';
     }
 
     path += '&is_service=0';

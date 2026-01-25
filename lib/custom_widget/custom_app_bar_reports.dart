@@ -373,6 +373,10 @@ class _CustomAppBarState extends State<CustomAppBarReports> with TickerProviderS
                 controller: _searchController,
                 focusNode: focusNode,
                 onChanged: widget.onChangedSearchInput,
+                onSubmitted: (value) {
+                  widget.onChangedSearchInput?.call(value);
+                },
+                textInputAction: TextInputAction.search,
                 decoration: InputDecoration(
                   hintText: AppLocalizations.of(context)!.translate('search_appbar'),
                   border: InputBorder.none,
