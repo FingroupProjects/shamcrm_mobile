@@ -115,16 +115,22 @@ class TaskById {
 class AuthorTask {
   final int id;
   final String name;
+  final String? lastname;
+  final String? fullName;
 
   AuthorTask({
     required this.id,
     required this.name,
+    this.lastname,
+    this.fullName,
   });
 
   factory AuthorTask.fromJson(Map<String, dynamic> json) {
     return AuthorTask(
       id: json['id'] ?? 0,
       name: json['name'] ?? 'Не указан',
+      lastname: json['lastname'],
+      fullName: json['full_name'],
     );
   }
 }

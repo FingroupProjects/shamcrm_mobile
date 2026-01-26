@@ -520,16 +520,48 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
         task.author?.id != null &&
         _currentUserId == task.author!.id;
 
+    bool authorAdded = false;
+    bool createdAtAdded = false;
+    
     for (var fc in _fieldConfiguration) {
       // Пропускаем поле 'files', так как оно всегда показывается в конце
       if (fc.fieldName == 'files') {
         continue;
       }
 
+      // Отмечаем, если поле 'author' или 'createdAt' были добавлены из конфигурации
+      if (fc.fieldName == 'author') {
+        authorAdded = true;
+      } else if (fc.fieldName == 'createdAt') {
+        createdAtAdded = true;
+      }
+
       final value = _getFieldValue(fc, task);
       final label = _getFieldName(fc);
 
       details.add({'label': label, 'value': value});
+    }
+
+    // Всегда добавляем поле 'author', если оно не было добавлено из конфигурации
+    if (!authorAdded && task.author != null) {
+      final authorName = task.author!.fullName ?? 
+                        (task.author!.name != null && task.author!.lastname != null
+                          ? '${task.author!.name} ${task.author!.lastname}'
+                          : task.author!.name ?? '');
+      if (authorName.isNotEmpty) {
+        details.add({
+          'label': AppLocalizations.of(context)!.translate('author_details'),
+          'value': authorName,
+        });
+      }
+    }
+
+    // Всегда добавляем дату создания, если она не была добавлена из конфигурации
+    if (!createdAtAdded && task.createdAt != null && task.createdAt!.isNotEmpty) {
+      details.add({
+        'label': AppLocalizations.of(context)!.translate('creation_date_details'),
+        'value': formatDate(task.createdAt),
+      });
     }
 
     // Всегда добавляем файлы в конец списка, если они есть
@@ -610,9 +642,16 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
       case 'deadline':
         if (task.endDate == null || task.endDate!.isEmpty) return '';
         return DateFormat('dd.MM.yyyy').format(DateTime.parse(task.endDate!));
-      case 'taskStatus':  return task.taskStatus?.taskStatus?.name ?? '';
-      case 'author':      return task.author?.name ?? '';
-      case 'createdAt':   return formatDate(task.createdAt);
+      case 'taskStatus':  
+        return task.taskStatus?.taskStatus?.name ?? '';
+      case 'author':      
+        if (task.author == null) return '';
+        return task.author!.fullName ?? 
+               (task.author!.name != null && task.author!.lastname != null
+                 ? '${task.author!.name} ${task.author!.lastname}'
+                 : task.author!.name ?? '');
+      case 'createdAt':   
+        return formatDate(task.createdAt);
       case 'deal':        return task.deal?.name ?? '';
       default:            return '';
     }
@@ -910,7 +949,6 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
     if (label == AppLocalizations.of(context)!.translate('task_name') ||
         label == AppLocalizations.of(context)!.translate('description_details') ||
         label == AppLocalizations.of(context)!.translate('project_details') ||
-        label == AppLocalizations.of(context)!.translate('author_details') ||
         label == AppLocalizations.of(context)!.translate('status_details')) {
       return GestureDetector(
         onTap: () {

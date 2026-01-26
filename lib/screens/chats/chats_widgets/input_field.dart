@@ -861,121 +861,141 @@ class _InputFieldState extends State<InputField>
                 ),
               ),
               
-            // ✅ НОВАЯ КОМПАКТНАЯ СТРУКТУРА - ВСЕ ВНУТРИ ОДНОГО КОНТЕЙНЕРА
-          // ✅ ИСПРАВЛЕННАЯ КОМПАКТНАЯ СТРУКТУРА
-Padding(
-  padding: const EdgeInsets.symmetric(horizontal: 12),
-  child: (context.watch<ListenSenderFileCubit>().state)
-      ? Container(
-          height: 42,
-          alignment: Alignment.center,
-          child: CircularProgressIndicator(
-            color: Color(0xff1E2E52),
-            strokeWidth: 2.5,
-          ),
-        )
-      : Container(
-          decoration: ChatSmsStyles.inputFieldDecoration,
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center, // ✅ ВАЖНО: Центрируем все элементы
-            children: [
-              // ✅ Кнопка меню (если isLeadChat)
-              if (widget.isLeadChat)
-                IconButton(
-                  icon: Image.asset(
-                    'assets/icons/chats/menu-button.png',
-                    width: 20,
-                    height: 20,
-                  ),
-                  iconSize: 20,
-                  padding: EdgeInsets.all(8),
-                  constraints: BoxConstraints(
-                    minWidth: 36,
-                    minHeight: 36,
-                  ),
-                  onPressed: () {
-                    _showTemplatesPanel(context);
-                  },
-                ),
-              
-              // ✅ Текстовое поле с явным выравниванием
-             Expanded(
-  child: AnimatedTextField(
-    controller: widget.messageController,
-    focusNode: widget.focusNode,
-    onChanged: _handleTextChange,
-    htmlContent: _htmlContent,
-    onLongPress: _showFormattingPanelOnLongPress,
-    hintText: AppLocalizations.of(context)!
-        .translate('enter_your_sms'),
-    style: ChatSmsStyles.messageTextStyle.copyWith(
-      color: const Color(0xFF1A202C),
-      fontSize: 15,
-      height: 1.3, // ✅ Межстрочный интервал
-    ),
-    hintStyle: TextStyle(
-      fontSize: 15,
-      color: ChatSmsStyles.hintTextColor,
-      fontWeight: FontWeight.w400,
-      fontFamily: 'Gilroy',
-      height: 1.3, // ✅ Такой же интервал для hint
-    ),
-    fillColor: Colors.transparent,
-    borderRadius: ChatSmsStyles.inputBorderRadius,
-    contentPadding: EdgeInsets.symmetric(
-      horizontal: 12,
-      vertical: 15, // ✅ Увеличен для лучшего центрирования
-    ),
-    maxVisibleLines: 5,
-    lineHeight: 20.0,
-  ),
-),
-              
-              // ✅ Кнопка прикрепления файла
-              IconButton(
-                icon: Image.asset(
-                  'assets/icons/chats/file.png',
-                  width: 20,
-                  height: 20,
-                ),
-                iconSize: 20,
-                padding: EdgeInsets.all(8),
-                constraints: BoxConstraints(
-                  minWidth: 36,
-                  minHeight: 36,
-                ),
-                onPressed: widget.onAttachFile,
-              ),
-              
-              // ✅ Умная кнопка (микрофон/отправить)
-              AnimatedSwitcher(
-                duration: Duration(milliseconds: 250),
-                transitionBuilder: (Widget child, Animation<double> animation) {
-                  return FadeTransition(
-                    opacity: animation,
-                    child: ScaleTransition(
-                      scale: animation,
-                      child: child,
+            // ✅ ИСПРАВЛЕННАЯ СТРУКТУРА СО STACK - БЕЗ OVERFLOW
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: (context.watch<ListenSenderFileCubit>().state)
+                  ? Container(
+                      height: 42,
+                      alignment: Alignment.center,
+                      child: CircularProgressIndicator(
+                        color: Color(0xff1E2E52),
+                        strokeWidth: 2.5,
+                      ),
+                    )
+                  : Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        // Основной контейнер с полями ввода
+                        Container(
+                          decoration: ChatSmsStyles.inputFieldDecoration,
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              // Кнопка меню
+                              if (widget.isLeadChat)
+                                IconButton(
+                                  icon: Image.asset(
+                                    'assets/icons/chats/menu-button.png',
+                                    width: 20,
+                                    height: 20,
+                                  ),
+                                  iconSize: 20,
+                                  padding: EdgeInsets.all(8),
+                                  constraints: BoxConstraints(
+                                    minWidth: 36,
+                                    minHeight: 36,
+                                  ),
+                                  onPressed: () {
+                                    _showTemplatesPanel(context);
+                                  },
+                                ),
+                              
+                              // Текстовое поле
+                              Expanded(
+                                child: AnimatedTextField(
+                                  controller: widget.messageController,
+                                  focusNode: widget.focusNode,
+                                  onChanged: _handleTextChange,
+                                  htmlContent: _htmlContent,
+                                  onLongPress: _showFormattingPanelOnLongPress,
+                                  hintText: AppLocalizations.of(context)!
+                                      .translate('enter_your_sms'),
+                                  style: ChatSmsStyles.messageTextStyle.copyWith(
+                                    color: const Color(0xFF1A202C),
+                                    fontSize: 15,
+                                    height: 1.3,
+                                  ),
+                                  hintStyle: TextStyle(
+                                    fontSize: 15,
+                                    color: ChatSmsStyles.hintTextColor,
+                                    fontWeight: FontWeight.w400,
+                                    fontFamily: 'Gilroy',
+                                    height: 1.3,
+                                  ),
+                                  fillColor: Colors.transparent,
+                                  borderRadius: ChatSmsStyles.inputBorderRadius,
+                                  contentPadding: EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 15,
+                                  ),
+                                  maxVisibleLines: 5,
+                                  lineHeight: 20.0,
+                                ),
+                              ),
+                              
+                              // Кнопка файла
+                              IconButton(
+                                icon: Image.asset(
+                                  'assets/icons/chats/file.png',
+                                  width: 20,
+                                  height: 20,
+                                ),
+                                iconSize: 20,
+                                padding: EdgeInsets.all(8),
+                                constraints: BoxConstraints(
+                                  minWidth: 36,
+                                  minHeight: 36,
+                                ),
+                                onPressed: widget.onAttachFile,
+                              ),
+                              
+                              // Динамическая кнопка (голос/отправить)
+                              AnimatedSwitcher(
+                                duration: Duration(milliseconds: 250),
+                                transitionBuilder: (Widget child, Animation<double> animation) {
+                                  return FadeTransition(
+                                    opacity: animation,
+                                    child: ScaleTransition(
+                                      scale: animation,
+                                      child: child,
+                                    ),
+                                  );
+                                },
+                                child: _hasText
+                                    ? _buildSendButton(messagingCubit, editingMessage, replyMsgId)
+                                    : SizedBox(
+                                        key: ValueKey('voice_placeholder'),
+                                        width: 36,
+                                        height: 36,
+                                      ),
+                              ),
+                              
+                              SizedBox(width: 4),
+                            ],
+                          ),
+                        ),
+                        
+                        // Голосовой рекордер поверх всего
+                        if (!_hasText)
+                          Positioned(
+                            right: 4,
+                            top: 8,
+                            bottom: 0,
+                            child: Center(
+                              child: _buildVoiceRecorder(),
+                            ),
+                          ),
+                      ],
                     ),
-                  );
-                },
-                child: _hasText
-                    ? _buildSendButton(messagingCubit, editingMessage, replyMsgId)
-                    : _buildVoiceRecorder(),
-              ),
-              
-              SizedBox(width: 4),
-            ],
-          ),
-        ),
-),
+            ),
           ],
         ),
       ),
     );
   }
 
-  // ✅ КОМПАКТНАЯ кнопка отправки
+  // Кнопка отправки
   Widget _buildSendButton(MessagingCubit messagingCubit, editingMessage, String? replyMsgId) {
     return (context.watch<ListenSenderTextCubit>().state)
         ? Container(
@@ -1037,7 +1057,7 @@ Padding(
           );
   }
 
-  // ✅ КОМПАКТНАЯ кнопка записи голоса
+  // ✅ ФИНАЛЬНАЯ версия кнопки записи голоса без overflow
   Widget _buildVoiceRecorder() {
     return (context.watch<ListenSenderVoiceCubit>().state)
         ? Container(
@@ -1054,42 +1074,36 @@ Padding(
               ),
             ),
           )
-        : Container(
+           
+        : SocialMediaRecorder(
             key: ValueKey('voice_recorder'),
-            width: 36,
-            height: 36,
-            child: MediaQuery(
-              data: MediaQueryData(size: Size(36, 36)),
-              child: SocialMediaRecorder(
-                maxRecordTimeInSecond: 180,
-                initRecordPackageWidth: 36,
-                fullRecordPackageHeight: 36,
-                startRecording: () {},
-                stopRecording: (_time) {},
-                sendRequestFunction: widget.sendRequestFunction,
-                cancelText: AppLocalizations.of(context)!.translate('cancel'),
-                cancelTextStyle: TextStyle(
-                  fontSize: 14,
-                  fontFamily: 'Gilroy',
-                  fontWeight: FontWeight.w500,
-                ),
-                slideToCancelText: AppLocalizations.of(context)!
-                    .translate('cancel_chat_sms'),
-                slideToCancelTextStyle: TextStyle(
-                  fontSize: 14,
-                  fontFamily: 'Gilroy',
-                  fontWeight: FontWeight.w500,
-                ),
-                recordIconBackGroundColor: Color(0xfff4F40EC),
-                counterTextStyle: TextStyle(
-                  fontSize: 12,
-                  fontFamily: 'Gilroy',
-                  fontWeight: FontWeight.w500,
-                ),
-                encode: AudioEncoderType.AAC,
-                radius: BorderRadius.circular(18),
-              ),
+            maxRecordTimeInSecond: 180,
+            initRecordPackageWidth: 36,
+            fullRecordPackageHeight: 36,
+            startRecording: () {},
+            stopRecording: (_time) {},
+            sendRequestFunction: widget.sendRequestFunction,
+            cancelText: AppLocalizations.of(context)!.translate('cancel'),
+            cancelTextStyle: TextStyle(
+              fontSize: 14,
+              fontFamily: 'Gilroy',
+              fontWeight: FontWeight.w500,
             ),
+            slideToCancelText: AppLocalizations.of(context)!
+                .translate('cancel_chat_sms'),
+            slideToCancelTextStyle: TextStyle(
+              fontSize: 14,
+              fontFamily: 'Gilroy',
+              fontWeight: FontWeight.w500,
+            ),
+            recordIconBackGroundColor: Color(0xfff4F40EC),
+            counterTextStyle: TextStyle(
+              fontSize: 12,
+              fontFamily: 'Gilroy',
+              fontWeight: FontWeight.w500,
+            ),
+            encode: AudioEncoderType.AAC,
+            radius: BorderRadius.circular(18),
           );
   }
 
