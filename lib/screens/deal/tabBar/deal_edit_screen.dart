@@ -641,6 +641,10 @@ class _DealEditScreenState extends State<DealEditScreen> {
         return loc.translate('manager');
       case 'lead_id':
         return loc.translate('lead');
+      case 'city_id':
+        return loc.translate('oblast');
+      case 'region_id':
+        return loc.translate('region');
       case 'start_date':
         return loc.translate('start_date');
       case 'end_date':

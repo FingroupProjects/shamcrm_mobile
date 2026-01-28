@@ -147,9 +147,11 @@ class _TaskStatusListState extends State<StatusList> {
                   fillColor: const Color(0xFFF4F7FD),
                 ),
                 dropdownColor: Colors.white,
-                icon: Transform.rotate(
-                  angle: 90 * 3.1415926535 / 180,
-                  child: Image.asset('assets/icons/arrow_down.png', width: 12, height: 10),
+                iconSize: 20,
+                icon: Icon(
+                  Icons.keyboard_arrow_down,
+                  size: 20,
+                  color: Color(0xff1E2E52),
                 ),
               ),
             ),

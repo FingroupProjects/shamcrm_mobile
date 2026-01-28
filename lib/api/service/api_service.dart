@@ -10096,6 +10096,7 @@ Future<int> DeleteAllNotifications() async {
     String? commentToCourier,
     int? managerId,
     int? integration,
+    required double sum,
   }) async {
     try {
       final token = await getToken();
@@ -10125,6 +10126,7 @@ Future<int> DeleteAllNotifications() async {
         'payment_type': 'cash',
         'manager_id': managerId,
         'integration_id': null, //  otpravim null
+        'sum': sum,
       };
 
       if (delivery) {
@@ -10198,6 +10200,7 @@ Future<int> DeleteAllNotifications() async {
     int? branchId,
     String? commentToCourier,
     int? managerId, // Новое поле
+    required double sum,
   }) async {
     try {
       final token = await getToken();
@@ -10227,6 +10230,7 @@ Future<int> DeleteAllNotifications() async {
         'comment_to_courier': commentToCourier,
         'payment_type': 'cash',
         'manager_id': managerId?.toString(),
+        'sum': sum,
       };
 
       if (delivery) {

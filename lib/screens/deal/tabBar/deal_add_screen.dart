@@ -23,8 +23,6 @@ import 'package:crm_task_manager/models/user_data_response.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_details/deal_name_list.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_details/lead_with_manager.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_details/manager_for_lead.dart';
-import 'package:crm_task_manager/screens/deal/tabBar/deal_status_list_edit.dart';
-import 'package:crm_task_manager/models/deal_model.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/add_custom_directory_dialog.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/lead_create_custom.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/main_field_dropdown_widget.dart';
@@ -62,7 +60,6 @@ class _DealAddScreenState extends State<DealAddScreen> {
   String? selectedManager;
   String? selectedLead;
   int? _selectedStatusId; // ✅ НОВОЕ: для хранения выбранного статуса
-  List<int> _selectedStatusIds = []; // ✅ НОВОЕ: список выбранных ID (для мультивыбора)
   List<CustomField> customFields = [];
   bool isEndDateInvalid = false;
   bool isTitleInvalid = false;
@@ -86,7 +83,6 @@ class _DealAddScreenState extends State<DealAddScreen> {
     super.initState();
     //print('DealAddScreen: initState started');
     _selectedStatusId = widget.statusId; // ✅ НОВОЕ: инициализируем выбранный статус
-    _selectedStatusIds = [widget.statusId]; // ✅ НОВОЕ: инициализируем список статусов
     context.read<GetAllManagerBloc>().add(GetAllManagerEv());
     context.read<GetAllLeadBloc>().add(GetAllLeadEv());
     //print('DealAddScreen: Dispatched GetAllManagerEv and GetAllLeadEv');
@@ -218,29 +214,9 @@ class _DealAddScreenState extends State<DealAddScreen> {
       case 'description':
         return _buildDescriptionField();
       case 'deal_status_id':
-        return DealStatusEditWidget(
-          selectedStatus: _selectedStatusId?.toString(),
-          onSelectStatus: (DealStatus selectedStatusData) {
-            if (_selectedStatusId != selectedStatusData.id) {
-              setState(() {
-                _selectedStatusId = selectedStatusData.id;
-                _selectedStatusIds = [selectedStatusData.id];
-              });
-            }
-          },
-          onSelectMultipleStatuses: (List<int> selectedIds) {
-            if (_selectedStatusIds.length != selectedIds.length ||
-                !_selectedStatusIds.toSet().containsAll(selectedIds) ||
-                !selectedIds.toSet().containsAll(_selectedStatusIds)) {
-              setState(() {
-                _selectedStatusIds = selectedIds;
-                if (selectedIds.isNotEmpty) {
-                  _selectedStatusId = selectedIds.first;
-                }
-              });
-            }
-          },
-        );
+        // В экране создания сделки из самой сделки статус уже известен (передаётся через statusId),
+        // поэтому поле статуса здесь не отображаем.
+        return const SizedBox.shrink();
       case 'user_ids':
       case 'users': // ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Добавляем обработку для поля 'users'
         // ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Всегда показываем поле, если оно активно в конфигурации
@@ -1321,6 +1297,10 @@ class _DealAddScreenState extends State<DealAddScreen> {
         return loc.translate('manager');
       case 'lead_id':
         return loc.translate('lead');
+      case 'city_id':
+        return loc.translate('oblast');
+      case 'region_id':
+        return loc.translate('region');
       case 'start_date':
         return loc.translate('start_date');
       case 'end_date':

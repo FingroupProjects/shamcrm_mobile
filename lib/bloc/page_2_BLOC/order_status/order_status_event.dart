@@ -87,6 +87,7 @@ class CreateOrder extends OrderEvent {
   final int? branchId;
   final String? commentToCourier;
   final int? managerId; // Новое поле
+  final double sum;
 
   CreateOrder({
     required this.phone,
@@ -100,6 +101,7 @@ class CreateOrder extends OrderEvent {
     this.branchId,
     this.commentToCourier,
     this.managerId, // Добавляем в конструктор
+    required this.sum,
   });
 }
 class UpdateOrder extends OrderEvent {
@@ -115,6 +117,7 @@ class UpdateOrder extends OrderEvent {
   final String? commentToCourier;
   final int? managerId; // Новое поле
   final int? statusId; // Добавлено для обновления списка
+  final double sum;
 
   UpdateOrder({
     required this.orderId,
@@ -129,6 +132,7 @@ class UpdateOrder extends OrderEvent {
     this.commentToCourier,
     this.managerId,
     this.statusId,
+    required this.sum,
   });
 }
 class DeleteOrder extends OrderEvent {

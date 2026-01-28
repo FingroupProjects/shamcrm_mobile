@@ -66,6 +66,8 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
   int? currencyId; // Поле для хранения currency_id
   final Map<int, TextEditingController> _quantityControllers = {};
   Country? _initialCountry; // Для автоопределения страны из телефона клиента
+  final TextEditingController _totalController = TextEditingController();
+  bool _isTotalEdited = false;
 
   @override
   void initState() {
@@ -140,6 +142,34 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
         debugPrint('OrderAddScreen: Auto-filled phone: $selectedDialCode');
       }
     });
+  }
+
+  @override
+  void dispose() {
+    for (final controller in _quantityControllers.values) {
+      controller.dispose();
+    }
+    _totalController.dispose();
+    _phoneController.dispose();
+    _deliveryAddressController.dispose();
+    _commentController.dispose();
+    super.dispose();
+  }
+
+  double _calculateAutoTotal() {
+    return _items.fold<double>(
+      0,
+      (sum, item) => sum + (item['price'] * (item['quantity'] ?? 1)),
+    );
+  }
+
+  double _getCurrentTotal() {
+    if (_isTotalEdited && _totalController.text.trim().isNotEmpty) {
+      final parsed = double.tryParse(
+          _totalController.text.trim().replaceAll(' ', '').replaceAll(',', '.'));
+      if (parsed != null) return parsed;
+    }
+    return _calculateAutoTotal();
   }
 
   // Метод загрузки currencyId из SharedPreferences
@@ -268,18 +298,6 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
         baseUrl = 'https://shamcrm.com/storage';
       });
     }
-  }
-
-  @override
-  void dispose() {
-    _phoneController.dispose();
-    _deliveryAddressController.dispose();
-    _commentController.dispose();
-    for (final controller in _quantityControllers.values) {
-      controller.dispose();
-    }
-    _quantityControllers.clear();
-    super.dispose();
   }
 
   Widget _buildPlaceholderImage() {
@@ -791,9 +809,13 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
     );
   }
 
-  Widget _buildItemsSection() {
-    final total = _items.fold<double>(
-        0, (sum, item) => sum + (item['price'] * (item['quantity'] ?? 1)));
+ Widget _buildItemsSection() {
+    final autoTotal = _calculateAutoTotal();
+    if (!_isTotalEdited) {
+      _totalController.text = autoTotal.toStringAsFixed(0);
+    }
+    final String currencySymbol =
+        _formatPrice(autoTotal).split(' ').isNotEmpty ? _formatPrice(autoTotal).split(' ').last : '';
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -852,19 +874,62 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(AppLocalizations.of(context)!.translate('total'),
-                    style: const TextStyle(
+                Text(
+                  AppLocalizations.of(context)!.translate('total'),
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontFamily: 'Gilroy',
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xff1E2E52),
+                  ),
+                ),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IntrinsicWidth(
+                      child: TextField(
+                        controller: _totalController,
+                        keyboardType:
+                            const TextInputType.numberWithOptions(decimal: true),
+                        textAlign: TextAlign.right,
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontFamily: 'Gilroy',
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xff1E2E52),
+                        ),
+                        decoration: const InputDecoration(
+                          isDense: true,
+                          border: InputBorder.none,
+                          focusedBorder: InputBorder.none,
+                          enabledBorder: InputBorder.none,
+                          contentPadding: EdgeInsets.zero,
+                        ),
+                        onTap: () {
+                          if (_totalController.text.trim().isEmpty) {
+                            _totalController.text =
+                                autoTotal.toStringAsFixed(0);
+                          }
+                        },
+                        onChanged: (value) {
+                          setState(() {
+                            _isTotalEdited = true;
+                          });
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      currencySymbol,
+                      style: const TextStyle(
                         fontSize: 16,
                         fontFamily: 'Gilroy',
                         fontWeight: FontWeight.w600,
-                        color: Color(0xff1E2E52))),
-                Text(
-                    _formatPrice(total),
-                    style: const TextStyle(
-                        fontSize: 20,
-                        fontFamily: 'Gilroy',
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xff1E2E52))),
+                        color: Color(0xff1E2E52),
+                      ),
+                    ),
+                  ],
+                ),
               ],
             ),
           ),
@@ -1143,6 +1208,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                   final orderBloc = context.read<OrderBloc>();
                   final isPickup = _deliveryMethod ==
                       AppLocalizations.of(context)!.translate('self_delivery');
+                  final currentTotal = _getCurrentTotal();
 
                   orderBloc.add(CreateOrder(
                     phone: selectedDialCode!,
@@ -1167,6 +1233,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                     managerId: selectedManager != null
                         ? int.parse(selectedManager!)
                         : null,
+                    sum: currentTotal,
                   ));
                 }
               },

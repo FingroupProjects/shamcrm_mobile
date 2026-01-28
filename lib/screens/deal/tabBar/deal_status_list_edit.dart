@@ -13,6 +13,7 @@ class DealStatusEditWidget extends StatefulWidget {
   final Function(DealStatus) onSelectStatus;
   final Function(List<int>)? onSelectMultipleStatuses;
   final List<DealStatusById>? dealStatuses;
+  final bool hasError; // для показа красной рамки и текста при ошибке
 
   DealStatusEditWidget({
     Key? key,
@@ -20,6 +21,7 @@ class DealStatusEditWidget extends StatefulWidget {
     this.selectedStatus,
     this.onSelectMultipleStatuses,
     this.dealStatuses,
+    this.hasError = false,
   }) : super(key: key);
 
   @override
@@ -235,6 +237,9 @@ class _DealStatusEditWidgetState extends State<DealStatusEditWidget> {
 
   @override
   Widget build(BuildContext context) {
+    final bool showError = widget.hasError;
+    final Color borderColor = showError ? Colors.red : const Color(0xFFF4F7FD);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -249,13 +254,26 @@ class _DealStatusEditWidgetState extends State<DealStatusEditWidget> {
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
               width: 1,
-              color: const Color(0xFFF4F7FD),
+              color: borderColor,
             ),
           ),
           child: isMultiSelectEnabled
               ? _buildMultiSelectDropdown()
               : _buildSingleSelectDropdown(),
         ),
+        if (showError)
+          Padding(
+            padding: const EdgeInsets.only(top: 4, left: 4),
+            child: Text(
+              AppLocalizations.of(context)!.translate('field_required'),
+              style: const TextStyle(
+                color: Colors.red,
+                fontSize: 12,
+                fontFamily: 'Gilroy',
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
       ],
     );
   }
@@ -271,12 +289,12 @@ class _DealStatusEditWidgetState extends State<DealStatusEditWidget> {
         closedFillColor: const Color(0xffF4F7FD),
         expandedFillColor: Colors.white,
         closedBorder: Border.all(
-          color: const Color(0xffF4F7FD),
+          color: widget.hasError ? Colors.red : const Color(0xffF4F7FD),
           width: 1,
         ),
         closedBorderRadius: BorderRadius.circular(12),
         expandedBorder: Border.all(
-          color: const Color(0xffF4F7FD),
+          color: widget.hasError ? Colors.red : const Color(0xffF4F7FD),
           width: 1,
         ),
         expandedBorderRadius: BorderRadius.circular(12),

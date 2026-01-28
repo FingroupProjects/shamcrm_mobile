@@ -522,6 +522,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
 
     bool authorAdded = false;
     bool createdAtAdded = false;
+    bool dealAdded = false;
     
     for (var fc in _fieldConfiguration) {
       // Пропускаем поле 'files', так как оно всегда показывается в конце
@@ -534,6 +535,8 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
         authorAdded = true;
       } else if (fc.fieldName == 'createdAt') {
         createdAtAdded = true;
+      } else if (fc.fieldName == 'deal') {
+        dealAdded = true;
       }
 
       final value = _getFieldValue(fc, task);
@@ -561,6 +564,15 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
       details.add({
         'label': AppLocalizations.of(context)!.translate('creation_date_details'),
         'value': formatDate(task.createdAt),
+      });
+    }
+
+    // Всегда добавляем сделку, если задача создана на основе сделки,
+    // но поле 'deal' отсутствует в конфигурации
+    if (!dealAdded && task.deal != null && task.deal!.id != 0) {
+      details.add({
+        'label': AppLocalizations.of(context)!.translate('task_by_deal'),
+        'value': task.deal!.name,
       });
     }
 

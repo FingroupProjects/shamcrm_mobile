@@ -37,7 +37,6 @@ import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 import 'dart:io';
-import 'package:file_picker/file_picker.dart';
 import 'package:crm_task_manager/models/deal_model.dart';
 
 class LeadDealAddScreen extends StatefulWidget {
@@ -65,6 +64,7 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
   bool isEndDateInvalid = false;
   bool isTitleInvalid = false;
   bool isManagerInvalid = false;
+  bool isStatusInvalid = false;
   List<FileHelper> files = [];
   bool _hasDealUsers = false;
   List<UserData> _selectedUsers = [];
@@ -235,8 +235,10 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
           onSelectStatus: (DealStatus selectedStatusData) {
             setState(() {
               selectedDealStatusId = selectedStatusData.id;
+              isStatusInvalid = false;
             });
           },
+          hasError: isStatusInvalid,
         );
 
       case 'manager_id':
@@ -1511,6 +1513,7 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
     setState(() {
       isTitleInvalid = titleController.text.isEmpty;
       isManagerInvalid = selectedManager == null;
+      isStatusInvalid = selectedDealStatusId == null;
     });
     
     if (_formKey.currentState!.validate() && titleController.text.isNotEmpty && selectedManager != null && selectedDealStatusId != null) {

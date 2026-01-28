@@ -58,6 +58,8 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
 
   int? currencyId; // Поле для хранения currency_id
   final Map<int, TextEditingController> _quantityControllers = {};
+  final TextEditingController _totalController = TextEditingController();
+  bool _isTotalEdited = false;
 
   @override
   void initState() {
@@ -259,6 +261,7 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
       controller.dispose();
     }
     _quantityControllers.clear();
+    _totalController.dispose();
     super.dispose();
   }
 
@@ -312,6 +315,22 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
         }));
       });
     }
+  }
+
+  double _calculateAutoTotal() {
+    return _items.fold<double>(
+      0,
+      (sum, item) => sum + (item['price'] * (item['quantity'] ?? 1)),
+    );
+  }
+
+  double _getCurrentTotal() {
+    if (_isTotalEdited && _totalController.text.trim().isNotEmpty) {
+      final parsed = double.tryParse(
+          _totalController.text.trim().replaceAll(' ', '').replaceAll(',', '.'));
+      if (parsed != null) return parsed;
+    }
+    return _calculateAutoTotal();
   }
 
   TextEditingController _getQuantityController(int index) {
@@ -686,8 +705,12 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
   }
 
   Widget _buildItemsSection() {
-    final total = _items.fold<double>(
-        0, (sum, item) => sum + (item['price'] * (item['quantity'] ?? 1)));
+    final autoTotal = _calculateAutoTotal();
+    if (!_isTotalEdited) {
+      _totalController.text = autoTotal.toStringAsFixed(0);
+    }
+    final String currencySymbol =
+        _formatPrice(autoTotal).split(' ').isNotEmpty ? _formatPrice(autoTotal).split(' ').last : '';
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -697,11 +720,10 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
             Text(
               AppLocalizations.of(context)!.translate('items_list'),
               style: const TextStyle(
-                fontSize: 16,
-                fontFamily: 'Gilroy',
-                fontWeight: FontWeight.w500,
-                color: Color(0xff1E2E52),
-              ),
+                  fontSize: 16,
+                  fontFamily: 'Gilroy',
+                  fontWeight: FontWeight.w500,
+                  color: Color(0xff1E2E52)),
             ),
             GestureDetector(
               onTap: _navigateToAddProduct,
@@ -709,15 +731,12 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
                 children: [
                   const Icon(Icons.add, color: Color(0xff1E2E52), size: 20),
                   const SizedBox(width: 4),
-                  Text(
-                    AppLocalizations.of(context)!.translate('add_product'),
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w500,
-                      color: Color(0xff1E2E52),
-                    ),
-                  ),
+                  Text(AppLocalizations.of(context)!.translate('add_product'),
+                      style: const TextStyle(
+                          fontSize: 14,
+                          fontFamily: 'Gilroy',
+                          fontWeight: FontWeight.w500,
+                          color: Color(0xff1E2E52))),
                 ],
               ),
             ),
@@ -741,11 +760,10 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
               borderRadius: BorderRadius.circular(12),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.grey.withOpacity(0.1),
-                  spreadRadius: 1,
-                  blurRadius: 3,
-                  offset: const Offset(0, 1),
-                ),
+                    color: Colors.grey.withOpacity(0.1),
+                    spreadRadius: 1,
+                    blurRadius: 3,
+                    offset: const Offset(0, 1))
               ],
             ),
             child: Row(
@@ -760,14 +778,52 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
                     color: Color(0xff1E2E52),
                   ),
                 ),
-                Text(
-                  _formatPrice(total),
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontFamily: 'Gilroy',
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xff1E2E52),
-                  ),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IntrinsicWidth(
+                      child: TextField(
+                        controller: _totalController,
+                        keyboardType:
+                            const TextInputType.numberWithOptions(decimal: true),
+                        textAlign: TextAlign.right,
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontFamily: 'Gilroy',
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xff1E2E52),
+                        ),
+                        decoration: const InputDecoration(
+                          isDense: true,
+                          border: InputBorder.none,
+                          focusedBorder: InputBorder.none,
+                          enabledBorder: InputBorder.none,
+                          contentPadding: EdgeInsets.zero,
+                        ),
+                        onTap: () {
+                          if (_totalController.text.trim().isEmpty) {
+                            _totalController.text =
+                                autoTotal.toStringAsFixed(0);
+                          }
+                        },
+                        onChanged: (value) {
+                          setState(() {
+                            _isTotalEdited = true;
+                          });
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      currencySymbol,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontFamily: 'Gilroy',
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xff1E2E52),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -775,7 +831,6 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
       ],
     );
   }
-
   Widget _buildItemCard(int index, Map<String, dynamic> item) {
     Widget _buildPlaceholderImage() {
       return Container(
@@ -1040,6 +1095,7 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
                   }
 
                   final isPickup = _deliveryMethod == AppLocalizations.of(context)!.translate('self_delivery');
+                  final currentTotal = _getCurrentTotal();
                   context.read<OrderBloc>().add(UpdateOrder(
                     orderId: widget.order.id,
                     phone: _fullPhoneNumber ?? widget.order.phone,
@@ -1061,6 +1117,7 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
                         : null,
                     managerId: selectedManager != null ? int.parse(selectedManager!) : null,
                     statusId: widget.order.orderStatus.id, // Передаем текущий statusId
+                    sum: currentTotal,
                   ));
                 } else {
                   showCustomSnackBar(

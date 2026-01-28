@@ -423,6 +423,10 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
         return AppLocalizations.of(context)!.translate('lead_deal_card');
       case 'manager_id':
         return AppLocalizations.of(context)!.translate('manager_details');
+      case 'city_id':
+        return AppLocalizations.of(context)!.translate('oblast_details');
+      case 'region_id':
+        return AppLocalizations.of(context)!.translate('region_details');
       case 'start_date':
         return AppLocalizations.of(context)!.translate('start_date_details');
       case 'end_date':

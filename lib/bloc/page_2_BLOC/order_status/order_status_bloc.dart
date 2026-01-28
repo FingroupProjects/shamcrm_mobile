@@ -387,6 +387,7 @@ Future<void> _createOrder(CreateOrder event, Emitter<OrderState> emit) async {
       'comment_to_courier': event.commentToCourier,
       'manager_id': event.managerId?.toString(),
       'integration': null,
+      'sum': event.sum,
     };
 
     if (event.delivery) {
@@ -415,6 +416,7 @@ Future<void> _createOrder(CreateOrder event, Emitter<OrderState> emit) async {
       commentToCourier: event.commentToCourier,
       managerId: event.managerId,
       integration: 1,
+      sum: event.sum,
     );
     //print('OrderBloc: Результат создания заказа: $result');
 
@@ -447,6 +449,7 @@ Future<void> _updateOrder(UpdateOrder event, Emitter<OrderState> emit) async {
       'organization_id': event.organizationId.toString(),
       'comment_to_courier': event.commentToCourier,
       'manager_id': event.managerId?.toString(),
+      'sum': event.sum,
     };
 
     if (event.delivery) {
@@ -476,6 +479,7 @@ Future<void> _updateOrder(UpdateOrder event, Emitter<OrderState> emit) async {
       branchId: event.branchId,
       commentToCourier: event.commentToCourier,
       managerId: event.managerId,
+      sum: event.sum,
     );
     //print('OrderBloc: Ответ сервера на обновление заказа: $response');
 
