@@ -2664,6 +2664,12 @@ userPresenceChannel.bind('chat.updated').listen((event) async {
       if (image != null) {
         _handlePickedFile(image.path, image.name);
       }
+    } else if (source == 'camera_photo') {
+      final XFile? image =
+          await ImagePicker().pickImage(source: ImageSource.camera);
+      if (image != null) {
+        _handlePickedFile(image.path, image.name);
+      }
     } else if (source == 'file') {
       FilePickerResult? result =
           await FilePicker.platform.pickFiles(allowMultiple: false);
@@ -2686,6 +2692,19 @@ userPresenceChannel.bind('chat.updated').listen((event) async {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              ListTile(
+                leading: Icon(Icons.photo_camera, color: Color(0xFF1E1E1E)),
+                title: Text(
+                  'Сделать фото',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    fontFamily: 'Gilroy',
+                    color: Color(0xFF1E1E1E),
+                  ),
+                ),
+                onTap: () => Navigator.pop(context, 'camera_photo'),
+              ),
               ListTile(
                 leading: Icon(Icons.photo_library, color: Color(0xFF1E1E1E)),
                 title: Text(

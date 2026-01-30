@@ -257,6 +257,14 @@ void _onScroll() {
         
         bool isTutorialShown = prefs.getBool('isTutorialShownTaskSearchIconAppBar') ?? false;
         setState(() { _isTutorialShown = isTutorialShown; });
+
+        // ✅ Если статусы уже пришли, но табы пустые — повторно обработаем статусы
+        if (mounted && _canReadTaskStatus && _tabTitles.isEmpty) {
+          final taskBloc = context.read<TaskBloc>();
+          if (taskBloc.state is TaskLoaded) {
+            taskBloc.add(FetchTaskStatuses());
+          }
+        }
         return;
       }
       
@@ -308,6 +316,15 @@ void _onScroll() {
 
     bool isTutorialShown = prefs.getBool('isTutorialShownTaskSearchIconAppBar') ?? false;
     setState(() { _isTutorialShown = isTutorialShown; });
+
+    // ✅ ВАЖНО: если статусы уже загружены, но права пришли позже,
+    // табы могли остаться пустыми → триггерим повторную обработку статусов
+    if (mounted && _canReadTaskStatus && _tabTitles.isEmpty) {
+      final taskBloc = context.read<TaskBloc>();
+      if (taskBloc.state is TaskLoaded) {
+        taskBloc.add(FetchTaskStatuses());
+      }
+    }
 
     if (tutorialProgress != null && tutorialProgress!['tasks']?['index'] == false && !_isTutorialShown && mounted) {
       _initTutorialTargets();

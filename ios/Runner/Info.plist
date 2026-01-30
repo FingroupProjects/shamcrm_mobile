@@ -64,7 +64,7 @@
 	<key>NSBiometricUsageDescription</key>
 	<string>Нам нужно ваше разрешение на использование биометрии для безопасного входа в систему.</string>
 	<key>NSCameraUsageDescription</key>
-	<string>Для сканирования QR-кодов.</string>
+	<string>Нужен доступ к камере для съемки фото в чате и сканирования QR-кодов.</string>
 	<key>NSContactsUsageDescription</key>
 	<string>Мы используем ваши контакты, чтобы вы могли легко выбрать номер клиента и быстро добавить его как лида. Мы загружаем на сервер только данные выбранного контакта — ваша полная адресная книга никогда не загружается автоматически.</string>
 	<key>NSDocumentsUsageDescription</key>
@@ -77,8 +77,6 @@
 	<string>shamCRM использует ваше местоположение для предоставления функций геолокации, таких как отображение вашего текущего положения в приложении.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Мы используем микрофон для записи голосовых сообщений в чате.</string>
-	<key>NSCameraUsageDescription</key>
-	<string>Нужен доступ к камере для сканирования штрихкодов</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>Приложение сохраняет изображения в вашу фотогалерею.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
