@@ -1908,8 +1908,19 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
       minimumReconnectDelayDuration: const Duration(seconds: 1),
     );
 
-    final chatIdentifier = widget.chatUniqueId ?? widget.chatId.toString();
-    final channelName = 'presence-chat.$chatIdentifier';
+    String chatIdentifier = widget.chatUniqueId ?? widget.chatId.toString();
+    if (widget.chatUniqueId == null || widget.chatUniqueId!.isEmpty) {
+      try {
+        final chatData = await widget.apiService.getChatById(widget.chatId);
+        if (chatData.uniqueId != null && chatData.uniqueId!.isNotEmpty) {
+          chatIdentifier = chatData.uniqueId!;
+        }
+      } catch (e) {
+        debugPrint(
+            '=================-=== ⚠️ Failed to resolve chat unique_id: $e');
+      }
+    }
+    final channelName = 'presence-v2.chat.$chatIdentifier';
 
     debugPrint(
         '=================-=== 📱 Chat identifier for socket: $chatIdentifier (uniqueId: ${widget.chatUniqueId}, chatId: ${widget.chatId})');
@@ -1964,7 +1975,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
     debugPrint(
         '=================-=== 🎯🎯🎯 CHAT_SMS: Registering chat.updated listener for $channelName...');
 
-    myPresenceChannel.bind('ChatUpdated').listen((event) async {
+    myPresenceChannel.bind('chat.updated').listen((event) async {
       debugPrint(
           '=================-=== 🔔 CHAT_SMS (ChatUpdated): ===== RECEIVED EVENT =====');
 
@@ -2035,12 +2046,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
             );
 
             debugPrint(
-                '=================-=== 🔔 CHAT_SMS: Determined isMyMessage=$isMyMessage (ДО инверсии)');
-
-            // ✅ КРИТИЧНО: ИНВЕРТИРУЕМ результат, так как логика работает наоборот
-            isMyMessage = !isMyMessage;
-            debugPrint(
-                '=================-=== 🔔 CHAT_SMS: ИНВЕРТИРОВАНО isMyMessage=$isMyMessage (ПОСЛЕ инверсии)');
+                '=================-=== 🔔 CHAT_SMS: Determined isMyMessage=$isMyMessage');
 
             if (!isMyMessage) {
               try {
@@ -2257,19 +2263,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
         debugPrint(
             '=================-=== ╔═══════════════════════════════════════════════════════╗');
         debugPrint(
-            '=================-=== ║  ✅✅✅ ИТОГОВОЕ РЕШЕНИЕ: isMyMessage = $isMyMessage (ДО инверсии) ║');
-        debugPrint(
-            '=================-=== ╚═══════════════════════════════════════════════════════╝');
-
-        // ✅ КРИТИЧНО: ИНВЕРТИРУЕМ результат, так как логика работает наоборот
-        // ✅ Если sender.id == myUserId → это НАШЕ сообщение → isMyMessage должен быть true
-        // ✅ Если sender.id != myUserId → это ЧУЖОЕ сообщение → isMyMessage должен быть false
-        // ✅ Но сейчас работает наоборот, поэтому инвертируем
-        isMyMessage = !isMyMessage;
-        debugPrint(
-            '=================-=== ╔═══════════════════════════════════════════════════════╗');
-        debugPrint(
-            '=================-=== ║  ✅✅✅ ИНВЕРТИРОВАНО: isMyMessage = $isMyMessage (ПОСЛЕ инверсии) ║');
+            '=================-=== ║  ✅✅✅ ИТОГОВОЕ РЕШЕНИЕ: isMyMessage = $isMyMessage ║');
         debugPrint(
             '=================-=== ╚═══════════════════════════════════════════════════════╝');
 
@@ -2285,6 +2279,19 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
           }
         }
 
+        String? resolvedSenderName = senderName;
+        if (resolvedSenderName != null && resolvedSenderName.trim().isEmpty) {
+          resolvedSenderName = null;
+        }
+        final fallbackCompanionName =
+            (_cachedCompanionName != null && _cachedCompanionName!.isNotEmpty)
+                ? _cachedCompanionName!
+                : (_isGroupChat == true
+                    ? ''
+                    : (widget.chatItem.name.isNotEmpty
+                        ? widget.chatItem.name
+                        : ''));
+
         final msg = Message(
           id: messageId ?? -1, // -1 — маркер ошибки
           text: text ??
@@ -2292,13 +2299,8 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
           type: type,
           createMessateTime: createdAt ?? DateTime.now().toIso8601String(),
           isMyMessage: isMyMessage,
-          senderName: senderName ??
-              (isMyMessage
-                  ? 'Вы'
-                  : (_cachedCompanionName != null &&
-                          _cachedCompanionName!.isNotEmpty
-                      ? _cachedCompanionName!
-                      : '')),
+          senderName:
+              resolvedSenderName ?? (isMyMessage ? 'Вы' : fallbackCompanionName),
           filePath: filePath,
           duration: voiceDuration != null
               ? Duration(
@@ -2401,94 +2403,155 @@ userPresenceChannel.bind('chat.updated').listen((event) async {
 
   try {
     final chatData = json.decode(event.data);
-    final chatObj = chatData['chat']; 
+    final chatObj = chatData['chat'];
     final eventChatId = chatObj?['id'];
 
     if (eventChatId != widget.chatId) {
-      return; 
+      return;
     }
 
-    if (mounted) {
-      final lastMessage = chatObj?['lastMessage'];
-      final chatUsers = chatObj?['chatUsers']; 
+    final prefs = await SharedPreferences.getInstance();
+    final myUserId = prefs.getString('userID') ?? '';
 
-      if (lastMessage != null) {
-        
-        final prefs = await SharedPreferences.getInstance();
-        final myUserId = prefs.getString('userID') ?? '';
+    String? extractedName;
 
-        // 1. Получаем флаг от сервера
-        bool isMyMessageFromServer = false;
-        if (lastMessage['is_my_message'] != null) {
-           final val = lastMessage['is_my_message'];
-           if (val is bool) isMyMessageFromServer = val;
-           else if (val is int) isMyMessageFromServer = val == 1;
-           else if (val is String) isMyMessageFromServer = val == 'true';
+    String? resolveNameFromMap(Map<dynamic, dynamic> data) {
+      final firstName = data['name']?.toString() ?? '';
+      final lastName = data['lastname']?.toString() ?? '';
+      final fullName = '$firstName $lastName'.trim();
+      return fullName.isNotEmpty ? fullName : null;
+    }
+
+    final chatUsers = chatObj?['chatUsers'];
+    if (chatUsers is List) {
+      for (final user in chatUsers) {
+        if (user is Map) {
+          final participant = user['participant'];
+          if (participant is Map) {
+            final participantId = participant['id']?.toString();
+            if (participantId != null &&
+                participantId.isNotEmpty &&
+                participantId != myUserId) {
+              extractedName = resolveNameFromMap(participant);
+              if (extractedName != null) break;
+            }
+          }
+        }
+      }
+    }
+
+    if (extractedName == null) {
+      final user = chatObj?['user'];
+      if (user is Map) {
+        final userId = user['id']?.toString();
+        if (userId != null && userId.isNotEmpty && userId != myUserId) {
+          extractedName = resolveNameFromMap(user);
+        }
+      }
+    }
+
+    if (extractedName == null) {
+      final chatName = chatObj?['name'];
+      if (chatName is String && chatName.trim().isNotEmpty) {
+        extractedName = chatName.trim();
+      }
+    }
+
+    if (mounted &&
+        extractedName != null &&
+        extractedName.isNotEmpty &&
+        (_cachedCompanionName == null || _cachedCompanionName!.isEmpty)) {
+      setState(() {
+        _cachedCompanionName = extractedName;
+      });
+      debugPrint('✅ Обновлено имя собеседника из chat.updated: $extractedName');
+    }
+
+    // ✅ Если chat.message не пришёл, подстрахуемся lastMessage из chat.updated
+    final lastMessage = chatObj?['lastMessage'];
+    if (lastMessage is Map) {
+      final rawMessageId = lastMessage['id'];
+      final messageId = rawMessageId is int
+          ? rawMessageId
+          : int.tryParse(rawMessageId?.toString() ?? '');
+
+      if (messageId != null) {
+        bool alreadyExists = false;
+        final state = context.read<MessagingCubit>().state;
+        if (state is MessagesLoadedState) {
+          alreadyExists = state.messages.any((msg) => msg.id == messageId);
+        } else if (state is PinnedMessagesState) {
+          alreadyExists = state.messages.any((msg) => msg.id == messageId);
+        } else if (state is EditingMessageState) {
+          alreadyExists = state.messages.any((msg) => msg.id == messageId);
         }
 
-        // ⚠️ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ:
-        // Сервер шлет true для входящих сообщений в этом сокете.
-        // Поэтому мы ИНВЕРТИРУЕМ значение, чтобы получить реальное положение дел.
-        bool isMyMessage = !isMyMessageFromServer;
+        if (!alreadyExists) {
+          bool? isMyMessageFromServer;
+          final isMyMsgValue = lastMessage['is_my_message'];
+          if (isMyMsgValue is bool) {
+            isMyMessageFromServer = isMyMsgValue;
+          } else if (isMyMsgValue is int) {
+            isMyMessageFromServer = isMyMsgValue == 1;
+          } else if (isMyMsgValue is String) {
+            isMyMessageFromServer =
+                isMyMsgValue.toLowerCase() == 'true' || isMyMsgValue == '1';
+          }
 
-        debugPrint('🔍 Флаг сервера: $isMyMessageFromServer -> Инверсия: $isMyMessage');
+          final senderId = lastMessage['sender']?['id']?.toString();
+          final senderType = lastMessage['sender']?['type']?.toString();
+          final isLeadChat = widget.endPointInTab == 'lead';
 
-        // 2. Ищем имя отправителя (если сообщение не мое)
-        String senderName = '';
-        
-        // Если сообщение "Мое", имя "Вы", иначе ищем собеседника
-        if (isMyMessage) {
-           senderName = "Вы";
-        } else {
-           // Пытаемся найти имя собеседника в chatUsers
-           if (chatUsers != null && chatUsers is List) {
-             for (var user in chatUsers) {
-               final p = user['participant'];
-               if (p == null) continue;
-               
-               // Ищем того, кто НЕ я
-               if (p['id'].toString() != myUserId) {
-                 senderName = "${p['name'] ?? ''} ${p['lastname'] ?? ''}".trim();
-                 break; 
-               }
-             }
-           }
-           // Фолбек, если имя не нашли
-           if (senderName.isEmpty) {
-              senderName = _cachedCompanionName ?? '';
-           }
-        }
+          final isMyMessage = await _determineIsMyMessage(
+            messageSenderId: senderId,
+            messageSenderType: senderType,
+            myUserId: myUserId,
+            isLeadChat: isLeadChat,
+            isMyMessageFromServer: isMyMessageFromServer,
+            debugContext: 'user_channel.chat.updated',
+          );
 
-        debugPrint('📨 Обработка: Текст="${lastMessage['text']}", Мое=$isMyMessage, Имя="$senderName"');
+          final fallbackName = extractedName ??
+              _cachedCompanionName ??
+              (_isGroupChat == true
+                  ? ''
+                  : (widget.chatItem.name.isNotEmpty
+                      ? widget.chatItem.name
+                      : ''));
 
-        final newMessage = Message(
-          id: lastMessage['id'] ?? 0,
-          text: lastMessage['text'] ?? '',
-          type: lastMessage['type'] ?? 'text',
-          filePath: lastMessage['file_path'],
-          isMyMessage: isMyMessage, // Используем инвертированное значение
-          createMessateTime: lastMessage['created_at'] ?? DateTime.now().toIso8601String(),
-          senderName: senderName, 
-          duration: Duration(
+          final newMessage = Message(
+            id: messageId,
+            text: lastMessage['text'] ?? '',
+            type: lastMessage['type'] ?? 'text',
+            filePath: lastMessage['file_path'],
+            isMyMessage: isMyMessage,
+            createMessateTime: lastMessage['created_at'] ??
+                DateTime.now().toIso8601String(),
+            senderName: isMyMessage ? 'Вы' : fallbackName,
+            duration: Duration(
               seconds: lastMessage['voice_duration'] != null
-                  ? double.tryParse(lastMessage['voice_duration'].toString())?.round() ?? 0
-                  : 0),
-          isPinned: lastMessage['is_pinned'] ?? false,
-          isChanged: lastMessage['is_changed'] ?? false,
-          isNote: lastMessage['is_note'] ?? false,
-        );
+                  ? double.tryParse(lastMessage['voice_duration'].toString())
+                          ?.round() ??
+                      0
+                  : 0,
+            ),
+            isPinned: lastMessage['is_pinned'] ?? false,
+            isChanged: lastMessage['is_changed'] ?? false,
+            isNote: lastMessage['is_note'] ?? false,
+          );
 
-        context.read<MessagingCubit>().updateMessageFromSocket(newMessage);
+          if (mounted) {
+            context.read<MessagingCubit>().updateMessageFromSocket(newMessage);
+          }
 
-        Future.delayed(Duration(milliseconds: 100), () {
-          if (mounted) _scrollToBottom();
-        });
-
-        if (!isMyMessage) {
-           try {
-             await _audioPlayer.setAsset('assets/audio/get.mp3');
-             await _audioPlayer.play();
-           } catch (e) { /* ignore */ }
+          if (!isMyMessage) {
+            try {
+              await _audioPlayer.setAsset('assets/audio/get.mp3');
+              await _audioPlayer.play();
+            } catch (e) {
+              // ignore
+            }
+          }
         }
       }
     }

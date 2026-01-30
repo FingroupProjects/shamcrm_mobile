@@ -1497,13 +1497,10 @@ bool _shouldRefreshData(List<Chats> current, List<Chats> updated) {
         // ✅ Обычное обновление (изменения в существующих чатах)
         // ✅ ИСПРАВЛЕНИЕ: Проверяем, действительно ли нужно обновлять
         if (currentItems.length == newChats.length && currentIds.containsAll(newIds) && newIds.containsAll(currentIds)) {
-          // Только изменения в данных, не в структуре - обновляем без сброса
-          debugPrint('=================-=== _ChatItemsWidget: Only data changes detected, updating without reset');
-          if (currentPage >= totalPage) {
-            widget.pagingController.appendLastPage(newChats);
-          } else {
-            widget.pagingController.appendPage(newChats, currentPage);
-          }
+          // Только изменения в данных, не в структуре - просто заменяем список
+          // appendPage здесь нельзя использовать, иначе список будет удваиваться
+          debugPrint('=================-=== _ChatItemsWidget: Only data changes detected, replacing itemList');
+          widget.pagingController.itemList = List<Chats>.from(newChats);
         } else {
           // Структурные изменения - нужен полный сброс
           widget.pagingController.itemList = null;
