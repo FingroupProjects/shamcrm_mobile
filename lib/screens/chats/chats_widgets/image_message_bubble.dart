@@ -97,8 +97,8 @@ class _ImageMessageBubbleState extends State<ImageMessageBubble> {
             // ✅ Логика отображения имени отправителя:
             // - В лид-чатах: показываем имя для ОБЕИХ сторон (несколько менеджеров могут отвечать)
             // - В корпоративных группах: показываем имя только для собеседника
-            // - В корпоративных чатах (не группа): НЕ показываем имя
-            if (widget.isLeadChat || (widget.isGroupChat == true && !widget.isSender))
+            // - В корпоративных чатах (не группа): показываем имя хотя бы для собеседника
+            if (widget.isLeadChat || widget.isGroupChat == true || !widget.isSender)
               Text(
                 widget.senderName,
                 style: TextStyle(

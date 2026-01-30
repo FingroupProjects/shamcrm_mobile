@@ -81,7 +81,11 @@ class _VoiceMessageWidgetState extends State<VoiceMessageWidget>
             : CrossAxisAlignment.start,
         children: [
           SizedBox(height: 4),
-          if (widget.isLeadChat || (widget.isGroupChat == true && !widget.message.isMyMessage))
+          // ✅ Логика отображения имени отправителя:
+          // - В лид-чатах: показываем имя для ОБЕИХ сторон (несколько менеджеров могут отвечать)
+          // - В корпоративных группах: показываем имя только для собеседника
+          // - В корпоративных чатах (не группа): показываем имя хотя бы для собеседника
+          if (widget.isLeadChat || widget.isGroupChat == true || !widget.message.isMyMessage)
             Text(
               widget.message.senderName,
               style: TextStyle(

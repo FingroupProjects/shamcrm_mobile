@@ -211,41 +211,37 @@ class MessagingCubit extends Cubit<MessagingState> {
   }
 
   void updateMessageFromSocket(Message updatedMessage) {
-  debugPrint('=================-=== 🔄 MessagingCubit.updateMessageFromSocket: Processing message id=${updatedMessage.id}, isMyMessage=${updatedMessage.isMyMessage}');
+  debugPrint('🔄 MessagingCubit.updateMessageFromSocket: Processing message id=${updatedMessage.id}, isMyMessage=${updatedMessage.isMyMessage}');
+  debugPrint('🔍 ДИАГНОСТИКА: senderName ДО добавления: "${updatedMessage.senderName}"');  // ← ДОБАВЬ ЭТУ СТРОКУ
   
   if (state is MessagesLoadedState) {
     final currentState = state as MessagesLoadedState;
     final messages = List<Message>.from(currentState.messages);
 
-    // ✅ ШАГ 1: Ищем локальное временное сообщение (id < 0)
     final localMessageIndex = messages.indexWhere((msg) => msg.id < 0);
 
     if (localMessageIndex != -1) {
-      debugPrint('=================-=== 🔄 MessagingCubit: Replacing local temp message at index $localMessageIndex');
+      debugPrint('🔄 MessagingCubit: Replacing local temp message at index $localMessageIndex');
       messages[localMessageIndex] = updatedMessage;
+      debugPrint('🔍 ДИАГНОСТИКА: senderName ПОСЛЕ замены: "${messages[localMessageIndex].senderName}"');  // ← ДОБАВЬ ЭТУ СТРОКУ
       emit(MessagesLoadedState(messages: messages));
     } else {
-      // ✅ ШАГ 2: Ищем существующее сообщение по id
       final index = messages.indexWhere((msg) => msg.id == updatedMessage.id);
       
       if (index != -1) {
-        debugPrint('=================-=== 🔄 MessagingCubit: Updating existing message at index $index');
-        
-        // ✅ КРИТИЧНО: Проверяем, изменилось ли isMyMessage
-        final oldMessage = messages[index];
-        if (oldMessage.isMyMessage != updatedMessage.isMyMessage) {
-          debugPrint('=================-=== ⚠️ MessagingCubit: isMyMessage CHANGED from ${oldMessage.isMyMessage} to ${updatedMessage.isMyMessage}');
-        }
-        
+        debugPrint('🔄 MessagingCubit: Updating existing message at index $index');
+        debugPrint('🔍 ДИАГНОСТИКА: Старый senderName: "${messages[index].senderName}"');  // ← ДОБАВЬ ЭТУ СТРОКУ
         messages[index] = updatedMessage;
+        debugPrint('🔍 ДИАГНОСТИКА: Новый senderName: "${messages[index].senderName}"');  // ← ДОБАВЬ ЭТУ СТРОКУ
         emit(MessagesLoadedState(messages: messages));
       } else {
-        // ✅ ШАГ 3: Добавляем новое сообщение в начало списка
-        debugPrint('=================-=== 🔄 MessagingCubit: Adding new message to list');
+        debugPrint('🔄 MessagingCubit: Adding new message to list');
         messages.insert(0, updatedMessage);
+        debugPrint('🔍 ДИАГНОСТИКА: senderName нового сообщения: "${messages[0].senderName}"');  // ← ДОБАВЬ ЭТУ СТРОКУ
         emit(MessagesLoadedState(messages: messages));
       }
     }
+  
     
     debugPrint('=================-=== ✅ MessagingCubit.updateMessageFromSocket: Completed, total messages: ${messages.length}');
   } else if (state is PinnedMessagesState) {

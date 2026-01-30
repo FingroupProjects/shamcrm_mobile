@@ -59,7 +59,7 @@ class Variant {
   int quantitySelected;
   String? selectedUnit;
   final List<Unit> availableUnits;
-    final int? remainder; // ← ДОБАВЛЯЕМ
+    final double? remainder; // ← ДОБАВЛЯЕМ
 
 
   Variant({
@@ -131,7 +131,7 @@ class Variant {
       selectedUnit: units.isNotEmpty ? units.first.shortName ?? units.first.name : null,
       availableUnits: units, // Always non-null
       remainder: json['remainder'] != null
-          ? int.tryParse(json['remainder'].toString())
+          ? double.tryParse(json['remainder'].toString())
           : null,
 
     );

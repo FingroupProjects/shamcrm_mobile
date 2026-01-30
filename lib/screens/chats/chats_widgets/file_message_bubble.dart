@@ -103,8 +103,8 @@ class FileMessageBubble extends StatelessWidget {
             // ✅ Логика отображения имени отправителя:
             // - В лид-чатах: показываем имя для ОБЕИХ сторон (несколько менеджеров могут отвечать)
             // - В корпоративных группах: показываем имя только для собеседника
-            // - В корпоративных чатах (не группа): НЕ показываем имя
-            if (isLeadChat || (isGroupChat == true && !isSender))
+            // - В корпоративных чатах (не группа): показываем имя хотя бы для собеседника
+            if (isLeadChat || isGroupChat == true || !isSender)
               Text(
                 senderName,
                 style: TextStyle(

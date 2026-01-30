@@ -187,19 +187,25 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
   }) async {
     final logPrefix = '[_determineIsMyMessage] $debugContext → ';
 
-    debugPrint('=================-=== ┌───────────── $logPrefix START ─────────────┐');
+    debugPrint(
+        '=================-=== ┌───────────── $logPrefix START ─────────────┐');
     debugPrint('=================-=== │ myUserId            : $myUserId');
     debugPrint('=================-=== │ isLeadChat          : $isLeadChat');
-    debugPrint('=================-=== │ isMyMessageFromServer: $isMyMessageFromServer');
-    debugPrint('=================-=== │ sender.id           : $messageSenderId');
-    debugPrint('=================-=== │ sender.type         : $messageSenderType');
+    debugPrint(
+        '=================-=== │ isMyMessageFromServer: $isMyMessageFromServer');
+    debugPrint(
+        '=================-=== │ sender.id           : $messageSenderId');
+    debugPrint(
+        '=================-=== │ sender.type         : $messageSenderType');
 
     bool isMyMessage;
 
     // ✅ ПРИОРИТЕТ 1: Сравнение ID отправителя (САМЫЙ НАДЕЖНЫЙ СПОСОБ!)
     // ✅ КРИТИЧНО: Если есть sender.id - используем его, а НЕ is_my_message от сервера!
     // Сервер иногда ошибается с is_my_message, но sender.id всегда правильный
-    if (messageSenderId != null && messageSenderId.isNotEmpty && myUserId.isNotEmpty) {
+    if (messageSenderId != null &&
+        messageSenderId.isNotEmpty &&
+        myUserId.isNotEmpty) {
       // ✅ КРИТИЧНО: Приводим к строке и убираем пробелы для надежного сравнения
       final senderIdStr = messageSenderId.toString().trim();
       final myIdStr = myUserId.toString().trim();
@@ -211,14 +217,17 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
         final myIdNum = int.tryParse(myIdStr);
         if (senderIdNum != null && myIdNum != null) {
           idsMatch = senderIdNum == myIdNum;
-          debugPrint('=================-=== │ 🔢 ПРИОРИТЕТ 1 → Сравнение как числа: $senderIdNum ${idsMatch ? "==" : "!="} $myIdNum');
+          debugPrint(
+              '=================-=== │ 🔢 ПРИОРИТЕТ 1 → Сравнение как числа: $senderIdNum ${idsMatch ? "==" : "!="} $myIdNum');
         } else {
           idsMatch = senderIdStr == myIdStr;
-          debugPrint('=================-=== │ 📝 ПРИОРИТЕТ 1 → Сравнение как строки: "$senderIdStr" ${idsMatch ? "==" : "!="} "$myIdStr"');
+          debugPrint(
+              '=================-=== │ 📝 ПРИОРИТЕТ 1 → Сравнение как строки: "$senderIdStr" ${idsMatch ? "==" : "!="} "$myIdStr"');
         }
       } catch (e) {
         idsMatch = senderIdStr == myIdStr;
-        debugPrint('=================-=== │ ⚠ ПРИОРИТЕТ 1 → Ошибка при сравнении ID, используем строковое сравнение: $e');
+        debugPrint(
+            '=================-=== │ ⚠ ПРИОРИТЕТ 1 → Ошибка при сравнении ID, используем строковое сравнение: $e');
       }
 
       // ✅ КРИТИЧНО: ИСПРАВЛЕНО: Если ID совпадают - это НАШЕ сообщение (isMyMessage = true)
@@ -226,22 +235,29 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
       isMyMessage = idsMatch;
       debugPrint(
           '=================-=== │ ✓✓✓✓✓ ПРИОРИТЕТ 1 → sender.id "$senderIdStr" ${idsMatch ? "==" : "!="} myUserId "$myIdStr" → isMyMessage = $isMyMessage (НАДЕЖНО!)');
-      
+
       // ✅ КРИТИЧНО: Если ID НЕ совпадают - это точно НЕ мое сообщение, возвращаем сразу
       if (!isMyMessage) {
-        debugPrint('=================-=== │ ⚠⚠⚠ ВАЖНО: ID НЕ совпадают - это точно НЕ мое сообщение!');
-        debugPrint('=================-=== │ ⚠ Игнорируем is_my_message от сервера ($isMyMessageFromServer), т.к. sender.id не совпадает!');
+        debugPrint(
+            '=================-=== │ ⚠⚠⚠ ВАЖНО: ID НЕ совпадают - это точно НЕ мое сообщение!');
+        debugPrint(
+            '=================-=== │ ⚠ Игнорируем is_my_message от сервера ($isMyMessageFromServer), т.к. sender.id не совпадает!');
         debugPrint('=================-=== │');
-        debugPrint('=================-=== │ ИТОГ: isMyMessage = $isMyMessage (ID НЕ совпадают)');
-        debugPrint('=================-=== └───────────── $logPrefix END ─────────────┘');
+        debugPrint(
+            '=================-=== │ ИТОГ: isMyMessage = $isMyMessage (ID НЕ совпадают)');
+        debugPrint(
+            '=================-=== └───────────── $logPrefix END ─────────────┘');
         return isMyMessage;
       }
-      
+
       // ✅ Если ID совпадают - это точно мое сообщение, возвращаем сразу
-      debugPrint('=================-=== │ ✓✓✓✓✓ ID совпадают - это точно МОЁ сообщение!');
+      debugPrint(
+          '=================-=== │ ✓✓✓✓✓ ID совпадают - это точно МОЁ сообщение!');
       debugPrint('=================-=== │');
-      debugPrint('=================-=== │ ИТОГ: isMyMessage = $isMyMessage (ID совпадают)');
-      debugPrint('=================-=== └───────────── $logPrefix END ─────────────┘');
+      debugPrint(
+          '=================-=== │ ИТОГ: isMyMessage = $isMyMessage (ID совпадают)');
+      debugPrint(
+          '=================-=== └───────────── $logPrefix END ─────────────┘');
       return isMyMessage;
     }
 
@@ -254,7 +270,8 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
             '=================-=== │ ✓✓✓ ПРИОРИТЕТ 2 → lead-чат, sender.type = "user" → это МОЁ сообщение (менеджер)');
         debugPrint('=================-=== │');
         debugPrint('=================-=== │ ИТОГ: isMyMessage = $isMyMessage');
-        debugPrint('=================-=== └───────────── $logPrefix END ─────────────┘');
+        debugPrint(
+            '=================-=== └───────────── $logPrefix END ─────────────┘');
         return isMyMessage;
       } else if (messageSenderType.toLowerCase() == 'lead') {
         isMyMessage = false;
@@ -262,7 +279,8 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
             '=================-=== │ ✓✓✓ ПРИОРИТЕТ 2 → lead-чат, sender.type = "lead" → это СООБЩЕНИЕ КЛИЕНТА (лид)');
         debugPrint('=================-=== │');
         debugPrint('=================-=== │ ИТОГ: isMyMessage = $isMyMessage');
-        debugPrint('=================-=== └───────────── $logPrefix END ─────────────┘');
+        debugPrint(
+            '=================-=== └───────────── $logPrefix END ─────────────┘');
         return isMyMessage;
       } else {
         debugPrint(
@@ -276,20 +294,24 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
       isMyMessage = isMyMessageFromServer;
       debugPrint(
           '=================-=== │ ⚠ ПРИОРИТЕТ 3 → берём is_my_message от сервера = $isMyMessage (НЕ НАДЕЖНО, но fallback)');
-      debugPrint('=================-=== │ ⚠ ВНИМАНИЕ: sender.id отсутствует, используем значение от сервера');
+      debugPrint(
+          '=================-=== │ ⚠ ВНИМАНИЕ: sender.id отсутствует, используем значение от сервера');
       debugPrint('=================-=== │');
       debugPrint('=================-=== │ ИТОГ: isMyMessage = $isMyMessage');
-      debugPrint('=================-=== └───────────── $logPrefix END ─────────────┘');
+      debugPrint(
+          '=================-=== └───────────── $logPrefix END ─────────────┘');
       return isMyMessage;
     }
 
     // ✅ Последний fallback — безопасность (считаем чужим, если ничего не определили)
     isMyMessage = false;
-    debugPrint('=================-=== │ ✗ FALLBACK → не смогли определить → считаем ЧУЖИМ сообщением');
+    debugPrint(
+        '=================-=== │ ✗ FALLBACK → не смогли определить → считаем ЧУЖИМ сообщением');
 
     debugPrint('=================-=== │');
     debugPrint('=================-=== │ ИТОГ: isMyMessage = $isMyMessage');
-    debugPrint('=================-=== └───────────── $logPrefix END ─────────────┘');
+    debugPrint(
+        '=================-=== └───────────── $logPrefix END ─────────────┘');
 
     return isMyMessage;
   }
@@ -344,7 +366,8 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
       setState(() {
         _isGroupChat = isGroup;
       });
-      debugPrint('=================-=== 📊 Чат является группой: $_isGroupChat');
+      debugPrint(
+          '=================-=== 📊 Чат является группой: $_isGroupChat');
 
       // Ищем собеседника в chatUsers
       if (chatData.chatUsers.isNotEmpty) {
@@ -368,9 +391,11 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
         }
       }
 
-      debugPrint('=================-=== ⚠️ Собеседник не найден в chatUsers');
+      debugPrint(
+          '=================-=== ⚠️ Имя участника не найдено в chatUsers');
     } catch (e) {
-      debugPrint('=================-=== ❌ Ошибка кэширования имени собеседника: $e');
+      debugPrint(
+          '=================-=== ❌ Ошибка кэширования имени собеседника: $e');
     }
   }
 
@@ -381,7 +406,8 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
         _isLoadingFromCache = true;
       });
 
-      debugPrint('=================-=== 🚀 ChatSmsScreen: Loading cached messages...');
+      debugPrint(
+          '=================-=== 🚀 ChatSmsScreen: Loading cached messages...');
 
       final cachedMessages =
           await _cacheService.getCachedMessages(widget.chatId);
@@ -402,13 +428,15 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
           if (mounted) _scrollToBottom();
         });
       } else {
-        debugPrint('=================-=== ⚠️ ChatSmsScreen: No cached messages found');
+        debugPrint(
+            '=================-=== ⚠️ ChatSmsScreen: No cached messages found');
         setState(() {
           _isLoadingFromCache = false;
         });
       }
     } catch (e) {
-      debugPrint('=================-=== ❌ ChatSmsScreen: Error loading cache: $e');
+      debugPrint(
+          '=================-=== ❌ ChatSmsScreen: Error loading cache: $e');
       setState(() {
         _isLoadingFromCache = false;
       });
@@ -431,16 +459,19 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
         apiService.initialize(),
         // ✅ Имя собеседника можно загрузить в фоне (не блокирует показ сообщений)
         _cacheCompanionName().catchError((e) {
-          debugPrint('=================-=== ⚠️ ChatSmsScreen: Name cache error (non-critical): $e');
+          debugPrint(
+              '=================-=== ⚠️ ChatSmsScreen: Name cache error (non-critical): $e');
         }),
       ], eagerError: false);
 
       baseUrl = await apiService.getDynamicBaseUrl();
-      debugPrint('=================-=== ✅ ChatSmsScreen: BaseURL initialized: $baseUrl');
+      debugPrint(
+          '=================-=== ✅ ChatSmsScreen: BaseURL initialized: $baseUrl');
 
       // ✅ Сокет подключается В ФОНЕ (не блокирует показ сообщений)
       _initializeSocket().catchError((e) {
-        debugPrint('=================-=== ⚠️ ChatSmsScreen: Socket init error (non-critical): $e');
+        debugPrint(
+            '=================-=== ⚠️ ChatSmsScreen: Socket init error (non-critical): $e');
       });
 
       // ✅ Загружаем свежие сообщения с API (обновляет кэш)
@@ -449,13 +480,16 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
       // ✅ Интеграцию для лидов загружаем в фоне (не блокирует UI)
       if (widget.endPointInTab == 'lead') {
         _fetchIntegration().catchError((e) {
-          debugPrint('=================-=== ⚠️ ChatSmsScreen: Integration error (non-critical): $e');
+          debugPrint(
+              '=================-=== ⚠️ ChatSmsScreen: Integration error (non-critical): $e');
         });
       }
 
-      debugPrint('=================-=== ✅ ChatSmsScreen: Optimized initialization completed');
+      debugPrint(
+          '=================-=== ✅ ChatSmsScreen: Optimized initialization completed');
     } catch (e, stackTrace) {
-      debugPrint('=================-=== ❌ ChatSmsScreen: Initialization error: $e');
+      debugPrint(
+          '=================-=== ❌ ChatSmsScreen: Initialization error: $e');
       debugPrint('StackTrace: $stackTrace');
 
       if (mounted) {
@@ -504,7 +538,8 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
         if (mounted) _scrollToBottom();
       });
     } catch (e) {
-      debugPrint('=================-=== ❌ ChatSmsScreen: Error loading messages from API: $e');
+      debugPrint(
+          '=================-=== ❌ ChatSmsScreen: Error loading messages from API: $e');
     }
   }
 
@@ -557,11 +592,14 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
 
   Future<void> _initializeSocket() async {
     try {
-      debugPrint('=================-=== 🔌 ChatSmsScreen: Starting socket initialization...');
+      debugPrint(
+          '=================-=== 🔌 ChatSmsScreen: Starting socket initialization...');
       await setUpServices();
-      debugPrint('=================-=== ✅ ChatSmsScreen: Socket initialization completed');
+      debugPrint(
+          '=================-=== ✅ ChatSmsScreen: Socket initialization completed');
     } catch (e) {
-      debugPrint('=================-=== ❌ ChatSmsScreen: Socket initialization error: $e');
+      debugPrint(
+          '=================-=== ❌ ChatSmsScreen: Socket initialization error: $e');
     }
   }
 
@@ -716,7 +754,8 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
       debugPrint(
           '=================-=== ChatSmsScreen: Integration configured - username: $integrationUsername, channel: $channelName');
     } catch (e) {
-      debugPrint('=================-=== ChatSmsScreen: Error fetching integration data: $e');
+      debugPrint(
+          '=================-=== ChatSmsScreen: Error fetching integration data: $e');
 
       setState(() {
         integrationUsername =
@@ -727,7 +766,8 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
         referralBody = prefs.getString('referral_body_${widget.chatId}');
       });
 
-      debugPrint('=================-=== ChatSmsScreen: Using cached integration data');
+      debugPrint(
+          '=================-=== ChatSmsScreen: Using cached integration data');
     }
   }
 
@@ -1393,7 +1433,8 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
   Widget messageListUi() {
     return BlocBuilder<MessagingCubit, MessagingState>(
       builder: (context, state) {
-        debugPrint('=================-=== messageListUi: Building with state: $state');
+        debugPrint(
+            '=================-=== messageListUi: Building with state: $state');
 
         if (state is MessagesPartialErrorState) {
           return Center(
@@ -1772,14 +1813,16 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
   }
 
   Future<void> setUpServices() async {
-    debugPrint('=================-=== 🔌 ChatSmsScreen: setUpServices() STARTED');
+    debugPrint(
+        '=================-=== 🔌 ChatSmsScreen: setUpServices() STARTED');
 
     if (baseUrl.isEmpty || baseUrl == 'null') {
       debugPrint('=================-=== BaseURL not initialized, fetching...');
       baseUrl = await apiService.getDynamicBaseUrl();
 
       if (baseUrl.isEmpty || baseUrl == 'null') {
-        debugPrint('=================-=== ❌ Failed to get baseURL, aborting socket setup');
+        debugPrint(
+            '=================-=== ❌ Failed to get baseURL, aborting socket setup');
         return;
       }
     }
@@ -1820,7 +1863,8 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
           await prefs.setString('enteredMainDomain', enteredMainDomain!);
           await prefs.setString('enteredDomain', enteredDomain!);
         } else {
-          debugPrint('=================-=== ❌ Failed to parse baseUrl, aborting socket setup');
+          debugPrint(
+              '=================-=== ❌ Failed to parse baseUrl, aborting socket setup');
           return;
         }
       } else {
@@ -1848,13 +1892,15 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
     socketClient = PusherChannelsClient.websocket(
       options: customOptions,
       connectionErrorHandler: (exception, trace, refresh) {
-        debugPrint('=================-=== ❌ Socket connection error: $exception');
+        debugPrint(
+            '=================-=== ❌ Socket connection error: $exception');
         Future.delayed(Duration(seconds: 5), () async {
           try {
             await socketClient.connect();
             debugPrint('=================-=== 🔄 Socket reconnect attempted');
           } catch (e) {
-            debugPrint('=================-=== ❌ Error reconnecting to socket: $e');
+            debugPrint(
+                '=================-=== ❌ Error reconnecting to socket: $e');
           }
         });
         refresh();
@@ -1880,7 +1926,8 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
           'X-Tenant': '$enteredDomain-back',
         },
         onAuthFailed: (exception, trace) {
-          debugPrint('=================-=== ❌ Auth failed for $channelName: $exception');
+          debugPrint(
+              '=================-=== ❌ Auth failed for $channelName: $exception');
         },
       ),
     );
@@ -1893,8 +1940,10 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
     });
 
     myPresenceChannel.bind('pusher:subscription_succeeded').listen((event) {
-      debugPrint('=================-=== ✅✅✅ CHAT_SMS: Successfully subscribed to $channelName');
-      debugPrint('=================-=== ✅✅✅ CHAT_SMS: Subscription data: ${event.data}');
+      debugPrint(
+          '=================-=== ✅✅✅ CHAT_SMS: Successfully subscribed to $channelName');
+      debugPrint(
+          '=================-=== ✅✅✅ CHAT_SMS: Subscription data: ${event.data}');
     });
 
     myPresenceChannel.bind('pusher:subscription_error').listen((event) {
@@ -1903,18 +1952,21 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
     });
 
     myPresenceChannel.bind('pusher:member_added').listen((event) {
-      debugPrint('=================-=== 👤👤👤 CHAT_SMS: Member added: ${event.data}');
+      debugPrint(
+          '=================-=== 👤👤👤 CHAT_SMS: Member added: ${event.data}');
     });
 
     myPresenceChannel.bind('pusher:member_removed').listen((event) {
-      debugPrint('=================-=== 👤👤👤 CHAT_SMS: Member removed: ${event.data}');
+      debugPrint(
+          '=================-=== 👤👤👤 CHAT_SMS: Member removed: ${event.data}');
     });
 
     debugPrint(
         '=================-=== 🎯🎯🎯 CHAT_SMS: Registering chat.updated listener for $channelName...');
 
     myPresenceChannel.bind('ChatUpdated').listen((event) async {
-      debugPrint('=================-=== 🔔 CHAT_SMS (ChatUpdated): ===== RECEIVED EVENT =====');
+      debugPrint(
+          '=================-=== 🔔 CHAT_SMS (ChatUpdated): ===== RECEIVED EVENT =====');
 
       try {
         final rawData = json.decode(event.data);
@@ -1927,12 +1979,14 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
             '=================-=== 🔔 CHAT_SMS: eventChatId=$eventChatId, widget.chatId=${widget.chatId}');
 
         if (eventChatId != widget.chatId) {
-          debugPrint('=================-=== ⚠️ CHAT_SMS: Different chat, ignoring');
+          debugPrint(
+              '=================-=== ⚠️ CHAT_SMS: Different chat, ignoring');
           return;
         }
 
         if (mounted) {
-          debugPrint('=================-=== 🔔 CHAT_SMS: ✅ RELOADING messages...');
+          debugPrint(
+              '=================-=== 🔔 CHAT_SMS: ✅ RELOADING messages...');
           context
               .read<MessagingCubit>()
               .getMessages(widget.chatId, chatType: widget.endPointInTab);
@@ -1953,11 +2007,14 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
               } else if (isMyMsgValue is int) {
                 isMyMessageFromServer = isMyMsgValue == 1;
               } else if (isMyMsgValue is String) {
-                isMyMessageFromServer = isMyMsgValue.toLowerCase() == 'true' || isMyMsgValue == '1';
+                isMyMessageFromServer =
+                    isMyMsgValue.toLowerCase() == 'true' || isMyMsgValue == '1';
               }
-              debugPrint('=================-=== 🔍🔍🔍 ChatUpdated: is_my_message извлечено: $isMyMessageFromServer (тип: ${isMyMsgValue.runtimeType})');
+              debugPrint(
+                  '=================-=== 🔍🔍🔍 ChatUpdated: is_my_message извлечено: $isMyMessageFromServer (тип: ${isMyMsgValue.runtimeType})');
             } else {
-              debugPrint('=================-=== ⚠️⚠️⚠️ ChatUpdated: is_my_message ОТСУТСТВУЕТ в lastMessage!');
+              debugPrint(
+                  '=================-=== ⚠️⚠️⚠️ ChatUpdated: is_my_message ОТСУТСТВУЕТ в lastMessage!');
             }
             debugPrint(
                 '=================-=== 🔔 CHAT_SMS: lastMessage.is_my_message=$isMyMessageFromServer ⭐⭐⭐');
@@ -1977,265 +2034,339 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
               isMyMessageFromServer: isMyMessageFromServer,
             );
 
-            debugPrint('=================-=== 🔔 CHAT_SMS: Determined isMyMessage=$isMyMessage (ДО инверсии)');
-            
+            debugPrint(
+                '=================-=== 🔔 CHAT_SMS: Determined isMyMessage=$isMyMessage (ДО инверсии)');
+
             // ✅ КРИТИЧНО: ИНВЕРТИРУЕМ результат, так как логика работает наоборот
             isMyMessage = !isMyMessage;
-            debugPrint('=================-=== 🔔 CHAT_SMS: ИНВЕРТИРОВАНО isMyMessage=$isMyMessage (ПОСЛЕ инверсии)');
+            debugPrint(
+                '=================-=== 🔔 CHAT_SMS: ИНВЕРТИРОВАНО isMyMessage=$isMyMessage (ПОСЛЕ инверсии)');
 
             if (!isMyMessage) {
               try {
                 await _audioPlayer.setAsset('assets/audio/get.mp3');
                 await _audioPlayer.play();
-                debugPrint('=================-=== 🔊 CHAT_SMS (ChatUpdated): Played sound');
+                debugPrint(
+                    '=================-=== 🔊 CHAT_SMS (ChatUpdated): Played sound');
               } catch (e) {
-                debugPrint('=================-=== ⚠️ CHAT_SMS: Sound error: $e');
+                debugPrint(
+                    '=================-=== ⚠️ CHAT_SMS: Sound error: $e');
               }
             }
           }
 
-          debugPrint('=================-=== ✅ CHAT_SMS (ChatUpdated): Handled successfully');
+          debugPrint(
+              '=================-=== ✅ CHAT_SMS (ChatUpdated): Handled successfully');
         }
       } catch (e, stackTrace) {
         debugPrint('=================-=== ❌ CHAT_SMS (ChatUpdated): ERROR: $e');
       }
     });
-    debugPrint('=================-=== ✅✅✅ CHAT_SMS: chat.updated listener registered');
+    debugPrint(
+        '=================-=== ✅✅✅ CHAT_SMS: chat.updated listener registered');
 
     // ✅ ИСПРАВЛЕНО: Сервер отправляет событие как 'chat.message' (broadcastAs), а не 'MessageSent'
-    debugPrint('=================-=== 🎯🎯🎯 CHAT_SMS: Registering chat.message listener for $channelName...');
-    chatSubscribtion = myPresenceChannel.bind('chat.message').listen((event) async {
-  debugPrint('=================-=== \n╔══════════════════════════════════════════════╗');
-  debugPrint('=================-=== ║    📨 chat.message — НОВОЕ СООБЩЕНИЕ         ║');
-  debugPrint('=================-=== ╚══════════════════════════════════════════════╝');
+    debugPrint(
+        '=================-=== 🎯🎯🎯 CHAT_SMS: Registering chat.message listener for $channelName...');
+    chatSubscribtion =
+        myPresenceChannel.bind('chat.message').listen((event) async {
+      debugPrint(
+          '=================-=== \n╔══════════════════════════════════════════════╗');
+      debugPrint(
+          '=================-=== ║    📨 chat.message — НОВОЕ СООБЩЕНИЕ         ║');
+      debugPrint(
+          '=================-=== ╚══════════════════════════════════════════════╝');
 
-  try {
-    // 1. Проверка входных данных
-    if (event.data == null || event.data.trim().isEmpty) {
-      debugPrint('=================-=== ❌ MessageSent: event.data пустой или null');
-      return;
-    }
-
-    debugPrint('=================-=== Raw event.data: ${event.data}');
-
-    // 2. Парсинг JSON
-    final rawData = json.decode(event.data);
-    debugPrint('=================-=== Parsed JSON: $rawData');
-
-    // 3. Определяем, где лежат данные сообщения
-    Map<String, dynamic> messageData;
-    if (rawData is Map && rawData['message'] != null && rawData['message'] is Map) {
-      messageData = rawData['message'] as Map<String, dynamic>;
-      debugPrint('=================-=== Структура: {"message": {...}} → берём вложенный message');
-    } else if (rawData is Map && rawData['id'] != null) {
-      messageData = rawData as Map<String, dynamic>;
-      debugPrint('=================-=== Структура: данные сообщения на верхнем уровне');
-    } else {
-      debugPrint('=================-=== ❌ Неизвестная структура данных: $rawData');
-      return;
-    }
-
-    // 4. Извлекаем ключевые поля
-    final messageId       = messageData['id'] as int?;
-    final text            = messageData['text'] as String?;
-    final type            = messageData['type'] as String? ?? 'text';
-    final createdAt       = messageData['created_at'] as String?;
-    final filePath        = messageData['file_path']?.toString();
-    final voiceDuration   = messageData['voice_duration'];
-    
-    // ✅ КРИТИЧНО: Извлекаем is_my_message с проверкой на разные форматы
-    bool? isMyMessageFromServer;
-    if (messageData['is_my_message'] != null) {
-      final isMyMsgValue = messageData['is_my_message'];
-      if (isMyMsgValue is bool) {
-        isMyMessageFromServer = isMyMsgValue;
-      } else if (isMyMsgValue is int) {
-        isMyMessageFromServer = isMyMsgValue == 1;
-      } else if (isMyMsgValue is String) {
-        isMyMessageFromServer = isMyMsgValue.toLowerCase() == 'true' || isMyMsgValue == '1';
-      }
-      debugPrint('=================-=== 🔍🔍🔍 MessageSent: is_my_message извлечено: $isMyMessageFromServer (тип: ${isMyMsgValue.runtimeType})');
-    } else {
-      debugPrint('=================-=== ⚠️⚠️⚠️ MessageSent: is_my_message ОТСУТСТВУЕТ в messageData!');
-    }
-
-    debugPrint('=================-=== ┌─ Данные сообщения ───────────────────────────────┐');
-    debugPrint('=================-=== │ id              : $messageId');
-    debugPrint('=================-=== │ type            : $type');
-    debugPrint('=================-=== │ text            : ${text?.substring(0, (text?.length ?? 0) > 60 ? 60 : (text?.length ?? 0))}...');
-    debugPrint('=================-=== │ created_at      : $createdAt');
-    debugPrint('=================-=== │ is_my_message   : $isMyMessageFromServer ⭐⭐⭐');
-    debugPrint('=================-=== │ file_path       : $filePath');
-    debugPrint('=================-=== │ voice_duration  : $voiceDuration');
-    debugPrint('=================-=== └─────────────────────────────────────────────────────┘');
-
-    // 5. Sender - ✅ КРИТИЧНО: Правильное извлечение данных отправителя
-    // ✅ СЕРВЕР ОТПРАВЛЯЕТ: message.sender с полями id, name, type
-    final senderData = messageData['sender'];
-    String? senderId;
-    String? senderType;
-    String? senderName;
-
-    debugPrint('=================-=== 🔍🔍🔍 MessageSent: Проверяем sender данные...');
-    debugPrint('=================-===    senderData: $senderData');
-    debugPrint('=================-===    senderData type: ${senderData?.runtimeType}');
-    
-    if (senderData != null) {
-      if (senderData is Map<String, dynamic>) {
-        senderId   = senderData['id']?.toString();
-        senderType = senderData['type']?.toString();
-        senderName = senderData['name']?.toString();
-        debugPrint('=================-=== ┌─ Sender данные (Map) ───────────────────────────────┐');
-        debugPrint('=================-=== │ id   : $senderId ⭐⭐⭐');
-        debugPrint('=================-=== │ type : $senderType');
-        debugPrint('=================-=== │ name : $senderName');
-        debugPrint('=================-=== └─────────────────────────────────────────────────────┘');
-      } else if (senderData is Map) {
-        // Fallback для Map без типизации
-        final senderMap = Map<String, dynamic>.from(senderData);
-        senderId   = senderMap['id']?.toString();
-        senderType = senderMap['type']?.toString();
-        senderName = senderMap['name']?.toString();
-        debugPrint('=================-=== ┌─ Sender данные (Map fallback) ───────────────────────────────┐');
-        debugPrint('=================-=== │ id   : $senderId ⭐⭐⭐');
-        debugPrint('=================-=== │ type : $senderType');
-        debugPrint('=================-=== │ name : $senderName');
-        debugPrint('=================-=== └─────────────────────────────────────────────────────┘');
-      } else {
-        debugPrint('=================-=== ⚠️⚠️⚠️ Sender имеет неверный тип: ${senderData.runtimeType}');
-        debugPrint('=================-=== ⚠️ senderData: $senderData');
-      }
-    } else {
-      debugPrint('=================-=== ⚠️⚠️⚠️ Sender отсутствует (null)!');
-      debugPrint('=================-=== ⚠️ messageData keys: ${messageData.keys.toList()}');
-    }
-    
-    // ✅ КРИТИЧНО: Если sender.id отсутствует, это проблема!
-    if (senderId == null || senderId.isEmpty) {
-      debugPrint('=================-=== ❌❌❌ КРИТИЧЕСКАЯ ОШИБКА: sender.id отсутствует или пустой!');
-      debugPrint('=================-===    Это означает, что мы не сможем правильно определить отправителя!');
-      debugPrint('=================-===    messageData: $messageData');
-    }
-
-    // 6. Мой ID
-    final prefs = await SharedPreferences.getInstance();
-    final myUserId = prefs.getString('userID') ?? '';
-
-    if (myUserId.isEmpty) {
-      debugPrint('=================-=== !!! КРИТИЧЕСКАЯ ОШИБКА !!! userID в SharedPreferences пустой');
-      // Можно добавить fallback или уведомление, но пока продолжаем
-    }
-
-    final isLeadChat = widget.endPointInTab == 'lead';
-    debugPrint('=================-=== Мой userID: "$myUserId" | Чат lead? $isLeadChat');
-
-    // 7. Самое важное — определяем, чьё это сообщение
-    // ✅ КРИТИЧНО: sender.id имеет ПРИОРИТЕТ 1 в _determineIsMyMessage
-    // Если sender.id != null, он будет использован для сравнения с myUserId
-    debugPrint('=================-=== ╔═══════════════════════════════════════════════════════╗');
-    debugPrint('=================-=== ║  🎯 chat.message: ОПРЕДЕЛЯЕМ isMyMessage            ║');
-    debugPrint('=================-=== ╠═══════════════════════════════════════════════════════╣');
-    debugPrint('=================-=== ║  sender.id ⭐⭐⭐        : $senderId');
-    debugPrint('=================-=== ║  sender.type            : $senderType');
-    debugPrint('=================-=== ║  myUserId                : $myUserId');
-    debugPrint('=================-=== ║  isLeadChat              : $isLeadChat');
-    debugPrint('=================-=== ║  is_my_message от сервера: $isMyMessageFromServer');
-    debugPrint('=================-=== ║  ⚠️ ВАЖНО: sender.id имеет ПРИОРИТЕТ 1!');
-    debugPrint('=================-=== ╚═══════════════════════════════════════════════════════╝');
-    
-    bool isMyMessage = await _determineIsMyMessage(
-      messageSenderId: senderId,
-      messageSenderType: senderType,
-      myUserId: myUserId,
-      isLeadChat: isLeadChat,
-      isMyMessageFromServer: isMyMessageFromServer,
-      debugContext: 'chat.message',
-    );
-
-    debugPrint('=================-=== ╔═══════════════════════════════════════════════════════╗');
-    debugPrint('=================-=== ║  ✅✅✅ ИТОГОВОЕ РЕШЕНИЕ: isMyMessage = $isMyMessage (ДО инверсии) ║');
-    debugPrint('=================-=== ╚═══════════════════════════════════════════════════════╝');
-    
-    // ✅ КРИТИЧНО: ИНВЕРТИРУЕМ результат, так как логика работает наоборот
-    // ✅ Если sender.id == myUserId → это НАШЕ сообщение → isMyMessage должен быть true
-    // ✅ Если sender.id != myUserId → это ЧУЖОЕ сообщение → isMyMessage должен быть false
-    // ✅ Но сейчас работает наоборот, поэтому инвертируем
-    isMyMessage = !isMyMessage;
-    debugPrint('=================-=== ╔═══════════════════════════════════════════════════════╗');
-    debugPrint('=================-=== ║  ✅✅✅ ИНВЕРТИРОВАНО: isMyMessage = $isMyMessage (ПОСЛЕ инверсии) ║');
-    debugPrint('=================-=== ╚═══════════════════════════════════════════════════════╝');
-
-    // 8. Создаём модель сообщения
-    ForwardedMessage? forwardedMessage;
-    if (messageData['forwarded_message'] != null) {
       try {
-        forwardedMessage = ForwardedMessage.fromJson(messageData['forwarded_message']);
-      } catch (e) {
-        debugPrint('=================-=== Ошибка парсинга forwarded_message: $e');
+        // 1. Проверка входных данных
+        if (event.data == null || event.data.trim().isEmpty) {
+          debugPrint(
+              '=================-=== ❌ MessageSent: event.data пустой или null');
+          return;
+        }
+
+        debugPrint('=================-=== Raw event.data: ${event.data}');
+
+        // 2. Парсинг JSON
+        final rawData = json.decode(event.data);
+        debugPrint('=================-=== Parsed JSON: $rawData');
+
+        // 3. Определяем, где лежат данные сообщения
+        Map<String, dynamic> messageData;
+        if (rawData is Map &&
+            rawData['message'] != null &&
+            rawData['message'] is Map) {
+          messageData = rawData['message'] as Map<String, dynamic>;
+          debugPrint(
+              '=================-=== Структура: {"message": {...}} → берём вложенный message');
+        } else if (rawData is Map && rawData['id'] != null) {
+          messageData = rawData as Map<String, dynamic>;
+          debugPrint(
+              '=================-=== Структура: данные сообщения на верхнем уровне');
+        } else {
+          debugPrint(
+              '=================-=== ❌ Неизвестная структура данных: $rawData');
+          return;
+        }
+
+        // 4. Извлекаем ключевые поля
+        final messageId = messageData['id'] as int?;
+        final text = messageData['text'] as String?;
+        final type = messageData['type'] as String? ?? 'text';
+        final createdAt = messageData['created_at'] as String?;
+        final filePath = messageData['file_path']?.toString();
+        final voiceDuration = messageData['voice_duration'];
+
+        // ✅ КРИТИЧНО: Извлекаем is_my_message с проверкой на разные форматы
+        bool? isMyMessageFromServer;
+        if (messageData['is_my_message'] != null) {
+          final isMyMsgValue = messageData['is_my_message'];
+          if (isMyMsgValue is bool) {
+            isMyMessageFromServer = isMyMsgValue;
+          } else if (isMyMsgValue is int) {
+            isMyMessageFromServer = isMyMsgValue == 1;
+          } else if (isMyMsgValue is String) {
+            isMyMessageFromServer =
+                isMyMsgValue.toLowerCase() == 'true' || isMyMsgValue == '1';
+          }
+          debugPrint(
+              '=================-=== 🔍🔍🔍 MessageSent: is_my_message извлечено: $isMyMessageFromServer (тип: ${isMyMsgValue.runtimeType})');
+        } else {
+          debugPrint(
+              '=================-=== ⚠️⚠️⚠️ MessageSent: is_my_message ОТСУТСТВУЕТ в messageData!');
+        }
+
+        debugPrint(
+            '=================-=== ┌─ Данные сообщения ───────────────────────────────┐');
+        debugPrint('=================-=== │ id              : $messageId');
+        debugPrint('=================-=== │ type            : $type');
+        debugPrint(
+            '=================-=== │ text            : ${text?.substring(0, (text?.length ?? 0) > 60 ? 60 : (text?.length ?? 0))}...');
+        debugPrint('=================-=== │ created_at      : $createdAt');
+        debugPrint(
+            '=================-=== │ is_my_message   : $isMyMessageFromServer ⭐⭐⭐');
+        debugPrint('=================-=== │ file_path       : $filePath');
+        debugPrint('=================-=== │ voice_duration  : $voiceDuration');
+        debugPrint(
+            '=================-=== └─────────────────────────────────────────────────────┘');
+
+        // 5. Sender - ✅ КРИТИЧНО: Правильное извлечение данных отправителя
+        // ✅ СЕРВЕР ОТПРАВЛЯЕТ: message.sender с полями id, name, type
+        final senderData = messageData['sender'];
+        String? senderId;
+        String? senderType;
+        String? senderName;
+
+        debugPrint(
+            '=================-=== 🔍🔍🔍 MessageSent: Проверяем sender данные...');
+        debugPrint('=================-===    senderData: $senderData');
+        debugPrint(
+            '=================-===    senderData type: ${senderData?.runtimeType}');
+
+        if (senderData != null) {
+          if (senderData is Map<String, dynamic>) {
+            senderId = senderData['id']?.toString();
+            senderType = senderData['type']?.toString();
+            senderName = senderData['name']?.toString();
+            debugPrint(
+                '=================-=== ┌─ Sender данные (Map) ───────────────────────────────┐');
+            debugPrint('=================-=== │ id   : $senderId ⭐⭐⭐');
+            debugPrint('=================-=== │ type : $senderType');
+            debugPrint('=================-=== │ name : $senderName');
+            debugPrint(
+                '=================-=== └─────────────────────────────────────────────────────┘');
+          } else if (senderData is Map) {
+            // Fallback для Map без типизации
+            final senderMap = Map<String, dynamic>.from(senderData);
+            senderId = senderMap['id']?.toString();
+            senderType = senderMap['type']?.toString();
+            senderName = senderMap['name']?.toString();
+            debugPrint(
+                '=================-=== ┌─ Sender данные (Map fallback) ───────────────────────────────┐');
+            debugPrint('=================-=== │ id   : $senderId ⭐⭐⭐');
+            debugPrint('=================-=== │ type : $senderType');
+            debugPrint('=================-=== │ name : $senderName');
+            debugPrint(
+                '=================-=== └─────────────────────────────────────────────────────┘');
+          } else {
+            debugPrint(
+                '=================-=== ⚠️⚠️⚠️ Sender имеет неверный тип: ${senderData.runtimeType}');
+            debugPrint('=================-=== ⚠️ senderData: $senderData');
+          }
+        } else {
+          debugPrint('=================-=== ⚠️⚠️⚠️ Sender отсутствует (null)!');
+          debugPrint(
+              '=================-=== ⚠️ messageData keys: ${messageData.keys.toList()}');
+        }
+
+        // ✅ КРИТИЧНО: Если sender.id отсутствует, это проблема!
+        if (senderId == null || senderId.isEmpty) {
+          debugPrint(
+              '=================-=== ❌❌❌ КРИТИЧЕСКАЯ ОШИБКА: sender.id отсутствует или пустой!');
+          debugPrint(
+              '=================-===    Это означает, что мы не сможем правильно определить отправителя!');
+          debugPrint('=================-===    messageData: $messageData');
+        }
+
+        // 6. Мой ID
+        final prefs = await SharedPreferences.getInstance();
+        final myUserId = prefs.getString('userID') ?? '';
+
+        if (myUserId.isEmpty) {
+          debugPrint(
+              '=================-=== !!! КРИТИЧЕСКАЯ ОШИБКА !!! userID в SharedPreferences пустой');
+          // Можно добавить fallback или уведомление, но пока продолжаем
+        }
+
+        final isLeadChat = widget.endPointInTab == 'lead';
+        debugPrint(
+            '=================-=== Мой userID: "$myUserId" | Чат lead? $isLeadChat');
+
+        // 7. Самое важное — определяем, чьё это сообщение
+        // ✅ КРИТИЧНО: sender.id имеет ПРИОРИТЕТ 1 в _determineIsMyMessage
+        // Если sender.id != null, он будет использован для сравнения с myUserId
+        debugPrint(
+            '=================-=== ╔═══════════════════════════════════════════════════════╗');
+        debugPrint(
+            '=================-=== ║  🎯 chat.message: ОПРЕДЕЛЯЕМ isMyMessage            ║');
+        debugPrint(
+            '=================-=== ╠═══════════════════════════════════════════════════════╣');
+        debugPrint('=================-=== ║  sender.id ⭐⭐⭐        : $senderId');
+        debugPrint(
+            '=================-=== ║  sender.type            : $senderType');
+        debugPrint(
+            '=================-=== ║  myUserId                : $myUserId');
+        debugPrint(
+            '=================-=== ║  isLeadChat              : $isLeadChat');
+        debugPrint(
+            '=================-=== ║  is_my_message от сервера: $isMyMessageFromServer');
+        debugPrint(
+            '=================-=== ║  ⚠️ ВАЖНО: sender.id имеет ПРИОРИТЕТ 1!');
+        debugPrint(
+            '=================-=== ╚═══════════════════════════════════════════════════════╝');
+
+        bool isMyMessage = await _determineIsMyMessage(
+          messageSenderId: senderId,
+          messageSenderType: senderType,
+          myUserId: myUserId,
+          isLeadChat: isLeadChat,
+          isMyMessageFromServer: isMyMessageFromServer,
+          debugContext: 'chat.message',
+        );
+
+        debugPrint(
+            '=================-=== ╔═══════════════════════════════════════════════════════╗');
+        debugPrint(
+            '=================-=== ║  ✅✅✅ ИТОГОВОЕ РЕШЕНИЕ: isMyMessage = $isMyMessage (ДО инверсии) ║');
+        debugPrint(
+            '=================-=== ╚═══════════════════════════════════════════════════════╝');
+
+        // ✅ КРИТИЧНО: ИНВЕРТИРУЕМ результат, так как логика работает наоборот
+        // ✅ Если sender.id == myUserId → это НАШЕ сообщение → isMyMessage должен быть true
+        // ✅ Если sender.id != myUserId → это ЧУЖОЕ сообщение → isMyMessage должен быть false
+        // ✅ Но сейчас работает наоборот, поэтому инвертируем
+        isMyMessage = !isMyMessage;
+        debugPrint(
+            '=================-=== ╔═══════════════════════════════════════════════════════╗');
+        debugPrint(
+            '=================-=== ║  ✅✅✅ ИНВЕРТИРОВАНО: isMyMessage = $isMyMessage (ПОСЛЕ инверсии) ║');
+        debugPrint(
+            '=================-=== ╚═══════════════════════════════════════════════════════╝');
+
+        // 8. Создаём модель сообщения
+        ForwardedMessage? forwardedMessage;
+        if (messageData['forwarded_message'] != null) {
+          try {
+            forwardedMessage =
+                ForwardedMessage.fromJson(messageData['forwarded_message']);
+          } catch (e) {
+            debugPrint(
+                '=================-=== Ошибка парсинга forwarded_message: $e');
+          }
+        }
+
+        final msg = Message(
+          id: messageId ?? -1, // -1 — маркер ошибки
+          text: text ??
+              (type == 'voice' ? 'Голосовое сообщение' : type ?? 'Сообщение'),
+          type: type,
+          createMessateTime: createdAt ?? DateTime.now().toIso8601String(),
+          isMyMessage: isMyMessage,
+          senderName: senderName ??
+              (isMyMessage
+                  ? 'Вы'
+                  : (_cachedCompanionName != null &&
+                          _cachedCompanionName!.isNotEmpty
+                      ? _cachedCompanionName!
+                      : '')),
+          filePath: filePath,
+          duration: voiceDuration != null
+              ? Duration(
+                  seconds:
+                      double.tryParse(voiceDuration.toString())?.round() ?? 0)
+              : Duration.zero,
+          forwardedMessage: forwardedMessage,
+          // isRead: true, // если нужно — можно добавить логику
+        );
+
+        debugPrint(
+            '=================-=== Создано сообщение → id: ${msg.id} | isMyMessage: ${msg.isMyMessage} | type: ${msg.type}');
+
+        // 9. Добавляем в UI
+        if (mounted) {
+          context.read<MessagingCubit>().updateMessageFromSocket(msg);
+          debugPrint(
+              '=================-=== Сообщение добавлено в UI через MessagingCubit');
+        }
+
+        // 10. Звук только для входящих
+        if (!msg.isMyMessage) {
+          try {
+            await _audioPlayer.setAsset('assets/audio/get.mp3');
+            await _audioPlayer.play();
+            debugPrint(
+                '=================-=== Воспроизведён звук входящего сообщения');
+          } catch (e) {
+            debugPrint(
+                '=================-=== Не удалось воспроизвести звук: $e');
+          }
+        } else {
+          debugPrint('=================-=== Звук пропущен — это моё сообщение');
+        }
+
+        // 11. Скролл вниз
+        _scrollToBottom();
+
+        // 12. Фоновая синхронизация (опционально)
+        try {
+          await context
+              .read<MessagingCubit>()
+              .syncMessagesInBackground(widget.chatId);
+          debugPrint('=================-=== Фоновая синхронизация запущена');
+        } catch (e) {
+          debugPrint('=================-=== Ошибка фоновой синхронизации: $e');
+        }
+
+        debugPrint(
+            '=================-=== ╚══════ chat.message обработан успешно ══════╝');
+      } catch (e, stackTrace) {
+        debugPrint(
+            '=================-=== ╔══════ ОШИБКА В ОБРАБОТЧИКЕ chat.message ══════╗');
+        debugPrint('=================-=== Ошибка: $e');
+        debugPrint('=================-=== StackTrace:\n$stackTrace');
+        debugPrint(
+            '=================-=== ╚══════════════════════════════════════════════╝');
       }
-    }
-
-    final msg = Message(
-      id: messageId ?? -1, // -1 — маркер ошибки
-      text: text ?? (type == 'voice' ? 'Голосовое сообщение' : type ?? 'Сообщение'),
-      type: type,
-      createMessateTime: createdAt ?? DateTime.now().toIso8601String(),
-      isMyMessage: isMyMessage,
-      senderName: senderName ?? (isMyMessage ? 'Вы' : 'Собеседник'),
-      filePath: filePath,
-      duration: voiceDuration != null
-          ? Duration(seconds: double.tryParse(voiceDuration.toString())?.round() ?? 0)
-          : Duration.zero,
-      forwardedMessage: forwardedMessage,
-      // isRead: true, // если нужно — можно добавить логику
-    );
-
-    debugPrint('=================-=== Создано сообщение → id: ${msg.id} | isMyMessage: ${msg.isMyMessage} | type: ${msg.type}');
-
-    // 9. Добавляем в UI
-    if (mounted) {
-      context.read<MessagingCubit>().updateMessageFromSocket(msg);
-      debugPrint('=================-=== Сообщение добавлено в UI через MessagingCubit');
-    }
-
-    // 10. Звук только для входящих
-    if (!msg.isMyMessage) {
-      try {
-        await _audioPlayer.setAsset('assets/audio/get.mp3');
-        await _audioPlayer.play();
-        debugPrint('=================-=== Воспроизведён звук входящего сообщения');
-      } catch (e) {
-        debugPrint('=================-=== Не удалось воспроизвести звук: $e');
-      }
-    } else {
-      debugPrint('=================-=== Звук пропущен — это моё сообщение');
-    }
-
-    // 11. Скролл вниз
-    _scrollToBottom();
-
-    // 12. Фоновая синхронизация (опционально)
-    try {
-      await context.read<MessagingCubit>().syncMessagesInBackground(widget.chatId);
-      debugPrint('=================-=== Фоновая синхронизация запущена');
-    } catch (e) {
-      debugPrint('=================-=== Ошибка фоновой синхронизации: $e');
-    }
-
-    debugPrint('=================-=== ╚══════ chat.message обработан успешно ══════╝');
-  } catch (e, stackTrace) {
-    debugPrint('=================-=== ╔══════ ОШИБКА В ОБРАБОТЧИКЕ chat.message ══════╗');
-    debugPrint('=================-=== Ошибка: $e');
-    debugPrint('=================-=== StackTrace:\n$stackTrace');
-    debugPrint('=================-=== ╚══════════════════════════════════════════════╝');
-  }
-});
-    debugPrint('=================-=== ✅✅✅ CHAT_SMS: chat.message listener registered');
-    debugPrint('=================-=== 🎯🎯🎯 CHAT_SMS: Setting up USER channel subscription...');
+    });
+    debugPrint(
+        '=================-=== ✅✅✅ CHAT_SMS: chat.message listener registered');
+    debugPrint(
+        '=================-=== 🎯🎯🎯 CHAT_SMS: Setting up USER channel subscription...');
     final userId = prefs.getString('unique_id') ?? '';
     if (userId.isNotEmpty) {
       final userChannelName = 'presence-user.$userId';
-      debugPrint('=================-=== 🎯🎯🎯 CHAT_SMS: User channel: $userChannelName');
+      debugPrint(
+          '=================-=== 🎯🎯🎯 CHAT_SMS: User channel: $userChannelName');
 
       final userPresenceChannel = socketClient.presenceChannel(
         userChannelName,
@@ -2248,345 +2379,138 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
             'X-Tenant': '$enteredDomain-back',
           },
           onAuthFailed: (exception, trace) {
-            debugPrint('=================-=== ❌ Auth failed for $userChannelName: $exception');
+            debugPrint(
+                '=================-=== ❌ Auth failed for $userChannelName: $exception');
           },
         ),
       );
 
       socketClient.onConnectionEstablished.listen((_) {
-        debugPrint('=================-=== ✅ Subscribing to user channel: $userChannelName');
+        debugPrint(
+            '=================-=== ✅ Subscribing to user channel: $userChannelName');
         userPresenceChannel.subscribeIfNotUnsubscribed();
       });
 
       // ✅ КРИТИЧНО: chat.updated используется ТОЛЬКО для обновления списка чатов, НЕ для добавления сообщений!
       // ✅ Сообщения добавляются через событие chat.message (MessageSent), которое содержит правильный sender.id
       // ✅ Поэтому в chat.updated мы НЕ добавляем сообщения, а только обновляем lastMessage в списке чатов
-    userPresenceChannel.bind('chat.updated').listen((event) async {
-  debugPrint('=================-=== 🔔🔔🔔 CHAT_SMS (USER CHANNEL): Received chat.updated!');
-  
+     // ✅ ОБНОВЛЕННЫЙ СЛУШАТЕЛЬ chat.updated (внутри userPresenceChannel)
+// ✅ ИСПРАВЛЕННЫЙ СЛУШАТЕЛЬ chat.updated (в файле chat_sms_screen.dart)
+userPresenceChannel.bind('chat.updated').listen((event) async {
+  debugPrint('🔔🔔🔔 CHAT_SMS (USER CHANNEL): Received chat.updated!');
+
   try {
     final chatData = json.decode(event.data);
-    final eventChatId = chatData['chat']?['id'];
-    
-    debugPrint('=================-=== 🔔🔔🔔 CHAT_SMS (USER CHANNEL): Event chatId: $eventChatId, our chatId: ${widget.chatId}');
-    
+    final chatObj = chatData['chat']; 
+    final eventChatId = chatObj?['id'];
+
     if (eventChatId != widget.chatId) {
-      debugPrint('=================-=== ⚠️ CHAT_SMS: Different chat, ignoring');
-      return;
+      return; 
     }
-    
+
     if (mounted) {
-      final lastMessage = chatData['chat']?['lastMessage'];
-      final chatUsers = chatData['chat']?['chatUsers'];
-      
+      final lastMessage = chatObj?['lastMessage'];
+      final chatUsers = chatObj?['chatUsers']; 
+
       if (lastMessage != null) {
-        debugPrint('=================-=== 🔔🔔🔔 CHAT_SMS (USER CHANNEL): ✅ Processing new message from chat.updated...');
         
         final prefs = await SharedPreferences.getInstance();
         final myUserId = prefs.getString('userID') ?? '';
-        final isLeadChat = widget.endPointInTab == 'lead';
-        
-        // ✅ Извлекаем is_my_message
-        bool? isMyMessageFromServer;
+
+        // 1. Получаем флаг от сервера
+        bool isMyMessageFromServer = false;
         if (lastMessage['is_my_message'] != null) {
-          final isMyMsgValue = lastMessage['is_my_message'];
-          if (isMyMsgValue is bool) {
-            isMyMessageFromServer = isMyMsgValue;
-          } else if (isMyMsgValue is int) {
-            isMyMessageFromServer = isMyMsgValue == 1;
-          } else if (isMyMsgValue is String) {
-            isMyMessageFromServer = isMyMsgValue.toLowerCase() == 'true' || isMyMsgValue == '1';
-          }
-          debugPrint('=================-=== 🔍🔍🔔 CHAT_SMS (USER): is_my_message извлечено: $isMyMessageFromServer (тип: ${isMyMsgValue.runtimeType}) ⭐⭐⭐');
+           final val = lastMessage['is_my_message'];
+           if (val is bool) isMyMessageFromServer = val;
+           else if (val is int) isMyMessageFromServer = val == 1;
+           else if (val is String) isMyMessageFromServer = val == 'true';
         }
+
+        // ⚠️ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ:
+        // Сервер шлет true для входящих сообщений в этом сокете.
+        // Поэтому мы ИНВЕРТИРУЕМ значение, чтобы получить реальное положение дел.
+        bool isMyMessage = !isMyMessageFromServer;
+
+        debugPrint('🔍 Флаг сервера: $isMyMessageFromServer -> Инверсия: $isMyMessage');
+
+        // 2. Ищем имя отправителя (если сообщение не мое)
+        String senderName = '';
         
-        // ✅ Определяем sender из lastMessage или chatUsers
-        String? messageSenderId;
-        String? messageSenderType;
-        
-        // ✅ КРИТИЧНО: Логируем структуру lastMessage для диагностики
-        debugPrint('=================-=== 🔍🔍🔍 CHAT_SMS (USER): lastMessage структура:');
-        debugPrint('=================-===    lastMessage keys: ${lastMessage.keys.toList()}');
-        debugPrint('=================-===    lastMessage[sender]: ${lastMessage['sender']}');
-        if (lastMessage['sender'] != null) {
-          debugPrint('=================-===    lastMessage[sender] type: ${lastMessage['sender'].runtimeType}');
-          if (lastMessage['sender'] is Map) {
-            debugPrint('=================-===    lastMessage[sender] keys: ${(lastMessage['sender'] as Map).keys.toList()}');
-          }
-        }
-        
-        if (lastMessage['sender'] != null && lastMessage['sender'] is Map) {
-          final senderMap = lastMessage['sender'] as Map<String, dynamic>;
-          messageSenderId = senderMap['id']?.toString();
-          messageSenderType = senderMap['type']?.toString();
-          debugPrint('=================-=== 🔍🔍🔍 CHAT_SMS (USER): Извлечено sender.id=$messageSenderId, sender.type=$messageSenderType');
-          
-          // ✅ КРИТИЧНО: Проверяем, что sender.id действительно правильный
-          // ✅ Если sender.id == myUserId, но is_my_message=false, это может быть ошибка
-          // ✅ Или если sender.id != myUserId, но is_my_message=true, это тоже ошибка
-          if (messageSenderId != null && messageSenderId.isNotEmpty) {
-            final senderIdNum = int.tryParse(messageSenderId.trim());
-            final myUserIdNum = int.tryParse(myUserId.trim());
-            bool senderIsMe = false;
-            if (senderIdNum != null && myUserIdNum != null) {
-              senderIsMe = senderIdNum == myUserIdNum;
-            } else {
-              senderIsMe = messageSenderId.trim() == myUserId.trim();
-            }
-            
-            // ✅ Если sender.id != myUserId, но is_my_message=true → это ошибка сервера
-            if (!senderIsMe && isMyMessageFromServer == true) {
-              debugPrint('=================-=== ⚠️⚠️⚠️ КРИТИЧЕСКАЯ ОШИБКА: sender.id=$messageSenderId != myUserId=$myUserId, но is_my_message=true!');
-              debugPrint('=================-===    Это сообщение от ДРУГОГО пользователя, но сервер пометил как наше!');
-              debugPrint('=================-===    ИСПРАВЛЯЕМ: Используем sender.id=$messageSenderId (правильный отправитель)');
-              // messageSenderId уже установлен правильно, просто логируем
-            }
-            // ✅ Если sender.id == myUserId, но is_my_message=false → это тоже ошибка
-            else if (senderIsMe && isMyMessageFromServer == false) {
-              debugPrint('=================-=== ⚠️⚠️⚠️ КРИТИЧЕСКАЯ ОШИБКА: sender.id=$messageSenderId == myUserId=$myUserId, но is_my_message=false!');
-              debugPrint('=================-===    Это НАШЕ сообщение, но сервер пометил как чужое!');
-              debugPrint('=================-===    ИСПРАВЛЯЕМ: Используем sender.id=$messageSenderId (правильный отправитель)');
-              // messageSenderId уже установлен правильно, просто логируем
-            }
-          }
+        // Если сообщение "Мое", имя "Вы", иначе ищем собеседника
+        if (isMyMessage) {
+           senderName = "Вы";
         } else {
-          // ✅ КРИТИЧНО: Если sender нет, используем chatUsers для определения
-          // ✅ ВАЖНО: НЕ ДОВЕРЯЕМ is_my_message от сервера, если sender отсутствует!
-          debugPrint('=================-=== ⚠️⚠️⚠️ CHAT_SMS (USER): sender отсутствует в lastMessage, используем chatUsers для определения');
-          
-          if (chatUsers != null && chatUsers is List) {
-            // ✅ Собираем всех участников
-            List<String> allParticipantIds = [];
-            List<String> otherParticipantIds = [];
-            
-            for (var user in chatUsers) {
-              if (user is Map && user['participant'] != null) {
-                final participant = user['participant'];
-                if (participant is Map) {
-                  final participantId = participant['id']?.toString() ?? '';
-                  if (participantId.isNotEmpty) {
-                    allParticipantIds.add(participantId);
-                    
-                    // Сравниваем как числа для надежности
-                    final participantIdNum = int.tryParse(participantId.trim());
-                    final myUserIdNum = int.tryParse(myUserId.trim());
-                    bool isNotMe = false;
-                    if (participantIdNum != null && myUserIdNum != null) {
-                      isNotMe = participantIdNum != myUserIdNum;
-                    } else {
-                      isNotMe = participantId.trim() != myUserId.trim();
-                    }
-                    
-                    if (isNotMe) {
-                      otherParticipantIds.add(participantId);
-                    }
-                  }
-                }
-              }
-            }
-            
-            debugPrint('=================-=== 🔍🔍🔍 CHAT_SMS (USER): Все участники: $allParticipantIds');
-            debugPrint('=================-=== 🔍🔍🔍 CHAT_SMS (USER): Другие участники (не я): $otherParticipantIds');
-            debugPrint('=================-=== 🔍🔍🔍 CHAT_SMS (USER): Мой ID: $myUserId');
-            debugPrint('=================-=== 🔍🔍🔍 CHAT_SMS (USER): is_my_message от сервера: $isMyMessageFromServer');
-            
-            // ✅ КРИТИЧНО: Определяем отправителя на основе chatUsers
-            if (isMyMessageFromServer == false) {
-              // ✅ is_my_message=false → это точно сообщение от другого участника
-              if (otherParticipantIds.isNotEmpty) {
-                messageSenderId = otherParticipantIds.first;
-                debugPrint('=================-=== ✅✅✅ CHAT_SMS (USER): is_my_message=false → это сообщение от ДРУГОГО пользователя (id=$messageSenderId)');
-              } else {
-                debugPrint('=================-=== ⚠️⚠️⚠️ CHAT_SMS (USER): is_my_message=false, но других участников не найдено!');
-                // Не устанавливаем messageSenderId, чтобы _determineIsMyMessage использовал fallback
-              }
-            } else if (isMyMessageFromServer == true) {
-              // ✅ is_my_message=true → проверяем chatUsers
-              if (otherParticipantIds.isEmpty) {
-                // ✅ Нет других участников → это точно наше сообщение
-                messageSenderId = myUserId;
-                debugPrint('=================-=== ✅✅✅ CHAT_SMS (USER): is_my_message=true, других участников нет → это НАШЕ сообщение (id=$myUserId)');
-              } else {
-                // ⚠️ ВНИМАНИЕ: is_my_message=true, но есть другие участники
-                // ✅ КРИТИЧНО: В корпоративных чатах может быть несколько участников
-                // ✅ ПРОБЛЕМА: Если sender отсутствует, мы не можем точно определить отправителя
-                // ✅ НО: Если is_my_message=true, но есть другие участники, это МОЖЕТ быть наше сообщение
-                // ✅ НО ТАКЖЕ: Это может быть сообщение от другого участника, но сервер ошибся с is_my_message
-                // ✅ БЕЗОПАСНЫЙ ВЫБОР: Если есть другие участники, НЕ устанавливаем messageSenderId автоматически
-                // ✅ Пусть _determineIsMyMessage использует is_my_message как fallback
-                debugPrint('=================-=== ⚠️⚠️⚠️ CHAT_SMS (USER): is_my_message=true, но есть другие участники: $otherParticipantIds');
-                debugPrint('=================-===    ⚠️ ВНИМАНИЕ: sender отсутствует, не можем точно определить отправителя!');
-                debugPrint('=================-===    ⚠️ НЕ устанавливаем messageSenderId, пусть _determineIsMyMessage использует is_my_message');
-                // НЕ устанавливаем messageSenderId, чтобы _determineIsMyMessage использовал is_my_message как fallback
-              }
-            } else {
-              // ✅ is_my_message == null → определяем по chatUsers
-              if (otherParticipantIds.isNotEmpty) {
-                // Есть другие участники → это может быть сообщение от них
-                // ✅ БЕЗОПАСНЫЙ ВЫБОР: Если есть другие участники, считаем что это сообщение от них
-                messageSenderId = otherParticipantIds.first;
-                debugPrint('=================-=== ⚠️⚠️⚠️ CHAT_SMS (USER): is_my_message=null, есть другие участники → считаем сообщением от ДРУГОГО (id=$messageSenderId)');
-              } else {
-                // Нет других участников → это наше сообщение
-                messageSenderId = myUserId;
-                debugPrint('=================-=== ✅✅✅ CHAT_SMS (USER): is_my_message=null, других участников нет → это НАШЕ сообщение (id=$myUserId)');
-              }
-            }
-          } else {
-            debugPrint('=================-=== ⚠️⚠️⚠️ CHAT_SMS (USER): chatUsers отсутствует, используем is_my_message как fallback');
-            // Если chatUsers нет, используем is_my_message
-            if (isMyMessageFromServer == false) {
-              // Не устанавливаем messageSenderId, чтобы _determineIsMyMessage использовал fallback
-            } else if (isMyMessageFromServer == true) {
-              messageSenderId = myUserId;
-            }
-          }
+           // Пытаемся найти имя собеседника в chatUsers
+           if (chatUsers != null && chatUsers is List) {
+             for (var user in chatUsers) {
+               final p = user['participant'];
+               if (p == null) continue;
+               
+               // Ищем того, кто НЕ я
+               if (p['id'].toString() != myUserId) {
+                 senderName = "${p['name'] ?? ''} ${p['lastname'] ?? ''}".trim();
+                 break; 
+               }
+             }
+           }
+           // Фолбек, если имя не нашли
+           if (senderName.isEmpty) {
+              senderName = _cachedCompanionName ?? '';
+           }
         }
-        
-        // ✅ КРИТИЧНО: Дополнительная проверка перед определением isMyMessage
-        // ✅ Если messageSenderId == null, но есть другие участники, и is_my_message=true,
-        // ✅ это может быть ошибка сервера - сообщение от другого участника помечено как наше
-        if (messageSenderId == null && chatUsers != null && chatUsers is List) {
-          List<String> otherParticipantIds = [];
-          for (var user in chatUsers) {
-            if (user is Map && user['participant'] != null) {
-              final participant = user['participant'];
-              if (participant is Map) {
-                final participantId = participant['id']?.toString() ?? '';
-                if (participantId.isNotEmpty) {
-                  final participantIdNum = int.tryParse(participantId.trim());
-                  final myUserIdNum = int.tryParse(myUserId.trim());
-                  bool isNotMe = false;
-                  if (participantIdNum != null && myUserIdNum != null) {
-                    isNotMe = participantIdNum != myUserIdNum;
-                  } else {
-                    isNotMe = participantId.trim() != myUserId.trim();
-                  }
-                  if (isNotMe) {
-                    otherParticipantIds.add(participantId);
-                  }
-                }
-              }
-            }
-          }
-          
-          // ✅ Если есть другие участники, и is_my_message=true, но sender отсутствует,
-          // ✅ это может быть сообщение от другого участника (ошибка сервера)
-          // ✅ БЕЗОПАСНЫЙ ВЫБОР: Если есть другие участники, считаем что это сообщение от них
-          if (otherParticipantIds.isNotEmpty && isMyMessageFromServer == true) {
-            debugPrint('=================-=== ⚠️⚠️⚠️ КРИТИЧЕСКАЯ ПРОВЕРКА: messageSenderId=null, но есть другие участники: $otherParticipantIds');
-            debugPrint('=================-===    is_my_message=true, но sender отсутствует - это может быть ошибка сервера!');
-            debugPrint('=================-===    БЕЗОПАСНЫЙ ВЫБОР: Используем первого другого участника как отправителя');
-            messageSenderId = otherParticipantIds.first;
-            debugPrint('=================-===    Установлен messageSenderId=$messageSenderId (другой участник)');
-          }
-        }
-        
-        // ✅ Определяем isMyMessage
-        debugPrint('=================-=== 🔔🔔🔔 CHAT_SMS (USER CHANNEL): Перед _determineIsMyMessage:');
-        debugPrint('=================-===    messageSenderId: $messageSenderId');
-        debugPrint('=================-===    messageSenderType: $messageSenderType');
-        debugPrint('=================-===    myUserId: $myUserId');
-        debugPrint('=================-===    isMyMessageFromServer: $isMyMessageFromServer');
-        
-        bool isMyMessage = await _determineIsMyMessage(
-          messageSenderId: messageSenderId,
-          messageSenderType: messageSenderType,
-          myUserId: myUserId,
-          isLeadChat: isLeadChat,
-          isMyMessageFromServer: isMyMessageFromServer,
-          debugContext: 'chat.updated (USER CHANNEL)',
-        );
-        
-        debugPrint('=================-=== 🔔🔔🔔 CHAT_SMS (USER CHANNEL): Determined isMyMessage=$isMyMessage (ДО инверсии)');
-        
-        // ✅ КРИТИЧНО: ИНВЕРТИРУЕМ результат, так как логика работает наоборот
-        // ✅ Если sender.id == myUserId → это НАШЕ сообщение → isMyMessage должен быть true
-        // ✅ Если sender.id != myUserId → это ЧУЖОЕ сообщение → isMyMessage должен быть false
-        // ✅ Но сейчас работает наоборот, поэтому инвертируем
-        isMyMessage = !isMyMessage;
-        debugPrint('=================-=== 🔔🔔🔔 CHAT_SMS (USER CHANNEL): ИНВЕРТИРОВАНО isMyMessage=$isMyMessage (ПОСЛЕ инверсии)');
-        
-        // ✅ Создаём и добавляем сообщение
-        String senderName = _cachedCompanionName ?? 'Собеседник';
-        if (chatUsers != null && chatUsers is List) {
-          for (var user in chatUsers) {
-            if (user is Map && user['participant'] != null) {
-              final participant = user['participant'];
-              if (participant is Map) {
-                final participantId = participant['id']?.toString() ?? '';
-                final participantName = participant['name'] ?? '';
-                final participantLastname = participant['lastname'] ?? '';
-                
-                if (participantId != myUserId && participantName.isNotEmpty) {
-                  String fullName = participantName;
-                  if (participantLastname.isNotEmpty) {
-                    fullName = '$participantName $participantLastname';
-                  }
-                  senderName = fullName;
-                  break;
-                }
-              }
-            }
-          }
-        }
-        
+
+        debugPrint('📨 Обработка: Текст="${lastMessage['text']}", Мое=$isMyMessage, Имя="$senderName"');
+
         final newMessage = Message(
           id: lastMessage['id'] ?? 0,
           text: lastMessage['text'] ?? '',
           type: lastMessage['type'] ?? 'text',
           filePath: lastMessage['file_path'],
-          isMyMessage: isMyMessage,
-          createMessateTime: lastMessage['created_at'] ?? '',
-          senderName: isMyMessage ? 'Вы' : senderName,
+          isMyMessage: isMyMessage, // Используем инвертированное значение
+          createMessateTime: lastMessage['created_at'] ?? DateTime.now().toIso8601String(),
+          senderName: senderName, 
           duration: Duration(
               seconds: lastMessage['voice_duration'] != null
-                  ? double.tryParse(lastMessage['voice_duration'].toString())?.round() ?? 20
-                  : 20),
+                  ? double.tryParse(lastMessage['voice_duration'].toString())?.round() ?? 0
+                  : 0),
           isPinned: lastMessage['is_pinned'] ?? false,
           isChanged: lastMessage['is_changed'] ?? false,
           isNote: lastMessage['is_note'] ?? false,
         );
-        
-        debugPrint('=================-=== 🔔🔔🔔 CHAT_SMS (USER CHANNEL): Message created with isMyMessage: ${newMessage.isMyMessage}');
-        
+
         context.read<MessagingCubit>().updateMessageFromSocket(newMessage);
-        
+
         Future.delayed(Duration(milliseconds: 100), () {
           if (mounted) _scrollToBottom();
         });
-        
-        // ✅ Звук только для входящих
+
         if (!isMyMessage) {
-          try {
-            await _audioPlayer.setAsset('assets/audio/get.mp3');
-            await _audioPlayer.play();
-            debugPrint('=================-=== 🔊 CHAT_SMS (USER CHANNEL): ✅ Played sound for INCOMING message');
-          } catch (e) {
-            debugPrint('=================-=== ⚠️ CHAT_SMS (USER CHANNEL): Sound error: $e');
-          }
-        } else {
-          debugPrint('=================-=== 🔔🔔🔔 CHAT_SMS (USER CHANNEL): Skipped sound - message is from ME');
+           try {
+             await _audioPlayer.setAsset('assets/audio/get.mp3');
+             await _audioPlayer.play();
+           } catch (e) { /* ignore */ }
         }
       }
     }
-  } catch (e, stackTrace) {
-    debugPrint('=================-=== ❌ CHAT_SMS (chat.updated): ERROR: $e');
-    debugPrint('=================-=== StackTrace: $stackTrace');
+  } catch (e, stack) {
+    debugPrint('❌ Ошибка парсинга chat.updated: $e');
   }
 });
-      debugPrint('=================-=== ✅✅✅ CHAT_SMS: User channel listener registered');
+      debugPrint(
+          '=================-=== ✅✅✅ CHAT_SMS: User channel listener registered');
     }
 
     try {
       debugPrint('=================-=== 🚀 Initiating socket connection...');
       await socketClient.connect();
-      debugPrint('=================-=== ✅ Socket connection initiated successfully');
+      debugPrint(
+          '=================-=== ✅ Socket connection initiated successfully');
     } catch (e) {
       debugPrint('=================-=== ❌ Error connecting to socket: $e');
     }
 
-    debugPrint('=================-=== 🔌 ChatSmsScreen: setUpServices() COMPLETED');
+    debugPrint(
+        '=================-=== 🔌 ChatSmsScreen: setUpServices() COMPLETED');
   }
 
   void _scrollToBottom() {
@@ -2783,7 +2707,8 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
     // Это скрывает счетчик до момента прихода нового сообщения от сервера
     _chatsBloc?.add(ResetUnreadCount(widget.chatId));
 
-    debugPrint('=================-=== ✅ ChatSmsScreen.dispose COMPLETED for chat ${widget.chatId}');
+    debugPrint(
+        '=================-=== ✅ ChatSmsScreen.dispose COMPLETED for chat ${widget.chatId}');
 
     super.dispose();
   }
@@ -2827,7 +2752,8 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
       debugPrint(
           '=================-=== ChatSmsScreen: Messages marked as read, chats list will update via socket naturally');
     } catch (e) {
-      debugPrint('=================-=== ChatSmsScreen: Error marking messages as read on exit: $e');
+      debugPrint(
+          '=================-=== ChatSmsScreen: Error marking messages as read on exit: $e');
       // Не критично, продолжаем работу
     }
   }

@@ -356,7 +356,7 @@ class _MyTaskScreenState extends State<MyTaskScreen>
         child: Text(
           AppLocalizations.of(context)!.translate('no_tasks_for_user'),
           style: const TextStyle(
-            fontSize: 18,
+            fontSize: 14,
             fontFamily: 'Gilroy',
             fontWeight: FontWeight.w500,
             color: Color(0xff99A4BA),

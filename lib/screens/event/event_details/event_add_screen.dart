@@ -343,16 +343,16 @@ Widget _buildFileIcon(String fileName, String fileExtension) {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          SubjectSelectionWidget(
-                            selectedSubject: selectedSubject,
-                            onSelectSubject: (String subject) {
-                              setState(() {
-                                selectedSubject = subject;
-                                isSubjectInvalid = subject.isEmpty; // Сбрасываем ошибку при вводе
-                              });
-                            },
-                            hasError: isSubjectInvalid, // Передаем флаг ошибки
-                          ),
+                         SubjectSelectionWidget(
+  selectedSubject: selectedSubject,
+  onSelectSubject: (String subject) {
+    setState(() {
+      selectedSubject = subject;
+      // можно убрать isSubjectInvalid здесь, т.к. теперь ошибка показывается внутри виджета
+    });
+  },
+  hasError: selectedSubject == null || selectedSubject!.trim().isEmpty,
+),
                           const SizedBox(height: 8),
                           // Lead selection
                           LeadRadioGroupWidget(
