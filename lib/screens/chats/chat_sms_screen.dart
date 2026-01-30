@@ -105,6 +105,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
   bool _isLoadingFromApi = false; // ✅ Флаг загрузки с API
   String? _cachedCompanionName; // Кэшированное имя собеседника
   bool? _isGroupChat; // Флаг, является ли чат группой
+  String _myDisplayName = '';
 
   void _onSearchChanged(String query) {
     setState(() {
@@ -131,6 +132,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
   void initState() {
     super.initState();
     _checkPermissions();
+    _getMyDisplayName();
 
     _chatsBloc = context.read<ChatsBloc>();
     _messagingCubit = context
@@ -397,6 +399,29 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
       debugPrint(
           '=================-=== ❌ Ошибка кэширования имени собеседника: $e');
     }
+  }
+
+  Future<String> _getMyDisplayName() async {
+    if (_myDisplayName.isNotEmpty) return _myDisplayName;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final name = (prefs.getString('userNameProfile') ??
+              prefs.getString('userName') ??
+              '')
+          .trim();
+      if (name.isNotEmpty) {
+        if (mounted) {
+          setState(() {
+            _myDisplayName = name;
+          });
+        } else {
+          _myDisplayName = name;
+        }
+      }
+    } catch (e) {
+      debugPrint('=================-=== ❌ Failed to load my display name: $e');
+    }
+    return _myDisplayName;
   }
 
   /// ✅ НОВЫЙ МЕТОД: Оптимистичная загрузка из кэша (мгновенно, без await)
@@ -1762,6 +1787,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
         },
         messageController: _messageController,
         sendRequestFunction: (File soundFile, String time) async {
+          final myName = await _getMyDisplayName();
           Duration calculateDuration(String time) {
             List<String> parts = time.split(':');
             int minutes = int.parse(parts[0]);
@@ -1776,7 +1802,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
             createMessateTime:
                 DateTime.now().add(Duration(hours: -0)).toString(),
             isMyMessage: true,
-            senderName: "Вы",
+            senderName: myName,
             filePath: soundFile.path,
             duration: calculateDuration(time),
           );
@@ -2292,6 +2318,11 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
                         ? widget.chatItem.name
                         : ''));
 
+        final myName = await _getMyDisplayName();
+        final senderDisplayName = isMyMessage
+            ? (resolvedSenderName ?? myName)
+            : (resolvedSenderName ?? fallbackCompanionName);
+
         final msg = Message(
           id: messageId ?? -1, // -1 — маркер ошибки
           text: text ??
@@ -2299,8 +2330,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
           type: type,
           createMessateTime: createdAt ?? DateTime.now().toIso8601String(),
           isMyMessage: isMyMessage,
-          senderName:
-              resolvedSenderName ?? (isMyMessage ? 'Вы' : fallbackCompanionName),
+          senderName: senderDisplayName,
           filePath: filePath,
           duration: voiceDuration != null
               ? Duration(
@@ -2519,6 +2549,9 @@ userPresenceChannel.bind('chat.updated').listen((event) async {
                       ? widget.chatItem.name
                       : ''));
 
+          final myName = await _getMyDisplayName();
+          final myDisplayName = myName.isNotEmpty ? myName : '';
+
           final newMessage = Message(
             id: messageId,
             text: lastMessage['text'] ?? '',
@@ -2527,7 +2560,7 @@ userPresenceChannel.bind('chat.updated').listen((event) async {
             isMyMessage: isMyMessage,
             createMessateTime: lastMessage['created_at'] ??
                 DateTime.now().toIso8601String(),
-            senderName: isMyMessage ? 'Вы' : fallbackName,
+            senderName: isMyMessage ? myDisplayName : fallbackName,
             duration: Duration(
               seconds: lastMessage['voice_duration'] != null
                   ? double.tryParse(lastMessage['voice_duration'].toString())
@@ -2590,13 +2623,14 @@ userPresenceChannel.bind('chat.updated').listen((event) async {
       String messageText, String? replyMessageId) async {
     if (messageText.trim().isNotEmpty) {
       try {
+        final myName = await _getMyDisplayName();
         final localMessage = Message(
           id: -DateTime.now().millisecondsSinceEpoch,
           text: messageText,
           type: 'text',
           createMessateTime: DateTime.now().add(Duration(hours: 0)).toString(),
           isMyMessage: true,
-          senderName: '',
+          senderName: myName,
         );
 
         context.read<MessagingCubit>().addLocalMessage(localMessage);
@@ -2688,13 +2722,14 @@ userPresenceChannel.bind('chat.updated').listen((event) async {
   }
 
   void _handlePickedFile(String path, String name) async {
+    final myName = await _getMyDisplayName();
     final localMessage = Message(
       id: -DateTime.now().millisecondsSinceEpoch,
       text: name,
       type: 'file',
       createMessateTime: DateTime.now().add(Duration(hours: -0)).toString(),
       isMyMessage: true,
-      senderName: "Вы",
+      senderName: myName,
       filePath: path,
     );
 
