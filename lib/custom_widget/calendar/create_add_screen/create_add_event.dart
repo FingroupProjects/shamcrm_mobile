@@ -130,7 +130,9 @@ class _CreateEventFromCalendareState extends State<CreateEventFromCalendare> {
                             onSelectSubject: (String subject) {
                               setState(() {
                                 selectedSubject = subject;
-                                _subjectError = subject.isEmpty;
+                                if (subject.trim().isNotEmpty) {
+                                  _subjectError = false;
+                                }
                               });
                             },
                             hasError: _subjectError,

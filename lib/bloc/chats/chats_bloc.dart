@@ -482,6 +482,22 @@ class ChatsBloc extends Bloc<ChatsEvent, ChatsState> {
         );
 
         updatedChats[chatIndex] = updatedChat;
+
+        // ✅ Если пришло новое сообщение — поднимаем чат наверх (как в мессенджерах)
+        if (isNewMessage) {
+          final movedChat = updatedChats.removeAt(chatIndex);
+          int insertIndex = 0;
+          if (updatedChats.isNotEmpty &&
+              updatedChats.first.type == 'support' &&
+              movedChat.type != 'support') {
+            insertIndex = 1;
+          }
+          if (insertIndex > updatedChats.length) {
+            insertIndex = updatedChats.length;
+          }
+          updatedChats.insert(insertIndex, movedChat);
+          debugPrint('=================-=== ChatsBloc: Moved chat ${movedChat.uniqueId ?? movedChat.id} to top');
+        }
         debugPrint('ChatsBloc._updateChatsFromSocketFetch: Updated existing chat uniqueId: ${event.chat.uniqueId ?? event.chat.id}, final unreadCount: $newUnreadCount');
 
       } else {

@@ -562,6 +562,24 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
       });
     }
 
+    final hasAuthorField = _fieldConfiguration.any((fc) =>
+        fc.fieldName == 'author' || fc.fieldName == 'author_id');
+    if (!hasAuthorField) {
+      details.add({
+        'label': AppLocalizations.of(context)!.translate('author_details'),
+        'value': deal.author?.name ?? '',
+      });
+    }
+
+    final hasCreatedAtField =
+        _fieldConfiguration.any((fc) => fc.fieldName == 'created_at');
+    if (!hasCreatedAtField) {
+      details.add({
+        'label': AppLocalizations.of(context)!.translate('creation_date_details'),
+        'value': formatDate(deal.createdAt),
+      });
+    }
+
     // Всегда добавляем файлы в конец списка, если они есть
     if (deal.files.isNotEmpty) {
       details.add({

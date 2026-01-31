@@ -9,11 +9,15 @@ import 'package:flutter_svg/flutter_svg.dart';
 class UserMultiSelectWidget extends StatefulWidget {
   final List<String>? selectedUsers;
   final Function(List<UserData>) onSelectUsers;
+  final bool hasError;
+  final String? errorText;
 
   UserMultiSelectWidget({
     super.key,
     required this.onSelectUsers,
     this.selectedUsers,
+    this.hasError = false,
+    this.errorText,
   });
 
   @override
@@ -174,13 +178,13 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                         closedFillColor: Color(0xffF4F7FD),
                         expandedFillColor: Colors.white,
                         closedBorder: Border.all(
-                          color: Color(0xffF4F7FD),
-                          width: 1,
+                          color: widget.hasError ? Colors.red : Color(0xffF4F7FD),
+                          width: widget.hasError ? 1.5 : 1,
                         ),
                         closedBorderRadius: BorderRadius.circular(12),
                         expandedBorder: Border.all(
-                          color: Color(0xffF4F7FD),
-                          width: 1,
+                          color: widget.hasError ? Colors.red : Color(0xffF4F7FD),
+                          width: widget.hasError ? 1.5 : 1,
                         ),
                         expandedBorderRadius: BorderRadius.circular(12),
                       ),
@@ -307,6 +311,17 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                       },
                     ),
                   ),
+                  if (widget.hasError && widget.errorText != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Text(
+                        widget.errorText!,
+                        style: const TextStyle(
+                          color: Colors.red,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
                 ],
               );
             }

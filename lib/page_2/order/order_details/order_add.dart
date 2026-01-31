@@ -660,6 +660,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                                           manager.id == selectedLeadData.managerId,
                                         );
                                         selectedManager = matchingManager.id.toString();
+                                        isManagerInvalid = false;
                                       } catch (e) {
                                         selectedManager = null;
                                       }
@@ -1163,7 +1164,18 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
           Expanded(
             child: ElevatedButton(
               onPressed: () async {
-                if (_formKey.currentState!.validate()) {
+                final bool managerMissing = selectedManager == null;
+                if (managerMissing) {
+                  setState(() {
+                    isManagerInvalid = true;
+                  });
+                }
+
+                final bool formValid = _formKey.currentState!.validate();
+                if (!formValid) {
+                  return;
+                }
+
                   if (_items.isEmpty) {
                     showCustomSnackBar(
                       context: context,
@@ -1172,10 +1184,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                     );
                     return;
                   }
-                  if (selectedManager == null) {
-                    setState(() {
-                      isManagerInvalid = true;
-                    });
+                  if (managerMissing) {
                     showCustomSnackBar(
                       context: context,
                       message: AppLocalizations.of(context)!
@@ -1235,7 +1244,6 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                         : null,
                     sum: currentTotal,
                   ));
-                }
               },
               style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xff4759FF),

@@ -25,6 +25,7 @@ class StorageWidget extends StatefulWidget {
 class _StorageWidgetState extends State<StorageWidget> {
   WareHouse? selectedStorageData;
   bool _isInitialLoad = true; // ✅ Track if this is the first load
+  String? _autoSelectedStorageId;
 
   @override
   void initState() {
@@ -105,6 +106,21 @@ class _StorageWidgetState extends State<StorageWidget> {
               } catch (e) {
                 selectedStorageData = null;
               }
+            }
+
+            if (storageList.length == 1 &&
+                (widget.selectedStorage == null ||
+                    selectedStorageData == null) &&
+                _autoSelectedStorageId != storageList.first.id.toString()) {
+              final singleStorage = storageList.first;
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (!mounted) return;
+                widget.onChanged(singleStorage.id.toString());
+                setState(() {
+                  selectedStorageData = singleStorage;
+                  _autoSelectedStorageId = singleStorage.id.toString();
+                });
+              });
             }
           }
 

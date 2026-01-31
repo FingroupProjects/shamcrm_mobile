@@ -3062,6 +3062,18 @@ class MessageItemWidget extends StatelessWidget {
           position.dy + messageBox.size.height,
         ),
         items: [
+          // TODO: включить reply для лид-чата, когда сервер будет готов
+          // _buildMenuItem(
+          //   icon: 'assets/icons/chats/menu_icons/reply.svg',
+          //   text: AppLocalizations.of(context)!.translate('reply'),
+          //   iconColor: Colors.black,
+          //   textColor: Colors.black,
+          //   onTap: () {
+          //     Navigator.pop(context);
+          //     focusNode.requestFocus();
+          //     context.read<MessagingCubit>().setReplyMessage(message);
+          //   },
+          // ),
           _buildMenuItem(
             icon: 'assets/icons/chats/menu_icons/copy.svg',
             text: AppLocalizations.of(context)!.translate('copy'),

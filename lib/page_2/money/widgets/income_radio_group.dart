@@ -26,6 +26,7 @@ class IncomeRadioGroupWidget extends StatefulWidget {
 class _IncomeRadioGroupWidgetState extends State<IncomeRadioGroupWidget> {
   List<IncomeCategoryData> incomeCategoriesList = [];
   IncomeCategoryData? selectedIncomeCategoryData;
+  String? _autoSelectedIncomeCategoryId;
 
   @override
   void initState() {
@@ -80,6 +81,21 @@ class _IncomeRadioGroupWidgetState extends State<IncomeRadioGroupWidget> {
             if (state is GetAllIncomeCategorySuccess) {
               incomeCategoriesList = state.dataIncomeCategories.result ?? [];
               _updateSelectedIncomeCategoryData();
+
+              if (incomeCategoriesList.length == 1 &&
+                  (widget.selectedIncomeCategoryId == null ||
+                      selectedIncomeCategoryData == null) &&
+                  _autoSelectedIncomeCategoryId != incomeCategoriesList.first.id.toString()) {
+                final singleCategory = incomeCategoriesList.first;
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (!mounted) return;
+                  widget.onSelectIncomeCategory(singleCategory);
+                  setState(() {
+                    selectedIncomeCategoryData = singleCategory;
+                    _autoSelectedIncomeCategoryId = singleCategory.id.toString();
+                  });
+                });
+              }
             }
 
             return CustomDropdown<IncomeCategoryData>.search(

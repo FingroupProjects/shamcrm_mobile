@@ -26,6 +26,7 @@ class DeliveryAddressDropdown extends StatefulWidget {
 }
 
 class _DeliveryAddressDropdownState extends State<DeliveryAddressDropdown> {
+  int? _autoSelectedAddressId;
 
   @override
   void initState() {
@@ -100,6 +101,18 @@ class _DeliveryAddressDropdownState extends State<DeliveryAddressDropdown> {
               // If selectedAddress is not found, set initialAddress to null
               initialAddress = null;
             }
+          }
+
+          if (addresses.length == 1 &&
+              widget.selectedAddress == null &&
+              _autoSelectedAddressId != addresses.first.id) {
+            final singleAddress = addresses.first;
+            _autoSelectedAddressId = singleAddress.id;
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (!mounted) return;
+              widget.onSelectAddress(singleAddress);
+            });
+            initialAddress = singleAddress;
           }
         } else if (state is DeliveryAddressError) {
           return Column(

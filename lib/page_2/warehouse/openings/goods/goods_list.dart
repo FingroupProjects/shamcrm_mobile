@@ -27,6 +27,7 @@ class GoodsRadioGroupWidget extends StatefulWidget {
 class _GoodsRadioGroupWidgetState extends State<GoodsRadioGroupWidget> {
   List<GoodVariantItem> goodsList = [];
   GoodVariantItem? selectedGoodData;
+  String? _autoSelectedGoodId;
 
   @override
   void initState() {
@@ -118,6 +119,20 @@ class _GoodsRadioGroupWidgetState extends State<GoodsRadioGroupWidget> {
               }
               // ИСПРАВЛЕНО: Обновляем selectedGoodData из текущего списка
               _updateSelectedGoodData();
+
+              if (goodsList.length == 1 &&
+                  (widget.selectedGood == null || selectedGoodData == null) &&
+                  _autoSelectedGoodId != goodsList.first.id.toString()) {
+                final singleGood = goodsList.first;
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (!mounted) return;
+                  widget.onSelectGood(singleGood);
+                  setState(() {
+                    selectedGoodData = singleGood;
+                    _autoSelectedGoodId = singleGood.id.toString();
+                  });
+                });
+              }
             }
 
             if (state is GetAllGoodsListError) {
@@ -330,4 +345,3 @@ class _GoodsRadioGroupWidgetState extends State<GoodsRadioGroupWidget> {
     );
   }
 }
-

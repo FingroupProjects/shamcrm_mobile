@@ -202,6 +202,8 @@ class _IncomingCardState extends State<IncomingCard> {
                       padding: const EdgeInsets.only(top: 8),
                       child: Text(
                         '${localizations.translate('comment') ?? 'Примечание'}: ${doc.comment}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                           fontSize: 14,
                           fontFamily: 'Gilroy',

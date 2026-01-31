@@ -205,10 +205,8 @@ class _TaskStatusRadioGroupWidgetState
                       color: const Color(0xFFF4F7FD),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        width: 1.5, // ✅ ИСПРАВЛЕНО: увеличили толщину
-                        color: widget.hasError  // ✅ НОВОЕ: используем hasError
-                            ? Colors.red 
-                            : const Color(0xFFF4F7FD),
+                        width: 1,
+                        color: const Color(0xFFF4F7FD),
                       ),
                     ),
                     child: CustomDropdown<TaskStatus>.search(
@@ -251,10 +249,7 @@ class _TaskStatusRadioGroupWidgetState
                           selectedItem.taskStatus?.name ?? 
                               AppLocalizations.of(context)!.translate('select_status'),
                           style: statusTextStyle.copyWith(
-                            // ✅ НОВОЕ: красный цвет при ошибке и нет выбранного
-                            color: widget.hasError
-                                ? Colors.red.withOpacity(0.7)
-                                : const Color(0xff1E2E52),
+                            color: const Color(0xff1E2E52),
                           ),
                         );
                       },
@@ -262,9 +257,7 @@ class _TaskStatusRadioGroupWidgetState
                         AppLocalizations.of(context)!.translate('select_status'),
                         style: statusTextStyle.copyWith(
                           fontSize: 14,
-                          color: widget.hasError // ✅ НОВОЕ: красный цвет при ошибке
-                              ? Colors.red.withOpacity(0.7)
-                              : const Color(0xFF6B7280),
+                          color: const Color(0xFF6B7280),
                         ),
                       ),
                       excludeSelected: false,
@@ -321,10 +314,8 @@ class _TaskStatusRadioGroupWidgetState
                       color: const Color(0xFFF4F7FD),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        width: 1.5,
-                        color: widget.hasError 
-                            ? Colors.red 
-                            : const Color(0xFFF4F7FD),
+                        width: 1,
+                        color: const Color(0xFFF4F7FD),
                       ),
                     ),
                     child: CustomDropdown<TaskStatus>.search(
@@ -367,9 +358,7 @@ class _TaskStatusRadioGroupWidgetState
                           selectedItem.taskStatus?.name ?? 
                               AppLocalizations.of(context)!.translate('select_status'),
                           style: statusTextStyle.copyWith(
-                            color: widget.hasError
-                                ? Colors.red.withOpacity(0.7)
-                                : const Color(0xff1E2E52),
+                            color: const Color(0xff1E2E52),
                           ),
                         );
                       },
@@ -377,9 +366,7 @@ class _TaskStatusRadioGroupWidgetState
                         AppLocalizations.of(context)!.translate('select_status'),
                         style: statusTextStyle.copyWith(
                           fontSize: 14,
-                          color: widget.hasError
-                              ? Colors.red.withOpacity(0.7)
-                              : const Color(0xFF6B7280),
+                          color: const Color(0xFF6B7280),
                         ),
                       ),
                       excludeSelected: false,
@@ -418,8 +405,8 @@ class _TaskStatusRadioGroupWidgetState
                     color: const Color(0xFFF4F7FD),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      width: 1.5,
-                      color: widget.hasError ? Colors.red : const Color(0xFFF4F7FD),
+                      width: 1,
+                      color: const Color(0xFFF4F7FD),
                     ),
                   ),
                   child: Center(

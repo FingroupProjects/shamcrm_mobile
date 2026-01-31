@@ -754,7 +754,9 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
         return lead.description ?? '';
 
       case 'author':
-        return lead.author?.name ?? '';
+        return (lead.author?.name != null && lead.author!.name!.isNotEmpty)
+            ? lead.author!.name!
+            : 'Система';
 
       case 'sales_funnel':
         return lead.salesFunnel?.name ?? '';
@@ -801,6 +803,28 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
         'label': fieldName,
         'value': fieldValue,
         'fieldName': fc.fieldName, // Добавляем fieldName для проверки типа поля
+      });
+    }
+
+    final hasAuthorField =
+        _fieldConfiguration.any((fc) => fc.fieldName == 'author');
+    if (!hasAuthorField) {
+      details.add({
+        'label': AppLocalizations.of(context)!.translate('author_details'),
+        'value': (lead.author?.name != null && lead.author!.name!.isNotEmpty)
+            ? lead.author!.name!
+            : 'Система',
+        'fieldName': 'author',
+      });
+    }
+
+    final hasCreatedAtField =
+        _fieldConfiguration.any((fc) => fc.fieldName == 'created_at');
+    if (!hasCreatedAtField) {
+      details.add({
+        'label': AppLocalizations.of(context)!.translate('created_at_details'),
+        'value': formatDate(lead.createdAt),
+        'fieldName': 'created_at',
       });
     }
 

@@ -24,6 +24,7 @@ class SupplierGroupWidget extends StatefulWidget {
 class _SupplierGroupWidgetState extends State<SupplierGroupWidget> {
   List<SupplierData> suppliersList = [];
   SupplierData? selectedSupplierData;
+  String? _autoSelectedSupplierId;
 
   @override
   void initState() {
@@ -77,6 +78,21 @@ class _SupplierGroupWidgetState extends State<SupplierGroupWidget> {
             if (state is GetAllSupplierSuccess) {
               suppliersList = state.dataSuppliers.result ?? [];
               _updateSelectedSupplierData();
+
+              if (suppliersList.length == 1 &&
+                  (widget.selectedSupplierId == null ||
+                      selectedSupplierData == null) &&
+                  _autoSelectedSupplierId != suppliersList.first.id.toString()) {
+                final singleSupplier = suppliersList.first;
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (!mounted) return;
+                  widget.onSelectSupplier(singleSupplier);
+                  setState(() {
+                    selectedSupplierData = singleSupplier;
+                    _autoSelectedSupplierId = singleSupplier.id.toString();
+                  });
+                });
+              }
             }
 
             return CustomDropdown<SupplierData>.search(

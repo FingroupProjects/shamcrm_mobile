@@ -343,16 +343,18 @@ Widget _buildFileIcon(String fileName, String fileExtension) {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                         SubjectSelectionWidget(
-  selectedSubject: selectedSubject,
-  onSelectSubject: (String subject) {
-    setState(() {
-      selectedSubject = subject;
-      // можно убрать isSubjectInvalid здесь, т.к. теперь ошибка показывается внутри виджета
-    });
-  },
-  hasError: selectedSubject == null || selectedSubject!.trim().isEmpty,
-),
+                          SubjectSelectionWidget(
+                            selectedSubject: selectedSubject,
+                            onSelectSubject: (String subject) {
+                              setState(() {
+                                selectedSubject = subject;
+                                if (subject.trim().isNotEmpty) {
+                                  isSubjectInvalid = false;
+                                }
+                              });
+                            },
+                            hasError: isSubjectInvalid,
+                          ),
                           const SizedBox(height: 8),
                           // Lead selection
                           LeadRadioGroupWidget(
@@ -530,6 +532,11 @@ Widget _buildFileIcon(String fileName, String fileExtension) {
             ),
           );
     } else {
+      if (selectedSubject == null || selectedSubject!.trim().isEmpty) {
+        setState(() {
+          isSubjectInvalid = true;
+        });
+      }
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(

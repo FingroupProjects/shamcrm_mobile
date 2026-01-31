@@ -28,6 +28,8 @@ class DualStorageWidget extends StatefulWidget {
 class _DualStorageWidgetState extends State<DualStorageWidget> {
   WareHouse? selectedSenderStorageData;
   WareHouse? selectedRecipientStorageData;
+  String? _autoSelectedSenderId;
+  String? _autoSelectedRecipientId;
 
   @override
   void initState() {
@@ -93,6 +95,35 @@ class _DualStorageWidgetState extends State<DualStorageWidget> {
                 );
               } catch (e) {
                 selectedRecipientStorageData = null;
+              }
+            }
+
+            if (storageList.length == 1) {
+              final singleStorage = storageList.first;
+              if ((widget.selectedSenderStorage == null ||
+                      selectedSenderStorageData == null) &&
+                  _autoSelectedSenderId != singleStorage.id.toString()) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (!mounted) return;
+                  widget.onSenderChanged(singleStorage.id.toString());
+                  setState(() {
+                    selectedSenderStorageData = singleStorage;
+                    _autoSelectedSenderId = singleStorage.id.toString();
+                  });
+                });
+              }
+
+              if ((widget.selectedRecipientStorage == null ||
+                      selectedRecipientStorageData == null) &&
+                  _autoSelectedRecipientId != singleStorage.id.toString()) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (!mounted) return;
+                  widget.onRecipientChanged(singleStorage.id.toString());
+                  setState(() {
+                    selectedRecipientStorageData = singleStorage;
+                    _autoSelectedRecipientId = singleStorage.id.toString();
+                  });
+                });
               }
             }
           }

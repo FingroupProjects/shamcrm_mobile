@@ -192,6 +192,9 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
     String formattedDate = order.lead.createdAt != null
         ? DateFormat('dd.MM.yyyy').format(order.lead.createdAt!)
         : AppLocalizations.of(context)!.translate('');
+    String createdAtDate = order.createdAt != null
+        ? DateFormat('dd.MM.yyyy').format(order.createdAt!)
+        : AppLocalizations.of(context)!.translate('');
 
     details = [
       {
@@ -203,12 +206,20 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
         'value': order.manager?.name ?? 'become_manager'
       },
       {
+        'label': AppLocalizations.of(context)!.translate('author_details'),
+        'value': order.manager?.name ?? ''
+      },
+      {
         'label': AppLocalizations.of(context)!.translate('client_phone'),
         'value': order.phone
       },
       {
         'label': AppLocalizations.of(context)!.translate('order_date'),
         'value': formattedDate
+      },
+      {
+        'label': AppLocalizations.of(context)!.translate('creation_date_details'),
+        'value': createdAtDate
       },
       {
         'label': AppLocalizations.of(context)!.translate('order_status'),

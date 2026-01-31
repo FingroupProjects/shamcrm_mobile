@@ -35,6 +35,7 @@ class _AddMoneyIncomeSupplierReturnState extends State<AddMoneyIncomeSupplierRet
   CashRegisterData? selectedCashRegister;
   List<SupplierData> suppliersList = [];
   bool _isLoading = false;
+  String? _autoSelectedSupplierId;
 
   @override
   void initState() {
@@ -208,6 +209,20 @@ class _AddMoneyIncomeSupplierReturnState extends State<AddMoneyIncomeSupplierRet
                   ),
                 ),
               );
+            }
+
+            if (state is GetAllSupplierSuccess &&
+                suppliersList.length == 1 &&
+                _selectedSupplier == null &&
+                _autoSelectedSupplierId != suppliersList.first.id.toString()) {
+              final singleSupplier = suppliersList.first;
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (!mounted) return;
+                setState(() {
+                  _selectedSupplier = singleSupplier;
+                  _autoSelectedSupplierId = singleSupplier.id.toString();
+                });
+              });
             }
 
             return CustomDropdown<SupplierData>.search(

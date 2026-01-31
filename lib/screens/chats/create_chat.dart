@@ -98,19 +98,16 @@ class _AddClientDialogState extends State<AddClientDialog> {
                         label: AppLocalizations.of(context)!.translate('enter_name_group'),
                         isPassword: false,
                         keyboardType: TextInputType.text,
-                        
+                        hasError: groupNameError != null,
+                        errorText: groupNameError,
+                        onChanged: (value) {
+                          if (groupNameError != null && value.trim().isNotEmpty) {
+                            setState(() {
+                              groupNameError = null;
+                            });
+                          }
+                        },
                       ),
-                      if (groupNameError != null)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 4),
-                          child: Text(
-                            groupNameError!,
-                            style: TextStyle(
-                              color: Colors.red,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ),
                     ],
                   ),
                 ),
@@ -122,24 +119,17 @@ class _AddClientDialogState extends State<AddClientDialog> {
                       onSelectUsers: (selectedUsersList) {
                         setState(() {
                           selectedUsers = selectedUsersList;
-                          selectedUsersError = null;
+                          if (selectedUsersList.isNotEmpty) {
+                            selectedUsersError = null;
+                          }
                         });
                       },
                       selectedUsers: selectedUsers.isNotEmpty
                           ? selectedUsers.map((e) => e.id.toString()).toList()
                           : [],
+                      hasError: selectedUsersError != null,
+                      errorText: selectedUsersError,
                     ),
-                    if (selectedUsersError != null)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 4),
-                        child: Text(
-                          selectedUsersError!,
-                          style: TextStyle(
-                            color: Colors.red,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ),
                   ],
                 ),
               if (!isGroupChat)
@@ -148,9 +138,12 @@ class _AddClientDialogState extends State<AddClientDialog> {
                     SchedulerBinding.instance.addPostFrameCallback((_) {
                       setState(() {
                         selectedUserData = data;
+                        selectedUsersError = null;
                       });
                     });
                   },
+                  hasError: selectedUsersError != null,
+                  errorText: selectedUsersError,
                 ),
             ],
           ),
