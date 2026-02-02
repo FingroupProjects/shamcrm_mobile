@@ -57,13 +57,15 @@ class _TaskStatusEditWidgetState extends State<TaskStatusEditWidget> {
                       style: statusTextStyle.copyWith(color: Colors.white),
                     ),
                     behavior: SnackBarBehavior.floating,
-                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    margin:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
                     backgroundColor: Colors.red,
                     elevation: 3,
-                    padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                    padding: const EdgeInsets.symmetric(
+                        vertical: 12, horizontal: 16),
                     duration: const Duration(seconds: 3),
                   ),
                 );
@@ -80,7 +82,8 @@ class _TaskStatusEditWidgetState extends State<TaskStatusEditWidget> {
                     selectedStatusData = statusList[0];
                   });
                 });
-              } else if (widget.selectedStatus != null && statusList.isNotEmpty) {
+              } else if (widget.selectedStatus != null &&
+                  statusList.isNotEmpty) {
                 try {
                   selectedStatusData = statusList.firstWhere(
                     (status) => status.id.toString() == widget.selectedStatus,
@@ -95,7 +98,8 @@ class _TaskStatusEditWidgetState extends State<TaskStatusEditWidget> {
                 children: [
                   Text(
                     AppLocalizations.of(context)!.translate('task_status'),
-                    style: statusTextStyle.copyWith(fontWeight: FontWeight.w400),
+                    style:
+                        statusTextStyle.copyWith(fontWeight: FontWeight.w400),
                   ),
                   const SizedBox(height: 4),
                   Container(
@@ -104,7 +108,7 @@ class _TaskStatusEditWidgetState extends State<TaskStatusEditWidget> {
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
                         width: 1.5,
-                        color: widget.hasError 
+                        color: widget.hasError
                             ? Colors.red
                             : const Color(0xFFF4F7FD),
                       ),
@@ -112,27 +116,29 @@ class _TaskStatusEditWidgetState extends State<TaskStatusEditWidget> {
                     child: CustomDropdown<TaskStatus>.search(
                       closeDropDownOnClearFilterSearch: true,
                       items: statusList,
-                      searchHintText: AppLocalizations.of(context)!.translate('search'),
+                      searchHintText:
+                          AppLocalizations.of(context)!.translate('search'),
                       overlayHeight: 400,
                       decoration: CustomDropdownDecoration(
                         closedFillColor: const Color(0xffF4F7FD),
                         expandedFillColor: Colors.white,
                         closedBorder: Border.all(
-                          color: widget.hasError 
+                          color: widget.hasError
                               ? Colors.red
                               : const Color(0xffF4F7FD),
-                          width: widget.hasError ? 1.5 : 1,
+                          width: 1.5,
                         ),
                         closedBorderRadius: BorderRadius.circular(12),
                         expandedBorder: Border.all(
-                          color: widget.hasError 
+                          color: widget.hasError
                               ? Colors.red
                               : const Color(0xffF4F7FD),
-                          width: widget.hasError ? 1.5 : 1,
+                          width: 1.5,
                         ),
                         expandedBorderRadius: BorderRadius.circular(12),
                       ),
-                      listItemBuilder: (context, item, isSelected, onItemSelect) {
+                      listItemBuilder:
+                          (context, item, isSelected, onItemSelect) {
                         return Text(
                           item.taskStatus?.name ?? "",
                           style: statusTextStyle,
@@ -140,27 +146,29 @@ class _TaskStatusEditWidgetState extends State<TaskStatusEditWidget> {
                       },
                       headerBuilder: (context, selectedItem, enabled) {
                         return Text(
-                          selectedItem?.taskStatus?.name ?? 
-                              AppLocalizations.of(context)!.translate('select_status'),
+                          selectedItem?.taskStatus?.name ??
+                              AppLocalizations.of(context)!
+                                  .translate('select_status'),
                           style: statusTextStyle.copyWith(
-                            color: widget.hasError && selectedItem == null 
+                            color: widget.hasError && selectedItem == null
                                 ? Colors.red.withOpacity(0.7)
                                 : const Color(0xff1E2E52),
                           ),
                         );
                       },
                       hintBuilder: (context, hint, enabled) => Text(
-                        AppLocalizations.of(context)!.translate('select_status'),
+                        AppLocalizations.of(context)!
+                            .translate('select_status'),
                         style: statusTextStyle.copyWith(
                           fontSize: 14,
-                          color: widget.hasError 
+                          color: widget.hasError
                               ? Colors.red.withOpacity(0.7)
                               : const Color(0xff1E2E52),
                         ),
                       ),
                       excludeSelected: false,
-                      initialItem: statusList.contains(selectedStatusData) 
-                          ? selectedStatusData 
+                      initialItem: statusList.contains(selectedStatusData)
+                          ? selectedStatusData
                           : null,
                       onChanged: (value) {
                         if (value != null) {

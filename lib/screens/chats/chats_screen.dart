@@ -1559,7 +1559,7 @@ class _ChatItemsWidgetState extends State<_ChatItemsWidget> {
             if (currentPage >= totalPage) {
               widget.pagingController.appendLastPage(newChats);
             } else {
-              widget.pagingController.appendPage(newChats, currentPage);
+              widget.pagingController.appendPage(newChats, currentPage + 1);
             }
             return;
           }
@@ -1594,7 +1594,7 @@ class _ChatItemsWidgetState extends State<_ChatItemsWidget> {
             if (currentPage >= totalPage) {
               widget.pagingController.appendLastPage(newItemsOnly);
             } else {
-              widget.pagingController.appendPage(newItemsOnly, currentPage);
+              widget.pagingController.appendPage(newItemsOnly, currentPage + 1);
             }
           } else {
             // ✅ Обычное обновление (изменения в существующих чатах)
@@ -1614,7 +1614,7 @@ class _ChatItemsWidgetState extends State<_ChatItemsWidget> {
               if (currentPage >= totalPage) {
                 widget.pagingController.appendLastPage(newChats);
               } else {
-                widget.pagingController.appendPage(newChats, currentPage);
+                widget.pagingController.appendPage(newChats, currentPage + 1);
               }
             }
           }

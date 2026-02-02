@@ -75,7 +75,8 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
   bool _isTutorialInProgress = false;
   Map<String, dynamic>? tutorialProgress;
   bool _isDownloading = false; // Флаг загрузки
-  Map<int, double> _downloadProgress = {}; // Прогресс загрузки для каждого файла
+  Map<int, double> _downloadProgress =
+      {}; // Прогресс загрузки для каждого файла
 
   //Конфигурация полей
   List<FieldConfiguration> _fieldConfiguration = [];
@@ -452,7 +453,8 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
     if (fc.isCustomField && fc.customFieldId != null) {
       for (final field in deal.customFieldValues) {
         if (field.customField?.name == fc.fieldName) {
-          debugPrint("Matching custom field found: ${field.customField?.name} with value: ${field.value}");
+          debugPrint(
+              "Matching custom field found: ${field.customField?.name} with value: ${field.value}");
           if (field.value.isNotEmpty) {
             return field.value;
           }
@@ -465,7 +467,8 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
     if (fc.isDirectory && fc.directoryId != null) {
       for (var dirValue in deal.directoryValues) {
         if (dirValue.entry.directory.name == fc.fieldName) {
-          debugPrint("Matching directory field found: ${dirValue.entry.directory.name} with values: ${dirValue.entry.values}");
+          debugPrint(
+              "Matching directory field found: ${dirValue.entry.directory.name} with values: ${dirValue.entry.values}");
           List<String> values = [];
 
           final value = dirValue.entry.values.entries.first.value;
@@ -478,7 +481,7 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
           }
         }
       }
-          return '';
+      return '';
     }
 
     switch (fc.fieldName) {
@@ -510,7 +513,7 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
         return formatDate(deal.createdAt);
 
       case 'deal_status_id':
-      // Show status history if available, otherwise current status
+        // Show status history if available, otherwise current status
         if (deal.dealStatuses.isNotEmpty) {
           return deal.dealStatuses.map((s) => s.title).join(', ');
         }
@@ -542,7 +545,8 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
 
     debugPrint("Deal custom fields:");
     for (var field in deal.customFieldValues) {
-      debugPrint("Custom Field - name: ${field.customField?.name}, Value: ${field.value}");
+      debugPrint(
+          "Custom Field - name: ${field.customField?.name}, Value: ${field.value}");
     }
 
     for (var fc in _fieldConfiguration) {
@@ -550,7 +554,7 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
       if (fc.fieldName == 'files') {
         continue;
       }
-      
+
       final fieldValue = _getFieldValue(fc, deal);
 
       final fieldName = _getFieldName(fc);
@@ -562,8 +566,8 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
       });
     }
 
-    final hasAuthorField = _fieldConfiguration.any((fc) =>
-        fc.fieldName == 'author' || fc.fieldName == 'author_id');
+    final hasAuthorField = _fieldConfiguration
+        .any((fc) => fc.fieldName == 'author' || fc.fieldName == 'author_id');
     if (!hasAuthorField) {
       details.add({
         'label': AppLocalizations.of(context)!.translate('author_details'),
@@ -575,7 +579,8 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
         _fieldConfiguration.any((fc) => fc.fieldName == 'created_at');
     if (!hasCreatedAtField) {
       details.add({
-        'label': AppLocalizations.of(context)!.translate('creation_date_details'),
+        'label':
+            AppLocalizations.of(context)!.translate('creation_date_details'),
         'value': formatDate(deal.createdAt),
       });
     }
@@ -584,7 +589,8 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
     if (deal.files.isNotEmpty) {
       details.add({
         'label': AppLocalizations.of(context)!.translate('files_details'),
-        'value': '${deal.files.length} ${AppLocalizations.of(context)!.translate('files')}',
+        'value':
+            '${deal.files.length} ${AppLocalizations.of(context)!.translate('files')}',
       });
     }
   }
@@ -594,14 +600,17 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
       final response = await _apiService.getFieldPositions(tableName: 'deals');
       if (!mounted) return;
 
-      // Сортируем только по position, без фильтрации по isActive
-      final activeFields = [...response.result]..sort((a, b) => a.position.compareTo(b.position));
+      // ✅ Фильтруем только активные поля и сортируем по position
+      final activeFields = response.result
+          .where((field) => field.isActive)
+          .toList()
+        ..sort((a, b) => a.position.compareTo(b.position));
 
       setState(() {
         _fieldConfiguration = activeFields;
         _isConfigurationLoaded = true;
       });
-      
+
       // ✅ Если данные уже загружены, обновляем детали с новой конфигурацией
       if (currentDeal != null) {
         _updateDetails(currentDeal!);
@@ -616,89 +625,92 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
     }
   }
 
-@override
-Widget build(BuildContext context) {
-  return BlocListener<DealByIdBloc, DealByIdState>(
-    listener: (context, state) {
-      if (state is DealByIdError) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                AppLocalizations.of(context)!.translate(state.message),
-                style: TextStyle(
-                  fontFamily: 'Gilroy',
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.white,
+  @override
+  Widget build(BuildContext context) {
+    return BlocListener<DealByIdBloc, DealByIdState>(
+      listener: (context, state) {
+        if (state is DealByIdError) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  AppLocalizations.of(context)!.translate(state.message),
+                  style: TextStyle(
+                    fontFamily: 'Gilroy',
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.white,
+                  ),
+                ),
+                behavior: SnackBarBehavior.floating,
+                margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+                backgroundColor: Colors.red,
+                elevation: 3,
+                padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                duration: Duration(seconds: 3),
+              ),
+            );
+          });
+        }
+      },
+      child: BlocBuilder<DealByIdBloc, DealByIdState>(
+        builder: (context, state) {
+          if (state is DealByIdLoading) {
+            return Scaffold(
+              backgroundColor: Colors.white,
+              body: Center(
+                  child: CircularProgressIndicator(color: Color(0xff1E2E52))),
+            );
+          } else if (state is DealByIdLoaded) {
+            DealById deal = state.deal;
+            _updateDetails(deal);
+            return Scaffold(
+              appBar: _buildAppBar(context,
+                  AppLocalizations.of(context)!.translate('view_deal'), deal),
+              backgroundColor: Colors.white,
+              body: Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                child: ListView(
+                  children: [
+                    _buildDetailsList(),
+                    const SizedBox(height: 8),
+                    ActionHistoryWidget(
+                        dealId: int.parse(widget.dealId), key: keyDealHistory),
+                    const SizedBox(height: 16),
+                    if (_canReadTasks)
+                      Container(
+                          key: keyDealTasks,
+                          child: TasksWidget(dealId: int.parse(widget.dealId))),
+                  ],
                 ),
               ),
-              behavior: SnackBarBehavior.floating,
-              margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
-              backgroundColor: Colors.red,
-              elevation: 3,
-              padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-              duration: Duration(seconds: 3),
-            ),
-          );
-        });
-      }
-    },
-    child: BlocBuilder<DealByIdBloc, DealByIdState>(
-      builder: (context, state) {
-        if (state is DealByIdLoading) {
+            );
+          } else if (state is DealByIdError) {
+            return Scaffold(
+              backgroundColor: Colors.white,
+              body: Center(
+                  child: Text(
+                      AppLocalizations.of(context)!.translate('error_text'))),
+            );
+          }
           return Scaffold(
             backgroundColor: Colors.white,
-            body: Center(
-                child: CircularProgressIndicator(color: Color(0xff1E2E52))),
+            body: Center(child: Text('')),
           );
-        } else if (state is DealByIdLoaded) {
-          DealById deal = state.deal;
-          _updateDetails(deal);
-          return Scaffold(
-            appBar: _buildAppBar(context, AppLocalizations.of(context)!.translate('view_deal'), deal),
-            backgroundColor: Colors.white,
-            body: Padding(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-              child: ListView(
-                children: [
-                  _buildDetailsList(),
-                  const SizedBox(height: 8),
-                  ActionHistoryWidget(
-                      dealId: int.parse(widget.dealId), key: keyDealHistory),
-                  const SizedBox(height: 16),
-                  if (_canReadTasks)
-                    Container(
-                        key: keyDealTasks,
-                        child: TasksWidget(dealId: int.parse(widget.dealId))),
-                ],
-              ),
-            ),
-          );
-        } else if (state is DealByIdError) {
-          return Scaffold(
-            backgroundColor: Colors.white,
-            body: Center(
-                child: Text(
-                    AppLocalizations.of(context)!.translate('error_text'))),
-          );
-        }
-        return Scaffold(
-          backgroundColor: Colors.white,
-          body: Center(child: Text('')),
-        );
-      },
-    ),
-  );
-}
- AppBar _buildAppBar(BuildContext context, String title, DealById? deal) {
+        },
+      ),
+    );
+  }
+
+  AppBar _buildAppBar(BuildContext context, String title, DealById? deal) {
     // Формируем заголовок в зависимости от наличия номера сделки
     String appBarTitle;
     if (deal?.dealNumber != null) {
-      appBarTitle = '${AppLocalizations.of(context)!.translate('view_deal')} №${deal!.dealNumber}';
+      appBarTitle =
+          '${AppLocalizations.of(context)!.translate('view_deal')} №${deal!.dealNumber}';
     } else {
       appBarTitle = AppLocalizations.of(context)!.translate('view_deal');
     }
@@ -738,91 +750,102 @@ Widget build(BuildContext context) {
         ),
       ),
       actions: [
-       if (_canEditDeal)
-  IconButton(
-    key: keyDealEdit,
-    padding: EdgeInsets.zero,
-    constraints: BoxConstraints(),
-    icon: Image.asset(
-      'assets/icons/edit.png',
-      width: 24,
-      height: 24,
-    ),
-    onPressed: () async {
-      if (currentDeal != null) {
-        // ✅ ИСПРАВЛЕНО: Правильный парсинг дат
-        String? startDateString;
-        String? endDateString;
-        String? createdAtDateString;
-        
-        try {
-          // Парсим startDate
-          if (currentDeal!.startDate != null && currentDeal!.startDate!.isNotEmpty) {
-            final parsedStartDate = DateTime.parse(currentDeal!.startDate!);
-            startDateString = DateFormat('dd/MM/yyyy').format(parsedStartDate);
-          }
-        } catch (e) {
-          debugPrint('Ошибка парсинга startDate: $e');
-          startDateString = null;
-        }
-        
-        try {
-          // Парсим endDate
-          if (currentDeal!.endDate != null && currentDeal!.endDate!.isNotEmpty) {
-            final parsedEndDate = DateTime.parse(currentDeal!.endDate!);
-            endDateString = DateFormat('dd/MM/yyyy').format(parsedEndDate);
-          }
-        } catch (e) {
-          debugPrint('Ошибка парсинга endDate: $e');
-          endDateString = null;
-        }
-        
-        try {
-          // Парсим createdAt
-          if (currentDeal!.createdAt != null && currentDeal!.createdAt!.isNotEmpty) {
-            final parsedCreatedAt = DateTime.parse(currentDeal!.createdAt!);
-            createdAtDateString = DateFormat('dd/MM/yyyy').format(parsedCreatedAt);
-          }
-        } catch (e) {
-          debugPrint('Ошибка парсинга createdAt: $e');
-          createdAtDateString = null;
-        }
-
-        final shouldUpdate = await Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => DealEditScreen(
-              dealId: currentDeal!.id,
-              dealName: currentDeal!.name,
-              statusId: currentDeal!.statusId,
-              dealStatuses: currentDeal!.dealStatuses, // ✅ Передаём массив статусов
-              manager: currentDeal!.manager != null
-                  ? currentDeal!.manager!.id.toString()
-                  : '',
-              lead: currentDeal!.lead != null
-                  ? currentDeal!.lead!.id.toString()
-                  : '',
-              startDate: startDateString,
-              endDate: endDateString,
-              createdAt: createdAtDateString,
-              sum: currentDeal!.sum,
-              description: currentDeal!.description ?? '',
-              // dealCustomFields: currentDeal!.dealCustomFields,
-              directoryValues: currentDeal!.directoryValues,
-              files: currentDeal!.files,
-              dealById: currentDeal!,
+        if (_canEditDeal)
+          IconButton(
+            key: keyDealEdit,
+            padding: EdgeInsets.zero,
+            constraints: BoxConstraints(),
+            icon: Image.asset(
+              'assets/icons/edit.png',
+              width: 24,
+              height: 24,
             ),
-          ),
-        );
+            onPressed: () async {
+              if (currentDeal != null) {
+                // ✅ ИСПРАВЛЕНО: Правильный парсинг дат
+                String? startDateString;
+                String? endDateString;
+                String? createdAtDateString;
 
-        if (shouldUpdate == true) {
-          _loadFieldConfiguration();
-          context.read<DealByIdBloc>().add(FetchDealByIdEvent(dealId: currentDeal!.id));
-          context.read<DealBloc>().add(FetchDealStatuses());
-        }
-      }
-    },
-  ),
+                try {
+                  // Парсим startDate
+                  if (currentDeal!.startDate != null &&
+                      currentDeal!.startDate!.isNotEmpty) {
+                    final parsedStartDate =
+                        DateTime.parse(currentDeal!.startDate!);
+                    startDateString =
+                        DateFormat('dd/MM/yyyy').format(parsedStartDate);
+                  }
+                } catch (e) {
+                  debugPrint('Ошибка парсинга startDate: $e');
+                  startDateString = null;
+                }
+
+                try {
+                  // Парсим endDate
+                  if (currentDeal!.endDate != null &&
+                      currentDeal!.endDate!.isNotEmpty) {
+                    final parsedEndDate = DateTime.parse(currentDeal!.endDate!);
+                    endDateString =
+                        DateFormat('dd/MM/yyyy').format(parsedEndDate);
+                  }
+                } catch (e) {
+                  debugPrint('Ошибка парсинга endDate: $e');
+                  endDateString = null;
+                }
+
+                try {
+                  // Парсим createdAt
+                  if (currentDeal!.createdAt != null &&
+                      currentDeal!.createdAt!.isNotEmpty) {
+                    final parsedCreatedAt =
+                        DateTime.parse(currentDeal!.createdAt!);
+                    createdAtDateString =
+                        DateFormat('dd/MM/yyyy').format(parsedCreatedAt);
+                  }
+                } catch (e) {
+                  debugPrint('Ошибка парсинга createdAt: $e');
+                  createdAtDateString = null;
+                }
+
+                final shouldUpdate = await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => DealEditScreen(
+                      dealId: currentDeal!.id,
+                      dealName: currentDeal!.name,
+                      statusId: currentDeal!.statusId,
+                      dealStatuses: currentDeal!
+                          .dealStatuses, // ✅ Передаём массив статусов
+                      manager: currentDeal!.manager != null
+                          ? currentDeal!.manager!.id.toString()
+                          : '',
+                      lead: currentDeal!.lead != null
+                          ? currentDeal!.lead!.id.toString()
+                          : '',
+                      startDate: startDateString,
+                      endDate: endDateString,
+                      createdAt: createdAtDateString,
+                      sum: currentDeal!.sum,
+                      description: currentDeal!.description ?? '',
+                      // dealCustomFields: currentDeal!.dealCustomFields,
+                      directoryValues: currentDeal!.directoryValues,
+                      files: currentDeal!.files,
+                      dealById: currentDeal!,
+                    ),
+                  ),
+                );
+
+                if (shouldUpdate == true) {
+                  _loadFieldConfiguration();
+                  context
+                      .read<DealByIdBloc>()
+                      .add(FetchDealByIdEvent(dealId: currentDeal!.id));
+                  context.read<DealBloc>().add(FetchDealStatuses());
+                }
+              }
+            },
+          ),
         if (_canDeleteDeal)
           IconButton(
             key: keyDealDelete,
@@ -864,103 +887,102 @@ Widget build(BuildContext context) {
     );
   }
 
-void _showUsersDialog(String users) {
-  List<String> userList =
-      users.split(',').map((user) => user.trim()).toList();
-  showDialog(
-    context: context,
-    builder: (BuildContext context) {
-      return Dialog(
-        backgroundColor: Colors.white,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              padding: EdgeInsets.all(16),
-              child: Text(
-                AppLocalizations.of(context)!.translate('assignee_list'),
-                style: TextStyle(
-                  color: Color(0xff1E2E52),
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
+  void _showUsersDialog(String users) {
+    List<String> userList =
+        users.split(',').map((user) => user.trim()).toList();
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return Dialog(
+          backgroundColor: Colors.white,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: EdgeInsets.all(16),
+                child: Text(
+                  AppLocalizations.of(context)!.translate('assignee_list'),
+                  style: TextStyle(
+                    color: Color(0xff1E2E52),
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
-            ),
-            SizedBox(
-              height: 400,
-              child: ListView.builder(
-                itemExtent: 40,
-                itemCount: userList.length,
-                itemBuilder: (context, index) {
-                  return ListTile(
-                    contentPadding: EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 2),
-                    title: Text(
-                      '${index + 1}. ${userList[index]}',
-                      style: TextStyle(
-                        color: Color(0xff1E2E52),
-                        fontSize: 16,
+              SizedBox(
+                height: 400,
+                child: ListView.builder(
+                  itemExtent: 40,
+                  itemCount: userList.length,
+                  itemBuilder: (context, index) {
+                    return ListTile(
+                      contentPadding:
+                          EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+                      title: Text(
+                        '${index + 1}. ${userList[index]}',
+                        style: TextStyle(
+                          color: Color(0xff1E2E52),
+                          fontSize: 16,
+                        ),
                       ),
-                    ),
-                  );
-                },
+                    );
+                  },
+                ),
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(20),
-              child: CustomButton(
-                buttonText: AppLocalizations.of(context)!.translate('close'),
-                onPressed: () {
-                  Navigator.pop(context);
-                },
-                buttonColor: Color(0xff1E2E52),
-                textColor: Colors.white,
-              ),
-            ),
-          ],
-        ),
-      );
-    },
-  );
-}
-
-// TODO at update details 'assignee' key used and shown data but on custom fields how to do it?
-  Widget _buildDetailItem(String label, String value) {
-    return LayoutBuilder(
-      builder: (BuildContext context, BoxConstraints constraints) {
-              // ✅ НОВОЕ: Обработка пользователей
-      if (label == AppLocalizations.of(context)!.translate('assignee') ||
-          label == AppLocalizations.of(context)!.translate('assignees') ||
-          label == AppLocalizations.of(context)!.translate('assignees_list')) {
-        return GestureDetector(
-          onTap: () => _showUsersDialog(value),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildLabel(label),
-              SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  value.split(',').length > 3
-                      ? '${value.split(',').take(3).join(', ')} и еще ${value.split(',').length - 3}...'
-                      : value,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontFamily: 'Gilroy',
-                    fontWeight: FontWeight.w500,
-                    color: Color(0xff1E2E52),
-                    decoration: TextDecoration.underline,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+              Padding(
+                padding: const EdgeInsets.all(20),
+                child: CustomButton(
+                  buttonText: AppLocalizations.of(context)!.translate('close'),
+                  onPressed: () {
+                    Navigator.pop(context);
+                  },
+                  buttonColor: Color(0xff1E2E52),
+                  textColor: Colors.white,
                 ),
               ),
             ],
           ),
         );
-      }
+      },
+    );
+  }
 
+// TODO at update details 'assignee' key used and shown data but on custom fields how to do it?
+  Widget _buildDetailItem(String label, String value) {
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        // ✅ НОВОЕ: Обработка пользователей
+        if (label == AppLocalizations.of(context)!.translate('assignee') ||
+            label == AppLocalizations.of(context)!.translate('assignees') ||
+            label ==
+                AppLocalizations.of(context)!.translate('assignees_list')) {
+          return GestureDetector(
+            onTap: () => _showUsersDialog(value),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildLabel(label),
+                SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    value.split(',').length > 3
+                        ? '${value.split(',').take(3).join(', ')} и еще ${value.split(',').length - 3}...'
+                        : value,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w500,
+                      color: Color(0xff1E2E52),
+                      decoration: TextDecoration.underline,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
 
         if (label == AppLocalizations.of(context)!.translate('files_details')) {
           return Column(
@@ -1049,10 +1071,13 @@ void _showUsersDialog(String users) {
           );
         }
 
-       if (label.contains(AppLocalizations.of(context)!.translate('name_deal_details')) ||
-          label.contains(AppLocalizations.of(context)!.translate('description_details')) ||
-          label == AppLocalizations.of(context)!.translate('status_history')) {
-        return GestureDetector(
+        if (label.contains(
+                AppLocalizations.of(context)!.translate('name_deal_details')) ||
+            label.contains(AppLocalizations.of(context)!
+                .translate('description_details')) ||
+            label ==
+                AppLocalizations.of(context)!.translate('status_history')) {
+          return GestureDetector(
             onTap: () {
               if (value.isNotEmpty) {
                 _showFullTextDialog(label.replaceAll(':', ''), value);

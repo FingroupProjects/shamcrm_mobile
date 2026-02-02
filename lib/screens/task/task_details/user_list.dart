@@ -87,15 +87,15 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
   // Метод для выбора/снятия выбора всех пользователей
   void _toggleSelectAll() {
     if (usersList.isEmpty) return;
-    
+
     final newSelectedUsersData = selectedUsersData.length == usersList.length
         ? <UserData>[]
         : List<UserData>.from(usersList);
-    
+
     // Проверяем, изменились ли выбранные пользователи
     final currentIds = selectedUsersData.map((u) => u.id).toList()..sort();
     final newIds = newSelectedUsersData.map((u) => u.id).toList()..sort();
-    
+
     if (!listEquals(currentIds, newIds)) {
       setState(() {
         selectedUsersData = newSelectedUsersData;
@@ -118,22 +118,24 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-           Text(
-  widget.customLabelText ?? // ✅ НОВОЕ: используем кастомный текст если есть
-      AppLocalizations.of(context)!.translate('assignees_list'), // дефолтный текст
-  style: userTextStyle.copyWith(
-    fontWeight: FontWeight.w400,
-    fontSize: 16,
-  ),
-),
+            Text(
+              widget
+                      .customLabelText ?? // ✅ НОВОЕ: используем кастомный текст если есть
+                  AppLocalizations.of(context)!
+                      .translate('assignees_list'), // дефолтный текст
+              style: userTextStyle.copyWith(
+                fontWeight: FontWeight.w400,
+                fontSize: 16,
+              ),
+            ),
             const SizedBox(height: 8),
             Container(
               decoration: BoxDecoration(
                 color: const Color(0xFFF4F7FD),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  width: widget.hasError ? 2 : 1,
-                  color: widget.hasError ? Colors.red : Colors.white,
+                  width: 1.5,
+                  color: widget.hasError ? Colors.red : Colors.transparent,
                 ),
               ),
               child: BlocConsumer<GetAllClientBloc, GetAllClientState>(
@@ -141,7 +143,7 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                   // Обрабатываем изменения состояния в listener, а не в builder
                   if (state is GetAllClientSuccess) {
                     final newUsersList = state.dataUser.result ?? [];
-                    
+
                     // Обновляем состояние только если список пользователей изменился
                     if (!listEquals(
                       usersList.map((u) => u.id).toList()..sort(),
@@ -149,14 +151,16 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                     )) {
                       // Синхронизируем выбранных пользователей перед setState
                       List<UserData> newSelectedUsersData = selectedUsersData;
-                      if (widget.selectedUsers != null && newUsersList.isNotEmpty) {
+                      if (widget.selectedUsers != null &&
+                          newUsersList.isNotEmpty) {
                         newSelectedUsersData = newUsersList
-                            .where((user) => widget.selectedUsers!.contains(user.id.toString()))
+                            .where((user) => widget.selectedUsers!
+                                .contains(user.id.toString()))
                             .toList();
                       } else if (widget.selectedUsers == null) {
                         newSelectedUsersData = [];
                       }
-                      
+
                       setState(() {
                         usersList = newUsersList;
                         displayUsersList = [selectAllItem, ...usersList];
@@ -168,7 +172,7 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                 builder: (context, state) {
                   // В builder только читаем данные, не изменяем состояние
                   final currentUsersList = usersList;
-                  
+
                   final currentDisplayList = currentUsersList.isNotEmpty
                       ? [selectAllItem, ...currentUsersList]
                       : displayUsersList;
@@ -200,7 +204,7 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                       final isSelectAll = item.id == -1;
                       final allSelected =
                           selectedUsersData.length == currentUsersList.length &&
-                          currentUsersList.isNotEmpty;
+                              currentUsersList.isNotEmpty;
 
                       return ListTile(
                         onTap: () {
@@ -287,11 +291,13 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                       // Фильтруем фиктивный элемент "Выбрать всех" из выбранных
                       final filteredValues =
                           values.where((user) => user.id != -1).toList();
-                      
+
                       // Проверяем, изменились ли выбранные пользователи
-                      final currentIds = selectedUsersData.map((u) => u.id).toList()..sort();
-                      final newIds = filteredValues.map((u) => u.id).toList()..sort();
-                      
+                      final currentIds =
+                          selectedUsersData.map((u) => u.id).toList()..sort();
+                      final newIds = filteredValues.map((u) => u.id).toList()
+                        ..sort();
+
                       // Вызываем callback ТОЛЬКО если данные реально изменились
                       if (!listEquals(currentIds, newIds)) {
                         setState(() {
@@ -321,15 +327,15 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
             if (widget.hasError)
               Padding(
                 padding: const EdgeInsets.only(top: 4, left: 0),
-                    // child: Text(
-                    //   AppLocalizations.of(context)!.translate('field_required'),
-                    //   style: const TextStyle(
-                    //     color: Colors.red,
-                    //     fontSize: 12,
-                    //     fontWeight: FontWeight.w400,
-                    //     fontFamily: 'Gilroy',
-                    //   ),
-                    // ),
+                // child: Text(
+                //   AppLocalizations.of(context)!.translate('field_required'),
+                //   style: const TextStyle(
+                //     color: Colors.red,
+                //     fontSize: 12,
+                //     fontWeight: FontWeight.w400,
+                //     fontFamily: 'Gilroy',
+                //   ),
+                // ),
               ),
           ],
         );
