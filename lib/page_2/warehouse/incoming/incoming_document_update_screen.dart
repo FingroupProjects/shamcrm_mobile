@@ -21,6 +21,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+
 class IncomingDocumentEditScreen extends StatefulWidget {
   final IncomingDocument document;
 
@@ -30,7 +31,8 @@ class IncomingDocumentEditScreen extends StatefulWidget {
   });
 
   @override
-  _IncomingDocumentEditScreenState createState() => _IncomingDocumentEditScreenState();
+  _IncomingDocumentEditScreenState createState() =>
+      _IncomingDocumentEditScreenState();
 }
 
 class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
@@ -67,6 +69,28 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
     super.initState();
     _initializeFormData();
     _tabController = TabController(length: 2, vsync: this);
+
+    // ✅ Add tab listener to validate required fields before switching to Products tab
+    _tabController.addListener(() {
+      if (!_tabController.indexIsChanging) return;
+
+      // Prevent switching to Products tab (index 1) if required fields are empty
+      if (_tabController.index == 1) {
+        if (_selectedSupplier == null || _selectedStorage == null) {
+          // Prevent the tab switch
+          Future.microtask(() {
+            if (mounted) {
+              _tabController.index = 0;
+              _showSnackBar(
+                AppLocalizations.of(context)!.translate('select_lead_first') ??
+                    'Пожайлуста заполните вкладку "Oсновное"',
+                false,
+              );
+            }
+          });
+        }
+      }
+    });
   }
 
   void _initializeFormData() {
@@ -85,9 +109,11 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
         final quantity = good.quantity ?? 0;
         final price = double.tryParse(good.price ?? '0') ?? 0.0;
 
-        final availableUnits = good.good?.units ?? (good.unit != null ? [good.unit!] : []);
+        final availableUnits =
+            good.good?.units ?? (good.unit != null ? [good.unit!] : []);
         Unit? selectedUnitObj;
-        double amount = 1.0; // USE 1 for amount DO NOT CALCUALTE TOTAL WITH AMOUNT
+        double amount =
+            1.0; // USE 1 for amount DO NOT CALCUALTE TOTAL WITH AMOUNT
         // if (good.good?.units != null && good.unitId != null) {
         //   // Search in good.good.units array for matching unit
         //   for (var unit in good.good!.units!) {
@@ -101,7 +127,10 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
         //   }
         // }
         // Fallback if not found
-        selectedUnitObj ??= good.unit ?? (availableUnits.isNotEmpty ? availableUnits.first : Unit(id: null, name: 'шт'));
+        selectedUnitObj ??= good.unit ??
+            (availableUnits.isNotEmpty
+                ? availableUnits.first
+                : Unit(id: null, name: 'шт'));
         debugPrint("amount of unit '${selectedUnitObj.name}': $amount");
 
         _items.add({
@@ -118,8 +147,10 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
         });
 
         // Создаем контроллеры с существующими значениями
-        _priceControllers[variantId] = TextEditingController(text: parseNumberToString(price * amount));
-        _quantityControllers[variantId] = TextEditingController(text: quantity.toString());
+        _priceControllers[variantId] =
+            TextEditingController(text: parseNumberToString(price * amount));
+        _quantityControllers[variantId] =
+            TextEditingController(text: quantity.toString());
 
         // ✅ НОВОЕ: Создаём FocusNode для существующих товаров
         _quantityFocusNodes[variantId] = FocusNode();
@@ -145,7 +176,8 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
 
           // ✅ Don't use the price from newItem - let user enter it
           final modifiedItem = Map<String, dynamic>.from(newItem);
-          modifiedItem['price'] = 0.0; // Set to 0 instead of using default price
+          modifiedItem['price'] =
+              0.0; // Set to 0 instead of using default price
           modifiedItem.remove('quantity');
 
           _items.add(modifiedItem);
@@ -200,7 +232,8 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
 
       _listKey.currentState?.removeItem(
         index,
-            (context, animation) => _buildSelectedItemCard(index, removedItem, animation),
+        (context, animation) =>
+            _buildSelectedItemCard(index, removedItem, animation),
         duration: const Duration(milliseconds: 300),
       );
 
@@ -260,9 +293,10 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
         _items[index]['selectedUnit'] = newUnit;
         _items[index]['unit_id'] = newUnitId;
 
-        final availableUnits = _items[index]['availableUnits'] as List<Unit>? ?? [];
+        final availableUnits =
+            _items[index]['availableUnits'] as List<Unit>? ?? [];
         final selectedUnitObj = availableUnits.firstWhere(
-              (unit) => (unit.name) == newUnit,
+          (unit) => (unit.name) == newUnit,
           orElse: () => availableUnits.isNotEmpty
               ? availableUnits.first
               : Unit(id: null, name: '', amount: 1),
@@ -273,7 +307,8 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
 
         // ✅ Get the current price from the controller (user input)
         final priceController = _priceControllers[variantId];
-        final currentDisplayPrice = double.tryParse(priceController?.text ?? '0') ?? 0.0;
+        final currentDisplayPrice =
+            double.tryParse(priceController?.text ?? '0') ?? 0.0;
 
         // ✅ Update price in item
         _items[index]['price'] = currentDisplayPrice;
@@ -289,7 +324,8 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
     final inputPrice = double.tryParse(value);
     if (inputPrice != null && inputPrice >= 0) {
       setState(() {
-        final index = _items.indexWhere((item) => item['variantId'] == variantId);
+        final index =
+            _items.indexWhere((item) => item['variantId'] == variantId);
         if (index != -1) {
           // ✅ Store the price as entered
           _items[index]['price'] = inputPrice;
@@ -302,7 +338,8 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
       });
     } else if (value.isEmpty) {
       setState(() {
-        final index = _items.indexWhere((item) => item['variantId'] == variantId);
+        final index =
+            _items.indexWhere((item) => item['variantId'] == variantId);
         if (index != -1) {
           _items[index]['price'] = 0.0;
           _items[index]['total'] = 0.0;
@@ -315,7 +352,8 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
     final quantity = int.tryParse(value);
     if (quantity != null && quantity > 0) {
       setState(() {
-        final index = _items.indexWhere((item) => item['variantId'] == variantId);
+        final index =
+            _items.indexWhere((item) => item['variantId'] == variantId);
         if (index != -1) {
           _items[index]['quantity'] = quantity;
           final price = _items[index]['price'] ?? 0.0;
@@ -327,7 +365,8 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
       });
     } else if (value.isEmpty) {
       setState(() {
-        final index = _items.indexWhere((item) => item['variantId'] == variantId);
+        final index =
+            _items.indexWhere((item) => item['variantId'] == variantId);
         if (index != -1) {
           // ✅ Remove quantity from item
           _items[index].remove('quantity');
@@ -344,7 +383,8 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
       final quantityController = _quantityControllers[variantId];
       final priceController = _priceControllers[variantId];
 
-      if (quantityController != null && quantityController.text.trim().isEmpty) {
+      if (quantityController != null &&
+          quantityController.text.trim().isEmpty) {
         _quantityFocusNodes[variantId]?.requestFocus();
         return;
       }
@@ -376,7 +416,9 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
 
   // Функция для парсинга цены: возвращает int если целое, double если дробное
   num _parsePriceAsNumber(dynamic price) {
-    final double parsedPrice = price is String ? (double.tryParse(price) ?? 0.0) : (price as num).toDouble();
+    final double parsedPrice = price is String
+        ? (double.tryParse(price) ?? 0.0)
+        : (price as num).toDouble();
     // Проверяем, является ли число целым
     if (parsedPrice == parsedPrice.truncateToDouble()) {
       return parsedPrice.toInt();
@@ -459,8 +501,10 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
     setState(() => _isLoading = true);
 
     try {
-      DateTime? parsedDate = DateFormat('dd/MM/yyyy HH:mm').parse(_dateController.text);
-      String isoDate = DateFormat("yyyy-MM-ddTHH:mm:ss.SSS'Z'").format(parsedDate);
+      DateTime? parsedDate =
+          DateFormat('dd/MM/yyyy HH:mm').parse(_dateController.text);
+      String isoDate =
+          DateFormat("yyyy-MM-ddTHH:mm:ss.SSS'Z'").format(parsedDate);
 
       final bloc = context.read<IncomingBloc>();
       bloc.add(UpdateIncoming(
@@ -568,7 +612,9 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
                         fontWeight: FontWeight.w500,
                       ),
                       tabs: [
-                        Tab(text: localizations.translate('main') ?? 'Основное'),
+                        Tab(
+                            text:
+                                localizations.translate('main') ?? 'Основное'),
                         Tab(text: localizations.translate('goods') ?? 'Товары'),
                       ],
                     ),
@@ -690,8 +736,7 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
                 const Icon(Icons.add, color: Colors.white, size: 20),
                 const SizedBox(width: 8),
                 Text(
-                  localizations.translate('add_good') ??
-                      'Добавить товар',
+                  localizations.translate('add_good') ?? 'Добавить товар',
                   style: const TextStyle(
                     fontSize: 16,
                     fontFamily: 'Gilroy',
@@ -800,7 +845,8 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
     return CustomTextField(
       controller: _commentController,
       label: localizations.translate('comment') ?? 'Примечание',
-      hintText: localizations.translate('enter_comment') ?? 'Введите примечание',
+      hintText:
+          localizations.translate('enter_comment') ?? 'Введите примечание',
       maxLines: 3,
       keyboardType: TextInputType.multiline,
     );
@@ -824,7 +870,8 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
     );
   }
 
-  Widget _buildSelectedItemCard(int index, Map<String, dynamic> item, Animation<double> animation) {
+  Widget _buildSelectedItemCard(
+      int index, Map<String, dynamic> item, Animation<double> animation) {
     final availableUnits = item['availableUnits'] as List<Unit>? ?? [];
     final variantId = item['variantId'] as int;
     final priceController = _priceControllers[variantId];
@@ -876,14 +923,17 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
                     ),
                     const SizedBox(width: 8),
                     Icon(
-                      isCollapsed ? Icons.keyboard_arrow_down : Icons.keyboard_arrow_up,
+                      isCollapsed
+                          ? Icons.keyboard_arrow_down
+                          : Icons.keyboard_arrow_up,
                       color: const Color(0xff4759FF),
                       size: 20,
                     ),
                     const SizedBox(width: 8),
                     GestureDetector(
                       onTap: () => _removeItem(index),
-                      child: const Icon(Icons.close, color: Color(0xff99A4BA), size: 18),
+                      child: const Icon(Icons.close,
+                          color: Color(0xff99A4BA), size: 18),
                     ),
                   ],
                 ),
@@ -914,7 +964,8 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          AppLocalizations.of(context)!.translate('quantity') ?? 'Кол-во',
+                          AppLocalizations.of(context)!.translate('quantity') ??
+                              'Кол-во',
                           style: const TextStyle(
                             fontSize: 11,
                             fontFamily: 'Gilroy',
@@ -924,9 +975,12 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
                         ),
                         const SizedBox(height: 4),
                         CompactTextField(
-                          controller: quantityController ?? TextEditingController(),
+                          controller:
+                              quantityController ?? TextEditingController(),
                           focusNode: quantityFocusNode,
-                          hintText: AppLocalizations.of(context)!.translate('quantity') ?? 'Количество',
+                          hintText: AppLocalizations.of(context)!
+                                  .translate('quantity') ??
+                              'Количество',
                           keyboardType: TextInputType.number,
                           inputFormatters: [
                             QuantityInputFormatter(),
@@ -939,7 +993,8 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
                             color: Color(0xff1E2E52),
                           ),
                           hasError: _quantityErrors[variantId] == true,
-                          onChanged: (value) => _updateItemQuantity(variantId, value),
+                          onChanged: (value) =>
+                              _updateItemQuantity(variantId, value),
                           onDone: _moveToNextEmptyField,
                         ),
                       ],
@@ -953,7 +1008,8 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            AppLocalizations.of(context)!.translate('unit') ?? 'Ед.',
+                            AppLocalizations.of(context)!.translate('unit') ??
+                                'Ед.',
                             style: const TextStyle(
                               fontSize: 11,
                               fontFamily: 'Gilroy',
@@ -965,11 +1021,13 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
                           if (availableUnits.length > 1)
                             Container(
                               height: 48,
-                              padding: const EdgeInsets.symmetric(horizontal: 8),
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 8),
                               decoration: BoxDecoration(
                                 color: const Color(0xFFF4F7FD),
                                 borderRadius: BorderRadius.circular(8),
-                                border: Border.all(color: const Color(0xFFE5E7EB)),
+                                border:
+                                    Border.all(color: const Color(0xFFE5E7EB)),
                               ),
                               child: DropdownButtonHideUnderline(
                                 child: DropdownButton<String>(
@@ -977,7 +1035,8 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
                                   isDense: true,
                                   isExpanded: true,
                                   dropdownColor: Colors.white,
-                                  icon: const Icon(Icons.arrow_drop_down, size: 16, color: Color(0xff4759FF)),
+                                  icon: const Icon(Icons.arrow_drop_down,
+                                      size: 16, color: Color(0xff4759FF)),
                                   style: const TextStyle(
                                     fontSize: 12,
                                     fontFamily: 'Gilroy',
@@ -992,10 +1051,12 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
                                   }).toList(),
                                   onChanged: (String? newValue) {
                                     if (newValue != null) {
-                                      final selectedUnit = availableUnits.firstWhere(
-                                            (unit) => (unit.name) == newValue,
+                                      final selectedUnit =
+                                          availableUnits.firstWhere(
+                                        (unit) => (unit.name) == newValue,
                                       );
-                                      _updateItemUnit(variantId, newValue, selectedUnit.id);
+                                      _updateItemUnit(
+                                          variantId, newValue, selectedUnit.id);
                                     }
                                   },
                                 ),
@@ -1004,11 +1065,13 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
                           else
                             Container(
                               height: 48,
-                              padding: const EdgeInsets.symmetric(horizontal: 8),
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 8),
                               decoration: BoxDecoration(
                                 color: const Color(0xFFF4F7FD),
                                 borderRadius: BorderRadius.circular(8),
-                                border: Border.all(color: const Color(0xFFE5E7EB)),
+                                border:
+                                    Border.all(color: const Color(0xFFE5E7EB)),
                               ),
                               alignment: Alignment.centerLeft,
                               child: Text(
@@ -1031,7 +1094,8 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            AppLocalizations.of(context)!.translate('price') ?? 'Цена',
+                            AppLocalizations.of(context)!.translate('price') ??
+                                'Цена',
                             style: const TextStyle(
                               fontSize: 11,
                               fontFamily: 'Gilroy',
@@ -1042,9 +1106,11 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
                           const SizedBox(height: 4),
                           CompactTextField(
                             controller:
-                            priceController ?? TextEditingController(),
+                                priceController ?? TextEditingController(),
                             focusNode: priceFocusNode,
-                            hintText: AppLocalizations.of(context)!.translate('price') ?? 'Цена',
+                            hintText: AppLocalizations.of(context)!
+                                    .translate('price') ??
+                                'Цена',
                             keyboardType: const TextInputType.numberWithOptions(
                                 decimal: true),
                             inputFormatters: [
@@ -1088,29 +1154,30 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
         ),
         child: _isLoading
             ? const SizedBox(
-          width: 18,
-          height: 18,
-          child: CircularProgressIndicator(
-            strokeWidth: 2,
-            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-          ),
-        )
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
+              )
             : Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.save_outlined, color: Colors.white, size: 18),
-            const SizedBox(width: 6),
-            Text(
-              localizations.translate('save') ?? 'Обновить',
-              style: const TextStyle(
-                fontSize: 14,
-                fontFamily: 'Gilroy',
-                fontWeight: FontWeight.w600,
-                color: Colors.white,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.save_outlined,
+                      color: Colors.white, size: 18),
+                  const SizedBox(width: 6),
+                  Text(
+                    localizations.translate('save') ?? 'Обновить',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
               ),
-            ),
-          ],
-        ),
       ),
     );
   }

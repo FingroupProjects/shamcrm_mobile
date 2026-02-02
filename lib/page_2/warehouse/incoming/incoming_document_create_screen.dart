@@ -26,10 +26,12 @@ class IncomingDocumentCreateScreen extends StatefulWidget {
   final int? organizationId;
   const IncomingDocumentCreateScreen({this.organizationId, super.key});
   @override
-  _IncomingDocumentCreateScreenState createState() => _IncomingDocumentCreateScreenState();
+  _IncomingDocumentCreateScreenState createState() =>
+      _IncomingDocumentCreateScreenState();
 }
 
-class _IncomingDocumentCreateScreenState extends State<IncomingDocumentCreateScreen>
+class _IncomingDocumentCreateScreenState
+    extends State<IncomingDocumentCreateScreen>
     with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _dateController = TextEditingController();
@@ -64,16 +66,41 @@ class _IncomingDocumentCreateScreenState extends State<IncomingDocumentCreateScr
   @override
   void initState() {
     super.initState();
-    _dateController.text = DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now());
+    _dateController.text =
+        DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now());
 
     _tabController = TabController(length: 2, vsync: this);
+
+    // ✅ Add tab listener to validate required fields before switching to Products tab
+    _tabController.addListener(() {
+      if (!_tabController.indexIsChanging) return;
+
+      // Prevent switching to Products tab (index 1) if required fields are empty
+      if (_tabController.index == 1) {
+        if (_selectedSupplier == null || _selectedStorage == null) {
+          // Prevent the tab switch
+          Future.microtask(() {
+            if (mounted) {
+              _tabController.index = 0;
+              _showSnackBar(
+                AppLocalizations.of(context)!.translate('select_lead_first') ??
+                    'Пожайлуста заполните вкладку "Oсновное"',
+                false,
+              );
+            }
+          });
+        }
+      }
+    });
+
     _checkApprovePermission();
   }
 
   // ✅ НОВОЕ: Проверка разрешения на проведение документа
   Future<void> _checkApprovePermission() async {
     try {
-      final hasPermission = await _apiService.hasPermission('income_document.approve');
+      final hasPermission =
+          await _apiService.hasPermission('income_document.approve');
       if (mounted) {
         setState(() {
           _hasApprovePermission = hasPermission;
@@ -157,7 +184,7 @@ class _IncomingDocumentCreateScreenState extends State<IncomingDocumentCreateScr
 
       _listKey.currentState?.removeItem(
         index,
-            (context, animation) =>
+        (context, animation) =>
             _buildSelectedItemCard(index, removedItem, animation),
         duration: const Duration(milliseconds: 300),
       );
@@ -233,9 +260,10 @@ class _IncomingDocumentCreateScreenState extends State<IncomingDocumentCreateScr
         _items[index]['selectedUnit'] = newUnit;
         _items[index]['unit_id'] = newUnitId;
 
-        final availableUnits = _items[index]['availableUnits'] as List<Unit>? ?? [];
+        final availableUnits =
+            _items[index]['availableUnits'] as List<Unit>? ?? [];
         final selectedUnitObj = availableUnits.firstWhere(
-              (unit) => (unit.name) == newUnit,
+          (unit) => (unit.name) == newUnit,
           orElse: () => availableUnits.isNotEmpty
               ? availableUnits.first
               : Unit(id: null, name: '', amount: 1),
@@ -246,7 +274,8 @@ class _IncomingDocumentCreateScreenState extends State<IncomingDocumentCreateScr
 
         // ✅ Get the current price from the controller (user input)
         final priceController = _priceControllers[variantId];
-        final currentDisplayPrice = double.tryParse(priceController?.text ?? '0') ?? 0.0;
+        final currentDisplayPrice =
+            double.tryParse(priceController?.text ?? '0') ?? 0.0;
 
         // ✅ Update price in item
         _items[index]['price'] = currentDisplayPrice;
@@ -262,7 +291,8 @@ class _IncomingDocumentCreateScreenState extends State<IncomingDocumentCreateScr
     final inputPrice = double.tryParse(value);
     if (inputPrice != null && inputPrice >= 0) {
       setState(() {
-        final index = _items.indexWhere((item) => item['variantId'] == variantId);
+        final index =
+            _items.indexWhere((item) => item['variantId'] == variantId);
         if (index != -1) {
           // ✅ Store the price as entered
           _items[index]['price'] = inputPrice;
@@ -275,7 +305,8 @@ class _IncomingDocumentCreateScreenState extends State<IncomingDocumentCreateScr
       });
     } else if (value.isEmpty) {
       setState(() {
-        final index = _items.indexWhere((item) => item['variantId'] == variantId);
+        final index =
+            _items.indexWhere((item) => item['variantId'] == variantId);
         if (index != -1) {
           _items[index]['price'] = 0.0;
           _items[index]['total'] = 0.0;
@@ -288,7 +319,8 @@ class _IncomingDocumentCreateScreenState extends State<IncomingDocumentCreateScr
     final quantity = int.tryParse(value);
     if (quantity != null && quantity > 0) {
       setState(() {
-        final index = _items.indexWhere((item) => item['variantId'] == variantId);
+        final index =
+            _items.indexWhere((item) => item['variantId'] == variantId);
         if (index != -1) {
           _items[index]['quantity'] = quantity;
           final price = _items[index]['price'] ?? 0.0;
@@ -300,7 +332,8 @@ class _IncomingDocumentCreateScreenState extends State<IncomingDocumentCreateScr
       });
     } else if (value.isEmpty) {
       setState(() {
-        final index = _items.indexWhere((item) => item['variantId'] == variantId);
+        final index =
+            _items.indexWhere((item) => item['variantId'] == variantId);
         if (index != -1) {
           // ✅ Remove quantity from item
           _items[index].remove('quantity');
@@ -317,7 +350,8 @@ class _IncomingDocumentCreateScreenState extends State<IncomingDocumentCreateScr
       final quantityController = _quantityControllers[variantId];
       final priceController = _priceControllers[variantId];
 
-      if (quantityController != null && quantityController.text.trim().isEmpty) {
+      if (quantityController != null &&
+          quantityController.text.trim().isEmpty) {
         _quantityFocusNodes[variantId]?.requestFocus();
         return;
       }
@@ -349,7 +383,9 @@ class _IncomingDocumentCreateScreenState extends State<IncomingDocumentCreateScr
 
   // Функция для парсинга цены: возвращает int если целое, double если дробное
   num _parsePriceAsNumber(dynamic price) {
-    final double parsedPrice = price is String ? (double.tryParse(price) ?? 0.0) : (price as num).toDouble();
+    final double parsedPrice = price is String
+        ? (double.tryParse(price) ?? 0.0)
+        : (price as num).toDouble();
     // Проверяем, является ли число целым
     if (parsedPrice == parsedPrice.truncateToDouble()) {
       return parsedPrice.toInt();
@@ -362,7 +398,8 @@ class _IncomingDocumentCreateScreenState extends State<IncomingDocumentCreateScr
 
     if (_items.isEmpty) {
       _showSnackBar(
-        AppLocalizations.of(context)!.translate('add_at_least_one_item') ?? 'Добавьте хотя бы один товар',
+        AppLocalizations.of(context)!.translate('add_at_least_one_item') ??
+            'Добавьте хотя бы один товар',
         false,
       );
       return;
@@ -370,7 +407,8 @@ class _IncomingDocumentCreateScreenState extends State<IncomingDocumentCreateScr
 
     if (_selectedStorage == null) {
       _showSnackBar(
-        AppLocalizations.of(context)!.translate('select_storage') ?? 'Выберите склад',
+        AppLocalizations.of(context)!.translate('select_storage') ??
+            'Выберите склад',
         false,
       );
       return;
@@ -378,7 +416,8 @@ class _IncomingDocumentCreateScreenState extends State<IncomingDocumentCreateScr
 
     if (_selectedSupplier == null) {
       _showSnackBar(
-        AppLocalizations.of(context)!.translate('select_supplier') ?? 'Выберите поставщика',
+        AppLocalizations.of(context)!.translate('select_supplier') ??
+            'Выберите поставщика',
         false,
       );
       return;
@@ -408,7 +447,8 @@ class _IncomingDocumentCreateScreenState extends State<IncomingDocumentCreateScr
         _tabController.animateTo(1);
       }
       _showSnackBar(
-        AppLocalizations.of(context)!.translate('fill_all_required_fields') ?? 'Заполните все обязательные поля',
+        AppLocalizations.of(context)!.translate('fill_all_required_fields') ??
+            'Заполните все обязательные поля',
         false,
       );
       // Фокусируемся на первом товаре с ошибкой
@@ -419,8 +459,10 @@ class _IncomingDocumentCreateScreenState extends State<IncomingDocumentCreateScr
     setState(() => _isLoading = true);
 
     try {
-      DateTime? parsedDate = DateFormat('dd/MM/yyyy HH:mm').parse(_dateController.text);
-      String isoDate = DateFormat("yyyy-MM-ddTHH:mm:ss.SSS'Z'").format(parsedDate);
+      DateTime? parsedDate =
+          DateFormat('dd/MM/yyyy HH:mm').parse(_dateController.text);
+      String isoDate =
+          DateFormat("yyyy-MM-ddTHH:mm:ss.SSS'Z'").format(parsedDate);
 
       final bloc = context.read<IncomingBloc>();
       bloc.add(CreateIncoming(
@@ -527,7 +569,7 @@ class _IncomingDocumentCreateScreenState extends State<IncomingDocumentCreateScr
                       tabs: [
                         Tab(
                             text:
-                            localizations.translate('main') ?? 'Основное'),
+                                localizations.translate('main') ?? 'Основное'),
                         Tab(text: localizations.translate('goods') ?? 'Товары'),
                       ],
                     ),
@@ -694,7 +736,8 @@ class _IncomingDocumentCreateScreenState extends State<IncomingDocumentCreateScr
           // Заголовок — всегда виден, но усекается при нехватке места
           Expanded(
             child: Text(
-              localizations.translate('create_incoming_document') ?? 'Создать приход',
+              localizations.translate('create_incoming_document') ??
+                  'Создать приход',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(
@@ -761,12 +804,12 @@ class _IncomingDocumentCreateScreenState extends State<IncomingDocumentCreateScr
     return CustomTextField(
       controller: _commentController,
       label: localizations.translate('comment') ?? 'Примечание',
-      hintText: localizations.translate('enter_comment') ?? 'Введите примечание',
+      hintText:
+          localizations.translate('enter_comment') ?? 'Введите примечание',
       maxLines: 3,
       keyboardType: TextInputType.multiline,
     );
   }
-
 
   Widget _buildSelectedItemsList() {
     return Column(
@@ -786,7 +829,8 @@ class _IncomingDocumentCreateScreenState extends State<IncomingDocumentCreateScr
     );
   }
 
-  Widget _buildSelectedItemCard(int index, Map<String, dynamic> item, Animation<double> animation) {
+  Widget _buildSelectedItemCard(
+      int index, Map<String, dynamic> item, Animation<double> animation) {
     final availableUnits = item['availableUnits'] as List<Unit>? ?? [];
     final variantId = item['variantId'] as int;
     final priceController = _priceControllers[variantId];
@@ -838,14 +882,17 @@ class _IncomingDocumentCreateScreenState extends State<IncomingDocumentCreateScr
                     ),
                     const SizedBox(width: 8),
                     Icon(
-                      isCollapsed ? Icons.keyboard_arrow_down : Icons.keyboard_arrow_up,
+                      isCollapsed
+                          ? Icons.keyboard_arrow_down
+                          : Icons.keyboard_arrow_up,
                       color: const Color(0xff4759FF),
                       size: 20,
                     ),
                     const SizedBox(width: 8),
                     GestureDetector(
                       onTap: () => _removeItem(index),
-                      child: const Icon(Icons.close, color: Color(0xff99A4BA), size: 18),
+                      child: const Icon(Icons.close,
+                          color: Color(0xff99A4BA), size: 18),
                     ),
                   ],
                 ),
@@ -888,10 +935,10 @@ class _IncomingDocumentCreateScreenState extends State<IncomingDocumentCreateScr
                         const SizedBox(height: 4),
                         CompactTextField(
                           controller:
-                          quantityController ?? TextEditingController(),
+                              quantityController ?? TextEditingController(),
                           focusNode: quantityFocusNode,
                           hintText: AppLocalizations.of(context)!
-                              .translate('quantity') ??
+                                  .translate('quantity') ??
                               'Количество',
                           keyboardType: TextInputType.number,
                           inputFormatters: [
@@ -934,12 +981,12 @@ class _IncomingDocumentCreateScreenState extends State<IncomingDocumentCreateScr
                             Container(
                               height: 48,
                               padding:
-                              const EdgeInsets.symmetric(horizontal: 8),
+                                  const EdgeInsets.symmetric(horizontal: 8),
                               decoration: BoxDecoration(
                                 color: const Color(0xFFF4F7FD),
                                 borderRadius: BorderRadius.circular(8),
                                 border:
-                                Border.all(color: const Color(0xFFE5E7EB)),
+                                    Border.all(color: const Color(0xFFE5E7EB)),
                               ),
                               child: DropdownButtonHideUnderline(
                                 child: DropdownButton<String>(
@@ -964,8 +1011,8 @@ class _IncomingDocumentCreateScreenState extends State<IncomingDocumentCreateScr
                                   onChanged: (String? newValue) {
                                     if (newValue != null) {
                                       final selectedUnit =
-                                      availableUnits.firstWhere(
-                                            (unit) => (unit.name) == newValue,
+                                          availableUnits.firstWhere(
+                                        (unit) => (unit.name) == newValue,
                                       );
                                       _updateItemUnit(
                                           variantId, newValue, selectedUnit.id);
@@ -978,12 +1025,12 @@ class _IncomingDocumentCreateScreenState extends State<IncomingDocumentCreateScr
                             Container(
                               height: 48,
                               padding:
-                              const EdgeInsets.symmetric(horizontal: 8),
+                                  const EdgeInsets.symmetric(horizontal: 8),
                               decoration: BoxDecoration(
                                 color: const Color(0xFFF4F7FD),
                                 borderRadius: BorderRadius.circular(8),
                                 border:
-                                Border.all(color: const Color(0xFFE5E7EB)),
+                                    Border.all(color: const Color(0xFFE5E7EB)),
                               ),
                               alignment: Alignment.centerLeft,
                               child: Text(
@@ -1018,10 +1065,10 @@ class _IncomingDocumentCreateScreenState extends State<IncomingDocumentCreateScr
                           const SizedBox(height: 4),
                           CompactTextField(
                             controller:
-                            priceController ?? TextEditingController(),
+                                priceController ?? TextEditingController(),
                             focusNode: priceFocusNode,
                             hintText: AppLocalizations.of(context)!
-                                .translate('price') ??
+                                    .translate('price') ??
                                 'Цена',
                             keyboardType: const TextInputType.numberWithOptions(
                                 decimal: true),
@@ -1116,30 +1163,30 @@ class _IncomingDocumentCreateScreenState extends State<IncomingDocumentCreateScr
               ),
               child: _isLoading
                   ? const SizedBox(
-                width: 18,
-                height: 18,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                ),
-              )
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    )
                   : Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.save_outlined,
-                      color: Colors.white, size: 18),
-                  const SizedBox(width: 6),
-                  Text(
-                    localizations.translate('save') ?? 'Сохранить',
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.save_outlined,
+                            color: Colors.white, size: 18),
+                        const SizedBox(width: 6),
+                        Text(
+                          localizations.translate('save') ?? 'Сохранить',
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontFamily: 'Gilroy',
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                ],
-              ),
             ),
           ),
         ),

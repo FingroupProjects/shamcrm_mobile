@@ -29,7 +29,8 @@ class CreateWriteOffDocumentScreen extends StatefulWidget {
       CreateWriteOffDocumentScreenState();
 }
 
-class CreateWriteOffDocumentScreenState extends State<CreateWriteOffDocumentScreen>
+class CreateWriteOffDocumentScreenState
+    extends State<CreateWriteOffDocumentScreen>
     with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _dateController = TextEditingController();
@@ -55,16 +56,41 @@ class CreateWriteOffDocumentScreenState extends State<CreateWriteOffDocumentScre
   @override
   void initState() {
     super.initState();
-    _dateController.text = DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now());
+    _dateController.text =
+        DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now());
 
     _tabController = TabController(length: 2, vsync: this);
+
+    // ✅ Add tab listener to validate required fields before switching to Products tab
+    _tabController.addListener(() {
+      if (!_tabController.indexIsChanging) return;
+
+      // Prevent switching to Products tab (index 1) if required fields are empty
+      if (_tabController.index == 1) {
+        if (_selectedStorage == null || _selectedArticle == null) {
+          // Prevent the tab switch
+          Future.microtask(() {
+            if (mounted) {
+              _tabController.index = 0;
+              _showSnackBar(
+                AppLocalizations.of(context)!.translate('select_lead_first') ??
+                    'Пожайлуста заполните вкладку "Oсновное"',
+                false,
+              );
+            }
+          });
+        }
+      }
+    });
+
     _checkApprovePermission();
   }
 
   // ✅ НОВОЕ: Проверка разрешения на проведение документа
   Future<void> _checkApprovePermission() async {
     try {
-      final hasPermission = await _apiService.hasPermission('write_off_document.approve');
+      final hasPermission =
+          await _apiService.hasPermission('write_off_document.approve');
       if (mounted) {
         setState(() {
           _hasApprovePermission = hasPermission;
@@ -83,7 +109,8 @@ class CreateWriteOffDocumentScreenState extends State<CreateWriteOffDocumentScre
   void _handleVariantSelection(Map<String, dynamic>? newItem) {
     if (mounted && newItem != null) {
       setState(() {
-        final existingIndex = _items.indexWhere((item) => item['variantId'] == newItem['variantId']);
+        final existingIndex = _items
+            .indexWhere((item) => item['variantId'] == newItem['variantId']);
 
         if (existingIndex == -1) {
           for (var item in _items) {
@@ -134,7 +161,8 @@ class CreateWriteOffDocumentScreenState extends State<CreateWriteOffDocumentScre
 
       _listKey.currentState?.removeItem(
         index,
-            (context, animation) => _buildSelectedItemCard(index, removedItem, animation),
+        (context, animation) =>
+            _buildSelectedItemCard(index, removedItem, animation),
         duration: const Duration(milliseconds: 300),
       );
 
@@ -181,7 +209,8 @@ class CreateWriteOffDocumentScreenState extends State<CreateWriteOffDocumentScre
     final quantity = int.tryParse(value);
     if (quantity != null && quantity > 0) {
       setState(() {
-        final index = _items.indexWhere((item) => item['variantId'] == variantId);
+        final index =
+            _items.indexWhere((item) => item['variantId'] == variantId);
         if (index != -1) {
           _items[index]['quantity'] = quantity;
         }
@@ -189,7 +218,8 @@ class CreateWriteOffDocumentScreenState extends State<CreateWriteOffDocumentScre
       });
     } else if (value.isEmpty) {
       setState(() {
-        final index = _items.indexWhere((item) => item['variantId'] == variantId);
+        final index =
+            _items.indexWhere((item) => item['variantId'] == variantId);
         if (index != -1) {
           _items[index]['quantity'] = 0;
         }
@@ -204,10 +234,13 @@ class CreateWriteOffDocumentScreenState extends State<CreateWriteOffDocumentScre
         _items[index]['selectedUnit'] = newUnit;
         _items[index]['unit_id'] = newUnitId;
 
-        final availableUnits = _items[index]['availableUnits'] as List<Unit>? ?? [];
+        final availableUnits =
+            _items[index]['availableUnits'] as List<Unit>? ?? [];
         final selectedUnitObj = availableUnits.firstWhere(
-              (unit) => (unit.name) == newUnit,
-          orElse: () => availableUnits.isNotEmpty ? availableUnits.first : Unit(id: 0, name: '', amount: 1),
+          (unit) => (unit.name) == newUnit,
+          orElse: () => availableUnits.isNotEmpty
+              ? availableUnits.first
+              : Unit(id: 0, name: '', amount: 1),
         );
 
         _items[index]['amount'] = selectedUnitObj.amount ?? 1;
@@ -221,7 +254,8 @@ class CreateWriteOffDocumentScreenState extends State<CreateWriteOffDocumentScre
       final variantId = item['variantId'] as int;
       final quantityController = _quantityControllers[variantId];
 
-      if (quantityController != null && quantityController.text.trim().isEmpty) {
+      if (quantityController != null &&
+          quantityController.text.trim().isEmpty) {
         _quantityFocusNodes[variantId]?.requestFocus();
         return;
       }
@@ -249,7 +283,8 @@ class CreateWriteOffDocumentScreenState extends State<CreateWriteOffDocumentScre
 
     if (_items.isEmpty) {
       _showSnackBar(
-        AppLocalizations.of(context)!.translate('add_at_least_one_item') ?? 'Добавьте хотя бы один товар',
+        AppLocalizations.of(context)!.translate('add_at_least_one_item') ??
+            'Добавьте хотя бы один товар',
         false,
       );
       return;
@@ -257,7 +292,8 @@ class CreateWriteOffDocumentScreenState extends State<CreateWriteOffDocumentScre
 
     if (_selectedStorage == null) {
       _showSnackBar(
-        AppLocalizations.of(context)!.translate('select_storage') ?? 'Выберите склад',
+        AppLocalizations.of(context)!.translate('select_storage') ??
+            'Выберите склад',
         false,
       );
       return;
@@ -265,7 +301,8 @@ class CreateWriteOffDocumentScreenState extends State<CreateWriteOffDocumentScre
 
     if (_selectedArticle == null) {
       _showSnackBar(
-        AppLocalizations.of(context)!.translate('select_article') ?? 'Выберите статью',
+        AppLocalizations.of(context)!.translate('select_article') ??
+            'Выберите статью',
         false,
       );
       return;
@@ -294,7 +331,8 @@ class CreateWriteOffDocumentScreenState extends State<CreateWriteOffDocumentScre
         _tabController.animateTo(1);
       }
       _showSnackBar(
-        AppLocalizations.of(context)!.translate('fill_all_required_fields') ?? 'Заполните все обязательные поля',
+        AppLocalizations.of(context)!.translate('fill_all_required_fields') ??
+            'Заполните все обязательные поля',
         false,
       );
       // Фокусируемся на первом товаре с ошибкой
@@ -305,8 +343,10 @@ class CreateWriteOffDocumentScreenState extends State<CreateWriteOffDocumentScre
     setState(() => _isLoading = true);
 
     try {
-      DateTime? parsedDate = DateFormat('dd/MM/yyyy HH:mm').parse(_dateController.text); // ✅ ФИКС: Добавлен ?
-      String isoDate = DateFormat("yyyy-MM-ddTHH:mm:ss.SSS'Z'").format(parsedDate!);
+      DateTime? parsedDate = DateFormat('dd/MM/yyyy HH:mm')
+          .parse(_dateController.text); // ✅ ФИКС: Добавлен ?
+      String isoDate =
+          DateFormat("yyyy-MM-ddTHH:mm:ss.SSS'Z'").format(parsedDate!);
 
       final bloc = context.read<WriteOffBloc>();
       bloc.add(CreateWriteOffDocument(
@@ -328,7 +368,8 @@ class CreateWriteOffDocumentScreenState extends State<CreateWriteOffDocumentScre
     } catch (e) {
       setState(() => _isLoading = false);
       _showSnackBar(
-        AppLocalizations.of(context)!.translate('enter_valid_datetime') ?? 'Введите корректную дату и время',
+        AppLocalizations.of(context)!.translate('enter_valid_datetime') ??
+            'Введите корректную дату и время',
         false,
       );
     }
@@ -408,7 +449,9 @@ class CreateWriteOffDocumentScreenState extends State<CreateWriteOffDocumentScre
                         fontWeight: FontWeight.w500,
                       ),
                       tabs: [
-                        Tab(text: localizations.translate('main') ?? 'Основное'),
+                        Tab(
+                            text:
+                                localizations.translate('main') ?? 'Основное'),
                         Tab(text: localizations.translate('goods') ?? 'Товары'),
                       ],
                     ),
@@ -427,7 +470,8 @@ class CreateWriteOffDocumentScreenState extends State<CreateWriteOffDocumentScre
             ),
           ),
         ),
-      ), );
+      ),
+    );
   }
 
   AppBar _buildAppBar(AppLocalizations localizations) {
@@ -437,7 +481,8 @@ class CreateWriteOffDocumentScreenState extends State<CreateWriteOffDocumentScre
       leadingWidth: 56,
       elevation: 0,
       leading: IconButton(
-        icon: const Icon(Icons.arrow_back_ios, color: Color(0xff1E2E52), size: 24),
+        icon: const Icon(Icons.arrow_back_ios,
+            color: Color(0xff1E2E52), size: 24),
         onPressed: () async {
           if (_items.isNotEmpty) {
             final shouldExit = await ConfirmExitDialog.show(context);
@@ -517,7 +562,8 @@ class CreateWriteOffDocumentScreenState extends State<CreateWriteOffDocumentScre
                     child: Padding(
                       padding: const EdgeInsets.symmetric(vertical: 32),
                       child: Text(
-                        localizations.translate('no_goods_added') ?? 'Товары не добавлены',
+                        localizations.translate('no_goods_added') ??
+                            'Товары не добавлены',
                         style: const TextStyle(
                           fontSize: 14,
                           fontFamily: 'Gilroy',
@@ -603,7 +649,8 @@ class CreateWriteOffDocumentScreenState extends State<CreateWriteOffDocumentScre
     return CustomTextField(
       controller: _commentController,
       label: localizations.translate('comment') ?? 'Примечание',
-      hintText: localizations.translate('enter_comment') ?? 'Введите примечание',
+      hintText:
+          localizations.translate('enter_comment') ?? 'Введите примечание',
       maxLines: 3,
       keyboardType: TextInputType.multiline,
     );
@@ -640,7 +687,8 @@ class CreateWriteOffDocumentScreenState extends State<CreateWriteOffDocumentScre
                         ),
                         const SizedBox(width: 6),
                         Text(
-                          localizations.translate('save_and_approve') ?? 'Провести',
+                          localizations.translate('save_and_approve') ??
+                              'Провести',
                           style: TextStyle(
                             fontSize: 14,
                             fontFamily: 'Gilroy',
@@ -674,29 +722,30 @@ class CreateWriteOffDocumentScreenState extends State<CreateWriteOffDocumentScre
               ),
               child: _isLoading
                   ? const SizedBox(
-                width: 18,
-                height: 18,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                ),
-              )
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    )
                   : Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.save_outlined, color: Colors.white, size: 18),
-                  const SizedBox(width: 6),
-                  Text(
-                    localizations.translate('save') ?? 'Сохранить',
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.save_outlined,
+                            color: Colors.white, size: 18),
+                        const SizedBox(width: 6),
+                        Text(
+                          localizations.translate('save') ?? 'Сохранить',
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontFamily: 'Gilroy',
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                ],
-              ),
             ),
           ),
         ),
@@ -721,7 +770,9 @@ class CreateWriteOffDocumentScreenState extends State<CreateWriteOffDocumentScre
       ],
     );
   }
-  Widget _buildSelectedItemCard(int index, Map<String, dynamic> item, Animation<double> animation) {
+
+  Widget _buildSelectedItemCard(
+      int index, Map<String, dynamic> item, Animation<double> animation) {
     final availableUnits = item['availableUnits'] as List<Unit>? ?? [];
     final variantId = item['variantId'] as int;
     final quantityController = _quantityControllers[variantId];
@@ -770,14 +821,17 @@ class CreateWriteOffDocumentScreenState extends State<CreateWriteOffDocumentScre
                     ),
                     const SizedBox(width: 8),
                     Icon(
-                      isCollapsed ? Icons.keyboard_arrow_down : Icons.keyboard_arrow_up,
+                      isCollapsed
+                          ? Icons.keyboard_arrow_down
+                          : Icons.keyboard_arrow_up,
                       color: const Color(0xff4759FF),
                       size: 20,
                     ),
                     const SizedBox(width: 8),
                     GestureDetector(
                       onTap: () => _removeItem(index),
-                      child: const Icon(Icons.close, color: Color(0xff99A4BA), size: 18),
+                      child: const Icon(Icons.close,
+                          color: Color(0xff99A4BA), size: 18),
                     ),
                   ],
                 ),
@@ -793,7 +847,8 @@ class CreateWriteOffDocumentScreenState extends State<CreateWriteOffDocumentScre
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          AppLocalizations.of(context)!.translate('quantity') ?? 'Кол-во',
+                          AppLocalizations.of(context)!.translate('quantity') ??
+                              'Кол-во',
                           style: const TextStyle(
                             fontSize: 11,
                             fontFamily: 'Gilroy',
@@ -803,9 +858,12 @@ class CreateWriteOffDocumentScreenState extends State<CreateWriteOffDocumentScre
                         ),
                         const SizedBox(height: 4),
                         CompactTextField(
-                          controller: quantityController ?? TextEditingController(),
+                          controller:
+                              quantityController ?? TextEditingController(),
                           focusNode: quantityFocusNode,
-                          hintText: AppLocalizations.of(context)!.translate('quantity') ?? 'Количество',
+                          hintText: AppLocalizations.of(context)!
+                                  .translate('quantity') ??
+                              'Количество',
                           keyboardType: TextInputType.number,
                           inputFormatters: [
                             QuantityInputFormatter(),
@@ -818,7 +876,8 @@ class CreateWriteOffDocumentScreenState extends State<CreateWriteOffDocumentScre
                             color: Color(0xff1E2E52),
                           ),
                           hasError: _quantityErrors[variantId] == true,
-                          onChanged: (value) => _updateItemQuantity(variantId, value),
+                          onChanged: (value) =>
+                              _updateItemQuantity(variantId, value),
                           onDone: _moveToNextEmptyField,
                         ),
                       ],
@@ -832,7 +891,8 @@ class CreateWriteOffDocumentScreenState extends State<CreateWriteOffDocumentScre
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            AppLocalizations.of(context)!.translate('unit') ?? 'Ед.',
+                            AppLocalizations.of(context)!.translate('unit') ??
+                                'Ед.',
                             style: const TextStyle(
                               fontSize: 11,
                               fontFamily: 'Gilroy',
@@ -844,11 +904,13 @@ class CreateWriteOffDocumentScreenState extends State<CreateWriteOffDocumentScre
                           if (availableUnits.length > 1)
                             Container(
                               height: 48,
-                              padding: const EdgeInsets.symmetric(horizontal: 8),
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 8),
                               decoration: BoxDecoration(
                                 color: const Color(0xFFF4F7FD),
                                 borderRadius: BorderRadius.circular(8),
-                                border: Border.all(color: const Color(0xFFE5E7EB)),
+                                border:
+                                    Border.all(color: const Color(0xFFE5E7EB)),
                               ),
                               child: DropdownButtonHideUnderline(
                                 child: DropdownButton<String>(
@@ -856,7 +918,8 @@ class CreateWriteOffDocumentScreenState extends State<CreateWriteOffDocumentScre
                                   isDense: true,
                                   isExpanded: true,
                                   dropdownColor: Colors.white,
-                                  icon: const Icon(Icons.arrow_drop_down, size: 16, color: Color(0xff4759FF)),
+                                  icon: const Icon(Icons.arrow_drop_down,
+                                      size: 16, color: Color(0xff4759FF)),
                                   style: const TextStyle(
                                     fontSize: 12,
                                     fontFamily: 'Gilroy',
@@ -871,10 +934,12 @@ class CreateWriteOffDocumentScreenState extends State<CreateWriteOffDocumentScre
                                   }).toList(),
                                   onChanged: (String? newValue) {
                                     if (newValue != null) {
-                                      final selectedUnit = availableUnits.firstWhere(
-                                            (unit) => (unit.name) == newValue,
+                                      final selectedUnit =
+                                          availableUnits.firstWhere(
+                                        (unit) => (unit.name) == newValue,
                                       );
-                                      _updateItemUnit(variantId, newValue, selectedUnit.id);
+                                      _updateItemUnit(
+                                          variantId, newValue, selectedUnit.id);
                                     }
                                   },
                                 ),
@@ -883,11 +948,13 @@ class CreateWriteOffDocumentScreenState extends State<CreateWriteOffDocumentScre
                           else
                             Container(
                               height: 48,
-                              padding: const EdgeInsets.symmetric(horizontal: 8),
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 8),
                               decoration: BoxDecoration(
                                 color: const Color(0xFFF4F7FD),
                                 borderRadius: BorderRadius.circular(8),
-                                border: Border.all(color: const Color(0xFFE5E7EB)),
+                                border:
+                                    Border.all(color: const Color(0xFFE5E7EB)),
                               ),
                               alignment: Alignment.centerLeft,
                               child: Text(
@@ -911,6 +978,7 @@ class CreateWriteOffDocumentScreenState extends State<CreateWriteOffDocumentScre
       ),
     );
   }
+
   void _createAndApproveDocument() {
     _createDocument(approve: true);
   }

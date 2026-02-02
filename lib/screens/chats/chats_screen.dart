@@ -72,11 +72,14 @@ class _ChatsScreenState extends State<ChatsScreen>
 
   bool _isTabControllerInitialized = false;
   SalesFunnel? _selectedFunnel;
-  
+
   // ✅ ИСПРАВЛЕНИЕ: Защита от бесконечных запросов через addPageRequestListener
-  final Map<String, DateTime?> _lastPageRequestTime = {}; // Время последнего запроса страницы для каждого endpoint
-  final Map<String, int?> _lastRequestedPage = {}; // Последняя запрошенная страница для каждого endpoint
-  static const Duration _pageRequestCooldown = Duration(milliseconds: 1000); // Задержка между запросами
+  final Map<String, DateTime?> _lastPageRequestTime =
+      {}; // Время последнего запроса страницы для каждого endpoint
+  final Map<String, int?> _lastRequestedPage =
+      {}; // Последняя запрошенная страница для каждого endpoint
+  static const Duration _pageRequestCooldown =
+      Duration(milliseconds: 1000); // Задержка между запросами
 
   final Map<String, PagingController<int, Chats>> _pagingControllers = {
     'lead': PagingController(firstPageKey: 0),
@@ -218,10 +221,10 @@ class _ChatsScreenState extends State<ChatsScreen>
   @override
   void initState() {
     super.initState();
-    
+
     // ✅ ДОБАВЛЕНО: Подписываемся на lifecycle events для обработки сворачивания приложения
     WidgetsBinding.instance.addObserver(this);
-    
+
     //print('ChatsScreen: initState started');
     _checkPermissions().then((_) {
       if (_isPermissionsChecked) {
@@ -301,33 +304,36 @@ class _ChatsScreenState extends State<ChatsScreen>
           controller.refresh();
           return;
         }
-        
+
         // ✅ ИСПРАВЛЕНИЕ: Защита от слишком частых запросов
         if (endPointInTab == endPoint) {
           final now = DateTime.now();
           final lastRequestTime = _lastPageRequestTime[endPoint];
           final lastRequestedPage = _lastRequestedPage[endPoint];
-          
+
           // Проверяем, не слишком ли часто запрашиваем страницы
           if (lastRequestTime != null) {
             final timeSinceLastRequest = now.difference(lastRequestTime);
             if (timeSinceLastRequest < _pageRequestCooldown) {
-              debugPrint('=================-=== ChatsScreen: Page request too soon (${timeSinceLastRequest.inMilliseconds}ms), skipping for endpoint $endPoint');
+              debugPrint(
+                  '=================-=== ChatsScreen: Page request too soon (${timeSinceLastRequest.inMilliseconds}ms), skipping for endpoint $endPoint');
               return;
             }
           }
-          
+
           // Проверяем, не запрашиваем ли мы ту же страницу
           if (lastRequestedPage == pageKey) {
-            debugPrint('=================-=== ChatsScreen: Same page requested ($pageKey), skipping for endpoint $endPoint');
+            debugPrint(
+                '=================-=== ChatsScreen: Same page requested ($pageKey), skipping for endpoint $endPoint');
             return;
           }
-          
+
           // Обновляем время и номер страницы
           _lastPageRequestTime[endPoint] = now;
           _lastRequestedPage[endPoint] = pageKey;
-          
-          debugPrint('=================-=== ChatsScreen: Requesting page $pageKey for endpoint $endPoint');
+
+          debugPrint(
+              '=================-=== ChatsScreen: Requesting page $pageKey for endpoint $endPoint');
           _chatsBlocs[endPoint]!.add(GetNextPageChats());
         }
       });
@@ -391,125 +397,166 @@ class _ChatsScreenState extends State<ChatsScreen>
     }
   }
 
- Widget _buildTitleWidget(BuildContext context) {
-  //print('ChatsScreen: Entering _buildTitleWidget');
-  return BlocBuilder<SalesFunnelBloc, SalesFunnelState>(
-    builder: (context, state) {
-      //print( 'ChatsScreen: _buildTitleWidget - Current SalesFunnelBloc state: $state');
-      //print('ChatsScreen: _buildTitleWidget - endPointInTab: $endPointInTab');
-      //print( 'ChatsScreen: _buildTitleWidget - _selectedFunnel: $_selectedFunnel');
+  Widget _buildTitleWidget(BuildContext context) {
+    //print('ChatsScreen: Entering _buildTitleWidget');
+    return BlocBuilder<SalesFunnelBloc, SalesFunnelState>(
+      builder: (context, state) {
+        //print( 'ChatsScreen: _buildTitleWidget - Current SalesFunnelBloc state: $state');
+        //print('ChatsScreen: _buildTitleWidget - endPointInTab: $endPointInTab');
+        //print( 'ChatsScreen: _buildTitleWidget - _selectedFunnel: $_selectedFunnel');
 
-      String title = AppLocalizations.of(context)!.translate('appbar_chats');
-      SalesFunnel? selectedFunnel;
+        String title = AppLocalizations.of(context)!.translate('appbar_chats');
+        SalesFunnel? selectedFunnel;
 
-      if (state is SalesFunnelLoading) {
-        //print('ChatsScreen: _buildTitleWidget - State is SalesFunnelLoading');
-        title = AppLocalizations.of(context)!.translate('appbar_chats');
-      } else if (state is SalesFunnelLoaded && endPointInTab == 'lead') {
-        //print('ChatsScreen: _buildTitleWidget - State is SalesFunnelLoaded');
-        //print( 'ChatsScreen: _buildTitleWidget - Available funnels: ${state.funnels.map((f) => '${f.id}: ${f.name}').toList()}');
-        //print('ChatsScreen: _buildTitleWidget - Selected funnel from state: ${state.selectedFunnel}');
+        if (state is SalesFunnelLoading) {
+          //print('ChatsScreen: _buildTitleWidget - State is SalesFunnelLoading');
+          title = AppLocalizations.of(context)!.translate('appbar_chats');
+        } else if (state is SalesFunnelLoaded && endPointInTab == 'lead') {
+          //print('ChatsScreen: _buildTitleWidget - State is SalesFunnelLoaded');
+          //print( 'ChatsScreen: _buildTitleWidget - Available funnels: ${state.funnels.map((f) => '${f.id}: ${f.name}').toList()}');
+          //print('ChatsScreen: _buildTitleWidget - Selected funnel from state: ${state.selectedFunnel}');
 
-        selectedFunnel = state.selectedFunnel ?? state.funnels.firstOrNull;
-        _selectedFunnel = selectedFunnel;
+          selectedFunnel = state.selectedFunnel ?? state.funnels.firstOrNull;
+          _selectedFunnel = selectedFunnel;
 
-        if (selectedFunnel != null) {
-          title = selectedFunnel.name;
-          //print( 'ChatsScreen: _buildTitleWidget - Using funnel: ${selectedFunnel.id} - ${selectedFunnel.name}');
-        } else {
-          //print(  'ChatsScreen: _buildTitleWidget - No funnel selected, using default title');
+          if (selectedFunnel != null) {
+            title = selectedFunnel.name;
+            //print( 'ChatsScreen: _buildTitleWidget - Using funnel: ${selectedFunnel.id} - ${selectedFunnel.name}');
+          } else {
+            //print(  'ChatsScreen: _buildTitleWidget - No funnel selected, using default title');
+          }
+        } else if (state is SalesFunnelError) {
+          //print(   'ChatsScreen: _buildTitleWidget - State is SalesFunnelError: ${state.message}');
+          title = AppLocalizations.of(context)!.translate(
+              'appbar_chats'); // Изменено: дефолтный заголовок вместо ошибки
         }
-      } else if (state is SalesFunnelError) {
-        //print(   'ChatsScreen: _buildTitleWidget - State is SalesFunnelError: ${state.message}');
-        title = AppLocalizations.of(context)!.translate('appbar_chats');  // Изменено: дефолтный заголовок вместо ошибки
-      }
 
-      //print('ChatsScreen: _buildTitleWidget - Final title: $title');
-      return Row(
-        children: [
-          Expanded(
-            child: Text(
-              title,
-              style: TextStyle(
-                fontSize: 20,
-                fontFamily: 'Gilroy',
-                fontWeight: FontWeight.w600,
-                color: Color(0xff1E2E52),
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          if (state is SalesFunnelLoaded &&
-              state.funnels.length > 1 &&
-              endPointInTab == 'lead')
-            Padding(
-              padding: const EdgeInsets.only(left: 8.0),
-              child: PopupMenuButton<SalesFunnel>(
-                icon: Icon(Icons.arrow_drop_down, color: Color(0xff1E2E52)),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12.0),
-                ),
-                color: Colors.white,
-                elevation: 8,
-                shadowColor: Colors.black.withOpacity(0.2),
-                offset: Offset(0, 40),
-                onSelected: (SalesFunnel funnel) async {
-                  //print('ChatsScreen: PopupMenuButton - Selected funnel: ${funnel.id} - ${funnel.name}');
-                  try {
-                    await apiService
-                        .saveSelectedChatSalesFunnel(funnel.id.toString());
-                    //print('ChatsScreen: PopupMenuButton - Saved funnel to preferences');
+        //print('ChatsScreen: _buildTitleWidget - Final title: $title');
+        return Row(
+          children: [
+            if (state is SalesFunnelLoaded &&
+                state.funnels.length > 1 &&
+                endPointInTab == 'lead')
+              Expanded(
+                child: InkWell(
+                  onTap: () async {
+                    final RenderBox button =
+                        context.findRenderObject() as RenderBox;
+                    final RenderBox overlay = Navigator.of(context)
+                        .overlay!
+                        .context
+                        .findRenderObject() as RenderBox;
+                    final RelativeRect position = RelativeRect.fromRect(
+                      Rect.fromPoints(
+                        button.localToGlobal(Offset.zero, ancestor: overlay),
+                        button.localToGlobal(
+                            button.size.bottomRight(Offset.zero),
+                            ancestor: overlay),
+                      ),
+                      Offset.zero & overlay.size,
+                    );
 
-                    setState(() {
-                      _selectedFunnel = funnel;
-                      _isSearching = false;
-                      searchController.clear();
-                      searchQuery = '';
-                    });
+                    final selected = await showMenu<SalesFunnel>(
+                      context: context,
+                      position: position,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12.0)),
+                      color: Colors.white,
+                      elevation: 8,
+                      items: state.funnels
+                          .map((funnel) => PopupMenuItem<SalesFunnel>(
+                                value: funnel,
+                                child: Text(
+                                  funnel.name,
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontFamily: 'Gilroy',
+                                    fontWeight: FontWeight.w500,
+                                    color: Color(0xff1E2E52),
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ))
+                          .toList(),
+                    );
 
-                    context
-                        .read<SalesFunnelBloc>()
-                        .add(SelectSalesFunnel(funnel));
-                    _chatsBlocs[endPointInTab]!.add(ClearChats());
-                    _pagingControllers[endPointInTab]!.itemList = null;
-                    _pagingControllers[endPointInTab]!.refresh();
+                    if (selected != null) {
+                      try {
+                        await apiService.saveSelectedChatSalesFunnel(
+                            selected.id.toString());
 
-                    //print(   'ChatsScreen: PopupMenuButton - Fetching chats with new funnel and active filters: $_activeFilters');
-                    _chatsBlocs[endPointInTab]!.add(FetchChats(
-                      endPoint: endPointInTab,
-                      salesFunnelId: funnel.id,
-                      filters: _activeFilters,
-                    ));
-                  } catch (e) {
-                    //print('ChatsScreen: PopupMenuButton - Error: $e');
-                  }
-                },
-                itemBuilder: (BuildContext context) {
-                  return state.funnels
-                      .map((funnel) => PopupMenuItem<SalesFunnel>(
-                            value: funnel,
-                            child: Text(
-                              funnel.name,
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontFamily: 'Gilroy',
-                                fontWeight: FontWeight.w500,
-                                color: Color(0xff1E2E52),
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                        setState(() {
+                          _selectedFunnel = selected;
+                          _isSearching = false;
+                          searchController.clear();
+                          searchQuery = '';
+                        });
+
+                        context
+                            .read<SalesFunnelBloc>()
+                            .add(SelectSalesFunnel(selected));
+                        _chatsBlocs[endPointInTab]!.add(ClearChats());
+                        _pagingControllers[endPointInTab]!.itemList = null;
+                        _pagingControllers[endPointInTab]!.refresh();
+
+                        _chatsBlocs[endPointInTab]!.add(FetchChats(
+                          endPoint: endPointInTab,
+                          salesFunnelId: selected.id,
+                          filters: _activeFilters,
+                        ));
+                      } catch (e) {
+                        //print('ChatsScreen: PopupMenuButton - Error: $e');
+                      }
+                    }
+                  },
+                  borderRadius: BorderRadius.circular(8),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 4.0, vertical: 4.0),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.expand_more,
+                            color: Color(0xff1E2E52), size: 24),
+                        const SizedBox(width: 4),
+                        Flexible(
+                          child: Text(
+                            title,
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontFamily: 'Gilroy',
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xff1E2E52),
                             ),
-                          ))
-                      .toList();
-                },
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              )
+            else
+              Expanded(
+                child: Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontFamily: 'Gilroy',
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xff1E2E52),
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
-            ),
-        ],
-      );
-    },
-  );
-}
+          ],
+        );
+      },
+    );
+  }
 
   String _getActiveFiltersText() {
     if (_activeFilters == null || !_hasActiveFilters) {
@@ -683,7 +730,7 @@ class _ChatsScreenState extends State<ChatsScreen>
 
     SharedPreferences prefs = await SharedPreferences.getInstance();
     bool isTutorialShown = prefs.getBool('isTutorialShowninChat') ?? false;
-  
+
     if (tutorialProgress == null ||
         tutorialProgress!['chat']?['index'] == true ||
         isTutorialShown ||
@@ -760,215 +807,253 @@ class _ChatsScreenState extends State<ChatsScreen>
     });
   }
 
-Future<void> setUpServices() async {
-  debugPrint('=================-=== ChatsScreen: Starting socket setup');
-  final prefs = await SharedPreferences.getInstance();
-  String? token = prefs.getString('token');
-  String? userId = prefs.getString('unique_id');
+  Future<void> setUpServices() async {
+    debugPrint('=================-=== ChatsScreen: Starting socket setup');
+    final prefs = await SharedPreferences.getInstance();
+    String? token = prefs.getString('token');
+    String? userId = prefs.getString('unique_id');
 
-  if (token == null || token.isEmpty || userId == null || userId.isEmpty) {
-    debugPrint('ChatsScreen: Error: Token or userId is null or empty (token: $token, userId: $userId)');
-    return;
-  }
+    if (token == null || token.isEmpty || userId == null || userId.isEmpty) {
+      debugPrint(
+          'ChatsScreen: Error: Token or userId is null or empty (token: $token, userId: $userId)');
+      return;
+    }
 
-  // Проверяем домены для старой логики
-  final enteredDomainMap = await ApiService().getEnteredDomain();
-  String? enteredMainDomain = enteredDomainMap['enteredMainDomain'];
-  String? enteredDomain = enteredDomainMap['enteredDomain'];
+    // Проверяем домены для старой логики
+    final enteredDomainMap = await ApiService().getEnteredDomain();
+    String? enteredMainDomain = enteredDomainMap['enteredMainDomain'];
+    String? enteredDomain = enteredDomainMap['enteredDomain'];
 
-  // Проверяем домен для email-верификации
-  String? verifiedDomain = await ApiService().getVerifiedDomain();
-  debugPrint('=================-=== ChatsScreen: Domain parameters: enteredMainDomain=$enteredMainDomain, enteredDomain=$enteredDomain, verifiedDomain=$verifiedDomain');
+    // Проверяем домен для email-верификации
+    String? verifiedDomain = await ApiService().getVerifiedDomain();
+    debugPrint(
+        '=================-=== ChatsScreen: Domain parameters: enteredMainDomain=$enteredMainDomain, enteredDomain=$enteredDomain, verifiedDomain=$verifiedDomain');
 
-  // Если домены отсутствуют, используем verifiedDomain или извлекаем из baseUrl ApiService
-  if (enteredMainDomain == null || enteredDomain == null) {
-    if (verifiedDomain != null && verifiedDomain.isNotEmpty) {
-      // Для email-верификации используем verifiedDomain
-      enteredMainDomain = verifiedDomain.split('-back.').last;
-      enteredDomain = verifiedDomain.split('-back.').first;
-      debugPrint('ChatsScreen: Using verifiedDomain: $verifiedDomain, parsed mainDomain=$enteredMainDomain, domain=$enteredDomain');
-    } else {
-      // Пытаемся извлечь из baseUrl ApiService
-      try {
-        final apiService = ApiService();
-        await apiService.initialize();
-        final baseUrl = await apiService.getDynamicBaseUrl();
-        debugPrint('=================-=== ChatsScreen: Got baseUrl from ApiService: $baseUrl');
-        
-        if (baseUrl.isNotEmpty && baseUrl != 'null') {
-          // Извлекаем домен из baseUrl (формат: https://fingroupcrm-back.shamcrm.com/api)
-          final urlPattern = RegExp(r'https://(.+?)-back\.(.+?)(/|$)');
-          final match = urlPattern.firstMatch(baseUrl);
-          if (match != null) {
-            enteredDomain = match.group(1);
-            enteredMainDomain = match.group(2);
-            debugPrint('ChatsScreen: Extracted from baseUrl: domain=$enteredDomain, mainDomain=$enteredMainDomain');
-            
-            // Сохраняем извлеченные значения
-            await prefs.setString('enteredMainDomain', enteredMainDomain!);
-            await prefs.setString('enteredDomain', enteredDomain!);
+    // Если домены отсутствуют, используем verifiedDomain или извлекаем из baseUrl ApiService
+    if (enteredMainDomain == null || enteredDomain == null) {
+      if (verifiedDomain != null && verifiedDomain.isNotEmpty) {
+        // Для email-верификации используем verifiedDomain
+        enteredMainDomain = verifiedDomain.split('-back.').last;
+        enteredDomain = verifiedDomain.split('-back.').first;
+        debugPrint(
+            'ChatsScreen: Using verifiedDomain: $verifiedDomain, parsed mainDomain=$enteredMainDomain, domain=$enteredDomain');
+      } else {
+        // Пытаемся извлечь из baseUrl ApiService
+        try {
+          final apiService = ApiService();
+          await apiService.initialize();
+          final baseUrl = await apiService.getDynamicBaseUrl();
+          debugPrint(
+              '=================-=== ChatsScreen: Got baseUrl from ApiService: $baseUrl');
+
+          if (baseUrl.isNotEmpty && baseUrl != 'null') {
+            // Извлекаем домен из baseUrl (формат: https://fingroupcrm-back.shamcrm.com/api)
+            final urlPattern = RegExp(r'https://(.+?)-back\.(.+?)(/|$)');
+            final match = urlPattern.firstMatch(baseUrl);
+            if (match != null) {
+              enteredDomain = match.group(1);
+              enteredMainDomain = match.group(2);
+              debugPrint(
+                  'ChatsScreen: Extracted from baseUrl: domain=$enteredDomain, mainDomain=$enteredMainDomain');
+
+              // Сохраняем извлеченные значения
+              await prefs.setString('enteredMainDomain', enteredMainDomain!);
+              await prefs.setString('enteredDomain', enteredDomain!);
+            } else {
+              debugPrint(
+                  '=================-=== ChatsScreen: Failed to parse baseUrl, using fallback');
+              enteredMainDomain = 'shamcrm.com';
+              enteredDomain =
+                  'fingroupcrm'; // Используем правильный домен из логов
+              await prefs.setString('enteredMainDomain', enteredMainDomain);
+              await prefs.setString('enteredDomain', enteredDomain);
+            }
           } else {
-            debugPrint('=================-=== ChatsScreen: Failed to parse baseUrl, using fallback');
+            debugPrint('ChatsScreen: BaseUrl empty, using fallback');
             enteredMainDomain = 'shamcrm.com';
-            enteredDomain = 'fingroupcrm'; // Используем правильный домен из логов
+            enteredDomain = 'fingroupcrm';
             await prefs.setString('enteredMainDomain', enteredMainDomain);
             await prefs.setString('enteredDomain', enteredDomain);
           }
-        } else {
-          debugPrint('ChatsScreen: BaseUrl empty, using fallback');
+        } catch (e) {
+          debugPrint(
+              '=================-=== ChatsScreen: Error extracting from baseUrl: $e, using fallback');
           enteredMainDomain = 'shamcrm.com';
           enteredDomain = 'fingroupcrm';
           await prefs.setString('enteredMainDomain', enteredMainDomain);
           await prefs.setString('enteredDomain', enteredDomain);
         }
-      } catch (e) {
-        debugPrint('=================-=== ChatsScreen: Error extracting from baseUrl: $e, using fallback');
-        enteredMainDomain = 'shamcrm.com';
-        enteredDomain = 'fingroupcrm';
-        await prefs.setString('enteredMainDomain', enteredMainDomain);
-        await prefs.setString('enteredDomain', enteredDomain);
       }
     }
-  }
 
-  final customOptions = PusherChannelsOptions.custom(
-    uriResolver: (metadata) => Uri.parse('wss://soketi.$enteredMainDomain/app/app-key'),
-    metadata: PusherChannelsOptionsMetadata.byDefault(),
-  );
+    final customOptions = PusherChannelsOptions.custom(
+      uriResolver: (metadata) =>
+          Uri.parse('wss://soketi.$enteredMainDomain/app/app-key'),
+      metadata: PusherChannelsOptionsMetadata.byDefault(),
+    );
 
-  socketClient = PusherChannelsClient.websocket(
-    options: customOptions,
-    connectionErrorHandler: (exception, trace, refresh) {
-      debugPrint('ChatsScreen: Socket connection error: $exception, StackTrace: $trace');
-      Future.delayed(Duration(seconds: 5), () async {
+    socketClient = PusherChannelsClient.websocket(
+      options: customOptions,
+      connectionErrorHandler: (exception, trace, refresh) {
+        debugPrint(
+            'ChatsScreen: Socket connection error: $exception, StackTrace: $trace');
+        Future.delayed(Duration(seconds: 5), () async {
+          try {
+            await socketClient.connect();
+            debugPrint('ChatsScreen: Socket reconnect attempted');
+          } catch (e, stackTrace) {
+            debugPrint(
+                'ChatsScreen: Error reconnecting to socket: $e, StackTrace: $stackTrace');
+          }
+        });
+        refresh();
+      },
+      minimumReconnectDelayDuration: const Duration(seconds: 1),
+    );
+
+    final myPresenceChannel = socketClient.presenceChannel(
+      'presence-user.$userId',
+      authorizationDelegate:
+          EndpointAuthorizableChannelTokenAuthorizationDelegate
+              .forPresenceChannel(
+        authorizationEndpoint: Uri.parse(
+            'https://$enteredDomain-back.$enteredMainDomain/broadcasting/auth'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'X-Tenant': '$enteredDomain-back',
+        },
+        onAuthFailed: (exception, trace) {
+          debugPrint(
+              '=================-=== ChatsScreen: Auth failed for presence-user.$userId: $exception, StackTrace: $trace');
+        },
+      ),
+    );
+
+    socketClient.onConnectionEstablished.listen((_) {
+      debugPrint(
+          '=================-=== ChatsScreen: Socket connected successfully for userId: $userId');
+      myPresenceChannel.subscribeIfNotUnsubscribed();
+      debugPrint(
+          '=================-=== ChatsScreen: Subscribed to channel: presence-user.$userId');
+    });
+
+    myPresenceChannel.bind('pusher:subscription_succeeded').listen((event) {
+      debugPrint(
+          '=================-=== ChatsScreen: Successfully subscribed to presence-user.$userId: ${event.data}');
+    });
+
+    myPresenceChannel.bind('pusher:subscription_error').listen((event) {
+      debugPrint(
+          '=================-=== ChatsScreen: Subscription error for presence-user.$userId: ${event.data}');
+    });
+
+    // Используем список подписок, чтобы избежать перезаписи
+    final List<StreamSubscription<ChannelReadEvent>> subscriptions = [];
+
+    subscriptions.add(
+      myPresenceChannel.bind('chat.created').listen((event) async {
+        debugPrint(
+            '=================-=== ChatsScreen: Received chat.created event: ${event.data}');
         try {
-          await socketClient.connect();
-          debugPrint('ChatsScreen: Socket reconnect attempted');
+          final chatData = json.decode(event.data);
+          if (chatData.containsKey('chat') &&
+              chatData['chat'] is Map<String, dynamic>) {
+            final chat = Chats.fromJson(chatData['chat']);
+            await updateFromSocket(chat: chat);
+          } else {
+            debugPrint(
+                '=================-=== ChatsScreen: Invalid chat.created data format: ${event.data}');
+          }
         } catch (e, stackTrace) {
-          debugPrint('ChatsScreen: Error reconnecting to socket: $e, StackTrace: $stackTrace');
+          debugPrint(
+              '=================-=== ChatsScreen: Error processing chat.created event: $e, StackTrace: $stackTrace');
         }
-      });
-      refresh();
-    },
-    minimumReconnectDelayDuration: const Duration(seconds: 1),
-  );
+      }),
+    );
 
-  final myPresenceChannel = socketClient.presenceChannel(
-    'presence-user.$userId',
-    authorizationDelegate: EndpointAuthorizableChannelTokenAuthorizationDelegate.forPresenceChannel(
-      authorizationEndpoint: Uri.parse('https://$enteredDomain-back.$enteredMainDomain/broadcasting/auth'),
-      headers: {
-        'Authorization': 'Bearer $token',
-        'X-Tenant': '$enteredDomain-back',
-      },
-      onAuthFailed: (exception, trace) {
-        debugPrint('=================-=== ChatsScreen: Auth failed for presence-user.$userId: $exception, StackTrace: $trace');
-      },
-    ),
-  );
-
-  socketClient.onConnectionEstablished.listen((_) {
-    debugPrint('=================-=== ChatsScreen: Socket connected successfully for userId: $userId');
-    myPresenceChannel.subscribeIfNotUnsubscribed();
-    debugPrint('=================-=== ChatsScreen: Subscribed to channel: presence-user.$userId');
-  });
-
-  myPresenceChannel.bind('pusher:subscription_succeeded').listen((event) {
-    debugPrint('=================-=== ChatsScreen: Successfully subscribed to presence-user.$userId: ${event.data}');
-  });
-
-  myPresenceChannel.bind('pusher:subscription_error').listen((event) {
-    debugPrint('=================-=== ChatsScreen: Subscription error for presence-user.$userId: ${event.data}');
-  });
-
-  // Используем список подписок, чтобы избежать перезаписи
-  final List<StreamSubscription<ChannelReadEvent>> subscriptions = [];
-
-  subscriptions.add(
-    myPresenceChannel.bind('chat.created').listen((event) async {
-      debugPrint('=================-=== ChatsScreen: Received chat.created event: ${event.data}');
-      try {
-        final chatData = json.decode(event.data);
-        if (chatData.containsKey('chat') && chatData['chat'] is Map<String, dynamic>) {
-          final chat = Chats.fromJson(chatData['chat']);
-          await updateFromSocket(chat: chat);
-        } else {
-          debugPrint('=================-=== ChatsScreen: Invalid chat.created data format: ${event.data}');
+    subscriptions.add(
+      myPresenceChannel.bind('chat.updated').listen((event) async {
+        debugPrint(
+            '=================-=== ChatsScreen: Received chat.updated event: ${event.data}');
+        try {
+          final chatData = json.decode(event.data);
+          if (chatData.containsKey('chat') &&
+              chatData['chat'] is Map<String, dynamic>) {
+            final chat = Chats.fromJson(chatData['chat']);
+            await updateFromSocket(chat: chat);
+          } else {
+            debugPrint(
+                '=================-=== ChatsScreen: Invalid chat.updated data format: ${event.data}');
+          }
+        } catch (e, stackTrace) {
+          debugPrint(
+              '=================-=== ChatsScreen: Error processing chat.updated event: $e, StackTrace: $stackTrace');
         }
-      } catch (e, stackTrace) {
-        debugPrint('=================-=== ChatsScreen: Error processing chat.created event: $e, StackTrace: $stackTrace');
-      }
-    }),
-  );
+      }),
+    );
 
-  subscriptions.add(
-    myPresenceChannel.bind('chat.updated').listen((event) async {
-      debugPrint('=================-=== ChatsScreen: Received chat.updated event: ${event.data}');
-      try {
-        final chatData = json.decode(event.data);
-        if (chatData.containsKey('chat') && chatData['chat'] is Map<String, dynamic>) {
-          final chat = Chats.fromJson(chatData['chat']);
-          await updateFromSocket(chat: chat);
-        } else {
-          debugPrint('=================-=== ChatsScreen: Invalid chat.updated data format: ${event.data}');
-        }
-      } catch (e, stackTrace) {
-        debugPrint('=================-=== ChatsScreen: Error processing chat.updated event: $e, StackTrace: $stackTrace');
-      }
-    }),
-  );
+    // Сохраняем подписки для последующей очистки
+    chatSubscribtion =
+        subscriptions.first; // Для совместимости с текущей структурой
 
-  // Сохраняем подписки для последующей очистки
-  chatSubscribtion = subscriptions.first; // Для совместимости с текущей структурой
-
-  try {
-    await socketClient.connect();
-    debugPrint('=================-=== ChatsScreen: Socket connection initiated');
-  } catch (e, stackTrace) {
-    debugPrint('=================-=== ChatsScreen: Error connecting to socket: $e, StackTrace: $stackTrace');
-  }
-}
-
-Future<void> updateFromSocket({required Chats chat}) async {
-  debugPrint('=================-=== ChatsScreen: updateFromSocket called for chat ID: ${chat.id}, type: ${chat.type}, unreadCount: ${chat.unreadCount}, lastMessage: "${chat.lastMessage}", current endPointInTab: $endPointInTab');
-  
-  if (chat.type == null) {
-    debugPrint('=================-=== ChatsScreen: Skipping update due to null chat type');
-    return;
-  }
-  
-  // Определяем, к какой вкладке относится чат
-  String chatEndpoint;
-  if (chat.type == 'lead') {
-    chatEndpoint = 'lead';
-  } else if (chat.type == 'task') {
-    chatEndpoint = 'task';
-  } else if (chat.type == 'corporate') {
-    chatEndpoint = 'corporate';
-  } else {
-    debugPrint('=================-=== ChatsScreen: Unknown chat type: ${chat.type}, skipping update');
-    return;
-  }
-  
-  // Обновляем соответствующий блок
-  if (_chatsBlocs.containsKey(chatEndpoint)) {
-    debugPrint('=================-=== ChatsScreen: Updating chat ID: ${chat.id} for endpoint $chatEndpoint');
-    _chatsBlocs[chatEndpoint]!.add(UpdateChatsFromSocket(chat: chat));
-    
-    // Если обновляется текущая вкладка, обновляем UI
-    if (chatEndpoint == endPointInTab) {
-      debugPrint('=================-=== ChatsScreen: Chat update for active tab $chatEndpoint, refreshing UI');
-      // НЕ вызываем refresh, чтобы не перезагружать данные
-      // _pagingControllers[chatEndpoint]!.refresh();
-    } else {
-      // Для неактивной вкладки очищаем данные, чтобы они загрузились заново при переключении
-      debugPrint('=================-=== ChatsScreen: Chat update for inactive tab $chatEndpoint, marking for refresh');
-      _pagingControllers[chatEndpoint]!.itemList = null;
+    try {
+      await socketClient.connect();
+      debugPrint(
+          '=================-=== ChatsScreen: Socket connection initiated');
+    } catch (e, stackTrace) {
+      debugPrint(
+          '=================-=== ChatsScreen: Error connecting to socket: $e, StackTrace: $stackTrace');
     }
-  } else {
-    debugPrint('=================-=== ChatsScreen: No bloc found for endpoint $chatEndpoint');
   }
-}
+
+  Future<void> updateFromSocket({required Chats chat}) async {
+    debugPrint(
+        '=================-=== ChatsScreen: updateFromSocket called for chat ID: ${chat.id}, type: ${chat.type}, unreadCount: ${chat.unreadCount}, lastMessage: "${chat.lastMessage}", current endPointInTab: $endPointInTab');
+
+    if (chat.type == null) {
+      debugPrint(
+          '=================-=== ChatsScreen: Skipping update due to null chat type');
+      return;
+    }
+
+    // Определяем, к какой вкладке относится чат
+    String chatEndpoint;
+    if (chat.type == 'lead') {
+      chatEndpoint = 'lead';
+    } else if (chat.type == 'task') {
+      chatEndpoint = 'task';
+    } else if (chat.type == 'corporate') {
+      chatEndpoint = 'corporate';
+    } else {
+      debugPrint(
+          '=================-=== ChatsScreen: Unknown chat type: ${chat.type}, skipping update');
+      return;
+    }
+
+    // Обновляем соответствующий блок
+    if (_chatsBlocs.containsKey(chatEndpoint)) {
+      debugPrint(
+          '=================-=== ChatsScreen: Updating chat ID: ${chat.id} for endpoint $chatEndpoint');
+      _chatsBlocs[chatEndpoint]!.add(UpdateChatsFromSocket(chat: chat));
+
+      // Если обновляется текущая вкладка, обновляем UI
+      if (chatEndpoint == endPointInTab) {
+        debugPrint(
+            '=================-=== ChatsScreen: Chat update for active tab $chatEndpoint, refreshing UI');
+        // НЕ вызываем refresh, чтобы не перезагружать данные
+        // _pagingControllers[chatEndpoint]!.refresh();
+      } else {
+        // Для неактивной вкладки очищаем данные, чтобы они загрузились заново при переключении
+        debugPrint(
+            '=================-=== ChatsScreen: Chat update for inactive tab $chatEndpoint, marking for refresh');
+        _pagingControllers[chatEndpoint]!.itemList = null;
+      }
+    } else {
+      debugPrint(
+          '=================-=== ChatsScreen: No bloc found for endpoint $chatEndpoint');
+    }
+  }
+
   void updateChats() {
     _chatsBlocs[endPointInTab]!.add(RefreshChats());
   }
@@ -1024,9 +1109,7 @@ Future<void> updateFromSocket({required Chats chat}) async {
                     _chatsBlocs[endPointInTab]!.add(FetchChats(
                       endPoint: endPointInTab,
                       salesFunnelId: _selectedFunnel?.id,
-                      filters: endPointInTab == 'lead'
-                          ? _activeFilters
-                          : null,
+                      filters: endPointInTab == 'lead' ? _activeFilters : null,
                     ));
                   }
                 });
@@ -1064,9 +1147,8 @@ Future<void> updateFromSocket({required Chats chat}) async {
                       chatsBloc.add(FetchChats(
                         endPoint: endPointInTab,
                         salesFunnelId: _selectedFunnel?.id,
-                        filters: endPointInTab == 'lead'
-                            ? _activeFilters
-                            : null,
+                        filters:
+                            endPointInTab == 'lead' ? _activeFilters : null,
                       ));
                     });
                   }
@@ -1240,16 +1322,16 @@ Future<void> updateFromSocket({required Chats chat}) async {
               : index == 1
                   ? 'task'
                   : 'corporate';
-          
+
           // Скрываем содержимое вкладок, к которым нет доступа
           bool hasAccess = (index == 0 && _showLeadChat) ||
-                          (index == 1 && _showTaskChat) ||
-                          (index == 2 && _showCorporateChat);
-          
+              (index == 1 && _showTaskChat) ||
+              (index == 2 && _showCorporateChat);
+
           if (!hasAccess) {
             return Container(); // Пустой контейнер для недоступных вкладок
           }
-          
+
           return BlocProvider.value(
             value: _chatsBlocs[endPoint]!,
             child: _ChatItemsWidget(
@@ -1266,14 +1348,16 @@ Future<void> updateFromSocket({required Chats chat}) async {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
-    
+
     if (state == AppLifecycleState.paused) {
       // ✅ Приложение свернулось - логируем для отладки
-      debugPrint('=================-=== ChatsScreen: App paused, active chats will be deactivated by ActiveChatTracker');
+      debugPrint(
+          '=================-=== ChatsScreen: App paused, active chats will be deactivated by ActiveChatTracker');
     } else if (state == AppLifecycleState.resumed) {
       // ✅ Приложение вернулось - обновляем список чатов
-      debugPrint('=================-=== ChatsScreen: App resumed, refreshing chats');
-      
+      debugPrint(
+          '=================-=== ChatsScreen: App resumed, refreshing chats');
+
       // ✅ Небольшая задержка, чтобы UI успел восстановиться
       Future.delayed(const Duration(milliseconds: 300), () {
         if (mounted) {
@@ -1288,7 +1372,7 @@ Future<void> updateFromSocket({required Chats chat}) async {
   void dispose() {
     // ✅ ДОБАВЛЕНО: Отписываемся от lifecycle events
     WidgetsBinding.instance.removeObserver(this);
-    
+
     _tabController.dispose();
     chatSubscribtion.cancel();
     socketClient.dispose();
@@ -1326,27 +1410,28 @@ class _ChatItemsWidgetState extends State<_ChatItemsWidget> {
     super.dispose();
   }
 
-void onTap(Chats chat) {
-  setState(() {
-    chat.unreadCount = 0;
-  });
-  FocusManager.instance.primaryFocus?.unfocus();
-  Navigator.push(
-    context,
-    MaterialPageRoute(
-      builder: (context) => BlocProvider(
-        create: (context) => MessagingCubit(ApiService()),
-        child: ChatSmsScreen(
-          chatItem: chat.toChatItem(),
-          chatId: chat.id,
-          chatUniqueId: chat.uniqueId, // Передаем unique_id для сокетов
-          endPointInTab: widget.endPointInTab,
-          canSendMessage: chat.canSendMessage,
+  void onTap(Chats chat) {
+    setState(() {
+      chat.unreadCount = 0;
+    });
+    FocusManager.instance.primaryFocus?.unfocus();
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => BlocProvider(
+          create: (context) => MessagingCubit(ApiService()),
+          child: ChatSmsScreen(
+            chatItem: chat.toChatItem(),
+            chatId: chat.id,
+            chatUniqueId: chat.uniqueId, // Передаем unique_id для сокетов
+            endPointInTab: widget.endPointInTab,
+            canSendMessage: chat.canSendMessage,
+          ),
         ),
       ),
-    ),
-  ); // ✅ УДАЛИЛИ .then((_) { widget.updateChats.call(); });
-}
+    ); // ✅ УДАЛИЛИ .then((_) { widget.updateChats.call(); });
+  }
+
   void onLongPress(Chats chat) {
     if (widget.endPointInTab == 'task' || widget.endPointInTab == 'lead') {
       return;
@@ -1360,187 +1445,206 @@ void onTap(Chats chat) {
       ),
     );
   }
-bool _shouldRefreshData(List<Chats> current, List<Chats> updated) {
-  if (current.isEmpty && updated.isEmpty) {
-    debugPrint('_ChatItemsWidget._shouldRefreshData: Both lists are empty, no refresh needed');
-    return false;
-  }
-  
-  // ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Если current пуст, а updated не пуст - это первая загрузка, НЕ merge!
-  if (current.isEmpty && updated.isNotEmpty) {
-    debugPrint('=================-=== _ChatItemsWidget._shouldRefreshData: First load detected (0 -> ${updated.length}), must refresh');
-    return true;
-  }
-  
-  // ✅ ИСПРАВЛЕНИЕ: Если длина изменилась, проверяем, не из-за ли это merge (добавления новых страниц)
-  if (current.length != updated.length) {
-    // Если обновленный список содержит все элементы текущего списка + новые - это merge
+
+  bool _shouldRefreshData(List<Chats> current, List<Chats> updated) {
+    if (current.isEmpty && updated.isEmpty) {
+      debugPrint(
+          '_ChatItemsWidget._shouldRefreshData: Both lists are empty, no refresh needed');
+      return false;
+    }
+
+    // ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Если current пуст, а updated не пуст - это первая загрузка, НЕ merge!
+    if (current.isEmpty && updated.isNotEmpty) {
+      debugPrint(
+          '=================-=== _ChatItemsWidget._shouldRefreshData: First load detected (0 -> ${updated.length}), must refresh');
+      return true;
+    }
+
+    // ✅ ИСПРАВЛЕНИЕ: Если длина изменилась, проверяем, не из-за ли это merge (добавления новых страниц)
+    if (current.length != updated.length) {
+      // Если обновленный список содержит все элементы текущего списка + новые - это merge
+      final currentIds = current.map((c) => c.id).toSet();
+      final updatedIds = updated.map((c) => c.id).toSet();
+
+      // ✅ ИСПРАВЛЕНИЕ: Проверяем, является ли currentIds подмножеством updatedIds
+      final isSubset = currentIds.every((id) => updatedIds.contains(id));
+
+      // Если все текущие ID есть в обновленном списке, и обновленный список больше - это merge
+      // НО только если current НЕ пуст (если пуст - это первая загрузка, уже обработано выше)
+      if (isSubset && updated.length > current.length && current.isNotEmpty) {
+        debugPrint(
+            '=================-=== _ChatItemsWidget._shouldRefreshData: Length increased from ${current.length} to ${updated.length} (merge detected), allowing refresh for pagination');
+        return true; // ✅ ИСПРАВЛЕНИЕ: Возвращаем true при merge, чтобы listener мог обработать пагинацию
+      }
+
+      debugPrint(
+          '_ChatItemsWidget._shouldRefreshData: Length changed from ${current.length} to ${updated.length}');
+      return true;
+    }
+
     final currentIds = current.map((c) => c.id).toSet();
     final updatedIds = updated.map((c) => c.id).toSet();
-    
-    // ✅ ИСПРАВЛЕНИЕ: Проверяем, является ли currentIds подмножеством updatedIds
-    final isSubset = currentIds.every((id) => updatedIds.contains(id));
-    
-    // Если все текущие ID есть в обновленном списке, и обновленный список больше - это merge
-    // НО только если current НЕ пуст (если пуст - это первая загрузка, уже обработано выше)
-    if (isSubset && updated.length > current.length && current.isNotEmpty) {
-      debugPrint('=================-=== _ChatItemsWidget._shouldRefreshData: Length increased from ${current.length} to ${updated.length} (merge detected), allowing refresh for pagination');
-      return true; // ✅ ИСПРАВЛЕНИЕ: Возвращаем true при merge, чтобы listener мог обработать пагинацию
-    }
-    
-    debugPrint('_ChatItemsWidget._shouldRefreshData: Length changed from ${current.length} to ${updated.length}');
-    return true;
-  }
-  
-  final currentIds = current.map((c) => c.id).toSet();
-  final updatedIds = updated.map((c) => c.id).toSet();
-  
-  if (!currentIds.containsAll(updatedIds) || !updatedIds.containsAll(currentIds)) {
-    debugPrint('=================-=== _ChatItemsWidget._shouldRefreshData: Chat IDs changed');
-    return true;
-  }
-  
-  // 🔹 НОВАЯ ПРОВЕРКА: сравниваем unreadCount и lastMessage
-  for (int i = 0; i < updated.length; i++) {
-    final updatedChat = updated[i];
-    final currentChat = current.firstWhere(
-      (c) => c.id == updatedChat.id, 
-      orElse: () => updatedChat,
-    );
-    
-    if (currentChat.unreadCount != updatedChat.unreadCount) {
-      debugPrint('_ChatItemsWidget._shouldRefreshData: unreadCount changed for chat ID ${updatedChat.id}: ${currentChat.unreadCount} -> ${updatedChat.unreadCount}');
+
+    if (!currentIds.containsAll(updatedIds) ||
+        !updatedIds.containsAll(currentIds)) {
+      debugPrint(
+          '=================-=== _ChatItemsWidget._shouldRefreshData: Chat IDs changed');
       return true;
     }
-    
-    if (currentChat.lastMessage != updatedChat.lastMessage) {
-      debugPrint('=================-=== _ChatItemsWidget._shouldRefreshData: lastMessage changed for chat ID ${updatedChat.id}');
+
+    // 🔹 НОВАЯ ПРОВЕРКА: сравниваем unreadCount и lastMessage
+    for (int i = 0; i < updated.length; i++) {
+      final updatedChat = updated[i];
+      final currentChat = current.firstWhere(
+        (c) => c.id == updatedChat.id,
+        orElse: () => updatedChat,
+      );
+
+      if (currentChat.unreadCount != updatedChat.unreadCount) {
+        debugPrint(
+            '_ChatItemsWidget._shouldRefreshData: unreadCount changed for chat ID ${updatedChat.id}: ${currentChat.unreadCount} -> ${updatedChat.unreadCount}');
+        return true;
+      }
+
+      if (currentChat.lastMessage != updatedChat.lastMessage) {
+        debugPrint(
+            '=================-=== _ChatItemsWidget._shouldRefreshData: lastMessage changed for chat ID ${updatedChat.id}');
+        return true;
+      }
+    }
+
+    // Проверяем изменение порядка
+    if (_isOrderChanged(current, updated)) {
+      debugPrint(
+          '=================-=== _ChatItemsWidget._shouldRefreshData: Order changed');
       return true;
     }
+
+    debugPrint('_ChatItemsWidget._shouldRefreshData: No changes detected');
+    return false;
   }
-  
-  // Проверяем изменение порядка
-  if (_isOrderChanged(current, updated)) {
-    debugPrint('=================-=== _ChatItemsWidget._shouldRefreshData: Order changed');
-    return true;
-  }
-  
-  debugPrint('_ChatItemsWidget._shouldRefreshData: No changes detected');
-  return false;
-}
+
   @override
   Widget build(BuildContext context) {
     return BlocListener<ChatsBloc, ChatsState>(
-  listener: (context, state) {
-    //print('_ChatItemsWidget: State=$state, endpoint=${widget.endPointInTab}');
-    
-    if (state is ChatsLoaded) {
-      final newChats = state.chatsPagination.data;
-      final currentPage = state.chatsPagination.currentPage;
-      final totalPage = state.chatsPagination.totalPage;
-      
-      //print('_ChatItemsWidget: Loaded page $currentPage/$totalPage with ${newChats.length} chats');
-      
-      // ✅ КРИТИЧЕСКАЯ ПРОВЕРКА #1: Первая страница пустая
-      if (currentPage == 1 && newChats.isEmpty) {
-        //print('_ChatItemsWidget: No data, showing empty state');
-        widget.pagingController.appendLastPage([]);
-        return;
-      }
-      
-      // ✅ КРИТИЧЕСКАЯ ПРОВЕРКА #2: Проверка на изменения
-      final currentItems = widget.pagingController.itemList ?? [];
-      
-      if (!_shouldRefreshData(currentItems, newChats)) {
-        //print('_ChatItemsWidget: No changes detected, skipping update');
-        return;
-      }
-      
-      // ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Если currentItems пуст, это первая загрузка, НЕ merge!
-      if (currentItems.isEmpty && newChats.isNotEmpty) {
-        debugPrint('_ChatItemsWidget: First load detected (empty -> ${newChats.length}), appending page $currentPage');
-        if (currentPage >= totalPage) {
-          widget.pagingController.appendLastPage(newChats);
-        } else {
-          widget.pagingController.appendPage(newChats, currentPage);
-        }
-        return;
-      }
-      
-      // ✅ ИСПРАВЛЕНИЕ: Проверяем, не является ли это merge (добавление новых страниц)
-      // Если текущий список является подмножеством нового - это merge, обновляем без сброса
-      final currentIds = currentItems.map((c) => c.id).toSet();
-      final newIds = newChats.map((c) => c.id).toSet();
-      final isSubset = currentIds.every((id) => newIds.contains(id));
-      // ✅ ИСПРАВЛЕНИЕ: Merge только если currentItems НЕ пуст
-      final isMerge = isSubset && newChats.length > currentItems.length && currentItems.isNotEmpty;
-      
-      if (isMerge) {
-        // ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: При merge извлекаем только НОВЫЕ элементы для добавления
-        // newChats содержит все элементы (старые + новые), нужно добавить только новые
-        final newItemsOnly = newChats.where((chat) => !currentIds.contains(chat.id)).toList();
-        
-        debugPrint('_ChatItemsWidget: Merge detected - current: ${currentItems.length}, new total: ${newChats.length}, new items only: ${newItemsOnly.length}, appending page $currentPage');
-        
-        // ✅ ИСПРАВЛЕНИЕ: Проверяем, не добавляем ли мы уже эту страницу
-        if (newItemsOnly.isEmpty) {
-          debugPrint('_ChatItemsWidget: No new items to append (page $currentPage already loaded), skipping');
-          return;
-        }
-        
-        if (currentPage >= totalPage) {
-          widget.pagingController.appendLastPage(newItemsOnly);
-        } else {
-          widget.pagingController.appendPage(newItemsOnly, currentPage);
-        }
-      } else {
-        // ✅ Обычное обновление (изменения в существующих чатах)
-        // ✅ ИСПРАВЛЕНИЕ: Проверяем, действительно ли нужно обновлять
-        if (currentItems.length == newChats.length && currentIds.containsAll(newIds) && newIds.containsAll(currentIds)) {
-          // Только изменения в данных, не в структуре - просто заменяем список
-          // appendPage здесь нельзя использовать, иначе список будет удваиваться
-          debugPrint('=================-=== _ChatItemsWidget: Only data changes detected, replacing itemList');
-          widget.pagingController.itemList = List<Chats>.from(newChats);
-        } else {
-          // Структурные изменения - нужен полный сброс
-          widget.pagingController.itemList = null;
-          
-          if (currentPage >= totalPage) {
-            widget.pagingController.appendLastPage(newChats);
-          } else {
-            widget.pagingController.appendPage(newChats, currentPage);
+      listener: (context, state) {
+        //print('_ChatItemsWidget: State=$state, endpoint=${widget.endPointInTab}');
+
+        if (state is ChatsLoaded) {
+          final newChats = state.chatsPagination.data;
+          final currentPage = state.chatsPagination.currentPage;
+          final totalPage = state.chatsPagination.totalPage;
+
+          //print('_ChatItemsWidget: Loaded page $currentPage/$totalPage with ${newChats.length} chats');
+
+          // ✅ КРИТИЧЕСКАЯ ПРОВЕРКА #1: Первая страница пустая
+          if (currentPage == 1 && newChats.isEmpty) {
+            //print('_ChatItemsWidget: No data, showing empty state');
+            widget.pagingController.appendLastPage([]);
+            return;
           }
-        }
-      }
-      
-    } else if (state is ChatsError) {
-      //print('_ChatItemsWidget: Error - ${state.message}');
-      widget.pagingController.error = state.message;
-      
-      if (state.message.contains(
-        AppLocalizations.of(context)!.translate('no_internet_connection'),
-      )) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              state.message,
-              style: TextStyle(
-                fontFamily: 'Gilroy',
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                color: Colors.white,
+
+          // ✅ КРИТИЧЕСКАЯ ПРОВЕРКА #2: Проверка на изменения
+          final currentItems = widget.pagingController.itemList ?? [];
+
+          if (!_shouldRefreshData(currentItems, newChats)) {
+            //print('_ChatItemsWidget: No changes detected, skipping update');
+            return;
+          }
+
+          // ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Если currentItems пуст, это первая загрузка, НЕ merge!
+          if (currentItems.isEmpty && newChats.isNotEmpty) {
+            debugPrint(
+                '_ChatItemsWidget: First load detected (empty -> ${newChats.length}), appending page $currentPage');
+            if (currentPage >= totalPage) {
+              widget.pagingController.appendLastPage(newChats);
+            } else {
+              widget.pagingController.appendPage(newChats, currentPage);
+            }
+            return;
+          }
+
+          // ✅ ИСПРАВЛЕНИЕ: Проверяем, не является ли это merge (добавление новых страниц)
+          // Если текущий список является подмножеством нового - это merge, обновляем без сброса
+          final currentIds = currentItems.map((c) => c.id).toSet();
+          final newIds = newChats.map((c) => c.id).toSet();
+          final isSubset = currentIds.every((id) => newIds.contains(id));
+          // ✅ ИСПРАВЛЕНИЕ: Merge только если currentItems НЕ пуст
+          final isMerge = isSubset &&
+              newChats.length > currentItems.length &&
+              currentItems.isNotEmpty;
+
+          if (isMerge) {
+            // ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: При merge извлекаем только НОВЫЕ элементы для добавления
+            // newChats содержит все элементы (старые + новые), нужно добавить только новые
+            final newItemsOnly = newChats
+                .where((chat) => !currentIds.contains(chat.id))
+                .toList();
+
+            debugPrint(
+                '_ChatItemsWidget: Merge detected - current: ${currentItems.length}, new total: ${newChats.length}, new items only: ${newItemsOnly.length}, appending page $currentPage');
+
+            // ✅ ИСПРАВЛЕНИЕ: Проверяем, не добавляем ли мы уже эту страницу
+            if (newItemsOnly.isEmpty) {
+              debugPrint(
+                  '_ChatItemsWidget: No new items to append (page $currentPage already loaded), skipping');
+              return;
+            }
+
+            if (currentPage >= totalPage) {
+              widget.pagingController.appendLastPage(newItemsOnly);
+            } else {
+              widget.pagingController.appendPage(newItemsOnly, currentPage);
+            }
+          } else {
+            // ✅ Обычное обновление (изменения в существующих чатах)
+            // ✅ ИСПРАВЛЕНИЕ: Проверяем, действительно ли нужно обновлять
+            if (currentItems.length == newChats.length &&
+                currentIds.containsAll(newIds) &&
+                newIds.containsAll(currentIds)) {
+              // Только изменения в данных, не в структуре - просто заменяем список
+              // appendPage здесь нельзя использовать, иначе список будет удваиваться
+              debugPrint(
+                  '=================-=== _ChatItemsWidget: Only data changes detected, replacing itemList');
+              widget.pagingController.itemList = List<Chats>.from(newChats);
+            } else {
+              // Структурные изменения - нужен полный сброс
+              widget.pagingController.itemList = null;
+
+              if (currentPage >= totalPage) {
+                widget.pagingController.appendLastPage(newChats);
+              } else {
+                widget.pagingController.appendPage(newChats, currentPage);
+              }
+            }
+          }
+        } else if (state is ChatsError) {
+          //print('_ChatItemsWidget: Error - ${state.message}');
+          widget.pagingController.error = state.message;
+
+          if (state.message.contains(
+            AppLocalizations.of(context)!.translate('no_internet_connection'),
+          )) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  state.message,
+                  style: TextStyle(
+                    fontFamily: 'Gilroy',
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.white,
+                  ),
+                ),
+                backgroundColor: Colors.red,
               ),
-            ),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-      
-    } else if (state is ChatsInitial) {
-      //print('_ChatItemsWidget: Initial state, resetting');
-      widget.pagingController.itemList = null;
-    }
-  },
+            );
+          }
+        } else if (state is ChatsInitial) {
+          //print('_ChatItemsWidget: Initial state, resetting');
+          widget.pagingController.itemList = null;
+        }
+      },
       child: PagedListView<int, Chats>(
         padding: EdgeInsets.symmetric(vertical: 0),
         pagingController: widget.pagingController,
@@ -1551,8 +1655,10 @@ bool _shouldRefreshData(List<Chats> current, List<Chats> updated) {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
-                    AppLocalizations.of(context)!.translate('nothing_found_chat'),
-                    style: TextStyle(fontSize: 18, color: AppColors.primaryBlue),
+                    AppLocalizations.of(context)!
+                        .translate('nothing_found_chat'),
+                    style:
+                        TextStyle(fontSize: 18, color: AppColors.primaryBlue),
                   ),
                   SizedBox(height: 8),
                   Text(
@@ -1598,11 +1704,11 @@ bool _shouldRefreshData(List<Chats> current, List<Chats> updated) {
       ),
     );
   }
-  
+
   // НОВЫЙ МЕТОД: Проверка изменения порядка элементов
   bool _isOrderChanged(List<Chats> current, List<Chats> updated) {
     if (current.length != updated.length) return true;
-    
+
     for (int i = 0; i < current.length && i < updated.length; i++) {
       if (current[i].id != updated[i].id) {
         return true;
