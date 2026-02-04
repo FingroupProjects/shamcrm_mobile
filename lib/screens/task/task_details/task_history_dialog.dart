@@ -19,7 +19,9 @@ class _TaskHistoryDialogState extends State<TaskHistoryDialog> {
   @override
   void initState() {
     super.initState();
-    context.read<TaskOverdueHistoryBloc>().add(FetchTaskOverdueHistory(widget.taskId));
+    context
+        .read<TaskOverdueHistoryBloc>()
+        .add(FetchTaskOverdueHistory(widget.taskId));
   }
 
   @override
@@ -46,16 +48,22 @@ class _TaskHistoryDialogState extends State<TaskHistoryDialog> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          AppLocalizations.of(context)!.translate('execution_history'),
-          style: const TextStyle(
-            fontSize: 22,
-            fontFamily: 'Gilroy',
-            fontWeight: FontWeight.w700,
-            color: Color(0xff1E2E52),
+        Expanded(
+          child: Text(
+            AppLocalizations.of(context)!.translate('execution_history'),
+            style: const TextStyle(
+              fontSize: 22,
+              fontFamily: 'Gilroy',
+              fontWeight: FontWeight.w700,
+              color: Color(0xff1E2E52),
+            ),
+            overflow: TextOverflow.ellipsis,
           ),
         ),
+        const SizedBox(width: 8),
         IconButton(
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints(),
           icon: Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
@@ -73,10 +81,6 @@ class _TaskHistoryDialogState extends State<TaskHistoryDialog> {
   Widget _buildContent() {
     return _buildOverdueHistory();
   }
-
-
-
-
 
   // ✨ КРАСИВАЯ История выполнения
   Widget _buildOverdueHistory() {
@@ -214,17 +218,19 @@ class _TaskHistoryDialogState extends State<TaskHistoryDialog> {
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: items.map((item) => Padding(
-        padding: const EdgeInsets.only(bottom: 4),
-        child: Text(
-          item,
-          style: TextStyle(
-            fontSize: 13,
-            fontFamily: 'Gilroy',
-            color: textColor,
-          ),
-        ),
-      )).toList(),
+      children: items
+          .map((item) => Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Text(
+                  item,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontFamily: 'Gilroy',
+                    color: textColor,
+                  ),
+                ),
+              ))
+          .toList(),
     );
   }
 

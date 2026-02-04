@@ -10,13 +10,13 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 class ProjectTaskGroupWidget extends StatefulWidget {
   final String? selectedProject;
   final Function(ProjectTask) onSelectProject;
-  final bool hasError; // Флаг для отображения ошибки
+  final String? errorText;
 
   ProjectTaskGroupWidget({
     super.key,
     required this.onSelectProject,
     this.selectedProject,
-    this.hasError = false,
+    this.errorText,
   });
 
   @override
@@ -186,9 +186,9 @@ class _ProjectTaskGroupWidgetState extends State<ProjectTaskGroupWidget> {
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
                   width: 1.5,
-                  color: widget.hasError
+                  color: widget.errorText != null
                       ? Colors.red
-                      : (field.hasError ? Colors.red : Colors.transparent),
+                      : Colors.transparent,
                 ),
               ),
               child: BlocConsumer<GetTaskProjectBloc, GetTaskProjectState>(
@@ -273,32 +273,19 @@ class _ProjectTaskGroupWidgetState extends State<ProjectTaskGroupWidget> {
                 },
               ),
             ),
-            if (field.hasError)
+            if (widget.errorText != null)
               Padding(
                 padding: const EdgeInsets.only(top: 4, left: 0),
                 child: Text(
-                  field.errorText!,
+                  widget.errorText!,
                   style: const TextStyle(
                     color: Colors.red,
                     fontSize: 14,
                     fontWeight: FontWeight.w400,
+                    fontFamily: 'Gilroy',
                   ),
                 ),
               ),
-            // Не показываем дубль сообщения об ошибке:
-            // если сработал validator (field.hasError) — он уже показал errorText.
-            // if (widget.hasError && !field.hasError)
-            //   Padding(
-            //     padding: const EdgeInsets.only(top: 4, left: 0),
-            //     child: Text(
-            //       AppLocalizations.of(context)!.translate('field_required_project'),
-            //       style: const TextStyle(
-            //         color: Colors.red,
-            //         fontSize: 14,
-            //         fontWeight: FontWeight.w400,
-            //       ),
-            //     ),
-            //   ),
           ],
         );
       },

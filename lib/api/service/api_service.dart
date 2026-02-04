@@ -38,6 +38,7 @@ import 'package:crm_task_manager/models/directory_link_model.dart';
 import 'package:crm_task_manager/models/directory_model.dart';
 import 'package:crm_task_manager/models/event_by_Id_model.dart';
 import 'package:crm_task_manager/models/event_model.dart';
+import 'package:crm_task_manager/utils/global_value.dart';
 import 'package:crm_task_manager/models/history_model_my-task.dart';
 import 'package:crm_task_manager/models/integration_model.dart';
 import 'package:crm_task_manager/models/lead_deal_model.dart';
@@ -6294,6 +6295,16 @@ Future<List<Message>> getMessages(
 }) async {
   try {
     final token = await getToken();
+    // ✅ Обновляем userID.value, чтобы Message.fromJson корректно определял isMyMessage
+    try {
+      if (userID.value.isEmpty) {
+        final prefs = await SharedPreferences.getInstance();
+        final storedUserId = prefs.getString('userID') ?? '';
+        if (storedUserId.isNotEmpty) {
+          userID.value = storedUserId;
+        }
+      }
+    } catch (_) {}
 
     // Проверяем инициализацию baseUrl
     if (baseUrl == null || baseUrl!.isEmpty || baseUrl == 'null') {

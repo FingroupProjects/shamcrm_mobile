@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:crm_task_manager/utils/global_fun.dart';
 import 'package:crm_task_manager/bloc/chats/template_bloc/template_bloc.dart';
 import 'package:crm_task_manager/bloc/chats/template_bloc/template_event.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/animated_text_field.dart';
@@ -74,7 +75,7 @@ class _InputFieldState extends State<InputField>
 
     widget.messageController.addListener(_handleSelectionChange);
     widget.messageController.addListener(_updateTextState);
-    
+
     _htmlContent = widget.messageController.text;
     _displayText = _htmlToDisplayText(_htmlContent);
     _hasText = widget.messageController.text.isNotEmpty;
@@ -782,7 +783,7 @@ class _InputFieldState extends State<InputField>
                             replyingToMessage.type == 'voice'
                                 ? AppLocalizations.of(context)!
                                     .translate('voice_message')
-                                : replyingToMessage.text,
+                                : stripHtmlTags(replyingToMessage.text),
                             style: TextStyle(
                               fontSize: 14,
                               color: Colors.black,
@@ -860,7 +861,7 @@ class _InputFieldState extends State<InputField>
                   ],
                 ),
               ),
-              
+
             // ✅ ИСПРАВЛЕННАЯ СТРУКТУРА СО STACK - БЕЗ OVERFLOW
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -900,7 +901,7 @@ class _InputFieldState extends State<InputField>
                                     _showTemplatesPanel(context);
                                   },
                                 ),
-                              
+
                               // Текстовое поле
                               Expanded(
                                 child: AnimatedTextField(
@@ -911,7 +912,8 @@ class _InputFieldState extends State<InputField>
                                   onLongPress: _showFormattingPanelOnLongPress,
                                   hintText: AppLocalizations.of(context)!
                                       .translate('enter_your_sms'),
-                                  style: ChatSmsStyles.messageTextStyle.copyWith(
+                                  style:
+                                      ChatSmsStyles.messageTextStyle.copyWith(
                                     color: const Color(0xFF1A202C),
                                     fontSize: 15,
                                     height: 1.3,
@@ -933,7 +935,7 @@ class _InputFieldState extends State<InputField>
                                   lineHeight: 20.0,
                                 ),
                               ),
-                              
+
                               // Кнопка файла
                               IconButton(
                                 icon: Image.asset(
@@ -949,11 +951,12 @@ class _InputFieldState extends State<InputField>
                                 ),
                                 onPressed: widget.onAttachFile,
                               ),
-                              
+
                               // Динамическая кнопка (голос/отправить)
                               AnimatedSwitcher(
                                 duration: Duration(milliseconds: 250),
-                                transitionBuilder: (Widget child, Animation<double> animation) {
+                                transitionBuilder: (Widget child,
+                                    Animation<double> animation) {
                                   return FadeTransition(
                                     opacity: animation,
                                     child: ScaleTransition(
@@ -963,19 +966,20 @@ class _InputFieldState extends State<InputField>
                                   );
                                 },
                                 child: _hasText
-                                    ? _buildSendButton(messagingCubit, editingMessage, replyMsgId)
+                                    ? _buildSendButton(messagingCubit,
+                                        editingMessage, replyMsgId)
                                     : SizedBox(
                                         key: ValueKey('voice_placeholder'),
                                         width: 36,
                                         height: 36,
                                       ),
                               ),
-                              
+
                               SizedBox(width: 4),
                             ],
                           ),
                         ),
-                        
+
                         // Голосовой рекордер поверх всего
                         if (!_hasText)
                           Positioned(
@@ -996,7 +1000,8 @@ class _InputFieldState extends State<InputField>
   }
 
   // Кнопка отправки
-  Widget _buildSendButton(MessagingCubit messagingCubit, editingMessage, String? replyMsgId) {
+  Widget _buildSendButton(
+      MessagingCubit messagingCubit, editingMessage, String? replyMsgId) {
     return (context.watch<ListenSenderTextCubit>().state)
         ? Container(
             key: ValueKey('loading'),
@@ -1074,7 +1079,6 @@ class _InputFieldState extends State<InputField>
               ),
             ),
           )
-           
         : SocialMediaRecorder(
             key: ValueKey('voice_recorder'),
             maxRecordTimeInSecond: 180,
@@ -1089,8 +1093,8 @@ class _InputFieldState extends State<InputField>
               fontFamily: 'Gilroy',
               fontWeight: FontWeight.w500,
             ),
-            slideToCancelText: AppLocalizations.of(context)!
-                .translate('cancel_chat_sms'),
+            slideToCancelText:
+                AppLocalizations.of(context)!.translate('cancel_chat_sms'),
             slideToCancelTextStyle: TextStyle(
               fontSize: 14,
               fontFamily: 'Gilroy',

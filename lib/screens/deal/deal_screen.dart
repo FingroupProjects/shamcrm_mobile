@@ -142,7 +142,8 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
         });
 
         // Просто загружаем статусы, listener будет создан в BlocListener
-        _dealBloc.add(FetchDealStatuses(salesFunnelId: _selectedFunnel?.id));
+        _dealBloc.add(FetchDealStatuses(
+            salesFunnelId: _selectedFunnel?.id, forceRefresh: true));
       }
     });
   }
@@ -304,8 +305,8 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
                           _tabController =
                               TabController(length: 0, vsync: this);
                         });
-                        _dealBloc
-                            .add(FetchDealStatuses(salesFunnelId: selected.id));
+                        _dealBloc.add(FetchDealStatuses(
+                            salesFunnelId: selected.id, forceRefresh: true));
                       } catch (e) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
@@ -1679,92 +1680,106 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
           }
         }
       },
-      child: _tabTitles.isEmpty
-          ? const Center(
+      child: BlocBuilder<DealBloc, DealState>(
+        builder: (context, state) {
+          if (state is DealLoading && _tabTitles.isEmpty) {
+            return const Center(
               child: PlayStoreImageLoading(
                 size: 80.0,
                 duration: Duration(milliseconds: 1000),
               ),
-            )
-          : TabBarView(
-              controller: _tabController,
-              physics: const AlwaysScrollableScrollPhysics(),
-              children: _tabTitles.map((status) {
-                return RefreshIndicator(
-                  onRefresh: () => _onRefresh(status['id']),
-                  color: const Color(0xff1E2E52),
-                  backgroundColor: Colors.white,
-                  child: DealColumn(
-                    isDealScreenTutorialCompleted:
-                        _isDealScreenTutorialCompleted,
-                    statusId: status['id'],
-                    title: status['title'],
-                    salesFunnelId: _selectedFunnel?.id,
-                    onStatusId: (newStatusId) {
-                      final index =
-                          _tabTitles.indexWhere((s) => s['id'] == newStatusId);
-                      if (index != -1) {
-                        _tabController.animateTo(index);
+            );
+          }
+          if (_tabTitles.isEmpty) {
+            return Center(
+              child: Text(
+                AppLocalizations.of(context)!.translate('no_deal_status'),
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontFamily: 'Gilroy',
+                  fontWeight: FontWeight.w500,
+                  color: Color(0xff99A4BA),
+                ),
+              ),
+            );
+          }
+          return TabBarView(
+            controller: _tabController,
+            physics: const AlwaysScrollableScrollPhysics(),
+            children: _tabTitles.map((status) {
+              return RefreshIndicator(
+                onRefresh: () => _onRefresh(status['id']),
+                color: const Color(0xff1E2E52),
+                backgroundColor: Colors.white,
+                child: DealColumn(
+                  isDealScreenTutorialCompleted: _isDealScreenTutorialCompleted,
+                  statusId: status['id'],
+                  title: status['title'],
+                  salesFunnelId: _selectedFunnel?.id,
+                  onStatusId: (newStatusId) {
+                    final index =
+                        _tabTitles.indexWhere((s) => s['id'] == newStatusId);
+                    if (index != -1) {
+                      _tabController.animateTo(index);
 
-                        // Проверяем, есть ли уже данные для этого статуса
-                        final currentDealBloc = context.read<DealBloc>();
-                        if (currentDealBloc.state is DealDataLoaded) {
-                          final currentState =
-                              currentDealBloc.state as DealDataLoaded;
-                          final hasDealsForStatus = currentState.deals
-                              .any((deal) => deal.statusId == newStatusId);
+                      // Проверяем, есть ли уже данные для этого статуса
+                      final currentDealBloc = context.read<DealBloc>();
+                      if (currentDealBloc.state is DealDataLoaded) {
+                        final currentState =
+                            currentDealBloc.state as DealDataLoaded;
+                        final hasDealsForStatus = currentState.deals
+                            .any((deal) => deal.statusId == newStatusId);
 
-                          // Загружаем только если нет данных для этого статуса
-                          if (!hasDealsForStatus) {
-                            currentDealBloc.add(FetchDeals(
-                              newStatusId,
-                              salesFunnelId: _selectedFunnel?.id,
-                              query: _lastSearchQuery.isNotEmpty
-                                  ? _lastSearchQuery
-                                  : null,
-                              managerIds: _selectedManagers.isNotEmpty
-                                  ? _selectedManagers
-                                      .map((manager) => manager.id)
-                                      .toList()
-                                  : null,
-                              regionsIds: _selectedRegions.isNotEmpty
-                                  ? _selectedRegions
-                                      .map((region) => region.id)
-                                      .toList()
-                                  : null,
-                              leadIds: _selectedLeads.isNotEmpty
-                                  ? _selectedLeads
-                                      .map((lead) => lead.id)
-                                      .toList()
-                                  : null,
-                              statusIds: _selectedStatuses,
-                              fromDate: _fromDate,
-                              toDate: _toDate,
-                              hasTasks: _hasTasks,
-                              daysWithoutActivity: _daysWithoutActivity,
-                              directoryValues: _selectedDirectoryValues,
-                              names: _selectedDealNames.isNotEmpty
-                                  ? _selectedDealNames
-                                      .map((dealName) => dealName.title)
-                                      .toList()
-                                  : null,
-                              customFieldFilters:
-                                  _selectedDealCustomFieldFilters,
-                            ));
-                          }
-                        } else {
-                          // Если нет состояния DealDataLoaded, загружаем данные
+                        // Загружаем только если нет данных для этого статуса
+                        if (!hasDealsForStatus) {
                           currentDealBloc.add(FetchDeals(
                             newStatusId,
                             salesFunnelId: _selectedFunnel?.id,
+                            query: _lastSearchQuery.isNotEmpty
+                                ? _lastSearchQuery
+                                : null,
+                            managerIds: _selectedManagers.isNotEmpty
+                                ? _selectedManagers
+                                    .map((manager) => manager.id)
+                                    .toList()
+                                : null,
+                            regionsIds: _selectedRegions.isNotEmpty
+                                ? _selectedRegions
+                                    .map((region) => region.id)
+                                    .toList()
+                                : null,
+                            leadIds: _selectedLeads.isNotEmpty
+                                ? _selectedLeads.map((lead) => lead.id).toList()
+                                : null,
+                            statusIds: _selectedStatuses,
+                            fromDate: _fromDate,
+                            toDate: _toDate,
+                            hasTasks: _hasTasks,
+                            daysWithoutActivity: _daysWithoutActivity,
+                            directoryValues: _selectedDirectoryValues,
+                            names: _selectedDealNames.isNotEmpty
+                                ? _selectedDealNames
+                                    .map((dealName) => dealName.title)
+                                    .toList()
+                                : null,
+                            customFieldFilters: _selectedDealCustomFieldFilters,
                           ));
                         }
+                      } else {
+                        // Если нет состояния DealDataLoaded, загружаем данные
+                        currentDealBloc.add(FetchDeals(
+                          newStatusId,
+                          salesFunnelId: _selectedFunnel?.id,
+                        ));
                       }
-                    },
-                  ),
-                );
-              }).toList(),
-            ),
+                    }
+                  },
+                ),
+              );
+            }).toList(),
+          );
+        },
+      ),
     );
   }
 

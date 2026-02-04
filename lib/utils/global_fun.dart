@@ -6,17 +6,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:http/http.dart' as http;
+import 'package:html/parser.dart' show parse;
 import 'package:path_provider/path_provider.dart';
 
 Future<File?> urlToFile(String imageUrl) async {
   try {
     final response = await http.get(Uri.parse(imageUrl));
     final documentDirectory = await getTemporaryDirectory();
-    
+
     // Создаем уникальное имя файла на основе URL или timestamp
     final uniqueFileName = 'image_${DateTime.now().millisecondsSinceEpoch}.jpg';
     final file = File('${documentDirectory.path}/$uniqueFileName');
-    
+
     await file.writeAsBytes(response.bodyBytes);
     return file;
   } catch (e) {
@@ -29,11 +30,11 @@ Future<void> cleanTempFiles() async {
   try {
     final directory = await getTemporaryDirectory();
     final files = directory.listSync();
-    
+
     final cutoffTime = DateTime.now().subtract(Duration(hours: 1));
     for (var file in files) {
-      if (file is File && 
-          file.path.endsWith('.jpg') && 
+      if (file is File &&
+          file.path.endsWith('.jpg') &&
           file.lastModifiedSync().isBefore(cutoffTime)) {
         await file.delete();
       }
@@ -61,7 +62,9 @@ Future<void> uploadFile(File file, String uploadUrl) async {
   Dio dio = Dio();
 
   FormData formData = FormData.fromMap({
-    'file': await MultipartFile.fromFile(file.path, filename: 'audio.ogg'), // fayl nomini kerakli formatga mos ravishda o'zgartiring
+    'file': await MultipartFile.fromFile(file.path,
+        filename:
+            'audio.ogg'), // fayl nomini kerakli formatga mos ravishda o'zgartiring
   });
 
   try {
@@ -76,8 +79,11 @@ String time(String dateAndTime) {
   // //print('------- time 1');
   // //print(DateTime.now().timeZoneOffset.inMinutes);
   // //print('------- time 2');
-  if(DateTime.now().timeZoneOffset.inMinutes > 0) {
-    if(dateAndTime.isEmpty) dateAndTime = DateTime.now().subtract(Duration(minutes: DateTime.now().timeZoneOffset.inMinutes)).toString();
+  if (DateTime.now().timeZoneOffset.inMinutes > 0) {
+    if (dateAndTime.isEmpty)
+      dateAndTime = DateTime.now()
+          .subtract(Duration(minutes: DateTime.now().timeZoneOffset.inMinutes))
+          .toString();
   } else {
     // if(dateAndTime.isEmpty) dateAndTime = DateTime.now().subtract(Duration(minutes: DateTime.now().timeZoneOffset.inMinutes)).toString();
   }
@@ -89,7 +95,13 @@ String time(String dateAndTime) {
     DateTime dateTime = DateTime.parse(dateAndTime);
 
     str = DateFormat('HH:mm').format(
-        (DateTime.now().timeZoneOffset.inMinutes > 0)  ? dateTime.add(Duration(minutes: DateTime.now().timeZoneOffset.inMinutes),) :  dateTime.add(Duration(minutes: DateTime.now().timeZoneOffset.inMinutes),),
+      (DateTime.now().timeZoneOffset.inMinutes > 0)
+          ? dateTime.add(
+              Duration(minutes: DateTime.now().timeZoneOffset.inMinutes),
+            )
+          : dateTime.add(
+              Duration(minutes: DateTime.now().timeZoneOffset.inMinutes),
+            ),
     );
 
     // //print(time); // Natija: 11:22:22
@@ -104,7 +116,6 @@ String date(String dateAndTime) {
 
   try {
     str = dateAndTime.split('T')[0].toString();
-
   } catch (e) {
     str = dateAndTime;
   }
@@ -144,7 +155,8 @@ class AppStyles {
 /// used on money income/outcome cards to compare backend and frontend dates
 bool areDatesEqual(String backendDateStr, String frontendDateStr) {
   try {
-    debugPrint("Comparing dates: backend='$backendDateStr', frontend='$frontendDateStr'");
+    debugPrint(
+        "Comparing dates: backend='$backendDateStr', frontend='$frontendDateStr'");
 
     final backendDate = DateTime.parse(backendDateStr);
     final frontendDate = DateTime.parse(frontendDateStr);
@@ -165,28 +177,28 @@ bool areDatesEqual(String backendDateStr, String frontendDateStr) {
 /// Handles both comma and dot as decimal separator: "1,00" -> "1", "2,5" -> "2.5"
 String parseNumberToString(dynamic value, {String nullValue = ''}) {
   if (value == null) return nullValue;
-  
+
   try {
     String stringValue = value.toString();
-    
+
     // Replace comma with dot for parsing
     stringValue = stringValue.replaceAll(',', '.');
-    
+
     // Parse to double
     double numValue = double.parse(stringValue);
-    
+
     // Check if the number is an integer (no decimal part)
     if (numValue == numValue.toInt()) {
       return numValue.toInt().toString();
     }
-    
+
     // Remove trailing zeros from decimal part
     String result = numValue.toString();
     if (result.contains('.')) {
       result = result.replaceAll(RegExp(r'0*$'), '');
       result = result.replaceAll(RegExp(r'\.$'), '');
     }
-    
+
     return result;
   } catch (e) {
     debugPrint('Error parsing number to string: $e');
@@ -238,5 +250,19 @@ class MoneyInputFormatter extends TextInputFormatter {
     }
 
     return newValue;
+  }
+}
+
+/// Removes HTML tags from a string
+String stripHtmlTags(String html) {
+  if (!html.contains('<') || !html.contains('>')) {
+    return html;
+  }
+
+  try {
+    final document = parse(html);
+    return document.body?.text ?? html.replaceAll(RegExp(r'<[^>]*>'), '');
+  } catch (e) {
+    return html.replaceAll(RegExp(r'<[^>]*>'), '').trim();
   }
 }

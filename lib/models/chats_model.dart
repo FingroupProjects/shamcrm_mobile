@@ -1,6 +1,7 @@
 import 'package:crm_task_manager/models/integration_model.dart';
 import 'package:crm_task_manager/models/task_model.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/chats_items.dart';
+import 'package:crm_task_manager/utils/global_value.dart';
 import 'package:flutter/material.dart';
 
 class Integration {
@@ -126,19 +127,24 @@ class Chats {
       unreadCount: json['unread_count'] ?? 0,
       taskFrom: json['task'] != null ? json['task']['from'] ?? '' : '',
       taskTo: json['task'] != null ? json['task']['to'] ?? '' : '',
-      description: json['task'] != null ? json['task']['description'] ?? '' : '',
+      description:
+          json['task'] != null ? json['task']['description'] ?? '' : '',
       channel: json['channel'] != null ? json['channel']['name'] ?? '' : '',
       lastMessage: json['lastMessage'] != null
           ? _getLastMessageText(json['lastMessage'])
           : '',
-      messageType: json['lastMessage'] != null ? json['lastMessage']['type'] ?? '' : '',
+      messageType:
+          json['lastMessage'] != null ? json['lastMessage']['type'] ?? '' : '',
       canSendMessage: json['can_send_message'] ?? false,
       type: json['type'],
       chatUsers: users,
       group: group,
       task: task,
-      channelObj: json['channel'] != null ? Channel.fromJson(json['channel']) : null,
-      integration: json['integration'] != null ? Integration.fromJson(json['integration']) : null,
+      channelObj:
+          json['channel'] != null ? Channel.fromJson(json['channel']) : null,
+      integration: json['integration'] != null
+          ? Integration.fromJson(json['integration'])
+          : null,
     );
   }
 
@@ -416,7 +422,7 @@ class Message {
     bool? isChanged,
     bool? isRead,
     bool? isNote, // Новое поле
-    
+
     ReadStatus? readStatus,
   }) {
     return Message(
@@ -447,10 +453,6 @@ class Message {
     } else {
       text = json['text'] ?? '';
     }
-    ForwardedMessage? forwardedMessage;
-    if (json['forwarded_message'] != null) {
-      forwardedMessage = ForwardedMessage.fromJson(json['forwarded_message']);
-    }
     ReadStatus? readStatus;
     try {
       if (json['read_status'] != null) {
@@ -460,57 +462,52 @@ class Message {
       debugPrint('Error parsing read_status: $e');
       readStatus = null;
     }
-    
+
     // ✅ ПРАВИЛЬНАЯ ЛОГИКА для определения isMyMessage:
-    // Специальная логика ТОЛЬКО для ЛИДОВ (когда chat.type == 'lead')
-    // В корпоративных чатах и задачах используем стандартную логику с сервера
-    bool isMyMessage;
-    
-    // 🔍 ДИАГНОСТИКА: Смотрим что приходит
-    debugPrint('🔍 Message.fromJson ДИАГНОСТИКА:');
-    debugPrint('   json["chat"] = ${json['chat']}');
-    debugPrint('   json["chat"]["type"] = ${json['chat']?['type']}');
-    debugPrint('   json["sender"] = ${json['sender']}');
-    debugPrint('   json["sender"]["type"] = ${json['sender']?['type']}');
-    debugPrint('   json["sender"]["name"] = ${json['sender']?['name']}');
-    debugPrint('   json["is_my_message"] = ${json['is_my_message']}');
-    
-    // ✅ УПРОЩЁННАЯ ЛОГИКА:
-    // Если приходит sender.type, используем его для определения:
-    // - sender.type == 'lead' → это ЛИДНЫЙ чат, сообщение от лида → isMyMessage = FALSE (слева)
-    // - sender.type == 'user' + chatType == 'lead' → ЛИДНЫЙ чат, сообщение от менеджера → isMyMessage = TRUE (справа)
-    // - Иначе → используем is_my_message с сервера (для корпоративных чатов и задач)
-    
-    if (json['sender'] != null && json['sender']['type'] != null) {
-      final senderType = json['sender']['type'].toString();
-      final senderName = json['sender']['name']?.toString() ?? 'Unknown';
-      // Используем переданный chatType или берём из JSON (приоритет у переданного)
-      final effectiveChatType = chatType ?? json['chat']?['type']?.toString();
-      
-      debugPrint('   → senderType = $senderType');
-      debugPrint('   → chatType (переданный) = $chatType');
-      debugPrint('   → json["chat"]["type"] = ${json['chat']?['type']}');
-      debugPrint('   → effectiveChatType (используемый) = $effectiveChatType');
-      
-      if (senderType == 'lead') {
-        // ✅ Если отправитель - ЛИД, это точно лидный чат
-        isMyMessage = false;
-        debugPrint('🎯 [LEAD CHAT] sender.type=lead (клиент: $senderName) → isMyMessage=FALSE (слева)');
-      } else if (senderType == 'user' && effectiveChatType == 'lead') {
-        // ✅ Если отправитель - USER и чат лидный
-        isMyMessage = true;
-        debugPrint('🎯 [LEAD CHAT] sender.type=user + chatType=lead (менеджер: $senderName) → isMyMessage=TRUE (справа)');
-      } else {
-        // ✅ Корпоративный чат или задача - используем стандартную логику
-        isMyMessage = json['is_my_message'] ?? false;
-        debugPrint('🎯 [CORPORATE/TASK] sender.type=$senderType, chatType=$effectiveChatType → is_my_message=$isMyMessage (с сервера)');
-      }
+    bool isMyMessage = false;
+
+    final senderId = json['sender']?['id']?.toString();
+    final myUserId = userID.value;
+    final senderName = json['sender']?['name']?.toString();
+
+    // ✅ ПРИОРИТЕТ 1: Если есть ID отправителя и наш ID, используем их для окончательного решения
+    if (senderId != null && senderId.isNotEmpty && myUserId.isNotEmpty) {
+      isMyMessage = (senderId == myUserId);
     } else {
-      // Нет sender.type - используем стандартную логику
-      isMyMessage = json['is_my_message'] ?? false;
-      debugPrint('🎯 [FALLBACK] НЕТ sender.type → is_my_message=$isMyMessage (с сервера)');
+      // ✅ ПРИОРИТЕТ 2: Если ID нет, используем логику типов и имен
+      if (json['sender'] != null && json['sender']['type'] != null) {
+        final senderType = json['sender']['type'].toString();
+        final effectiveChatType = chatType ?? json['chat']?['type']?.toString();
+
+        if (senderType == 'lead') {
+          isMyMessage = false;
+        } else if (senderType == 'user' && effectiveChatType == 'lead') {
+          isMyMessage = true;
+        } else {
+          isMyMessage = json['is_my_message'] ?? false;
+        }
+      } else {
+        isMyMessage = json['is_my_message'] ?? false;
+      }
     }
-    
+
+    ForwardedMessage? forwardedMessage;
+    if (json['forwarded_message'] != null) {
+      try {
+        forwardedMessage = ForwardedMessage.fromJson(json['forwarded_message']);
+      } catch (_) {
+        try {
+          final fJson = json['forwarded_message'];
+          forwardedMessage = ForwardedMessage(
+            id: fJson['id'] ?? 0,
+            text: _stripHtmlTags(fJson['text'] ?? ''),
+            type: fJson['type'] ?? 'text',
+            senderName: fJson['sender']?['name'] ?? 'Без имени',
+          );
+        } catch (_) {}
+      }
+    }
+
     return Message(
         id: json['id'],
         text: text,
@@ -556,9 +553,10 @@ class ForwardedMessage {
 
   factory ForwardedMessage.fromJson(Map<String, dynamic> json) {
     return ForwardedMessage(
-      id: json['id'],
+      id: json['id'] ?? 0,
       text: json['text'] ?? '',
-      type: json['type'],
+      type: json['type'] ??
+          'text', // ✅ FIX: Added default fallback to prevent crash
       senderName: json['sender']?['name'] ?? 'Без имени',
     );
   }
@@ -678,5 +676,16 @@ class User {
   @override
   String toString() {
     return 'User{id: $id, name: $name, lastname: $lastname, login: $login, email: $email, phone: $phone, image: $image, lastSeen: $lastSeen, deletedAt: $deletedAt, telegramUserId: $telegramUserId, jobTitle: $jobTitle, online: $online, fullName: $fullName,readAt: $readAt}';
+  }
+}
+
+String _stripHtmlTags(String html) {
+  if (!html.contains('<') || !html.contains('>')) {
+    return html;
+  }
+  try {
+    return html.replaceAll(RegExp(r'<[^>]*>'), '').trim();
+  } catch (e) {
+    return html;
   }
 }

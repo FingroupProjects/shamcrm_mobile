@@ -21,7 +21,8 @@ class CreateStatusDialog extends StatefulWidget {
 class _CreateStatusDialogState extends State<CreateStatusDialog> {
   final TextEditingController _controller = TextEditingController();
   final TextEditingController _dayController = TextEditingController();
-  final TextEditingController _notificationMessageController = TextEditingController();
+  final TextEditingController _notificationMessageController =
+      TextEditingController();
   String? _errorMessage;
   String? _dayErrorMessage;
   bool _isTextExpanded = false;
@@ -31,9 +32,12 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
   bool _isFailure = false;
   bool _isMultiSelectEnabled = false; // ✅ НОВОЕ: флаг мультивыбора
   List<UserData> _selectedUsers = []; // ✅ НОВОЕ: выбранные пользователи
-    List<UserData> _selectedChangeStatusUsers = []; // ✅ НОВОЕ: пользователи, которые могут ИЗМЕНЯТЬ статус
- bool _isExpandedViewUsers = false; // ✅ НОВОЕ: для expandable текста первого поля
-  bool _isExpandedChangeUsers = false; // ✅ НОВОЕ: для expandable текста второго поля
+  List<UserData> _selectedChangeStatusUsers =
+      []; // ✅ НОВОЕ: пользователи, которые могут ИЗМЕНЯТЬ статус
+  bool _isExpandedViewUsers =
+      false; // ✅ НОВОЕ: для expandable текста первого поля
+  bool _isExpandedChangeUsers =
+      false; // ✅ НОВОЕ: для expandable текста второго поля
 
   @override
   void initState() {
@@ -44,23 +48,26 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
   // ✅ ОБНОВЛЁННАЯ ЛОГИКА
   Future<void> _loadMultiSelectSetting() async {
     final prefs = await SharedPreferences.getInstance();
-    final managingVisibility = prefs.getBool('managing_deal_status_visibility') ?? false;
-    final changeMultiple = prefs.getBool('change_deal_to_multiple_statuses') ?? false;
-    
+    final managingVisibility =
+        prefs.getBool('managing_deal_status_visibility') ?? false;
+    final changeMultiple =
+        prefs.getBool('change_deal_to_multiple_statuses') ?? false;
+
     // Если хотя бы один флаг true, включаем мультивыбор
     final value = managingVisibility || changeMultiple;
-    
+
     if (mounted) {
       setState(() {
         _isMultiSelectEnabled = value;
       });
     }
-    
-    debugPrint('CreateStatusDialog: managing_deal_status_visibility = $managingVisibility');
-    debugPrint('CreateStatusDialog: change_deal_to_multiple_statuses = $changeMultiple');
+
+    debugPrint(
+        'CreateStatusDialog: managing_deal_status_visibility = $managingVisibility');
+    debugPrint(
+        'CreateStatusDialog: change_deal_to_multiple_statuses = $changeMultiple');
     debugPrint('CreateStatusDialog: _isMultiSelectEnabled = $value');
   }
-
 
   Widget _buildTextFieldWithLabel({
     required String label,
@@ -69,6 +76,7 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
     TextInputType? keyboardType,
     List<TextInputFormatter>? formatters,
     String? hintText,
+    String? errorText,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -77,8 +85,11 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
           controller: controller,
           hintText: hintText ?? '',
           label: label,
+          errorText: errorText,
           validator: isRequired
-              ? (value) => value!.isEmpty ? 'Поле обязательно' : null
+              ? (value) => value!.isEmpty
+                  ? AppLocalizations.of(context)!.translate('field_required')
+                  : null
               : null,
           keyboardType: keyboardType ?? TextInputType.text,
           inputFormatters: formatters,
@@ -200,7 +211,8 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
                       ),
                     ),
                     IconButton(
-                      icon: Icon(Icons.close, size: 24, color: Colors.grey[600]),
+                      icon:
+                          Icon(Icons.close, size: 24, color: Colors.grey[600]),
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints(),
                       onPressed: () => Navigator.of(context).pop(),
@@ -219,90 +231,89 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
                           controller: _controller,
                           isRequired: true,
                           hintText: localizations.translate('enter_title'),
+                          errorText: _errorMessage,
                         ),
-                        if (_errorMessage != null)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 8.0),
-                            child: Text(
-                              _errorMessage!,
-                              style: TextStyle(
-                                color: Colors.red,
-                                fontSize: 14,
-                                fontFamily: 'Gilroy',
-                                fontWeight: FontWeight.w400,
-                              ),
+                        const SizedBox(height: 20),
+
+                        // ✅ НОВОЕ: Поле выбора пользователей (только если включен мультивыбор)
+                        // ✅ НОВОЕ: Поле выбора пользователей (только если включен мультивыбор)
+                        if (_isMultiSelectEnabled) ...[
+                          // 1️⃣ ПЕРВОЕ ПОЛЕ: Пользователи, которые могут ВИДЕТЬ сделки
+                          GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                _isExpandedViewUsers = !_isExpandedViewUsers;
+                              });
+                            },
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  localizations
+                                      .translate('users_who_can_view_deals'),
+                                  style: _textStyle(),
+                                  overflow: _isExpandedViewUsers
+                                      ? TextOverflow.visible
+                                      : TextOverflow.ellipsis,
+                                  maxLines: _isExpandedViewUsers ? null : 1,
+                                ),
+                              ],
                             ),
                           ),
-                        const SizedBox(height: 20),
-                        
-                        // ✅ НОВОЕ: Поле выбора пользователей (только если включен мультивыбор)
-                        // ✅ НОВОЕ: Поле выбора пользователей (только если включен мультивыбор)
-if (_isMultiSelectEnabled) ...[
-  // 1️⃣ ПЕРВОЕ ПОЛЕ: Пользователи, которые могут ВИДЕТЬ сделки
-  GestureDetector(
-    onTap: () {
-      setState(() {
-        _isExpandedViewUsers = !_isExpandedViewUsers;
-      });
-    },
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          localizations.translate('users_who_can_view_deals'),
-          style: _textStyle(),
-          overflow: _isExpandedViewUsers ? TextOverflow.visible : TextOverflow.ellipsis,
-          maxLines: _isExpandedViewUsers ? null : 1,
-        ),
-      ],
-    ),
-  ),
-  // const SizedBox(height: 8),
-  UserMultiSelectWidget(
-    selectedUsers: null,
-    customLabelText: '', // ✅ Пустая строка, чтобы скрыть дефолтный заголовок
-    onSelectUsers: (List<UserData> users) {
-      setState(() {
-        _selectedUsers = users;
-      });
-      debugPrint('CreateStatusDialog: Выбрано пользователей (просмотр): ${users.length}');
-    },
-  ),
-  const SizedBox(height: 20),
-  
-  // 2️⃣ ВТОРОЕ ПОЛЕ: Пользователи, которые могут ИЗМЕНЯТЬ статус
-  GestureDetector(
-    onTap: () {
-      setState(() {
-        _isExpandedChangeUsers = !_isExpandedChangeUsers;
-      });
-    },
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          localizations.translate('users_who_can_change_status'),
-          style: _textStyle(),
-          overflow: _isExpandedChangeUsers ? TextOverflow.visible : TextOverflow.ellipsis,
-          maxLines: _isExpandedChangeUsers ? null : 1,
-        ),
-      ],
-    ),
-  ),
-  // const SizedBox(height: 8),
-  UserMultiSelectWidget(
-    selectedUsers: null,
-    customLabelText: '', // ✅ Пустая строка, чтобы скрыть дефолтный заголовок
-    onSelectUsers: (List<UserData> users) {
-      setState(() {
-        _selectedChangeStatusUsers = users;
-      });
-      debugPrint('CreateStatusDialog: Выбрано пользователей (изменение): ${users.length}');
-    },
-  ),
-  const SizedBox(height: 20),
-],
-                        
+                          // const SizedBox(height: 8),
+                          UserMultiSelectWidget(
+                            selectedUsers: null,
+                            customLabelText:
+                                '', // ✅ Пустая строка, чтобы скрыть дефолтный заголовок
+                            onSelectUsers: (List<UserData> users) {
+                              setState(() {
+                                _selectedUsers = users;
+                              });
+                              debugPrint(
+                                  'CreateStatusDialog: Выбрано пользователей (просмотр): ${users.length}');
+                            },
+                          ),
+                          const SizedBox(height: 20),
+
+                          // 2️⃣ ВТОРОЕ ПОЛЕ: Пользователи, которые могут ИЗМЕНЯТЬ статус
+                          GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                _isExpandedChangeUsers =
+                                    !_isExpandedChangeUsers;
+                              });
+                            },
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  localizations
+                                      .translate('users_who_can_change_status'),
+                                  style: _textStyle(),
+                                  overflow: _isExpandedChangeUsers
+                                      ? TextOverflow.visible
+                                      : TextOverflow.ellipsis,
+                                  maxLines: _isExpandedChangeUsers ? null : 1,
+                                ),
+                              ],
+                            ),
+                          ),
+                          // const SizedBox(height: 8),
+                          UserMultiSelectWidget(
+                            selectedUsers: null,
+                            customLabelText:
+                                '', // ✅ Пустая строка, чтобы скрыть дефолтный заголовок
+                            onSelectUsers: (List<UserData> users) {
+                              setState(() {
+                                _selectedChangeStatusUsers = users;
+                              });
+                              debugPrint(
+                                  'CreateStatusDialog: Выбрано пользователей (изменение): ${users.length}');
+                            },
+                          ),
+                          const SizedBox(height: 20),
+                        ],
+
                         GestureDetector(
                           onTap: () {
                             setState(() {
@@ -313,9 +324,12 @@ if (_isMultiSelectEnabled) ...[
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                localizations.translate('how_many_days_in_status'),
+                                localizations
+                                    .translate('how_many_days_in_status'),
                                 style: _textStyle(),
-                                overflow: _isTextExpanded ? TextOverflow.visible : TextOverflow.ellipsis,
+                                overflow: _isTextExpanded
+                                    ? TextOverflow.visible
+                                    : TextOverflow.ellipsis,
                                 maxLines: _isTextExpanded ? null : 1,
                               ),
                             ],
@@ -344,7 +358,7 @@ if (_isMultiSelectEnabled) ...[
                             ),
                           ),
                         const SizedBox(height: 20),
-                       
+
                         // const SizedBox(height: 12),
                         GestureDetector(
                           onTap: () {
@@ -356,9 +370,12 @@ if (_isMultiSelectEnabled) ...[
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                localizations.translate('notification_message_label'),
+                                localizations
+                                    .translate('notification_message_label'),
                                 style: _textStyle(),
-                                overflow: _isExpandedMessage ? TextOverflow.visible : TextOverflow.ellipsis,
+                                overflow: _isExpandedMessage
+                                    ? TextOverflow.visible
+                                    : TextOverflow.ellipsis,
                                 maxLines: _isExpandedMessage ? null : 1,
                               ),
                             ],
@@ -369,7 +386,8 @@ if (_isMultiSelectEnabled) ...[
                           label: '',
                           controller: _notificationMessageController,
                           isRequired: false,
-                          hintText: localizations.translate('enter_notification_message'),
+                          hintText: localizations
+                              .translate('enter_notification_message'),
                         ),
                         const SizedBox(height: 12),
                         Row(
@@ -377,15 +395,18 @@ if (_isMultiSelectEnabled) ...[
                           children: [
                             ElevatedButton(
                               onPressed: () {
-                                if (_notificationMessageController.text.isNotEmpty) {
+                                if (_notificationMessageController
+                                    .text.isNotEmpty) {
                                   setState(() {
-                                    _notificationMessageController.text += ' %deal_number%';
+                                    _notificationMessageController.text +=
+                                        ' %deal_number%';
                                   });
                                 }
                               },
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: const Color(0xff1E2E52),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8)),
                               ),
                               child: Text(
                                 localizations.translate('deal_number'),
@@ -394,15 +415,18 @@ if (_isMultiSelectEnabled) ...[
                             ),
                             ElevatedButton(
                               onPressed: () {
-                                if (_notificationMessageController.text.isNotEmpty) {
+                                if (_notificationMessageController
+                                    .text.isNotEmpty) {
                                   setState(() {
-                                    _notificationMessageController.text += ' %sum%';
+                                    _notificationMessageController.text +=
+                                        ' %sum%';
                                   });
                                 }
                               },
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: const Color(0xff1E2E52),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8)),
                               ),
                               child: Text(
                                 localizations.translate('sum'),
@@ -484,46 +508,63 @@ if (_isMultiSelectEnabled) ...[
                                 _dayErrorMessage = null;
                               });
 
-                              final day = dayString.isNotEmpty ? int.tryParse(dayString) : null;
+                              final day = dayString.isNotEmpty
+                                  ? int.tryParse(dayString)
+                                  : null;
 
                               if (dayString.isNotEmpty && day == null) {
                                 setState(() {
-                                  _dayErrorMessage = localizations.translate('enter_valid_number_day');
+                                  _dayErrorMessage = localizations
+                                      .translate('enter_valid_number_day');
                                 });
                                 return;
                               }
 
                               // ✅ НОВОЕ: Получаем список ID пользователей
-                              final userIds = _selectedUsers.map((user) => user.id).toList();
-                                  final changeStatusUserIds = _selectedChangeStatusUsers.map((user) => user.id).toList();
+                              final userIds = _selectedUsers
+                                  .map((user) => user.id)
+                                  .toList();
+                              final changeStatusUserIds =
+                                  _selectedChangeStatusUsers
+                                      .map((user) => user.id)
+                                      .toList();
 
-                              
-                              debugPrint('CreateStatusDialog: Отправка статуса с пользователями: $userIds');
-    debugPrint('CreateStatusDialog: Пользователи (изменение): $changeStatusUserIds');
+                              debugPrint(
+                                  'CreateStatusDialog: Отправка статуса с пользователями: $userIds');
+                              debugPrint(
+                                  'CreateStatusDialog: Пользователи (изменение): $changeStatusUserIds');
 
                               context.read<DealBloc>().add(
                                     CreateDealStatus(
                                       title: title,
                                       color: '#000',
                                       day: day,
-                                      notificationMessage: _notificationMessageController.text,
+                                      notificationMessage:
+                                          _notificationMessageController.text,
                                       showOnMainPage: _showOnMainPage,
                                       isSuccess: _isSuccess,
                                       isFailure: _isFailure,
-                                      userIds: userIds.isNotEmpty ? userIds : null, // ✅ НОВОЕ
-                                              changeStatusUserIds: changeStatusUserIds.isNotEmpty ? changeStatusUserIds : null, // ✅ НОВОЕ
+                                      userIds: userIds.isNotEmpty
+                                          ? userIds
+                                          : null, // ✅ НОВОЕ
+                                      changeStatusUserIds:
+                                          changeStatusUserIds.isNotEmpty
+                                              ? changeStatusUserIds
+                                              : null, // ✅ НОВОЕ
 
                                       localizations: localizations,
                                     ),
                                   );
                             } else {
                               setState(() {
-                                _errorMessage = localizations.translate('enter_textfield');
+                                _errorMessage =
+                                    localizations.translate('field_required');
                               });
                             }
                           },
                           style: TextButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 24, vertical: 10),
                           ),
                           child: Text(
                             localizations.translate('add'),

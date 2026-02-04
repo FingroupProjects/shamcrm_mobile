@@ -8,11 +8,13 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 class StatusList extends StatefulWidget {
   final String? selectedTaskStatus;
   final Function(String? value, int? id) onChanged;
+  final String? errorText;
 
   const StatusList({
     Key? key,
     required this.selectedTaskStatus,
     required this.onChanged,
+    this.errorText,
   }) : super(key: key);
 
   @override
@@ -98,7 +100,8 @@ class _TaskStatusListState extends State<StatusList> {
               ),
               child: DropdownButtonFormField<String>(
                 menuMaxHeight: 400,
-                value: dropdownItems.any((item) => item.value == widget.selectedTaskStatus)
+                value: dropdownItems
+                        .any((item) => item.value == widget.selectedTaskStatus)
                     ? widget.selectedTaskStatus
                     : null,
                 hint: Text(
@@ -122,7 +125,8 @@ class _TaskStatusListState extends State<StatusList> {
                 },
                 validator: (value) {
                   if (value == null) {
-                    return AppLocalizations.of(context)!.translate('field_required');
+                    return AppLocalizations.of(context)!
+                        .translate('field_required');
                   }
                   return null;
                 },
@@ -131,16 +135,52 @@ class _TaskStatusListState extends State<StatusList> {
                     vertical: 16,
                     horizontal: 16,
                   ),
+                  errorText: widget.errorText,
+                  errorStyle: TextStyle(
+                    fontSize: 14,
+                    color: Colors.red,
+                    fontWeight: FontWeight.w400,
+                    fontFamily: 'Gilroy',
+                  ),
                   border: OutlineInputBorder(
-                    borderSide: const BorderSide(color: Color(0xFFF4F7FD)),
+                    borderSide: BorderSide(
+                      color: widget.errorText != null
+                          ? Colors.red
+                          : Color(0xFFF4F7FD),
+                      width: widget.errorText != null ? 1.5 : 1,
+                    ),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   enabledBorder: OutlineInputBorder(
-                    borderSide: const BorderSide(color: Color(0xFFF4F7FD)),
+                    borderSide: BorderSide(
+                      color: widget.errorText != null
+                          ? Colors.red
+                          : Color(0xFFF4F7FD),
+                      width: widget.errorText != null ? 1.5 : 1,
+                    ),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   focusedBorder: OutlineInputBorder(
-                    borderSide: const BorderSide(color: Color(0xFFF4F7FD)),
+                    borderSide: BorderSide(
+                      color: widget.errorText != null
+                          ? Colors.red
+                          : Color(0xff1E2E52),
+                      width: 1.5,
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  errorBorder: OutlineInputBorder(
+                    borderSide: BorderSide(
+                      color: Colors.red,
+                      width: 1.5,
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  focusedErrorBorder: OutlineInputBorder(
+                    borderSide: BorderSide(
+                      color: Colors.red,
+                      width: 1.5,
+                    ),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   filled: true,

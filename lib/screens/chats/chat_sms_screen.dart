@@ -9,10 +9,9 @@ import 'package:crm_task_manager/bloc/cubit/listen_sender_file_cubit.dart';
 import 'package:crm_task_manager/bloc/cubit/listen_sender_text_cubit.dart';
 import 'package:crm_task_manager/bloc/cubit/listen_sender_voice_cubit.dart';
 import 'package:crm_task_manager/bloc/messaging/messaging_cubit.dart';
-import 'package:crm_task_manager/utils/active_chat_tracker.dart'; // ✅ ДОБАВЛЕНО: Импорт для отслеживания активного чата
-import 'package:crm_task_manager/services/message_cache_service.dart'; // ✅ ДОБАВЛЕНО: Импорт для кэширования сообщений
 import 'package:crm_task_manager/models/integration_model.dart';
-import 'package:crm_task_manager/models/msg_data_in_socket.dart';
+import 'package:crm_task_manager/utils/active_chat_tracker.dart';
+import 'package:crm_task_manager/services/message_cache_service.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/chatById_screen.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/chatById_task_screen.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/image_message_bubble.dart';
@@ -45,6 +44,7 @@ import 'package:crm_task_manager/screens/chats/chats_widgets/chats_items.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/file_message_bubble.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/message_bubble.dart';
 import 'package:crm_task_manager/models/chats_model.dart';
+import 'package:crm_task_manager/utils/global_value.dart';
 import 'package:table_calendar/table_calendar.dart';
 
 class ChatSmsScreen extends StatefulWidget {
@@ -182,140 +182,44 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
   Future<bool> _determineIsMyMessage({
     required String? messageSenderId,
     required String? messageSenderType,
+    required String? messageSenderName, // Added this parameter
     required String myUserId,
     required bool isLeadChat,
     bool? isMyMessageFromServer,
     String? debugContext = '', // для удобства понимания, откуда пришёл вызов
   }) async {
-    final logPrefix = '[_determineIsMyMessage] $debugContext → ';
-
-    debugPrint(
-        '=================-=== ┌───────────── $logPrefix START ─────────────┐');
-    debugPrint('=================-=== │ myUserId            : $myUserId');
-    debugPrint('=================-=== │ isLeadChat          : $isLeadChat');
-    debugPrint(
-        '=================-=== │ isMyMessageFromServer: $isMyMessageFromServer');
-    debugPrint(
-        '=================-=== │ sender.id           : $messageSenderId');
-    debugPrint(
-        '=================-=== │ sender.type         : $messageSenderType');
-
-    bool isMyMessage;
-
-    // ✅ ПРИОРИТЕТ 1: Сравнение ID отправителя (САМЫЙ НАДЕЖНЫЙ СПОСОБ!)
-    // ✅ КРИТИЧНО: Если есть sender.id - используем его, а НЕ is_my_message от сервера!
-    // Сервер иногда ошибается с is_my_message, но sender.id всегда правильный
+    // ✅ ПРИОРИТЕТ 1: Если есть ID отправителя и наш ID, это окончательный ответ
     if (messageSenderId != null &&
         messageSenderId.isNotEmpty &&
         myUserId.isNotEmpty) {
-      // ✅ КРИТИЧНО: Приводим к строке и убираем пробелы для надежного сравнения
-      final senderIdStr = messageSenderId.toString().trim();
-      final myIdStr = myUserId.toString().trim();
-
-      // ✅ ДОПОЛНИТЕЛЬНАЯ ПРОВЕРКА: Пробуем сравнить как числа, если оба являются числами
-      bool idsMatch = false;
-      try {
-        final senderIdNum = int.tryParse(senderIdStr);
-        final myIdNum = int.tryParse(myIdStr);
-        if (senderIdNum != null && myIdNum != null) {
-          idsMatch = senderIdNum == myIdNum;
-          debugPrint(
-              '=================-=== │ 🔢 ПРИОРИТЕТ 1 → Сравнение как числа: $senderIdNum ${idsMatch ? "==" : "!="} $myIdNum');
-        } else {
-          idsMatch = senderIdStr == myIdStr;
-          debugPrint(
-              '=================-=== │ 📝 ПРИОРИТЕТ 1 → Сравнение как строки: "$senderIdStr" ${idsMatch ? "==" : "!="} "$myIdStr"');
-        }
-      } catch (e) {
-        idsMatch = senderIdStr == myIdStr;
-        debugPrint(
-            '=================-=== │ ⚠ ПРИОРИТЕТ 1 → Ошибка при сравнении ID, используем строковое сравнение: $e');
+      bool idsMatch =
+          (messageSenderId.toString().trim() == myUserId.toString().trim());
+      if (idsMatch) {
+        debugPrint('✅ [DETERMINE] ID matching success! TRUE');
+        return true;
       }
 
-      // ✅ КРИТИЧНО: ИСПРАВЛЕНО: Если ID совпадают - это НАШЕ сообщение (isMyMessage = true)
-      // ✅ Если ID НЕ совпадают - это ЧУЖОЕ сообщение (isMyMessage = false)
-      isMyMessage = idsMatch;
-      debugPrint(
-          '=================-=== │ ✓✓✓✓✓ ПРИОРИТЕТ 1 → sender.id "$senderIdStr" ${idsMatch ? "==" : "!="} myUserId "$myIdStr" → isMyMessage = $isMyMessage (НАДЕЖНО!)');
-
-      // ✅ КРИТИЧНО: Если ID НЕ совпадают - это точно НЕ мое сообщение, возвращаем сразу
-      if (!isMyMessage) {
-        debugPrint(
-            '=================-=== │ ⚠⚠⚠ ВАЖНО: ID НЕ совпадают - это точно НЕ мое сообщение!');
-        debugPrint(
-            '=================-=== │ ⚠ Игнорируем is_my_message от сервера ($isMyMessageFromServer), т.к. sender.id не совпадает!');
-        debugPrint('=================-=== │');
-        debugPrint(
-            '=================-=== │ ИТОГ: isMyMessage = $isMyMessage (ID НЕ совпадают)');
-        debugPrint(
-            '=================-=== └───────────── $logPrefix END ─────────────┘');
-        return isMyMessage;
-      }
-
-      // ✅ Если ID совпадают - это точно мое сообщение, возвращаем сразу
-      debugPrint(
-          '=================-=== │ ✓✓✓✓✓ ID совпадают - это точно МОЁ сообщение!');
-      debugPrint('=================-=== │');
-      debugPrint(
-          '=================-=== │ ИТОГ: isMyMessage = $isMyMessage (ID совпадают)');
-      debugPrint(
-          '=================-=== └───────────── $logPrefix END ─────────────┘');
-      return isMyMessage;
+      // Если ID не совпали — значит сообщение ЧУЖОЕ
+      debugPrint('ℹ️ [DETERMINE] IDs do NOT match. FALSE');
+      return false;
     }
 
-    // ✅ ПРИОРИТЕТ 2: Специфичная логика для lead-чатов (только если нет sender.id)
-    // ✅ КРИТИЧНО: В lead-чатах sender.type имеет ВЫСОКИЙ приоритет
-    if (isLeadChat && messageSenderType != null) {
-      if (messageSenderType.toLowerCase() == 'user') {
-        isMyMessage = true;
-        debugPrint(
-            '=================-=== │ ✓✓✓ ПРИОРИТЕТ 2 → lead-чат, sender.type = "user" → это МОЁ сообщение (менеджер)');
-        debugPrint('=================-=== │');
-        debugPrint('=================-=== │ ИТОГ: isMyMessage = $isMyMessage');
-        debugPrint(
-            '=================-=== └───────────── $logPrefix END ─────────────┘');
-        return isMyMessage;
-      } else if (messageSenderType.toLowerCase() == 'lead') {
-        isMyMessage = false;
-        debugPrint(
-            '=================-=== │ ✓✓✓ ПРИОРИТЕТ 2 → lead-чат, sender.type = "lead" → это СООБЩЕНИЕ КЛИЕНТА (лид)');
-        debugPrint('=================-=== │');
-        debugPrint('=================-=== │ ИТОГ: isMyMessage = $isMyMessage');
-        debugPrint(
-            '=================-=== └───────────── $logPrefix END ─────────────┘');
-        return isMyMessage;
-      } else {
-        debugPrint(
-            '=================-=== │ ⚠ ПРИОРИТЕТ 2 → неизвестный sender.type "$messageSenderType" → переходим к fallback');
-      }
-    }
+    // ✅ ПРИОРИТЕТ 2: Если ID нет, используем логику имен и типов (как запасной вариант)
 
-    // ✅ ПРИОРИТЕТ 3: is_my_message от сервера (только если нет sender.id и sender.type)
-    // ✅ ВНИМАНИЕ: Сервер иногда ошибается, поэтому это последний приоритет!
+    // ✅ ПРИОРИТЕТ 3: Флаг от сервера
     if (isMyMessageFromServer != null) {
-      isMyMessage = isMyMessageFromServer;
-      debugPrint(
-          '=================-=== │ ⚠ ПРИОРИТЕТ 3 → берём is_my_message от сервера = $isMyMessage (НЕ НАДЕЖНО, но fallback)');
-      debugPrint(
-          '=================-=== │ ⚠ ВНИМАНИЕ: sender.id отсутствует, используем значение от сервера');
-      debugPrint('=================-=== │');
-      debugPrint('=================-=== │ ИТОГ: isMyMessage = $isMyMessage');
-      debugPrint(
-          '=================-=== └───────────── $logPrefix END ─────────────┘');
-      return isMyMessage;
+      debugPrint('ℹ️ [DETERMINE] Using server flag: $isMyMessageFromServer');
+      return isMyMessageFromServer;
     }
 
-    // ✅ Последний fallback — безопасность (считаем чужим, если ничего не определили)
-    isMyMessage = false;
-    debugPrint(
-        '=================-=== │ ✗ FALLBACK → не смогли определить → считаем ЧУЖИМ сообщением');
+    // ✅ ПРИОРИТЕТ 4: Логика для лид-чатов
+    if (isLeadChat && messageSenderType != null) {
+      if (messageSenderType.toLowerCase() == 'lead') return false;
+      if (messageSenderType.toLowerCase() == 'user') return true;
+    }
 
-    debugPrint('=================-=== │');
-    debugPrint('=================-=== │ ИТОГ: isMyMessage = $isMyMessage');
-    debugPrint(
-        '=================-=== └───────────── $logPrefix END ─────────────┘');
-
-    return isMyMessage;
+    debugPrint('🏁 [DETERMINE] Fallback → FALSE');
+    return false;
   }
 
   Future<void> _initializeBaseUrl() async {
@@ -2062,10 +1966,12 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
 
             String? senderId = lastMessage['sender']?['id']?.toString();
             String? senderType = lastMessage['sender']?['type']?.toString();
+            String? senderName = lastMessage['sender']?['name']?.toString();
 
             bool isMyMessage = await _determineIsMyMessage(
               messageSenderId: senderId,
               messageSenderType: senderType,
+              messageSenderName: senderName,
               myUserId: myUserId,
               isLeadChat: isLeadChat,
               isMyMessageFromServer: isMyMessageFromServer,
@@ -2102,213 +2008,93 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
         '=================-=== 🎯🎯🎯 CHAT_SMS: Registering chat.message listener for $channelName...');
     chatSubscribtion =
         myPresenceChannel.bind('chat.message').listen((event) async {
+      debugPrint('\n\n');
       debugPrint(
-          '=================-=== \n╔══════════════════════════════════════════════╗');
+          '======================================================================');
+      debugPrint('🚀 [SOCKET] chat.message RECEIVED!');
       debugPrint(
-          '=================-=== ║    📨 chat.message — НОВОЕ СООБЩЕНИЕ         ║');
-      debugPrint(
-          '=================-=== ╚══════════════════════════════════════════════╝');
+          '======================================================================');
 
       try {
-        // 1. Проверка входных данных
         if (event.data == null || event.data.trim().isEmpty) {
-          debugPrint(
-              '=================-=== ❌ MessageSent: event.data пустой или null');
+          debugPrint('❌ [SOCKET] chat.message: event.data is empty!');
           return;
         }
 
-        debugPrint('=================-=== Raw event.data: ${event.data}');
-
-        // 2. Парсинг JSON
         final rawData = json.decode(event.data);
-        debugPrint('=================-=== Parsed JSON: $rawData');
-
-        // 3. Определяем, где лежат данные сообщения
         Map<String, dynamic> messageData;
         if (rawData is Map &&
             rawData['message'] != null &&
             rawData['message'] is Map) {
           messageData = rawData['message'] as Map<String, dynamic>;
-          debugPrint(
-              '=================-=== Структура: {"message": {...}} → берём вложенный message');
         } else if (rawData is Map && rawData['id'] != null) {
           messageData = rawData as Map<String, dynamic>;
-          debugPrint(
-              '=================-=== Структура: данные сообщения на верхнем уровне');
         } else {
-          debugPrint(
-              '=================-=== ❌ Неизвестная структура данных: $rawData');
           return;
         }
 
-        // 4. Извлекаем ключевые поля
         final messageId = messageData['id'] as int?;
         final text = messageData['text'] as String?;
         final type = messageData['type'] as String? ?? 'text';
-        final createdAt = messageData['created_at'] as String?;
-        final filePath = messageData['file_path']?.toString();
-        final voiceDuration = messageData['voice_duration'];
+        final isMyMessageFromServer = messageData['is_my_message'];
 
-        // ✅ КРИТИЧНО: Извлекаем is_my_message с проверкой на разные форматы
-        bool? isMyMessageFromServer;
-        if (messageData['is_my_message'] != null) {
-          final isMyMsgValue = messageData['is_my_message'];
-          if (isMyMsgValue is bool) {
-            isMyMessageFromServer = isMyMsgValue;
-          } else if (isMyMsgValue is int) {
-            isMyMessageFromServer = isMyMsgValue == 1;
-          } else if (isMyMsgValue is String) {
-            isMyMessageFromServer =
-                isMyMsgValue.toLowerCase() == 'true' || isMyMsgValue == '1';
-          }
-          debugPrint(
-              '=================-=== 🔍🔍🔍 MessageSent: is_my_message извлечено: $isMyMessageFromServer (тип: ${isMyMsgValue.runtimeType})');
-        } else {
-          debugPrint(
-              '=================-=== ⚠️⚠️⚠️ MessageSent: is_my_message ОТСУТСТВУЕТ в messageData!');
-        }
-
-        debugPrint(
-            '=================-=== ┌─ Данные сообщения ───────────────────────────────┐');
-        debugPrint('=================-=== │ id              : $messageId');
-        debugPrint('=================-=== │ type            : $type');
-        debugPrint(
-            '=================-=== │ text            : ${text?.substring(0, (text?.length ?? 0) > 60 ? 60 : (text?.length ?? 0))}...');
-        debugPrint('=================-=== │ created_at      : $createdAt');
-        debugPrint(
-            '=================-=== │ is_my_message   : $isMyMessageFromServer ⭐⭐⭐');
-        debugPrint('=================-=== │ file_path       : $filePath');
-        debugPrint('=================-=== │ voice_duration  : $voiceDuration');
-        debugPrint(
-            '=================-=== └─────────────────────────────────────────────────────┘');
-
-        // 5. Sender - ✅ КРИТИЧНО: Правильное извлечение данных отправителя
-        // ✅ СЕРВЕР ОТПРАВЛЯЕТ: message.sender с полями id, name, type
         final senderData = messageData['sender'];
         String? senderId;
         String? senderType;
         String? senderName;
 
-        debugPrint(
-            '=================-=== 🔍🔍🔍 MessageSent: Проверяем sender данные...');
-        debugPrint('=================-===    senderData: $senderData');
-        debugPrint(
-            '=================-===    senderData type: ${senderData?.runtimeType}');
-
-        if (senderData != null) {
-          if (senderData is Map<String, dynamic>) {
-            senderId = senderData['id']?.toString();
-            senderType = senderData['type']?.toString();
-            senderName = senderData['name']?.toString();
-            debugPrint(
-                '=================-=== ┌─ Sender данные (Map) ───────────────────────────────┐');
-            debugPrint('=================-=== │ id   : $senderId ⭐⭐⭐');
-            debugPrint('=================-=== │ type : $senderType');
-            debugPrint('=================-=== │ name : $senderName');
-            debugPrint(
-                '=================-=== └─────────────────────────────────────────────────────┘');
-          } else if (senderData is Map) {
-            // Fallback для Map без типизации
-            final senderMap = Map<String, dynamic>.from(senderData);
-            senderId = senderMap['id']?.toString();
-            senderType = senderMap['type']?.toString();
-            senderName = senderMap['name']?.toString();
-            debugPrint(
-                '=================-=== ┌─ Sender данные (Map fallback) ───────────────────────────────┐');
-            debugPrint('=================-=== │ id   : $senderId ⭐⭐⭐');
-            debugPrint('=================-=== │ type : $senderType');
-            debugPrint('=================-=== │ name : $senderName');
-            debugPrint(
-                '=================-=== └─────────────────────────────────────────────────────┘');
-          } else {
-            debugPrint(
-                '=================-=== ⚠️⚠️⚠️ Sender имеет неверный тип: ${senderData.runtimeType}');
-            debugPrint('=================-=== ⚠️ senderData: $senderData');
-          }
-        } else {
-          debugPrint('=================-=== ⚠️⚠️⚠️ Sender отсутствует (null)!');
-          debugPrint(
-              '=================-=== ⚠️ messageData keys: ${messageData.keys.toList()}');
+        if (senderData is Map) {
+          senderId = senderData['id']?.toString();
+          senderType = senderData['type']?.toString();
+          senderName = senderData['name']?.toString();
         }
 
-        // ✅ КРИТИЧНО: Если sender.id отсутствует, это проблема!
-        if (senderId == null || senderId.isEmpty) {
-          debugPrint(
-              '=================-=== ❌❌❌ КРИТИЧЕСКАЯ ОШИБКА: sender.id отсутствует или пустой!');
-          debugPrint(
-              '=================-===    Это означает, что мы не сможем правильно определить отправителя!');
-          debugPrint('=================-===    messageData: $messageData');
-        }
-
-        // 6. Мой ID
         final prefs = await SharedPreferences.getInstance();
         final myUserId = prefs.getString('userID') ?? '';
-
-        if (myUserId.isEmpty) {
-          debugPrint(
-              '=================-=== !!! КРИТИЧЕСКАЯ ОШИБКА !!! userID в SharedPreferences пустой');
-          // Можно добавить fallback или уведомление, но пока продолжаем
-        }
+        final globalUserId = userID.value;
+        debugPrint('🏠 [SOCKET] MY DEVICE USER ID (Prefs): "$myUserId"');
+        debugPrint('🌍 [SOCKET] GLOBAL USER ID (Variable): "$globalUserId"');
 
         final isLeadChat = widget.endPointInTab == 'lead';
-        debugPrint(
-            '=================-=== Мой userID: "$myUserId" | Чат lead? $isLeadChat');
+        debugPrint('📁 [SOCKET] IS LEAD CHAT: $isLeadChat');
 
-        // 7. Самое важное — определяем, чьё это сообщение
-        // ✅ КРИТИЧНО: sender.id имеет ПРИОРИТЕТ 1 в _determineIsMyMessage
-        // Если sender.id != null, он будет использован для сравнения с myUserId
-        debugPrint(
-            '=================-=== ╔═══════════════════════════════════════════════════════╗');
-        debugPrint(
-            '=================-=== ║  🎯 chat.message: ОПРЕДЕЛЯЕМ isMyMessage            ║');
-        debugPrint(
-            '=================-=== ╠═══════════════════════════════════════════════════════╣');
-        debugPrint('=================-=== ║  sender.id ⭐⭐⭐        : $senderId');
-        debugPrint(
-            '=================-=== ║  sender.type            : $senderType');
-        debugPrint(
-            '=================-=== ║  myUserId                : $myUserId');
-        debugPrint(
-            '=================-=== ║  isLeadChat              : $isLeadChat');
-        debugPrint(
-            '=================-=== ║  is_my_message от сервера: $isMyMessageFromServer');
-        debugPrint(
-            '=================-=== ║  ⚠️ ВАЖНО: sender.id имеет ПРИОРИТЕТ 1!');
-        debugPrint(
-            '=================-=== ╚═══════════════════════════════════════════════════════╝');
+        // Parse isMyMessageFromServer safely
+        bool? parsedIsMyMessageFromServer;
+        if (isMyMessageFromServer != null) {
+          if (isMyMessageFromServer is bool)
+            parsedIsMyMessageFromServer = isMyMessageFromServer;
+          else if (isMyMessageFromServer is int)
+            parsedIsMyMessageFromServer = isMyMessageFromServer == 1;
+          else if (isMyMessageFromServer is String)
+            parsedIsMyMessageFromServer =
+                isMyMessageFromServer.toLowerCase() == 'true' ||
+                    isMyMessageFromServer == '1';
+        }
 
-        bool isMyMessage = await _determineIsMyMessage(
+        final isMyMessageResult = await _determineIsMyMessage(
           messageSenderId: senderId,
           messageSenderType: senderType,
-          myUserId: myUserId,
+          messageSenderName: senderName,
+          myUserId: myUserId.isNotEmpty ? myUserId : globalUserId,
           isLeadChat: isLeadChat,
-          isMyMessageFromServer: isMyMessageFromServer,
-          debugContext: 'chat.message',
+          isMyMessageFromServer: parsedIsMyMessageFromServer,
+          debugContext: 'SOCKET chat.message',
         );
 
-        debugPrint(
-            '=================-=== ╔═══════════════════════════════════════════════════════╗');
-        debugPrint(
-            '=================-=== ║  ✅✅✅ ИТОГОВОЕ РЕШЕНИЕ: isMyMessage = $isMyMessage ║');
-        debugPrint(
-            '=================-=== ╚═══════════════════════════════════════════════════════╝');
+        debugPrint('🎯 [SOCKET] FINAL isMyMessage RESULT: $isMyMessageResult');
 
-        // 8. Создаём модель сообщения
         ForwardedMessage? forwardedMessage;
         if (messageData['forwarded_message'] != null) {
           try {
             forwardedMessage =
                 ForwardedMessage.fromJson(messageData['forwarded_message']);
+            debugPrint('↪️ [SOCKET] Forwarded message detected and parsed');
           } catch (e) {
-            debugPrint(
-                '=================-=== Ошибка парсинга forwarded_message: $e');
+            debugPrint('⚠️ [SOCKET] Error parsing forwarded_message: $e');
           }
         }
 
-        String? resolvedSenderName = senderName;
-        if (resolvedSenderName != null && resolvedSenderName.trim().isEmpty) {
-          resolvedSenderName = null;
-        }
+        final myName = await _getMyDisplayName();
         final fallbackCompanionName =
             (_cachedCompanionName != null && _cachedCompanionName!.isNotEmpty)
                 ? _cachedCompanionName!
@@ -2318,76 +2104,54 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
                         ? widget.chatItem.name
                         : ''));
 
-        final myName = await _getMyDisplayName();
-        final senderDisplayName = isMyMessage
-            ? (resolvedSenderName ?? myName)
-            : (resolvedSenderName ?? fallbackCompanionName);
+        final senderDisplayName = isMyMessageResult
+            ? (senderName ?? myName)
+            : (senderName ?? fallbackCompanionName);
 
         final msg = Message(
-          id: messageId ?? -1, // -1 — маркер ошибки
+          id: messageId ?? -1,
           text: text ??
               (type == 'voice' ? 'Голосовое сообщение' : type ?? 'Сообщение'),
           type: type,
-          createMessateTime: createdAt ?? DateTime.now().toIso8601String(),
-          isMyMessage: isMyMessage,
+          createMessateTime:
+              messageData['created_at'] ?? DateTime.now().toIso8601String(),
+          isMyMessage: isMyMessageResult,
           senderName: senderDisplayName,
-          filePath: filePath,
-          duration: voiceDuration != null
+          filePath: messageData['file_path']?.toString(),
+          duration: messageData['voice_duration'] != null
               ? Duration(
                   seconds:
-                      double.tryParse(voiceDuration.toString())?.round() ?? 0)
+                      double.tryParse(messageData['voice_duration'].toString())
+                              ?.round() ??
+                          0)
               : Duration.zero,
           forwardedMessage: forwardedMessage,
-          // isRead: true, // если нужно — можно добавить логику
         );
 
         debugPrint(
-            '=================-=== Создано сообщение → id: ${msg.id} | isMyMessage: ${msg.isMyMessage} | type: ${msg.type}');
+            '✨ [SOCKET] Message object created: id=${msg.id}, isMyMsg=${msg.isMyMessage}, senderName="${msg.senderName}"');
 
-        // 9. Добавляем в UI
         if (mounted) {
+          debugPrint('📡 [SOCKET] Dispatching message to MessagingCubit...');
           context.read<MessagingCubit>().updateMessageFromSocket(msg);
-          debugPrint(
-              '=================-=== Сообщение добавлено в UI через MessagingCubit');
         }
 
-        // 10. Звук только для входящих
         if (!msg.isMyMessage) {
-          try {
-            await _audioPlayer.setAsset('assets/audio/get.mp3');
-            await _audioPlayer.play();
-            debugPrint(
-                '=================-=== Воспроизведён звук входящего сообщения');
-          } catch (e) {
-            debugPrint(
-                '=================-=== Не удалось воспроизвести звук: $e');
-          }
-        } else {
-          debugPrint('=================-=== Звук пропущен — это моё сообщение');
+          _audioPlayer
+              .setAsset('assets/audio/get.mp3')
+              .then((_) => _audioPlayer.play())
+              .catchError((e) => debugPrint('⚠️ Sound error: $e'));
         }
 
-        // 11. Скролл вниз
         _scrollToBottom();
-
-        // 12. Фоновая синхронизация (опционально)
-        try {
-          await context
-              .read<MessagingCubit>()
-              .syncMessagesInBackground(widget.chatId);
-          debugPrint('=================-=== Фоновая синхронизация запущена');
-        } catch (e) {
-          debugPrint('=================-=== Ошибка фоновой синхронизации: $e');
-        }
-
+        debugPrint('✅ [SOCKET] chat.message processing FINISHED');
         debugPrint(
-            '=================-=== ╚══════ chat.message обработан успешно ══════╝');
+            '======================================================================');
       } catch (e, stackTrace) {
+        debugPrint('❌ [SOCKET] FATAL ERROR in chat.message listener: $e');
+        debugPrint('$stackTrace');
         debugPrint(
-            '=================-=== ╔══════ ОШИБКА В ОБРАБОТЧИКЕ chat.message ══════╗');
-        debugPrint('=================-=== Ошибка: $e');
-        debugPrint('=================-=== StackTrace:\n$stackTrace');
-        debugPrint(
-            '=================-=== ╚══════════════════════════════════════════════╝');
+            '======================================================================');
       }
     });
     debugPrint(
@@ -2426,172 +2190,184 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
       // ✅ КРИТИЧНО: chat.updated используется ТОЛЬКО для обновления списка чатов, НЕ для добавления сообщений!
       // ✅ Сообщения добавляются через событие chat.message (MessageSent), которое содержит правильный sender.id
       // ✅ Поэтому в chat.updated мы НЕ добавляем сообщения, а только обновляем lastMessage в списке чатов
-     // ✅ ОБНОВЛЕННЫЙ СЛУШАТЕЛЬ chat.updated (внутри userPresenceChannel)
+      // ✅ ОБНОВЛЕННЫЙ СЛУШАТЕЛЬ chat.updated (внутри userPresenceChannel)
 // ✅ ИСПРАВЛЕННЫЙ СЛУШАТЕЛЬ chat.updated (в файле chat_sms_screen.dart)
-userPresenceChannel.bind('chat.updated').listen((event) async {
-  debugPrint('🔔🔔🔔 CHAT_SMS (USER CHANNEL): Received chat.updated!');
+      userPresenceChannel.bind('chat.updated').listen((event) async {
+        debugPrint('🔔🔔🔔 CHAT_SMS (USER CHANNEL): Received chat.updated!');
 
-  try {
-    final chatData = json.decode(event.data);
-    final chatObj = chatData['chat'];
-    final eventChatId = chatObj?['id'];
+        try {
+          final chatData = json.decode(event.data);
+          final chatObj = chatData['chat'];
+          final eventChatId = chatObj?['id'];
 
-    if (eventChatId != widget.chatId) {
-      return;
-    }
+          if (eventChatId != widget.chatId) {
+            return;
+          }
 
-    final prefs = await SharedPreferences.getInstance();
-    final myUserId = prefs.getString('userID') ?? '';
+          final prefs = await SharedPreferences.getInstance();
+          final myUserId = prefs.getString('userID') ?? '';
 
-    String? extractedName;
+          String? extractedName;
 
-    String? resolveNameFromMap(Map<dynamic, dynamic> data) {
-      final firstName = data['name']?.toString() ?? '';
-      final lastName = data['lastname']?.toString() ?? '';
-      final fullName = '$firstName $lastName'.trim();
-      return fullName.isNotEmpty ? fullName : null;
-    }
+          String? resolveNameFromMap(Map<dynamic, dynamic> data) {
+            final firstName = data['name']?.toString() ?? '';
+            final lastName = data['lastname']?.toString() ?? '';
+            final fullName = '$firstName $lastName'.trim();
+            return fullName.isNotEmpty ? fullName : null;
+          }
 
-    final chatUsers = chatObj?['chatUsers'];
-    if (chatUsers is List) {
-      for (final user in chatUsers) {
-        if (user is Map) {
-          final participant = user['participant'];
-          if (participant is Map) {
-            final participantId = participant['id']?.toString();
-            if (participantId != null &&
-                participantId.isNotEmpty &&
-                participantId != myUserId) {
-              extractedName = resolveNameFromMap(participant);
-              if (extractedName != null) break;
+          final chatUsers = chatObj?['chatUsers'];
+          if (chatUsers is List) {
+            for (final user in chatUsers) {
+              if (user is Map) {
+                final participant = user['participant'];
+                if (participant is Map) {
+                  final participantId = participant['id']?.toString();
+                  if (participantId != null &&
+                      participantId.isNotEmpty &&
+                      participantId != myUserId) {
+                    extractedName = resolveNameFromMap(participant);
+                    if (extractedName != null) break;
+                  }
+                }
+              }
             }
           }
+
+          if (extractedName == null) {
+            final user = chatObj?['user'];
+            if (user is Map) {
+              final userId = user['id']?.toString();
+              if (userId != null && userId.isNotEmpty && userId != myUserId) {
+                extractedName = resolveNameFromMap(user);
+              }
+            }
+          }
+
+          if (extractedName == null) {
+            final chatName = chatObj?['name'];
+            if (chatName is String && chatName.trim().isNotEmpty) {
+              extractedName = chatName.trim();
+            }
+          }
+
+          if (mounted &&
+              extractedName != null &&
+              extractedName.isNotEmpty &&
+              (_cachedCompanionName == null || _cachedCompanionName!.isEmpty)) {
+            setState(() {
+              _cachedCompanionName = extractedName;
+            });
+            debugPrint(
+                '✅ Обновлено имя собеседника из chat.updated: $extractedName');
+          }
+
+          // ✅ Если chat.message не пришёл, подстрахуемся lastMessage из chat.updated
+          final lastMessage = chatObj?['lastMessage'];
+          if (lastMessage is Map) {
+            final rawMessageId = lastMessage['id'];
+            final messageId = rawMessageId is int
+                ? rawMessageId
+                : int.tryParse(rawMessageId?.toString() ?? '');
+
+            if (messageId != null) {
+              bool alreadyExists = false;
+              final state = context.read<MessagingCubit>().state;
+              if (state is MessagesLoadedState) {
+                alreadyExists =
+                    state.messages.any((msg) => msg.id == messageId);
+              } else if (state is PinnedMessagesState) {
+                alreadyExists =
+                    state.messages.any((msg) => msg.id == messageId);
+              } else if (state is EditingMessageState) {
+                alreadyExists =
+                    state.messages.any((msg) => msg.id == messageId);
+              }
+
+              if (!alreadyExists) {
+                bool? isMyMessageFromServer;
+                final isMyMsgValue = lastMessage['is_my_message'];
+                if (isMyMsgValue is bool) {
+                  isMyMessageFromServer = isMyMsgValue;
+                } else if (isMyMsgValue is int) {
+                  isMyMessageFromServer = isMyMsgValue == 1;
+                } else if (isMyMsgValue is String) {
+                  isMyMessageFromServer =
+                      isMyMsgValue.toLowerCase() == 'true' ||
+                          isMyMsgValue == '1';
+                }
+
+                final senderId = lastMessage['sender']?['id']?.toString();
+                final senderType = lastMessage['sender']?['type']?.toString();
+                final isLeadChat = widget.endPointInTab == 'lead';
+
+                final senderNameFromLast =
+                    lastMessage['sender']?['name']?.toString();
+
+                final isMyMessage = await _determineIsMyMessage(
+                  messageSenderId: senderId,
+                  messageSenderType: senderType,
+                  messageSenderName: senderNameFromLast,
+                  myUserId: myUserId,
+                  isLeadChat: isLeadChat,
+                  isMyMessageFromServer: isMyMessageFromServer,
+                  debugContext: 'user_channel.chat.updated',
+                );
+
+                final fallbackName = extractedName ??
+                    _cachedCompanionName ??
+                    (_isGroupChat == true
+                        ? ''
+                        : (widget.chatItem.name.isNotEmpty
+                            ? widget.chatItem.name
+                            : ''));
+
+                final myName = await _getMyDisplayName();
+                final myDisplayName = myName.isNotEmpty ? myName : '';
+
+                final newMessage = Message(
+                  id: messageId,
+                  text: lastMessage['text'] ?? '',
+                  type: lastMessage['type'] ?? 'text',
+                  filePath: lastMessage['file_path'],
+                  isMyMessage: isMyMessage,
+                  createMessateTime: lastMessage['created_at'] ??
+                      DateTime.now().toIso8601String(),
+                  senderName: isMyMessage ? myDisplayName : fallbackName,
+                  duration: Duration(
+                    seconds: lastMessage['voice_duration'] != null
+                        ? double.tryParse(
+                                    lastMessage['voice_duration'].toString())
+                                ?.round() ??
+                            0
+                        : 0,
+                  ),
+                  isPinned: lastMessage['is_pinned'] ?? false,
+                  isChanged: lastMessage['is_changed'] ?? false,
+                  isNote: lastMessage['is_note'] ?? false,
+                );
+
+                if (mounted) {
+                  context
+                      .read<MessagingCubit>()
+                      .updateMessageFromSocket(newMessage);
+                }
+
+                if (!isMyMessage) {
+                  try {
+                    await _audioPlayer.setAsset('assets/audio/get.mp3');
+                    await _audioPlayer.play();
+                  } catch (e) {
+                    // ignore
+                  }
+                }
+              }
+            }
+          }
+        } catch (e, stack) {
+          debugPrint('❌ Ошибка парсинга chat.updated: $e');
         }
-      }
-    }
-
-    if (extractedName == null) {
-      final user = chatObj?['user'];
-      if (user is Map) {
-        final userId = user['id']?.toString();
-        if (userId != null && userId.isNotEmpty && userId != myUserId) {
-          extractedName = resolveNameFromMap(user);
-        }
-      }
-    }
-
-    if (extractedName == null) {
-      final chatName = chatObj?['name'];
-      if (chatName is String && chatName.trim().isNotEmpty) {
-        extractedName = chatName.trim();
-      }
-    }
-
-    if (mounted &&
-        extractedName != null &&
-        extractedName.isNotEmpty &&
-        (_cachedCompanionName == null || _cachedCompanionName!.isEmpty)) {
-      setState(() {
-        _cachedCompanionName = extractedName;
       });
-      debugPrint('✅ Обновлено имя собеседника из chat.updated: $extractedName');
-    }
-
-    // ✅ Если chat.message не пришёл, подстрахуемся lastMessage из chat.updated
-    final lastMessage = chatObj?['lastMessage'];
-    if (lastMessage is Map) {
-      final rawMessageId = lastMessage['id'];
-      final messageId = rawMessageId is int
-          ? rawMessageId
-          : int.tryParse(rawMessageId?.toString() ?? '');
-
-      if (messageId != null) {
-        bool alreadyExists = false;
-        final state = context.read<MessagingCubit>().state;
-        if (state is MessagesLoadedState) {
-          alreadyExists = state.messages.any((msg) => msg.id == messageId);
-        } else if (state is PinnedMessagesState) {
-          alreadyExists = state.messages.any((msg) => msg.id == messageId);
-        } else if (state is EditingMessageState) {
-          alreadyExists = state.messages.any((msg) => msg.id == messageId);
-        }
-
-        if (!alreadyExists) {
-          bool? isMyMessageFromServer;
-          final isMyMsgValue = lastMessage['is_my_message'];
-          if (isMyMsgValue is bool) {
-            isMyMessageFromServer = isMyMsgValue;
-          } else if (isMyMsgValue is int) {
-            isMyMessageFromServer = isMyMsgValue == 1;
-          } else if (isMyMsgValue is String) {
-            isMyMessageFromServer =
-                isMyMsgValue.toLowerCase() == 'true' || isMyMsgValue == '1';
-          }
-
-          final senderId = lastMessage['sender']?['id']?.toString();
-          final senderType = lastMessage['sender']?['type']?.toString();
-          final isLeadChat = widget.endPointInTab == 'lead';
-
-          final isMyMessage = await _determineIsMyMessage(
-            messageSenderId: senderId,
-            messageSenderType: senderType,
-            myUserId: myUserId,
-            isLeadChat: isLeadChat,
-            isMyMessageFromServer: isMyMessageFromServer,
-            debugContext: 'user_channel.chat.updated',
-          );
-
-          final fallbackName = extractedName ??
-              _cachedCompanionName ??
-              (_isGroupChat == true
-                  ? ''
-                  : (widget.chatItem.name.isNotEmpty
-                      ? widget.chatItem.name
-                      : ''));
-
-          final myName = await _getMyDisplayName();
-          final myDisplayName = myName.isNotEmpty ? myName : '';
-
-          final newMessage = Message(
-            id: messageId,
-            text: lastMessage['text'] ?? '',
-            type: lastMessage['type'] ?? 'text',
-            filePath: lastMessage['file_path'],
-            isMyMessage: isMyMessage,
-            createMessateTime: lastMessage['created_at'] ??
-                DateTime.now().toIso8601String(),
-            senderName: isMyMessage ? myDisplayName : fallbackName,
-            duration: Duration(
-              seconds: lastMessage['voice_duration'] != null
-                  ? double.tryParse(lastMessage['voice_duration'].toString())
-                          ?.round() ??
-                      0
-                  : 0,
-            ),
-            isPinned: lastMessage['is_pinned'] ?? false,
-            isChanged: lastMessage['is_changed'] ?? false,
-            isNote: lastMessage['is_note'] ?? false,
-          );
-
-          if (mounted) {
-            context.read<MessagingCubit>().updateMessageFromSocket(newMessage);
-          }
-
-          if (!isMyMessage) {
-            try {
-              await _audioPlayer.setAsset('assets/audio/get.mp3');
-              await _audioPlayer.play();
-            } catch (e) {
-              // ignore
-            }
-          }
-        }
-      }
-    }
-  } catch (e, stack) {
-    debugPrint('❌ Ошибка парсинга chat.updated: $e');
-  }
-});
       debugPrint(
           '=================-=== ✅✅✅ CHAT_SMS: User channel listener registered');
     }
