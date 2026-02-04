@@ -16,10 +16,12 @@ class AddMoneyIncomeAnotherCashRegister extends StatefulWidget {
   const AddMoneyIncomeAnotherCashRegister({super.key});
 
   @override
-  _AddMoneyIncomeAnotherCashRegisterState createState() => _AddMoneyIncomeAnotherCashRegisterState();
+  _AddMoneyIncomeAnotherCashRegisterState createState() =>
+      _AddMoneyIncomeAnotherCashRegisterState();
 }
 
-class _AddMoneyIncomeAnotherCashRegisterState extends State<AddMoneyIncomeAnotherCashRegister> {
+class _AddMoneyIncomeAnotherCashRegisterState
+    extends State<AddMoneyIncomeAnotherCashRegister> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _dateController = TextEditingController();
   final TextEditingController _commentController = TextEditingController();
@@ -31,7 +33,8 @@ class _AddMoneyIncomeAnotherCashRegisterState extends State<AddMoneyIncomeAnothe
   @override
   void initState() {
     super.initState();
-    _dateController.text = DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now());
+    _dateController.text =
+        DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now());
   }
 
   void _createDocument({bool approve = false}) {
@@ -39,15 +42,18 @@ class _AddMoneyIncomeAnotherCashRegisterState extends State<AddMoneyIncomeAnothe
 
     if (selectedCashRegister == null) {
       _showSnackBar(
-        AppLocalizations.of(context)!.translate('select_sender_cash_register') ?? 'Пожалуйста, выберите кассу-отправителя',
+        AppLocalizations.of(context)!
+                .translate('select_sender_cash_register') ??
+            'Пожалуйста, выберите кассу-отправителя',
         false,
       );
       return;
     }
-    
+
     if (selectedSenderCashRegister == null) {
       _showSnackBar(
-        AppLocalizations.of(context)!.translate('select_cash_register') ?? 'Пожалуйста, выберите кассу',
+        AppLocalizations.of(context)!.translate('select_cash_register') ??
+            'Пожалуйста, выберите кассу',
         false,
       );
       return;
@@ -58,30 +64,33 @@ class _AddMoneyIncomeAnotherCashRegisterState extends State<AddMoneyIncomeAnothe
     String? isoDate;
 
     try {
-      DateTime? parsedDate = DateFormat('dd/MM/yyyy HH:mm').parse(_dateController.text);
+      DateTime? parsedDate =
+          DateFormat('dd/MM/yyyy HH:mm').parse(_dateController.text);
       isoDate = DateFormat("yyyy-MM-ddTHH:mm:ss.SSS'Z'").format(parsedDate);
     } catch (e) {
       if (mounted) {
         setState(() => _isLoading = false);
       }
       _showSnackBar(
-        AppLocalizations.of(context)!.translate('enter_valid_datetime') ?? 'Введите корректную дату и время',
+        AppLocalizations.of(context)!.translate('enter_valid_datetime') ??
+            'Введите корректную дату и время',
         false,
       );
       return;
     }
 
-    if (selectedCashRegister!.id  == selectedSenderCashRegister!.id) {
+    if (selectedCashRegister!.id == selectedSenderCashRegister!.id) {
       if (mounted) {
         setState(() => _isLoading = false);
       }
       _showSnackBar(
-        AppLocalizations.of(context)!.translate('cash_registers_must_be_different') ?? 'Касса-отправитель и касса-получатель должны быть разными',
+        AppLocalizations.of(context)!
+                .translate('cash_registers_must_be_different') ??
+            'Касса-отправитель и касса-получатель должны быть разными',
         false,
       );
       return;
     }
-
 
     final bloc = context.read<MoneyIncomeBloc>();
     bloc.add(CreateMoneyIncome(
@@ -157,23 +166,31 @@ class _AddMoneyIncomeAnotherCashRegisterState extends State<AddMoneyIncomeAnothe
             children: [
               Expanded(
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const SizedBox(height: 8),
                       CashRegisterGroupWidget(
-                        title: AppLocalizations.of(context)!.translate('sender_cash_register') ?? 'Касса-отправитель',
-                        selectedCashRegisterId: selectedSenderCashRegister?.id.toString(),
-                        onSelectCashRegister: (CashRegisterData selectedRegionData) {
+                        title: AppLocalizations.of(context)!
+                                .translate('sender_cash_register') ??
+                            'Касса-отправитель',
+                        selectedCashRegisterId:
+                            selectedSenderCashRegister?.id.toString(),
+                        onSelectCashRegister:
+                            (CashRegisterData selectedRegionData) {
                           try {
                             setState(() {
                               selectedSenderCashRegister = selectedRegionData;
                             });
                           } catch (e) {
-                            debugPrint('Error selecting sender cash register: $e');
+                            debugPrint(
+                                'Error selecting sender cash register: $e');
                             _showSnackBar(
-                                AppLocalizations.of(context)!.translate('error_selecting_cash_register') ?? 'Ошибка выбора кассы',
+                                AppLocalizations.of(context)!.translate(
+                                        'error_selecting_cash_register') ??
+                                    'Ошибка выбора кассы',
                                 false);
                           }
                         },
@@ -182,17 +199,24 @@ class _AddMoneyIncomeAnotherCashRegisterState extends State<AddMoneyIncomeAnothe
                       _buildDateField(localizations),
                       const SizedBox(height: 16),
                       CashRegisterGroupWidget(
-                        title: AppLocalizations.of(context)!.translate('receiver_cash_register') ?? 'Касса-получатель',
-                        selectedCashRegisterId: selectedCashRegister?.id.toString(),
-                        onSelectCashRegister: (CashRegisterData selectedRegionData) {
+                        title: AppLocalizations.of(context)!
+                                .translate('receiver_cash_register') ??
+                            'Касса-получатель',
+                        selectedCashRegisterId:
+                            selectedCashRegister?.id.toString(),
+                        onSelectCashRegister:
+                            (CashRegisterData selectedRegionData) {
                           try {
                             setState(() {
                               selectedCashRegister = selectedRegionData;
                             });
                           } catch (e) {
-                            debugPrint('Error selecting receiver cash register: $e');
+                            debugPrint(
+                                'Error selecting receiver cash register: $e');
                             _showSnackBar(
-                                AppLocalizations.of(context)!.translate('error_selecting_cash_register') ?? 'Ошибка выбора кассы',
+                                AppLocalizations.of(context)!.translate(
+                                        'error_selecting_cash_register') ??
+                                    'Ошибка выбора кассы',
                                 false);
                           }
                         },
@@ -220,11 +244,13 @@ class _AddMoneyIncomeAnotherCashRegisterState extends State<AddMoneyIncomeAnothe
       forceMaterialTransparency: true,
       elevation: 0,
       leading: IconButton(
-        icon: const Icon(Icons.arrow_back_ios, color: Color(0xff1E2E52), size: 24),
+        icon: const Icon(Icons.arrow_back_ios,
+            color: Color(0xff1E2E52), size: 24),
         onPressed: () => Navigator.pop(context),
       ),
       title: Text(
-        AppLocalizations.of(context)!.translate('create_incoming_document') ?? 'Создать доход',
+        AppLocalizations.of(context)!.translate('create_incoming_document') ??
+            'Создать доход',
         style: const TextStyle(
           fontSize: 20,
           fontFamily: 'Gilroy',
@@ -254,8 +280,10 @@ class _AddMoneyIncomeAnotherCashRegisterState extends State<AddMoneyIncomeAnothe
   Widget _buildCommentField(AppLocalizations localizations) {
     return CustomTextField(
       controller: _commentController,
-      label: AppLocalizations.of(context)!.translate('comment') ?? 'Комментарий',
-      hintText: AppLocalizations.of(context)!.translate('enter_comment') ?? 'Введите комментарий',
+      label:
+          AppLocalizations.of(context)!.translate('comment') ?? 'Комментарий',
+      hintText: AppLocalizations.of(context)!.translate('enter_comment') ??
+          'Введите комментарий',
       maxLines: 3,
       keyboardType: TextInputType.multiline,
     );
@@ -263,33 +291,37 @@ class _AddMoneyIncomeAnotherCashRegisterState extends State<AddMoneyIncomeAnothe
 
   Widget _buildAmountField(AppLocalizations localizations) {
     return CustomTextField(
-      inputFormatters: [
-        PriceInputFormatter(),
-      ],
-      controller: _amountController,
-      label: AppLocalizations.of(context)!.translate('amount') ?? 'Сумма',
-      hintText: AppLocalizations.of(context)!.translate('enter_amount') ?? 'Введите сумму',
-      maxLines: 1,
-      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+        inputFormatters: [
+          PriceInputFormatter(),
+        ],
+        controller: _amountController,
+        label: AppLocalizations.of(context)!.translate('amount') ?? 'Сумма',
+        hintText: AppLocalizations.of(context)!.translate('enter_amount') ??
+            'Введите сумму',
+        maxLines: 1,
+        keyboardType: const TextInputType.numberWithOptions(decimal: true),
         validator: (value) {
           if (value == null || value.isEmpty) {
-            return AppLocalizations.of(context)!.translate('enter_amount') ?? 'Введите сумму';
+            return AppLocalizations.of(context)!.translate('enter_amount') ??
+                'Введите сумму';
           }
 
           final doubleValue = double.tryParse(value.trim());
           if (doubleValue == null) {
-            return AppLocalizations.of(context)!.translate('enter_valid_amount') ?? 'Введите корректную сумму';
+            return AppLocalizations.of(context)!
+                    .translate('enter_valid_amount') ??
+                'Введите корректную сумму';
           }
 
           if (doubleValue <= 0) {
-            return AppLocalizations.of(context)!.translate('amount_must_be_greater_than_zero') ?? 'Сумма должна быть больше нуля';
+            return AppLocalizations.of(context)!
+                    .translate('amount_must_be_greater_than_zero') ??
+                'Сумма должна быть больше нуля';
           }
 
           return null;
-        }
-    );
+        });
   }
-
 
   // Новый метод для сохранения и проведения
   void _createAndApproveDocument() {
@@ -338,16 +370,21 @@ class _AddMoneyIncomeAnotherCashRegisterState extends State<AddMoneyIncomeAnothe
                       Icon(
                         Icons.check_circle_outline,
                         size: 20,
-                        color: _isLoading ? const Color(0xff99A4BA) : const Color(0xff4CAF50),
+                        color: _isLoading
+                            ? const Color(0xff99A4BA)
+                            : const Color(0xff4CAF50),
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        localizations.translate('save_and_approve') ?? 'Сохранить и провести',
+                        localizations.translate('save_and_approve') ??
+                            'Сохранить и провести',
                         style: TextStyle(
                           fontSize: 16,
                           fontFamily: 'Gilroy',
                           fontWeight: FontWeight.w600,
-                          color: _isLoading ? const Color(0xff99A4BA) : const Color(0xff4CAF50),
+                          color: _isLoading
+                              ? const Color(0xff99A4BA)
+                              : const Color(0xff4CAF50),
                         ),
                       ),
                     ],
@@ -395,22 +432,23 @@ class _AddMoneyIncomeAnotherCashRegisterState extends State<AddMoneyIncomeAnothe
                   ),
                   child: _isLoading
                       ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                    ),
-                  )
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor:
+                                AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        )
                       : Text(
-                    localizations.translate('save') ?? 'Сохранить',
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w500,
-                      color: Colors.white,
-                    ),
-                  ),
+                          localizations.translate('save') ?? 'Сохранить',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontFamily: 'Gilroy',
+                            fontWeight: FontWeight.w500,
+                            color: Colors.white,
+                          ),
+                        ),
                 ),
               ),
             ],

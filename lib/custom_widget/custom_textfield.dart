@@ -57,7 +57,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
   @override
   void initState() {
     super.initState();
-    
+
     // ← Добавили: отслеживаем фокус для показа тулбара на iOS
     if (Platform.isIOS) {
       _focusNode.addListener(_handleFocusChange);
@@ -186,10 +186,12 @@ class _CustomTextFieldState extends State<CustomTextField> {
             ),
             filled: true,
             fillColor: widget.backgroundColor,
-            contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
+            contentPadding:
+                const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
             prefixIcon: widget.prefixIcon,
             suffixIcon: _buildSuffixIcon(),
             errorText: widget.errorText,
+            errorMaxLines: 2,
             errorStyle: const TextStyle(
               fontSize: 14,
               color: Colors.red,

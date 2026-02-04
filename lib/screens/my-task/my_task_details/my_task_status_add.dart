@@ -45,8 +45,17 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
           children: [
             TextFormField(
               controller: _controller,
+              maxLines: 1,
+              onChanged: (value) {
+                if (_errorMessage != null && value.trim().isNotEmpty) {
+                  setState(() {
+                    _errorMessage = null;
+                  });
+                }
+              },
               decoration: InputDecoration(
-                hintText:AppLocalizations.of(context)!.translate('enter_category_name'),
+                hintText: AppLocalizations.of(context)!
+                    .translate('enter_category_name'),
                 hintStyle: TextStyle(
                   fontSize: 16,
                   fontFamily: 'Gilroy',
@@ -59,22 +68,48 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
                 ),
                 filled: true,
                 fillColor: Color(0xffF4F7FD),
-                contentPadding: EdgeInsets.symmetric(vertical: 10, horizontal: 12),
-              ),
-            ),
-            if (_errorMessage != null)
-              Padding(
-                padding: const EdgeInsets.only(top: 8.0),
-                child: Text(
-                  _errorMessage!,
-                  style: TextStyle(
+                contentPadding:
+                    EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+                errorText: _errorMessage,
+                errorMaxLines: 2,
+                errorStyle: TextStyle(
+                  fontSize: 14,
+                  color: Colors.red,
+                  fontWeight: FontWeight.w400,
+                  fontFamily: 'Gilroy',
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(
+                    color:
+                        _errorMessage != null ? Colors.red : Colors.transparent,
+                    width: _errorMessage != null ? 1.5 : 0,
+                  ),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(
+                    color:
+                        _errorMessage != null ? Colors.red : Color(0xff1E2E52),
+                    width: 1.5,
+                  ),
+                ),
+                errorBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(
                     color: Colors.red,
-                    fontSize: 14,
-                    fontFamily: 'Gilroy',
-                    fontWeight: FontWeight.w400,
+                    width: 1.5,
+                  ),
+                ),
+                focusedErrorBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(
+                    color: Colors.red,
+                    width: 1.5,
                   ),
                 ),
               ),
+            ),
             const SizedBox(height: 8),
             Container(
               padding: EdgeInsets.symmetric(vertical: 0),
@@ -98,7 +133,8 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
                       });
                     },
                     activeColor: const Color.fromARGB(255, 255, 255, 255),
-                    inactiveTrackColor: const Color.fromARGB(255, 179, 179, 179).withOpacity(0.5),
+                    inactiveTrackColor: const Color.fromARGB(255, 179, 179, 179)
+                        .withOpacity(0.5),
                     activeTrackColor: ChatSmsStyles.messageBubbleSenderColor,
                     inactiveThumbColor:
                         const Color.fromARGB(255, 255, 255, 255),
@@ -170,7 +206,7 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
     if (statusName.isEmpty) {
       setState(() {
         _errorMessage =
-            AppLocalizations.of(context)!.translate('fill_required_fields');
+            AppLocalizations.of(context)!.translate('field_required');
       });
       return;
     }
