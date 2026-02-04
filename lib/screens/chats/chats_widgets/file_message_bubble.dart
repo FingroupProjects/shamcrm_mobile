@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:crm_task_manager/custom_widget/custom_chat_styles.dart';
+import 'package:crm_task_manager/models/message_reaction_model.dart';
+import 'package:crm_task_manager/screens/chats/chats_widgets/compact_reaction_chip.dart';
 
 class FileMessageBubble extends StatelessWidget {
   final String time;
@@ -8,10 +10,12 @@ class FileMessageBubble extends StatelessWidget {
   final String fileName;
   final String senderName;
   final Function(String) onTap;
-  final bool isHighlighted; 
+  final bool isHighlighted;
   final bool isRead;
   final bool isLeadChat;
   final bool? isGroupChat;
+  final List<MessageReaction> reactions;
+  final Function(String)? onReactionTap;
 
   const FileMessageBubble({
     Key? key,
@@ -25,6 +29,8 @@ class FileMessageBubble extends StatelessWidget {
     required this.isRead,
     this.isLeadChat = false,
     this.isGroupChat,
+    this.reactions = const [],
+    this.onReactionTap,
   }) : super(key: key);
 
   @override
@@ -85,7 +91,8 @@ class FileMessageBubble extends StatelessWidget {
     return DecoratedBox(
       decoration: BoxDecoration(
         boxShadow: isHighlighted
-            ? [ BoxShadow(
+            ? [
+                BoxShadow(
                   color: Colors.grey.withOpacity(0.3),
                   blurRadius: 5,
                   spreadRadius: 2,
@@ -97,7 +104,8 @@ class FileMessageBubble extends StatelessWidget {
       child: Align(
         alignment: isSender ? Alignment.centerRight : Alignment.centerLeft,
         child: Column(
-          crossAxisAlignment: isSender ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+          crossAxisAlignment:
+              isSender ? CrossAxisAlignment.end : CrossAxisAlignment.start,
           children: [
             const SizedBox(height: 8),
             // ✅ Логика отображения имени отправителя:
@@ -143,7 +151,8 @@ class FileMessageBubble extends StatelessWidget {
                     Flexible(
                       child: Text(
                         fileName,
-                        style: TextStyle( color: isSender ? Colors.white : Colors.black),
+                        style: TextStyle(
+                            color: isSender ? Colors.white : Colors.black),
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
@@ -151,9 +160,27 @@ class FileMessageBubble extends StatelessWidget {
                 ),
               ),
             ),
-            Row( mainAxisSize: MainAxisSize.min,
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                Text(time, style: const TextStyle(
+                if (reactions.isNotEmpty) ...[
+                  Wrap(
+                    spacing: 3,
+                    runSpacing: 3,
+                    children: reactions.map((reaction) {
+                      return CompactReactionChip(
+                        reaction: reaction,
+                        isSender: isSender,
+                        onTap: () => onReactionTap?.call(reaction.emoji),
+                      );
+                    }).toList(),
+                  ),
+                  const SizedBox(width: 8),
+                ],
+                Text(
+                  time,
+                  style: const TextStyle(
                     fontSize: 12,
                     color: ChatSmsStyles.appBarTitleColor,
                     fontWeight: FontWeight.w400,
@@ -162,8 +189,8 @@ class FileMessageBubble extends StatelessWidget {
                 ),
                 const SizedBox(width: 3),
                 if (isSender)
-
-                  Icon(isRead ? Icons.done_all : Icons.done_all,
+                  Icon(
+                    isRead ? Icons.done_all : Icons.done_all,
                     size: 18,
                     color: isRead
                         ? const Color.fromARGB(255, 45, 28, 235)

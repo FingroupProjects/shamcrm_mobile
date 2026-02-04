@@ -1,5 +1,7 @@
 import 'package:crm_task_manager/custom_widget/custom_chat_styles.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/models/message_reaction_model.dart';
+import 'package:crm_task_manager/screens/chats/chats_widgets/compact_reaction_chip.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -20,7 +22,7 @@ String _stripHtmlTags(String html) {
   if (!html.contains('<') || !html.contains('>')) {
     return html; // Если нет HTML тегов, возвращаем как есть
   }
-  
+
   try {
     final document = parse(html);
     return document.body?.text ?? html.replaceAll(RegExp(r'<[^>]*>'), '');
@@ -44,6 +46,9 @@ class MessageBubble extends StatelessWidget {
   final bool isNote;
   final bool isLeadChat;
   final bool? isGroupChat;
+  final List<MessageReaction> reactions; // Реакции
+  final Function(String emoji)? onReactionTap; // Callback для реакций
+  final VoidCallback? onLongPress; // Callback для long press
 
   MessageBubble({
     Key? key,
@@ -60,6 +65,9 @@ class MessageBubble extends StatelessWidget {
     required this.isNote,
     this.isLeadChat = false,
     this.isGroupChat,
+    this.reactions = const [], // Реакции по умолчанию пустой список
+    this.onReactionTap, // Callback для реакций
+    this.onLongPress, // Callback для long press
   }) : super(key: key);
 
   @override
@@ -95,7 +103,8 @@ class MessageBubble extends StatelessWidget {
                   senderName,
                   style: TextStyle(
                     fontWeight: FontWeight.w600,
-                    color: isSender ? Colors.grey.shade600 : AppColors.primaryBlue,
+                    color:
+                        isSender ? Colors.grey.shade600 : AppColors.primaryBlue,
                   ),
                 ),
               if (replyMessage != null && replyMessage!.isNotEmpty)
@@ -147,10 +156,14 @@ class MessageBubble extends StatelessWidget {
                   ],
                 ),
                 child: Column(
-                  crossAxisAlignment:
-                      isSender ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+                  crossAxisAlignment: isSender
+                      ? CrossAxisAlignment.end
+                      : CrossAxisAlignment.start,
                   children: [
+                    // Текст сообщения
                     _buildMessageWithHtml(context, message),
+
+                    // "Изменено" если отредактировано
                     if (isChanged)
                       Padding(
                         padding: const EdgeInsets.only(top: 4),
@@ -163,33 +176,59 @@ class MessageBubble extends StatelessWidget {
                           ),
                         ),
                       ),
+
+                    // Нижний блок: реакции и время в одной строке (компактно)
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        // Реакции слева (если есть)
+                        if (reactions.isNotEmpty) ...[
+                          Wrap(
+                            spacing: 3,
+                            runSpacing: 3,
+                            children: reactions.map((reaction) {
+                              return CompactReactionChip(
+                                reaction: reaction,
+                                isSender: isSender,
+                                onTap: () =>
+                                    onReactionTap?.call(reaction.emoji),
+                              );
+                            }).toList(),
+                          ),
+                          const SizedBox(width: 6),
+                        ],
+
+                        // Время
+                        if (time.isNotEmpty)
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                time,
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: isSender
+                                      ? Colors.white70
+                                      : Colors.black54,
+                                  fontWeight: FontWeight.w400,
+                                  fontFamily: 'Gilroy',
+                                ),
+                              ),
+                              const SizedBox(width: 3),
+                              if (isSender)
+                                Icon(
+                                  isRead ? Icons.done_all : Icons.done_all,
+                                  size: 16,
+                                  color: isRead ? Colors.white : Colors.white70,
+                                ),
+                            ],
+                          ),
+                      ],
+                    ),
                   ],
                 ),
               ),
-              if (time.isNotEmpty)
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      time,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: ChatSmsStyles.appBarTitleColor,
-                        fontWeight: FontWeight.w400,
-                        fontFamily: 'Gilroy',
-                      ),
-                    ),
-                    const SizedBox(width: 3),
-                    if (isSender)
-                      Icon(
-                        isRead ? Icons.done_all : Icons.done_all,
-                        size: 18,
-                        color: isRead
-                            ? const Color.fromARGB(255, 45, 28, 235)
-                            : Colors.grey.shade400,
-                      ),
-                  ],
-                ),
             ],
           ),
         ),
@@ -198,17 +237,18 @@ class MessageBubble extends StatelessWidget {
   }
 
   // Метод для парсинга текста с ссылками (без HTML)
-  List<TextSpan> _parseTextWithLinks(BuildContext context, String text, TextStyle baseStyle) {
+  List<TextSpan> _parseTextWithLinks(
+      BuildContext context, String text, TextStyle baseStyle) {
     final List<TextSpan> spans = [];
     final matches = _urlRegex.allMatches(text);
-    
+
     if (matches.isEmpty) {
       // Нет ссылок — возвращаем обычный текст
       return [TextSpan(text: text, style: baseStyle)];
     }
-    
+
     int currentPosition = 0;
-    
+
     for (final match in matches) {
       // Добавляем текст до ссылки
       if (match.start > currentPosition) {
@@ -217,16 +257,16 @@ class MessageBubble extends StatelessWidget {
           style: baseStyle,
         ));
       }
-      
+
       // Добавляем саму ссылку
       String url = match.group(0)!;
       String displayUrl = url;
-      
+
       // Добавляем https:// если ссылка начинается с www.
       if (!url.startsWith('http')) {
         url = 'https://$url';
       }
-      
+
       spans.add(
         TextSpan(
           text: displayUrl,
@@ -238,10 +278,10 @@ class MessageBubble extends StatelessWidget {
             ..onTap = () => _handleLinkTap(context, url),
         ),
       );
-      
+
       currentPosition = match.end;
     }
-    
+
     // Добавляем оставшийся текст
     if (currentPosition < text.length) {
       spans.add(TextSpan(
@@ -249,7 +289,7 @@ class MessageBubble extends StatelessWidget {
         style: baseStyle,
       ));
     }
-    
+
     return spans;
   }
 
@@ -258,8 +298,7 @@ class MessageBubble extends StatelessWidget {
     // Вариант 1: Показываем меню с опциями (текущая логика)
     final RenderBox overlay =
         Overlay.of(context).context.findRenderObject() as RenderBox;
-    final RenderBox messageBox =
-        context.findRenderObject() as RenderBox;
+    final RenderBox messageBox = context.findRenderObject() as RenderBox;
     final Offset position =
         messageBox.localToGlobal(Offset.zero, ancestor: overlay);
 
@@ -278,14 +317,12 @@ class MessageBubble extends StatelessWidget {
       items: [
         _buildMenuItem(
           icon: 'assets/icons/chats/menu_icons/open.svg',
-          text: AppLocalizations.of(context)!
-              .translate('open_url_source'),
+          text: AppLocalizations.of(context)!.translate('open_url_source'),
           iconColor: Colors.black,
           textColor: Colors.black,
           onTap: () async {
             Navigator.pop(context);
-            launchUrl(Uri.parse(url),
-                mode: LaunchMode.externalApplication);
+            launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
           },
         ),
         _buildMenuItem(
@@ -309,15 +346,13 @@ class MessageBubble extends StatelessWidget {
                   ),
                 ),
                 behavior: SnackBarBehavior.floating,
-                margin: EdgeInsets.symmetric(
-                    horizontal: 16, vertical: 8),
+                margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
                 backgroundColor: Colors.green,
                 elevation: 3,
-                padding: EdgeInsets.symmetric(
-                    vertical: 12, horizontal: 16),
+                padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                 duration: Duration(seconds: 3),
               ),
             );
@@ -325,7 +360,7 @@ class MessageBubble extends StatelessWidget {
         ),
       ],
     );
-    
+
     // Вариант 2: Прямой переход (раскомментируйте, если нужно)
     // launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
   }
@@ -335,18 +370,18 @@ class MessageBubble extends StatelessWidget {
 
     // Проверяем, содержит ли текст HTML-теги
     final bool isHtml = text.contains('<') && text.contains('>');
-    
+
     // Определяем базовый стиль текста в зависимости от isNote
     final baseStyle = isNote
         ? ChatSmsStyles.messageTextStyle.copyWith(color: Colors.black)
         : isSender
             ? ChatSmsStyles.senderMessageTextStyle
             : ChatSmsStyles.receiverMessageTextStyle;
-    
+
     if (!isHtml) {
       // Простой текст — ищем ссылки регуляркой
       final spans = _parseTextWithLinks(context, text, baseStyle);
-      
+
       return Container(
         constraints: BoxConstraints(maxWidth: maxWidth),
         child: RichText(
@@ -360,7 +395,9 @@ class MessageBubble extends StatelessWidget {
     // Предобработка HTML: убираем служебные теги
     String cleanedHtml = text
         // Убираем служебные теги Quill-редактора
-        .replaceAll(RegExp(r'<span class="ql-cursor"[^>]*>.*?</span>', dotAll: true), '')
+        .replaceAll(
+            RegExp(r'<span class="ql-cursor"[^>]*>.*?</span>', dotAll: true),
+            '')
         .replaceAll(RegExp(r'<span[^>]*>\s*</span>'), '') // Пустые span
         // Убираем невидимые символы
         .replaceAll(RegExp(r'[\u200B-\u200D\uFEFF]'), '');
@@ -368,9 +405,11 @@ class MessageBubble extends StatelessWidget {
     // Оригинальная логика для HTML
     final document = parse(cleanedHtml);
     List<TextSpan> spans = [];
-    bool needsLineBreak = false; // Флаг для добавления переноса строки после блочных элементов
+    bool needsLineBreak =
+        false; // Флаг для добавления переноса строки после блочных элементов
 
-    void parseNode(dom.Node node, TextStyle currentStyle, {bool isFirstInBlock = false}) {
+    void parseNode(dom.Node node, TextStyle currentStyle,
+        {bool isFirstInBlock = false}) {
       if (node is dom.Text) {
         final textContent = node.text.trim();
         if (textContent.isNotEmpty) {
@@ -384,19 +423,21 @@ class MessageBubble extends StatelessWidget {
         }
       } else if (node is dom.Element) {
         // Игнорируем служебные элементы
-        if (node.localName == 'span' && 
+        if (node.localName == 'span' &&
             (node.attributes['class']?.contains('ql-') ?? false)) {
           return; // Пропускаем служебные span от Quill
         }
-        
+
         TextStyle newStyle = currentStyle;
-        
+
         // Обработка форматирования
         if (node.localName == 'strong' || node.localName == 'b') {
           newStyle = newStyle.copyWith(fontWeight: FontWeight.bold);
         } else if (node.localName == 'em' || node.localName == 'i') {
           newStyle = newStyle.copyWith(fontStyle: FontStyle.italic);
-        } else if (node.localName == 's' || node.localName == 'strike' || node.localName == 'del') {
+        } else if (node.localName == 's' ||
+            node.localName == 'strike' ||
+            node.localName == 'del') {
           newStyle = newStyle.copyWith(decoration: TextDecoration.lineThrough);
         } else if (node.localName == 'u') {
           newStyle = newStyle.copyWith(decoration: TextDecoration.underline);
@@ -421,22 +462,22 @@ class MessageBubble extends StatelessWidget {
           // Обработка переноса строки
           spans.add(TextSpan(text: '\n', style: currentStyle));
           return;
-        } else if (node.localName == 'p' || 
-                   node.localName == 'div' || 
-                   node.localName == 'h1' || 
-                   node.localName == 'h2' || 
-                   node.localName == 'h3' ||
-                   node.localName == 'blockquote') {
+        } else if (node.localName == 'p' ||
+            node.localName == 'div' ||
+            node.localName == 'h1' ||
+            node.localName == 'h2' ||
+            node.localName == 'h3' ||
+            node.localName == 'blockquote') {
           // Блочные элементы - обрабатываем их содержимое без самих тегов
           // Добавляем перенос строки перед блоком если это не первый элемент
           if (spans.isNotEmpty && !isFirstInBlock) {
             spans.add(TextSpan(text: '\n', style: currentStyle));
           }
-          
+
           for (var child in node.nodes) {
             parseNode(child, newStyle);
           }
-          
+
           // Помечаем что после блока нужен перенос
           needsLineBreak = true;
           return;
