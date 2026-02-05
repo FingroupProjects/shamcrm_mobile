@@ -470,6 +470,7 @@ class _HistoryDialogState extends State<HistoryDialog> {
     'manager': 'Менеджер',
     'tg_nick': 'Telegram',
     'birthday': 'День рождения',
+    'city_id': 'Область',
     'description': 'Описание',
     'insta_login': 'Instagram',
     'facebook_login': 'Facebook',

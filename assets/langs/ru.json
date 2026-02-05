@@ -1273,7 +1273,7 @@
   "other_income": "Прочие доходы",
   "no_money_income": "Нет денежных поступлений",
   "select_cash_register": "Выберите кассу",
-  "enter_amount": "Поле обязательно для заполнения",
+  "enter_amount": "Введите сумму",
   "enter_valid_amount": "Введите корректную сумму",
   "cash_register": "Касса",
   "navigate_to_document": "Переход к документу: {document}",

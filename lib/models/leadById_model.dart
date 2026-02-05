@@ -16,6 +16,7 @@ import 'package:crm_task_manager/models/sales_funnel_model.dart';
     final ManagerData? manager;
     final SourceLead? sourceLead;
     final String? birthday;
+    final String? cityId;
     final String? instagram;
     final String? facebook;
     final String? telegram;
@@ -44,6 +45,7 @@ import 'package:crm_task_manager/models/sales_funnel_model.dart';
       this.manager,
       this.sourceLead,
       this.birthday,
+      this.cityId,
       this.instagram,
       this.facebook,
       this.telegram,
@@ -99,6 +101,7 @@ import 'package:crm_task_manager/models/sales_funnel_model.dart';
             ? SourceLead.fromJson(json['source_lead'])
             : null,
         birthday: json['birthday'] is String ? json['birthday'] : '',
+        cityId: json['city_id'] != null ? json['city_id'].toString() : null,
         instagram: json['insta_login'] is String ? json['insta_login'] : '',
         facebook: json['facebook_login'] is String ? json['facebook_login'] : '',
         telegram: json['tg_nick'] is String ? json['tg_nick'] : '',

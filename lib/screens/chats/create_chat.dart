@@ -230,6 +230,7 @@ class _AddClientDialogState extends State<AddClientDialog> {
                                     chatId: state.chatId,
                                     endPointInTab: 'corporate',
                                     canSendMessage: true,
+                                    initialChannelName: '',
                                   ),
                                 ),
                               ),

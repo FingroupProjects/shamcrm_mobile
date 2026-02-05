@@ -53,6 +53,7 @@ class ChatSmsScreen extends StatefulWidget {
   final String? chatUniqueId;
   final String endPointInTab;
   final bool canSendMessage;
+  final String? initialChannelName;
   final ApiService apiService = ApiService();
   final ApiServiceDownload apiServiceDownload = ApiServiceDownload();
 
@@ -63,6 +64,7 @@ class ChatSmsScreen extends StatefulWidget {
     this.chatUniqueId,
     required this.endPointInTab,
     required this.canSendMessage,
+    this.initialChannelName,
   });
 
   @override
@@ -106,6 +108,55 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
   String? _cachedCompanionName; // Кэшированное имя собеседника
   bool? _isGroupChat; // Флаг, является ли чат группой
   String _myDisplayName = '';
+  String? _instagramResponseType; // direct | comment
+  final Set<int> _expandedPostIds = {};
+
+  bool get _isInstagramCommentChannel {
+    final name = channelName ?? '';
+    return name.contains('instagram_comment');
+  }
+
+  Future<void> _showInstagramResponseTypePicker(Message? message) async {
+    final selected = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.reply, color: Colors.black87),
+                  title: const Text('Ответить как комментарий'),
+                  onTap: () => Navigator.pop(context, 'comment'),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.send, color: Colors.black87),
+                  title: const Text('Ответить в директ'),
+                  onTap: () => Navigator.pop(context, 'direct'),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    if (selected == null) return;
+    setState(() {
+      _instagramResponseType = selected;
+    });
+
+    if (message != null) {
+      _focusNode.requestFocus();
+      context.read<MessagingCubit>().setReplyMessage(message);
+    }
+  }
 
   void _onSearchChanged(String query) {
     setState(() {
@@ -133,6 +184,10 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
     super.initState();
     _checkPermissions();
     _getMyDisplayName();
+    if (widget.initialChannelName != null &&
+        widget.initialChannelName!.isNotEmpty) {
+      channelName = widget.initialChannelName;
+    }
 
     _chatsBloc = context.read<ChatsBloc>();
     _messagingCubit = context
@@ -1543,7 +1598,14 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
                   FocusScope.of(context).unfocus();
                 },
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  padding: EdgeInsets.only(
+                    left: 8,
+                    right: 8,
+                    bottom: (_isInstagramCommentChannel &&
+                            _instagramResponseType == null)
+                        ? 80
+                        : 0,
+                  ),
                   child: ScrollablePositionedList.builder(
                     itemScrollController: _scrollControllerMessage,
                     itemCount: messages.length,
@@ -1595,6 +1657,29 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
                           message: message,
                           chatId: widget.chatId,
                           endPointInTab: widget.endPointInTab,
+                          isInstagramCommentChannel:
+                              _isInstagramCommentChannel,
+                          onInstagramReplyTap: (type) {
+                            if (type == null) {
+                              _showInstagramResponseTypePicker(message);
+                              return;
+                            }
+                            setState(() {
+                              _instagramResponseType = type;
+                            });
+                            _focusNode.requestFocus();
+                            context.read<MessagingCubit>().setReplyMessage(message);
+                          },
+                          isPostExpanded: _expandedPostIds.contains(message.id),
+                          onTogglePost: () {
+                            setState(() {
+                              if (_expandedPostIds.contains(message.id)) {
+                                _expandedPostIds.remove(message.id);
+                              } else {
+                                _expandedPostIds.add(message.id);
+                              }
+                            });
+                          },
                           apiServiceDownload: widget.apiServiceDownload,
                           baseUrl: baseUrl,
                           onReplyTap: _scrollToMessageReply,
@@ -1678,61 +1763,101 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
   }
 
   Widget inputWidget() {
+    if (widget.endPointInTab == 'lead' && channelName == null) {
+      return const SizedBox.shrink();
+    }
+    if (_isInstagramCommentChannel && _instagramResponseType == null) {
+      return const SizedBox.shrink();
+    }
+
     return SafeArea(
       bottom: true,
       top: false,
-      child: InputField(
-        onSend: _onSendInButton,
-        onAttachFile: _onPickFilePressed,
-        focusNode: _focusNode,
-        isLeadChat: widget.endPointInTab == 'lead',
-        onRecordVoice: () {
-          debugPrint('Record voice triggered');
-        },
-        messageController: _messageController,
-        sendRequestFunction: (File soundFile, String time) async {
-          final myName = await _getMyDisplayName();
-          Duration calculateDuration(String time) {
-            List<String> parts = time.split(':');
-            int minutes = int.parse(parts[0]);
-            int seconds = int.parse(parts[1]);
-            return Duration(minutes: minutes, seconds: seconds);
-          }
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (_isInstagramCommentChannel && _instagramResponseType != null)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+              child: Row(
+                children: [
+                  const Icon(Icons.check_circle, size: 16, color: Colors.green),
+                  const SizedBox(width: 6),
+                  Text(
+                    _instagramResponseType == 'direct'
+                        ? 'Ответ: в директ'
+                        : 'Ответ: комментарий',
+                    style: const TextStyle(fontSize: 12, color: Colors.black54),
+                  ),
+                  const Spacer(),
+                  TextButton(
+                    onPressed: () => _showInstagramResponseTypePicker(null),
+                    child: const Text('Изменить'),
+                  ),
+                ],
+              ),
+            ),
+          InputField(
+            onSend: _onSendInButton,
+            onAttachFile: _onPickFilePressed,
+            focusNode: _focusNode,
+            isLeadChat: widget.endPointInTab == 'lead',
+            onRecordVoice: () {
+              debugPrint('Record voice triggered');
+            },
+            messageController: _messageController,
+            sendRequestFunction: (File soundFile, String time) async {
+              final myName = await _getMyDisplayName();
+              Duration calculateDuration(String time) {
+                List<String> parts = time.split(':');
+                int minutes = int.parse(parts[0]);
+                int seconds = int.parse(parts[1]);
+                return Duration(minutes: minutes, seconds: seconds);
+              }
 
-          final tempMessage = Message(
-            id: -DateTime.now().millisecondsSinceEpoch,
-            text: "Голосовое сообщение",
-            type: 'voice',
-            createMessateTime:
-                DateTime.now().add(Duration(hours: -0)).toString(),
-            isMyMessage: true,
-            senderName: myName,
-            filePath: soundFile.path,
-            duration: calculateDuration(time),
-          );
+              final tempMessage = Message(
+                id: -DateTime.now().millisecondsSinceEpoch,
+                text: "Голосовое сообщение",
+                type: 'voice',
+                createMessateTime:
+                    DateTime.now().add(Duration(hours: -0)).toString(),
+                isMyMessage: true,
+                senderName: myName,
+                filePath: soundFile.path,
+                duration: calculateDuration(time),
+              );
 
-          context.read<MessagingCubit>().addLocalMessage(tempMessage);
+              context.read<MessagingCubit>().addLocalMessage(tempMessage);
 
-          await _playSound();
+              await _playSound();
 
-          String inputPath = soundFile.path;
-          String outputPath = await getOutputPath('converted_file.ogg');
+              String inputPath = soundFile.path;
+              String outputPath = await getOutputPath('converted_file.ogg');
 
-          File? convertedFile = await convertAudioFile(inputPath, outputPath);
+              File? convertedFile =
+                  await convertAudioFile(inputPath, outputPath);
 
-          if (convertedFile != null) {
-            String uploadUrl = '$baseUrl/chat/sendVoice/${widget.chatId}';
-            await uploadFile(convertedFile, uploadUrl);
-          } else {
-            debugPrint('Conversion failed');
-          }
-          try {
-            await widget.apiService.sendChatAudioFile(widget.chatId, soundFile);
-          } catch (e) {
-            context.read<ListenSenderVoiceCubit>().updateValue(false);
-          }
-          context.read<ListenSenderVoiceCubit>().updateValue(false);
-        },
+              if (convertedFile != null) {
+                String uploadUrl = '$baseUrl/chat/sendVoice/${widget.chatId}';
+                await uploadFile(convertedFile, uploadUrl);
+              } else {
+                debugPrint('Conversion failed');
+              }
+              try {
+                await widget.apiService.sendChatAudioFile(
+                  widget.chatId,
+                  soundFile,
+                  responseType: _isInstagramCommentChannel
+                      ? _instagramResponseType
+                      : null,
+                );
+              } catch (e) {
+                context.read<ListenSenderVoiceCubit>().updateValue(false);
+              }
+              context.read<ListenSenderVoiceCubit>().updateValue(false);
+            },
+          ),
+        ],
       ),
     );
   }
@@ -2419,6 +2544,8 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
           widget.chatId,
           messageText.trim(),
           replyMessageId: replyMessageId,
+          responseType:
+              _isInstagramCommentChannel ? _instagramResponseType : null,
         );
 
         context.read<ListenSenderTextCubit>().updateValue(false);
@@ -2531,7 +2658,11 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
     context.read<MessagingCubit>().addLocalMessage(localMessage);
     await _playSound();
 
-    await widget.apiService.sendChatFile(widget.chatId, path);
+    await widget.apiService.sendChatFile(
+      widget.chatId,
+      path,
+      responseType: _isInstagramCommentChannel ? _instagramResponseType : null,
+    );
     context.read<ListenSenderFileCubit>().updateValue(false);
   }
 
@@ -2664,6 +2795,10 @@ class MessageItemWidget extends StatelessWidget {
   final String endPointInTab;
   final ApiServiceDownload apiServiceDownload;
   final String baseUrl;
+  final bool isInstagramCommentChannel;
+  final void Function(String?)? onInstagramReplyTap;
+  final bool isPostExpanded;
+  final VoidCallback? onTogglePost;
   final void Function(int)? onReplyTap;
   final int? highlightedMessageId;
   final void Function(bool)? onMenuStateChanged;
@@ -2680,6 +2815,10 @@ class MessageItemWidget extends StatelessWidget {
     required this.chatId,
     required this.apiServiceDownload,
     required this.baseUrl,
+    this.isInstagramCommentChannel = false,
+    this.onInstagramReplyTap,
+    this.isPostExpanded = false,
+    this.onTogglePost,
     this.onReplyTap,
     this.highlightedMessageId,
     this.onMenuStateChanged,
@@ -2696,6 +2835,11 @@ class MessageItemWidget extends StatelessWidget {
       key: Key(message.id.toString()),
       direction: DismissDirection.endToStart,
       confirmDismiss: (direction) async {
+        if (isInstagramCommentChannel) {
+          focusNode.requestFocus();
+          onInstagramReplyTap?.call(null);
+          return false;
+        }
         if (endPointInTab == 'task' || endPointInTab == 'corporate') {
           focusNode.requestFocus();
           context.read<MessagingCubit>().setReplyMessage(message);
@@ -2729,9 +2873,10 @@ class MessageItemWidget extends StatelessWidget {
     // Определяем, является ли чат лид-чатом
     final bool isLeadChat = endPointInTab == 'lead';
 
+    Widget content;
     switch (message.type) {
       case 'text':
-        return MessageBubble(
+        content = MessageBubble(
           message: message.text,
           time: time(message.createMessateTime),
           isSender: message.isMyMessage,
@@ -2748,8 +2893,9 @@ class MessageItemWidget extends StatelessWidget {
           isLeadChat: isLeadChat,
           isGroupChat: isGroupChat,
         );
+        break;
       case 'image':
-        return ImageMessageBubble(
+        content = ImageMessageBubble(
           time: time(message.createMessateTime),
           isSender: message.isMyMessage,
           filePath: message.filePath ?? 'Unknown file format',
@@ -2762,9 +2908,10 @@ class MessageItemWidget extends StatelessWidget {
           isLeadChat: isLeadChat,
           isGroupChat: isGroupChat,
         );
+        break;
       case 'file':
       case 'document':
-        return FileMessageBubble(
+        content = FileMessageBubble(
           time: time(message.createMessateTime),
           isSender: message.isMyMessage,
           filePath: message.filePath ?? 'Unknown file format',
@@ -2790,16 +2937,100 @@ class MessageItemWidget extends StatelessWidget {
           senderName: message.senderName,
           isRead: message.isRead,
         );
+        break;
       case 'voice':
-        return VoiceMessageWidget(
+        content = VoiceMessageWidget(
           message: message,
           baseUrl: baseUrl,
           isLeadChat: isLeadChat,
           isGroupChat: isGroupChat,
         );
+        break;
       default:
-        return SizedBox();
+        content = SizedBox();
     }
+
+    if (message.post == null) {
+      return content;
+    }
+
+    return Column(
+      crossAxisAlignment: message.isMyMessage
+          ? CrossAxisAlignment.end
+          : CrossAxisAlignment.start,
+      children: [
+        _buildPostPreview(context, message.post!),
+        content,
+      ],
+    );
+  }
+
+  Widget _buildPostPreview(BuildContext context, Post post) {
+    final caption = post.caption.trim();
+    final text = caption.isNotEmpty ? caption : 'Пост в Instagram';
+
+    return GestureDetector(
+      onTap: onTogglePost,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 8, top: 2),
+        padding: const EdgeInsets.all(12),
+        constraints: BoxConstraints(
+          maxWidth: MediaQuery.of(context).size.width * 0.75,
+        ),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Colors.white, Colors.grey.shade100],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.black12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Image.asset(
+                  'assets/icons/leads/instagram.png',
+                  width: 14,
+                  height: 14,
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  'Ответ на пост',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey.shade700,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              text,
+              maxLines: isPostExpanded ? null : 5,
+              overflow:
+                  isPostExpanded ? TextOverflow.visible : TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 13.5,
+                color: Colors.black87,
+                height: 1.25,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   String time(String createMessateTime) {
@@ -2838,18 +3069,30 @@ class MessageItemWidget extends StatelessWidget {
           position.dy + messageBox.size.height,
         ),
         items: [
-          // TODO: включить reply для лид-чата, когда сервер будет готов
-          // _buildMenuItem(
-          //   icon: 'assets/icons/chats/menu_icons/reply.svg',
-          //   text: AppLocalizations.of(context)!.translate('reply'),
-          //   iconColor: Colors.black,
-          //   textColor: Colors.black,
-          //   onTap: () {
-          //     Navigator.pop(context);
-          //     focusNode.requestFocus();
-          //     context.read<MessagingCubit>().setReplyMessage(message);
-          //   },
-          // ),
+          if (isInstagramCommentChannel)
+            _buildMenuItem(
+              icon: 'assets/icons/chats/menu_icons/reply.svg',
+              text: 'Ответить как комментарий',
+              iconColor: Colors.black,
+              textColor: Colors.black,
+              onTap: () {
+                Navigator.pop(context);
+                focusNode.requestFocus();
+                onInstagramReplyTap?.call('comment');
+              },
+            ),
+          if (isInstagramCommentChannel)
+            _buildMenuItem(
+              icon: 'assets/icons/chats/menu_icons/reply.svg',
+              text: 'Ответить в директ',
+              iconColor: Colors.black,
+              textColor: Colors.black,
+              onTap: () {
+                Navigator.pop(context);
+                focusNode.requestFocus();
+                onInstagramReplyTap?.call('direct');
+              },
+            ),
           _buildMenuItem(
             icon: 'assets/icons/chats/menu_icons/copy.svg',
             text: AppLocalizations.of(context)!.translate('copy'),
@@ -3070,19 +3313,48 @@ class MessageItemWidget extends StatelessWidget {
         }
       }
 
-      menuItems.add(
-        _buildMenuItem(
-          icon: 'assets/icons/chats/menu_icons/reply.svg',
-          text: AppLocalizations.of(context)!.translate('reply'),
-          iconColor: Colors.black,
-          textColor: Colors.black,
-          onTap: () {
-            Navigator.pop(context);
-            focusNode.requestFocus();
-            context.read<MessagingCubit>().setReplyMessage(message);
-          },
-        ),
-      );
+      if (isInstagramCommentChannel) {
+        menuItems.add(
+          _buildMenuItem(
+            icon: 'assets/icons/chats/menu_icons/reply.svg',
+            text: 'Ответить как комментарий',
+            iconColor: Colors.black,
+            textColor: Colors.black,
+            onTap: () {
+              Navigator.pop(context);
+              focusNode.requestFocus();
+              onInstagramReplyTap?.call('comment');
+            },
+          ),
+        );
+        menuItems.add(
+          _buildMenuItem(
+            icon: 'assets/icons/chats/menu_icons/reply.svg',
+            text: 'Ответить в директ',
+            iconColor: Colors.black,
+            textColor: Colors.black,
+            onTap: () {
+              Navigator.pop(context);
+              focusNode.requestFocus();
+              onInstagramReplyTap?.call('direct');
+            },
+          ),
+        );
+      } else {
+        menuItems.add(
+          _buildMenuItem(
+            icon: 'assets/icons/chats/menu_icons/reply.svg',
+            text: AppLocalizations.of(context)!.translate('reply'),
+            iconColor: Colors.black,
+            textColor: Colors.black,
+            onTap: () {
+              Navigator.pop(context);
+              focusNode.requestFocus();
+              context.read<MessagingCubit>().setReplyMessage(message);
+            },
+          ),
+        );
+      }
 
       menuItems.add(
         _buildMenuItem(

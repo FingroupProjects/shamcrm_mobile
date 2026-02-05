@@ -39,6 +39,7 @@ class ImageMessageBubble extends StatefulWidget {
 class _ImageMessageBubbleState extends State<ImageMessageBubble> {
   final ApiService _apiService = ApiService();
   String? baseUrl;
+  String? _lastFailedUrl;
 
   @override
   void initState() {
@@ -146,15 +147,23 @@ class _ImageMessageBubbleState extends State<ImageMessageBubble> {
                               width: 200,
                               height: 200,
                               fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) {
-                                debugPrint('Error loading image: $error, StackTrace: $stackTrace');
-                                return Container(
+                              loadingBuilder: (context, child, progress) {
+                                if (progress == null) return child;
+                                return const _ImageLoadingPlaceholder(
                                   width: 200,
                                   height: 200,
-                                  color: Colors.grey,
-                                  child: Center(
-                                    child: Text(AppLocalizations.of(context)!.translate('error_loading')),
-                                  ),
+                                );
+                              },
+                              errorBuilder: (context, error, stackTrace) {
+                                debugPrint('Error loading image: $error, StackTrace: $stackTrace');
+                                _lastFailedUrl = fullUrl;
+                                return _ImageErrorPlaceholder(
+                                  width: 200,
+                                  height: 200,
+                                  onRetry: () {
+                                    if (_lastFailedUrl == null) return;
+                                    setState(() {});
+                                  },
                                 );
                               },
                             )
@@ -199,6 +208,117 @@ class _ImageMessageBubbleState extends State<ImageMessageBubble> {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ImageLoadingPlaceholder extends StatefulWidget {
+  final double width;
+  final double height;
+
+  const _ImageLoadingPlaceholder({
+    Key? key,
+    required this.width,
+    required this.height,
+  }) : super(key: key);
+
+  @override
+  State<_ImageLoadingPlaceholder> createState() =>
+      _ImageLoadingPlaceholderState();
+}
+
+class _ImageLoadingPlaceholderState extends State<_ImageLoadingPlaceholder>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 1200),
+      vsync: this,
+    )..repeat();
+    _animation = Tween<double>(begin: -1, end: 2).animate(_controller);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: widget.width,
+      height: widget.height,
+      child: AnimatedBuilder(
+        animation: _animation,
+        builder: (context, child) {
+          return DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment(_animation.value, 0),
+                end: Alignment(_animation.value + 1, 0),
+                colors: [
+                  Colors.grey.shade300,
+                  Colors.grey.shade200,
+                  Colors.grey.shade300,
+                ],
+              ),
+            ),
+            child: Center(
+              child: SizedBox(
+                width: 22,
+                height: 22,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Colors.grey.shade600,
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _ImageErrorPlaceholder extends StatelessWidget {
+  final double width;
+  final double height;
+  final VoidCallback onRetry;
+
+  const _ImageErrorPlaceholder({
+    Key? key,
+    required this.width,
+    required this.height,
+    required this.onRetry,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onRetry,
+      child: Container(
+        width: width,
+        height: height,
+        color: Colors.grey.shade300,
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.refresh, color: Colors.grey.shade700),
+              const SizedBox(height: 6),
+              Text(
+                AppLocalizations.of(context)!.translate('loading'),
+                style: TextStyle(color: Colors.grey.shade700, fontSize: 12),
+              ),
+            ],
+          ),
         ),
       ),
     );

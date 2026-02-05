@@ -229,13 +229,13 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       }
 
       List<Contact> contacts =
-      await FlutterContacts.getContacts(withProperties: true);
+          await FlutterContacts.getContacts(withProperties: true);
 
       Set<String> normalizedPhones = {};
       for (var contact in contacts) {
         for (var phone in contact.phones) {
           String normalizedPhone =
-          phone.number.replaceAll(RegExp(r'[^\d+]'), '');
+              phone.number.replaceAll(RegExp(r'[^\d+]'), '');
           normalizedPhones.add(normalizedPhone);
         }
       }
@@ -277,13 +277,13 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     _prefsSubscription =
         Stream.periodic(Duration(seconds: 1)).listen((_) async {
-          bool newValue = prefs.getBool('switchContact') ?? false;
-          if (newValue != _isExportContactEnabled) {
-            setState(() {
-              _isExportContactEnabled = newValue;
-            });
-          }
+      bool newValue = prefs.getBool('switchContact') ?? false;
+      if (newValue != _isExportContactEnabled) {
+        setState(() {
+          _isExportContactEnabled = newValue;
         });
+      }
+    });
   }
 
   Future<void> _fetchTutorialProgress() async {
@@ -388,7 +388,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
             .translate('tutorial_lead_details_chat_description'),
         align: ContentAlign.top,
         extraSpacing:
-        SizedBox(height: MediaQuery.of(context).size.height * 0.3),
+            SizedBox(height: MediaQuery.of(context).size.height * 0.3),
         context: context,
       ),
       if (_canReadNotes)
@@ -401,7 +401,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
               .translate('tutorial_lead_details_notice_description'),
           align: ContentAlign.top,
           extraSpacing:
-          SizedBox(height: MediaQuery.of(context).size.height * 0.2),
+              SizedBox(height: MediaQuery.of(context).size.height * 0.2),
           context: context,
         ),
       if (_canReadDeal)
@@ -414,7 +414,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
               .translate('tutorial_lead_details_deal_description'),
           align: ContentAlign.top,
           extraSpacing:
-          SizedBox(height: MediaQuery.of(context).size.height * 0.2),
+              SizedBox(height: MediaQuery.of(context).size.height * 0.2),
           context: context,
         ),
       createTarget(
@@ -426,7 +426,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
             .translate('tutorial_lead_details_contact_description'),
         align: ContentAlign.top,
         extraSpacing:
-        SizedBox(height: MediaQuery.of(context).size.height * 0.2),
+            SizedBox(height: MediaQuery.of(context).size.height * 0.2),
         context: context,
       ),
     ]);
@@ -613,12 +613,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
   // }
   // }
 
-
   String _getFieldName(FieldConfiguration fc) {
-    if (fc.isCustomField || fc.isDirectory) {
-      return '${fc.fieldName}:';
-    }
-
     switch (fc.fieldName) {
       case 'name':
         return AppLocalizations.of(context)!.translate('lead_name');
@@ -628,6 +623,8 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
         return AppLocalizations.of(context)!.translate('manager_details');
       case 'region_id':
         return AppLocalizations.of(context)!.translate('region_details');
+      case 'city_id':
+        return AppLocalizations.of(context)!.translate('oblast_details');
       case 'source_id':
         return AppLocalizations.of(context)!.translate('source_details');
       case 'wa_phone':
@@ -645,7 +642,8 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       case 'price_type':
         return AppLocalizations.of(context)!.translate('price_type_details');
       case 'description':
-        return AppLocalizations.of(context)!.translate('description_details_lead');
+        return AppLocalizations.of(context)!
+            .translate('description_details_lead');
       case 'author':
         return AppLocalizations.of(context)!.translate('author_details');
       case 'sales_funnel':
@@ -657,6 +655,9 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       case 'lead_status_id':
         return AppLocalizations.of(context)!.translate('status_details');
       default:
+        if (fc.isCustomField || fc.isDirectory) {
+          return '${fc.fieldName}:';
+        }
         return '${fc.fieldName}:';
     }
   }
@@ -685,8 +686,8 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
 
     if (fc.isDirectory && fc.directoryId != null) {
       for (var dirValue in lead.directoryValues) {
-        if (dirValue.entry != null && dirValue.entry!.directory.id == fc.directoryId) {
-
+        if (dirValue.entry != null &&
+            dirValue.entry!.directory.id == fc.directoryId) {
           List<String> values = [];
           for (var fieldValue in dirValue.entry!.values) {
             if (fieldValue.value.isNotEmpty) {
@@ -718,6 +719,9 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       case 'region_id':
         return lead.region?.name ?? '';
 
+      case 'city_id':
+        return lead.cityId ?? '';
+
       case 'source_id':
         return lead.source?.name ?? '';
 
@@ -737,14 +741,14 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
         return lead.email ?? '';
 
       case 'birthday':
-      // Only show birthday if phone is verified
+        // Only show birthday if phone is verified
         if (lead.phone_verified_at != null) {
           return formatDate(lead.birthday);
         }
         return '';
 
       case 'price_type':
-      // Only show price type if phone is verified
+        // Only show price type if phone is verified
         if (lead.phone_verified_at != null) {
           return lead.priceType?.name ?? '';
         }
@@ -832,7 +836,8 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
     if (lead.files != null && lead.files!.isNotEmpty) {
       details.add({
         'label': AppLocalizations.of(context)!.translate('files_details'),
-        'value': '${lead.files!.length} ${AppLocalizations.of(context)!.translate('files')}',
+        'value':
+            '${lead.files!.length} ${AppLocalizations.of(context)!.translate('files')}',
         'fieldName': 'files',
       });
     }
@@ -878,7 +883,9 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       ],
       child: Scaffold(
         appBar: _buildAppBar(
-            context, AppLocalizations.of(context)!.translate('view_lead')  + widget.leadId),
+            context,
+            AppLocalizations.of(context)!.translate('view_lead') +
+                widget.leadId),
         backgroundColor: Colors.white,
         body: BlocListener<LeadByIdBloc, LeadByIdState>(
           listener: (context, state) {
@@ -887,7 +894,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                 showCustomSnackBar(
                   context: context,
                   message:
-                  AppLocalizations.of(context)!.translate(state.message),
+                      AppLocalizations.of(context)!.translate(state.message),
                   isSuccess: false,
                 );
               });
@@ -904,7 +911,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                 // print('LeadDetailsScreen: Lead chats: ${lead.chats}');
                 return Padding(
                   padding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   child: ListView(
                     controller: _scrollController,
                     children: [
@@ -916,16 +923,16 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                         leadName: widget.leadName,
                         chats: state.lead.chats
                             .map((chat) => {
-                          'id': chat.id,
-                          'integration': chat.integration != null
-                              ? {
-                            'id': chat.integration!.id,
-                            'name': chat.integration!.name,
-                            'username':
-                            chat.integration!.username,
-                          }
-                              : null,
-                        })
+                                  'id': chat.id,
+                                  'integration': chat.integration != null
+                                      ? {
+                                          'id': chat.integration!.id,
+                                          'name': chat.integration!.name,
+                                          'username':
+                                              chat.integration!.username,
+                                        }
+                                      : null,
+                                })
                             .toList(),
                       ),
                       const SizedBox(height: 8),
@@ -951,7 +958,11 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                       if (_canReadOrders)
                         OrdersWidget(
                           leadId: int.parse(widget.leadId),
-                          clientPhone: widget.phone, // Передаем телефон клиента для автозаполнения
+                          clientPhone: lead
+                              .phone, // Передаем телефон клиента из загруженных данных
+                          // key: GlobalKey(), // Убираем ключ, если он не нужен, или создаем новый.
+                          // В оригинале было GlobalKey(), но лучше просто передать null, если он не обязателен,
+                          // или создать Key. Но чтобы не ломать логику, верну GlobalKey()
                           key: GlobalKey(),
                         ),
                       ContactPersonWidget(
@@ -1052,14 +1063,14 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                   onPressed: () async {
                     if (currentLead != null) {
                       final birthdayString = currentLead!.birthday != null &&
-                          currentLead!.birthday!.isNotEmpty
+                              currentLead!.birthday!.isNotEmpty
                           ? DateFormat('dd/MM/yyyy')
-                          .format(DateTime.parse(currentLead!.birthday!))
+                              .format(DateTime.parse(currentLead!.birthday!))
                           : null;
                       final createdAtString = currentLead!.createdAt != null &&
-                          currentLead!.createdAt!.isNotEmpty
+                              currentLead!.createdAt!.isNotEmpty
                           ? DateFormat('dd/MM/yyyy')
-                          .format(DateTime.parse(currentLead!.createdAt!))
+                              .format(DateTime.parse(currentLead!.createdAt!))
                           : null;
                       final shouldUpdate = await Navigator.push(
                         context,
@@ -1081,6 +1092,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                                 ? currentLead!.manager!.id.toString()
                                 : '',
                             birthday: birthdayString,
+                            cityId: currentLead!.cityId,
                             createAt: createdAtString,
                             instagram: currentLead!.instagram,
                             facebook: currentLead!.facebook,
@@ -1089,7 +1101,8 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                             whatsApp: currentLead!.whatsApp,
                             email: currentLead!.email,
                             description: currentLead!.description,
-                            leadCustomFieldValues: currentLead!.leadCustomFieldValues,
+                            leadCustomFieldValues:
+                                currentLead!.leadCustomFieldValues,
                             directoryValues: currentLead!.directoryValues,
                             existedFiles: currentLead!.files,
                             // phoneVerifiedAt: currentLead!.phone_verified_at,
@@ -1185,7 +1198,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                   itemBuilder: (context, index) {
                     final file = currentLead!.files![index];
                     final fileExtension =
-                    file.name.split('.').last.toLowerCase();
+                        file.name.split('.').last.toLowerCase();
 
                     return Padding(
                       padding: EdgeInsets.only(right: 16),
@@ -1227,7 +1240,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                                       value: _downloadProgress[file.id],
                                       strokeWidth: 3,
                                       backgroundColor:
-                                      Colors.grey.withOpacity(0.3),
+                                          Colors.grey.withOpacity(0.3),
                                       valueColor: AlwaysStoppedAnimation<Color>(
                                         Color(0xff1E2E52),
                                       ),
@@ -1266,7 +1279,8 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if (label == AppLocalizations.of(context)!.translate('lead_name'))
+                  if (label ==
+                      AppLocalizations.of(context)!.translate('lead_name'))
                     Row(
                       children: [
                         _buildExpandableText(
@@ -1284,40 +1298,42 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                     )
                   else
                     Expanded(
-                      child: (label.contains(
-                          AppLocalizations.of(context)!
-                              .translate('lead')) ||
-                          label.contains(AppLocalizations.of(context)!
-                              .translate('description_details_lead')))
+                      child: (label.contains(AppLocalizations.of(context)!
+                                  .translate('lead')) ||
+                              label.contains(AppLocalizations.of(context)!
+                                  .translate('description_details_lead')))
                           ? _buildExpandableText(
-                          label, value, constraints.maxWidth)
+                              label, value, constraints.maxWidth)
                           : _buildValue(value, label, fieldName),
                     ),
-                  if (label == AppLocalizations.of(context)!.translate('phone_use') &&
+                  if (label ==
+                          AppLocalizations.of(context)!
+                              .translate('phone_use') &&
                       _canExportContact &&
                       _isExportContactEnabled)
                     _isLoadingContacts
                         ? SizedBox(
-                      width: 24,
-                      height: 24,
-                      child: CircularProgressIndicator(
-                        color: Color(0xFF1E2E52),
-                        strokeWidth: 2,
-                      ),
-                    )
+                            width: 24,
+                            height: 24,
+                            child: CircularProgressIndicator(
+                              color: Color(0xFF1E2E52),
+                              strokeWidth: 2,
+                            ),
+                          )
                         : !_isPhoneInContacts(value)
-                        ? Padding(
-                      padding: const EdgeInsets.only(left: 8),
-                      child: GestureDetector(
-                        onTap: () => _addContact(widget.leadName, value),
-                        child: Icon(
-                          Icons.contacts,
-                          size: 24,
-                          color: Color(0xFF1E2E52),
-                        ),
-                      ),
-                    )
-                        : Container(),
+                            ? Padding(
+                                padding: const EdgeInsets.only(left: 8),
+                                child: GestureDetector(
+                                  onTap: () =>
+                                      _addContact(widget.leadName, value),
+                                  child: Icon(
+                                    Icons.contacts,
+                                    size: 24,
+                                    color: Color(0xFF1E2E52),
+                                  ),
+                                ),
+                              )
+                            : Container(),
                 ],
               ),
             ),
@@ -1515,14 +1531,16 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       if (!mounted) return;
 
       // Фильтруем только активные поля и сортируем по position
-      final activeFields = response.result.where((field) => field.isActive).toList()
+      final activeFields = response.result
+          .where((field) => field.isActive)
+          .toList()
         ..sort((a, b) => a.position.compareTo(b.position));
 
       setState(() {
         _fieldConfiguration = activeFields;
         _isConfigurationLoaded = true;
       });
-      
+
       // ✅ Если данные уже загружены, обновляем детали с новой конфигурацией
       if (currentLead != null) {
         _updateDetails(currentLead!);
@@ -1567,7 +1585,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
         showCustomSnackBar(
           context: context,
           message:
-          AppLocalizations.of(context)!.translate('whatsapp_not_installed'),
+              AppLocalizations.of(context)!.translate('whatsapp_not_installed'),
           isSuccess: false,
         );
       }
@@ -1575,7 +1593,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       showCustomSnackBar(
         context: context,
         message:
-        AppLocalizations.of(context)!.translate('whatsapp_open_failed'),
+            AppLocalizations.of(context)!.translate('whatsapp_open_failed'),
         isSuccess: false,
       );
     }
@@ -1693,14 +1711,14 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       showCustomSnackBar(
         context: context,
         message:
-        AppLocalizations.of(context)!.translate('manager_assigned_success'),
+            AppLocalizations.of(context)!.translate('manager_assigned_success'),
         isSuccess: true,
       );
     } catch (e) {
       showCustomSnackBar(
         context: context,
         message:
-        AppLocalizations.of(context)!.translate('manager_assign_failed'),
+            AppLocalizations.of(context)!.translate('manager_assign_failed'),
         isSuccess: false,
       );
     }

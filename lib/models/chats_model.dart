@@ -266,19 +266,21 @@ class Chats {
   }
 
   String _mapChannelToIcon(String channel) {
+    final normalized = channel.replaceAll('channel-', '');
     const channelIconMap = {
       'mini_app': 'assets/icons/leads/telegram.png',
       'telegram_bot': 'assets/icons/leads/telegram.png',
       'telegram_account': 'assets/icons/leads/telegram.png',
       'whatsapp': 'assets/icons/leads/whatsapp.png',
       'instagram': 'assets/icons/leads/instagram.png',
+      'instagram_comment': 'assets/icons/leads/instagram.png',
       'facebook': 'assets/icons/leads/messenger.png',
       'messenger': 'assets/icons/leads/messenger.png',
       'phone': 'assets/icons/leads/telefon.png',
       'email': 'assets/icons/leads/email.png',
       'site': '', // Используется Flutter иконка Icons.language
     };
-    return channelIconMap[channel] ?? 'assets/icons/leads/default.png';
+    return channelIconMap[normalized] ?? 'assets/icons/leads/default.png';
   }
 }
 
@@ -376,6 +378,7 @@ class Message {
   Duration duration;
   Duration position;
   final ForwardedMessage? forwardedMessage;
+  final Post? post;
   bool isPinned;
   bool isChanged;
   bool isRead;
@@ -396,6 +399,7 @@ class Message {
     this.duration = const Duration(),
     this.position = const Duration(),
     this.forwardedMessage,
+    this.post,
     this.isPinned = false,
     this.isChanged = false,
     this.isNote = false, // Инициализация по умолчанию
@@ -418,6 +422,7 @@ class Message {
     Duration? duration,
     Duration? position,
     ForwardedMessage? forwardedMessage,
+    Post? post,
     bool? isPinned,
     bool? isChanged,
     bool? isRead,
@@ -438,6 +443,7 @@ class Message {
       duration: duration ?? this.duration,
       position: position ?? this.position,
       forwardedMessage: forwardedMessage ?? this.forwardedMessage,
+      post: post ?? this.post,
       isPinned: isPinned ?? this.isPinned,
       isChanged: isChanged ?? this.isChanged,
       isRead: isRead ?? this.isRead,
@@ -507,6 +513,12 @@ class Message {
         } catch (_) {}
       }
     }
+    Post? post;
+    if (json['post'] != null) {
+      try {
+        post = Post.fromJson(json['post']);
+      } catch (_) {}
+    }
 
     return Message(
         id: json['id'],
@@ -522,6 +534,7 @@ class Message {
         isChanged: json['is_changed'] ?? false,
         isMyMessage: isMyMessage,
         forwardedMessage: forwardedMessage,
+        post: post,
         isRead: json['is_read'] ?? false,
         readStatus: readStatus,
         isNote: json['is_note'] ?? false, // Парсинг is_note
@@ -564,6 +577,31 @@ class ForwardedMessage {
   @override
   String toString() {
     return 'ForwardedMessage{id: $id, text: $text, type: $type, senderName: $senderName}';
+  }
+}
+
+class Post {
+  final int id;
+  final String caption;
+  final String? mediaUrl;
+
+  Post({
+    required this.id,
+    required this.caption,
+    this.mediaUrl,
+  });
+
+  factory Post.fromJson(Map<String, dynamic> json) {
+    return Post(
+      id: json['id'] ?? 0,
+      caption: json['caption']?.toString() ?? '',
+      mediaUrl: json['media_url']?.toString(),
+    );
+  }
+
+  @override
+  String toString() {
+    return 'Post{id: $id, caption: $caption, mediaUrl: $mediaUrl}';
   }
 }
 

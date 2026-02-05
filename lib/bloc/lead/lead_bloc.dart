@@ -502,6 +502,9 @@ Future<void> _createLead(CreateLead event, Emitter<LeadState> emit) async {
     if (event.tgNick != null) requestData['tg_nick'] = event.tgNick;
     if (event.waPhone != null) requestData['wa_phone'] = event.waPhone;
     if (event.birthday != null) requestData['birthday'] = event.birthday!.toIso8601String();
+    if (event.cityId != null && event.cityId!.isNotEmpty) {
+      requestData['city_id'] = event.cityId;
+    }
     if (event.email != null) requestData['email'] = event.email;
     if (event.description != null) requestData['description'] = event.description;
     if (event.files != null && event.files!.isNotEmpty) requestData['files'] = event.files;
@@ -550,6 +553,7 @@ Future<void> _updateLead(UpdateLead event, Emitter<LeadState> emit) async {
       if (event.facebookLogin != null) 'facebook_login': event.facebookLogin,
       if (event.tgNick != null) 'tg_nick': event.tgNick,
       if (event.birthday != null) 'birthday': event.birthday!.toIso8601String(),
+      if (event.cityId != null && event.cityId!.isNotEmpty) 'city_id': event.cityId,
       if (event.email != null) 'email': event.email,
       if (event.description != null) 'description': event.description,
       if (event.waPhone != null) 'wa_phone': event.waPhone,
