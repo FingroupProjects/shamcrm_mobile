@@ -248,6 +248,7 @@ class _ActionHistoryWidgetState extends State<ActionHistoryWidget> {
       'wa_name' => 'WhatsApp',
       'source' => 'Источник',
       'birthday' => 'День рождения',
+      'city_id' => 'Область',
       'description' => 'Описание',
       'insta_login' => 'Instagram',
       'facebook_login' => 'Facebook',

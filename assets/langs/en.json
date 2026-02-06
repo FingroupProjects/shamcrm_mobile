@@ -101,11 +101,9 @@
   "login_label": "Login",
   "request_confirmation": "Request Confirmation",
   "enter_login_error": "Enter login",
-  
   "check_email": "Check your email",
   "code_sent_to_email": "Verification code sent to:",
   "enter_code_below": "Enter the received code below",
-  
   "enter_confirmation_code": "Enter verification code",
   "confirmation_code_label": "Verification code",
   "resend_available_in": "Resend available in",
@@ -189,7 +187,6 @@
   "remove_cards_first": "Please remove cards from this status first!",
   "status_deleted_successfully": "Status deleted successfully!",
   "action_history": "Action History",
-
   "status_task": "Task status: ",
   "name_history": "Name: ",
   "final_stage": "Final Stage: ",
@@ -941,6 +938,7 @@
   "add_at_least_one_product": "Add at least one product",
   "add_at_least_one_item": "Add at least one product",
   "fill_all_required_fields": "Fill all required fields",
+  "fill_main_tab_first": "Please fill in the Main tab first",
   "order_updated_successfully": "Order updated successfully",
   "enter_delivery_address": "Enter delivery address",
   "delivery_address": "Delivery address",
@@ -1900,7 +1898,7 @@
   "outcome_document": "Outcome",
   "change_status": "Change Status",
   "save_hint": "After adding items, go to 'Main' to save",
-    "users_who_can_view_deals": "Users who can view deals with this status",
+  "users_who_can_view_deals": "Users who can view deals with this status",
   "users_who_can_change_status": "Users who can change deal to this status",
   "show_field": "Show field",
   "show_on_table": "Show in table",

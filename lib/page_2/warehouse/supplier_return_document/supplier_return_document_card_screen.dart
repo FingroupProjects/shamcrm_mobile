@@ -53,7 +53,7 @@ class _SupplierReturnCardState extends State<SupplierReturnCard> {
       return localizations.translate('not_approved_supplier_return') ?? 'Не проведен';
     }
   }
-
+   
   Color _getStatusColor() {
     final doc = widget.document;
     

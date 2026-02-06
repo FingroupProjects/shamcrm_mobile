@@ -30,6 +30,7 @@ class _CreateNotesDialogState extends State<CreateNotesDialog> {
   final TextEditingController titleController = TextEditingController();
   List<int> selectedManagers = [];
   String? selectedSubject;
+  bool isSubjectInvalid = false;
   bool hasAutoSelectedManager = false;
   // Переменные для файлов
   List<String> selectedFiles = [];
@@ -318,8 +319,12 @@ class _CreateNotesDialogState extends State<CreateNotesDialog> {
                     onSelectSubject: (String subject) {
                       setState(() {
                         selectedSubject = subject;
+                        if (subject.trim().isNotEmpty) {
+                          isSubjectInvalid = false;
+                        }
                       });
                     },
+                    hasError: isSubjectInvalid,
                   ),
                   SizedBox(height: 8),
                   CustomTextField(
@@ -358,8 +363,17 @@ class _CreateNotesDialogState extends State<CreateNotesDialog> {
                   CustomButton(
                     buttonText: AppLocalizations.of(context)!.translate('save'),
                     onPressed: () {
-                      if (_formKey.currentState!.validate()) {
-                        if (selectedSubject == null || selectedSubject!.isEmpty) {
+                      final bool subjectMissing =
+                          selectedSubject == null || selectedSubject!.trim().isEmpty;
+                      if (subjectMissing) {
+                        setState(() {
+                          isSubjectInvalid = true;
+                        });
+                      }
+
+                      final bool formValid = _formKey.currentState!.validate();
+                      if (!formValid || subjectMissing) {
+                        if (subjectMissing) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
                               content: Text(
@@ -379,8 +393,9 @@ class _CreateNotesDialogState extends State<CreateNotesDialog> {
                               ),
                             ),
                           );
-                          return;
                         }
+                        return;
+                      }
 
                         final String body = bodyController.text;
                         final String? dateString = dateController.text.isEmpty
@@ -424,7 +439,6 @@ class _CreateNotesDialogState extends State<CreateNotesDialog> {
                           filePaths: selectedFiles, // Передаем файлы
                           // localizations: AppLocalizations.of(context), // Передаем локализацию
                         ));
-                      }
                     },
                     buttonColor: Color(0xff1E2E52),
                     textColor: Colors.white,

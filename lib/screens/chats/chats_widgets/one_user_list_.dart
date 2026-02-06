@@ -9,7 +9,14 @@ import 'package:flutter_svg/flutter_svg.dart';
 
 class ClientRadioGroupWidget extends StatefulWidget {
   Function(UserData) onSelectUser;
-  ClientRadioGroupWidget({super.key, required this.onSelectUser});
+  final bool hasError;
+  final String? errorText;
+  ClientRadioGroupWidget({
+    super.key,
+    required this.onSelectUser,
+    this.hasError = false,
+    this.errorText,
+  });
 
   @override
   State<ClientRadioGroupWidget> createState() => _ClientRadioGroupWidgetState();
@@ -141,13 +148,13 @@ class _ClientRadioGroupWidgetState extends State<ClientRadioGroupWidget> {
                         closedFillColor: Color(0xffF4F7FD),
                         expandedFillColor: Colors.white,
                         closedBorder: Border.all(
-                          color: Color(0xffF4F7FD),
-                          width: 1,
+                          color: widget.hasError ? Colors.red : Color(0xffF4F7FD),
+                          width: widget.hasError ? 1.5 : 1,
                         ),
                         closedBorderRadius: BorderRadius.circular(12),
                         expandedBorder: Border.all(
-                          color: Color(0xffF4F7FD),
-                          width: 1,
+                          color: widget.hasError ? Colors.red : Color(0xffF4F7FD),
+                          width: widget.hasError ? 1.5 : 1,
                         ),
                         expandedBorderRadius: BorderRadius.circular(12),
                       ),
@@ -180,6 +187,17 @@ class _ClientRadioGroupWidgetState extends State<ClientRadioGroupWidget> {
                       onChanged: (value) {},
                     ),
                   ),
+                  if (widget.hasError && widget.errorText != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Text(
+                        widget.errorText!,
+                        style: const TextStyle(
+                          color: Colors.red,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
                 ],
               );
             }

@@ -65,11 +65,13 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
   void initState() {
     super.initState();
     _phoneController = TextEditingController();
-    _commentController = TextEditingController(text: widget.order.commentToCourier);
+    _commentController =
+        TextEditingController(text: widget.order.commentToCourier);
     _items = widget.order.goods.map((good) {
-      final imagePath = good.variantGood != null && good.variantGood!.files.isNotEmpty
-          ? good.variantGood!.files[0].path
-          : null;
+      final imagePath =
+          good.variantGood != null && good.variantGood!.files.isNotEmpty
+              ? good.variantGood!.files[0].path
+              : null;
       return {
         'id': good.goodId,
         'name': good.goodName,
@@ -85,13 +87,13 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
     selectedManager = widget.order.manager?.id.toString();
     _selectedDeliveryAddress = widget.order.deliveryAddress != null
         ? DeliveryAddress(
-      id: widget.order.deliveryAddressId ?? 0,
-      address: widget.order.deliveryAddress ?? '',
-      leadId: widget.order.lead.id,
-      isActive: 0,
-      createdAt: '',
-      updatedAt: '',
-    )
+            id: widget.order.deliveryAddressId ?? 0,
+            address: widget.order.deliveryAddress ?? '',
+            leadId: widget.order.lead.id,
+            isActive: 0,
+            createdAt: '',
+            updatedAt: '',
+          )
         : null;
 
     debugPrint("_selectedDeliveryAddress");
@@ -135,7 +137,9 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
       _initializeBaseUrl();
       _loadCurrencyId(); // Загружаем currencyId
       context.read<BranchBloc>().add(FetchBranches());
-      context.read<DeliveryAddressBloc>().add(FetchDeliveryAddresses(leadId: widget.order.lead.id));
+      context
+          .read<DeliveryAddressBloc>()
+          .add(FetchDeliveryAddresses(leadId: widget.order.lead.id));
       context.read<GetAllManagerBloc>().add(GetAllManagerEv());
     });
   }
@@ -253,6 +257,7 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
       });
     }
   }
+
   @override
   void dispose() {
     _phoneController.dispose();
@@ -268,7 +273,8 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
   void _navigateToAddProduct() async {
     final Order tempOrder = widget.order.copyWith(
       phone: _fullPhoneNumber ?? widget.order.phone,
-      delivery: _deliveryMethod == AppLocalizations.of(context)!.translate('delivery'),
+      delivery: _deliveryMethod ==
+          AppLocalizations.of(context)!.translate('delivery'),
       deliveryAddress: _selectedDeliveryAddress?.address,
       deliveryAddressId: _selectedDeliveryAddress?.id,
       lead: OrderLead(
@@ -307,12 +313,12 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
     if (result != null && result is List<Map<String, dynamic>> && mounted) {
       setState(() {
         _items.addAll(result.map((item) => {
-          'id': item['id'],
-          'name': item['name'],
-          'price': item['price'],
-          'quantity': item['quantity'] ?? 1,
-          'imagePath': item['imagePath'],
-        }));
+              'id': item['id'],
+              'name': item['name'],
+              'price': item['price'],
+              'quantity': item['quantity'] ?? 1,
+              'imagePath': item['imagePath'],
+            }));
       });
     }
   }
@@ -326,15 +332,18 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
 
   double _getCurrentTotal() {
     if (_isTotalEdited && _totalController.text.trim().isNotEmpty) {
-      final parsed = double.tryParse(
-          _totalController.text.trim().replaceAll(' ', '').replaceAll(',', '.'));
+      final parsed = double.tryParse(_totalController.text
+          .trim()
+          .replaceAll(' ', '')
+          .replaceAll(',', '.'));
       if (parsed != null) return parsed;
     }
     return _calculateAutoTotal();
   }
 
   TextEditingController _getQuantityController(int index) {
-    assert(index >= 0 && index < _items.length, 'Index вне диапазона списка товаров');
+    assert(index >= 0 && index < _items.length,
+        'Index вне диапазона списка товаров');
     final item = _items[index];
     final key = identityHashCode(item);
     final currentText = '${item['quantity'] ?? 1}';
@@ -427,7 +436,8 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
               controller: addressController,
               hintText: AppLocalizations.of(context)!
                   .translate('enter_delivery_address'),
-              label: AppLocalizations.of(context)!.translate('delivery_address'),
+              label:
+                  AppLocalizations.of(context)!.translate('delivery_address'),
               maxLines: 3,
               keyboardType: TextInputType.text,
             ),
@@ -451,7 +461,8 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
               if (addressController.text.trim().isEmpty) {
                 showCustomSnackBar(
                   context: context,
-                  message: AppLocalizations.of(context)!.translate('field_required'),
+                  message:
+                      AppLocalizations.of(context)!.translate('field_required'),
                   isSuccess: false,
                 );
                 return;
@@ -461,11 +472,11 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
 
               // Вызываем bloc событие для добавления адреса
               context.read<OrderBloc>().add(
-                AddMiniAppAddress(
-                  address: addressController.text.trim(),
-                  leadId: _selectedLead?.id ?? 0,
-                ),
-              );
+                    AddMiniAppAddress(
+                      address: addressController.text.trim(),
+                      leadId: _selectedLead?.id ?? 0,
+                    ),
+                  );
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xff4759FF),
@@ -491,14 +502,17 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
 
   @override
   Widget build(BuildContext context) {
-
     // debugPrint("selectedBranch ID  : ${_selectedBranch?.id}");
 
     return MultiBlocProvider(
       providers: [
-        BlocProvider(create: (context) => OrderBloc(context.read<ApiService>())),
-        BlocProvider(create: (context) => BranchBloc(context.read<ApiService>())),
-        BlocProvider(create: (context) => DeliveryAddressBloc(context.read<ApiService>())),
+        BlocProvider(
+            create: (context) => OrderBloc(context.read<ApiService>())),
+        BlocProvider(
+            create: (context) => BranchBloc(context.read<ApiService>())),
+        BlocProvider(
+            create: (context) =>
+                DeliveryAddressBloc(context.read<ApiService>())),
       ],
       child: Scaffold(
         backgroundColor: Colors.white,
@@ -508,7 +522,8 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
             if (state is OrderSuccess) {
               showCustomSnackBar(
                 context: context,
-                message: AppLocalizations.of(context)!.translate('order_updated_successfully'),
+                message: AppLocalizations.of(context)!
+                    .translate('order_updated_successfully'),
                 isSuccess: true,
               );
               Navigator.pop(context, {
@@ -529,10 +544,10 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
               );
               // Обновляем список адресов доставки
               context.read<DeliveryAddressBloc>().add(
-                FetchDeliveryAddresses(
-                  leadId: _selectedLead?.id ?? 0,
-                ),
-              );
+                    FetchDeliveryAddresses(
+                      leadId: _selectedLead?.id ?? 0,
+                    ),
+                  );
             } else if (state is OrderCreateAddressError) {
               showCustomSnackBar(
                 context: context,
@@ -551,7 +566,8 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
                 children: [
                   Expanded(
                     child: SingleChildScrollView(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 8),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -560,16 +576,47 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
                             selectedLead: _selectedLead?.id.toString(),
                             onSelectLead: (LeadData lead) {
                               if (mounted) {
-
                                 if (_selectedLead?.id == lead.id) return;
                                 setState(() {
                                   _selectedLead = lead;
+
+                                  // Автозаполнение телефона при изменении лида
+                                  if (lead.phone != null &&
+                                      lead.phone!.isNotEmpty) {
+                                    String leadPhone = lead.phone!;
+                                    bool countryFound = false;
+
+                                    for (var country in countries) {
+                                      if (leadPhone
+                                          .startsWith(country.dialCode)) {
+                                        selectedDialCode = country.dialCode;
+                                        _phoneController.text = leadPhone
+                                            .substring(country.dialCode.length);
+                                        _fullPhoneNumber = leadPhone;
+                                        countryFound = true;
+                                        break;
+                                      }
+                                    }
+
+                                    if (!countryFound) {
+                                      selectedDialCode =
+                                          '+992'; // Или оставить текущий
+                                      _phoneController.text = leadPhone;
+                                      _fullPhoneNumber = leadPhone;
+                                    }
+                                  } else {
+                                    _phoneController.clear();
+                                    _fullPhoneNumber = '';
+                                  }
+
                                   debugPrint("setting selected address null");
                                   _selectedDeliveryAddress = null;
                                 });
-                                context.read<DeliveryAddressBloc>().add(FetchDeliveryAddresses(
-                                  leadId: lead.id,
-                                ));
+                                context
+                                    .read<DeliveryAddressBloc>()
+                                    .add(FetchDeliveryAddresses(
+                                      leadId: lead.id,
+                                    ));
                               }
                             },
                           ),
@@ -583,11 +630,13 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
                             },
                             validator: (value) {
                               if (value == null || value.isEmpty) {
-                                return AppLocalizations.of(context)!.translate('field_required');
+                                return AppLocalizations.of(context)!
+                                    .translate('field_required');
                               }
                               return null;
                             },
-                            label: AppLocalizations.of(context)!.translate('phone'),
+                            label: AppLocalizations.of(context)!
+                                .translate('phone'),
                             selectedDialCode: selectedDialCode,
                           ),
                           const SizedBox(height: 16),
@@ -604,7 +653,8 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
                             selectedManager: selectedManager,
                             onSelectManager: (ManagerData selectedManagerData) {
                               setState(() {
-                                selectedManager = selectedManagerData.id.toString();
+                                selectedManager =
+                                    selectedManagerData.id.toString();
                               });
                             },
                           ),
@@ -627,7 +677,9 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
                             },
                           ),
                           const SizedBox(height: 8),
-                          if (_deliveryMethod == AppLocalizations.of(context)!.translate('delivery'))
+                          if (_deliveryMethod ==
+                              AppLocalizations.of(context)!
+                                  .translate('delivery'))
                             DeliveryAddressDropdown(
                               leadId: _selectedLead?.id ?? 0,
                               organizationId: widget.order.organizationId ?? 1,
@@ -638,18 +690,26 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
                                 });
                               },
                             ),
-                          if (_deliveryMethod == AppLocalizations.of(context)!.translate('delivery')) const SizedBox(height: 16),
-                          if (_deliveryMethod == AppLocalizations.of(context)!.translate('delivery'))
+                          if (_deliveryMethod ==
+                              AppLocalizations.of(context)!
+                                  .translate('delivery'))
+                            const SizedBox(height: 16),
+                          if (_deliveryMethod ==
+                              AppLocalizations.of(context)!
+                                  .translate('delivery'))
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               crossAxisAlignment: CrossAxisAlignment.center,
                               children: [
                                 Spacer(),
-                                if (_deliveryMethod == AppLocalizations.of(context)!.translate('delivery'))
+                                if (_deliveryMethod ==
+                                    AppLocalizations.of(context)!
+                                        .translate('delivery'))
                                   GestureDetector(
                                     onTap: () => _showAddAddressDialog(context),
                                     child: Text(
-                                      AppLocalizations.of(context)!.translate('add_address'),
+                                      AppLocalizations.of(context)!
+                                          .translate('add_address'),
                                       style: const TextStyle(
                                         fontSize: 14,
                                         fontWeight: FontWeight.w500,
@@ -660,11 +720,16 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
                                   ),
                               ],
                             ),
-                          if (_deliveryMethod == AppLocalizations.of(context)!.translate('delivery')) const SizedBox(height: 8),
+                          if (_deliveryMethod ==
+                              AppLocalizations.of(context)!
+                                  .translate('delivery'))
+                            const SizedBox(height: 8),
                           CustomTextField(
                             controller: _commentController,
-                            hintText: AppLocalizations.of(context)!.translate('please_enter_comment'),
-                            label: AppLocalizations.of(context)!.translate('comment'),
+                            hintText: AppLocalizations.of(context)!
+                                .translate('please_enter_comment'),
+                            label: AppLocalizations.of(context)!
+                                .translate('comment'),
                             maxLines: 5,
                             keyboardType: TextInputType.multiline,
                           ),
@@ -688,7 +753,8 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
       forceMaterialTransparency: true,
       elevation: 0,
       leading: IconButton(
-        icon: const Icon(Icons.arrow_back_ios, color: Color(0xff1E2E52), size: 24),
+        icon: const Icon(Icons.arrow_back_ios,
+            color: Color(0xff1E2E52), size: 24),
         onPressed: () => Navigator.pop(context),
       ),
       title: Text(
@@ -709,8 +775,9 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
     if (!_isTotalEdited) {
       _totalController.text = autoTotal.toStringAsFixed(0);
     }
-    final String currencySymbol =
-        _formatPrice(autoTotal).split(' ').isNotEmpty ? _formatPrice(autoTotal).split(' ').last : '';
+    final String currencySymbol = _formatPrice(autoTotal).split(' ').isNotEmpty
+        ? _formatPrice(autoTotal).split(' ').last
+        : '';
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -784,8 +851,8 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
                     IntrinsicWidth(
                       child: TextField(
                         controller: _totalController,
-                        keyboardType:
-                            const TextInputType.numberWithOptions(decimal: true),
+                        keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true),
                         textAlign: TextAlign.right,
                         style: const TextStyle(
                           fontSize: 20,
@@ -831,13 +898,15 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
       ],
     );
   }
+
   Widget _buildItemCard(int index, Map<String, dynamic> item) {
     Widget _buildPlaceholderImage() {
       return Container(
         width: 48,
         height: 48,
         color: Colors.grey[200],
-        child: const Center(child: Icon(Icons.image, color: Colors.grey, size: 24)),
+        child: const Center(
+            child: Icon(Icons.image, color: Colors.grey, size: 24)),
       );
     }
 
@@ -862,25 +931,29 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
           SizedBox(
             width: 48,
             height: 48,
-            child: item['imagePath'] != null && item['imagePath'].isNotEmpty && baseUrl != null
+            child: item['imagePath'] != null &&
+                    item['imagePath'].isNotEmpty &&
+                    baseUrl != null
                 ? ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: CachedNetworkImage(
-                imageUrl: item['imagePath'].startsWith('http')
-                    ? item['imagePath']
-                    : '${item['imagePath']}',
-                width: 48,
-                height: 48,
-                fit: BoxFit.cover,
-                placeholder: (context, url) => const Center(
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(Color(0xff4759FF)),
-                  ),
-                ),
-                errorWidget: (context, url, error) => _buildPlaceholderImage(),
-              ),
-            )
+                    borderRadius: BorderRadius.circular(8),
+                    child: CachedNetworkImage(
+                      imageUrl: item['imagePath'].startsWith('http')
+                          ? item['imagePath']
+                          : '${item['imagePath']}',
+                      width: 48,
+                      height: 48,
+                      fit: BoxFit.cover,
+                      placeholder: (context, url) => const Center(
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor:
+                              AlwaysStoppedAnimation<Color>(Color(0xff4759FF)),
+                        ),
+                      ),
+                      errorWidget: (context, url, error) =>
+                          _buildPlaceholderImage(),
+                    ),
+                  )
                 : _buildPlaceholderImage(),
           ),
           const SizedBox(width: 12),
@@ -889,7 +962,8 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  item['name'] ?? AppLocalizations.of(context)!.translate('no_name'),
+                  item['name'] ??
+                      AppLocalizations.of(context)!.translate('no_name'),
                   style: const TextStyle(
                     fontSize: 14,
                     fontFamily: 'Gilroy',
@@ -967,7 +1041,8 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
                     child: Row(
                       children: [
                         GestureDetector(
-                          onTap: () => _updateQuantity(index, (item['quantity'] ?? 1) - 1),
+                          onTap: () => _updateQuantity(
+                              index, (item['quantity'] ?? 1) - 1),
                           behavior: HitTestBehavior.opaque,
                           child: const Padding(
                             padding: EdgeInsets.all(8),
@@ -1001,13 +1076,17 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
                             inputFormatters: [
                               FilteringTextInputFormatter.digitsOnly,
                             ],
-                            onChanged: (value) => _handleQuantityInput(index, value),
-                            onEditingComplete: () => _handleQuantityEditingComplete(index),
-                            onSubmitted: (value) => _handleQuantityInput(index, value),
+                            onChanged: (value) =>
+                                _handleQuantityInput(index, value),
+                            onEditingComplete: () =>
+                                _handleQuantityEditingComplete(index),
+                            onSubmitted: (value) =>
+                                _handleQuantityInput(index, value),
                           ),
                         ),
                         GestureDetector(
-                          onTap: () => _updateQuantity(index, (item['quantity'] ?? 1) + 1),
+                          onTap: () => _updateQuantity(
+                              index, (item['quantity'] ?? 1) + 1),
                           behavior: HitTestBehavior.opaque,
                           child: const Padding(
                             padding: EdgeInsets.all(8),
@@ -1023,7 +1102,8 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
                   ),
                   const SizedBox(width: 8),
                   IconButton(
-                    icon: const Icon(Icons.delete, color: Color(0xff99A4BA), size: 20),
+                    icon: const Icon(Icons.delete,
+                        color: Color(0xff99A4BA), size: 20),
                     onPressed: () => _removeItem(index),
                   ),
                 ],
@@ -1056,7 +1136,8 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
               onPressed: () => Navigator.pop(context),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xffF4F7FD),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
                 padding: const EdgeInsets.symmetric(vertical: 12),
               ),
               child: Text(
@@ -1075,63 +1156,77 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
             child: ElevatedButton(
               onPressed: () {
                 if (_formKey.currentState!.validate() && _items.isNotEmpty) {
-                  if (_deliveryMethod == AppLocalizations.of(context)!.translate('self_delivery') &&
+                  if (_deliveryMethod ==
+                          AppLocalizations.of(context)!
+                              .translate('self_delivery') &&
                       _selectedBranch == null) {
                     showCustomSnackBar(
                       context: context,
-                      message: AppLocalizations.of(context)!.translate('please_select_branch'),
+                      message: AppLocalizations.of(context)!
+                          .translate('please_select_branch'),
                       isSuccess: false,
                     );
                     return;
                   }
-                  if (_deliveryMethod == AppLocalizations.of(context)!.translate('delivery') &&
+                  if (_deliveryMethod ==
+                          AppLocalizations.of(context)!.translate('delivery') &&
                       _selectedDeliveryAddress == null) {
                     showCustomSnackBar(
                       context: context,
-                      message: AppLocalizations.of(context)!.translate('please_select_delivery_address'),
+                      message: AppLocalizations.of(context)!
+                          .translate('please_select_delivery_address'),
                       isSuccess: false,
                     );
                     return;
                   }
 
-                  final isPickup = _deliveryMethod == AppLocalizations.of(context)!.translate('self_delivery');
+                  final isPickup = _deliveryMethod ==
+                      AppLocalizations.of(context)!.translate('self_delivery');
                   final currentTotal = _getCurrentTotal();
                   context.read<OrderBloc>().add(UpdateOrder(
-                    orderId: widget.order.id,
-                    phone: _fullPhoneNumber ?? widget.order.phone,
-                    leadId: _selectedLead?.id ?? 0,
-                    delivery: !isPickup,
-                    deliveryAddress: isPickup ? null : _selectedDeliveryAddress?.address,
-                    deliveryAddressId: isPickup ? null : _selectedDeliveryAddress?.id,
-                    goods: _items
-                        .map((item) => {
-                      'variant_id': item['id'].toString(),
-                      'quantity': item['quantity'] ?? 1,
-                      'price': item['price'].toString(),
-                    })
-                        .toList(),
-                    organizationId: widget.order.organizationId ?? 1,
-                    branchId: _selectedBranch?.id,
-                    commentToCourier: _commentController.text.isNotEmpty
-                        ? _commentController.text
-                        : null,
-                    managerId: selectedManager != null ? int.parse(selectedManager!) : null,
-                    statusId: widget.order.orderStatus.id, // Передаем текущий statusId
-                    sum: currentTotal,
-                  ));
+                        orderId: widget.order.id,
+                        phone: _fullPhoneNumber ?? widget.order.phone,
+                        leadId: _selectedLead?.id ?? 0,
+                        delivery: !isPickup,
+                        deliveryAddress:
+                            isPickup ? null : _selectedDeliveryAddress?.address,
+                        deliveryAddressId:
+                            isPickup ? null : _selectedDeliveryAddress?.id,
+                        goods: _items
+                            .map((item) => {
+                                  'variant_id': item['id'].toString(),
+                                  'quantity': item['quantity'] ?? 1,
+                                  'price': item['price'].toString(),
+                                })
+                            .toList(),
+                        organizationId: widget.order.organizationId ?? 1,
+                        branchId: _selectedBranch?.id,
+                        commentToCourier: _commentController.text.isNotEmpty
+                            ? _commentController.text
+                            : null,
+                        managerId: selectedManager != null
+                            ? int.parse(selectedManager!)
+                            : null,
+                        statusId: widget
+                            .order.orderStatus.id, // Передаем текущий statusId
+                        sum: currentTotal,
+                      ));
                 } else {
                   showCustomSnackBar(
                     context: context,
                     message: _items.isEmpty
-                        ? AppLocalizations.of(context)!.translate('add_at_least_one_product')
-                        : AppLocalizations.of(context)!.translate('fill_all_required_fields'),
+                        ? AppLocalizations.of(context)!
+                            .translate('add_at_least_one_product')
+                        : AppLocalizations.of(context)!
+                            .translate('fill_all_required_fields'),
                     isSuccess: false,
                   );
                 }
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xff4759FF),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
                 padding: const EdgeInsets.symmetric(vertical: 12),
               ),
               child: Text(

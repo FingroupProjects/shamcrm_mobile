@@ -66,28 +66,13 @@ class _SubjectSelectionWidgetState extends State<SubjectSelectionWidget> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Заголовок поля + звёздочка
-        RichText(
-          text: TextSpan(
-            children: [
-              TextSpan(
-                text: AppLocalizations.of(context)!.translate('subject'),
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  fontFamily: 'Gilroy',
-                  color: Color(0xff1E2E52),
-                ),
-              ),
-              const TextSpan(
-                text: ' *',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.red,
-                ),
-              ),
-            ],
+        Text(
+          AppLocalizations.of(context)!.translate('subject'),
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            fontFamily: 'Gilroy',
+            color: Color(0xff1E2E52),
           ),
         ),
         const SizedBox(height: 8),

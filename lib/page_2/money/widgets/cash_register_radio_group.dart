@@ -27,6 +27,7 @@ class _CashRegisterGroupWidgetState extends State<CashRegisterGroupWidget> {
   List<CashRegisterData> cashRegistersList = [];
   CashRegisterData? selectedCashRegisterData;
   bool _isInitialLoad = true; // ✅ Track if this is the first load
+  String? _autoSelectedCashRegisterId;
 
   @override
   void initState() {
@@ -101,6 +102,21 @@ class _CashRegisterGroupWidgetState extends State<CashRegisterGroupWidget> {
               if (state is GetAllCashRegisterSuccess) {
                 cashRegistersList = state.dataCashRegisters.result ?? [];
                 _updateSelectedCashRegisterData();
+
+                if (cashRegistersList.length == 1 &&
+                    (widget.selectedCashRegisterId == null ||
+                        selectedCashRegisterData == null) &&
+                    _autoSelectedCashRegisterId != cashRegistersList.first.id.toString()) {
+                  final singleRegister = cashRegistersList.first;
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (!mounted) return;
+                    widget.onSelectCashRegister(singleRegister);
+                    setState(() {
+                      selectedCashRegisterData = singleRegister;
+                      _autoSelectedCashRegisterId = singleRegister.id.toString();
+                    });
+                  });
+                }
               }
 
               return CustomDropdown<CashRegisterData>.search(

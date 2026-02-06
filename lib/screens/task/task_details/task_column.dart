@@ -55,18 +55,19 @@ class _TaskColumnState extends State<TaskColumn> {
     super.initState();
     // ОПТИМИЗАЦИЯ: Не создаем новый блок, используем существующий из контекста
     _isInitialLoad = true; // Устанавливаем флаг первой загрузки
-    
+
     // Загружаем разрешения асинхронно
     Future.microtask(() {
       if (mounted) {
         _checkPermission();
         _loadFeatureState();
-        
+
         // КРИТИЧНО: Проверяем есть ли уже данные для этого статуса
         final taskBloc = context.read<TaskBloc>();
         if (taskBloc.state is TaskDataLoaded) {
           final currentState = taskBloc.state as TaskDataLoaded;
-          final hasTasksForStatus = currentState.tasks.any((task) => task.statusId == widget.statusId);
+          final hasTasksForStatus = currentState.tasks
+              .any((task) => task.statusId == widget.statusId);
           if (hasTasksForStatus) {
             // Если данные уже есть, сбрасываем флаг загрузки
             setState(() {
@@ -261,33 +262,33 @@ class _TaskColumnState extends State<TaskColumn> {
     super.dispose();
   }
 
+  Future<void> _checkPermission() async {
+    try {
+      // ОПТИМИЗАЦИЯ: Параллельно проверяем оба разрешения с timeout
+      final results = await Future.wait([
+        _apiService.hasPermission('task.create'),
+        _apiService.hasPermission('task.createForMySelf'),
+      ]).timeout(
+        Duration(seconds: 5),
+        onTimeout: () => [false, false],
+      );
 
-Future<void> _checkPermission() async {
-  try {
-    // ОПТИМИЗАЦИЯ: Параллельно проверяем оба разрешения с timeout
-    final results = await Future.wait([
-      _apiService.hasPermission('task.create'),
-      _apiService.hasPermission('task.createForMySelf'),
-    ]).timeout(
-      Duration(seconds: 5),
-      onTimeout: () => [false, false],
-    );
-
-    // Устанавливаем _hasPermissionToAddTask в true, если есть хотя бы одно разрешение
-    if (mounted) {
-      setState(() {
-        _hasPermissionToAddTask = results[0] || results[1];
-      });
-    }
-  } catch (e) {
-    // Обработка ошибок при запросе к API
-    if (mounted) {
-      setState(() {
-        _hasPermissionToAddTask = false; // В случае ошибки отключаем кнопку
-      });
+      // Устанавливаем _hasPermissionToAddTask в true, если есть хотя бы одно разрешение
+      if (mounted) {
+        setState(() {
+          _hasPermissionToAddTask = results[0] || results[1];
+        });
+      }
+    } catch (e) {
+      // Обработка ошибок при запросе к API
+      if (mounted) {
+        setState(() {
+          _hasPermissionToAddTask = false; // В случае ошибки отключаем кнопку
+        });
+      }
     }
   }
-}
+
   Future<void> _onRefresh() async {
     // ОПТИМИЗАЦИЯ: При обновлении заново загружаем задачи и статусы из единого блока
     if (mounted) {
@@ -298,36 +299,40 @@ Future<void> _checkPermission() async {
     return Future.delayed(Duration(milliseconds: 100));
   }
 
-   @override
+  @override
   Widget build(BuildContext context) {
     // ОПТИМИЗАЦИЯ: Используем существующий блок из контекста, не создаем новый
     return Scaffold(
-        backgroundColor: Colors.white,
-        body: BlocBuilder<TaskBloc, TaskState>(
-          builder: (context, state) {
-            // Получаем блок из контекста
-            final taskBloc = context.read<TaskBloc>();
-            
-            // ОПТИМИЗАЦИЯ: Проверяем наличие данных для текущего статуса
-            bool hasDataForStatus = false;
-            if (state is TaskDataLoaded) {
-              hasDataForStatus = state.tasks.any((task) => task.statusId == widget.statusId);
-            }
-            
-            // ОПТИМИЗАЦИЯ: Показываем лоадер только при реальной загрузке БЕЗ данных
-            if (state is TaskLoading && _isInitialLoad && !hasDataForStatus) {
-              return const Center(
-                child: PlayStoreImageLoading(
-                  size: 80.0,
-                  duration: Duration(milliseconds: 1000),
-                ),
-              );
-            } 
-            
-            if (state is TaskDataLoaded) {
-              final tasks = state.tasks.where((task) => task.statusId == widget.statusId).toList();
-              
-              // КРИТИЧНО: Сбрасываем флаг сразу, как только получаем состояние с данными
+      backgroundColor: Colors.white,
+      body: BlocBuilder<TaskBloc, TaskState>(
+        builder: (context, state) {
+          // Получаем блок из контекста
+          final taskBloc = context.read<TaskBloc>();
+
+          // ОПТИМИЗАЦИЯ: Проверяем наличие данных для текущего статуса
+          bool hasDataForStatus = false;
+          if (state is TaskDataLoaded) {
+            hasDataForStatus =
+                state.tasks.any((task) => task.statusId == widget.statusId);
+          }
+
+          // ОПТИМИЗАЦИЯ: Показываем лоадер только при реальной загрузке БЕЗ данных
+          if (state is TaskLoading && _isInitialLoad && !hasDataForStatus) {
+            return const Center(
+              child: PlayStoreImageLoading(
+                size: 80.0,
+                duration: Duration(milliseconds: 1000),
+              ),
+            );
+          }
+
+          if (state is TaskDataLoaded) {
+            final tasks = state.tasks
+                .where((task) => task.statusId == widget.statusId)
+                .toList();
+
+            if (tasks.isNotEmpty) {
+              // ✅ Сбрасываем флаг только когда есть задачи
               if (_isInitialLoad) {
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   if (mounted) {
@@ -338,190 +343,220 @@ Future<void> _checkPermission() async {
                 });
               }
 
-              if (tasks.isNotEmpty) {
-                // ОПТИМИЗАЦИЯ: Используем один ScrollController для всего виджета
-                if (!_scrollListenerAdded) {
-                  _scrollListenerAdded = true;
-                  _scrollController.addListener(() {
-                    if (_scrollController.position.pixels == _scrollController.position.maxScrollExtent &&
-                        !taskBloc.allTasksFetched) {
-                      taskBloc.add(FetchMoreTasks(widget.statusId, state.currentPage));
-                    }
-                  });
-                }
+              // ОПТИМИЗАЦИЯ: Используем один ScrollController для всего виджета
+              if (!_scrollListenerAdded) {
+                _scrollListenerAdded = true;
+                _scrollController.addListener(() {
+                  if (_scrollController.position.pixels ==
+                          _scrollController.position.maxScrollExtent &&
+                      !taskBloc.allTasksFetched) {
+                    taskBloc.add(
+                        FetchMoreTasks(widget.statusId, state.currentPage));
+                  }
+                });
+              }
 
-                return RefreshIndicator(
-                  color: Color(0xff1E2E52),
-                  backgroundColor: Colors.white,
-                  onRefresh: _onRefresh,
-                  child: Column(
-                    children: [
-                      SizedBox(height: 8),
-                      Expanded(
-                        child: ListView.builder(
-                          controller: _scrollController,
-                          physics: AlwaysScrollableScrollPhysics(),
-                          itemCount: tasks.length,
-                          itemBuilder: (context, index) {
-                            
-                            if (index > 0 && tasks[index].id == tasks[index - 1].id) {
-                                return SizedBox.shrink(); 
-                              }
-                              
-                            return Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                              child: TaskCard(
-                                key: index == 0 ? keyTaskCard : null,
-                                dropdownStatusKey: index == 0 ? keyStatusDropdown : null,
-                                task: tasks[index],
-                                name: widget.name,
-                                statusId: widget.statusId,
-                                onStatusUpdated: () {
-                                  if (mounted) {
-                                    taskBloc.add(FetchTasks(widget.statusId));
-                                  }
-                                },
-                                onStatusId: (StatusTaskId) {
-                                  widget.onStatusId(StatusTaskId);
-                                },
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              } else {
-                // ИСПРАВЛЕНО: Показываем "Нет задач" сразу, т.к. флаг уже сброшен выше
-                return RefreshIndicator(
-                  backgroundColor: Colors.white,
-                  color: Color(0xff1E2E52),
-                  onRefresh: _onRefresh,
-                  child: ListView(
-                    physics: AlwaysScrollableScrollPhysics(),
-                    children: [
-                      SizedBox(height: MediaQuery.of(context).size.height * 0.4),
-                      Center(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              AppLocalizations.of(context)!.translate('no_tasks_for_selected_status'),
-                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, fontFamily: 'Gilroy'),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              }
-            } else if (state is TaskLoaded) {
-              // Когда загружены статусы, но еще не задачи - загружаем задачи для текущего статуса
-              if (_isInitialLoad) {
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (mounted) {
-                    context.read<TaskBloc>().add(FetchTasks(widget.statusId));
-                  }
-                });
-              }
-              // Показываем лоадер пока загружаем задачи
-              return const Center(
-                child: PlayStoreImageLoading(
-                  size: 80.0,
-                  duration: Duration(milliseconds: 1000),
-                ),
-              );
-            } else if (state is TaskError) {
-              // Сбрасываем флаг загрузки при ошибке
-              if (_isInitialLoad) {
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (mounted) {
-                    setState(() {
-                      _isInitialLoad = false;
-                    });
-                  }
-                });
-              }
-              
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                        AppLocalizations.of(context)!
-                            .translate(state.message), // Локализация сообщения
-                        style: TextStyle(
-                            fontFamily: 'Gilroy',
-                            fontSize: 16,
-                            fontWeight: FontWeight.w500,
-                            color: Colors.white)),
-                    behavior: SnackBarBehavior.floating,
-                    margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
-                    backgroundColor: Colors.red,
-                    elevation: 3,
-                    padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                    duration: Duration(seconds: 3),
-                  ),
-                );
-              });
-              
-              // Показываем пустой список при ошибке
               return RefreshIndicator(
-                onRefresh: _onRefresh,
                 color: Color(0xff1E2E52),
                 backgroundColor: Colors.white,
+                onRefresh: _onRefresh,
+                child: Column(
+                  children: [
+                    SizedBox(height: 8),
+                    Expanded(
+                      child: ListView.builder(
+                        controller: _scrollController,
+                        physics: AlwaysScrollableScrollPhysics(),
+                        itemCount: tasks.length,
+                        itemBuilder: (context, index) {
+                          if (index > 0 &&
+                              tasks[index].id == tasks[index - 1].id) {
+                            return SizedBox.shrink();
+                          }
+
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 8),
+                            child: TaskCard(
+                              key: index == 0 ? keyTaskCard : null,
+                              dropdownStatusKey:
+                                  index == 0 ? keyStatusDropdown : null,
+                              task: tasks[index],
+                              name: widget.name,
+                              statusId: widget.statusId,
+                              onStatusUpdated: () {
+                                if (mounted) {
+                                  taskBloc.add(FetchTasks(widget.statusId));
+                                }
+                              },
+                              onStatusId: (StatusTaskId) {
+                                widget.onStatusId(StatusTaskId);
+                              },
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            } else {
+              // ✅ ИСПРАВЛЕНО: Показываем анимацию загрузки во время переключения статусов
+              if (_isInitialLoad) {
+                // Сбрасываем флаг с небольшой задержкой для пустых статусов
+                Future.delayed(Duration(milliseconds: 300), () {
+                  if (mounted) {
+                    setState(() {
+                      _isInitialLoad = false;
+                    });
+                  }
+                });
+
+                return const Center(
+                  child: PlayStoreImageLoading(
+                    size: 80.0,
+                    duration: Duration(milliseconds: 1000),
+                  ),
+                );
+              }
+
+              // Показываем "Нет задач" только когда загрузка завершена
+              return RefreshIndicator(
+                backgroundColor: Colors.white,
+                color: Color(0xff1E2E52),
+                onRefresh: _onRefresh,
                 child: ListView(
                   physics: AlwaysScrollableScrollPhysics(),
                   children: [
                     SizedBox(height: MediaQuery.of(context).size.height * 0.4),
                     Center(
-                      child: Text(
-                        AppLocalizations.of(context)!.translate('no_tasks_for_selected_status'),
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, fontFamily: 'Gilroy'),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            AppLocalizations.of(context)!
+                                .translate('no_tasks_for_selected_status'),
+                            style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                                fontFamily: 'Gilroy'),
+                          ),
+                        ],
                       ),
                     ),
                   ],
                 ),
               );
             }
-            
-            // Для всех остальных состояний показываем лоадер только при первой загрузке
+          } else if (state is TaskLoaded) {
+            // Когда загружены статусы, но еще не задачи - загружаем задачи для текущего статуса
             if (_isInitialLoad) {
-              return const Center(
-                child: PlayStoreImageLoading(
-                  size: 80.0,
-                  duration: Duration(milliseconds: 1000),
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted) {
+                  context.read<TaskBloc>().add(FetchTasks(widget.statusId));
+                }
+              });
+            }
+            // Показываем лоадер пока загружаем задачи
+            return const Center(
+              child: PlayStoreImageLoading(
+                size: 80.0,
+                duration: Duration(milliseconds: 1000),
+              ),
+            );
+          } else if (state is TaskError) {
+            // Сбрасываем флаг загрузки при ошибке
+            if (_isInitialLoad) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted) {
+                  setState(() {
+                    _isInitialLoad = false;
+                  });
+                }
+              });
+            }
+
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                      AppLocalizations.of(context)!
+                          .translate(state.message), // Локализация сообщения
+                      style: TextStyle(
+                          fontFamily: 'Gilroy',
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.white)),
+                  behavior: SnackBarBehavior.floating,
+                  margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                  backgroundColor: Colors.red,
+                  elevation: 3,
+                  padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                  duration: Duration(seconds: 3),
                 ),
               );
-            }
-            
-            return Container();
-          },
-        ),
-        floatingActionButton: _hasPermissionToAddTask
-            ? FloatingActionButton(
-                key: keyFloatingActionButton,
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) =>
-                          TaskAddScreen(statusId: widget.statusId),
+            });
+
+            // Показываем пустой список при ошибке
+            return RefreshIndicator(
+              onRefresh: _onRefresh,
+              color: Color(0xff1E2E52),
+              backgroundColor: Colors.white,
+              child: ListView(
+                physics: AlwaysScrollableScrollPhysics(),
+                children: [
+                  SizedBox(height: MediaQuery.of(context).size.height * 0.4),
+                  Center(
+                    child: Text(
+                      AppLocalizations.of(context)!
+                          .translate('no_tasks_for_selected_status'),
+                      style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          fontFamily: 'Gilroy'),
                     ),
-                  ).then((_) {
-                    if (mounted) {
-                      context.read<TaskBloc>().add(FetchTasks(widget.statusId));
-                    }
-                  });
-                },
-                backgroundColor: Color(0xff1E2E52),
-                child: Image.asset('assets/icons/tabBar/add.png',
-                    width: 24, height: 24),
-              )
-            : null,
-      );
+                  ),
+                ],
+              ),
+            );
+          }
+
+          // Для всех остальных состояний показываем лоадер только при первой загрузке
+          if (_isInitialLoad) {
+            return const Center(
+              child: PlayStoreImageLoading(
+                size: 80.0,
+                duration: Duration(milliseconds: 1000),
+              ),
+            );
+          }
+
+          return Container();
+        },
+      ),
+      floatingActionButton: _hasPermissionToAddTask
+          ? FloatingActionButton(
+              key: keyFloatingActionButton,
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) =>
+                        TaskAddScreen(statusId: widget.statusId),
+                  ),
+                ).then((_) {
+                  if (mounted) {
+                    context.read<TaskBloc>().add(FetchTasks(widget.statusId));
+                  }
+                });
+              },
+              backgroundColor: Color(0xff1E2E52),
+              child: Image.asset('assets/icons/tabBar/add.png',
+                  width: 24, height: 24),
+            )
+          : null,
+    );
   }
 }

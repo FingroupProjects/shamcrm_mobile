@@ -292,7 +292,7 @@ class VariantFile {
   final String? name;
   final String? path;
   final String? modelType;
-  final String? modelId;
+  final int? modelId;
   final String? createdAt;
   final String? updatedAt;
   final String? externalId;
@@ -318,10 +318,12 @@ class VariantFile {
       name: json['name'],
       path: json['path'],
       modelType: json['model_type'],
-      modelId: json['model_id'],
+      modelId: json['model_id'] == null
+          ? null
+          : int.tryParse(json['model_id'].toString()),
       createdAt: json['created_at'],
       updatedAt: json['updated_at'],
-      externalId: json['external_id'],
+      externalId: json['external_id']?.toString(),
       externalUrl: json['external_url'],
       isMain: json['is_main'],
     );
@@ -538,4 +540,3 @@ class VariantPrice {
     );
   }
 }
-

@@ -31,6 +31,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/bloc/lead/lead_bloc.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
+import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 import 'package:crm_task_manager/models/directory_model.dart'
@@ -52,6 +53,7 @@ class LeadEditScreen extends StatefulWidget {
   final String? manager;
   final String? sourceId;
   final String? birthday;
+  final String? cityId;
   final String? createAt;
   final String? instagram;
   final String? facebook;
@@ -76,6 +78,7 @@ class LeadEditScreen extends StatefulWidget {
     this.manager,
     this.sourceId,
     this.birthday,
+    this.cityId,
     this.createAt,
     this.instagram,
     this.facebook,
@@ -107,6 +110,7 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
   final TextEditingController facebookLoginController = TextEditingController();
   final TextEditingController telegramController = TextEditingController();
   final TextEditingController birthdayController = TextEditingController();
+  final TextEditingController cityController = TextEditingController();
   final TextEditingController createdAtController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
   final TextEditingController authorController = TextEditingController();
@@ -199,6 +203,7 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
     facebookLoginController.text = widget.facebook ?? '';
     telegramController.text = widget.telegram ?? '';
     birthdayController.text = widget.birthday ?? '';
+    cityController.text = widget.cityId ?? '';
     emailController.text = widget.email ?? '';
     descriptionController.text = widget.description ?? '';
     selectedRegion = widget.region;
@@ -698,6 +703,20 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
           keyboardType: TextInputType.emailAddress,
         );
 
+      case 'birthday':
+        return CustomTextFieldDate(
+          controller: birthdayController,
+          label: AppLocalizations.of(context)!.translate('birth_date'),
+          withTime: false,
+        );
+
+      case 'city_id':
+        return CustomTextField(
+          controller: cityController,
+          hintText: AppLocalizations.of(context)!.translate('enter_region'),
+          label: AppLocalizations.of(context)!.translate('oblast'),
+        );
+
       case 'lead_status_id':
         return LeadStatusEditpWidget(
           selectedStatus:
@@ -898,6 +917,10 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
         return localizations!.translate('Facebook');
       case 'email':
         return localizations!.translate('email');
+      case 'birthday':
+        return localizations!.translate('birth_date');
+      case 'city_id':
+        return localizations!.translate('oblast');
       case 'lead_status_id':
         return localizations!.translate('lead_status');
       case 'sales_funnel_id':
@@ -1282,6 +1305,7 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
     facebookLoginController.dispose();
     telegramController.dispose();
     birthdayController.dispose();
+    cityController.dispose();
     createdAtController.dispose();
     emailController.dispose();
     authorController.dispose();
@@ -2128,6 +2152,9 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                                             ? null
                                             : telegramController.text,
                                         birthday: parsedBirthday,
+                                        cityId: cityController.text.trim().isEmpty
+                                            ? null
+                                            : cityController.text.trim(),
                                         email: emailController.text.isEmpty
                                             ? null
                                             : emailController.text,

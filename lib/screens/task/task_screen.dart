@@ -17,6 +17,7 @@ import 'package:crm_task_manager/screens/profile/profile_screen.dart';
 import 'package:crm_task_manager/screens/task/task_cache.dart';
 import 'package:crm_task_manager/screens/task/task_details/task_card.dart';
 import 'package:crm_task_manager/screens/task/task_details/task_column.dart';
+import 'package:crm_task_manager/screens/task/task_details/task_add_screen.dart';
 import 'package:crm_task_manager/screens/task/task_details/task_status_add.dart';
 import 'package:crm_task_manager/screens/task/task_status_delete.dart';
 import 'package:crm_task_manager/screens/task/task_status_edit.dart';
@@ -275,6 +276,7 @@ void _onScroll() {
         _apiService.hasPermission('taskStatus.update'),
         _apiService.hasPermission('taskStatus.delete'),
         _apiService.hasPermission('task.create'),
+        _apiService.hasPermission('task.createForMySelf'),
         _apiService.getTutorialProgress(),
       ]).timeout(Duration(seconds: 10), onTimeout: () {
         // Возвращаем кэшированные значения при timeout
@@ -284,6 +286,7 @@ void _onScroll() {
           prefs.getBool('cached_canUpdateTaskStatus') ?? false,
           prefs.getBool('cached_canDeleteTaskStatus') ?? false,
           prefs.getBool('cached_hasPermissionToAddTask') ?? false,
+          prefs.getBool('cached_hasPermissionToAddTask') ?? false,
           {'result': null},
         ];
       });
@@ -292,8 +295,10 @@ void _onScroll() {
       final canCreate = results[1] as bool;
       final canUpdate = results[2] as bool;
       final canDelete = results[3] as bool;
-      final hasPermission = results[4] as bool;
-      final progress = results[5] as Map<String, dynamic>;
+      final canCreateTask = results[4] as bool;
+      final canCreateTaskForMySelf = results[5] as bool;
+      final hasPermission = canCreateTask || canCreateTaskForMySelf;
+      final progress = results[6] as Map<String, dynamic>;
       
       // Сохраняем в кэш
       await prefs.setBool('cached_canReadTaskStatus', canRead);
@@ -778,6 +783,17 @@ void _onScroll() {
     final localizations = AppLocalizations.of(context);
     return Scaffold(
       backgroundColor: Colors.white,
+      floatingActionButton: (!isClickAvatarIcon &&
+              (_isSearching || _hasActiveFilters()) &&
+              _hasPermissionToAddTask &&
+              _getCreateTaskStatusId() != null)
+          ? FloatingActionButton(
+              onPressed: _openCreateTaskFromFilteredView,
+              backgroundColor: const Color(0xff1E2E52),
+              child: Image.asset('assets/icons/tabBar/add.png',
+                  width: 24, height: 24),
+            )
+          : null,
       appBar: AppBar(
         forceMaterialTransparency: true,
         title: CustomAppBar(
@@ -908,6 +924,61 @@ void _onScroll() {
         ],
       ),
     );
+  }
+
+  int? _getCreateTaskStatusId() {
+    if (_selectedStatuses != null) {
+      return _selectedStatuses;
+    }
+    if (_tabTitles.isNotEmpty && _currentTabIndex < _tabTitles.length) {
+      return _tabTitles[_currentTabIndex]['id'];
+    }
+    return null;
+  }
+
+  void _openCreateTaskFromFilteredView() {
+    final statusId = _getCreateTaskStatusId();
+    if (statusId == null) return;
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => TaskAddScreen(statusId: statusId),
+      ),
+    ).then((_) {
+      if (!mounted) return;
+      final taskBloc = context.read<TaskBloc>();
+
+      if (_isSearching || _hasActiveFilters()) {
+        // Преобразуем project_ids в List<int>
+        List<int>? projectIdsList = _selectedProjects.isNotEmpty
+            ? _selectedProjects.map((id) => int.parse(id)).toList()
+            : (_selectedProject != null ? [int.parse(_selectedProject!)] : null);
+
+        taskBloc.add(FetchTasks(
+          statusId,
+          query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
+          userIds: _selectedUsers.isNotEmpty
+              ? _selectedUsers.map((user) => user.id).toList()
+              : null,
+          statusIds: _selectedStatuses,
+          fromDate: _fromDate,
+          toDate: _toDate,
+          overdue: _isOverdue,
+          hasFile: _hasFile,
+          hasDeal: _hasDeal,
+          urgent: _isUrgent,
+          deadlinefromDate: _deadlinefromDate,
+          deadlinetoDate: _deadlinetoDate,
+          projectIds: projectIdsList,
+          authors: _selectedAuthors,
+          department: _selectedDepartment,
+          directoryValues: _selectedDirectoryValues,
+        ));
+      } else {
+        taskBloc.add(FetchTasks(statusId));
+      }
+    });
   }
 
   Widget searchWidget(List<Task> tasks) {

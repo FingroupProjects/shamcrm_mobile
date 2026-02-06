@@ -63,14 +63,14 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
   String? selectedStatus;
   List<String>? selectedUsers;
   List<CustomField> customFields = [];
-  
+
   // Флаги для валидации обязательных полей
   bool isNameInvalid = false;
   bool isExecutorInvalid = false;
   bool isProjectInvalid = false;
   bool isEndDateInvalid = false;
   bool isStatusInvalid = false;
-  
+
   bool _hasTaskCreatePermission = false;
   bool _hasTaskCreateForMySelfPermission = false;
   int? _currentUserId;
@@ -93,7 +93,7 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
     context.read<UserTaskBloc>().add(FetchUsers());
     _setDefaultValues();
     _checkPermissionsAndUser();
-    
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadFieldConfiguration();
     });
@@ -110,7 +110,9 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
     if (kDebugMode) {
       print('TasksAddScreen: Loading field configuration for tasks');
     }
-    context.read<FieldConfigurationBloc>().add(FetchFieldConfiguration('tasks'));
+    context
+        .read<FieldConfigurationBloc>()
+        .add(FetchFieldConfiguration('tasks'));
   }
 
   Future<void> _saveFieldOrderToBackend() async {
@@ -167,7 +169,7 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
 
   CustomField _getOrCreateCustomField(FieldConfiguration config) {
     final existingField = customFields.firstWhere(
-          (field) => field.fieldName == config.fieldName && field.isCustomField,
+      (field) => field.fieldName == config.fieldName && field.isCustomField,
       orElse: () {
         final newField = CustomField(
           fieldName: config.fieldName,
@@ -186,7 +188,7 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
 
   CustomField _getOrCreateDirectoryField(FieldConfiguration config) {
     final existingField = customFields.firstWhere(
-          (field) => field.directoryId == config.directoryId,
+      (field) => field.directoryId == config.directoryId,
       orElse: () {
         final newField = CustomField(
           fieldName: config.fieldName,
@@ -252,7 +254,8 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
       case 'description':
         return CustomTextField(
           controller: descriptionController,
-          hintText: AppLocalizations.of(context)!.translate('enter_description'),
+          hintText:
+              AppLocalizations.of(context)!.translate('enter_description'),
           label: AppLocalizations.of(context)!.translate('description_list'),
           maxLines: 5,
           keyboardType: TextInputType.multiline,
@@ -264,7 +267,9 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
             selectedUsers: selectedUsers,
             onSelectUsers: (List<UserData> selectedUsersData) {
               setState(() {
-                selectedUsers = selectedUsersData.map((user) => user.id.toString()).toList();
+                selectedUsers = selectedUsersData
+                    .map((user) => user.id.toString())
+                    .toList();
                 isExecutorInvalid = false;
               });
             },
@@ -286,21 +291,10 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                   isProjectInvalid = false;
                 });
               },
-              hasError: isProjectInvalid,
+              errorText: isProjectInvalid
+                  ? AppLocalizations.of(context)!.translate('field_required')
+                  : null,
             ),
-            if (isProjectInvalid)
-              Padding(
-                padding: const EdgeInsets.only(top: 4, left: 4),
-                child: Text(
-                  AppLocalizations.of(context)!.translate('field_required'),
-                  style: TextStyle(
-                    color: Colors.red,
-                    fontSize: 12,
-                    fontFamily: 'Gilroy',
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
           ],
         );
 
@@ -392,7 +386,8 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
         selectedField: null,
         onSelectField: (MainField selectedField) {
           setState(() {
-            final index = customFields.indexWhere((f) => f.directoryId == config.directoryId);
+            final index = customFields
+                .indexWhere((f) => f.directoryId == config.directoryId);
             if (index != -1) {
               customFields[index] = directoryField.copyWith(
                 entryId: selectedField.id,
@@ -404,7 +399,8 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
         controller: directoryField.controller,
         onSelectEntryId: (int entryId) {
           setState(() {
-            final index = customFields.indexWhere((f) => f.directoryId == config.directoryId);
+            final index = customFields
+                .indexWhere((f) => f.directoryId == config.directoryId);
             if (index != -1) {
               customFields[index] = directoryField.copyWith(
                 entryId: entryId,
@@ -419,7 +415,7 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
     if (config.fieldName == 'executor') {
       final field = _buildStandardField(config);
       if (field == null || field is SizedBox) return field;
-      
+
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -444,7 +440,8 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
     return _buildStandardField(config);
   }
 
-  List<Widget> _withVerticalSpacing(List<Widget> widgets, {double spacing = 15}) {
+  List<Widget> _withVerticalSpacing(List<Widget> widgets,
+      {double spacing = 15}) {
     if (widgets.isEmpty) {
       return widgets;
     }
@@ -496,11 +493,16 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
     );
   }
 
-  Future<void> _addCustomField(String fieldName, {bool isDirectory = false, int? directoryId, String? type}) async {
+  Future<void> _addCustomField(String fieldName,
+      {bool isDirectory = false, int? directoryId, String? type}) async {
     if (isDirectory && directoryId != null) {
-      bool directoryExists = customFields.any((field) => field.isDirectoryField && field.directoryId == directoryId);
+      bool directoryExists = customFields.any((field) =>
+          field.isDirectoryField && field.directoryId == directoryId);
       if (directoryExists) {
-        showCustomSnackBar(context: context, message: 'Справочник уже добавлен', isSuccess: true);
+        showCustomSnackBar(
+            context: context,
+            message: 'Справочник уже добавлен',
+            isSuccess: true);
         debugPrint("Directory with ID $directoryId already exists.");
         return;
       }
@@ -523,8 +525,8 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
             ));
           });
           context.read<FieldConfigurationBloc>().add(
-            FetchFieldConfiguration('tasks'),
-          );
+                FetchFieldConfiguration('tasks'),
+              );
 
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -562,8 +564,8 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
 
       if (mounted) {
         context.read<FieldConfigurationBloc>().add(
-          FetchFieldConfiguration('tasks'),
-        );
+              FetchFieldConfiguration('tasks'),
+            );
         setState(() {
           customFields.add(CustomField(
             fieldName: fieldName,
@@ -581,7 +583,8 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
   }
 
   void _showAddFieldMenu() {
-    final RenderBox? renderBox = _addFieldButtonKey.currentContext?.findRenderObject() as RenderBox?;
+    final RenderBox? renderBox =
+        _addFieldButtonKey.currentContext?.findRenderObject() as RenderBox?;
     if (renderBox == null) return;
 
     final Offset offset = renderBox.localToGlobal(Offset.zero);
@@ -623,7 +626,9 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
         offset.dx,
         showAbove ? offset.dy + verticalOffset : offset.dy + verticalOffset,
         MediaQuery.of(context).size.width - offset.dx - size.width,
-        showAbove ? MediaQuery.of(context).size.height - offset.dy + verticalOffset : MediaQuery.of(context).size.height - offset.dy - size.height - 8,
+        showAbove
+            ? MediaQuery.of(context).size.height - offset.dy + verticalOffset
+            : MediaQuery.of(context).size.height - offset.dy - size.height - 8,
       ),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
@@ -664,12 +669,13 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
 
   bool _hasFieldChanges() {
     if (originalFieldConfigurations == null) return false;
-    if (originalFieldConfigurations!.length != fieldConfigurations.length) return true;
+    if (originalFieldConfigurations!.length != fieldConfigurations.length)
+      return true;
 
     for (int i = 0; i < fieldConfigurations.length; i++) {
       final current = fieldConfigurations[i];
       final original = originalFieldConfigurations!.firstWhere(
-            (f) => f.id == current.id,
+        (f) => f.id == current.id,
         orElse: () => current,
       );
 
@@ -685,59 +691,64 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
 
   Future<bool> _showExitSettingsDialog() async {
     return await showDialog<bool>(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          backgroundColor: Colors.white,
-          title: Text(
-            AppLocalizations.of(context)!.translate('warning'),
-            style: TextStyle(
-              fontFamily: 'Gilroy',
-              fontSize: 20,
-              fontWeight: FontWeight.w600,
-              color: Color(0xff1E2E52),
-            ),
-          ),
-          content: Text(
-            AppLocalizations.of(context)!.translate('position_changes_will_not_be_saved'),
-            style: TextStyle(
-              fontFamily: 'Gilroy',
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-              color: Color(0xff1E2E52),
-            ),
-          ),
-          actions: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                Expanded(
-                  child: CustomButton(
-                    buttonText: AppLocalizations.of(context)!.translate('cancel'),
-                    onPressed: () => Navigator.of(context).pop(false),
-                    buttonColor: Color(0xff1E2E52),
-                    textColor: Colors.white,
-                  ),
+          context: context,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              backgroundColor: Colors.white,
+              title: Text(
+                AppLocalizations.of(context)!.translate('warning'),
+                style: TextStyle(
+                  fontFamily: 'Gilroy',
+                  fontSize: 20,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xff1E2E52),
                 ),
-                SizedBox(width: 8),
-                Expanded(
-                  child: CustomButton(
-                    buttonText: AppLocalizations.of(context)!.translate('dont_save'),
-                    onPressed: () => Navigator.of(context).pop(true),
-                    buttonColor: Colors.red,
-                    textColor: Colors.white,
-                  ),
+              ),
+              content: Text(
+                AppLocalizations.of(context)!
+                    .translate('position_changes_will_not_be_saved'),
+                style: TextStyle(
+                  fontFamily: 'Gilroy',
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: Color(0xff1E2E52),
+                ),
+              ),
+              actions: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    Expanded(
+                      child: CustomButton(
+                        buttonText:
+                            AppLocalizations.of(context)!.translate('cancel'),
+                        onPressed: () => Navigator.of(context).pop(false),
+                        buttonColor: Color(0xff1E2E52),
+                        textColor: Colors.white,
+                      ),
+                    ),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: CustomButton(
+                        buttonText: AppLocalizations.of(context)!
+                            .translate('dont_save'),
+                        onPressed: () => Navigator.of(context).pop(true),
+                        buttonColor: Colors.red,
+                        textColor: Colors.white,
+                      ),
+                    ),
+                  ],
                 ),
               ],
-            ),
-          ],
-        );
-      },
-    ) ?? false;
+            );
+          },
+        ) ??
+        false;
   }
 
   Widget _buildSettingsMode() {
-    final sortedFields = [...fieldConfigurations]..sort((a, b) => a.position.compareTo(b.position));
+    final sortedFields = [...fieldConfigurations]
+      ..sort((a, b) => a.position.compareTo(b.position));
 
     return Column(
       children: [
@@ -749,7 +760,8 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
               return AnimatedBuilder(
                 animation: animation,
                 builder: (BuildContext context, Widget? child) {
-                  final double animValue = Curves.easeInOut.transform(animation.value);
+                  final double animValue =
+                      Curves.easeInOut.transform(animation.value);
                   final double scale = 1.0 + (animValue * 0.05);
                   final double elevation = animValue * 12.0;
 
@@ -768,7 +780,8 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
               );
             },
             onReorder: (oldIndex, newIndex) {
-              if (oldIndex == sortedFields.length || newIndex == sortedFields.length + 1) {
+              if (oldIndex == sortedFields.length ||
+                  newIndex == sortedFields.length + 1) {
                 return;
               }
 
@@ -815,7 +828,8 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                   key: _addFieldButtonKey,
                   margin: const EdgeInsets.only(bottom: 12),
                   child: CustomButton(
-                    buttonText: AppLocalizations.of(context)!.translate('add_field'),
+                    buttonText:
+                        AppLocalizations.of(context)!.translate('add_field'),
                     buttonColor: Color(0xff1E2E52),
                     textColor: Colors.white,
                     onPressed: _showAddFieldMenu,
@@ -830,7 +844,8 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
               return Container(
                 key: ValueKey('field_${config.id}'),
                 margin: const EdgeInsets.only(bottom: 12),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(12),
@@ -883,13 +898,13 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                             ],
                           ),
                           SizedBox(height: 12),
-                          if (config.fieldName != 'name' && 
-    config.fieldName != 'description' && 
-    config.fieldName != 'executor' &&
-    config.fieldName != 'project' &&
-    config.fieldName != 'deadline' &&
-    config.fieldName != 'task_status_id')
-                          GestureDetector(
+                          if (config.fieldName != 'name' &&
+                              config.fieldName != 'description' &&
+                              config.fieldName != 'executor' &&
+                              config.fieldName != 'project' &&
+                              config.fieldName != 'deadline' &&
+                              config.fieldName != 'task_status_id')
+                            GestureDetector(
                               behavior: HitTestBehavior.opaque,
                               onTap: () {
                                 setState(() {
@@ -911,14 +926,16 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                                     originalRequired: config.originalRequired,
                                   );
 
-                                  final idx = fieldConfigurations.indexWhere((f) => f.id == config.id);
+                                  final idx = fieldConfigurations
+                                      .indexWhere((f) => f.id == config.id);
                                   if (idx != -1) {
                                     fieldConfigurations[idx] = updatedConfig;
                                   }
                                 });
                               },
                               child: Padding(
-                                padding: const EdgeInsets.symmetric(vertical: 4),
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 4),
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
@@ -928,9 +945,13 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                                       width: 24,
                                       height: 24,
                                       decoration: BoxDecoration(
-                                        color: config.isActive ? Color(0xff4759FF) : Colors.white,
+                                        color: config.isActive
+                                            ? Color(0xff4759FF)
+                                            : Colors.white,
                                         border: Border.all(
-                                          color: config.isActive ? Color(0xff4759FF) : Color(0xffCCD5E0),
+                                          color: config.isActive
+                                              ? Color(0xff4759FF)
+                                              : Color(0xffCCD5E0),
                                           width: 2,
                                         ),
                                         borderRadius: BorderRadius.circular(6),
@@ -947,12 +968,15 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                                     ),
                                     SizedBox(width: 12),
                                     Text(
-                                      AppLocalizations.of(context)!.translate('show_field'),
+                                      AppLocalizations.of(context)!
+                                          .translate('show_field'),
                                       style: TextStyle(
                                         fontSize: 14,
                                         fontFamily: 'Gilroy',
                                         fontWeight: FontWeight.w500,
-                                        color: config.isActive ? Color(0xff1E2E52) : Color(0xff6B7A99),
+                                        color: config.isActive
+                                            ? Color(0xff1E2E52)
+                                            : Color(0xff6B7A99),
                                       ),
                                     ),
                                   ],
@@ -982,91 +1006,94 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
           ),
           child: isSavingFieldOrder
               ? Container(
-            height: 50,
-            decoration: BoxDecoration(
-              color: Color(0xff4759FF).withOpacity(0.7),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Center(
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                    ),
+                  height: 50,
+                  decoration: BoxDecoration(
+                    color: Color(0xff4759FF).withOpacity(0.7),
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  SizedBox(width: 12),
-                  Text(
-                    AppLocalizations.of(context)!.translate('saving'),
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          )
-              : CustomButton(
-            buttonText: AppLocalizations.of(context)!.translate('save'),
-            buttonColor: Color(0xff4759FF),
-            textColor: Colors.white,
-            onPressed: () async {
-              setState(() {
-                isSavingFieldOrder = true;
-              });
-
-              try {
-                await _saveFieldOrderToBackend();
-
-                if (mounted) {
-                  setState(() {
-                    originalFieldConfigurations = null;
-                    isSettingsMode = false;
-                  });
-
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        'Настройки полей сохранены',
-                        style: TextStyle(
-                          fontFamily: 'Gilroy',
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.white,
+                  child: Center(
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor:
+                                AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
                         ),
-                      ),
-                      behavior: SnackBarBehavior.floating,
-                      margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      backgroundColor: Colors.green,
-                      elevation: 3,
-                      padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                      duration: Duration(seconds: 2),
+                        SizedBox(width: 12),
+                        Text(
+                          AppLocalizations.of(context)!.translate('saving'),
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontFamily: 'Gilroy',
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
                     ),
-                  );
-                }
-              } catch (e) {
-                if (kDebugMode) {
-                  print('TaskAddScreen: Error in save button: $e');
-                }
-              } finally {
-                if (mounted) {
-                  setState(() {
-                    isSavingFieldOrder = false;
-                  });
-                }
-              }
-            },
-          ),
+                  ),
+                )
+              : CustomButton(
+                  buttonText: AppLocalizations.of(context)!.translate('save'),
+                  buttonColor: Color(0xff4759FF),
+                  textColor: Colors.white,
+                  onPressed: () async {
+                    setState(() {
+                      isSavingFieldOrder = true;
+                    });
+
+                    try {
+                      await _saveFieldOrderToBackend();
+
+                      if (mounted) {
+                        setState(() {
+                          originalFieldConfigurations = null;
+                          isSettingsMode = false;
+                        });
+
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              'Настройки полей сохранены',
+                              style: TextStyle(
+                                fontFamily: 'Gilroy',
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.white,
+                              ),
+                            ),
+                            behavior: SnackBarBehavior.floating,
+                            margin: EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 8),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            backgroundColor: Colors.green,
+                            elevation: 3,
+                            padding: EdgeInsets.symmetric(
+                                vertical: 12, horizontal: 16),
+                            duration: Duration(seconds: 2),
+                          ),
+                        );
+                      }
+                    } catch (e) {
+                      if (kDebugMode) {
+                        print('TaskAddScreen: Error in save button: $e');
+                      }
+                    } finally {
+                      if (mounted) {
+                        setState(() {
+                          isSavingFieldOrder = false;
+                        });
+                      }
+                    }
+                  },
+                ),
         ),
       ],
     );
@@ -1117,14 +1144,17 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
       galleryLabel: AppLocalizations.of(context)!.translate('gallery'),
       cameraLabel: AppLocalizations.of(context)!.translate('camera'),
       cancelLabel: AppLocalizations.of(context)!.translate('cancel'),
-      fileSizeTooLargeMessage: AppLocalizations.of(context)!.translate('file_size_too_large'),
-      errorPickingFileMessage: AppLocalizations.of(context)!.translate('error_picking_file'),
+      fileSizeTooLargeMessage:
+          AppLocalizations.of(context)!.translate('file_size_too_large'),
+      errorPickingFileMessage:
+          AppLocalizations.of(context)!.translate('error_picking_file'),
     );
 
     if (pickedFiles != null && pickedFiles.isNotEmpty) {
       setState(() {
         for (var file in pickedFiles) {
-          files.add(FileHelper(id: 0, name: file.name, path: file.path, size: file.sizeKB));
+          files.add(FileHelper(
+              id: 0, name: file.name, path: file.path, size: file.sizeKB));
         }
       });
     }
@@ -1181,7 +1211,8 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                   if (originalFieldConfigurations != null) {
                     setState(() {
                       final newFields = fieldConfigurations.where((current) {
-                        return !originalFieldConfigurations!.any((original) => original.id == current.id);
+                        return !originalFieldConfigurations!
+                            .any((original) => original.id == current.id);
                       }).toList();
 
                       fieldConfigurations = [...originalFieldConfigurations!];
@@ -1189,7 +1220,9 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                       if (newFields.isNotEmpty) {
                         int maxPosition = fieldConfigurations.isEmpty
                             ? 0
-                            : fieldConfigurations.map((e) => e.position).reduce((a, b) => a > b ? a : b);
+                            : fieldConfigurations
+                                .map((e) => e.position)
+                                .reduce((a, b) => a > b ? a : b);
                         for (int i = 0; i < newFields.length; i++) {
                           fieldConfigurations.add(FieldConfiguration(
                             id: newFields[i].id,
@@ -1223,7 +1256,8 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                 }
               } else {
                 setState(() {
-                  originalFieldConfigurations = fieldConfigurations.map((config) {
+                  originalFieldConfigurations =
+                      fieldConfigurations.map((config) {
                     return FieldConfiguration(
                       id: config.id,
                       tableName: config.tableName,
@@ -1253,10 +1287,12 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
         ],
         backgroundColor: const Color.fromARGB(255, 255, 255, 255),
       ),
-      body: BlocConsumer<FieldConfigurationBloc, FieldConfigurationState>(listener: (context, configState) {
+      body: BlocConsumer<FieldConfigurationBloc, FieldConfigurationState>(
+          listener: (context, configState) {
         if (configState is FieldConfigurationLoaded) {
           if (kDebugMode) {
-            print('Task: Configuration loaded with ${configState.fields.length} fields');
+            print(
+                'Task: Configuration loaded with ${configState.fields.length} fields');
           }
           setState(() {
             fieldConfigurations = configState.fields;
@@ -1283,7 +1319,8 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
         }
       }, builder: (context, configState) {
         if (kDebugMode) {
-          print('TaskAddScreen: Building with state: ${configState.runtimeType}, isLoaded: $isConfigurationLoaded');
+          print(
+              'TaskAddScreen: Building with state: ${configState.runtimeType}, isLoaded: $isConfigurationLoaded');
         }
 
         if (configState is FieldConfigurationLoading) {
@@ -1322,13 +1359,15 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
               if (state is TaskError) {
                 showCustomSnackBar(
                   context: context,
-                  message: AppLocalizations.of(context)!.translate(state.message),
+                  message:
+                      AppLocalizations.of(context)!.translate(state.message),
                   isSuccess: false,
                 );
               } else if (state is TaskSuccess) {
                 showCustomSnackBar(
                   context: context,
-                  message: AppLocalizations.of(context)!.translate(state.message),
+                  message:
+                      AppLocalizations.of(context)!.translate(state.message),
                   isSuccess: true,
                 );
                 if (context.mounted) {
@@ -1352,59 +1391,68 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             ..._buildConfiguredFieldWidgets(),
-
                             if (customFields.where((field) {
                               return !fieldConfigurations.any((config) =>
-                              (config.isCustomField && config.fieldName == field.fieldName) ||
-                                  (config.isDirectory && config.directoryId == field.directoryId));
+                                  (config.isCustomField &&
+                                      config.fieldName == field.fieldName) ||
+                                  (config.isDirectory &&
+                                      config.directoryId == field.directoryId));
                             }).isNotEmpty)
                               const SizedBox(height: 16),
-
                             ...(() {
-                              final customFieldsList = customFields.where((field) {
+                              final customFieldsList =
+                                  customFields.where((field) {
                                 return !fieldConfigurations.any((config) =>
-                                (config.isCustomField && config.fieldName == field.fieldName) ||
-                                    (config.isDirectory && config.directoryId == field.directoryId));
+                                    (config.isCustomField &&
+                                        config.fieldName == field.fieldName) ||
+                                    (config.isDirectory &&
+                                        config.directoryId ==
+                                            field.directoryId));
                               }).toList();
 
                               if (customFieldsList.isEmpty) return <Widget>[];
 
-                              final customFieldWidgets = customFieldsList.map((field) {
-                                return field.isDirectoryField && field.directoryId != null
+                              final customFieldWidgets =
+                                  customFieldsList.map((field) {
+                                return field.isDirectoryField &&
+                                        field.directoryId != null
                                     ? MainFieldDropdownWidget(
-                                    directoryId: field.directoryId!,
-                                    directoryName: field.fieldName,
-                                    selectedField: null,
-                                    onSelectField: (MainField selectedField) {
-                                      setState(() {
-                                        final idx = customFields.indexOf(field);
-                                        customFields[idx] = field.copyWith(
-                                          entryId: selectedField.id,
-                                          controller: TextEditingController(
-                                              text: selectedField.value),
-                                        );
-                                      });
-                                    },
-                                    controller: field.controller,
-                                    onSelectEntryId: (int entryId) {
-                                      setState(() {
-                                        final idx = customFields.indexOf(field);
-                                        customFields[idx] = field.copyWith(
-                                          entryId: entryId,
-                                        );
-                                      });
-                                    })
+                                        directoryId: field.directoryId!,
+                                        directoryName: field.fieldName,
+                                        selectedField: null,
+                                        onSelectField:
+                                            (MainField selectedField) {
+                                          setState(() {
+                                            final idx =
+                                                customFields.indexOf(field);
+                                            customFields[idx] = field.copyWith(
+                                              entryId: selectedField.id,
+                                              controller: TextEditingController(
+                                                  text: selectedField.value),
+                                            );
+                                          });
+                                        },
+                                        controller: field.controller,
+                                        onSelectEntryId: (int entryId) {
+                                          setState(() {
+                                            final idx =
+                                                customFields.indexOf(field);
+                                            customFields[idx] = field.copyWith(
+                                              entryId: entryId,
+                                            );
+                                          });
+                                        })
                                     : CustomFieldWidget(
-                                  fieldName: field.fieldName,
-                                  valueController: field.controller,
-                                  type: field.type,
-                                  isDirectory: false,
-                                );
+                                        fieldName: field.fieldName,
+                                        valueController: field.controller,
+                                        type: field.type,
+                                        isDirectory: false,
+                                      );
                               }).toList();
 
-                              return _withVerticalSpacing(customFieldWidgets, spacing: 8);
+                              return _withVerticalSpacing(customFieldWidgets,
+                                  spacing: 8);
                             })(),
-
                             const SizedBox(height: 16),
                             _buildFileSelection(),
                             const SizedBox(height: 80),
@@ -1499,7 +1547,9 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
         });
         hasError = true;
       }
-    } else if (!_hasTaskCreatePermission && _hasTaskCreateForMySelfPermission && _currentUserId == null) {
+    } else if (!_hasTaskCreatePermission &&
+        _hasTaskCreateForMySelfPermission &&
+        _currentUserId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
@@ -1572,9 +1622,12 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
 
   void _createTask() {
     final String name = nameController.text.trim();
-    final String? startDateString = startDateController.text.isEmpty ? null : startDateController.text;
-    final String? endDateString = endDateController.text.isEmpty ? null : endDateController.text;
-    final String? description = descriptionController.text.isEmpty ? null : descriptionController.text;
+    final String? startDateString =
+        startDateController.text.isEmpty ? null : startDateController.text;
+    final String? endDateString =
+        endDateController.text.isEmpty ? null : endDateController.text;
+    final String? description =
+        descriptionController.text.isEmpty ? null : descriptionController.text;
 
     DateTime? startDate;
     if (startDateString != null && startDateString.isNotEmpty) {
@@ -1617,7 +1670,8 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            AppLocalizations.of(context)!.translate('start_date_after_end_date'),
+            AppLocalizations.of(context)!
+                .translate('start_date_after_end_date'),
             style: TextStyle(
               color: Colors.white,
             ),
@@ -1661,7 +1715,8 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
         }
       }
 
-      if ((fieldType == 'date' || fieldType == 'datetime') && fieldValue.isNotEmpty) {
+      if ((fieldType == 'date' || fieldType == 'datetime') &&
+          fieldValue.isNotEmpty) {
         try {
           if (fieldType == 'date') {
             DateFormat('dd/MM/yyyy').parse(fieldValue);
@@ -1672,7 +1727,8 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                AppLocalizations.of(context)!.translate('enter_valid_${fieldType}'),
+                AppLocalizations.of(context)!
+                    .translate('enter_valid_${fieldType}'),
                 style: TextStyle(
                   fontFamily: 'Gilroy',
                   fontSize: 16,
@@ -1687,7 +1743,9 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
         }
       }
 
-      if (field.isDirectoryField && field.directoryId != null && field.entryId != null) {
+      if (field.isDirectoryField &&
+          field.directoryId != null &&
+          field.entryId != null) {
         directoryValues.add({
           'directory_id': field.directoryId!,
           'entry_id': field.entryId!,
@@ -1704,27 +1762,30 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
     final localizations = AppLocalizations.of(context)!;
 
     List<int>? userIds;
-    if (!_hasTaskCreatePermission && _hasTaskCreateForMySelfPermission && _currentUserId != null) {
+    if (!_hasTaskCreatePermission &&
+        _hasTaskCreateForMySelfPermission &&
+        _currentUserId != null) {
       userIds = [_currentUserId!];
     } else {
       userIds = selectedUsers?.map((id) => int.parse(id)).toList();
     }
 
     context.read<TaskBloc>().add(CreateTask(
-      name: name,
-      statusId: widget.statusId,
-      taskStatusId: int.parse(selectedStatus!),
-      startDate: startDate,
-      endDate: endDate,
-      projectId: selectedProject != null ? int.parse(selectedProject!) : null,
-      userId: userIds,
-      priority: selectedPriority,
-      description: description,
-      customFields: customFieldMap,
-      files: files.isNotEmpty ? files : null,
-      directoryValues: directoryValues,
-      localizations: localizations,
-    ));
+          name: name,
+          statusId: widget.statusId,
+          taskStatusId: int.parse(selectedStatus!),
+          startDate: startDate,
+          endDate: endDate,
+          projectId:
+              selectedProject != null ? int.parse(selectedProject!) : null,
+          userId: userIds,
+          priority: selectedPriority,
+          description: description,
+          customFields: customFieldMap,
+          files: files.isNotEmpty ? files : null,
+          directoryValues: directoryValues,
+          localizations: localizations,
+        ));
   }
 
   Widget _buildFileSelection() {
@@ -1756,7 +1817,8 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                       width: 100,
                       child: Column(
                         children: [
-                          Image.asset('assets/icons/files/add.png', width: 60, height: 60),
+                          Image.asset('assets/icons/files/add.png',
+                              width: 60, height: 60),
                           SizedBox(height: 8),
                           Text(
                             AppLocalizations.of(context)!.translate('add_file'),
@@ -1823,7 +1885,8 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                               ),
                             ],
                           ),
-                          child: Icon(Icons.close, size: 16, color: Color(0xff1E2E52)),
+                          child: Icon(Icons.close,
+                              size: 16, color: Color(0xff1E2E52)),
                         ),
                       ),
                     ),
@@ -1851,7 +1914,8 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
       setState(() {
         _hasTaskCreatePermission = results[0];
         _hasTaskCreateForMySelfPermission = results[1];
-        _currentUserId = userIdString != null ? int.tryParse(userIdString) : null;
+        _currentUserId =
+            userIdString != null ? int.tryParse(userIdString) : null;
       });
     } catch (e) {
       setState(() {

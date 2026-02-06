@@ -71,7 +71,8 @@ class _DealAddScreenState extends State<DealAddScreen> {
   // Режим настроек
   bool isSettingsMode = false;
   bool isSavingFieldOrder = false;
-  List<FieldConfiguration>? originalFieldConfigurations; // Для отслеживания изменений
+  List<FieldConfiguration>?
+      originalFieldConfigurations; // Для отслеживания изменений
   final GlobalKey _addFieldButtonKey = GlobalKey();
 
   // Конфигурация полей с сервера
@@ -82,7 +83,8 @@ class _DealAddScreenState extends State<DealAddScreen> {
   void initState() {
     super.initState();
     //print('DealAddScreen: initState started');
-    _selectedStatusId = widget.statusId; // ✅ НОВОЕ: инициализируем выбранный статус
+    _selectedStatusId =
+        widget.statusId; // ✅ НОВОЕ: инициализируем выбранный статус
     context.read<GetAllManagerBloc>().add(GetAllManagerEv());
     context.read<GetAllLeadBloc>().add(GetAllLeadEv());
     //print('DealAddScreen: Dispatched GetAllManagerEv and GetAllLeadEv');
@@ -95,7 +97,9 @@ class _DealAddScreenState extends State<DealAddScreen> {
     if (kDebugMode) {
       print('DealAddScreen: Loading field configuration for deals');
     }
-    context.read<FieldConfigurationBloc>().add(FetchFieldConfiguration('deals'));
+    context
+        .read<FieldConfigurationBloc>()
+        .add(FetchFieldConfiguration('deals'));
   }
 
   // Метод для отправки позиций полей на бэкенд
@@ -108,7 +112,8 @@ class _DealAddScreenState extends State<DealAddScreen> {
           'id': config.id,
           'position': config.position,
           'is_active': config.isActive ? 1 : 0,
-          'is_required': config.originalRequired ? 1 : 0, // Используем originalRequired
+          'is_required':
+              config.originalRequired ? 1 : 0, // Используем originalRequired
           'show_on_table': config.showOnTable ? 1 : 0,
         });
       }
@@ -221,7 +226,8 @@ class _DealAddScreenState extends State<DealAddScreen> {
       case 'users': // ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Добавляем обработку для поля 'users'
         // ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Всегда показываем поле, если оно активно в конфигурации
         if (kDebugMode) {
-          print('DealAddScreen: Building users field (field_name: ${config.fieldName})');
+          print(
+              'DealAddScreen: Building users field (field_name: ${config.fieldName})');
         }
         return UserMultiSelectWidget(
           selectedUsers: null,
@@ -232,6 +238,22 @@ class _DealAddScreenState extends State<DealAddScreen> {
             });
             print('DealAddScreen: Выбрано пользователей: ${users.length}');
           },
+        );
+      case 'city_id':
+        // ✅ НОВОЕ: Обработка поля город/область
+        return CustomTextField(
+          controller:
+              TextEditingController(), // TODO: добавить контроллер в state если нужно сохранять
+          hintText: AppLocalizations.of(context)!.translate('enter_city'),
+          label: AppLocalizations.of(context)!.translate('oblast'),
+        );
+      case 'region_id':
+        // ✅ НОВОЕ: Обработка поля регион
+        return CustomTextField(
+          controller:
+              TextEditingController(), // TODO: добавить контроллер в state если нужно сохранять
+          hintText: AppLocalizations.of(context)!.translate('enter_region'),
+          label: AppLocalizations.of(context)!.translate('region'),
         );
       // case 'file':
       //   // Поле выбора файлов: отображаем согласно позиции в конфигурации
@@ -265,7 +287,8 @@ class _DealAddScreenState extends State<DealAddScreen> {
         selectedField: null,
         onSelectField: (MainField selectedField) {
           setState(() {
-            final index = customFields.indexWhere((f) => f.directoryId == config.directoryId);
+            final index = customFields
+                .indexWhere((f) => f.directoryId == config.directoryId);
             if (index != -1) {
               customFields[index] = directoryField.copyWith(
                 entryId: selectedField.id,
@@ -277,7 +300,8 @@ class _DealAddScreenState extends State<DealAddScreen> {
         controller: directoryField.controller,
         onSelectEntryId: (int entryId) {
           setState(() {
-            final index = customFields.indexWhere((f) => f.directoryId == config.directoryId);
+            final index = customFields
+                .indexWhere((f) => f.directoryId == config.directoryId);
             if (index != -1) {
               customFields[index] = directoryField.copyWith(
                 entryId: entryId,
@@ -306,7 +330,7 @@ class _DealAddScreenState extends State<DealAddScreen> {
   }
 
   Widget _buildLeadField() {
-    return  LeadWithManager(
+    return LeadWithManager(
       selectedLead: selectedLead,
       onSelectLead: (LeadData selectedLeadData) {
         //print('DealAddScreen: Lead selected: ${selectedLeadData.id}, managerId: ${selectedLeadData.managerId}');
@@ -317,7 +341,8 @@ class _DealAddScreenState extends State<DealAddScreen> {
         setState(() {
           selectedLead = selectedLeadData.id.toString();
           //print('DealAddScreen: isManagerManuallySelected: $isManagerManuallySelected');
-          if (!isManagerManuallySelected && selectedLeadData.managerId != null) {
+          if (!isManagerManuallySelected &&
+              selectedLeadData.managerId != null) {
             //print('DealAddScreen: Attempting to auto-select manager');
             final managerBlocState = context.read<GetAllManagerBloc>().state;
             //print('DealAddScreen: ManagerBloc state: $managerBlocState');
@@ -326,7 +351,7 @@ class _DealAddScreenState extends State<DealAddScreen> {
               //print('DealAddScreen: Available managers: ${managers.map((m) => m.id)}');
               try {
                 final matchingManager = managers.firstWhere(
-                      (manager) => manager.id == selectedLeadData.managerId,
+                  (manager) => manager.id == selectedLeadData.managerId,
                 );
                 selectedManager = matchingManager.id.toString();
                 //print('DealAddScreen: Auto-selected manager: ${matchingManager.id} (${matchingManager.name})');
@@ -396,7 +421,8 @@ class _DealAddScreenState extends State<DealAddScreen> {
     );
   }
 
-  List<Widget> _withVerticalSpacing(List<Widget> widgets, {double spacing = 15}) {
+  List<Widget> _withVerticalSpacing(List<Widget> widgets,
+      {double spacing = 15}) {
     if (widgets.isEmpty) {
       return widgets;
     }
@@ -418,9 +444,11 @@ class _DealAddScreenState extends State<DealAddScreen> {
       ..sort((a, b) => a.position.compareTo(b.position));
 
     if (kDebugMode) {
-      print('DealAddScreen: Building widgets for ${sorted.length} active fields');
+      print(
+          'DealAddScreen: Building widgets for ${sorted.length} active fields');
       for (var config in sorted) {
-        print('DealAddScreen: Field - name: ${config.fieldName}, position: ${config.position}, isActive: ${config.isActive}');
+        print(
+            'DealAddScreen: Field - name: ${config.fieldName}, position: ${config.position}, isActive: ${config.isActive}');
       }
     }
 
@@ -430,20 +458,22 @@ class _DealAddScreenState extends State<DealAddScreen> {
       if (fieldWidget != null && fieldWidget is! SizedBox) {
         // ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Исключаем пустые SizedBox виджеты
         if (kDebugMode) {
-          print('DealAddScreen: Added widget for field: ${config.fieldName}, type: ${fieldWidget.runtimeType}');
+          print(
+              'DealAddScreen: Added widget for field: ${config.fieldName}, type: ${fieldWidget.runtimeType}');
         }
         widgets.add(fieldWidget);
       } else {
         if (kDebugMode) {
-          print('DealAddScreen: Skipped widget for field: ${config.fieldName}, widget is null or SizedBox');
+          print(
+              'DealAddScreen: Skipped widget for field: ${config.fieldName}, widget is null or SizedBox');
         }
       }
     }
-    
+
     if (kDebugMode) {
       print('DealAddScreen: Total widgets built: ${widgets.length}');
     }
-    
+
     return _withVerticalSpacing(widgets, spacing: 16);
   }
 
@@ -485,9 +515,10 @@ class _DealAddScreenState extends State<DealAddScreen> {
       {bool isDirectory = false, int? directoryId, String? type}) async {
     if (isDirectory && directoryId != null) {
       bool directoryExists = customFields.any((field) =>
-      field.isDirectoryField && field.directoryId == directoryId);
+          field.isDirectoryField && field.directoryId == directoryId);
       if (directoryExists) {
-        showCustomSnackBar(context: context, message: 'Справочник уже добавлен');
+        showCustomSnackBar(
+            context: context, message: 'Справочник уже добавлен');
         debugPrint("Directory with ID $directoryId already exists.");
         return;
       }
@@ -511,8 +542,8 @@ class _DealAddScreenState extends State<DealAddScreen> {
           });
           // Перезагружаем конфигурацию после успешной привязки справочника
           context.read<FieldConfigurationBloc>().add(
-            FetchFieldConfiguration('deals'),
-          );
+                FetchFieldConfiguration('deals'),
+              );
 
           // Сообщаем об успешном добавлении справочника
           ScaffoldMessenger.of(context).showSnackBar(
@@ -552,8 +583,8 @@ class _DealAddScreenState extends State<DealAddScreen> {
 
       if (mounted) {
         context.read<FieldConfigurationBloc>().add(
-          FetchFieldConfiguration('deals'),
-        );
+              FetchFieldConfiguration('deals'),
+            );
         setState(() {
           customFields.add(CustomField(
             fieldName: fieldName,
@@ -571,7 +602,8 @@ class _DealAddScreenState extends State<DealAddScreen> {
   }
 
   void _showAddFieldMenu() {
-    final RenderBox? renderBox = _addFieldButtonKey.currentContext?.findRenderObject() as RenderBox?;
+    final RenderBox? renderBox =
+        _addFieldButtonKey.currentContext?.findRenderObject() as RenderBox?;
     if (renderBox == null) return;
 
     final Offset offset = renderBox.localToGlobal(Offset.zero);
@@ -615,7 +647,9 @@ class _DealAddScreenState extends State<DealAddScreen> {
         offset.dx,
         showAbove ? offset.dy + verticalOffset : offset.dy + verticalOffset,
         MediaQuery.of(context).size.width - offset.dx - size.width,
-        showAbove ? MediaQuery.of(context).size.height - offset.dy + verticalOffset : MediaQuery.of(context).size.height - offset.dy - size.height - 8,
+        showAbove
+            ? MediaQuery.of(context).size.height - offset.dy + verticalOffset
+            : MediaQuery.of(context).size.height - offset.dy - size.height - 8,
       ),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
@@ -657,12 +691,13 @@ class _DealAddScreenState extends State<DealAddScreen> {
   // Проверка, были ли изменения в конфигурации полей
   bool _hasFieldChanges() {
     if (originalFieldConfigurations == null) return false;
-    if (originalFieldConfigurations!.length != fieldConfigurations.length) return true;
+    if (originalFieldConfigurations!.length != fieldConfigurations.length)
+      return true;
 
     for (int i = 0; i < fieldConfigurations.length; i++) {
       final current = fieldConfigurations[i];
       final original = originalFieldConfigurations!.firstWhere(
-            (f) => f.id == current.id,
+        (f) => f.id == current.id,
         orElse: () => current,
       );
 
@@ -693,7 +728,8 @@ class _DealAddScreenState extends State<DealAddScreen> {
                 ),
               ),
               content: Text(
-                AppLocalizations.of(context)!.translate('position_changes_will_not_be_saved'),
+                AppLocalizations.of(context)!
+                    .translate('position_changes_will_not_be_saved'),
                 style: TextStyle(
                   fontFamily: 'Gilroy',
                   fontSize: 16,
@@ -707,7 +743,8 @@ class _DealAddScreenState extends State<DealAddScreen> {
                   children: [
                     Expanded(
                       child: CustomButton(
-                        buttonText: AppLocalizations.of(context)!.translate('cancel'),
+                        buttonText:
+                            AppLocalizations.of(context)!.translate('cancel'),
                         onPressed: () => Navigator.of(context).pop(false),
                         buttonColor: Color(0xff1E2E52),
                         textColor: Colors.white,
@@ -716,7 +753,8 @@ class _DealAddScreenState extends State<DealAddScreen> {
                     SizedBox(width: 8),
                     Expanded(
                       child: CustomButton(
-                        buttonText: AppLocalizations.of(context)!.translate('dont_save'),
+                        buttonText: AppLocalizations.of(context)!
+                            .translate('dont_save'),
                         onPressed: () => Navigator.of(context).pop(true),
                         buttonColor: Colors.red,
                         textColor: Colors.white,
@@ -732,7 +770,8 @@ class _DealAddScreenState extends State<DealAddScreen> {
   }
 
   Widget _buildSettingsMode() {
-    final sortedFields = [...fieldConfigurations]..sort((a, b) => a.position.compareTo(b.position));
+    final sortedFields = [...fieldConfigurations]
+      ..sort((a, b) => a.position.compareTo(b.position));
 
     return Column(
       children: [
@@ -744,7 +783,8 @@ class _DealAddScreenState extends State<DealAddScreen> {
               return AnimatedBuilder(
                 animation: animation,
                 builder: (BuildContext context, Widget? child) {
-                  final double animValue = Curves.easeInOut.transform(animation.value);
+                  final double animValue =
+                      Curves.easeInOut.transform(animation.value);
                   final double scale = 1.0 + (animValue * 0.05);
                   final double elevation = animValue * 12.0;
 
@@ -763,7 +803,8 @@ class _DealAddScreenState extends State<DealAddScreen> {
               );
             },
             onReorder: (oldIndex, newIndex) {
-              if (oldIndex == sortedFields.length || newIndex == sortedFields.length + 1) {
+              if (oldIndex == sortedFields.length ||
+                  newIndex == sortedFields.length + 1) {
                 return;
               }
 
@@ -797,7 +838,8 @@ class _DealAddScreenState extends State<DealAddScreen> {
                     type: config.type,
                     isDirectory: config.isDirectory,
                     showOnTable: config.showOnTable,
-                    originalRequired: config.originalRequired, // Сохраняем оригинальное значение
+                    originalRequired: config
+                        .originalRequired, // Сохраняем оригинальное значение
                   ));
                 }
 
@@ -810,7 +852,8 @@ class _DealAddScreenState extends State<DealAddScreen> {
                   key: _addFieldButtonKey,
                   margin: const EdgeInsets.only(bottom: 12),
                   child: CustomButton(
-                    buttonText: AppLocalizations.of(context)!.translate('add_field'),
+                    buttonText:
+                        AppLocalizations.of(context)!.translate('add_field'),
                     buttonColor: Color(0xff1E2E52),
                     textColor: Colors.white,
                     onPressed: _showAddFieldMenu,
@@ -831,7 +874,8 @@ class _DealAddScreenState extends State<DealAddScreen> {
               return Container(
                 key: ValueKey('field_${config.id}'),
                 margin: const EdgeInsets.only(bottom: 12),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(12),
@@ -884,14 +928,14 @@ class _DealAddScreenState extends State<DealAddScreen> {
                             ],
                           ),
                           SizedBox(height: 12),
-                          if (config.fieldName != 'name' && 
-    config.fieldName != 'lead_id' && 
-    config.fieldName != 'manager_id' &&
-    config.fieldName != 'start_date' &&
-    config.fieldName != 'end_date' &&
-    config.fieldName != 'sum' &&
-    config.fieldName != 'description')
-                          GestureDetector(
+                          if (config.fieldName != 'name' &&
+                              config.fieldName != 'lead_id' &&
+                              config.fieldName != 'manager_id' &&
+                              config.fieldName != 'start_date' &&
+                              config.fieldName != 'end_date' &&
+                              config.fieldName != 'sum' &&
+                              config.fieldName != 'description')
+                            GestureDetector(
                               behavior: HitTestBehavior.opaque,
                               onTap: () {
                                 setState(() {
@@ -910,17 +954,20 @@ class _DealAddScreenState extends State<DealAddScreen> {
                                     type: config.type,
                                     isDirectory: config.isDirectory,
                                     showOnTable: config.showOnTable,
-                                    originalRequired: config.originalRequired, // Сохраняем оригинальное значение
+                                    originalRequired: config
+                                        .originalRequired, // Сохраняем оригинальное значение
                                   );
 
-                                  final idx = fieldConfigurations.indexWhere((f) => f.id == config.id);
+                                  final idx = fieldConfigurations
+                                      .indexWhere((f) => f.id == config.id);
                                   if (idx != -1) {
                                     fieldConfigurations[idx] = updatedConfig;
                                   }
                                 });
                               },
                               child: Padding(
-                                padding: const EdgeInsets.symmetric(vertical: 4),
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 4),
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
@@ -930,9 +977,13 @@ class _DealAddScreenState extends State<DealAddScreen> {
                                       width: 24,
                                       height: 24,
                                       decoration: BoxDecoration(
-                                        color: config.isActive ? Color(0xff4759FF) : Colors.white,
+                                        color: config.isActive
+                                            ? Color(0xff4759FF)
+                                            : Colors.white,
                                         border: Border.all(
-                                          color: config.isActive ? Color(0xff4759FF) : Color(0xffCCD5E0),
+                                          color: config.isActive
+                                              ? Color(0xff4759FF)
+                                              : Color(0xffCCD5E0),
                                           width: 2,
                                         ),
                                         borderRadius: BorderRadius.circular(6),
@@ -949,12 +1000,15 @@ class _DealAddScreenState extends State<DealAddScreen> {
                                     ),
                                     SizedBox(width: 12),
                                     Text(
-                                      AppLocalizations.of(context)!.translate('show_field'),
+                                      AppLocalizations.of(context)!
+                                          .translate('show_field'),
                                       style: TextStyle(
                                         fontSize: 14,
                                         fontFamily: 'Gilroy',
                                         fontWeight: FontWeight.w500,
-                                        color: config.isActive ? Color(0xff1E2E52) : Color(0xff6B7A99),
+                                        color: config.isActive
+                                            ? Color(0xff1E2E52)
+                                            : Color(0xff6B7A99),
                                       ),
                                     ),
                                   ],
@@ -998,7 +1052,8 @@ class _DealAddScreenState extends State<DealAddScreen> {
                           height: 20,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            valueColor:
+                                AlwaysStoppedAnimation<Color>(Colors.white),
                           ),
                         ),
                         SizedBox(width: 12),
@@ -1030,7 +1085,8 @@ class _DealAddScreenState extends State<DealAddScreen> {
 
                       if (mounted) {
                         setState(() {
-                          originalFieldConfigurations = null; // Очищаем снимок после сохранения
+                          originalFieldConfigurations =
+                              null; // Очищаем снимок после сохранения
                           isSettingsMode = false;
                         });
 
@@ -1046,13 +1102,15 @@ class _DealAddScreenState extends State<DealAddScreen> {
                               ),
                             ),
                             behavior: SnackBarBehavior.floating,
-                            margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            margin: EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 8),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
                             backgroundColor: Colors.green,
                             elevation: 3,
-                            padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                            padding: EdgeInsets.symmetric(
+                                vertical: 12, horizontal: 16),
                             duration: Duration(seconds: 2),
                           ),
                         );
@@ -1101,8 +1159,10 @@ class _DealAddScreenState extends State<DealAddScreen> {
       galleryLabel: AppLocalizations.of(context)!.translate('gallery'),
       cameraLabel: AppLocalizations.of(context)!.translate('camera'),
       cancelLabel: AppLocalizations.of(context)!.translate('cancel'),
-      fileSizeTooLargeMessage: AppLocalizations.of(context)!.translate('file_size_too_large'),
-      errorPickingFileMessage: AppLocalizations.of(context)!.translate('error_picking_file'),
+      fileSizeTooLargeMessage:
+          AppLocalizations.of(context)!.translate('file_size_too_large'),
+      errorPickingFileMessage:
+          AppLocalizations.of(context)!.translate('error_picking_file'),
     );
 
     // Если файлы выбраны, добавляем их
@@ -1113,7 +1173,8 @@ class _DealAddScreenState extends State<DealAddScreen> {
           // fileNames.add(file.name);
           // fileSizes.add(file.sizeKB);
 
-          files.add(FileHelper(id: 0, name: file.name, path: file.path, size: file.sizeKB));
+          files.add(FileHelper(
+              id: 0, name: file.name, path: file.path, size: file.sizeKB));
         }
       });
     }
@@ -1149,7 +1210,8 @@ class _DealAddScreenState extends State<DealAddScreen> {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(
-                    AppLocalizations.of(context)!.translate('error_delete_file'),
+                    AppLocalizations.of(context)!
+                        .translate('error_delete_file'),
                     style: TextStyle(
                       fontFamily: 'Gilroy',
                       fontSize: 16,
@@ -1202,7 +1264,8 @@ class _DealAddScreenState extends State<DealAddScreen> {
                       width: 100,
                       child: Column(
                         children: [
-                          Image.asset('assets/icons/files/add.png', width: 60, height: 60),
+                          Image.asset('assets/icons/files/add.png',
+                              width: 60, height: 60),
                           SizedBox(height: 8),
                           Text(
                             AppLocalizations.of(context)!.translate('add_file'),
@@ -1273,7 +1336,8 @@ class _DealAddScreenState extends State<DealAddScreen> {
                               ),
                             ],
                           ),
-                          child: Icon(Icons.close, size: 16, color: Color(0xff1E2E52)),
+                          child: Icon(Icons.close,
+                              size: 16, color: Color(0xff1E2E52)),
                         ),
                       ),
                     ),
@@ -1311,8 +1375,8 @@ class _DealAddScreenState extends State<DealAddScreen> {
         return loc.translate('description_list');
       case 'deal_status_id':
         return loc.translate('status');
-            case 'users':  // <-- ДОБАВЛЯЕМ ЭТУ СТРОКУ
-      return loc.translate('assignees_list');  // <-- И ЭТУ
+      case 'users': // <-- ДОБАВЛЯЕМ ЭТУ СТРОКУ
+        return loc.translate('assignees_list'); // <-- И ЭТУ
       // case 'file':
       //   return loc.translate('file');
       default:
@@ -1355,7 +1419,8 @@ class _DealAddScreenState extends State<DealAddScreen> {
           child: Transform.translate(
             offset: const Offset(0, -2),
             child: IconButton(
-              icon: Image.asset('assets/icons/arrow-left.png', width: 24, height: 24),
+              icon: Image.asset('assets/icons/arrow-left.png',
+                  width: 24, height: 24),
               onPressed: () {
                 Navigator.pop(context, widget.statusId);
                 context.read<DealBloc>().add(FetchDealStatuses());
@@ -1384,7 +1449,8 @@ class _DealAddScreenState extends State<DealAddScreen> {
                     setState(() {
                       // Находим новые поля (которые есть в текущей конфигурации, но нет в оригинальной)
                       final newFields = fieldConfigurations.where((current) {
-                        return !originalFieldConfigurations!.any((original) => original.id == current.id);
+                        return !originalFieldConfigurations!
+                            .any((original) => original.id == current.id);
                       }).toList();
 
                       // Восстанавливаем оригинальную конфигурацию
@@ -1394,7 +1460,9 @@ class _DealAddScreenState extends State<DealAddScreen> {
                       if (newFields.isNotEmpty) {
                         int maxPosition = fieldConfigurations.isEmpty
                             ? 0
-                            : fieldConfigurations.map((e) => e.position).reduce((a, b) => a > b ? a : b);
+                            : fieldConfigurations
+                                .map((e) => e.position)
+                                .reduce((a, b) => a > b ? a : b);
                         for (int i = 0; i < newFields.length; i++) {
                           fieldConfigurations.add(FieldConfiguration(
                             id: newFields[i].id,
@@ -1411,7 +1479,8 @@ class _DealAddScreenState extends State<DealAddScreen> {
                             type: newFields[i].type,
                             isDirectory: newFields[i].isDirectory,
                             showOnTable: newFields[i].showOnTable,
-                            originalRequired: newFields[i].originalRequired, // Сохраняем оригинальное значение
+                            originalRequired: newFields[i]
+                                .originalRequired, // Сохраняем оригинальное значение
                           ));
                         }
                       }
@@ -1430,7 +1499,8 @@ class _DealAddScreenState extends State<DealAddScreen> {
               } else {
                 // Входим в режим настроек - сохраняем снимок конфигурации
                 setState(() {
-                  originalFieldConfigurations = fieldConfigurations.map((config) {
+                  originalFieldConfigurations =
+                      fieldConfigurations.map((config) {
                     return FieldConfiguration(
                       id: config.id,
                       tableName: config.tableName,
@@ -1446,7 +1516,8 @@ class _DealAddScreenState extends State<DealAddScreen> {
                       type: config.type,
                       isDirectory: config.isDirectory,
                       showOnTable: config.showOnTable,
-                      originalRequired: config.originalRequired, // Сохраняем оригинальное значение
+                      originalRequired: config
+                          .originalRequired, // Сохраняем оригинальное значение
                     );
                   }).toList();
                   isSettingsMode = true;
@@ -1481,14 +1552,17 @@ class _DealAddScreenState extends State<DealAddScreen> {
         ],
         backgroundColor: const Color.fromARGB(255, 255, 255, 255),
       ),
-      body: BlocConsumer<FieldConfigurationBloc, FieldConfigurationState>(listener: (context, configState) {
+      body: BlocConsumer<FieldConfigurationBloc, FieldConfigurationState>(
+          listener: (context, configState) {
         if (kDebugMode) {
-          print('DealAddScreen: FieldConfigurationBloc state changed: ${configState.runtimeType}');
+          print(
+              'DealAddScreen: FieldConfigurationBloc state changed: ${configState.runtimeType}');
         }
 
         if (configState is FieldConfigurationLoaded) {
           if (kDebugMode) {
-            print('DealAddScreen: Configuration loaded with ${configState.fields.length} fields');
+            print(
+                'DealAddScreen: Configuration loaded with ${configState.fields.length} fields');
           }
           setState(() {
             fieldConfigurations = configState.fields;
@@ -1515,7 +1589,8 @@ class _DealAddScreenState extends State<DealAddScreen> {
         }
       }, builder: (context, configState) {
         if (kDebugMode) {
-          print('DealAddScreen: Building with state: ${configState.runtimeType}, isLoaded: $isConfigurationLoaded');
+          print(
+              'DealAddScreen: Building with state: ${configState.runtimeType}, isLoaded: $isConfigurationLoaded');
         }
 
         if (configState is FieldConfigurationLoading) {
@@ -1554,13 +1629,15 @@ class _DealAddScreenState extends State<DealAddScreen> {
               if (state is DealError) {
                 showCustomSnackBar(
                   context: context,
-                  message: AppLocalizations.of(context)!.translate(state.message),
+                  message:
+                      AppLocalizations.of(context)!.translate(state.message),
                   isSuccess: false,
                 );
               } else if (state is DealSuccess) {
                 showCustomSnackBar(
                   context: context,
-                  message: AppLocalizations.of(context)!.translate(state.message),
+                  message:
+                      AppLocalizations.of(context)!.translate(state.message),
                   isSuccess: true,
                 );
                 if (context.mounted) {
@@ -1595,43 +1672,51 @@ class _DealAddScreenState extends State<DealAddScreen> {
                             ...customFields.where((field) {
                               // Исключаем поля, которые уже есть в серверной конфигурации
                               return !fieldConfigurations.any((config) =>
-                              (config.isCustomField && config.fieldName == field.fieldName) ||
-                                  (config.isDirectory && config.directoryId == field.directoryId)
-                              );
+                                  (config.isCustomField &&
+                                      config.fieldName == field.fieldName) ||
+                                  (config.isDirectory &&
+                                      config.directoryId == field.directoryId));
                             }).map((field) {
                               return Column(
                                 children: [
-                                  field.isDirectoryField && field.directoryId != null
+                                  field.isDirectoryField &&
+                                          field.directoryId != null
                                       ? MainFieldDropdownWidget(
-                                      directoryId: field.directoryId!,
-                                      directoryName: field.fieldName,
-                                      selectedField: null,
-                                      onSelectField: (MainField selectedField) {
-                                        setState(() {
-                                          final idx = customFields.indexOf(field);
-                                          customFields[idx] = field.copyWith(
-                                            entryId: selectedField.id,
-                                            controller: TextEditingController(
-                                                text: selectedField.value),
-                                          );
-                                        });
-                                      },
-                                      controller: field.controller,
-                                      onSelectEntryId: (int entryId) {
-                                        setState(() {
-                                          final idx = customFields.indexOf(field);
-                                          customFields[idx] = field.copyWith(
-                                            entryId: entryId,
-                                          );
-                                        });
-                                      }
-                                  )
+                                          directoryId: field.directoryId!,
+                                          directoryName: field.fieldName,
+                                          selectedField: null,
+                                          onSelectField:
+                                              (MainField selectedField) {
+                                            setState(() {
+                                              final idx =
+                                                  customFields.indexOf(field);
+                                              customFields[idx] =
+                                                  field.copyWith(
+                                                entryId: selectedField.id,
+                                                controller:
+                                                    TextEditingController(
+                                                        text: selectedField
+                                                            .value),
+                                              );
+                                            });
+                                          },
+                                          controller: field.controller,
+                                          onSelectEntryId: (int entryId) {
+                                            setState(() {
+                                              final idx =
+                                                  customFields.indexOf(field);
+                                              customFields[idx] =
+                                                  field.copyWith(
+                                                entryId: entryId,
+                                              );
+                                            });
+                                          })
                                       : CustomFieldWidget(
-                                    fieldName: field.fieldName,
-                                    valueController: field.controller,
-                                    type: field.type,
-                                    isDirectory: false,
-                                  ),
+                                          fieldName: field.fieldName,
+                                          valueController: field.controller,
+                                          type: field.type,
+                                          isDirectory: false,
+                                        ),
                                   const SizedBox(height: 16),
                                 ],
                               );
@@ -1646,12 +1731,14 @@ class _DealAddScreenState extends State<DealAddScreen> {
                     ),
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 10),
                     child: Row(
                       children: [
                         Expanded(
                           child: CustomButton(
-                            buttonText: AppLocalizations.of(context)!.translate('cancel'),
+                            buttonText: AppLocalizations.of(context)!
+                                .translate('cancel'),
                             buttonColor: Color(0xffF4F7FD),
                             textColor: Colors.black,
                             onPressed: () {
@@ -1666,10 +1753,13 @@ class _DealAddScreenState extends State<DealAddScreen> {
                             builder: (context, state) {
                               //print('DealAddScreen: DealBloc builder state: $state');
                               if (state is DealLoading) {
-                                return Center(child: CircularProgressIndicator(color: Color(0xff1E2E52)));
+                                return Center(
+                                    child: CircularProgressIndicator(
+                                        color: Color(0xff1E2E52)));
                               } else {
                                 return CustomButton(
-                                  buttonText: AppLocalizations.of(context)!.translate('add'),
+                                  buttonText: AppLocalizations.of(context)!
+                                      .translate('add'),
                                   buttonColor: Color(0xff4759FF),
                                   textColor: Colors.white,
                                   onPressed: _submitForm,
@@ -1685,17 +1775,20 @@ class _DealAddScreenState extends State<DealAddScreen> {
               ),
             ),
           ),
-          );
+        );
       }),
     );
   }
 
   void _createDeal() {
     final String name = titleController.text.trim();
-    final String? startDateString = startDateController.text.isEmpty ? null : startDateController.text;
-    final String? endDateString = endDateController.text.isEmpty ? null : endDateController.text;
+    final String? startDateString =
+        startDateController.text.isEmpty ? null : startDateController.text;
+    final String? endDateString =
+        endDateController.text.isEmpty ? null : endDateController.text;
     final String sum = sumController.text;
-    final String? description = descriptionController.text.isEmpty ? null : descriptionController.text;
+    final String? description =
+        descriptionController.text.isEmpty ? null : descriptionController.text;
 
     //print('DealAddScreen: Creating deal with name: $name, leadId: $selectedLead, managerId: $selectedManager');
 
@@ -1707,7 +1800,8 @@ class _DealAddScreenState extends State<DealAddScreen> {
         //print('DealAddScreen: Invalid start date format: $e');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(AppLocalizations.of(context)!.translate('enter_valid_date')),
+            content: Text(
+                AppLocalizations.of(context)!.translate('enter_valid_date')),
             backgroundColor: Colors.red,
           ),
         );
@@ -1722,7 +1816,8 @@ class _DealAddScreenState extends State<DealAddScreen> {
         //print('DealAddScreen: Invalid end date format: $e');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(AppLocalizations.of(context)!.translate('enter_valid_date')),
+            content: Text(
+                AppLocalizations.of(context)!.translate('enter_valid_date')),
             backgroundColor: Colors.red,
           ),
         );
@@ -1738,7 +1833,8 @@ class _DealAddScreenState extends State<DealAddScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            AppLocalizations.of(context)!.translate('start_date_after_end_date'),
+            AppLocalizations.of(context)!
+                .translate('start_date_after_end_date'),
             style: TextStyle(color: Colors.white),
           ),
           backgroundColor: Colors.red,
@@ -1805,7 +1901,9 @@ class _DealAddScreenState extends State<DealAddScreen> {
         }
       }
 
-      if (field.isDirectoryField && field.directoryId != null && field.entryId != null) {
+      if (field.isDirectoryField &&
+          field.directoryId != null &&
+          field.entryId != null) {
         directoryValues.add({
           'directory_id': field.directoryId!,
           'entry_id': field.entryId!,
@@ -1822,25 +1920,25 @@ class _DealAddScreenState extends State<DealAddScreen> {
     }
 
     final localizations = AppLocalizations.of(context)!;
-      final userIds = _selectedUsers.map((user) => user.id).toList();
-
+    final userIds = _selectedUsers.map((user) => user.id).toList();
 
     context.read<DealBloc>().add(CreateDeal(
-      name: name,
-      dealStatusId: _selectedStatusId ?? widget.statusId, // ✅ НОВОЕ: используем выбранный статус
-      managerId: int.parse(selectedManager!),
-      leadId: int.parse(selectedLead!),
-      dealtypeId: 1,
-      startDate: startDate,
-      endDate: endDate,
-      sum: sum,
-      description: description,
-      customFields: customFieldMap,
-      directoryValues: directoryValues,
-      files: files,
-      localizations: localizations,
-      userIds: userIds.isNotEmpty ? userIds : null, // ✅ НОВОЕ
-    ));
+          name: name,
+          dealStatusId: _selectedStatusId ??
+              widget.statusId, // ✅ НОВОЕ: используем выбранный статус
+          managerId: int.parse(selectedManager!),
+          leadId: int.parse(selectedLead!),
+          dealtypeId: 1,
+          startDate: startDate,
+          endDate: endDate,
+          sum: sum,
+          description: description,
+          customFields: customFieldMap,
+          directoryValues: directoryValues,
+          files: files,
+          localizations: localizations,
+          userIds: userIds.isNotEmpty ? userIds : null, // ✅ НОВОЕ
+        ));
     //print('DealAddScreen: Dispatched CreateDeal event');
   }
 
@@ -1851,7 +1949,10 @@ class _DealAddScreenState extends State<DealAddScreen> {
       isManagerInvalid = selectedManager == null;
     });
 
-    if (_formKey.currentState!.validate() && titleController.text.isNotEmpty && selectedManager != null && selectedLead != null) {
+    if (_formKey.currentState!.validate() &&
+        titleController.text.isNotEmpty &&
+        selectedManager != null &&
+        selectedLead != null) {
       _createDeal();
     } else {
       //print('DealAddScreen: Form validation failed');
@@ -1868,7 +1969,8 @@ class _DealAddScreenState extends State<DealAddScreen> {
           ),
           behavior: SnackBarBehavior.floating,
           margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           backgroundColor: Colors.red,
           elevation: 3,
           padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),

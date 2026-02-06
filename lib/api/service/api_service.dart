@@ -38,6 +38,7 @@ import 'package:crm_task_manager/models/directory_link_model.dart';
 import 'package:crm_task_manager/models/directory_model.dart';
 import 'package:crm_task_manager/models/event_by_Id_model.dart';
 import 'package:crm_task_manager/models/event_model.dart';
+import 'package:crm_task_manager/utils/global_value.dart';
 import 'package:crm_task_manager/models/history_model_my-task.dart';
 import 'package:crm_task_manager/models/integration_model.dart';
 import 'package:crm_task_manager/models/lead_deal_model.dart';
@@ -6294,6 +6295,16 @@ Future<List<Message>> getMessages(
 }) async {
   try {
     final token = await getToken();
+    // ✅ Обновляем userID.value, чтобы Message.fromJson корректно определял isMyMessage
+    try {
+      if (userID.value.isEmpty) {
+        final prefs = await SharedPreferences.getInstance();
+        final storedUserId = prefs.getString('userID') ?? '';
+        if (storedUserId.isNotEmpty) {
+          userID.value = storedUserId;
+        }
+      }
+    } catch (_) {}
 
     // Проверяем инициализацию baseUrl
     if (baseUrl == null || baseUrl!.isEmpty || baseUrl == 'null') {
@@ -6409,7 +6420,7 @@ Future<List<Message>> getMessages(
 
 // Метод для отправки текстового сообщения
   Future<void> sendMessage(int chatId, String message,
-      {String? replyMessageId}) async {
+      {String? replyMessageId, String? responseType}) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/v2/chat/sendMessage/$chatId');
     if (kDebugMode) {
@@ -6419,6 +6430,7 @@ Future<List<Message>> getMessages(
     final response = await _postRequest(path, {
       'message': message,
       if (replyMessageId != null) 'forwarded_message_id': replyMessageId,
+      if (responseType != null) 'response_type': responseType,
     });
 
     if (response.statusCode != 200) {
@@ -6471,7 +6483,8 @@ Future<List<Message>> getMessages(
   }
 
 // Метод для отправки audio file
-  Future<void> sendChatAudioFile(int chatId, File audio) async {
+  Future<void> sendChatAudioFile(int chatId, File audio,
+      {String? responseType}) async {
     final token = await getToken();
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/v2/chat/sendVoice/$chatId');
@@ -6485,7 +6498,10 @@ Future<List<Message>> getMessages(
     try {
       final voice = await MultipartFile.fromFile(audio.path,
           contentType: MediaType('audio', 'm4a'));
-      FormData formData = FormData.fromMap({'voice': voice});
+      FormData formData = FormData.fromMap({
+        'voice': voice,
+        if (responseType != null) 'response_type': responseType,
+      });
 
       var response = await dio.post(
         requestUrl,
@@ -6522,7 +6538,8 @@ Future<List<Message>> getMessages(
   }
 
 // Метод для отправки audio file
-  Future<void> sendChatFile(int chatId, String pathFile) async {
+  Future<void> sendChatFile(int chatId, String pathFile,
+      {String? responseType}) async {
     final token = await getToken();
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/v2/chat/sendFile/$chatId');
@@ -6534,8 +6551,10 @@ Future<List<Message>> getMessages(
 
     Dio dio = Dio();
     try {
-      FormData formData =
-          FormData.fromMap({'file': await MultipartFile.fromFile(pathFile)});
+      FormData formData = FormData.fromMap({
+        'file': await MultipartFile.fromFile(pathFile),
+        if (responseType != null) 'response_type': responseType,
+      });
 
       var response = await dio.post(
         requestUrl,

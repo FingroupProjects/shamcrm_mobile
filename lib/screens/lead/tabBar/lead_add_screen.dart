@@ -10,6 +10,7 @@ import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/custom_widget/custom_create_field_widget.dart';
 import 'package:crm_task_manager/custom_widget/custom_phone_number_input.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
+import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
 import 'package:crm_task_manager/custom_widget/delete_file_dialog.dart';
 import 'package:crm_task_manager/custom_widget/file_picker_dialog.dart';
 import 'package:crm_task_manager/models/file_helper.dart';
@@ -61,6 +62,7 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
   final TextEditingController tgNickController = TextEditingController();
   final TextEditingController whatsappController = TextEditingController();
   final TextEditingController birthdayController = TextEditingController();
+  final TextEditingController cityController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
   final TextEditingController descriptionController = TextEditingController();
 
@@ -309,6 +311,20 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
           hintText: AppLocalizations.of(context)!.translate('enter_email'),
           label: AppLocalizations.of(context)!.translate('email'),
           keyboardType: TextInputType.emailAddress,
+        );
+
+      case 'birthday':
+        return CustomTextFieldDate(
+          controller: birthdayController,
+          label: AppLocalizations.of(context)!.translate('birth_date'),
+          withTime: false,
+        );
+
+      case 'city_id':
+        return CustomTextField(
+          controller: cityController,
+          hintText: AppLocalizations.of(context)!.translate('enter_region'),
+          label: AppLocalizations.of(context)!.translate('oblast'),
         );
 
       case 'lead_status_id':
@@ -745,6 +761,10 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
         return localizations!.translate('Facebook');
       case 'email':
         return localizations!.translate('email');
+      case 'birthday':
+        return localizations!.translate('birth_date');
+      case 'city_id':
+        return localizations!.translate('oblast');
       case 'lead_status_id':
         return localizations!.translate('lead_status');
         case 'description':  // <-- ДОБАВЛЯЕМ ЭТУ СТРОКУ
@@ -1652,6 +1672,25 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
 
   void _createLead() {
     if (_formKey.currentState!.validate()) {
+      DateTime? parsedBirthday;
+      if (birthdayController.text.isNotEmpty) {
+        try {
+          parsedBirthday =
+              DateFormat('dd/MM/yyyy').parseStrict(birthdayController.text);
+        } catch (e) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                AppLocalizations.of(context)!
+                    .translate('error_enter_birth_day'),
+              ),
+              backgroundColor: Colors.red,
+            ),
+          );
+          return;
+        }
+      }
+
       final String name = titleController.text;
       final String phone = selectedDialCode;
       final String? instaLogin =
@@ -1779,7 +1818,10 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
         facebookLogin: facebookLogin,
         tgNick: tgNick,
         waPhone: whatsapp,
-        birthday: null,
+        birthday: parsedBirthday,
+        cityId: cityController.text.trim().isEmpty
+            ? null
+            : cityController.text.trim(),
         email: email,
         description: description,
         customFields: customFieldMap,
@@ -1856,6 +1898,7 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
     birthdayController.dispose();
     emailController.dispose();
     descriptionController.dispose();
+    cityController.dispose();
     for (var field in customFields) {
       field.controller.dispose();
     }

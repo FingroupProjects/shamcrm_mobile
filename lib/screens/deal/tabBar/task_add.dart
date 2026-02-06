@@ -54,20 +54,20 @@ class TaskAddFromDeal extends StatefulWidget {
 class _TaskAddFromDealState extends State<TaskAddFromDeal> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final ApiService _apiService = ApiService();
-  
+
   final TextEditingController nameController = TextEditingController();
   final TextEditingController startDateController = TextEditingController();
   final TextEditingController endDateController = TextEditingController();
   final TextEditingController descriptionController = TextEditingController();
 
   List<FileHelper> files = [];
-  
+
   int? selectedPriority;
   String? selectedProject;
   int? selectedStatusId;
   List<String>? selectedUsers;
   List<CustomField> customFields = [];
-  
+
   // Флаги для валидации обязательных полей
   bool isNameInvalid = false;
   bool isExecutorInvalid = false;
@@ -92,17 +92,19 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
     context.read<GetTaskProjectBloc>().add(GetTaskProjectEv());
     context.read<UserTaskBloc>().add(FetchUsers());
     _setDefaultValues();
-    
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadFieldConfiguration();
     });
   }
-  
+
   Future<void> _loadFieldConfiguration() async {
     if (kDebugMode) {
       print('TaskAddFromDeal: Loading field configuration for tasks');
     }
-    context.read<FieldConfigurationBloc>().add(FetchFieldConfiguration('tasks'));
+    context
+        .read<FieldConfigurationBloc>()
+        .add(FetchFieldConfiguration('tasks'));
   }
 
   Future<void> _saveFieldOrderToBackend() async {
@@ -201,7 +203,8 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
           children: [
             CustomTextFieldWithPriority(
               controller: nameController,
-              hintText: AppLocalizations.of(context)!.translate('enter_category_name'),
+              hintText: AppLocalizations.of(context)!
+                  .translate('enter_category_name'),
               label: AppLocalizations.of(context)!.translate('category_name'),
               showPriority: true,
               isPrioritySelected: selectedPriority == 3,
@@ -242,7 +245,8 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
       case 'description':
         return CustomTextField(
           controller: descriptionController,
-          hintText: AppLocalizations.of(context)!.translate('enter_description'),
+          hintText:
+              AppLocalizations.of(context)!.translate('enter_description'),
           label: AppLocalizations.of(context)!.translate('description_list'),
           maxLines: 5,
           keyboardType: TextInputType.multiline,
@@ -253,7 +257,8 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
           selectedUsers: selectedUsers,
           onSelectUsers: (List<UserData> selectedUsersData) {
             setState(() {
-              selectedUsers = selectedUsersData.map((user) => user.id.toString()).toList();
+              selectedUsers =
+                  selectedUsersData.map((user) => user.id.toString()).toList();
               isExecutorInvalid = false;
             });
           },
@@ -272,21 +277,10 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
                   isProjectInvalid = false;
                 });
               },
-              hasError: isProjectInvalid,
+              errorText: isProjectInvalid
+                  ? AppLocalizations.of(context)!.translate('field_required')
+                  : null,
             ),
-            if (isProjectInvalid)
-              Padding(
-                padding: const EdgeInsets.only(top: 4, left: 4),
-                child: Text(
-                  AppLocalizations.of(context)!.translate('field_required'),
-                  style: TextStyle(
-                    color: Colors.red,
-                    fontSize: 12,
-                    fontFamily: 'Gilroy',
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
           ],
         );
 
@@ -323,15 +317,17 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
         );
 
       case 'task_status_id':
-        debugPrint('🔵🔵🔵 TaskAddFromDeal: _buildStandardField - Building task_status_id widget 🔵🔵🔵');
+        debugPrint(
+            '🔵🔵🔵 TaskAddFromDeal: _buildStandardField - Building task_status_id widget 🔵🔵🔵');
         debugPrint('🔵 TaskAddFromDeal: selectedStatusId = $selectedStatusId');
         debugPrint('🔵 TaskAddFromDeal: isStatusInvalid = $isStatusInvalid');
         debugPrint('🔵 TaskAddFromDeal: context is mounted: ${mounted}');
-        
+
         final statusRadioWidget = TaskStatusRadioGroupWidget(
           selectedStatus: selectedStatusId?.toString(),
           onSelectStatus: (TaskStatus selectedStatusData) {
-            debugPrint('🔵 TaskAddFromDeal: Status selected: ${selectedStatusData.id}');
+            debugPrint(
+                '🔵 TaskAddFromDeal: Status selected: ${selectedStatusData.id}');
             setState(() {
               selectedStatusId = selectedStatusData.id;
               isStatusInvalid = false;
@@ -339,9 +335,10 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
           },
           hasError: isStatusInvalid,
         );
-        
-        debugPrint('🔵 TaskAddFromDeal: TaskStatusRadioGroupWidget created, type: ${statusRadioWidget.runtimeType}');
-        
+
+        debugPrint(
+            '🔵 TaskAddFromDeal: TaskStatusRadioGroupWidget created, type: ${statusRadioWidget.runtimeType}');
+
         final statusWidget = Column(
           key: ValueKey('task_status_id_column'),
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -362,12 +359,15 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
               ),
           ],
         );
-        
-        debugPrint('🔵 TaskAddFromDeal: _buildStandardField - task_status_id Column widget built');
-        debugPrint('🔵 TaskAddFromDeal: Column has ${statusWidget.children.length} children');
+
+        debugPrint(
+            '🔵 TaskAddFromDeal: _buildStandardField - task_status_id Column widget built');
+        debugPrint(
+            '🔵 TaskAddFromDeal: Column has ${statusWidget.children.length} children');
         debugPrint('🔵 TaskAddFromDeal: Column key: ${statusWidget.key}');
-        debugPrint('🔵 TaskAddFromDeal: Returning Column widget, type: ${statusWidget.runtimeType}');
-        
+        debugPrint(
+            '🔵 TaskAddFromDeal: Returning Column widget, type: ${statusWidget.runtimeType}');
+
         return statusWidget;
 
       default:
@@ -396,7 +396,8 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
         selectedField: null,
         onSelectField: (MainField selectedField) {
           setState(() {
-            final index = customFields.indexWhere((f) => f.directoryId == config.directoryId);
+            final index = customFields
+                .indexWhere((f) => f.directoryId == config.directoryId);
             if (index != -1) {
               customFields[index] = directoryField.copyWith(
                 entryId: selectedField.id,
@@ -408,7 +409,8 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
         controller: directoryField.controller,
         onSelectEntryId: (int entryId) {
           setState(() {
-            final index = customFields.indexWhere((f) => f.directoryId == config.directoryId);
+            final index = customFields
+                .indexWhere((f) => f.directoryId == config.directoryId);
             if (index != -1) {
               customFields[index] = directoryField.copyWith(entryId: entryId);
             }
@@ -421,7 +423,7 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
     if (config.fieldName == 'executor') {
       final field = _buildStandardField(config);
       if (field is SizedBox) return field;
-      
+
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -445,471 +447,113 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
 
     // Специальная обработка для task_status_id - всегда показываем
     if (config.fieldName == 'task_status_id') {
-      debugPrint('🟢🟢🟢 TaskAddFromDeal: _buildFieldWidget - Processing task_status_id 🟢🟢🟢');
+      debugPrint(
+          '🟢🟢🟢 TaskAddFromDeal: _buildFieldWidget - Processing task_status_id 🟢🟢🟢');
       debugPrint('🟢 TaskAddFromDeal: config.id = ${config.id}');
       debugPrint('🟢 TaskAddFromDeal: config.tableName = ${config.tableName}');
       debugPrint('🟢 TaskAddFromDeal: config.fieldName = ${config.fieldName}');
-      debugPrint('🟢 TaskAddFromDeal: config.isCustomField = ${config.isCustomField}');
-      debugPrint('🟢 TaskAddFromDeal: config.isDirectory = ${config.isDirectory}');
+      debugPrint(
+          '🟢 TaskAddFromDeal: config.isCustomField = ${config.isCustomField}');
+      debugPrint(
+          '🟢 TaskAddFromDeal: config.isDirectory = ${config.isDirectory}');
       debugPrint('🟢 TaskAddFromDeal: config.isActive = ${config.isActive}');
       debugPrint('🟢 TaskAddFromDeal: config.position = ${config.position}');
       debugPrint('🟢 TaskAddFromDeal: config.required = ${config.required}');
-      debugPrint('🟢 TaskAddFromDeal: config.originalRequired = ${config.originalRequired}');
-      
-      debugPrint('🟢 TaskAddFromDeal: Calling _buildStandardField for task_status_id...');
+      debugPrint(
+          '🟢 TaskAddFromDeal: config.originalRequired = ${config.originalRequired}');
+
+      debugPrint(
+          '🟢 TaskAddFromDeal: Calling _buildStandardField for task_status_id...');
       final field = _buildStandardField(config);
-      debugPrint('🟢 TaskAddFromDeal: _buildFieldWidget - _buildStandardField returned widget type: ${field.runtimeType}');
-      debugPrint('🟢 TaskAddFromDeal: _buildFieldWidget - field is SizedBox: ${field is SizedBox}');
-      debugPrint('🟢 TaskAddFromDeal: _buildFieldWidget - field is Column: ${field is Column}');
-      
+      debugPrint(
+          '🟢 TaskAddFromDeal: _buildFieldWidget - _buildStandardField returned widget type: ${field.runtimeType}');
+      debugPrint(
+          '🟢 TaskAddFromDeal: _buildFieldWidget - field is SizedBox: ${field is SizedBox}');
+      debugPrint(
+          '🟢 TaskAddFromDeal: _buildFieldWidget - field is Column: ${field is Column}');
+
       if (field is SizedBox) {
-        debugPrint('🟢 TaskAddFromDeal: ⚠️⚠️⚠️ CRITICAL ERROR: _buildStandardField returned SizedBox for task_status_id! ⚠️⚠️⚠️');
+        debugPrint(
+            '🟢 TaskAddFromDeal: ⚠️⚠️⚠️ CRITICAL ERROR: _buildStandardField returned SizedBox for task_status_id! ⚠️⚠️⚠️');
       } else if (field is Column) {
-        debugPrint('🟢 TaskAddFromDeal: ✅ Column widget received, has ${field.children.length} children');
+        debugPrint(
+            '🟢 TaskAddFromDeal: ✅ Column widget received, has ${field.children.length} children');
         debugPrint('🟢 TaskAddFromDeal: Column key: ${field.key}');
       }
-      
+
       // ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Всегда возвращаем виджет для task_status_id
       if (kDebugMode) {
-        print('TaskAddFromDeal: _buildFieldWidget for task_status_id, returning widget type: ${field.runtimeType}');
+        print(
+            'TaskAddFromDeal: _buildFieldWidget for task_status_id, returning widget type: ${field.runtimeType}');
       }
-      debugPrint('🟢🟢🟢 TaskAddFromDeal: _buildFieldWidget - Returning widget for task_status_id 🟢🟢🟢');
+      debugPrint(
+          '🟢🟢🟢 TaskAddFromDeal: _buildFieldWidget - Returning widget for task_status_id 🟢🟢🟢');
       return field;
     }
 
     return _buildStandardField(config);
   }
 
-  List<Widget> _withVerticalSpacing(List<Widget> widgets, {double spacing = 8}) {
+  List<Widget> _withVerticalSpacing(List<Widget> widgets,
+      {double spacing = 8}) {
     debugPrint('🔷 TaskAddFromDeal: _withVerticalSpacing - START');
     debugPrint('🔷 TaskAddFromDeal: Input widgets.length: ${widgets.length}');
-    
+
     if (widgets.isEmpty) {
-      debugPrint('🔷 TaskAddFromDeal: _withVerticalSpacing - widgets is empty, returning empty list');
+      debugPrint(
+          '🔷 TaskAddFromDeal: _withVerticalSpacing - widgets is empty, returning empty list');
       return widgets;
     }
-    
+
     final result = <Widget>[];
     for (var i = 0; i < widgets.length; i++) {
       final widget = widgets[i];
-      debugPrint('🔷 TaskAddFromDeal: Adding widget $i, type: ${widget.runtimeType}');
-      if (widget is Column && widget.key != null && widget.key.toString().contains('task_status_id')) {
-        debugPrint('🔷 TaskAddFromDeal: ⭐⭐⭐ Found task_status_id Column widget at index $i! ⭐⭐⭐');
+      debugPrint(
+          '🔷 TaskAddFromDeal: Adding widget $i, type: ${widget.runtimeType}');
+      if (widget is Column &&
+          widget.key != null &&
+          widget.key.toString().contains('task_status_id')) {
+        debugPrint(
+            '🔷 TaskAddFromDeal: ⭐⭐⭐ Found task_status_id Column widget at index $i! ⭐⭐⭐');
       }
       result.add(widget);
       if (i != widgets.length - 1) {
         result.add(SizedBox(height: spacing));
-        debugPrint('🔷 TaskAddFromDeal: Added spacing SizedBox after widget $i');
+        debugPrint(
+            '🔷 TaskAddFromDeal: Added spacing SizedBox after widget $i');
       }
     }
-    
+
     debugPrint('🔷 TaskAddFromDeal: _withVerticalSpacing - END');
     debugPrint('🔷 TaskAddFromDeal: Output result.length: ${result.length}');
-    debugPrint('🔷 TaskAddFromDeal: Expected length: ${widgets.length * 2 - 1} (${widgets.length} widgets + ${widgets.length - 1} spacing)');
-    
+    debugPrint(
+        '🔷 TaskAddFromDeal: Expected length: ${widgets.length * 2 - 1} (${widgets.length} widgets + ${widgets.length - 1} spacing)');
+
     return result;
   }
 
   // ✅ НОВОЕ: Построение всех обязательных полей независимо от конфигурации
-List<Widget> _buildAllRequiredFields() {
-  final List<Widget> widgets = [];
+  List<Widget> _buildAllRequiredFields() {
+    final List<Widget> widgets = [];
 
-  // 1. Название (всегда первое)
-  widgets.add(_buildStandardField(FieldConfiguration(
-    id: 0,
-    tableName: 'tasks',
-    fieldName: 'name',
-    position: 1,
-    required: true,
-    isActive: true,
-    isCustomField: false,
-    createdAt: DateTime.now(),
-    updatedAt: DateTime.now(),
-    showOnTable: false,
-    originalRequired: true,
-    isDirectory: false,
-  )));
-
-  // 2. Статус задачи (ОБЯЗАТЕЛЬНОЕ ПОЛЕ) ✅ ПЕРЕМЕЩЕНО СЮДА
-  widgets.add(_buildStandardField(FieldConfiguration(
-    id: 0,
-    tableName: 'tasks',
-    fieldName: 'task_status_id',
-    position: 2,
-    required: true,
-    isActive: true,
-    isCustomField: false,
-    createdAt: DateTime.now(),
-    updatedAt: DateTime.now(),
-    showOnTable: false,
-    originalRequired: true,
-    isDirectory: false,
-  )));
-
-  // 3. Описание
-  widgets.add(_buildStandardField(FieldConfiguration(
-    id: 0,
-    tableName: 'tasks',
-    fieldName: 'description',
-    position: 3,
-    required: false,
-    isActive: true,
-    isCustomField: false,
-    createdAt: DateTime.now(),
-    updatedAt: DateTime.now(),
-    showOnTable: false,
-    originalRequired: false,
-    isDirectory: false,
-  )));
-
-  // 4. Исполнители (ОБЯЗАТЕЛЬНОЕ ПОЛЕ)
-  widgets.add(Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      _buildStandardField(FieldConfiguration(
-        id: 0,
-        tableName: 'tasks',
-        fieldName: 'executor',
-        position: 4,
-        required: true,
-        isActive: true,
-        isCustomField: false,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-        showOnTable: false,
-        originalRequired: true,
-        isDirectory: false,
-      )),
-      if (isExecutorInvalid)
-        Padding(
-          padding: const EdgeInsets.only(top: 4, left: 4),
-          child: Text(
-            AppLocalizations.of(context)!.translate('field_required'),
-            style: TextStyle(
-              color: Colors.red,
-              fontSize: 12,
-              fontFamily: 'Gilroy',
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ),
-    ],
-  ));
-
-  // 5. Проект (ОБЯЗАТЕЛЬНОЕ ПОЛЕ)
-  widgets.add(_buildStandardField(FieldConfiguration(
-    id: 0,
-    tableName: 'tasks',
-    fieldName: 'project',
-    position: 5,
-    required: true,
-    isActive: true,
-    isCustomField: false,
-    createdAt: DateTime.now(),
-    updatedAt: DateTime.now(),
-    showOnTable: false,
-    originalRequired: true,
-    isDirectory: false,
-  )));
-
-  // 6. Дедлайн (ОБЯЗАТЕЛЬНОЕ ПОЛЕ)
-  widgets.add(_buildStandardField(FieldConfiguration(
-    id: 0,
-    tableName: 'tasks',
-    fieldName: 'deadline',
-    position: 6,
-    required: true,
-    isActive: true,
-    isCustomField: false,
-    createdAt: DateTime.now(),
-    updatedAt: DateTime.now(),
-    showOnTable: false,
-    originalRequired: true,
-    isDirectory: false,
-  )));
-
-  return widgets;
-}
-  List<Widget> _buildConfiguredFieldWidgets() {
-  debugPrint('🟡🟡🟡 TaskAddFromDeal: _buildConfiguredFieldWidgets - START 🟡🟡🟡');
-  debugPrint('🟡 TaskAddFromDeal: fieldConfigurations.length = ${fieldConfigurations.length}');
-  debugPrint('🟡 TaskAddFromDeal: isConfigurationLoaded = $isConfigurationLoaded');
-  
-  // Сортируем поля по позиции
-  final sortedFields = [...fieldConfigurations]
-    ..sort((a, b) => a.position.compareTo(b.position));
-
-  debugPrint('🟡 TaskAddFromDeal: sortedFields.length = ${sortedFields.length}');
-  
-  // Проверяем наличие task_status_id в исходных данных
-  final hasStatusInConfig = sortedFields.any((f) => f.fieldName == 'task_status_id');
-  debugPrint('🟡 TaskAddFromDeal: task_status_id found in config: $hasStatusInConfig');
-  if (hasStatusInConfig) {
-    final statusField = sortedFields.firstWhere((f) => f.fieldName == 'task_status_id');
-    debugPrint('🟡 TaskAddFromDeal: task_status_id config - position: ${statusField.position}, isActive: ${statusField.isActive}, isCustom: ${statusField.isCustomField}, isDirectory: ${statusField.isDirectory}');
-  } else {
-    debugPrint('🟡 TaskAddFromDeal: ⚠️⚠️⚠️ task_status_id NOT FOUND in sortedFields! ⚠️⚠️⚠️');
-  }
-
-  if (kDebugMode) {
-    print('TaskAddFromDeal: Total fields from config: ${sortedFields.length}');
-    for (var field in sortedFields) {
-      print('TaskAddFromDeal: Field - name: ${field.fieldName}, position: ${field.position}, isActive: ${field.isActive}, isCustom: ${field.isCustomField}, isDirectory: ${field.isDirectory}');
-    }
-  }
-
-  // Обязательные системные поля, которые всегда должны отображаться
-  // ✅ КРИТИЧЕСКОЕ: task_status_id ВСЕГДА на позиции 2
-  final requiredSystemFields = {
-    'name': 1,
-    'task_status_id': 2,  // ✅ ВСЕГДА позиция 2
-    'description': 3,
-    'executor': 4,
-    'project': 5,
-    'deadline': 6,
-  };
-  
-  // Фильтруем активные поля + обязательные системные поля (даже если неактивны)
-  final activeFields = sortedFields.where((config) {
-    final isActive = config.isActive;
-    final isRequired = requiredSystemFields.containsKey(config.fieldName) && !config.isCustomField && !config.isDirectory;
-    final shouldInclude = isActive || isRequired;
-    
-    if (config.fieldName == 'task_status_id') {
-      debugPrint('🟡 TaskAddFromDeal: Filtering task_status_id - isActive: $isActive, isRequired: $isRequired, shouldInclude: $shouldInclude');
-    }
-    
-    return shouldInclude;
-  }).toList();
-  
-  debugPrint('🟡 TaskAddFromDeal: activeFields.length after filtering: ${activeFields.length}');
-  final hasStatusInActive = activeFields.any((f) => f.fieldName == 'task_status_id');
-  debugPrint('🟡 TaskAddFromDeal: task_status_id in activeFields: $hasStatusInActive');
-
-  // ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Принудительно добавляем обязательные поля, если их нет
-  // И ОБЯЗАТЕЛЬНО исправляем позицию для task_status_id на 2
-  final activeFieldNames = activeFields.map((f) => f.fieldName).toSet();
-  
-  // Сначала проверяем и исправляем task_status_id, если он уже есть
-  final statusFieldIndex = activeFields.indexWhere((f) => f.fieldName == 'task_status_id');
-  debugPrint('🟡 TaskAddFromDeal: statusFieldIndex = $statusFieldIndex');
-  
-  if (statusFieldIndex != -1) {
-    debugPrint('🟡 TaskAddFromDeal: task_status_id found at index $statusFieldIndex, fixing position and isActive');
-    // Исправляем позицию на 2 и делаем активным
-    final existingStatusField = activeFields[statusFieldIndex];
-    debugPrint('🟡 TaskAddFromDeal: Existing status field - position: ${existingStatusField.position}, isActive: ${existingStatusField.isActive}');
-    
-    activeFields[statusFieldIndex] = FieldConfiguration(
-      id: existingStatusField.id,
-      tableName: existingStatusField.tableName,
-      fieldName: existingStatusField.fieldName,
-      position: 2, // ✅ ВСЕГДА позиция 2
-      required: existingStatusField.required,
-      isActive: true, // ✅ ВСЕГДА активен
-      isCustomField: existingStatusField.isCustomField,
-      createdAt: existingStatusField.createdAt,
-      updatedAt: existingStatusField.updatedAt,
-      customFieldId: existingStatusField.customFieldId,
-      directoryId: existingStatusField.directoryId,
-      type: existingStatusField.type,
-      isDirectory: existingStatusField.isDirectory,
-      showOnTable: existingStatusField.showOnTable,
-      originalRequired: existingStatusField.originalRequired,
-    );
-    debugPrint('🟡 TaskAddFromDeal: Fixed task_status_id - new position: 2, new isActive: true');
-    if (kDebugMode) {
-      print('TaskAddFromDeal: Fixed task_status_id position to 2 and set isActive to true');
-    }
-  } else {
-    debugPrint('🟡 TaskAddFromDeal: task_status_id NOT found in activeFields, adding it now');
-    // Добавляем task_status_id, если его нет
-    final tempConfig = FieldConfiguration(
+    // 1. Название (всегда первое)
+    widgets.add(_buildStandardField(FieldConfiguration(
       id: 0,
       tableName: 'tasks',
-      fieldName: 'task_status_id',
-      position: 2, // ✅ ВСЕГДА позиция 2
+      fieldName: 'name',
+      position: 1,
       required: true,
-      isActive: true, // ✅ ВСЕГДА активен
+      isActive: true,
       isCustomField: false,
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
       showOnTable: false,
       originalRequired: true,
       isDirectory: false,
-    );
-    activeFields.add(tempConfig);
-    debugPrint('🟡 TaskAddFromDeal: Added missing task_status_id field with position 2');
-    if (kDebugMode) {
-      print('TaskAddFromDeal: Added missing task_status_id field with position 2');
-    }
-  }
-  
-  // Добавляем другие обязательные поля, если их нет
-  for (var entry in requiredSystemFields.entries) {
-    if (entry.key != 'task_status_id' && !activeFieldNames.contains(entry.key)) {
-      final tempConfig = FieldConfiguration(
-        id: 0,
-        tableName: 'tasks',
-        fieldName: entry.key,
-        position: entry.value,
-        required: true,
-        isActive: true,
-        isCustomField: false,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-        showOnTable: false,
-        originalRequired: true,
-        isDirectory: false,
-      );
-      activeFields.add(tempConfig);
-      if (kDebugMode) {
-        print('TaskAddFromDeal: Added missing required field: ${entry.key} with position ${entry.value}');
-      }
-    }
-  }
+    )));
 
-  // Сортируем активные поля по позиции после добавления недостающих
-  activeFields.sort((a, b) => a.position.compareTo(b.position));
-  
-  debugPrint('🟡 TaskAddFromDeal: After sorting, activeFields.length = ${activeFields.length}');
-  final statusFieldAfterSort = activeFields.firstWhere(
-    (f) => f.fieldName == 'task_status_id',
-    orElse: () => FieldConfiguration(
-      id: -1,
-      tableName: 'tasks',
-      fieldName: 'NOT_FOUND',
-      position: -1,
-      required: false,
-      isActive: false,
-      isCustomField: false,
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
-      showOnTable: false,
-      originalRequired: false,
-      isDirectory: false,
-    ),
-  );
-  if (statusFieldAfterSort.fieldName == 'task_status_id') {
-    debugPrint('🟡 TaskAddFromDeal: After sort - task_status_id found at position ${statusFieldAfterSort.position}, isActive: ${statusFieldAfterSort.isActive}');
-  } else {
-    debugPrint('🟡 TaskAddFromDeal: After sort - task_status_id NOT FOUND!');
-  }
-
-  if (kDebugMode) {
-    print('TaskAddFromDeal: Active fields count (including required): ${activeFields.length}');
-    for (var field in activeFields) {
-      print('TaskAddFromDeal: Active field - name: ${field.fieldName}, position: ${field.position}, isActive: ${field.isActive}');
-    }
-  }
-
-  if (activeFields.isEmpty) {
-    // Если с сервера ничего не пришло, показываем жёстко заданные обязательные поля
-    return _withVerticalSpacing(_buildAllRequiredFields(), spacing: 8);
-  }
-
-  // Строим виджеты для активных полей
-  final List<Widget> widgets = [];
-  bool hasStatusWidget = false;
-  Widget? statusWidget;
-  int statusWidgetIndex = -1;
-  
-  debugPrint('🟠🟠🟠 TaskAddFromDeal: Starting to build widgets for ${activeFields.length} active fields 🟠🟠🟠');
-  
-  for (int i = 0; i < activeFields.length; i++) {
-    final config = activeFields[i];
-    debugPrint('🟠 TaskAddFromDeal: [${i + 1}/${activeFields.length}] Processing field: ${config.fieldName}, position: ${config.position}');
-    
-    if (kDebugMode) {
-      print('TaskAddFromDeal: Building widget for field: ${config.fieldName}');
-    }
-    // Специальная обработка для task_status_id - всегда показываем
-    if (config.fieldName == 'task_status_id') {
-      debugPrint('🟠🟠🟠 TaskAddFromDeal: ⭐⭐⭐ FOUND task_status_id in loop! ⭐⭐⭐');
-      debugPrint('🟠 TaskAddFromDeal: config.isActive: ${config.isActive}, config.position: ${config.position}');
-      debugPrint('🟠 TaskAddFromDeal: config.isCustomField: ${config.isCustomField}, config.isDirectory: ${config.isDirectory}');
-      debugPrint('🟠 TaskAddFromDeal: config.required: ${config.required}');
-      debugPrint('🟠 TaskAddFromDeal: widgets.length BEFORE building: ${widgets.length}');
-      
-      if (kDebugMode) {
-        print('TaskAddFromDeal: Processing task_status_id field, isActive: ${config.isActive}, position: ${config.position}');
-      }
-      
-      debugPrint('🟠 TaskAddFromDeal: Calling _buildFieldWidget for task_status_id...');
-      final widget = _buildFieldWidget(config);
-      debugPrint('🟠 TaskAddFromDeal: _buildFieldWidget returned widget type: ${widget.runtimeType}');
-      debugPrint('🟠 TaskAddFromDeal: widget is SizedBox: ${widget is SizedBox}');
-      debugPrint('🟠 TaskAddFromDeal: widget is Column: ${widget is Column}');
-      debugPrint('🟠 TaskAddFromDeal: widget.toString(): ${widget.toString()}');
-      
-      // Проверяем, что виджет не пустой
-      if (widget is SizedBox) {
-        debugPrint('🟠 TaskAddFromDeal: ⚠️⚠️⚠️ WARNING: task_status_id widget is SizedBox! This is a problem! ⚠️⚠️⚠️');
-      }
-      
-      if (kDebugMode) {
-        print('TaskAddFromDeal: task_status_id widget built successfully, widget type: ${widget.runtimeType}');
-      }
-      // ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Всегда добавляем виджет для task_status_id
-      widgets.add(widget);
-      statusWidgetIndex = widgets.length - 1;
-      debugPrint('🟠 TaskAddFromDeal: ✅✅✅ widget ADDED at index $statusWidgetIndex! widgets.length after add: ${widgets.length} ✅✅✅');
-      hasStatusWidget = true;
-      statusWidget = widget;
-      debugPrint('🟠 TaskAddFromDeal: hasStatusWidget = $hasStatusWidget');
-      debugPrint('🟠 TaskAddFromDeal: statusWidgetIndex = $statusWidgetIndex');
-    } else {
-      debugPrint('🟠 TaskAddFromDeal: Processing non-status field: ${config.fieldName}');
-      final widget = _buildFieldWidget(config);
-      debugPrint('🟠 TaskAddFromDeal: Widget for ${config.fieldName} type: ${widget.runtimeType}, is SizedBox: ${widget is SizedBox}');
-      // ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Исключаем только пустые SizedBox виджеты для других полей
-      if (widget is! SizedBox) {
-        widgets.add(widget);
-        debugPrint('🟠 TaskAddFromDeal: Added widget for ${config.fieldName} at index ${widgets.length - 1}');
-      } else {
-        debugPrint('🟠 TaskAddFromDeal: Skipped widget for field ${config.fieldName} because it\'s SizedBox');
-        if (kDebugMode) {
-          print('TaskAddFromDeal: Skipped widget for field ${config.fieldName} because it\'s SizedBox');
-        }
-      }
-    }
-  }
-  
-  debugPrint('🟠🟠🟠 TaskAddFromDeal: Finished building widgets. Total widgets: ${widgets.length} 🟠🟠🟠');
-  debugPrint('🟠 TaskAddFromDeal: hasStatusWidget = $hasStatusWidget');
-  debugPrint('🟠 TaskAddFromDeal: statusWidgetIndex = $statusWidgetIndex');
-  debugPrint('🟠 TaskAddFromDeal: statusWidget != null: ${statusWidget != null}');
-
-  // ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Если task_status_id не был добавлен, добавляем его принудительно на позицию 2
-  debugPrint('🟣🟣🟣 TaskAddFromDeal: After loop check 🟣🟣🟣');
-  debugPrint('🟣 TaskAddFromDeal: hasStatusWidget: $hasStatusWidget');
-  debugPrint('🟣 TaskAddFromDeal: statusWidget != null: ${statusWidget != null}');
-  debugPrint('🟣 TaskAddFromDeal: statusWidgetIndex: $statusWidgetIndex');
-  debugPrint('🟣 TaskAddFromDeal: widgets.length: ${widgets.length}');
-  
-  // Проверяем, есть ли виджет статуса в списке
-  bool statusWidgetInList = false;
-  int actualStatusIndex = -1;
-  for (int i = 0; i < widgets.length; i++) {
-    final w = widgets[i];
-    if (w is Column && w.children.isNotEmpty) {
-      // Проверяем, содержит ли Column TaskStatusRadioGroupWidget
-      // Это сложно проверить напрямую, но мы можем проверить по структуре
-      debugPrint('🟣 TaskAddFromDeal: Widget $i is Column with ${w.children.length} children');
-    }
-    if (i == statusWidgetIndex) {
-      statusWidgetInList = true;
-      actualStatusIndex = i;
-      debugPrint('🟣 TaskAddFromDeal: Found status widget at expected index $i, type: ${w.runtimeType}');
-    }
-  }
-  
-  if (!hasStatusWidget || statusWidget == null || !statusWidgetInList) {
-    debugPrint('🟣🟣🟣 TaskAddFromDeal: ⚠️⚠️⚠️ task_status_id widget was NOT found! Creating it now... ⚠️⚠️⚠️');
-    if (kDebugMode) {
-      print('TaskAddFromDeal: task_status_id widget was not found! Creating it now...');
-    }
-    final statusConfig = FieldConfiguration(
+    // 2. Статус задачи (ОБЯЗАТЕЛЬНОЕ ПОЛЕ) ✅ ПЕРЕМЕЩЕНО СЮДА
+    widgets.add(_buildStandardField(FieldConfiguration(
       id: 0,
       tableName: 'tasks',
       fieldName: 'task_status_id',
@@ -922,65 +566,519 @@ List<Widget> _buildAllRequiredFields() {
       showOnTable: false,
       originalRequired: true,
       isDirectory: false,
-    );
-    debugPrint('🟣 TaskAddFromDeal: Calling _buildFieldWidget with forced config...');
-    final forcedStatusWidget = _buildFieldWidget(statusConfig);
-    debugPrint('🟣 TaskAddFromDeal: forcedStatusWidget type: ${forcedStatusWidget.runtimeType}');
-    debugPrint('🟣 TaskAddFromDeal: forcedStatusWidget is SizedBox: ${forcedStatusWidget is SizedBox}');
-    debugPrint('🟣 TaskAddFromDeal: forcedStatusWidget is Column: ${forcedStatusWidget is Column}');
-    
-    if (forcedStatusWidget is SizedBox) {
-      debugPrint('🟣 TaskAddFromDeal: ⚠️⚠️⚠️ CRITICAL: forcedStatusWidget is SizedBox! This should not happen! ⚠️⚠️⚠️');
-    }
-    
-    // Вставляем на позицию 2 (индекс 1, так как name должен быть на позиции 1, индекс 0)
-    // Если виджетов меньше 2, просто добавляем в конец и потом отсортируем
-    debugPrint('🟣 TaskAddFromDeal: widgets.length before insert: ${widgets.length}');
-    if (widgets.length >= 1) {
-      widgets.insert(1, forcedStatusWidget); // Вставляем после первого элемента (name)
-      debugPrint('🟣 TaskAddFromDeal: ✅✅✅ Inserted at index 1, widgets.length after insert: ${widgets.length} ✅✅✅');
-    } else {
-      widgets.add(forcedStatusWidget);
-      debugPrint('🟣 TaskAddFromDeal: Added to end, widgets.length after add: ${widgets.length}');
-    }
-    
-    if (kDebugMode) {
-      print('TaskAddFromDeal: task_status_id widget forced to be added at position 2');
-    }
-  } else {
-    debugPrint('🟣 TaskAddFromDeal: ✅ task_status_id widget WAS found at index $actualStatusIndex, no need to force add');
+    )));
+
+    // 3. Описание
+    widgets.add(_buildStandardField(FieldConfiguration(
+      id: 0,
+      tableName: 'tasks',
+      fieldName: 'description',
+      position: 3,
+      required: false,
+      isActive: true,
+      isCustomField: false,
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+      showOnTable: false,
+      originalRequired: false,
+      isDirectory: false,
+    )));
+
+    // 4. Исполнители (ОБЯЗАТЕЛЬНОЕ ПОЛЕ)
+    widgets.add(Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildStandardField(FieldConfiguration(
+          id: 0,
+          tableName: 'tasks',
+          fieldName: 'executor',
+          position: 4,
+          required: true,
+          isActive: true,
+          isCustomField: false,
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          showOnTable: false,
+          originalRequired: true,
+          isDirectory: false,
+        )),
+        if (isExecutorInvalid)
+          Padding(
+            padding: const EdgeInsets.only(top: 4, left: 4),
+            child: Text(
+              AppLocalizations.of(context)!.translate('field_required'),
+              style: TextStyle(
+                color: Colors.red,
+                fontSize: 12,
+                fontFamily: 'Gilroy',
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+      ],
+    ));
+
+    // 5. Проект (ОБЯЗАТЕЛЬНОЕ ПОЛЕ)
+    widgets.add(_buildStandardField(FieldConfiguration(
+      id: 0,
+      tableName: 'tasks',
+      fieldName: 'project',
+      position: 5,
+      required: true,
+      isActive: true,
+      isCustomField: false,
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+      showOnTable: false,
+      originalRequired: true,
+      isDirectory: false,
+    )));
+
+    // 6. Дедлайн (ОБЯЗАТЕЛЬНОЕ ПОЛЕ)
+    widgets.add(_buildStandardField(FieldConfiguration(
+      id: 0,
+      tableName: 'tasks',
+      fieldName: 'deadline',
+      position: 6,
+      required: true,
+      isActive: true,
+      isCustomField: false,
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+      showOnTable: false,
+      originalRequired: true,
+      isDirectory: false,
+    )));
+
+    return widgets;
   }
 
-  debugPrint('🟣🟣🟣 TaskAddFromDeal: Final widgets check 🟣🟣🟣');
-  debugPrint('🟣 TaskAddFromDeal: Final widgets.length: ${widgets.length}');
-  debugPrint('🟣 TaskAddFromDeal: statusWidgetIndex in final list: $statusWidgetIndex');
-  
-  if (kDebugMode) {
-    print('TaskAddFromDeal: Total widgets built: ${widgets.length}');
-    for (var i = 0; i < widgets.length; i++) {
-      print('TaskAddFromDeal: Widget $i type: ${widgets[i].runtimeType}');
-      if (i == statusWidgetIndex || (statusWidgetIndex == -1 && i == 1)) {
-        print('TaskAddFromDeal: ⭐ This is the status widget at index $i ⭐');
+  List<Widget> _buildConfiguredFieldWidgets() {
+    debugPrint(
+        '🟡🟡🟡 TaskAddFromDeal: _buildConfiguredFieldWidgets - START 🟡🟡🟡');
+    debugPrint(
+        '🟡 TaskAddFromDeal: fieldConfigurations.length = ${fieldConfigurations.length}');
+    debugPrint(
+        '🟡 TaskAddFromDeal: isConfigurationLoaded = $isConfigurationLoaded');
+
+    // Сортируем поля по позиции
+    final sortedFields = [...fieldConfigurations]
+      ..sort((a, b) => a.position.compareTo(b.position));
+
+    debugPrint(
+        '🟡 TaskAddFromDeal: sortedFields.length = ${sortedFields.length}');
+
+    // Проверяем наличие task_status_id в исходных данных
+    final hasStatusInConfig =
+        sortedFields.any((f) => f.fieldName == 'task_status_id');
+    debugPrint(
+        '🟡 TaskAddFromDeal: task_status_id found in config: $hasStatusInConfig');
+    if (hasStatusInConfig) {
+      final statusField =
+          sortedFields.firstWhere((f) => f.fieldName == 'task_status_id');
+      debugPrint(
+          '🟡 TaskAddFromDeal: task_status_id config - position: ${statusField.position}, isActive: ${statusField.isActive}, isCustom: ${statusField.isCustomField}, isDirectory: ${statusField.isDirectory}');
+    } else {
+      debugPrint(
+          '🟡 TaskAddFromDeal: ⚠️⚠️⚠️ task_status_id NOT FOUND in sortedFields! ⚠️⚠️⚠️');
+    }
+
+    if (kDebugMode) {
+      print(
+          'TaskAddFromDeal: Total fields from config: ${sortedFields.length}');
+      for (var field in sortedFields) {
+        print(
+            'TaskAddFromDeal: Field - name: ${field.fieldName}, position: ${field.position}, isActive: ${field.isActive}, isCustom: ${field.isCustomField}, isDirectory: ${field.isDirectory}');
       }
     }
-    print('TaskAddFromDeal: task_status_id widget is present: ${hasStatusWidget}');
-  }
-  
-  final finalWidgets = _withVerticalSpacing(widgets, spacing: 8);
-  debugPrint('🟣 TaskAddFromDeal: _withVerticalSpacing returned ${finalWidgets.length} widgets (was ${widgets.length})');
-  debugPrint('🟣 TaskAddFromDeal: Checking finalWidgets for status widget...');
-  for (int i = 0; i < finalWidgets.length; i++) {
-    final w = finalWidgets[i];
-    if (w is SizedBox && w.width == null && w.height == null) {
-      debugPrint('🟣 TaskAddFromDeal: Widget $i is empty SizedBox (spacing)');
+
+    // Обязательные системные поля, которые всегда должны отображаться
+    // ✅ КРИТИЧЕСКОЕ: task_status_id ВСЕГДА на позиции 2
+    final requiredSystemFields = {
+      'name': 1,
+      'task_status_id': 2, // ✅ ВСЕГДА позиция 2
+      'description': 3,
+      'executor': 4,
+      'project': 5,
+      'deadline': 6,
+    };
+
+    // Фильтруем активные поля + обязательные системные поля (даже если неактивны)
+    final activeFields = sortedFields.where((config) {
+      final isActive = config.isActive;
+      final isRequired = requiredSystemFields.containsKey(config.fieldName) &&
+          !config.isCustomField &&
+          !config.isDirectory;
+      final shouldInclude = isActive || isRequired;
+
+      if (config.fieldName == 'task_status_id') {
+        debugPrint(
+            '🟡 TaskAddFromDeal: Filtering task_status_id - isActive: $isActive, isRequired: $isRequired, shouldInclude: $shouldInclude');
+      }
+
+      return shouldInclude;
+    }).toList();
+
+    debugPrint(
+        '🟡 TaskAddFromDeal: activeFields.length after filtering: ${activeFields.length}');
+    final hasStatusInActive =
+        activeFields.any((f) => f.fieldName == 'task_status_id');
+    debugPrint(
+        '🟡 TaskAddFromDeal: task_status_id in activeFields: $hasStatusInActive');
+
+    // ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Принудительно добавляем обязательные поля, если их нет
+    // И ОБЯЗАТЕЛЬНО исправляем позицию для task_status_id на 2
+    final activeFieldNames = activeFields.map((f) => f.fieldName).toSet();
+
+    // Сначала проверяем и исправляем task_status_id, если он уже есть
+    final statusFieldIndex =
+        activeFields.indexWhere((f) => f.fieldName == 'task_status_id');
+    debugPrint('🟡 TaskAddFromDeal: statusFieldIndex = $statusFieldIndex');
+
+    if (statusFieldIndex != -1) {
+      debugPrint(
+          '🟡 TaskAddFromDeal: task_status_id found at index $statusFieldIndex, fixing position and isActive');
+      // Исправляем позицию на 2 и делаем активным
+      final existingStatusField = activeFields[statusFieldIndex];
+      debugPrint(
+          '🟡 TaskAddFromDeal: Existing status field - position: ${existingStatusField.position}, isActive: ${existingStatusField.isActive}');
+
+      activeFields[statusFieldIndex] = FieldConfiguration(
+        id: existingStatusField.id,
+        tableName: existingStatusField.tableName,
+        fieldName: existingStatusField.fieldName,
+        position: 2, // ✅ ВСЕГДА позиция 2
+        required: existingStatusField.required,
+        isActive: true, // ✅ ВСЕГДА активен
+        isCustomField: existingStatusField.isCustomField,
+        createdAt: existingStatusField.createdAt,
+        updatedAt: existingStatusField.updatedAt,
+        customFieldId: existingStatusField.customFieldId,
+        directoryId: existingStatusField.directoryId,
+        type: existingStatusField.type,
+        isDirectory: existingStatusField.isDirectory,
+        showOnTable: existingStatusField.showOnTable,
+        originalRequired: existingStatusField.originalRequired,
+      );
+      debugPrint(
+          '🟡 TaskAddFromDeal: Fixed task_status_id - new position: 2, new isActive: true');
+      if (kDebugMode) {
+        print(
+            'TaskAddFromDeal: Fixed task_status_id position to 2 and set isActive to true');
+      }
     } else {
-      debugPrint('🟣 TaskAddFromDeal: Widget $i type: ${w.runtimeType}');
+      debugPrint(
+          '🟡 TaskAddFromDeal: task_status_id NOT found in activeFields, adding it now');
+      // Добавляем task_status_id, если его нет
+      final tempConfig = FieldConfiguration(
+        id: 0,
+        tableName: 'tasks',
+        fieldName: 'task_status_id',
+        position: 2, // ✅ ВСЕГДА позиция 2
+        required: true,
+        isActive: true, // ✅ ВСЕГДА активен
+        isCustomField: false,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+        showOnTable: false,
+        originalRequired: true,
+        isDirectory: false,
+      );
+      activeFields.add(tempConfig);
+      debugPrint(
+          '🟡 TaskAddFromDeal: Added missing task_status_id field with position 2');
+      if (kDebugMode) {
+        print(
+            'TaskAddFromDeal: Added missing task_status_id field with position 2');
+      }
     }
+
+    // Добавляем другие обязательные поля, если их нет
+    for (var entry in requiredSystemFields.entries) {
+      if (entry.key != 'task_status_id' &&
+          !activeFieldNames.contains(entry.key)) {
+        final tempConfig = FieldConfiguration(
+          id: 0,
+          tableName: 'tasks',
+          fieldName: entry.key,
+          position: entry.value,
+          required: true,
+          isActive: true,
+          isCustomField: false,
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          showOnTable: false,
+          originalRequired: true,
+          isDirectory: false,
+        );
+        activeFields.add(tempConfig);
+        if (kDebugMode) {
+          print(
+              'TaskAddFromDeal: Added missing required field: ${entry.key} with position ${entry.value}');
+        }
+      }
+    }
+
+    // Сортируем активные поля по позиции после добавления недостающих
+    activeFields.sort((a, b) => a.position.compareTo(b.position));
+
+    debugPrint(
+        '🟡 TaskAddFromDeal: After sorting, activeFields.length = ${activeFields.length}');
+    final statusFieldAfterSort = activeFields.firstWhere(
+      (f) => f.fieldName == 'task_status_id',
+      orElse: () => FieldConfiguration(
+        id: -1,
+        tableName: 'tasks',
+        fieldName: 'NOT_FOUND',
+        position: -1,
+        required: false,
+        isActive: false,
+        isCustomField: false,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+        showOnTable: false,
+        originalRequired: false,
+        isDirectory: false,
+      ),
+    );
+    if (statusFieldAfterSort.fieldName == 'task_status_id') {
+      debugPrint(
+          '🟡 TaskAddFromDeal: After sort - task_status_id found at position ${statusFieldAfterSort.position}, isActive: ${statusFieldAfterSort.isActive}');
+    } else {
+      debugPrint('🟡 TaskAddFromDeal: After sort - task_status_id NOT FOUND!');
+    }
+
+    if (kDebugMode) {
+      print(
+          'TaskAddFromDeal: Active fields count (including required): ${activeFields.length}');
+      for (var field in activeFields) {
+        print(
+            'TaskAddFromDeal: Active field - name: ${field.fieldName}, position: ${field.position}, isActive: ${field.isActive}');
+      }
+    }
+
+    if (activeFields.isEmpty) {
+      // Если с сервера ничего не пришло, показываем жёстко заданные обязательные поля
+      return _withVerticalSpacing(_buildAllRequiredFields(), spacing: 8);
+    }
+
+    // Строим виджеты для активных полей
+    final List<Widget> widgets = [];
+    bool hasStatusWidget = false;
+    Widget? statusWidget;
+    int statusWidgetIndex = -1;
+
+    debugPrint(
+        '🟠🟠🟠 TaskAddFromDeal: Starting to build widgets for ${activeFields.length} active fields 🟠🟠🟠');
+
+    for (int i = 0; i < activeFields.length; i++) {
+      final config = activeFields[i];
+      debugPrint(
+          '🟠 TaskAddFromDeal: [${i + 1}/${activeFields.length}] Processing field: ${config.fieldName}, position: ${config.position}');
+
+      if (kDebugMode) {
+        print(
+            'TaskAddFromDeal: Building widget for field: ${config.fieldName}');
+      }
+      // Специальная обработка для task_status_id - всегда показываем
+      if (config.fieldName == 'task_status_id') {
+        debugPrint(
+            '🟠🟠🟠 TaskAddFromDeal: ⭐⭐⭐ FOUND task_status_id in loop! ⭐⭐⭐');
+        debugPrint(
+            '🟠 TaskAddFromDeal: config.isActive: ${config.isActive}, config.position: ${config.position}');
+        debugPrint(
+            '🟠 TaskAddFromDeal: config.isCustomField: ${config.isCustomField}, config.isDirectory: ${config.isDirectory}');
+        debugPrint('🟠 TaskAddFromDeal: config.required: ${config.required}');
+        debugPrint(
+            '🟠 TaskAddFromDeal: widgets.length BEFORE building: ${widgets.length}');
+
+        if (kDebugMode) {
+          print(
+              'TaskAddFromDeal: Processing task_status_id field, isActive: ${config.isActive}, position: ${config.position}');
+        }
+
+        debugPrint(
+            '🟠 TaskAddFromDeal: Calling _buildFieldWidget for task_status_id...');
+        final widget = _buildFieldWidget(config);
+        debugPrint(
+            '🟠 TaskAddFromDeal: _buildFieldWidget returned widget type: ${widget.runtimeType}');
+        debugPrint(
+            '🟠 TaskAddFromDeal: widget is SizedBox: ${widget is SizedBox}');
+        debugPrint('🟠 TaskAddFromDeal: widget is Column: ${widget is Column}');
+        debugPrint(
+            '🟠 TaskAddFromDeal: widget.toString(): ${widget.toString()}');
+
+        // Проверяем, что виджет не пустой
+        if (widget is SizedBox) {
+          debugPrint(
+              '🟠 TaskAddFromDeal: ⚠️⚠️⚠️ WARNING: task_status_id widget is SizedBox! This is a problem! ⚠️⚠️⚠️');
+        }
+
+        if (kDebugMode) {
+          print(
+              'TaskAddFromDeal: task_status_id widget built successfully, widget type: ${widget.runtimeType}');
+        }
+        // ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Всегда добавляем виджет для task_status_id
+        widgets.add(widget);
+        statusWidgetIndex = widgets.length - 1;
+        debugPrint(
+            '🟠 TaskAddFromDeal: ✅✅✅ widget ADDED at index $statusWidgetIndex! widgets.length after add: ${widgets.length} ✅✅✅');
+        hasStatusWidget = true;
+        statusWidget = widget;
+        debugPrint('🟠 TaskAddFromDeal: hasStatusWidget = $hasStatusWidget');
+        debugPrint(
+            '🟠 TaskAddFromDeal: statusWidgetIndex = $statusWidgetIndex');
+      } else {
+        debugPrint(
+            '🟠 TaskAddFromDeal: Processing non-status field: ${config.fieldName}');
+        final widget = _buildFieldWidget(config);
+        debugPrint(
+            '🟠 TaskAddFromDeal: Widget for ${config.fieldName} type: ${widget.runtimeType}, is SizedBox: ${widget is SizedBox}');
+        // ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Исключаем только пустые SizedBox виджеты для других полей
+        if (widget is! SizedBox) {
+          widgets.add(widget);
+          debugPrint(
+              '🟠 TaskAddFromDeal: Added widget for ${config.fieldName} at index ${widgets.length - 1}');
+        } else {
+          debugPrint(
+              '🟠 TaskAddFromDeal: Skipped widget for field ${config.fieldName} because it\'s SizedBox');
+          if (kDebugMode) {
+            print(
+                'TaskAddFromDeal: Skipped widget for field ${config.fieldName} because it\'s SizedBox');
+          }
+        }
+      }
+    }
+
+    debugPrint(
+        '🟠🟠🟠 TaskAddFromDeal: Finished building widgets. Total widgets: ${widgets.length} 🟠🟠🟠');
+    debugPrint('🟠 TaskAddFromDeal: hasStatusWidget = $hasStatusWidget');
+    debugPrint('🟠 TaskAddFromDeal: statusWidgetIndex = $statusWidgetIndex');
+    debugPrint(
+        '🟠 TaskAddFromDeal: statusWidget != null: ${statusWidget != null}');
+
+    // ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Если task_status_id не был добавлен, добавляем его принудительно на позицию 2
+    debugPrint('🟣🟣🟣 TaskAddFromDeal: After loop check 🟣🟣🟣');
+    debugPrint('🟣 TaskAddFromDeal: hasStatusWidget: $hasStatusWidget');
+    debugPrint(
+        '🟣 TaskAddFromDeal: statusWidget != null: ${statusWidget != null}');
+    debugPrint('🟣 TaskAddFromDeal: statusWidgetIndex: $statusWidgetIndex');
+    debugPrint('🟣 TaskAddFromDeal: widgets.length: ${widgets.length}');
+
+    // Проверяем, есть ли виджет статуса в списке
+    bool statusWidgetInList = false;
+    int actualStatusIndex = -1;
+    for (int i = 0; i < widgets.length; i++) {
+      final w = widgets[i];
+      if (w is Column && w.children.isNotEmpty) {
+        // Проверяем, содержит ли Column TaskStatusRadioGroupWidget
+        // Это сложно проверить напрямую, но мы можем проверить по структуре
+        debugPrint(
+            '🟣 TaskAddFromDeal: Widget $i is Column with ${w.children.length} children');
+      }
+      if (i == statusWidgetIndex) {
+        statusWidgetInList = true;
+        actualStatusIndex = i;
+        debugPrint(
+            '🟣 TaskAddFromDeal: Found status widget at expected index $i, type: ${w.runtimeType}');
+      }
+    }
+
+    if (!hasStatusWidget || statusWidget == null || !statusWidgetInList) {
+      debugPrint(
+          '🟣🟣🟣 TaskAddFromDeal: ⚠️⚠️⚠️ task_status_id widget was NOT found! Creating it now... ⚠️⚠️⚠️');
+      if (kDebugMode) {
+        print(
+            'TaskAddFromDeal: task_status_id widget was not found! Creating it now...');
+      }
+      final statusConfig = FieldConfiguration(
+        id: 0,
+        tableName: 'tasks',
+        fieldName: 'task_status_id',
+        position: 2,
+        required: true,
+        isActive: true,
+        isCustomField: false,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+        showOnTable: false,
+        originalRequired: true,
+        isDirectory: false,
+      );
+      debugPrint(
+          '🟣 TaskAddFromDeal: Calling _buildFieldWidget with forced config...');
+      final forcedStatusWidget = _buildFieldWidget(statusConfig);
+      debugPrint(
+          '🟣 TaskAddFromDeal: forcedStatusWidget type: ${forcedStatusWidget.runtimeType}');
+      debugPrint(
+          '🟣 TaskAddFromDeal: forcedStatusWidget is SizedBox: ${forcedStatusWidget is SizedBox}');
+      debugPrint(
+          '🟣 TaskAddFromDeal: forcedStatusWidget is Column: ${forcedStatusWidget is Column}');
+
+      if (forcedStatusWidget is SizedBox) {
+        debugPrint(
+            '🟣 TaskAddFromDeal: ⚠️⚠️⚠️ CRITICAL: forcedStatusWidget is SizedBox! This should not happen! ⚠️⚠️⚠️');
+      }
+
+      // Вставляем на позицию 2 (индекс 1, так как name должен быть на позиции 1, индекс 0)
+      // Если виджетов меньше 2, просто добавляем в конец и потом отсортируем
+      debugPrint(
+          '🟣 TaskAddFromDeal: widgets.length before insert: ${widgets.length}');
+      if (widgets.length >= 1) {
+        widgets.insert(
+            1, forcedStatusWidget); // Вставляем после первого элемента (name)
+        debugPrint(
+            '🟣 TaskAddFromDeal: ✅✅✅ Inserted at index 1, widgets.length after insert: ${widgets.length} ✅✅✅');
+      } else {
+        widgets.add(forcedStatusWidget);
+        debugPrint(
+            '🟣 TaskAddFromDeal: Added to end, widgets.length after add: ${widgets.length}');
+      }
+
+      if (kDebugMode) {
+        print(
+            'TaskAddFromDeal: task_status_id widget forced to be added at position 2');
+      }
+    } else {
+      debugPrint(
+          '🟣 TaskAddFromDeal: ✅ task_status_id widget WAS found at index $actualStatusIndex, no need to force add');
+    }
+
+    debugPrint('🟣🟣🟣 TaskAddFromDeal: Final widgets check 🟣🟣🟣');
+    debugPrint('🟣 TaskAddFromDeal: Final widgets.length: ${widgets.length}');
+    debugPrint(
+        '🟣 TaskAddFromDeal: statusWidgetIndex in final list: $statusWidgetIndex');
+
+    if (kDebugMode) {
+      print('TaskAddFromDeal: Total widgets built: ${widgets.length}');
+      for (var i = 0; i < widgets.length; i++) {
+        print('TaskAddFromDeal: Widget $i type: ${widgets[i].runtimeType}');
+        if (i == statusWidgetIndex || (statusWidgetIndex == -1 && i == 1)) {
+          print('TaskAddFromDeal: ⭐ This is the status widget at index $i ⭐');
+        }
+      }
+      print(
+          'TaskAddFromDeal: task_status_id widget is present: ${hasStatusWidget}');
+    }
+
+    final finalWidgets = _withVerticalSpacing(widgets, spacing: 8);
+    debugPrint(
+        '🟣 TaskAddFromDeal: _withVerticalSpacing returned ${finalWidgets.length} widgets (was ${widgets.length})');
+    debugPrint(
+        '🟣 TaskAddFromDeal: Checking finalWidgets for status widget...');
+    for (int i = 0; i < finalWidgets.length; i++) {
+      final w = finalWidgets[i];
+      if (w is SizedBox && w.width == null && w.height == null) {
+        debugPrint('🟣 TaskAddFromDeal: Widget $i is empty SizedBox (spacing)');
+      } else {
+        debugPrint('🟣 TaskAddFromDeal: Widget $i type: ${w.runtimeType}');
+      }
+    }
+    debugPrint(
+        '🟡🟡🟡 TaskAddFromDeal: _buildConfiguredFieldWidgets - END 🟡🟡🟡');
+
+    return finalWidgets;
   }
-  debugPrint('🟡🟡🟡 TaskAddFromDeal: _buildConfiguredFieldWidgets - END 🟡🟡🟡');
-  
-  return finalWidgets;
-}
 
   void _setDefaultValues() {
     selectedPriority = 1;
@@ -988,15 +1086,21 @@ List<Widget> _buildAllRequiredFields() {
     startDateController.text = DateFormat('dd/MM/yyyy').format(now);
   }
 
-  Future<void> _addCustomField(String fieldName, {bool isDirectory = false, int? directoryId, String? type}) async {
+  Future<void> _addCustomField(String fieldName,
+      {bool isDirectory = false, int? directoryId, String? type}) async {
     if (isDirectory && directoryId != null) {
-      bool directoryExists = customFields.any((field) => field.isDirectoryField && field.directoryId == directoryId);
+      bool directoryExists = customFields.any((field) =>
+          field.isDirectoryField && field.directoryId == directoryId);
       if (directoryExists) {
-        showCustomSnackBar(context: context, message: 'Справочник уже добавлен', isSuccess: true);
-        debugPrint("TaskAddFromDeal: Directory with ID $directoryId already exists.");
+        showCustomSnackBar(
+            context: context,
+            message: 'Справочник уже добавлен',
+            isSuccess: true);
+        debugPrint(
+            "TaskAddFromDeal: Directory with ID $directoryId already exists.");
         return;
       }
-      
+
       try {
         await ApiService().linkDirectory(
           directoryId: directoryId,
@@ -1015,10 +1119,10 @@ List<Widget> _buildAllRequiredFields() {
               type: null,
             ));
           });
-          
+
           context.read<FieldConfigurationBloc>().add(
-            FetchFieldConfiguration('tasks'),
-          );
+                FetchFieldConfiguration('tasks'),
+              );
 
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -1069,9 +1173,9 @@ List<Widget> _buildAllRequiredFields() {
 
       if (mounted) {
         context.read<FieldConfigurationBloc>().add(
-          FetchFieldConfiguration('tasks'),
-        );
-        
+              FetchFieldConfiguration('tasks'),
+            );
+
         setState(() {
           customFields.add(CustomField(
             fieldName: fieldName,
@@ -1102,7 +1206,8 @@ List<Widget> _buildAllRequiredFields() {
   }
 
   void _showAddFieldMenu() {
-    final RenderBox? renderBox = _addFieldButtonKey.currentContext?.findRenderObject() as RenderBox?;
+    final RenderBox? renderBox =
+        _addFieldButtonKey.currentContext?.findRenderObject() as RenderBox?;
     if (renderBox == null) return;
 
     final Offset offset = renderBox.localToGlobal(Offset.zero);
@@ -1144,7 +1249,9 @@ List<Widget> _buildAllRequiredFields() {
         offset.dx,
         showAbove ? offset.dy + verticalOffset : offset.dy + verticalOffset,
         MediaQuery.of(context).size.width - offset.dx - size.width,
-        showAbove ? MediaQuery.of(context).size.height - offset.dy + verticalOffset : MediaQuery.of(context).size.height - offset.dy - size.height - 8,
+        showAbove
+            ? MediaQuery.of(context).size.height - offset.dy + verticalOffset
+            : MediaQuery.of(context).size.height - offset.dy - size.height - 8,
       ),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
@@ -1185,7 +1292,8 @@ List<Widget> _buildAllRequiredFields() {
 
   bool _hasFieldChanges() {
     if (originalFieldConfigurations == null) return false;
-    if (originalFieldConfigurations!.length != fieldConfigurations.length) return true;
+    if (originalFieldConfigurations!.length != fieldConfigurations.length)
+      return true;
 
     for (int i = 0; i < fieldConfigurations.length; i++) {
       final current = fieldConfigurations[i];
@@ -1206,59 +1314,64 @@ List<Widget> _buildAllRequiredFields() {
 
   Future<bool> _showExitSettingsDialog() async {
     return await showDialog<bool>(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          backgroundColor: Colors.white,
-          title: Text(
-            AppLocalizations.of(context)!.translate('warning'),
-            style: TextStyle(
-              fontFamily: 'Gilroy',
-              fontSize: 20,
-              fontWeight: FontWeight.w600,
-              color: Color(0xff1E2E52),
-            ),
-          ),
-          content: Text(
-            AppLocalizations.of(context)!.translate('position_changes_will_not_be_saved'),
-            style: TextStyle(
-              fontFamily: 'Gilroy',
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-              color: Color(0xff1E2E52),
-            ),
-          ),
-          actions: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                Expanded(
-                  child: CustomButton(
-                    buttonText: AppLocalizations.of(context)!.translate('cancel'),
-                    onPressed: () => Navigator.of(context).pop(false),
-                    buttonColor: Color(0xff1E2E52),
-                    textColor: Colors.white,
-                  ),
+          context: context,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              backgroundColor: Colors.white,
+              title: Text(
+                AppLocalizations.of(context)!.translate('warning'),
+                style: TextStyle(
+                  fontFamily: 'Gilroy',
+                  fontSize: 20,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xff1E2E52),
                 ),
-                SizedBox(width: 8),
-                Expanded(
-                  child: CustomButton(
-                    buttonText: AppLocalizations.of(context)!.translate('dont_save'),
-                    onPressed: () => Navigator.of(context).pop(true),
-                    buttonColor: Colors.red,
-                    textColor: Colors.white,
-                  ),
+              ),
+              content: Text(
+                AppLocalizations.of(context)!
+                    .translate('position_changes_will_not_be_saved'),
+                style: TextStyle(
+                  fontFamily: 'Gilroy',
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: Color(0xff1E2E52),
+                ),
+              ),
+              actions: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    Expanded(
+                      child: CustomButton(
+                        buttonText:
+                            AppLocalizations.of(context)!.translate('cancel'),
+                        onPressed: () => Navigator.of(context).pop(false),
+                        buttonColor: Color(0xff1E2E52),
+                        textColor: Colors.white,
+                      ),
+                    ),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: CustomButton(
+                        buttonText: AppLocalizations.of(context)!
+                            .translate('dont_save'),
+                        onPressed: () => Navigator.of(context).pop(true),
+                        buttonColor: Colors.red,
+                        textColor: Colors.white,
+                      ),
+                    ),
+                  ],
                 ),
               ],
-            ),
-          ],
-        );
-      },
-    ) ?? false;
+            );
+          },
+        ) ??
+        false;
   }
 
   Widget _buildSettingsMode() {
-    final sortedFields = [...fieldConfigurations]..sort((a, b) => a.position.compareTo(b.position));
+    final sortedFields = [...fieldConfigurations]
+      ..sort((a, b) => a.position.compareTo(b.position));
 
     return Column(
       children: [
@@ -1270,7 +1383,8 @@ List<Widget> _buildAllRequiredFields() {
               return AnimatedBuilder(
                 animation: animation,
                 builder: (BuildContext context, Widget? child) {
-                  final double animValue = Curves.easeInOut.transform(animation.value);
+                  final double animValue =
+                      Curves.easeInOut.transform(animation.value);
                   final double scale = 1.0 + (animValue * 0.05);
                   final double elevation = animValue * 12.0;
 
@@ -1289,7 +1403,8 @@ List<Widget> _buildAllRequiredFields() {
               );
             },
             onReorder: (oldIndex, newIndex) {
-              if (oldIndex == sortedFields.length || newIndex == sortedFields.length + 1) {
+              if (oldIndex == sortedFields.length ||
+                  newIndex == sortedFields.length + 1) {
                 return;
               }
 
@@ -1336,7 +1451,8 @@ List<Widget> _buildAllRequiredFields() {
                   key: _addFieldButtonKey,
                   margin: const EdgeInsets.only(bottom: 12),
                   child: CustomButton(
-                    buttonText: AppLocalizations.of(context)!.translate('add_field'),
+                    buttonText:
+                        AppLocalizations.of(context)!.translate('add_field'),
                     buttonColor: Color(0xff1E2E52),
                     textColor: Colors.white,
                     onPressed: _showAddFieldMenu,
@@ -1351,7 +1467,8 @@ List<Widget> _buildAllRequiredFields() {
               return Container(
                 key: ValueKey('field_${config.id}'),
                 margin: const EdgeInsets.only(bottom: 12),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(12),
@@ -1401,7 +1518,7 @@ List<Widget> _buildAllRequiredFields() {
                           ),
                           SizedBox(height: 12),
                           // Запрещаем отключать обязательные системные поля
-                          if (config.fieldName != 'name' && 
+                          if (config.fieldName != 'name' &&
                               config.fieldName != 'task_status_id' &&
                               config.fieldName != 'executor' &&
                               config.fieldName != 'project' &&
@@ -1429,14 +1546,16 @@ List<Widget> _buildAllRequiredFields() {
                                     originalRequired: config.originalRequired,
                                   );
 
-                                  final idx = fieldConfigurations.indexWhere((f) => f.id == config.id);
+                                  final idx = fieldConfigurations
+                                      .indexWhere((f) => f.id == config.id);
                                   if (idx != -1) {
                                     fieldConfigurations[idx] = updatedConfig;
                                   }
                                 });
                               },
                               child: Padding(
-                                padding: const EdgeInsets.symmetric(vertical: 4),
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 4),
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
@@ -1446,9 +1565,13 @@ List<Widget> _buildAllRequiredFields() {
                                       width: 24,
                                       height: 24,
                                       decoration: BoxDecoration(
-                                        color: config.isActive ? Color(0xff4759FF) : Colors.white,
+                                        color: config.isActive
+                                            ? Color(0xff4759FF)
+                                            : Colors.white,
                                         border: Border.all(
-                                          color: config.isActive ? Color(0xff4759FF) : Color(0xffCCD5E0),
+                                          color: config.isActive
+                                              ? Color(0xff4759FF)
+                                              : Color(0xffCCD5E0),
                                           width: 2,
                                         ),
                                         borderRadius: BorderRadius.circular(6),
@@ -1465,12 +1588,15 @@ List<Widget> _buildAllRequiredFields() {
                                     ),
                                     SizedBox(width: 12),
                                     Text(
-                                      AppLocalizations.of(context)!.translate('show_field'),
+                                      AppLocalizations.of(context)!
+                                          .translate('show_field'),
                                       style: TextStyle(
                                         fontSize: 14,
                                         fontFamily: 'Gilroy',
                                         fontWeight: FontWeight.w500,
-                                        color: config.isActive ? Color(0xff1E2E52) : Color(0xff6B7A99),
+                                        color: config.isActive
+                                            ? Color(0xff1E2E52)
+                                            : Color(0xff6B7A99),
                                       ),
                                     ),
                                   ],
@@ -1514,7 +1640,8 @@ List<Widget> _buildAllRequiredFields() {
                           height: 20,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            valueColor:
+                                AlwaysStoppedAnimation<Color>(Colors.white),
                           ),
                         ),
                         SizedBox(width: 12),
@@ -1561,13 +1688,15 @@ List<Widget> _buildAllRequiredFields() {
                               ),
                             ),
                             behavior: SnackBarBehavior.floating,
-                            margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            margin: EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 8),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
                             backgroundColor: Colors.green,
                             elevation: 3,
-                            padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                            padding: EdgeInsets.symmetric(
+                                vertical: 12, horizontal: 16),
                             duration: Duration(seconds: 2),
                           ),
                         );
@@ -1634,14 +1763,17 @@ List<Widget> _buildAllRequiredFields() {
       galleryLabel: AppLocalizations.of(context)!.translate('gallery'),
       cameraLabel: AppLocalizations.of(context)!.translate('camera'),
       cancelLabel: AppLocalizations.of(context)!.translate('cancel'),
-      fileSizeTooLargeMessage: AppLocalizations.of(context)!.translate('file_size_too_large'),
-      errorPickingFileMessage: AppLocalizations.of(context)!.translate('error_picking_file'),
+      fileSizeTooLargeMessage:
+          AppLocalizations.of(context)!.translate('file_size_too_large'),
+      errorPickingFileMessage:
+          AppLocalizations.of(context)!.translate('error_picking_file'),
     );
 
     if (pickedFiles != null && pickedFiles.isNotEmpty) {
       setState(() {
         for (var file in pickedFiles) {
-          files.add(FileHelper(id: 0, name: file.name, path: file.path, size: file.sizeKB));
+          files.add(FileHelper(
+              id: 0, name: file.name, path: file.path, size: file.sizeKB));
         }
       });
     }
@@ -1676,7 +1808,8 @@ List<Widget> _buildAllRequiredFields() {
                       width: 100,
                       child: Column(
                         children: [
-                          Image.asset('assets/icons/files/add.png', width: 60, height: 60),
+                          Image.asset('assets/icons/files/add.png',
+                              width: 60, height: 60),
                           SizedBox(height: 8),
                           Text(
                             AppLocalizations.of(context)!.translate('add_file'),
@@ -1743,7 +1876,8 @@ List<Widget> _buildAllRequiredFields() {
                               ),
                             ],
                           ),
-                          child: Icon(Icons.close, size: 16, color: Color(0xff1E2E52)),
+                          child: Icon(Icons.close,
+                              size: 16, color: Color(0xff1E2E52)),
                         ),
                       ),
                     ),
@@ -1783,7 +1917,8 @@ List<Widget> _buildAllRequiredFields() {
                         ),
                       )
                     : CustomButton(
-                        buttonText: AppLocalizations.of(context)!.translate('add'),
+                        buttonText:
+                            AppLocalizations.of(context)!.translate('add'),
                         buttonColor: const Color(0xff4759FF),
                         textColor: Colors.white,
                         onPressed: _submitForm,
@@ -1879,9 +2014,12 @@ List<Widget> _buildAllRequiredFields() {
 
   void _createTask() {
     final String name = nameController.text.trim();
-    final String? startDateString = startDateController.text.isEmpty ? null : startDateController.text;
-    final String? endDateString = endDateController.text.isEmpty ? null : endDateController.text;
-    final String? description = descriptionController.text.isEmpty ? null : descriptionController.text;
+    final String? startDateString =
+        startDateController.text.isEmpty ? null : startDateController.text;
+    final String? endDateString =
+        endDateController.text.isEmpty ? null : endDateController.text;
+    final String? description =
+        descriptionController.text.isEmpty ? null : descriptionController.text;
 
     DateTime? startDate;
     if (startDateString != null && startDateString.isNotEmpty) {
@@ -1890,7 +2028,8 @@ List<Widget> _buildAllRequiredFields() {
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(AppLocalizations.of(context)!.translate('enter_valid_date')),
+            content: Text(
+                AppLocalizations.of(context)!.translate('enter_valid_date')),
           ),
         );
         return;
@@ -1904,7 +2043,8 @@ List<Widget> _buildAllRequiredFields() {
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(AppLocalizations.of(context)!.translate('enter_valid_date')),
+            content: Text(
+                AppLocalizations.of(context)!.translate('enter_valid_date')),
           ),
         );
         return;
@@ -1918,7 +2058,8 @@ List<Widget> _buildAllRequiredFields() {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            AppLocalizations.of(context)!.translate('start_date_after_end_date'),
+            AppLocalizations.of(context)!
+                .translate('start_date_after_end_date'),
             style: TextStyle(
               color: Colors.white,
             ),
@@ -1962,7 +2103,8 @@ List<Widget> _buildAllRequiredFields() {
         }
       }
 
-      if ((fieldType == 'date' || fieldType == 'datetime') && fieldValue.isNotEmpty) {
+      if ((fieldType == 'date' || fieldType == 'datetime') &&
+          fieldValue.isNotEmpty) {
         try {
           if (fieldType == 'date') {
             DateFormat('dd/MM/yyyy').parse(fieldValue);
@@ -1973,7 +2115,8 @@ List<Widget> _buildAllRequiredFields() {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                AppLocalizations.of(context)!.translate('enter_valid_${fieldType}'),
+                AppLocalizations.of(context)!
+                    .translate('enter_valid_${fieldType}'),
                 style: TextStyle(
                   fontFamily: 'Gilroy',
                   fontSize: 16,
@@ -1988,7 +2131,9 @@ List<Widget> _buildAllRequiredFields() {
         }
       }
 
-      if (field.isDirectoryField && field.directoryId != null && field.entryId != null) {
+      if (field.isDirectoryField &&
+          field.directoryId != null &&
+          field.entryId != null) {
         directoryValues.add({
           'directory_id': field.directoryId!,
           'entry_id': field.entryId!,
@@ -2005,22 +2150,23 @@ List<Widget> _buildAllRequiredFields() {
     List<String> filePaths = files.map((file) => file.path).toList();
 
     context.read<TaskAddFromDealBloc>().add(
-      CreateTaskFromDeal(
-        dealId: widget.dealId,
-        name: name,
-        statusId: selectedStatusId!,
-        taskStatusId: selectedStatusId!,
-        priority: selectedPriority ?? 1,
-        startDate: startDate,
-        endDate: endDate,
-        projectId: selectedProject != null ? int.parse(selectedProject!) : null,
-        userId: selectedUsers?.map((id) => int.parse(id)).toList(),
-        description: description,
-        customFields: customFieldMap,
-        filePaths: filePaths,
-        directoryValues: directoryValues,
-      ),
-    );
+          CreateTaskFromDeal(
+            dealId: widget.dealId,
+            name: name,
+            statusId: selectedStatusId!,
+            taskStatusId: selectedStatusId!,
+            priority: selectedPriority ?? 1,
+            startDate: startDate,
+            endDate: endDate,
+            projectId:
+                selectedProject != null ? int.parse(selectedProject!) : null,
+            userId: selectedUsers?.map((id) => int.parse(id)).toList(),
+            description: description,
+            customFields: customFieldMap,
+            filePaths: filePaths,
+            directoryValues: directoryValues,
+          ),
+        );
   }
 
   @override
@@ -2040,7 +2186,9 @@ List<Widget> _buildAllRequiredFields() {
               ),
               onPressed: () {
                 Navigator.pop(context, widget.dealId);
-                context.read<TaskAddFromDealBloc>().add(FetchTaskDealStatuses());
+                context
+                    .read<TaskAddFromDealBloc>()
+                    .add(FetchTaskDealStatuses());
               },
             ),
           ),
@@ -2075,7 +2223,8 @@ List<Widget> _buildAllRequiredFields() {
                   if (originalFieldConfigurations != null) {
                     setState(() {
                       final newFields = fieldConfigurations.where((current) {
-                        return !originalFieldConfigurations!.any((original) => original.id == current.id);
+                        return !originalFieldConfigurations!
+                            .any((original) => original.id == current.id);
                       }).toList();
 
                       fieldConfigurations = [...originalFieldConfigurations!];
@@ -2083,7 +2232,9 @@ List<Widget> _buildAllRequiredFields() {
                       if (newFields.isNotEmpty) {
                         int maxPosition = fieldConfigurations.isEmpty
                             ? 0
-                            : fieldConfigurations.map((e) => e.position).reduce((a, b) => a > b ? a : b);
+                            : fieldConfigurations
+                                .map((e) => e.position)
+                                .reduce((a, b) => a > b ? a : b);
                         for (int i = 0; i < newFields.length; i++) {
                           fieldConfigurations.add(FieldConfiguration(
                             id: newFields[i].id,
@@ -2117,7 +2268,8 @@ List<Widget> _buildAllRequiredFields() {
                 }
               } else {
                 setState(() {
-                  originalFieldConfigurations = fieldConfigurations.map((config) {
+                  originalFieldConfigurations =
+                      fieldConfigurations.map((config) {
                     return FieldConfiguration(
                       id: config.id,
                       tableName: config.tableName,
@@ -2150,7 +2302,8 @@ List<Widget> _buildAllRequiredFields() {
         listener: (context, configState) {
           if (configState is FieldConfigurationLoaded) {
             if (kDebugMode) {
-              print('TaskAddFromDeal: Configuration loaded with ${configState.fields.length} fields');
+              print(
+                  'TaskAddFromDeal: Configuration loaded with ${configState.fields.length} fields');
             }
             setState(() {
               fieldConfigurations = configState.fields;
@@ -2158,7 +2311,8 @@ List<Widget> _buildAllRequiredFields() {
             });
           } else if (configState is FieldConfigurationError) {
             if (kDebugMode) {
-              print('TaskAddFromDeal: Configuration error: ${configState.message}');
+              print(
+                  'TaskAddFromDeal: Configuration error: ${configState.message}');
             }
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
@@ -2229,7 +2383,8 @@ List<Widget> _buildAllRequiredFields() {
                       ),
                       backgroundColor: Colors.red,
                       elevation: 3,
-                      padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                      padding:
+                          EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                       duration: Duration(seconds: 3),
                     ),
                   );
@@ -2252,12 +2407,15 @@ List<Widget> _buildAllRequiredFields() {
                       ),
                       backgroundColor: Colors.green,
                       elevation: 3,
-                      padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                      padding:
+                          EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                       duration: Duration(seconds: 3),
                     ),
                   );
                   Navigator.pop(context, widget.dealId);
-                  context.read<TaskAddFromDealBloc>().add(FetchTaskDealStatuses());
+                  context
+                      .read<TaskAddFromDealBloc>()
+                      .add(FetchTaskDealStatuses());
                 }
               },
               child: Form(
@@ -2273,17 +2431,28 @@ List<Widget> _buildAllRequiredFields() {
                           padding: const EdgeInsets.all(16),
                           child: Builder(
                             builder: (context) {
-                              debugPrint('🔴🔴🔴 TaskAddFromDeal: build() - Calling _buildConfiguredFieldWidgets() 🔴🔴🔴');
+                              debugPrint(
+                                  '🔴🔴🔴 TaskAddFromDeal: build() - Calling _buildConfiguredFieldWidgets() 🔴🔴🔴');
                               final widgets = _buildConfiguredFieldWidgets();
-                              debugPrint('🔴 TaskAddFromDeal: build() - Received ${widgets.length} widgets from _buildConfiguredFieldWidgets()');
+                              debugPrint(
+                                  '🔴 TaskAddFromDeal: build() - Received ${widgets.length} widgets from _buildConfiguredFieldWidgets()');
                               for (int i = 0; i < widgets.length; i++) {
                                 final w = widgets[i];
-                                if (w is SizedBox && w.width == null && w.height == null) {
-                                  debugPrint('🔴 TaskAddFromDeal: build() - Widget $i is spacing SizedBox');
+                                if (w is SizedBox &&
+                                    w.width == null &&
+                                    w.height == null) {
+                                  debugPrint(
+                                      '🔴 TaskAddFromDeal: build() - Widget $i is spacing SizedBox');
                                 } else {
-                                  debugPrint('🔴 TaskAddFromDeal: build() - Widget $i type: ${w.runtimeType}');
-                                  if (w is Column && w.key != null && w.key.toString().contains('task_status_id')) {
-                                    debugPrint('🔴 TaskAddFromDeal: ⭐⭐⭐⭐⭐ STATUS WIDGET FOUND IN BUILD AT INDEX $i! ⭐⭐⭐⭐⭐');
+                                  debugPrint(
+                                      '🔴 TaskAddFromDeal: build() - Widget $i type: ${w.runtimeType}');
+                                  if (w is Column &&
+                                      w.key != null &&
+                                      w.key
+                                          .toString()
+                                          .contains('task_status_id')) {
+                                    debugPrint(
+                                        '🔴 TaskAddFromDeal: ⭐⭐⭐⭐⭐ STATUS WIDGET FOUND IN BUILD AT INDEX $i! ⭐⭐⭐⭐⭐');
                                   }
                                 }
                               }
@@ -2293,61 +2462,83 @@ List<Widget> _buildAllRequiredFields() {
                                   // ✅ НОВОЕ: Всегда показываем обязательные поля
                                   ...widgets,
 
-                              if (customFields.where((field) {
-                                return !fieldConfigurations.any((config) =>
-                                    (config.isCustomField && config.fieldName == field.fieldName) ||
-                                    (config.isDirectory && config.directoryId == field.directoryId));
-                              }).isNotEmpty)
-                                const SizedBox(height: 16),
+                                  if (customFields.where((field) {
+                                    return !fieldConfigurations.any((config) =>
+                                        (config.isCustomField &&
+                                            config.fieldName ==
+                                                field.fieldName) ||
+                                        (config.isDirectory &&
+                                            config.directoryId ==
+                                                field.directoryId));
+                                  }).isNotEmpty)
+                                    const SizedBox(height: 16),
 
-                              ...(() {
-                                final customFieldsList = customFields.where((field) {
-                                  return !fieldConfigurations.any((config) =>
-                                      (config.isCustomField && config.fieldName == field.fieldName) ||
-                                      (config.isDirectory && config.directoryId == field.directoryId));
-                                }).toList();
+                                  ...(() {
+                                    final customFieldsList =
+                                        customFields.where((field) {
+                                      return !fieldConfigurations.any(
+                                          (config) =>
+                                              (config.isCustomField &&
+                                                  config.fieldName ==
+                                                      field.fieldName) ||
+                                              (config.isDirectory &&
+                                                  config.directoryId ==
+                                                      field.directoryId));
+                                    }).toList();
 
-                                if (customFieldsList.isEmpty) return <Widget>[];
+                                    if (customFieldsList.isEmpty)
+                                      return <Widget>[];
 
-                                final customFieldWidgets = customFieldsList.map((field) {
-                                  return field.isDirectoryField && field.directoryId != null
-                                      ? MainFieldDropdownWidget(
-                                          directoryId: field.directoryId!,
-                                          directoryName: field.fieldName,
-                                          selectedField: null,
-                                          onSelectField: (MainField selectedField) {
-                                            setState(() {
-                                              final idx = customFields.indexOf(field);
-                                              customFields[idx] = field.copyWith(
-                                                entryId: selectedField.id,
-                                                controller: TextEditingController(
-                                                    text: selectedField.value),
-                                              );
-                                            });
-                                          },
-                                          controller: field.controller,
-                                          onSelectEntryId: (int entryId) {
-                                            setState(() {
-                                              final idx = customFields.indexOf(field);
-                                              customFields[idx] = field.copyWith(
-                                                entryId: entryId,
-                                              );
-                                            });
-                                          })
-                                      : CustomFieldWidget(
-                                          fieldName: field.fieldName,
-                                          valueController: field.controller,
-                                          type: field.type,
-                                          isDirectory: false,
-                                        );
-                                }).toList();
+                                    final customFieldWidgets =
+                                        customFieldsList.map((field) {
+                                      return field.isDirectoryField &&
+                                              field.directoryId != null
+                                          ? MainFieldDropdownWidget(
+                                              directoryId: field.directoryId!,
+                                              directoryName: field.fieldName,
+                                              selectedField: null,
+                                              onSelectField:
+                                                  (MainField selectedField) {
+                                                setState(() {
+                                                  final idx = customFields
+                                                      .indexOf(field);
+                                                  customFields[idx] =
+                                                      field.copyWith(
+                                                    entryId: selectedField.id,
+                                                    controller:
+                                                        TextEditingController(
+                                                            text: selectedField
+                                                                .value),
+                                                  );
+                                                });
+                                              },
+                                              controller: field.controller,
+                                              onSelectEntryId: (int entryId) {
+                                                setState(() {
+                                                  final idx = customFields
+                                                      .indexOf(field);
+                                                  customFields[idx] =
+                                                      field.copyWith(
+                                                    entryId: entryId,
+                                                  );
+                                                });
+                                              })
+                                          : CustomFieldWidget(
+                                              fieldName: field.fieldName,
+                                              valueController: field.controller,
+                                              type: field.type,
+                                              isDirectory: false,
+                                            );
+                                    }).toList();
 
-                                return _withVerticalSpacing(customFieldWidgets, spacing: 8);
-                              })(),
+                                    return _withVerticalSpacing(
+                                        customFieldWidgets,
+                                        spacing: 8);
+                                  })(),
 
-                              const SizedBox(height: 16),
-                              _buildFileSelection(),
-                              const SizedBox(height: 80),
+                                  const SizedBox(height: 16),
+                                  _buildFileSelection(),
+                                  const SizedBox(height: 80),
                                 ],
                               );
                             },

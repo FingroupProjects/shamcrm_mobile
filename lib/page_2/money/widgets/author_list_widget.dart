@@ -22,6 +22,7 @@ class AuthorRadioGroupWidget extends StatefulWidget {
 class _AuthorRadioGroupWidgetState extends State<AuthorRadioGroupWidget> {
   List<AuthorData> authorsList = [];
   AuthorData? selectedAuthorData;
+  String? _autoSelectedAuthorId;
 
   @override
   void initState() {
@@ -77,6 +78,21 @@ class _AuthorRadioGroupWidgetState extends State<AuthorRadioGroupWidget> {
             if (state is GetAllAuthorSuccess) {
               authorsList = state.dataAuthor.result ?? [];
               _updateSelectedAuthorData();
+
+              if (authorsList.length == 1 &&
+                  (widget.selectedAuthor == null ||
+                      selectedAuthorData == null) &&
+                  _autoSelectedAuthorId != authorsList.first.id.toString()) {
+                final singleAuthor = authorsList.first;
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (!mounted) return;
+                  widget.onSelectAuthor(singleAuthor);
+                  setState(() {
+                    selectedAuthorData = singleAuthor;
+                    _autoSelectedAuthorId = singleAuthor.id.toString();
+                  });
+                });
+              }
             }
 
             return CustomDropdown<AuthorData>.search(

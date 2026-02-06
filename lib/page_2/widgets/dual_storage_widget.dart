@@ -12,6 +12,8 @@ class DualStorageWidget extends StatefulWidget {
   final String? selectedRecipientStorage;
   final Function(String?) onSenderChanged;
   final Function(String?) onRecipientChanged;
+  final bool hasSenderError;
+  final bool hasRecipientError;
 
   const DualStorageWidget({
     Key? key,
@@ -19,6 +21,8 @@ class DualStorageWidget extends StatefulWidget {
     this.selectedRecipientStorage,
     required this.onSenderChanged,
     required this.onRecipientChanged,
+    this.hasSenderError = false,
+    this.hasRecipientError = false,
   }) : super(key: key);
 
   @override
@@ -28,6 +32,8 @@ class DualStorageWidget extends StatefulWidget {
 class _DualStorageWidgetState extends State<DualStorageWidget> {
   WareHouse? selectedSenderStorageData;
   WareHouse? selectedRecipientStorageData;
+  String? _autoSelectedSenderId;
+  String? _autoSelectedRecipientId;
 
   @override
   void initState() {
@@ -69,16 +75,18 @@ class _DualStorageWidgetState extends State<DualStorageWidget> {
       child: BlocBuilder<StorageBloc, StorageState>(
         builder: (context, state) {
           final isLoading = state is StorageLoading;
-          
+
           // Обновляем данные при успешной загрузке
           if (state is StorageLoaded) {
             List<WareHouse> storageList = state.storageList;
 
             // Обновляем данные для склада отправителя
-            if (widget.selectedSenderStorage != null && storageList.isNotEmpty) {
+            if (widget.selectedSenderStorage != null &&
+                storageList.isNotEmpty) {
               try {
                 selectedSenderStorageData = storageList.firstWhere(
-                  (storage) => storage.id.toString() == widget.selectedSenderStorage,
+                  (storage) =>
+                      storage.id.toString() == widget.selectedSenderStorage,
                 );
               } catch (e) {
                 selectedSenderStorageData = null;
@@ -86,13 +94,44 @@ class _DualStorageWidgetState extends State<DualStorageWidget> {
             }
 
             // Обновляем данные для склада получателя
-            if (widget.selectedRecipientStorage != null && storageList.isNotEmpty) {
+            if (widget.selectedRecipientStorage != null &&
+                storageList.isNotEmpty) {
               try {
                 selectedRecipientStorageData = storageList.firstWhere(
-                  (storage) => storage.id.toString() == widget.selectedRecipientStorage,
+                  (storage) =>
+                      storage.id.toString() == widget.selectedRecipientStorage,
                 );
               } catch (e) {
                 selectedRecipientStorageData = null;
+              }
+            }
+
+            if (storageList.length == 1) {
+              final singleStorage = storageList.first;
+              if ((widget.selectedSenderStorage == null ||
+                      selectedSenderStorageData == null) &&
+                  _autoSelectedSenderId != singleStorage.id.toString()) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (!mounted) return;
+                  widget.onSenderChanged(singleStorage.id.toString());
+                  setState(() {
+                    selectedSenderStorageData = singleStorage;
+                    _autoSelectedSenderId = singleStorage.id.toString();
+                  });
+                });
+              }
+
+              if ((widget.selectedRecipientStorage == null ||
+                      selectedRecipientStorageData == null) &&
+                  _autoSelectedRecipientId != singleStorage.id.toString()) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (!mounted) return;
+                  widget.onRecipientChanged(singleStorage.id.toString());
+                  setState(() {
+                    selectedRecipientStorageData = singleStorage;
+                    _autoSelectedRecipientId = singleStorage.id.toString();
+                  });
+                });
               }
             }
           }
@@ -102,11 +141,14 @@ class _DualStorageWidgetState extends State<DualStorageWidget> {
             children: [
               // Склад отправитель
               _buildStorageField(
-                label: localizations.translate('sender_storage') ?? 'Склад отправитель',
-                hint: localizations.translate('select_sender_storage') ?? 'Выберите склад отправитель',
+                label: localizations.translate('sender_storage') ??
+                    'Склад отправитель',
+                hint: localizations.translate('select_sender_storage') ??
+                    'Выберите склад отправитель',
                 selectedStorage: selectedSenderStorageData,
                 state: state,
                 isLoading: isLoading,
+                hasError: widget.hasSenderError,
                 onChanged: (value) {
                   if (value != null) {
                     widget.onSenderChanged(value.id.toString());
@@ -122,11 +164,14 @@ class _DualStorageWidgetState extends State<DualStorageWidget> {
 
               // Склад получатель
               _buildStorageField(
-                label: localizations.translate('recipient_storage') ?? 'Склад получатель',
-                hint: localizations.translate('select_recipient_storage') ?? 'Выберите склад получатель',
+                label: localizations.translate('recipient_storage') ??
+                    'Склад получатель',
+                hint: localizations.translate('select_recipient_storage') ??
+                    'Выберите склад получатель',
                 selectedStorage: selectedRecipientStorageData,
                 state: state,
                 isLoading: isLoading,
+                hasError: widget.hasRecipientError,
                 onChanged: (value) {
                   if (value != null) {
                     widget.onRecipientChanged(value.id.toString());
@@ -150,6 +195,7 @@ class _DualStorageWidgetState extends State<DualStorageWidget> {
     required WareHouse? selectedStorage,
     required StorageState state,
     required bool isLoading,
+    required bool hasError,
     required Function(WareHouse?) onChanged,
   }) {
     final localizations = AppLocalizations.of(context)!;
@@ -177,8 +223,8 @@ class _DualStorageWidgetState extends State<DualStorageWidget> {
             closedFillColor: const Color(0xffF4F7FD),
             expandedFillColor: Colors.white,
             closedBorder: Border.all(
-              color: const Color(0xffF4F7FD),
-              width: 1,
+              color: hasError ? Colors.red : const Color(0xffF4F7FD),
+              width: hasError ? 2 : 1,
             ),
             closedBorderRadius: BorderRadius.circular(12),
             expandedBorder: Border.all(
@@ -208,12 +254,13 @@ class _DualStorageWidgetState extends State<DualStorageWidget> {
                   height: 20,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
+                    valueColor:
+                        AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
                   ),
                 ),
               );
             }
-            
+
             return Text(
               selectedItem?.name ?? hint,
               style: const TextStyle(
@@ -232,12 +279,13 @@ class _DualStorageWidgetState extends State<DualStorageWidget> {
                   height: 20,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
+                    valueColor:
+                        AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
                   ),
                 ),
               );
             }
-            
+
             return Text(
               hint,
               style: const TextStyle(
@@ -255,7 +303,8 @@ class _DualStorageWidgetState extends State<DualStorageWidget> {
                   padding: EdgeInsets.all(20.0),
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
+                    valueColor:
+                        AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
                   ),
                 ),
               );
@@ -279,6 +328,13 @@ class _DualStorageWidgetState extends State<DualStorageWidget> {
                   state.storageList.contains(selectedStorage))
               ? selectedStorage
               : null,
+          validator: (value) {
+            if (hasError && value == null) {
+              return localizations.translate('field_required') ??
+                  'Поле обязательно для заполнения';
+            }
+            return null;
+          },
           onChanged: onChanged,
         ),
       ],

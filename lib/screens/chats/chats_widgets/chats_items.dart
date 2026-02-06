@@ -271,7 +271,21 @@ class ChatListItem extends StatelessWidget {
     }
 
     try {
-      DateTime parsedTime = DateTime.parse(time);
+      final DateTime parsedTime = DateTime.parse(time).toLocal();
+      final DateTime now = DateTime.now();
+      final DateTime today = DateTime(now.year, now.month, now.day);
+      final DateTime messageDate =
+          DateTime(parsedTime.year, parsedTime.month, parsedTime.day);
+      final DateTime yesterday = today.subtract(const Duration(days: 1));
+
+      if (messageDate == today) {
+        return DateFormat('HH:mm').format(parsedTime);
+      }
+
+      if (messageDate == yesterday) {
+        return 'Вчера';
+      }
+
       return DateFormat('dd.MM.yyyy').format(parsedTime);
     } catch (e) {
       // print("Ошибка парсинга даты: $e");

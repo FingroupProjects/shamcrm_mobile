@@ -6,8 +6,10 @@ import 'package:crm_task_manager/bloc/role/role_bloc.dart';
 import 'package:crm_task_manager/bloc/role/role_event.dart';
 import 'package:crm_task_manager/bloc/task/task_bloc.dart';
 import 'package:crm_task_manager/bloc/task/task_event.dart';
-import 'package:crm_task_manager/bloc/task_status_add/task_bloc.dart' as task_status_add;
-import 'package:crm_task_manager/bloc/task_status_add/task_event.dart' as task_status_add;
+import 'package:crm_task_manager/bloc/task_status_add/task_bloc.dart'
+    as task_status_add;
+import 'package:crm_task_manager/bloc/task_status_add/task_event.dart'
+    as task_status_add;
 import 'package:crm_task_manager/custom_widget/custom_chat_styles.dart';
 import 'package:crm_task_manager/models/project_task_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
@@ -18,7 +20,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class CreateStatusDialog extends StatefulWidget {
-  
   const CreateStatusDialog({Key? key}) : super(key: key);
 
   @override
@@ -31,7 +32,8 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
   List<int> selectedRoleIds = [];
   bool needsPermission = false;
   bool isFinalStage = false;
-  String? _errorMessage;
+  String? _statusNameError;
+  String? _projectError;
 
   @override
   void initState() {
@@ -60,12 +62,14 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             StatusList(
-              selectedTaskStatus:selectedStatusNameId?.toString(), 
+              selectedTaskStatus: selectedStatusNameId?.toString(),
               onChanged: (String? statusName, int? statusId) {
                 setState(() {
-                  selectedStatusNameId = statusId; 
+                  selectedStatusNameId = statusId;
+                  _statusNameError = null; // Сбрасываем ошибку при выборе
                 });
               },
+              errorText: _statusNameError,
             ),
             const SizedBox(height: 4),
             ProjectTaskGroupWidget(
@@ -73,8 +77,10 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
               onSelectProject: (ProjectTask selectedProjectData) {
                 setState(() {
                   selectedProjectId = selectedProjectData.id.toString();
+                  _projectError = null; // Сбрасываем ошибку при выборе
                 });
               },
+              errorText: _projectError,
             ),
             Container(
               padding: EdgeInsets.symmetric(vertical: 0),
@@ -86,7 +92,8 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          AppLocalizations.of(context)!.translate('with_access'),
+                          AppLocalizations.of(context)!
+                              .translate('with_access'),
                           style: TextStyle(
                             fontFamily: 'Gilroy',
                             fontSize: 14,
@@ -104,9 +111,13 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
                             });
                           },
                           activeColor: const Color.fromARGB(255, 255, 255, 255),
-                          inactiveTrackColor: const Color.fromARGB(255, 179, 179, 179).withOpacity(0.5),
-                          activeTrackColor: ChatSmsStyles.messageBubbleSenderColor,
-                          inactiveThumbColor: const Color.fromARGB(255, 255, 255, 255),
+                          inactiveTrackColor:
+                              const Color.fromARGB(255, 179, 179, 179)
+                                  .withOpacity(0.5),
+                          activeTrackColor:
+                              ChatSmsStyles.messageBubbleSenderColor,
+                          inactiveThumbColor:
+                              const Color.fromARGB(255, 255, 255, 255),
                         ),
                       ],
                     ),
@@ -117,7 +128,8 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          AppLocalizations.of(context)!.translate('final_stage_add'),
+                          AppLocalizations.of(context)!
+                              .translate('final_stage_add'),
                           style: TextStyle(
                             fontFamily: 'Gilroy',
                             fontSize: 14,
@@ -132,9 +144,13 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
                             });
                           },
                           activeColor: const Color.fromARGB(255, 255, 255, 255),
-                          inactiveTrackColor: const Color.fromARGB(255, 179, 179, 179).withOpacity(0.5),
-                          activeTrackColor: ChatSmsStyles.messageBubbleSenderColor,
-                          inactiveThumbColor: const Color.fromARGB(255, 255, 255, 255),
+                          inactiveTrackColor:
+                              const Color.fromARGB(255, 179, 179, 179)
+                                  .withOpacity(0.5),
+                          activeTrackColor:
+                              ChatSmsStyles.messageBubbleSenderColor,
+                          inactiveThumbColor:
+                              const Color.fromARGB(255, 255, 255, 255),
                         ),
                       ],
                     ),
@@ -156,19 +172,6 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
                 ),
               ),
             ],
-            if (_errorMessage != null)
-              Padding(
-                padding: const EdgeInsets.only(top: 8),
-                child: Text(
-                  _errorMessage!,
-                  style: TextStyle(
-                    color: Colors.red,
-                    fontSize: 14,
-                    fontFamily: 'Gilroy',
-                    fontWeight: FontWeight.w400,
-                  ),
-                ),
-              ),
           ],
         ),
       ),
@@ -210,7 +213,7 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
                     ),
                   ),
                   child: Text(
-                   AppLocalizations.of(context)!.translate('add'),
+                    AppLocalizations.of(context)!.translate('add'),
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 14,
@@ -228,15 +231,31 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
   }
 
   void _createStatus() {
-    if (selectedStatusNameId == null || selectedProjectId == null) {
+    bool hasError = false;
+
+    if (selectedStatusNameId == null) {
       setState(() {
-        _errorMessage =  AppLocalizations.of(context)!.translate('fill_required_fields');
+        _statusNameError =
+            AppLocalizations.of(context)!.translate('field_required');
       });
+      hasError = true;
+    }
+
+    if (selectedProjectId == null) {
+      setState(() {
+        _projectError =
+            AppLocalizations.of(context)!.translate('field_required');
+      });
+      hasError = true;
+    }
+
+    if (hasError) {
       return;
     }
 
     setState(() {
-      _errorMessage = null;
+      _statusNameError = null;
+      _projectError = null;
     });
 
     context.read<task_status_add.TaskStatusBloc>().add(
@@ -252,7 +271,8 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          AppLocalizations.of(context)!.translate('status_created_successfully'),
+          AppLocalizations.of(context)!
+              .translate('status_created_successfully'),
           style: TextStyle(
             fontFamily: 'Gilroy',
             fontSize: 16,

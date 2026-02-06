@@ -35,6 +35,7 @@ class _AddMoneyOutcomeSupplierReturnState extends State<AddMoneyOutcomeSupplierR
   List<SupplierData> suppliersList = [];
   bool _isLoading = false;
   bool _isSupplierInvalid = false; // Флаг для отображения ошибки валидации
+  String? _autoSelectedSupplierId;
 
   @override
   void initState() {
@@ -211,6 +212,21 @@ class _AddMoneyOutcomeSupplierReturnState extends State<AddMoneyOutcomeSupplierR
                   ),
                 ),
               );
+            }
+
+            if (state is GetAllSupplierSuccess &&
+                suppliersList.length == 1 &&
+                _selectedSupplier == null &&
+                _autoSelectedSupplierId != suppliersList.first.id.toString()) {
+              final singleSupplier = suppliersList.first;
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (!mounted) return;
+                setState(() {
+                  _selectedSupplier = singleSupplier;
+                  _autoSelectedSupplierId = singleSupplier.id.toString();
+                  _isSupplierInvalid = false;
+                });
+              });
             }
 
             return CustomDropdown<SupplierData>.search(

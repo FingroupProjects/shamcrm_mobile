@@ -20,6 +20,7 @@ class SupplierWidget extends StatefulWidget {
 class _SupplierWidgetState extends State<SupplierWidget> {
   Supplier? selectedSupplierData;
   bool _isInitialLoad = true; // ✅ Track if this is the first load
+  String? _autoSelectedSupplierId;
 
   @override
   void initState() {
@@ -79,6 +80,21 @@ class _SupplierWidgetState extends State<SupplierWidget> {
               } catch (e) {
                 selectedSupplierData = null;
               }
+            }
+
+            if (supplierList.length == 1 &&
+                (widget.selectedSupplier == null ||
+                    selectedSupplierData == null) &&
+                _autoSelectedSupplierId != supplierList.first.id.toString()) {
+              final singleSupplier = supplierList.first;
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (!mounted) return;
+                widget.onChanged(singleSupplier.id.toString());
+                setState(() {
+                  selectedSupplierData = singleSupplier;
+                  _autoSelectedSupplierId = singleSupplier.id.toString();
+                });
+              });
             }
           }
 
