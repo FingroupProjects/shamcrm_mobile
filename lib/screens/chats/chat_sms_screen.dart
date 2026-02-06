@@ -45,6 +45,12 @@ import 'package:crm_task_manager/screens/chats/chats_widgets/file_message_bubble
 import 'package:crm_task_manager/screens/chats/chats_widgets/message_bubble.dart';
 import 'package:crm_task_manager/models/chats_model.dart';
 import 'package:crm_task_manager/utils/global_value.dart';
+import 'package:crm_task_manager/models/message_reaction_model.dart';
+import 'package:crm_task_manager/screens/chats/chats_widgets/reaction_picker_panel.dart';
+import 'package:crm_task_manager/screens/chats/chats_widgets/full_emoji_picker_sheet.dart';
+import 'package:crm_task_manager/api/service/message_reaction_api_service.dart';
+import 'package:crm_task_manager/screens/chats/chats_widgets/premium_haptic_wrapper.dart';
+import 'package:crm_task_manager/screens/chats/chats_widgets/premium_context_menu.dart';
 import 'package:table_calendar/table_calendar.dart';
 
 class ChatSmsScreen extends StatefulWidget {
@@ -157,6 +163,9 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
       context.read<MessagingCubit>().setReplyMessage(message);
     }
   }
+
+  // Локальное хранилище реакций (message.id -> список реакций)
+  final Map<int, List<MessageReaction>> _localReactions = {};
 
   void _onSearchChanged(String query) {
     setState(() {
@@ -381,6 +390,129 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
       debugPrint('=================-=== ❌ Failed to load my display name: $e');
     }
     return _myDisplayName;
+  }
+
+  // ========== МЕТОДЫ ДЛЯ РАБОТЫ С РЕАКЦИЯМИ ЛОКАЛЬНО ==========
+
+  /// Получить реакции для конкретного сообщения
+  List<MessageReaction> _getReactionsForMessage(int messageId) {
+    return _localReactions[messageId] ?? [];
+  }
+
+  /// Добавить или переключить реакцию на сообщение
+  void _toggleReaction(int messageId, String emoji) async {
+    final reactionApiService = MessageReactionApiService();
+    String? emojiToRemoveLocally;
+
+    setState(() {
+      final List<MessageReaction> reactions =
+          List.from(_localReactions[messageId] ?? []);
+
+      // 1. Убираем любую другую МОЮ реакцию (один юзер - одна реакция)
+      int otherMyReactionIndex =
+          reactions.indexWhere((r) => r.isMyReaction && r.emoji != emoji);
+
+      if (otherMyReactionIndex != -1) {
+        emojiToRemoveLocally = reactions[otherMyReactionIndex].emoji;
+        final otherReaction = reactions[otherMyReactionIndex];
+        if (otherReaction.count == 1) {
+          reactions.removeAt(otherMyReactionIndex);
+        } else {
+          reactions[otherMyReactionIndex] = otherReaction.copyWith(
+            count: otherReaction.count - 1,
+            isMyReaction: false,
+            users: otherReaction.users
+                .where((u) => u.name != _myDisplayName)
+                .toList(),
+          );
+        }
+      }
+
+      // 2. Работаем с выбранной реакцией
+      final existingReactionIndex =
+          reactions.indexWhere((r) => r.emoji == emoji);
+
+      if (existingReactionIndex != -1) {
+        final existingReaction = reactions[existingReactionIndex];
+
+        if (existingReaction.isMyReaction) {
+          // Удаляем свою реакцию (toggle off)
+          if (existingReaction.count == 1) {
+            reactions.removeAt(existingReactionIndex);
+          } else {
+            reactions[existingReactionIndex] = existingReaction.copyWith(
+              count: existingReaction.count - 1,
+              isMyReaction: false,
+              users: existingReaction.users
+                  .where((u) => u.name != _myDisplayName)
+                  .toList(),
+            );
+          }
+          // Вызов API (удаление текущей)
+          reactionApiService.removeReaction(messageId: messageId, emoji: emoji);
+        } else {
+          // Добавляем себя (была чужая реакция)
+          final myUser =
+              ReactionUser(id: -1, name: _myDisplayName, image: null);
+          reactions[existingReactionIndex] = existingReaction.copyWith(
+            count: existingReaction.count + 1,
+            isMyReaction: true,
+            users: [...existingReaction.users, myUser],
+          );
+          // Вызов API (добавление текущей)
+          reactionApiService.addReaction(messageId: messageId, emoji: emoji);
+        }
+      } else {
+        // Создаем новую реакцию
+        final myUser = ReactionUser(id: -1, name: _myDisplayName, image: null);
+        reactions.add(MessageReaction(
+          emoji: emoji,
+          count: 1,
+          isMyReaction: true,
+          users: [myUser],
+        ));
+        // Вызов API (добавление текущей)
+        reactionApiService.addReaction(messageId: messageId, emoji: emoji);
+      }
+
+      // Обновляем хранилище
+      if (reactions.isEmpty) {
+        _localReactions.remove(messageId);
+      } else {
+        _localReactions[messageId] = reactions;
+      }
+    });
+
+    // 3. Вызываем API для удаления старой реакции (если была замена)
+    if (emojiToRemoveLocally != null) {
+      try {
+        await reactionApiService.removeReaction(
+            messageId: messageId, emoji: emojiToRemoveLocally!);
+      } catch (e) {
+        debugPrint('Error removing old reaction via API: $e');
+      }
+    }
+  }
+
+  /// Показать панель выбора реакций
+  void _showReactionPicker(
+      BuildContext context, Message message, Offset position) {
+    showReactionPicker(
+      context: context,
+      position: position,
+      onEmojiSelected: (emoji) {
+        _toggleReaction(message.id, emoji);
+      },
+      onShowFullPicker: () {
+        // Открываем полную панель эмодзи
+        showFullEmojiPicker(
+          context: context,
+          onEmojiSelected: (emoji) {
+            _toggleReaction(message.id, emoji);
+          },
+        );
+      },
+    );
   }
 
   /// ✅ НОВЫЙ МЕТОД: Оптимистичная загрузка из кэша (мгновенно, без await)
@@ -1694,6 +1826,10 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
                           isFirstMessage: isFirstMessage,
                           referralBody: referralBody,
                           isGroupChat: _isGroupChat,
+                          // Передаем функции для реакций
+                          onReactionTap: _toggleReaction,
+                          getReactionsForMessage: _getReactionsForMessage,
+                          onShowReactionPicker: _showReactionPicker,
                         ),
                       );
                       return Column(
@@ -2409,7 +2545,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
                     state.messages.any((msg) => msg.id == messageId);
               }
 
-              if (!alreadyExists) {
+            if (!alreadyExists) {
                 bool? isMyMessageFromServer;
                 final isMyMsgValue = lastMessage['is_my_message'];
                 if (isMyMsgValue is bool) {
@@ -2426,19 +2562,20 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
                 final senderType = lastMessage['sender']?['type']?.toString();
                 final isLeadChat = widget.endPointInTab == 'lead';
 
+                // Достаем имя отправителя из последних данных (ветка 1)
                 final senderNameFromLast =
                     lastMessage['sender']?['name']?.toString();
 
+                // Объединенный вызов с новым параметром messageSenderName
                 final isMyMessage = await _determineIsMyMessage(
                   messageSenderId: senderId,
                   messageSenderType: senderType,
-                  messageSenderName: senderNameFromLast,
+                  messageSenderName: senderNameFromLast, // Из ветки 1
                   myUserId: myUserId,
                   isLeadChat: isLeadChat,
                   isMyMessageFromServer: isMyMessageFromServer,
                   debugContext: 'user_channel.chat.updated',
                 );
-
                 final fallbackName = extractedName ??
                     _cachedCompanionName ??
                     (_isGroupChat == true
@@ -2807,6 +2944,9 @@ class MessageItemWidget extends StatelessWidget {
   final bool isFirstMessage;
   final String? referralBody;
   final bool? isGroupChat;
+  final Function(int messageId, String emoji)? onReactionTap;
+  final List<MessageReaction> Function(int messageId)? getReactionsForMessage;
+  final void Function(BuildContext, Message, Offset)? onShowReactionPicker;
 
   MessageItemWidget({
     super.key,
@@ -2827,6 +2967,9 @@ class MessageItemWidget extends StatelessWidget {
     required this.isFirstMessage,
     this.referralBody,
     this.isGroupChat,
+    this.onReactionTap,
+    this.getReactionsForMessage,
+    this.onShowReactionPicker,
   });
 
   @override
@@ -2847,9 +2990,12 @@ class MessageItemWidget extends StatelessWidget {
         }
         return false;
       },
-      child: GestureDetector(
+      child: PremiumHapticWrapper(
         onLongPress: () {
           _showMessageContextMenu(context, message, focusNode);
+        },
+        onDoubleTap: () {
+          onReactionTap?.call(message.id, '👍');
         },
         child: Container(
           width: double.infinity,
@@ -2870,7 +3016,6 @@ class MessageItemWidget extends StatelessWidget {
           : message.forwardedMessage!.text;
     }
 
-    // Определяем, является ли чат лид-чатом
     final bool isLeadChat = endPointInTab == 'lead';
 
     Widget content;
@@ -2883,22 +3028,22 @@ class MessageItemWidget extends StatelessWidget {
           senderName: message.senderName.toString(),
           replyMessage: replyMessageText,
           replyMessageId: message.forwardedMessage?.id,
-          onReplyTap: (int replyMessageId) {
-            onReplyTap?.call(replyMessageId);
-          },
+          onReplyTap: (id) => onReplyTap?.call(id),
           isHighlighted: highlightedMessageId == message.id,
           isChanged: message.isChanged,
           isRead: message.isRead,
           isNote: message.isNote,
           isLeadChat: isLeadChat,
           isGroupChat: isGroupChat,
+          reactions: getReactionsForMessage?.call(message.id) ?? [],
+          onReactionTap: (emoji) => onReactionTap?.call(message.id, emoji),
         );
         break;
       case 'image':
         content = ImageMessageBubble(
           time: time(message.createMessateTime),
           isSender: message.isMyMessage,
-          filePath: message.filePath ?? 'Unknown file format',
+          filePath: message.filePath ?? 'Unknown',
           fileName: message.text,
           message: message,
           senderName: message.senderName,
@@ -2907,6 +3052,8 @@ class MessageItemWidget extends StatelessWidget {
           isRead: message.isRead,
           isLeadChat: isLeadChat,
           isGroupChat: isGroupChat,
+          reactions: getReactionsForMessage?.call(message.id) ?? [],
+          onReactionTap: (emoji) => onReactionTap?.call(message.id, emoji),
         );
         break;
       case 'file':
@@ -2914,7 +3061,7 @@ class MessageItemWidget extends StatelessWidget {
         content = FileMessageBubble(
           time: time(message.createMessateTime),
           isSender: message.isMyMessage,
-          filePath: message.filePath ?? 'Unknown file format',
+          filePath: message.filePath ?? 'Unknown',
           fileName: message.text,
           isHighlighted: highlightedMessageId == message.id,
           isLeadChat: isLeadChat,
@@ -2924,18 +3071,14 @@ class MessageItemWidget extends StatelessWidget {
               try {
                 await apiServiceDownload.downloadAndOpenFile(message.filePath!);
               } catch (e) {
-                if (kDebugMode) {
-                  ////print('Error opening file!');
-                }
-              }
-            } else {
-              if (kDebugMode) {
-                ////print('Invalid file path. Cannot open file.');
+                debugPrint('Error downloading file: $e');
               }
             }
           },
           senderName: message.senderName,
           isRead: message.isRead,
+          reactions: getReactionsForMessage?.call(message.id) ?? [],
+          onReactionTap: (emoji) => onReactionTap?.call(message.id, emoji),
         );
         break;
       case 'voice':
@@ -2944,10 +3087,12 @@ class MessageItemWidget extends StatelessWidget {
           baseUrl: baseUrl,
           isLeadChat: isLeadChat,
           isGroupChat: isGroupChat,
+          reactions: getReactionsForMessage?.call(message.id) ?? [],
+          onReactionTap: (emoji) => onReactionTap?.call(message.id, emoji),
         );
         break;
       default:
-        content = SizedBox();
+        content = const SizedBox();
     }
 
     if (message.post == null) {
@@ -3052,386 +3197,96 @@ class MessageItemWidget extends StatelessWidget {
 
     onMenuStateChanged?.call(true);
 
-    bool showReadersList = false;
-    bool isSingleUserChat = message.readStatus?.read.length == 1;
 
-    if (endPointInTab == 'lead') {
-      showMenu(
-        context: context,
-        color: Colors.white,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(6),
+    final List<ContextMenuItem> menuItems = [];
+
+    // 1. Ответить
+    if (endPointInTab != 'lead') {
+      menuItems.add(
+        ContextMenuItem(
+          icon: 'assets/icons/chats/menu_icons/reply.svg',
+          text: AppLocalizations.of(context)!.translate('reply'),
+          onTap: () {
+            focusNode.requestFocus();
+            context.read<MessagingCubit>().setReplyMessage(message);
+          },
         ),
-        position: RelativeRect.fromLTRB(
-          position.dx + messageBox.size.width / 2.5,
-          position.dy,
-          position.dx + messageBox.size.width / 2 + 1,
-          position.dy + messageBox.size.height,
-        ),
-        items: [
-          if (isInstagramCommentChannel)
-            _buildMenuItem(
-              icon: 'assets/icons/chats/menu_icons/reply.svg',
-              text: 'Ответить как комментарий',
-              iconColor: Colors.black,
-              textColor: Colors.black,
-              onTap: () {
-                Navigator.pop(context);
-                focusNode.requestFocus();
-                onInstagramReplyTap?.call('comment');
-              },
-            ),
-          if (isInstagramCommentChannel)
-            _buildMenuItem(
-              icon: 'assets/icons/chats/menu_icons/reply.svg',
-              text: 'Ответить в директ',
-              iconColor: Colors.black,
-              textColor: Colors.black,
-              onTap: () {
-                Navigator.pop(context);
-                focusNode.requestFocus();
-                onInstagramReplyTap?.call('direct');
-              },
-            ),
-          _buildMenuItem(
-            icon: 'assets/icons/chats/menu_icons/copy.svg',
-            text: AppLocalizations.of(context)!.translate('copy'),
-            iconColor: Colors.black,
-            textColor: Colors.black,
-            onTap: () {
-              Navigator.pop(context);
-              _copyMessageToClipboard(context, message.text);
-            },
-          ),
-        ],
-      ).then((_) {
-        onMenuStateChanged?.call(false);
-      });
-      return;
+      );
     }
 
-    void showMenuItems() {
-      final List<PopupMenuItem> menuItems = [];
+    // 2. Копировать
+    menuItems.add(
+      ContextMenuItem(
+        icon: 'assets/icons/chats/menu_icons/copy.svg',
+        text: AppLocalizations.of(context)!.translate('copy'),
+        onTap: () {
+          _copyMessageToClipboard(context, message.text);
+        },
+      ),
+    );
 
-      if (showReadersList) {
-        menuItems.add(
-          PopupMenuItem(
-            child: InkWell(
-              onTap: () {
-                Navigator.pop(context);
-                showReadersList = false;
-                showMenuItems();
-              },
-              borderRadius: BorderRadius.circular(10),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 0, horizontal: 8),
-                child: Column(
-                  children: [
-                    Row(
-                      children: [
-                        Icon(Icons.arrow_back, color: Colors.black),
-                        const SizedBox(width: 10),
-                        Text(
-                          AppLocalizations.of(context)!.translate('back'),
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w500,
-                            fontFamily: 'Gilroy',
-                            color: Colors.black,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 6),
-                    const Divider(
-                      color: Colors.grey,
-                      height: 10,
-                      thickness: 0.5,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        );
+    // 3. Закрепить/Открепить
+    menuItems.add(
+      ContextMenuItem(
+        icon: 'assets/icons/chats/menu_icons/pin.svg',
+        text: message.isPinned
+            ? AppLocalizations.of(context)!.translate('un_pin')
+            : AppLocalizations.of(context)!.translate('pin'),
+        onTap: () {
+          context.read<MessagingCubit>().pinMessage(message);
+        },
+      ),
+    );
 
-        bool isUserNavigating = false;
+    // 4. Редактировать (только свои тексты)
+    if (message.isMyMessage && message.type == 'text') {
+      menuItems.add(
+        ContextMenuItem(
+          icon: 'assets/icons/chats/menu_icons/edit.svg',
+          text: AppLocalizations.of(context)!.translate('edit'),
+          onTap: () {
+            focusNode.requestFocus();
+            context.read<MessagingCubit>().startEditingMessage(message);
+          },
+        ),
+      );
+    }
 
-        for (var user in message.readStatus?.read ?? []) {
-          String formattedTime = user.readAt != null
-              ? DateFormat('HH:mm').format(user.readAt!)
-              : AppLocalizations.of(context)!.translate('unknown_time');
-          menuItems.add(
-            _buildMenuItemWithAvatar(
-              avatarSvg: user.image,
-              text: "${user.fullName} — $formattedTime",
-              textColor: Colors.black,
-              onTap: () async {
-                if (isUserNavigating) return;
-                isUserNavigating = true;
-                final getChatById = await ApiService().getChatById(chatId);
-                final selectedUser = getChatById.chatUsers
-                    .firstWhere(
-                      (chatUser) =>
-                          chatUser.participant.id.toString() ==
-                          user.id.toString(),
-                    )
-                    ?.participant;
+    // 5. Удалить (только свои)
+    if (message.isMyMessage) {
+      menuItems.add(
+        ContextMenuItem(
+          icon: 'assets/icons/chats/menu_icons/delete-red.svg',
+          text: AppLocalizations.of(context)!.translate('delete'),
+          isDestructive: true,
+          onTap: () {
+            _deleteMessage(context);
+          },
+        ),
+      );
+    }
 
-                if (selectedUser != null) {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => ParticipantProfileScreen(
-                        userId: selectedUser.id.toString(),
-                        image: selectedUser.image,
-                        name: selectedUser.name,
-                        email: selectedUser.email,
-                        phone: selectedUser.phone,
-                        login: selectedUser.login,
-                        lastSeen: selectedUser.lastSeen?.toString() ??
-                            AppLocalizations.of(context)!.translate('unknow'),
-                        buttonChat: true,
-                      ),
-                    ),
-                  ).then((_) {
-                    isUserNavigating = false;
-                  });
-                } else {
-                  isUserNavigating = false;
-                }
-              },
-            ),
-          );
-        }
-
-        showMenu(
+    PremiumContextMenu.show(
+      context: context,
+      messagePosition: position,
+      messageSize: messageBox.size,
+      messageWidget: _buildMessageContent(context),
+      items: menuItems,
+      onReactionSelected: (emoji) {
+        onReactionTap?.call(message.id, emoji);
+      },
+      onShowFullPicker: () {
+        showFullEmojiPicker(
           context: context,
-          color: Colors.white,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(6),
-          ),
-          position: RelativeRect.fromLTRB(
-            position.dx + messageBox.size.width / 2.5,
-            position.dy,
-            position.dx + messageBox.size.width / 2 + 1,
-            position.dy + messageBox.size.height,
-          ),
-          items: menuItems,
-        ).then((_) {
-          onMenuStateChanged?.call(false);
-        });
-        return;
-      }
-
-      if (message.isMyMessage) {
-        if (message.readStatus?.read.isNotEmpty ?? false) {
-          if (isSingleUserChat) {
-            User reader = message.readStatus!.read.first;
-            String formattedTime = reader.readAt != null
-                ? DateFormat('HH:mm').format(reader.readAt!)
-                : AppLocalizations.of(context)!.translate('unknown_time');
-            menuItems.add(
-              PopupMenuItem(
-                child: Row(
-                  children: [
-                    const Icon(Icons.done_all,
-                        color: ChatSmsStyles.messageBubbleSenderColor),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        "${reader.name} ${AppLocalizations.of(context)!.translate('read_at')} $formattedTime",
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                          fontFamily: 'Gilroy',
-                          color: ChatSmsStyles.messageBubbleSenderColor,
-                        ),
-                        softWrap: true,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          } else {
-            menuItems.add(
-              PopupMenuItem(
-                child: InkWell(
-                  onTap: () {
-                    Navigator.pop(context);
-                    showReadersList = true;
-                    showMenuItems();
-                  },
-                  borderRadius: BorderRadius.circular(10),
-                  child: Padding(
-                    padding:
-                        const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.done_all,
-                            color: ChatSmsStyles.messageBubbleSenderColor),
-                        const SizedBox(width: 10),
-                        Text(
-                          "${message.readStatus!.read.length} ${AppLocalizations.of(context)!.translate('views')}",
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w500,
-                            fontFamily: 'Gilroy',
-                            color: ChatSmsStyles.messageBubbleSenderColor,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            );
-          }
-        } else {
-          menuItems.add(
-            PopupMenuItem(
-              child: Row(
-                children: [
-                  const Icon(Icons.done, color: Colors.grey),
-                  const SizedBox(width: 10),
-                  Text(
-                    AppLocalizations.of(context)!.translate('not_read_at'),
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      fontFamily: 'Gilroy',
-                      color: Colors.grey,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
-        }
-      }
-
-      if (isInstagramCommentChannel) {
-        menuItems.add(
-          _buildMenuItem(
-            icon: 'assets/icons/chats/menu_icons/reply.svg',
-            text: 'Ответить как комментарий',
-            iconColor: Colors.black,
-            textColor: Colors.black,
-            onTap: () {
-              Navigator.pop(context);
-              focusNode.requestFocus();
-              onInstagramReplyTap?.call('comment');
-            },
-          ),
-        );
-        menuItems.add(
-          _buildMenuItem(
-            icon: 'assets/icons/chats/menu_icons/reply.svg',
-            text: 'Ответить в директ',
-            iconColor: Colors.black,
-            textColor: Colors.black,
-            onTap: () {
-              Navigator.pop(context);
-              focusNode.requestFocus();
-              onInstagramReplyTap?.call('direct');
-            },
-          ),
-        );
-      } else {
-        menuItems.add(
-          _buildMenuItem(
-            icon: 'assets/icons/chats/menu_icons/reply.svg',
-            text: AppLocalizations.of(context)!.translate('reply'),
-            iconColor: Colors.black,
-            textColor: Colors.black,
-            onTap: () {
-              Navigator.pop(context);
-              focusNode.requestFocus();
-              context.read<MessagingCubit>().setReplyMessage(message);
-            },
-          ),
-        );
-      }
-
-      menuItems.add(
-        _buildMenuItem(
-          icon: 'assets/icons/chats/menu_icons/pin.svg',
-          text: message.isPinned
-              ? AppLocalizations.of(context)!.translate('un_pin')
-              : AppLocalizations.of(context)!.translate('pin'),
-          iconColor: Colors.black,
-          textColor: Colors.black,
-          onTap: () {
-            Navigator.pop(context);
-            context.read<MessagingCubit>().pinMessage(message);
+          onEmojiSelected: (emoji) {
+            onReactionTap?.call(message.id, emoji);
           },
-        ),
-      );
-
-      menuItems.add(
-        _buildMenuItem(
-          icon: 'assets/icons/chats/menu_icons/copy.svg',
-          text: AppLocalizations.of(context)!.translate('copy'),
-          iconColor: Colors.black,
-          textColor: Colors.black,
-          onTap: () {
-            Navigator.pop(context);
-            _copyMessageToClipboard(context, message.text);
-          },
-        ),
-      );
-
-      if (message.isMyMessage) {
-        menuItems.add(
-          _buildMenuItem(
-            icon: 'assets/icons/chats/menu_icons/edit.svg',
-            text: AppLocalizations.of(context)!.translate('edit'),
-            iconColor: Colors.black,
-            textColor: Colors.black,
-            onTap: () {
-              Navigator.pop(context);
-              focusNode.requestFocus();
-              context.read<MessagingCubit>().startEditingMessage(message);
-            },
-          ),
         );
-
-        menuItems.add(
-          _buildMenuItem(
-            icon: 'assets/icons/chats/menu_icons/delete-red.svg',
-            text: AppLocalizations.of(context)!.translate('delete'),
-            iconColor: Colors.red,
-            textColor: Colors.red,
-            onTap: () {
-              Navigator.pop(context);
-              _deleteMessage(context);
-            },
-          ),
-        );
-      }
-
-      showMenu(
-        context: context,
-        color: Colors.white,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(6),
-        ),
-        position: RelativeRect.fromLTRB(
-          position.dx + messageBox.size.width / 2.5,
-          position.dy,
-          position.dx + messageBox.size.width / 2 + 1,
-          position.dy + messageBox.size.height,
-        ),
-        items: menuItems,
-      ).then((_) {
+      },
+      onDismiss: () {
         onMenuStateChanged?.call(false);
-      });
-    }
-
-    showMenuItems();
+      },
+    );
   }
 
   void _copyMessageToClipboard(BuildContext context, String messageText) {
@@ -3440,7 +3295,7 @@ class MessageItemWidget extends StatelessWidget {
       SnackBar(
         content: Text(
           AppLocalizations.of(context)!.translate('copy_message'),
-          style: TextStyle(
+          style: const TextStyle(
             fontFamily: 'Gilroy',
             fontSize: 16,
             fontWeight: FontWeight.w500,
@@ -3448,110 +3303,26 @@ class MessageItemWidget extends StatelessWidget {
           ),
         ),
         behavior: SnackBarBehavior.floating,
-        margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
         ),
         backgroundColor: Colors.green,
         elevation: 3,
-        padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-        duration: Duration(seconds: 3),
-      ),
-    );
-  }
-
-  PopupMenuItem _buildMenuItemWithAvatar({
-    required String avatarSvg,
-    required String text,
-    required Color textColor,
-    required VoidCallback onTap,
-  }) {
-    return PopupMenuItem(
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(10),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
-          child: Row(
-            children: [
-              SvgPicture.string(
-                avatarSvg,
-                width: 30,
-                height: 30,
-              ),
-              const SizedBox(width: 10),
-              Flexible(
-                child: Text(
-                  text,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    fontFamily: 'Gilroy',
-                    color: textColor,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  PopupMenuItem _buildMenuItem({
-    required String icon,
-    required String text,
-    required Color iconColor,
-    required Color textColor,
-    required VoidCallback onTap,
-  }) {
-    return PopupMenuItem(
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(10),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
-          child: Row(
-            children: [
-              if (icon.isNotEmpty)
-                SvgPicture.asset(
-                  icon,
-                  width: 24,
-                  height: 24,
-                  color: iconColor,
-                ),
-              if (icon.isNotEmpty) const SizedBox(width: 10),
-              Flexible(
-                child: Text(
-                  text,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    fontFamily: 'Gilroy',
-                    color: textColor,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+        duration: const Duration(seconds: 3),
       ),
     );
   }
 
   void _deleteMessage(BuildContext context) {
     if (message.isMyMessage) {
-      int messageId = message.id;
-
-      context.read<DeleteMessageBloc>().add(DeleteMessage(messageId));
-
+      context.read<DeleteMessageBloc>().add(DeleteMessage(message.id));
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
             AppLocalizations.of(context)!.translate('sms_deletes_successfully'),
-            style: TextStyle(
+            style: const TextStyle(
               fontFamily: 'Gilroy',
               fontSize: 16,
               fontWeight: FontWeight.w500,
@@ -3559,38 +3330,14 @@ class MessageItemWidget extends StatelessWidget {
             ),
           ),
           behavior: SnackBarBehavior.floating,
-          margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
           backgroundColor: Colors.green,
           elevation: 3,
-          padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-          duration: Duration(seconds: 3),
-        ),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            AppLocalizations.of(context)!
-                .translate('cannot_someone_delete_sms'),
-            style: TextStyle(
-              fontFamily: 'Gilroy',
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-              color: Colors.white,
-            ),
-          ),
-          behavior: SnackBarBehavior.floating,
-          margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          backgroundColor: Colors.red,
-          elevation: 3,
-          padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-          duration: Duration(seconds: 3),
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+          duration: const Duration(seconds: 3),
         ),
       );
     }
