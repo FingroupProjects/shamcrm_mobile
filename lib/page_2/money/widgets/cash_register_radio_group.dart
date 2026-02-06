@@ -28,6 +28,8 @@ class _CashRegisterGroupWidgetState extends State<CashRegisterGroupWidget> {
   CashRegisterData? selectedCashRegisterData;
   bool _isInitialLoad = true; // ✅ Track if this is the first load
   String? _autoSelectedCashRegisterId;
+  final GlobalKey<FormFieldState<CashRegisterData>> _formFieldKey =
+      GlobalKey<FormFieldState<CashRegisterData>>();
 
   @override
   void initState() {
@@ -56,6 +58,9 @@ class _CashRegisterGroupWidgetState extends State<CashRegisterGroupWidget> {
           selectedCashRegisterData = null;
         }
       }
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _formFieldKey.currentState?.didChange(selectedCashRegisterData);
+      });
     }
   }
 
@@ -73,11 +78,12 @@ class _CashRegisterGroupWidgetState extends State<CashRegisterGroupWidget> {
 
   @override
   Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context)!;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          widget.title ?? AppLocalizations.of(context)!.translate('cash_register'),
+          widget.title ?? localizations.translate('cash_register'),
           style: const TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w500,
@@ -115,135 +121,167 @@ class _CashRegisterGroupWidgetState extends State<CashRegisterGroupWidget> {
                       selectedCashRegisterData = singleRegister;
                       _autoSelectedCashRegisterId = singleRegister.id.toString();
                     });
+                    _formFieldKey.currentState?.didChange(singleRegister);
                   });
                 }
               }
 
-              return CustomDropdown<CashRegisterData>.search(
-                closeDropDownOnClearFilterSearch: true,
-                items: cashRegistersList,
-                searchHintText: AppLocalizations.of(context)!.translate('search'),
-                overlayHeight: 400,
-                enabled: !isLoading,
-                decoration: CustomDropdownDecoration(
-                  closedFillColor: const Color(0xffF4F7FD),
-                  expandedFillColor: Colors.white,
-                  closedBorder: Border.all(
-                    color: const Color(0xffF4F7FD),
-                    width: 1,
-                  ),
-                  closedBorderRadius: BorderRadius.circular(12),
-                  expandedBorder: Border.all(
-                    color: const Color(0xffF4F7FD),
-                    width: 1,
-                  ),
-                  expandedBorderRadius: BorderRadius.circular(12),
-                ),
-                listItemBuilder: (context, item, isSelected, onItemSelect) {
-                  return Text(
-                    item.name,
-                    style: const TextStyle(
-                      color: Color(0xff1E2E52),
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      fontFamily: 'Gilroy',
-                    ),
-                  );
-                },
-                headerBuilder: (context, selectedItem, enabled) {
-                  if (isLoading) {
-                    return const Center(
-                      child: SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
-                        ),
-                      ),
-                    );
-                  }
-                  return Text(
-                    selectedItem.name,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      fontFamily: 'Gilroy',
-                      color: Color(0xff1E2E52),
-                    ),
-                  );
-                },
-                hintBuilder: (context, hint, enabled) {
-                  if (isLoading) {
-                    return const Center(
-                      child: SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
-                        ),
-                      ),
-                    );
-                  }
-                  return Text(
-                    AppLocalizations.of(context)!.translate('select_cash_register'),
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      fontFamily: 'Gilroy',
-                      color: Color(0xff1E2E52),
-                    ),
-                  );
-                },
-                noResultFoundBuilder: (context, text) {
-                  if (isLoading) {
-                    return const Center(
-                      child: Padding(
-                        padding: EdgeInsets.all(20.0),
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
-                        ),
-                      ),
-                    );
-                  }
-                  return Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(20.0),
-                      child: Text(
-                        AppLocalizations.of(context)!.translate('no_results'),
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontFamily: 'Gilroy',
-                          color: Color(0xff1E2E52),
-                        ),
-                      ),
-                    ),
-                  );
-                },
-                excludeSelected: false,
-                initialItem: cashRegistersList.contains(selectedCashRegisterData)
-                    ? selectedCashRegisterData
-                    : null,
-                // ✅ FIX: Don't validate while data is loading or on initial load
+              return FormField<CashRegisterData>(
+                key: _formFieldKey,
+                initialValue: selectedCashRegisterData,
                 validator: (value) {
                   if (_isInitialLoad || isLoading) {
                     return null; // Skip validation during initial load
                   }
                   if (value == null) {
-                    return AppLocalizations.of(context)!.translate('field_required_project');
+                    return localizations.translate('field_required');
                   }
                   return null;
                 },
-                onChanged: (value) {
-                  if (value != null) {
-                    widget.onSelectCashRegister(value);
-                    setState(() {
-                      selectedCashRegisterData = value;
-                    });
-                    FocusScope.of(context).unfocus();
-                  }
+                builder: (formFieldState) {
+                  final hasError = formFieldState.hasError;
+
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      CustomDropdown<CashRegisterData>.search(
+                        closeDropDownOnClearFilterSearch: true,
+                        items: cashRegistersList,
+                        searchHintText: localizations.translate('search'),
+                        overlayHeight: 400,
+                        enabled: !isLoading,
+                        decoration: CustomDropdownDecoration(
+                          closedFillColor: const Color(0xffF4F7FD),
+                          expandedFillColor: Colors.white,
+                          closedBorder: Border.all(
+                            color: hasError ? Colors.red : const Color(0xffF4F7FD),
+                            width: hasError ? 1.5 : 1,
+                          ),
+                          closedBorderRadius: BorderRadius.circular(12),
+                          expandedBorder: Border.all(
+                            color: const Color(0xffF4F7FD),
+                            width: 1,
+                          ),
+                          expandedBorderRadius: BorderRadius.circular(12),
+                          errorStyle: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w400,
+                            color: Colors.red,
+                          ),
+                        ),
+                        listItemBuilder: (context, item, isSelected, onItemSelect) {
+                          return Text(
+                            item.name,
+                            style: const TextStyle(
+                              color: Color(0xff1E2E52),
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                              fontFamily: 'Gilroy',
+                            ),
+                          );
+                        },
+                        headerBuilder: (context, selectedItem, enabled) {
+                          if (isLoading) {
+                            return const Center(
+                              child: SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
+                                ),
+                              ),
+                            );
+                          }
+                          return Text(
+                            selectedItem.name,
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                              fontFamily: 'Gilroy',
+                              color: Color(0xff1E2E52),
+                            ),
+                          );
+                        },
+                        hintBuilder: (context, hint, enabled) {
+                          if (isLoading) {
+                            return const Center(
+                              child: SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
+                                ),
+                              ),
+                            );
+                          }
+                          return Text(
+                            localizations.translate('select_cash_register'),
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                              fontFamily: 'Gilroy',
+                              color: Color(0xff1E2E52),
+                            ),
+                          );
+                        },
+                        noResultFoundBuilder: (context, text) {
+                          if (isLoading) {
+                            return const Center(
+                              child: Padding(
+                                padding: EdgeInsets.all(20.0),
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
+                                ),
+                              ),
+                            );
+                          }
+                          return Center(
+                            child: Padding(
+                              padding: const EdgeInsets.all(20.0),
+                              child: Text(
+                                localizations.translate('no_results'),
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  fontFamily: 'Gilroy',
+                                  color: Color(0xff1E2E52),
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                        excludeSelected: false,
+                        initialItem: cashRegistersList.contains(selectedCashRegisterData)
+                            ? selectedCashRegisterData
+                            : null,
+                        validator: null,
+                        onChanged: (value) {
+                          if (value != null) {
+                            widget.onSelectCashRegister(value);
+                            setState(() {
+                              selectedCashRegisterData = value;
+                            });
+                            _formFieldKey.currentState?.didChange(value);
+                            FocusScope.of(context).unfocus();
+                          }
+                        },
+                      ),
+                        if (hasError)
+                          Padding(
+                            padding: const EdgeInsets.only(left: 12, top: 8),
+                          child: Text(
+                            formFieldState.errorText ?? '',
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w400,
+                              color: Colors.red,
+                            ),
+                          ),
+                        ),
+                    ],
+                  );
                 },
               );
             },

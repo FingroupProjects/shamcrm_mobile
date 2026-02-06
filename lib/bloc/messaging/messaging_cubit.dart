@@ -480,24 +480,21 @@ class MessagingCubit extends Cubit<MessagingState> {
         if (messageIndex != -1) {
           final message = messages[messageIndex];
           final readStatus = message.readStatus ?? ReadStatus(read: [], unread: []);
-          final readUser = ReadUser(
-            userId: userId,
-            readAt: readAt.toString(),
-            user: User(
-              id: userId,
-              name: readData['user']['name'],
-              lastname: readData['user']['lastname'],
-              login: readData['user']['login'],
-              email: readData['user']['email'],
-              phone: readData['user']['phone'],
-              image: readData['user']['image'],
-              lastSeen: readData['user']['last_seen'],
-              online: readData['user']['online'],
-              fullName: userFullName,
-              readAt: readAt,
-            ),
+          final lastSeenRaw = readData['user']['last_seen'];
+          final lastSeen = lastSeenRaw is String ? DateTime.tryParse(lastSeenRaw) : null;
+          final readUser = User(
+            id: userId,
+            name: readData['user']['name'],
+            lastname: readData['user']['lastname'],
+            login: readData['user']['login'],
+            email: readData['user']['email'],
+            phone: readData['user']['phone'],
+            image: readData['user']['image'],
+            lastSeen: lastSeen,
+            fullName: userFullName,
+            readAt: readAt,
           );
-          readStatus.read.add(readUser.user);
+          readStatus.read.add(readUser);
           readStatus.unread.removeWhere((user) => user.id == userId);
           final updatedMessage = message.copyWith(
             readStatus: readStatus,
