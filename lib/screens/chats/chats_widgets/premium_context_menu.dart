@@ -10,8 +10,9 @@ class PremiumContextMenu {
     required Size messageSize,
     required Widget messageWidget,
     required List<ContextMenuItem> items,
-    required Function(String emoji) onReactionSelected,
+    Function(String emoji)? onReactionSelected,
     VoidCallback? onShowFullPicker,
+    bool showReactions = true,
     required VoidCallback onDismiss,
   }) {
     final overlay = Overlay.of(context);
@@ -23,16 +24,21 @@ class PremiumContextMenu {
         messageSize: messageSize,
         messageWidget: messageWidget,
         items: items,
-        onReactionSelected: (emoji) {
-          onReactionSelected(emoji);
-          onDismiss();
-          entry.remove();
-        },
-        onShowFullPicker: () {
-          onShowFullPicker?.call();
-          onDismiss();
-          entry.remove();
-        },
+        onReactionSelected: showReactions && onReactionSelected != null
+            ? (emoji) {
+                onReactionSelected(emoji);
+                onDismiss();
+                entry.remove();
+              }
+            : null,
+        onShowFullPicker: showReactions
+            ? () {
+                onShowFullPicker?.call();
+                onDismiss();
+                entry.remove();
+              }
+            : null,
+        showReactions: showReactions,
         onDismiss: () {
           onDismiss();
           entry.remove();
@@ -63,8 +69,9 @@ class _PremiumMenuOverlay extends StatefulWidget {
   final Size messageSize;
   final Widget messageWidget;
   final List<ContextMenuItem> items;
-  final Function(String emoji) onReactionSelected;
+  final Function(String emoji)? onReactionSelected;
   final VoidCallback? onShowFullPicker;
+  final bool showReactions;
   final VoidCallback onDismiss;
 
   const _PremiumMenuOverlay({
@@ -73,8 +80,9 @@ class _PremiumMenuOverlay extends StatefulWidget {
     required this.messageSize,
     required this.messageWidget,
     required this.items,
-    required this.onReactionSelected,
+    this.onReactionSelected,
     this.onShowFullPicker,
+    this.showReactions = true,
     required this.onDismiss,
   }) : super(key: key);
 
@@ -119,7 +127,7 @@ class _PremiumMenuOverlayState extends State<_PremiumMenuOverlay>
     // Константы для расчёта
     const double maxMenuWidth = 260.0;
     const double horizontalPadding = 16.0;
-    const double reactionPanelHeight = 54.0;
+    final double reactionPanelHeight = widget.showReactions ? 54.0 : 0.0;
 
     // Рассчитываем вертикальное положение
     final isMenuBelow = widget.messagePosition.dy < screenHeight / 2;
@@ -183,9 +191,10 @@ class _PremiumMenuOverlayState extends State<_PremiumMenuOverlay>
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Панель реакций
-                    _buildReactionPanel(),
-                    const SizedBox(height: 10),
+                    if (widget.showReactions) ...[
+                      _buildReactionPanel(),
+                      const SizedBox(height: 10),
+                    ],
                     // Контекстное меню
                     _buildMenuCard(),
                   ],
@@ -217,7 +226,7 @@ class _PremiumMenuOverlayState extends State<_PremiumMenuOverlay>
             const SizedBox(width: 6),
             ...EmojiData.quickReactions.map((emoji) {
               return GestureDetector(
-                onTap: () => widget.onReactionSelected(emoji),
+                onTap: () => widget.onReactionSelected?.call(emoji),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 6),
                   child: Text(

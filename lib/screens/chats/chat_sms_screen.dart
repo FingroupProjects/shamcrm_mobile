@@ -45,10 +45,7 @@ import 'package:crm_task_manager/screens/chats/chats_widgets/file_message_bubble
 import 'package:crm_task_manager/screens/chats/chats_widgets/message_bubble.dart';
 import 'package:crm_task_manager/models/chats_model.dart';
 import 'package:crm_task_manager/utils/global_value.dart';
-import 'package:crm_task_manager/models/message_reaction_model.dart';
-import 'package:crm_task_manager/screens/chats/chats_widgets/reaction_picker_panel.dart';
-import 'package:crm_task_manager/screens/chats/chats_widgets/full_emoji_picker_sheet.dart';
-import 'package:crm_task_manager/api/service/message_reaction_api_service.dart';
+// реакции временно отключены
 import 'package:crm_task_manager/screens/chats/chats_widgets/premium_haptic_wrapper.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/premium_context_menu.dart';
 import 'package:table_calendar/table_calendar.dart';
@@ -165,7 +162,8 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
   }
 
   // Локальное хранилище реакций (message.id -> список реакций)
-  final Map<int, List<MessageReaction>> _localReactions = {};
+  // реакции временно отключены
+  // final Map<int, List<MessageReaction>> _localReactions = {};
 
   void _onSearchChanged(String query) {
     setState(() {
@@ -392,128 +390,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
     return _myDisplayName;
   }
 
-  // ========== МЕТОДЫ ДЛЯ РАБОТЫ С РЕАКЦИЯМИ ЛОКАЛЬНО ==========
-
-  /// Получить реакции для конкретного сообщения
-  List<MessageReaction> _getReactionsForMessage(int messageId) {
-    return _localReactions[messageId] ?? [];
-  }
-
-  /// Добавить или переключить реакцию на сообщение
-  void _toggleReaction(int messageId, String emoji) async {
-    final reactionApiService = MessageReactionApiService();
-    String? emojiToRemoveLocally;
-
-    setState(() {
-      final List<MessageReaction> reactions =
-          List.from(_localReactions[messageId] ?? []);
-
-      // 1. Убираем любую другую МОЮ реакцию (один юзер - одна реакция)
-      int otherMyReactionIndex =
-          reactions.indexWhere((r) => r.isMyReaction && r.emoji != emoji);
-
-      if (otherMyReactionIndex != -1) {
-        emojiToRemoveLocally = reactions[otherMyReactionIndex].emoji;
-        final otherReaction = reactions[otherMyReactionIndex];
-        if (otherReaction.count == 1) {
-          reactions.removeAt(otherMyReactionIndex);
-        } else {
-          reactions[otherMyReactionIndex] = otherReaction.copyWith(
-            count: otherReaction.count - 1,
-            isMyReaction: false,
-            users: otherReaction.users
-                .where((u) => u.name != _myDisplayName)
-                .toList(),
-          );
-        }
-      }
-
-      // 2. Работаем с выбранной реакцией
-      final existingReactionIndex =
-          reactions.indexWhere((r) => r.emoji == emoji);
-
-      if (existingReactionIndex != -1) {
-        final existingReaction = reactions[existingReactionIndex];
-
-        if (existingReaction.isMyReaction) {
-          // Удаляем свою реакцию (toggle off)
-          if (existingReaction.count == 1) {
-            reactions.removeAt(existingReactionIndex);
-          } else {
-            reactions[existingReactionIndex] = existingReaction.copyWith(
-              count: existingReaction.count - 1,
-              isMyReaction: false,
-              users: existingReaction.users
-                  .where((u) => u.name != _myDisplayName)
-                  .toList(),
-            );
-          }
-          // Вызов API (удаление текущей)
-          reactionApiService.removeReaction(messageId: messageId, emoji: emoji);
-        } else {
-          // Добавляем себя (была чужая реакция)
-          final myUser =
-              ReactionUser(id: -1, name: _myDisplayName, image: null);
-          reactions[existingReactionIndex] = existingReaction.copyWith(
-            count: existingReaction.count + 1,
-            isMyReaction: true,
-            users: [...existingReaction.users, myUser],
-          );
-          // Вызов API (добавление текущей)
-          reactionApiService.addReaction(messageId: messageId, emoji: emoji);
-        }
-      } else {
-        // Создаем новую реакцию
-        final myUser = ReactionUser(id: -1, name: _myDisplayName, image: null);
-        reactions.add(MessageReaction(
-          emoji: emoji,
-          count: 1,
-          isMyReaction: true,
-          users: [myUser],
-        ));
-        // Вызов API (добавление текущей)
-        reactionApiService.addReaction(messageId: messageId, emoji: emoji);
-      }
-
-      // Обновляем хранилище
-      if (reactions.isEmpty) {
-        _localReactions.remove(messageId);
-      } else {
-        _localReactions[messageId] = reactions;
-      }
-    });
-
-    // 3. Вызываем API для удаления старой реакции (если была замена)
-    if (emojiToRemoveLocally != null) {
-      try {
-        await reactionApiService.removeReaction(
-            messageId: messageId, emoji: emojiToRemoveLocally!);
-      } catch (e) {
-        debugPrint('Error removing old reaction via API: $e');
-      }
-    }
-  }
-
-  /// Показать панель выбора реакций
-  void _showReactionPicker(
-      BuildContext context, Message message, Offset position) {
-    showReactionPicker(
-      context: context,
-      position: position,
-      onEmojiSelected: (emoji) {
-        _toggleReaction(message.id, emoji);
-      },
-      onShowFullPicker: () {
-        // Открываем полную панель эмодзи
-        showFullEmojiPicker(
-          context: context,
-          onEmojiSelected: (emoji) {
-            _toggleReaction(message.id, emoji);
-          },
-        );
-      },
-    );
-  }
+  // ========== РЕАКЦИИ ВРЕМЕННО ОТКЛЮЧЕНЫ ==========
 
   /// ✅ НОВЫЙ МЕТОД: Оптимистичная загрузка из кэша (мгновенно, без await)
   Future<void> _loadCachedMessagesOptimistically() async {
@@ -1826,10 +1703,6 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
                           isFirstMessage: isFirstMessage,
                           referralBody: referralBody,
                           isGroupChat: _isGroupChat,
-                          // Передаем функции для реакций
-                          onReactionTap: _toggleReaction,
-                          getReactionsForMessage: _getReactionsForMessage,
-                          onShowReactionPicker: _showReactionPicker,
                         ),
                       );
                       return Column(
@@ -2944,9 +2817,7 @@ class MessageItemWidget extends StatelessWidget {
   final bool isFirstMessage;
   final String? referralBody;
   final bool? isGroupChat;
-  final Function(int messageId, String emoji)? onReactionTap;
-  final List<MessageReaction> Function(int messageId)? getReactionsForMessage;
-  final void Function(BuildContext, Message, Offset)? onShowReactionPicker;
+  // реакции временно отключены
 
   MessageItemWidget({
     super.key,
@@ -2967,9 +2838,7 @@ class MessageItemWidget extends StatelessWidget {
     required this.isFirstMessage,
     this.referralBody,
     this.isGroupChat,
-    this.onReactionTap,
-    this.getReactionsForMessage,
-    this.onShowReactionPicker,
+    // реакции временно отключены
   });
 
   @override
@@ -2994,9 +2863,7 @@ class MessageItemWidget extends StatelessWidget {
         onLongPress: () {
           _showMessageContextMenu(context, message, focusNode);
         },
-        onDoubleTap: () {
-          onReactionTap?.call(message.id, '👍');
-        },
+        // реакции временно отключены
         child: Container(
           width: double.infinity,
           padding: const EdgeInsets.all(2),
@@ -3035,8 +2902,7 @@ class MessageItemWidget extends StatelessWidget {
           isNote: message.isNote,
           isLeadChat: isLeadChat,
           isGroupChat: isGroupChat,
-          reactions: getReactionsForMessage?.call(message.id) ?? [],
-          onReactionTap: (emoji) => onReactionTap?.call(message.id, emoji),
+          // реакции временно отключены
         );
         break;
       case 'image':
@@ -3052,8 +2918,7 @@ class MessageItemWidget extends StatelessWidget {
           isRead: message.isRead,
           isLeadChat: isLeadChat,
           isGroupChat: isGroupChat,
-          reactions: getReactionsForMessage?.call(message.id) ?? [],
-          onReactionTap: (emoji) => onReactionTap?.call(message.id, emoji),
+          // реакции временно отключены
         );
         break;
       case 'file':
@@ -3077,8 +2942,7 @@ class MessageItemWidget extends StatelessWidget {
           },
           senderName: message.senderName,
           isRead: message.isRead,
-          reactions: getReactionsForMessage?.call(message.id) ?? [],
-          onReactionTap: (emoji) => onReactionTap?.call(message.id, emoji),
+          // реакции временно отключены
         );
         break;
       case 'voice':
@@ -3087,8 +2951,7 @@ class MessageItemWidget extends StatelessWidget {
           baseUrl: baseUrl,
           isLeadChat: isLeadChat,
           isGroupChat: isGroupChat,
-          reactions: getReactionsForMessage?.call(message.id) ?? [],
-          onReactionTap: (emoji) => onReactionTap?.call(message.id, emoji),
+          // реакции временно отключены
         );
         break;
       default:
@@ -3272,17 +3135,7 @@ class MessageItemWidget extends StatelessWidget {
       messageSize: messageBox.size,
       messageWidget: _buildMessageContent(context),
       items: menuItems,
-      onReactionSelected: (emoji) {
-        onReactionTap?.call(message.id, emoji);
-      },
-      onShowFullPicker: () {
-        showFullEmojiPicker(
-          context: context,
-          onEmojiSelected: (emoji) {
-            onReactionTap?.call(message.id, emoji);
-          },
-        );
-      },
+      showReactions: false,
       onDismiss: () {
         onMenuStateChanged?.call(false);
       },
