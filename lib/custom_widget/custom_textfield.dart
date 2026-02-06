@@ -161,7 +161,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
             color: const Color(0xff1E2E52),
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 4),
         TextFormField(
           controller: widget.controller,
           focusNode: _focusNode, // ← Добавили наш FocusNode
