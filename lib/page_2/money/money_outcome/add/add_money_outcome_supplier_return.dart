@@ -57,16 +57,22 @@ class _AddMoneyOutcomeSupplierReturnState extends State<AddMoneyOutcomeSupplierR
   }
 
   void _createDocument({bool approve = false}) {
-    if (!_formKey.currentState!.validate()) return;
+    final isFormValid = _formKey.currentState?.validate() ?? false;
+    final isSupplierInvalid = _selectedSupplier == null;
 
-    if (_selectedSupplier == null) {
+    if (_isSupplierInvalid != isSupplierInvalid) {
       setState(() {
-        _isSupplierInvalid = true;
+        _isSupplierInvalid = isSupplierInvalid;
       });
-      _showSnackBar(
-        AppLocalizations.of(context)!.translate('select_supplier') ?? 'Пожалуйста, выберите поставщика',
-        false,
-      );
+    }
+
+    if (!isFormValid || isSupplierInvalid) {
+      if (isSupplierInvalid) {
+        _showSnackBar(
+          AppLocalizations.of(context)!.translate('select_supplier') ?? 'Пожалуйста, выберите поставщика',
+          false,
+        );
+      }
       return;
     }
 
@@ -293,13 +299,12 @@ class _AddMoneyOutcomeSupplierReturnState extends State<AddMoneyOutcomeSupplierR
         ),
         if (_isSupplierInvalid)
           Padding(
-            padding: const EdgeInsets.only(top: 8),
+            padding: const EdgeInsets.only(left: 12, top: 8),
             child: Text(
               AppLocalizations.of(context)!.translate('field_required') ?? 'Поле обязательно для заполнения',
               style: const TextStyle(
-                fontSize: 12,
+                fontSize: 14,
                 fontWeight: FontWeight.w400,
-                fontFamily: 'Gilroy',
                 color: Colors.red,
               ),
             ),
@@ -447,7 +452,7 @@ class _AddMoneyOutcomeSupplierReturnState extends State<AddMoneyOutcomeSupplierR
         keyboardType: const TextInputType.numberWithOptions(decimal: true),
         validator: (value) {
           if (value == null || value.isEmpty) {
-            return AppLocalizations.of(context)!.translate('enter_amount') ?? 'Введите сумму';
+            return AppLocalizations.of(context)!.translate('field_required') ?? 'Введите сумму';
           }
 
           final doubleValue = double.tryParse(value.trim());

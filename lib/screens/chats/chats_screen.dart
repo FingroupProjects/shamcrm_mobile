@@ -1426,6 +1426,7 @@ class _ChatItemsWidgetState extends State<_ChatItemsWidget> {
             chatUniqueId: chat.uniqueId, // Передаем unique_id для сокетов
             endPointInTab: widget.endPointInTab,
             canSendMessage: chat.canSendMessage,
+            initialChannelName: chat.channel,
           ),
         ),
       ),

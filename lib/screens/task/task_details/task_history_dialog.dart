@@ -52,7 +52,7 @@ class _TaskHistoryDialogState extends State<TaskHistoryDialog> {
           child: Text(
             AppLocalizations.of(context)!.translate('execution_history'),
             style: const TextStyle(
-              fontSize: 22,
+              fontSize: 18,
               fontFamily: 'Gilroy',
               fontWeight: FontWeight.w700,
               color: Color(0xff1E2E52),

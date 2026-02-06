@@ -199,23 +199,32 @@ class Chats {
       avatar = "assets/images/AvatarChat.png";
     }
 
-    return ChatItem(displayName!, lastMessage, createDate, avatar, _mapChannelToIcon(channel), unreadCount);
+    return ChatItem(
+      displayName!,
+      lastMessage,
+      createDate,
+      avatar,
+      _mapChannelToIcon(channel),
+      unreadCount,
+    );
   }
 
   String _mapChannelToIcon(String channel) {
+    final normalized = channel.replaceAll('channel-', '');
     const channelIconMap = {
       'mini_app': 'assets/icons/leads/telegram.png',
       'telegram_bot': 'assets/icons/leads/telegram.png',
       'telegram_account': 'assets/icons/leads/telegram.png',
       'whatsapp': 'assets/icons/leads/whatsapp.png',
       'instagram': 'assets/icons/leads/instagram.png',
+      'instagram_comment': 'assets/icons/leads/instagram.png',
       'facebook': 'assets/icons/leads/messenger.png',
       'messenger': 'assets/icons/leads/messenger.png',
       'phone': 'assets/icons/leads/telefon.png',
       'email': 'assets/icons/leads/email.png',
-      'site': '',
+      'site': '', // Используется Flutter иконка Icons.language
     };
-    return channelIconMap[channel] ?? 'assets/icons/leads/default.png';
+    return channelIconMap[normalized] ?? 'assets/icons/leads/default.png';
   }
 }
 
@@ -280,10 +289,11 @@ class Message {
   Duration duration;
   Duration position;
   final ForwardedMessage? forwardedMessage;
+  final Post? post;
   bool isPinned;
   bool isChanged;
   bool isRead;
-  final bool isNote;
+  final bool isNote; // Новое поле
   final ReadStatus? readStatus;
   final String? referralBody;
   final List<MessageReaction> reactions; // Сохранено из ветки reaction
@@ -301,6 +311,7 @@ class Message {
     this.duration = const Duration(),
     this.position = const Duration(),
     this.forwardedMessage,
+    this.post,
     this.isPinned = false,
     this.isChanged = false,
     this.isNote = false,
@@ -311,10 +322,25 @@ class Message {
   });
 
   Message copyWith({
-    int? id, String? text, String? type, String? filePath, bool? isMyMessage,
-    String? createMessateTime, bool? isPlaying, String? senderName, bool? isPause,
-    Duration? duration, Duration? position, ForwardedMessage? forwardedMessage,
-    bool? isPinned, bool? isChanged, bool? isRead, bool? isNote, ReadStatus? readStatus,
+    int? id,
+    String? text,
+    String? type,
+    String? filePath,
+    bool? isMyMessage,
+    String? createMessateTime,
+    bool? isPlaying,
+    String? senderName,
+    bool? isPause,
+    Duration? duration,
+    Duration? position,
+    ForwardedMessage? forwardedMessage,
+    Post? post,
+    bool? isPinned,
+    bool? isChanged,
+    bool? isRead,
+    bool? isNote, // Новое поле
+
+    ReadStatus? readStatus,
     List<MessageReaction>? reactions, // Сохранено из ветки reaction
   }) {
     return Message(
@@ -330,6 +356,7 @@ class Message {
       duration: duration ?? this.duration,
       position: position ?? this.position,
       forwardedMessage: forwardedMessage ?? this.forwardedMessage,
+      post: post ?? this.post,
       isPinned: isPinned ?? this.isPinned,
       isChanged: isChanged ?? this.isChanged,
       isRead: isRead ?? this.isRead,
@@ -378,14 +405,23 @@ class Message {
       try {
         forwardedMessage = ForwardedMessage.fromJson(json['forwarded_message']);
       } catch (_) {
-        final fJson = json['forwarded_message'];
-        forwardedMessage = ForwardedMessage(
-          id: fJson['id'] ?? 0,
-          text: _stripHtmlTags(fJson['text'] ?? ''),
-          type: fJson['type'] ?? 'text',
-          senderName: fJson['sender']?['name'] ?? 'Без имени',
-        );
+        try {
+          final fJson = json['forwarded_message'];
+          forwardedMessage = ForwardedMessage(
+            id: fJson['id'] ?? 0,
+            text: _stripHtmlTags(fJson['text'] ?? ''),
+            type: fJson['type'] ?? 'text',
+            senderName: fJson['sender']?['name'] ?? 'Без имени',
+          );
+        } catch (_) {}
       }
+    }
+
+    Post? post;
+    if (json['post'] != null) {
+      try {
+        post = Post.fromJson(json['post']);
+      } catch (_) {}
     }
 
     // ✅ РЕАКЦИИ ИЗ ВЕТКИ REACTION
@@ -400,7 +436,9 @@ class Message {
       id: json['id'],
       text: text,
       type: json['type'],
-      senderName: json['sender']?['name'] ?? 'Без имени',
+      senderName: json['sender'] == null
+          ? 'Без имени'
+          : json['sender']['name'] ?? 'Без имени',
       referralBody: json['chat']?['referral_body'],
       createMessateTime: json['created_at'] ?? '',
       filePath: json['file_path'],
@@ -408,14 +446,22 @@ class Message {
       isChanged: json['is_changed'] ?? false,
       isMyMessage: isMyMessage,
       forwardedMessage: forwardedMessage,
+      post: post,
       isRead: json['is_read'] ?? false,
       readStatus: readStatus,
       isNote: json['is_note'] ?? false,
       reactions: reactionsList,
       duration: Duration(
-        seconds: json['voice_duration'] != null ? double.tryParse(json['voice_duration'].toString())?.round() ?? 0 : 20,
+        seconds: json['voice_duration'] != null
+            ? double.tryParse(json['voice_duration'].toString())?.round() ?? 0
+            : 20,
       ),
     );
+  }
+
+  @override
+  String toString() {
+    return 'Message{id: $id, text: $text, type: $type, filePath: $filePath, isMyMessage: $isMyMessage, isPlaying: $isPlaying, isPause: $isPause, duration: $duration, position: $position, forwardedMessage: $forwardedMessage, isPinned: $isPinned, isChanged: $isChanged, isRead: $isRead, readStatus: $readStatus}';
   }
 }
 
@@ -434,6 +480,35 @@ class ForwardedMessage {
       type: json['type'] ?? 'text',
       senderName: json['sender']?['name'] ?? 'Без имени',
     );
+  }
+  @override
+  String toString() {
+    return 'ForwardedMessage{id: $id, text: $text, type: $type, senderName: $senderName}';
+  }
+}
+
+class Post {
+  final int id;
+  final String caption;
+  final String? mediaUrl;
+
+  Post({
+    required this.id,
+    required this.caption,
+    this.mediaUrl,
+  });
+
+  factory Post.fromJson(Map<String, dynamic> json) {
+    return Post(
+      id: json['id'] ?? 0,
+      caption: json['caption']?.toString() ?? '',
+      mediaUrl: json['media_url']?.toString(),
+    );
+  }
+
+  @override
+  String toString() {
+    return 'Post{id: $id, caption: $caption, mediaUrl: $mediaUrl}';
   }
 }
 

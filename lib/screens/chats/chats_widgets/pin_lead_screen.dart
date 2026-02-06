@@ -21,6 +21,7 @@ class PinnedLeadMessageWidget extends StatelessWidget {
     'telegram_account': 'assets/icons/leads/telegram.png',
     'whatsapp': 'assets/icons/leads/whatsapp.png',
     'instagram': 'assets/icons/leads/instagram.png',
+    'instagram_comment': 'assets/icons/leads/instagram.png',
     'facebook': 'assets/icons/leads/messenger.png',
     'email': 'assets/icons/leads/email.png',
     'site': '', // Используется Flutter иконка Icons.language
@@ -28,7 +29,9 @@ class PinnedLeadMessageWidget extends StatelessWidget {
 
   String _getChannelIcon(String? channelType) {
     debugPrint('Channel type received: $channelType');
-    final icon = channelIconMap[channelType] ?? 'assets/icons/leads/default.png';
+    final normalized = (channelType ?? '').replaceAll('channel-', '');
+    final icon =
+        channelIconMap[normalized] ?? 'assets/icons/leads/default.png';
     debugPrint('Selected icon: $icon');
     return icon;
   }

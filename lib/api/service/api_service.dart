@@ -6420,7 +6420,7 @@ Future<List<Message>> getMessages(
 
 // Метод для отправки текстового сообщения
   Future<void> sendMessage(int chatId, String message,
-      {String? replyMessageId}) async {
+      {String? replyMessageId, String? responseType}) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/v2/chat/sendMessage/$chatId');
     if (kDebugMode) {
@@ -6430,6 +6430,7 @@ Future<List<Message>> getMessages(
     final response = await _postRequest(path, {
       'message': message,
       if (replyMessageId != null) 'forwarded_message_id': replyMessageId,
+      if (responseType != null) 'response_type': responseType,
     });
 
     if (response.statusCode != 200) {
@@ -6482,7 +6483,8 @@ Future<List<Message>> getMessages(
   }
 
 // Метод для отправки audio file
-  Future<void> sendChatAudioFile(int chatId, File audio) async {
+  Future<void> sendChatAudioFile(int chatId, File audio,
+      {String? responseType}) async {
     final token = await getToken();
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/v2/chat/sendVoice/$chatId');
@@ -6496,7 +6498,10 @@ Future<List<Message>> getMessages(
     try {
       final voice = await MultipartFile.fromFile(audio.path,
           contentType: MediaType('audio', 'm4a'));
-      FormData formData = FormData.fromMap({'voice': voice});
+      FormData formData = FormData.fromMap({
+        'voice': voice,
+        if (responseType != null) 'response_type': responseType,
+      });
 
       var response = await dio.post(
         requestUrl,
@@ -6533,7 +6538,8 @@ Future<List<Message>> getMessages(
   }
 
 // Метод для отправки audio file
-  Future<void> sendChatFile(int chatId, String pathFile) async {
+  Future<void> sendChatFile(int chatId, String pathFile,
+      {String? responseType}) async {
     final token = await getToken();
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/v2/chat/sendFile/$chatId');
@@ -6545,8 +6551,10 @@ Future<List<Message>> getMessages(
 
     Dio dio = Dio();
     try {
-      FormData formData =
-          FormData.fromMap({'file': await MultipartFile.fromFile(pathFile)});
+      FormData formData = FormData.fromMap({
+        'file': await MultipartFile.fromFile(pathFile),
+        if (responseType != null) 'response_type': responseType,
+      });
 
       var response = await dio.post(
         requestUrl,
@@ -10108,6 +10116,8 @@ Future<int> DeleteAllNotifications() async {
     int? managerId,
     int? integration,
     required double sum,
+    List<Map<String, dynamic>>? customFields,
+    List<Map<String, int>>? directoryValues,
   }) async {
     try {
       final token = await getToken();
@@ -10148,6 +10158,14 @@ Future<int> DeleteAllNotifications() async {
       
       // Всегда отправляем branch_id, если он указан
       body['branch_id'] = branchId;
+
+      if (customFields != null && customFields.isNotEmpty) {
+        body['custom_fields'] = customFields;
+      }
+
+      if (directoryValues != null && directoryValues.isNotEmpty) {
+        body['directory_values'] = directoryValues;
+      }
     
 
       ////debugPrint('ApiService: Тело запроса для создания заказа: ${jsonEncode(body)}');
@@ -10212,6 +10230,8 @@ Future<int> DeleteAllNotifications() async {
     String? commentToCourier,
     int? managerId, // Новое поле
     required double sum,
+    List<Map<String, dynamic>>? customFields,
+    List<Map<String, int>>? directoryValues,
   }) async {
     try {
       final token = await getToken();
@@ -10254,6 +10274,14 @@ Future<int> DeleteAllNotifications() async {
       
       // Всегда отправляем branch_id, если он указан
       body['branch_id'] = branchId;
+
+      if (customFields != null && customFields.isNotEmpty) {
+        body['custom_fields'] = customFields;
+      }
+
+      if (directoryValues != null && directoryValues.isNotEmpty) {
+        body['directory_values'] = directoryValues;
+      }
 
       ////debugPrint('ApiService: Тело запроса для обновления заказа: ${jsonEncode(body)}');
 
@@ -16854,7 +16882,7 @@ Future<List<ExpenseArticleDashboardWarehouse>> getExpenseArticleDashboardWarehou
         debugPrint('ApiService: Loading all field configurations');
       }
 
-      final tables = ['leads', 'tasks', 'deals'];
+      final tables = ['leads', 'tasks', 'deals', 'orders'];
 
       for (final tableName in tables) {
         try {
@@ -16889,7 +16917,7 @@ Future<List<ExpenseArticleDashboardWarehouse>> getExpenseArticleDashboardWarehou
       final prefs = await SharedPreferences.getInstance();
       final organizationId = await getSelectedOrganization();
 
-      final tables = ['leads', 'tasks', 'deals'];
+      final tables = ['leads', 'tasks', 'deals', 'orders'];
 
       for (final tableName in tables) {
         final cacheKey = 'field_config_${tableName}_org_${organizationId}';
