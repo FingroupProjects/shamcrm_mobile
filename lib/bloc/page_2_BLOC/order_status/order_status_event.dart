@@ -88,6 +88,8 @@ class CreateOrder extends OrderEvent {
   final String? commentToCourier;
   final int? managerId; // Новое поле
   final double sum;
+  final List<Map<String, dynamic>>? customFields;
+  final List<Map<String, int>>? directoryValues;
 
   CreateOrder({
     required this.phone,
@@ -102,6 +104,8 @@ class CreateOrder extends OrderEvent {
     this.commentToCourier,
     this.managerId, // Добавляем в конструктор
     required this.sum,
+    this.customFields,
+    this.directoryValues,
   });
 }
 class UpdateOrder extends OrderEvent {
@@ -118,6 +122,8 @@ class UpdateOrder extends OrderEvent {
   final int? managerId; // Новое поле
   final int? statusId; // Добавлено для обновления списка
   final double sum;
+  final List<Map<String, dynamic>>? customFields;
+  final List<Map<String, int>>? directoryValues;
 
   UpdateOrder({
     required this.orderId,
@@ -133,6 +139,8 @@ class UpdateOrder extends OrderEvent {
     this.managerId,
     this.statusId,
     required this.sum,
+    this.customFields,
+    this.directoryValues,
   });
 }
 class DeleteOrder extends OrderEvent {

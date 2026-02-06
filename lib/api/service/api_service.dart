@@ -10116,6 +10116,8 @@ Future<int> DeleteAllNotifications() async {
     int? managerId,
     int? integration,
     required double sum,
+    List<Map<String, dynamic>>? customFields,
+    List<Map<String, int>>? directoryValues,
   }) async {
     try {
       final token = await getToken();
@@ -10156,6 +10158,14 @@ Future<int> DeleteAllNotifications() async {
       
       // Всегда отправляем branch_id, если он указан
       body['branch_id'] = branchId;
+
+      if (customFields != null && customFields.isNotEmpty) {
+        body['custom_fields'] = customFields;
+      }
+
+      if (directoryValues != null && directoryValues.isNotEmpty) {
+        body['directory_values'] = directoryValues;
+      }
     
 
       ////debugPrint('ApiService: Тело запроса для создания заказа: ${jsonEncode(body)}');
@@ -10220,6 +10230,8 @@ Future<int> DeleteAllNotifications() async {
     String? commentToCourier,
     int? managerId, // Новое поле
     required double sum,
+    List<Map<String, dynamic>>? customFields,
+    List<Map<String, int>>? directoryValues,
   }) async {
     try {
       final token = await getToken();
@@ -10262,6 +10274,14 @@ Future<int> DeleteAllNotifications() async {
       
       // Всегда отправляем branch_id, если он указан
       body['branch_id'] = branchId;
+
+      if (customFields != null && customFields.isNotEmpty) {
+        body['custom_fields'] = customFields;
+      }
+
+      if (directoryValues != null && directoryValues.isNotEmpty) {
+        body['directory_values'] = directoryValues;
+      }
 
       ////debugPrint('ApiService: Тело запроса для обновления заказа: ${jsonEncode(body)}');
 
@@ -16862,7 +16882,7 @@ Future<List<ExpenseArticleDashboardWarehouse>> getExpenseArticleDashboardWarehou
         debugPrint('ApiService: Loading all field configurations');
       }
 
-      final tables = ['leads', 'tasks', 'deals'];
+      final tables = ['leads', 'tasks', 'deals', 'orders'];
 
       for (final tableName in tables) {
         try {
@@ -16897,7 +16917,7 @@ Future<List<ExpenseArticleDashboardWarehouse>> getExpenseArticleDashboardWarehou
       final prefs = await SharedPreferences.getInstance();
       final organizationId = await getSelectedOrganization();
 
-      final tables = ['leads', 'tasks', 'deals'];
+      final tables = ['leads', 'tasks', 'deals', 'orders'];
 
       for (final tableName in tables) {
         final cacheKey = 'field_config_${tableName}_org_${organizationId}';

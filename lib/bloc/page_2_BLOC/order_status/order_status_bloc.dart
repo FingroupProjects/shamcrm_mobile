@@ -417,6 +417,8 @@ Future<void> _createOrder(CreateOrder event, Emitter<OrderState> emit) async {
       managerId: event.managerId,
       integration: 1,
       sum: event.sum,
+      customFields: event.customFields,
+      directoryValues: event.directoryValues,
     );
     //print('OrderBloc: Результат создания заказа: $result');
 
@@ -480,6 +482,8 @@ Future<void> _updateOrder(UpdateOrder event, Emitter<OrderState> emit) async {
       commentToCourier: event.commentToCourier,
       managerId: event.managerId,
       sum: event.sum,
+      customFields: event.customFields,
+      directoryValues: event.directoryValues,
     );
     //print('OrderBloc: Ответ сервера на обновление заказа: $response');
 
