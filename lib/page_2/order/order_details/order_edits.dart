@@ -424,6 +424,7 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
           'is_active': config.isActive ? 1 : 0,
           'is_required': config.originalRequired ? 1 : 0,
           'show_on_table': config.showOnTable ? 1 : 0,
+          'show_on_site': config.showOnSite ? 1 : 0,
         });
       }
 
@@ -750,7 +751,7 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
 
   List<Widget> _buildConfiguredFieldWidgets() {
     final sorted = fieldConfigurations
-        .where((config) => config.isActive)
+        .where((config) => config.isActive || _isAlwaysVisible(config))
         .toList()
       ..sort((a, b) => a.position.compareTo(b.position));
 
@@ -981,12 +982,49 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
 
       if (current.position != original.position ||
           current.isActive != original.isActive ||
-          current.showOnTable != original.showOnTable) {
+          current.showOnTable != original.showOnTable ||
+          current.showOnSite != original.showOnSite) {
         return true;
       }
     }
 
     return false;
+  }
+
+  bool _isHideToggleAllowed(FieldConfiguration config) {
+    const lockedFields = {
+      'phone',
+      'lead_id',
+      'manager_id',
+      'order_status_id',
+      'status_id',
+      'comment_to_courier',
+      'comment',
+      'integration_id',
+      'payment_type',
+      'payment_method',
+    };
+    return !lockedFields.contains(config.fieldName);
+  }
+
+  bool _isAlwaysVisible(FieldConfiguration config) {
+    return !_isHideToggleAllowed(config);
+  }
+
+  bool _canShowOnSiteToggle(FieldConfiguration config) {
+    if (config.isCustomField) return true;
+    const showOnSiteFields = {
+      'order_type',
+      'order_type_id',
+      'type',
+      'branch_id',
+      'storage_id',
+      'comment_to_courier',
+      'comment',
+      'payment_type',
+      'payment_method',
+    };
+    return showOnSiteFields.contains(config.fieldName);
   }
 
   Future<bool> _showExitSettingsDialog() async {
@@ -1049,22 +1087,38 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
   String _getFieldDisplayName(FieldConfiguration config) {
     final loc = AppLocalizations.of(context)!;
     switch (config.fieldName) {
+      case 'order_status_id':
+      case 'status_id':
+        return loc.translate('order_status_label');
       case 'lead_id':
-        return loc.translate('client');
+        return loc.translate('client_label');
       case 'phone':
-        return loc.translate('client_phone');
+        return loc.translate('phone_label');
       case 'branch_id':
-        return loc.translate('branch_order');
+      case 'storage_id':
+        return loc.translate('branch_label');
       case 'manager_id':
-        return loc.translate('manager_details');
+        return loc.translate('manager_label');
+      case 'integration_id':
+        return loc.translate('internet_store_label');
+      case 'payment_type':
+      case 'payment_method':
+        return loc.translate('payment_method_label');
+      case 'deal_id':
+        return loc.translate('deal_label');
+      case 'order_type':
+      case 'order_type_id':
+      case 'type':
+        return loc.translate('order_type_label');
       case 'delivery_type':
       case 'delivery':
       case 'deliveryType':
         return loc.translate('delivery');
       case 'delivery_address_id':
-        return loc.translate('order_address');
+        return loc.translate('order_address_label');
       case 'comment_to_courier':
-        return loc.translate('comment_client');
+      case 'comment':
+        return loc.translate('comment_label');
       case 'goods':
       case 'order_goods':
       case 'items':
@@ -1154,6 +1208,7 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
                     type: config.type,
                     isDirectory: config.isDirectory,
                     showOnTable: config.showOnTable,
+                    showOnSite: config.showOnSite,
                     originalRequired: config.originalRequired,
                   ));
                 }
@@ -1237,84 +1292,166 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
                             ],
                           ),
                           SizedBox(height: 12),
-                          GestureDetector(
-                            behavior: HitTestBehavior.opaque,
-                            onTap: () {
-                              setState(() {
-                                final updatedConfig = FieldConfiguration(
-                                  id: config.id,
-                                  tableName: config.tableName,
-                                  fieldName: config.fieldName,
-                                  position: config.position,
-                                  required: false,
-                                  isActive: !config.isActive,
-                                  isCustomField: config.isCustomField,
-                                  createdAt: config.createdAt,
-                                  updatedAt: config.updatedAt,
-                                  customFieldId: config.customFieldId,
-                                  directoryId: config.directoryId,
-                                  type: config.type,
-                                  isDirectory: config.isDirectory,
-                                  showOnTable: config.showOnTable,
-                                  originalRequired: config.originalRequired,
-                                );
+                          if (_isHideToggleAllowed(config))
+                            GestureDetector(
+                              behavior: HitTestBehavior.opaque,
+                              onTap: () {
+                                setState(() {
+                                  final updatedConfig = FieldConfiguration(
+                                    id: config.id,
+                                    tableName: config.tableName,
+                                    fieldName: config.fieldName,
+                                    position: config.position,
+                                    required: false,
+                                    isActive: !config.isActive,
+                                    isCustomField: config.isCustomField,
+                                    createdAt: config.createdAt,
+                                    updatedAt: config.updatedAt,
+                                    customFieldId: config.customFieldId,
+                                    directoryId: config.directoryId,
+                                    type: config.type,
+                                    isDirectory: config.isDirectory,
+                                    showOnTable: config.showOnTable,
+                                    showOnSite: config.showOnSite,
+                                    originalRequired: config.originalRequired,
+                                  );
 
-                                final idx = fieldConfigurations
-                                    .indexWhere((f) => f.id == config.id);
-                                if (idx != -1) {
-                                  fieldConfigurations[idx] = updatedConfig;
-                                }
-                              });
-                            },
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 4),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  AnimatedContainer(
-                                    duration: Duration(milliseconds: 200),
-                                    curve: Curves.easeInOut,
-                                    width: 24,
-                                    height: 24,
-                                    decoration: BoxDecoration(
-                                      color: config.isActive
-                                          ? Color(0xff4759FF)
-                                          : Colors.white,
-                                      border: Border.all(
+                                  final idx = fieldConfigurations
+                                      .indexWhere((f) => f.id == config.id);
+                                  if (idx != -1) {
+                                    fieldConfigurations[idx] = updatedConfig;
+                                  }
+                                });
+                              },
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 4),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    AnimatedContainer(
+                                      duration: Duration(milliseconds: 200),
+                                      curve: Curves.easeInOut,
+                                      width: 24,
+                                      height: 24,
+                                      decoration: BoxDecoration(
                                         color: config.isActive
                                             ? Color(0xff4759FF)
-                                            : Color(0xffCCD5E0),
-                                        width: 2,
+                                            : Colors.white,
+                                        border: Border.all(
+                                          color: config.isActive
+                                              ? Color(0xff4759FF)
+                                              : Color(0xffCCD5E0),
+                                          width: 2,
+                                        ),
+                                        borderRadius: BorderRadius.circular(6),
                                       ),
-                                      borderRadius: BorderRadius.circular(6),
-                                    ),
-                                    child: AnimatedOpacity(
-                                      duration: Duration(milliseconds: 200),
-                                      opacity: config.isActive ? 1.0 : 0.0,
-                                      child: Icon(
-                                        Icons.check_rounded,
-                                        size: 16,
-                                        color: Colors.white,
+                                      child: AnimatedOpacity(
+                                        duration: Duration(milliseconds: 200),
+                                        opacity: config.isActive ? 1.0 : 0.0,
+                                        child: Icon(
+                                          Icons.check_rounded,
+                                          size: 16,
+                                          color: Colors.white,
+                                        ),
                                       ),
                                     ),
-                                  ),
-                                  SizedBox(width: 12),
-                                  Text(
-                                    AppLocalizations.of(context)!
-                                        .translate('show_field'),
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      fontFamily: 'Gilroy',
-                                      fontWeight: FontWeight.w500,
-                                      color: config.isActive
-                                          ? Color(0xff1E2E52)
-                                          : Color(0xff6B7A99),
+                                    SizedBox(width: 12),
+                                    Text(
+                                      AppLocalizations.of(context)!
+                                          .translate('show_field'),
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        fontFamily: 'Gilroy',
+                                        fontWeight: FontWeight.w500,
+                                        color: config.isActive
+                                            ? Color(0xff1E2E52)
+                                            : Color(0xff6B7A99),
+                                      ),
                                     ),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
                             ),
-                          ),
+                          if (_canShowOnSiteToggle(config))
+                            GestureDetector(
+                              behavior: HitTestBehavior.opaque,
+                              onTap: () {
+                                setState(() {
+                                  final updatedConfig = FieldConfiguration(
+                                    id: config.id,
+                                    tableName: config.tableName,
+                                    fieldName: config.fieldName,
+                                    position: config.position,
+                                    required: false,
+                                    isActive: config.isActive,
+                                    isCustomField: config.isCustomField,
+                                    createdAt: config.createdAt,
+                                    updatedAt: config.updatedAt,
+                                    customFieldId: config.customFieldId,
+                                    directoryId: config.directoryId,
+                                    type: config.type,
+                                    isDirectory: config.isDirectory,
+                                    showOnTable: config.showOnTable,
+                                    showOnSite: !config.showOnSite,
+                                    originalRequired: config.originalRequired,
+                                  );
+
+                                  final idx = fieldConfigurations
+                                      .indexWhere((f) => f.id == config.id);
+                                  if (idx != -1) {
+                                    fieldConfigurations[idx] = updatedConfig;
+                                  }
+                                });
+                              },
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 4),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    AnimatedContainer(
+                                      duration: Duration(milliseconds: 200),
+                                      curve: Curves.easeInOut,
+                                      width: 24,
+                                      height: 24,
+                                      decoration: BoxDecoration(
+                                        color: config.showOnSite
+                                            ? Color(0xff4759FF)
+                                            : Colors.white,
+                                        border: Border.all(
+                                          color: config.showOnSite
+                                              ? Color(0xff4759FF)
+                                              : Color(0xffCCD5E0),
+                                          width: 2,
+                                        ),
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: AnimatedOpacity(
+                                        duration: Duration(milliseconds: 200),
+                                        opacity: config.showOnSite ? 1.0 : 0.0,
+                                        child: Icon(
+                                          Icons.check_rounded,
+                                          size: 16,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                    ),
+                                    SizedBox(width: 12),
+                                    Text(
+                                      AppLocalizations.of(context)!
+                                          .translate('show_on_site'),
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        fontFamily: 'Gilroy',
+                                        fontWeight: FontWeight.w500,
+                                        color: config.showOnSite
+                                            ? Color(0xff1E2E52)
+                                            : Color(0xff6B7A99),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
                         ],
                       ),
                     ),
@@ -1824,6 +1961,7 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
                     type: config.type,
                     isDirectory: config.isDirectory,
                     showOnTable: config.showOnTable,
+                    showOnSite: config.showOnSite,
                     originalRequired: config.originalRequired,
                   );
                 }).toList();

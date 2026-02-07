@@ -192,41 +192,76 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
     }
   }
 
+  String _withColon(String value) {
+    if (value.trim().endsWith(':')) return value;
+    return '$value:';
+  }
+
   String _getFieldName(FieldConfiguration fc) {
     if (fc.isCustomField || fc.isDirectory) {
-      return '${fc.fieldName}:';
+      return _withColon(fc.fieldName);
     }
 
     switch (fc.fieldName) {
       case 'lead_id':
-        return AppLocalizations.of(context)!.translate('client');
+        return _withColon(
+            AppLocalizations.of(context)!.translate('client_label'));
       case 'manager_id':
-        return AppLocalizations.of(context)!.translate('manager_details');
+        return _withColon(
+            AppLocalizations.of(context)!.translate('manager_label'));
       case 'author' || 'author_id':
-        return AppLocalizations.of(context)!.translate('author_details');
+        return _withColon(
+            AppLocalizations.of(context)!.translate('author_label'));
       case 'phone':
-        return AppLocalizations.of(context)!.translate('client_phone');
+        return _withColon(
+            AppLocalizations.of(context)!.translate('phone_label'));
       case 'order_date':
-        return AppLocalizations.of(context)!.translate('order_date');
+        return _withColon(
+            AppLocalizations.of(context)!.translate('order_date_label'));
       case 'created_at':
-        return AppLocalizations.of(context)!.translate('creation_date_details');
+        return _withColon(
+            AppLocalizations.of(context)!.translate('creation_date_label'));
       case 'order_status_id':
       case 'status_id':
-        return AppLocalizations.of(context)!.translate('order_status');
-      case 'delivery_address_id':
-        return AppLocalizations.of(context)!.translate('order_address');
-      case 'branch_id':
-        return AppLocalizations.of(context)!.translate('branch_order');
-      case 'comment_to_courier':
-        return AppLocalizations.of(context)!.translate('comment_client');
-      case 'sum':
-        return AppLocalizations.of(context)!.translate('price');
+        return _withColon(
+            AppLocalizations.of(context)!.translate('order_status_label'));
+      case 'integration_id':
+        return _withColon(
+            AppLocalizations.of(context)!.translate('internet_store_label'));
       case 'payment_type':
-        return AppLocalizations.of(context)!.translate('payment_method_title');
+      case 'payment_method':
+        return _withColon(
+            AppLocalizations.of(context)!.translate('payment_method_label'));
+      case 'deal_id':
+        return _withColon(
+            AppLocalizations.of(context)!.translate('deal_label'));
+      case 'order_type':
+      case 'order_type_id':
+      case 'type':
+        return _withColon(
+            AppLocalizations.of(context)!.translate('order_type_label'));
+      case 'deliveryType':
+      case 'delivery_type':
+      case 'delivery':
+        return _withColon(AppLocalizations.of(context)!.translate('delivery'));
+      case 'delivery_address_id':
+        return _withColon(
+            AppLocalizations.of(context)!.translate('order_address_label'));
+      case 'branch_id':
+      case 'storage_id':
+        return _withColon(
+            AppLocalizations.of(context)!.translate('branch_label'));
+      case 'comment_to_courier':
+      case 'comment':
+        return _withColon(
+            AppLocalizations.of(context)!.translate('comment_label'));
+      case 'sum':
+        return _withColon(AppLocalizations.of(context)!.translate('price'));
       case 'payment_status':
-        return AppLocalizations.of(context)!.translate('payment_status_title');
+        return _withColon(
+            AppLocalizations.of(context)!.translate('payment_status'));
       default:
-        return '${fc.fieldName}:';
+        return _withColon(fc.fieldName);
     }
   }
 
