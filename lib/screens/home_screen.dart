@@ -762,14 +762,14 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       inactiveIconsGroup1.add('assets/icons/MyNavBar/chats_OFF.png');
     }
 
-    // Аналитика - новый раздел
-    if (hasPermission('section.dashboard')) {
-      widgetsGroup1.add(AnalyticsScreen());
-      titleKeysGroup1.add('appbar_analytics');
-      navBarTitleKeysGroup1.add('appbar_analytics');
-      activeIconsGroup1.add('assets/icons/MyNavBar/dashboard_ON.png');
-      inactiveIconsGroup1.add('assets/icons/MyNavBar/dashboard_OFF.png');
-    }
+    // // Аналитика - новый раздел
+    // if (hasPermission('section.dashboard')) {
+    //   widgetsGroup1.add(AnalyticsScreen());
+    //   titleKeysGroup1.add('appbar_analytics');
+    //   navBarTitleKeysGroup1.add('appbar_analytics');
+    //   activeIconsGroup1.add('assets/icons/MyNavBar/dashboard_ON.png');
+    //   inactiveIconsGroup1.add('assets/icons/MyNavBar/dashboard_OFF.png');
+    // }
 
     // ========== КЛЮЧЕВАЯ ЛОГИКА ==========
 

@@ -512,6 +512,29 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
     );
   }
 
+  bool _isFieldRequiredByNames(Set<String> names) {
+    if (!isConfigurationLoaded) return false;
+    return fieldConfigurations.any(
+      (config) =>
+          (config.isActive || _isAlwaysVisible(config)) &&
+          config.originalRequired &&
+          names.contains(config.fieldName),
+    );
+  }
+
+  String _normalizeOrderErrorMessage(String message) {
+    // For validation-like backend errors, show a single generic message.
+    final lower = message.toLowerCase();
+    if (lower.contains('обязательно') ||
+        lower.contains('required') ||
+        message.contains('manager_id')) {
+      return AppLocalizations.of(context)!.translate('fill_all_required_fields');
+    }
+
+    final normalized = message.replaceAll(RegExp(r'\bException:\s*'), '');
+    return normalized.trim();
+  }
+
   bool _isItemsField(String fieldName) {
     return <String>{'goods', 'order_goods', 'items', 'sum'}.contains(fieldName);
   }
@@ -1778,7 +1801,7 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
                 } else if (state is OrderError) {
                   showCustomSnackBar(
                     context: context,
-                    message: state.message,
+                    message: _normalizeOrderErrorMessage(state.message),
                     isSuccess: false,
                   );
                 } else if (state is OrderCreateAddressSuccess) {
@@ -1903,24 +1926,30 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
   }
 
   AppBar _buildAppBar() {
+    
     return AppBar(
       backgroundColor: Colors.white,
       forceMaterialTransparency: true,
       elevation: 0,
+      
       leading: IconButton(
         icon: const Icon(Icons.arrow_back_ios,
             color: Color(0xff1E2E52), size: 24),
         onPressed: () => Navigator.pop(context),
       ),
+      leadingWidth: 45,
       title: Text(
         '${AppLocalizations.of(context)!.translate('edit_order')} №${widget.order.orderNumber}',
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
         style: const TextStyle(
-          fontSize: 20,
+          fontSize: 18,
           fontFamily: 'Gilroy',
           fontWeight: FontWeight.w600,
           color: Color(0xff1E2E52),
         ),
       ),
+      titleSpacing: 0,
       centerTitle: false,
       actions: [
         IconButton(
@@ -2368,9 +2397,20 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
                     _isFieldActiveByNames({'branch_id', 'storage_id'});
                 final bool deliveryAddressRequired =
                     _isFieldActiveByNames({'delivery_address_id'});
+                final bool managerRequired =
+                    _isFieldRequiredByNames({'manager_id'});
 
                 if (_formKey.currentState!.validate() &&
                     (!goodsRequired || _items.isNotEmpty)) {
+                  if (managerRequired && selectedManager == null) {
+                    showCustomSnackBar(
+                      context: context,
+                      message: AppLocalizations.of(context)!
+                          .translate('fill_all_required_fields'),
+                      isSuccess: false,
+                    );
+                    return;
+                  }
                   if (_deliveryMethod ==
                           AppLocalizations.of(context)!
                               .translate('self_delivery') &&

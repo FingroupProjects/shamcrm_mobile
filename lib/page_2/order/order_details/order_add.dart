@@ -562,31 +562,6 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
       );
     }
 
-    if (config.fieldName == 'manager_id') {
-      final field = _buildStandardField(config);
-      if (field == null || field is SizedBox) return field;
-
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          field,
-          if (isManagerInvalid)
-            Padding(
-              padding: const EdgeInsets.only(top: 4, left: 4),
-              child: Text(
-                AppLocalizations.of(context)!.translate('field_required'),
-                style: TextStyle(
-                  color: Colors.red,
-                  fontSize: 12,
-                  fontFamily: 'Gilroy',
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ),
-        ],
-      );
-    }
-
     return _buildStandardField(config);
   }
 
@@ -2473,15 +2448,15 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                   );
                   return;
                 }
-                if (branchRequired && _selectedBranch == null) {
-                  showCustomSnackBar(
-                    context: context,
-                    message: AppLocalizations.of(context)!
-                        .translate('please_select_branch'),
-                    isSuccess: false,
-                  );
-                  return;
-                }
+                // if (branchRequired && _selectedBranch == null) {
+                //   showCustomSnackBar(
+                //     context: context,
+                //     message: AppLocalizations.of(context)!
+                //         .translate('please_select_branch'),
+                //     isSuccess: false,
+                //   );
+                //   return;
+                // }
                 if (deliveryAddressRequired &&
                     _deliveryMethod ==
                         AppLocalizations.of(context)!.translate('delivery') &&

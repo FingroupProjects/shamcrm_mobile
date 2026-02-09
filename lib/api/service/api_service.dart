@@ -17270,8 +17270,18 @@ class ApiService {
       final organizationId = await getSelectedOrganization();
       final salesFunnelId = await getSelectedSalesFunnel();
 
+      final normalizedUpdates = updates.map((update) {
+        if (update.containsKey('show_on_site')) {
+          return {
+            ...update,
+            'show_to_site': update['show_on_site'],
+          }..remove('show_on_site');
+        }
+        return update;
+      }).toList();
+
       final body = {
-        'updates': updates,
+        'updates': normalizedUpdates,
         'organization_id': organizationId,
         'sales_funnel_id': salesFunnelId,
       };
