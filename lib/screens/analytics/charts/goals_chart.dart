@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:crm_task_manager/screens/analytics/utils/responsive_helper.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
-import 'package:crm_task_manager/models/dashboard_charts_models/user_task _model.dart';
+import 'package:crm_task_manager/screens/analytics/models/users_chart_model.dart';
 
 class GoalsChart extends StatefulWidget {
   const GoalsChart({super.key});
@@ -13,7 +13,8 @@ class GoalsChart extends StatefulWidget {
 class _GoalsChartState extends State<GoalsChart> {
   bool _isLoading = true;
   String? _error;
-  List<UserTaskCompletion> _goals = [];
+  List<UserPerformance> _goals = [];
+  int _averageKpi = 0;
 
   @override
   void initState() {
@@ -29,10 +30,11 @@ class _GoalsChartState extends State<GoalsChart> {
 
     try {
       final apiService = ApiService();
-      final response = await apiService.getUsersChartData();
+      final response = await apiService.getUsersChartV2();
 
       setState(() {
-        _goals = response;
+        _goals = response.users;
+        _averageKpi = response.averageKpi;
         _isLoading = false;
       });
     } catch (e) {
@@ -175,7 +177,7 @@ class _GoalsChartState extends State<GoalsChart> {
                                   padding: const EdgeInsets.only(bottom: 20),
                                   child: _buildEmployeeProgress(
                                     goal.name,
-                                    goal.finishedTasksprocent.round(),
+                                    goal.finishedTasksPercent.round(),
                                     color,
                                   ),
                                 );
@@ -231,7 +233,7 @@ class _GoalsChartState extends State<GoalsChart> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        '${_goals.isEmpty ? 0 : (_goals.map((g) => g.finishedTasksprocent).reduce((a, b) => a + b) / _goals.length).toStringAsFixed(0)}%',
+                        '${_averageKpi.toStringAsFixed(0)}%',
                         style: const TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.w700,

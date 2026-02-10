@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:crm_task_manager/screens/analytics/utils/responsive_helper.dart';
-import 'package:crm_task_manager/screens/analytics/models/lead_channel_model.dart';
+import 'package:crm_task_manager/screens/analytics/models/source_of_leads_model.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
-import 'dart:convert';
 
 class SourcesChart extends StatefulWidget {
   const SourcesChart({Key? key}) : super(key: key);
@@ -16,7 +15,9 @@ class _SourcesChartState extends State<SourcesChart> {
   int _touchedIndex = -1;
   bool _isLoading = true;
   String? _error;
-  List<LeadChannelModel> _channels = [];
+  List<LeadSourceItem> _channels = [];
+  String _bestSource = '';
+  int _totalSources = 0;
 
   @override
   void initState() {
@@ -32,34 +33,15 @@ class _SourcesChartState extends State<SourcesChart> {
 
     try {
       final apiService = ApiService();
-      final response = await apiService.getLeadChannels();
+      final response = await apiService.getSourceOfLeadsChartV2();
 
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> jsonData = json.decode(response.body);
-        final result = jsonData['result'];
-
-        if (result is List) {
-          setState(() {
-            _channels = result
-                .map(
-                    (e) => LeadChannelModel.fromJson(e as Map<String, dynamic>))
-                .where((channel) =>
-                    channel.count > 0) // Only show channels with data
-                .toList();
-            _isLoading = false;
-          });
-        } else {
-          setState(() {
-            _error = 'Неверный формат данных';
-            _isLoading = false;
-          });
-        }
-      } else {
-        setState(() {
-          _error = 'Ошибка загрузки: ${response.statusCode}';
-          _isLoading = false;
-        });
-      }
+      setState(() {
+        _channels = response.activeSources;
+        _bestSource = response.bestSource;
+        _totalSources =
+            response.totalSources > 0 ? response.totalSources : _channels.length;
+        _isLoading = false;
+      });
     } catch (e) {
       setState(() {
         _error = 'Ошибка: $e';
@@ -265,7 +247,9 @@ class _SourcesChartState extends State<SourcesChart> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        _channels.isNotEmpty ? _channels.first.name : '-',
+                        _bestSource.isNotEmpty
+                            ? _bestSource
+                            : (_channels.isNotEmpty ? _channels.first.name : '-'),
                         style: const TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.w700,
@@ -288,7 +272,7 @@ class _SourcesChartState extends State<SourcesChart> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        '${_channels.length}',
+                        '$_totalSources',
                         style: const TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.w700,

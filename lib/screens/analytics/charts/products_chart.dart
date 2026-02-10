@@ -1,14 +1,73 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:crm_task_manager/screens/analytics/utils/responsive_helper.dart';
+import 'package:crm_task_manager/screens/analytics/models/top_selling_products_model.dart';
+import 'package:crm_task_manager/api/service/api_service.dart';
 
-class ProductsChart extends StatelessWidget {
+class ProductsChart extends StatefulWidget {
   const ProductsChart({Key? key}) : super(key: key);
+
+  @override
+  State<ProductsChart> createState() => _ProductsChartState();
+}
+
+class _ProductsChartState extends State<ProductsChart> {
+  bool _isLoading = true;
+  String? _error;
+  TopSellingProductsResponse? _data;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      final apiService = ApiService();
+      final response = await apiService.getTopSellingProductsChartV2();
+
+      setState(() {
+        _data = response;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _error = 'Ошибка: $e';
+        _isLoading = false;
+      });
+    }
+  }
+
+  List<TopSellingProductItem> get _topItems {
+    final list = _data?.list ?? [];
+    final sorted = List<TopSellingProductItem>.from(list)
+      ..sort((a, b) => b.totalSold.compareTo(a.totalSold));
+    return sorted.take(7).toList();
+  }
+
+  double get _maxSold {
+    final list = _topItems;
+    if (list.isEmpty) return 0;
+    return list
+        .map((e) => e.totalSold.toDouble())
+        .reduce((a, b) => a > b ? a : b);
+  }
+
+  String _shortName(String name) {
+    if (name.length <= 12) return name;
+    return '${name.substring(0, 12)}…';
+  }
 
   @override
   Widget build(BuildContext context) {
     final responsive = ResponsiveHelper(context);
-    
+
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -58,7 +117,7 @@ class ProductsChart extends StatelessWidget {
                   style: TextStyle(
                     fontSize: responsive.titleFontSize,
                     fontWeight: FontWeight.w600,
-                    color: Color(0xff0F172A),
+                    color: const Color(0xff0F172A),
                     fontFamily: 'Golos',
                   ),
                 ),
@@ -68,176 +127,209 @@ class ProductsChart extends StatelessWidget {
           // Chart
           SizedBox(
             height: 400,
-            child: Padding(
-              padding: const EdgeInsets.only(right: 20, left: 10, bottom: 20),
-              child: BarChart(
-                BarChartData(
-                  alignment: BarChartAlignment.spaceAround,
-                  maxY: 450,
-                  barTouchData: BarTouchData(
-                    enabled: true,
-                    touchTooltipData: BarTouchTooltipData(
-                      getTooltipColor: (group) => Colors.white,
-                      tooltipBorder: const BorderSide(color: Color(0xffE2E8F0)),
-                      tooltipRoundedRadius: 8,
-                      getTooltipItem: (group, groupIndex, rod, rodIndex) {
-                        return BarTooltipItem(
-                          '${rod.toY.toInt()} шт',
-                          const TextStyle(
-                            color: Color(0xff0F172A),
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
-                            fontFamily: 'Golos',
-                          ),
-                        );
-                      },
+            child: _isLoading
+                ? const Center(
+                    child: CircularProgressIndicator(
+                      color: Color(0xffF97316),
                     ),
-                  ),
-                  titlesData: FlTitlesData(
-                    show: true,
-                    leftTitles: AxisTitles(
-                      sideTitles: SideTitles(
-                        showTitles: true,
-                        reservedSize: 120,
-                        getTitlesWidget: (value, meta) {
-                          const products = [
-                            'Смартфон Galaxy S24',
-                            'Ноутбук MacBook Pro',
-                            'Наушники AirPods',
-                            'Планшет iPad Air',
-                            'Часы Apple Watch',
-                            'Клавиатура MX Keys',
-                            'Мышь MX Master',
-                          ];
-                          if (value.toInt() >= 0 &&
-                              value.toInt() < products.length) {
-                            return Padding(
-                              padding: const EdgeInsets.only(right: 8),
-                              child: Text(
-                                products[value.toInt()],
-                                style: const TextStyle(
-                                  color: Color(0xff64748B),
-                                  fontSize: 11,
-                                  fontFamily: 'Golos',
-                                ),
-                                textAlign: TextAlign.right,
-                              ),
-                            );
-                          }
-                          return Text('');
-                        },
-                      ),
-                    ),
-                    bottomTitles: AxisTitles(
-                      sideTitles: SideTitles(
-                        showTitles: true,
-                        getTitlesWidget: (value, meta) {
-                          return Padding(
-                            padding: const EdgeInsets.only(top: 8),
-                            child: Text(
-                              value.toInt().toString(),
+                  )
+                : _error != null
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.error_outline,
+                                size: 48, color: Color(0xffEF4444)),
+                            const SizedBox(height: 12),
+                            Text(
+                              _error!,
                               style: const TextStyle(
                                 color: Color(0xff64748B),
-                                fontSize: 12,
+                                fontSize: 14,
+                                fontFamily: 'Golos',
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 12),
+                            TextButton(
+                              onPressed: _loadData,
+                              child: const Text('Повторить'),
+                            ),
+                          ],
+                        ),
+                      )
+                    : _topItems.isEmpty
+                        ? const Center(
+                            child: Text(
+                              'Нет данных',
+                              style: TextStyle(
+                                color: Color(0xff64748B),
+                                fontSize: 14,
                                 fontFamily: 'Golos',
                               ),
                             ),
-                          );
-                        },
-                      ),
-                    ),
-                    topTitles: const AxisTitles(
-                      sideTitles: SideTitles(showTitles: false),
-                    ),
-                    rightTitles: const AxisTitles(
-                      sideTitles: SideTitles(showTitles: false),
-                    ),
-                  ),
-                  gridData: FlGridData(
-                    show: true,
-                    drawHorizontalLine: false,
-                    verticalInterval: 50,
-                    getDrawingVerticalLine: (value) {
-                      return const FlLine(
-                        color: Color(0xffE2E8F0),
-                        strokeWidth: 1,
-                      );
-                    },
-                  ),
-                  borderData: FlBorderData(show: false),
-                  barGroups: [
-                    _makeGroupData(0, 387),
-                    _makeGroupData(1, 342),
-                    _makeGroupData(2, 298),
-                    _makeGroupData(3, 267),
-                    _makeGroupData(4, 234),
-                    _makeGroupData(5, 189),
-                    _makeGroupData(6, 156),
-                  ],
-                ),
-              ),
-            ),
+                          )
+                        : Padding(
+                            padding: const EdgeInsets.only(
+                                right: 20, left: 10, bottom: 20),
+                            child: BarChart(
+                              BarChartData(
+                                alignment: BarChartAlignment.spaceAround,
+                                maxY: _maxSold <= 0 ? 1 : _maxSold + 5,
+                                barTouchData: BarTouchData(
+                                  enabled: true,
+                                  touchTooltipData: BarTouchTooltipData(
+                                    getTooltipColor: (group) => Colors.white,
+                                    tooltipBorder:
+                                        const BorderSide(color: Color(0xffE2E8F0)),
+                                    tooltipRoundedRadius: 8,
+                                    getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                                      return BarTooltipItem(
+                                        '${rod.toY.toInt()} шт',
+                                        const TextStyle(
+                                          color: Color(0xff0F172A),
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 14,
+                                          fontFamily: 'Golos',
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ),
+                                titlesData: FlTitlesData(
+                                  show: true,
+                                  bottomTitles: AxisTitles(
+                                    sideTitles: SideTitles(
+                                      showTitles: true,
+                                      getTitlesWidget: (value, meta) {
+                                        final index = value.toInt();
+                                        if (index >= 0 && index < _topItems.length) {
+                                          return Padding(
+                                            padding: const EdgeInsets.only(top: 8),
+                                            child: Text(
+                                              _shortName(_topItems[index].name),
+                                              style: const TextStyle(
+                                                color: Color(0xff64748B),
+                                                fontSize: 11,
+                                                fontFamily: 'Golos',
+                                              ),
+                                            ),
+                                          );
+                                        }
+                                        return const Text('');
+                                      },
+                                    ),
+                                  ),
+                                  leftTitles: AxisTitles(
+                                    sideTitles: SideTitles(
+                                      showTitles: true,
+                                      reservedSize: 40,
+                                      getTitlesWidget: (value, meta) {
+                                        return Text(
+                                          value.toInt().toString(),
+                                          style: const TextStyle(
+                                            color: Color(0xff64748B),
+                                            fontSize: 12,
+                                            fontFamily: 'Golos',
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                  topTitles: const AxisTitles(
+                                    sideTitles: SideTitles(showTitles: false),
+                                  ),
+                                  rightTitles: const AxisTitles(
+                                    sideTitles: SideTitles(showTitles: false),
+                                  ),
+                                ),
+                                gridData: FlGridData(
+                                  show: true,
+                                  drawVerticalLine: false,
+                                  horizontalInterval: _maxSold <= 0
+                                      ? 1
+                                      : (_maxSold / 5).ceilToDouble(),
+                                  getDrawingHorizontalLine: (value) {
+                                    return const FlLine(
+                                      color: Color(0xffE2E8F0),
+                                      strokeWidth: 1,
+                                    );
+                                  },
+                                ),
+                                borderData: FlBorderData(show: false),
+                                barGroups: _topItems
+                                    .asMap()
+                                    .entries
+                                    .map((entry) =>
+                                        _makeGroupData(entry.key, entry.value.totalSold.toDouble()))
+                                    .toList(),
+                              ),
+                            ),
+                          ),
           ),
           // Footer
-          Container(
-            padding: EdgeInsets.all(responsive.cardPadding),
-            decoration: const BoxDecoration(
-              border: Border(
-                top: BorderSide(color: Color(0xffE2E8F0)),
+          if (!_isLoading && _error == null)
+            Container(
+              padding: EdgeInsets.all(responsive.cardPadding),
+              decoration: const BoxDecoration(
+                border: Border(
+                  top: BorderSide(color: Color(0xffE2E8F0)),
+                ),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Топ товар',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Color(0xff64748B),
+                          fontFamily: 'Golos',
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        _data?.top.name.isNotEmpty == true
+                            ? _data!.top.name
+                            : (_topItems.isNotEmpty ? _topItems.first.name : '-'),
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xff0F172A),
+                          fontFamily: 'Golos',
+                        ),
+                      ),
+                    ],
+                  ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      const Text(
+                        'Всего продано',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Color(0xff64748B),
+                          fontFamily: 'Golos',
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${_topItems.isNotEmpty ? _topItems.fold<int>(0, (sum, item) => sum + item.totalSold) : 0} шт',
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xff0F172A),
+                          fontFamily: 'Golos',
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Топ товар',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Color(0xff64748B),
-                        fontFamily: 'Golos',
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Galaxy S24',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xff0F172A),
-                        fontFamily: 'Golos',
-                      ),
-                    ),
-                  ],
-                ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      'Всего продано',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Color(0xff64748B),
-                        fontFamily: 'Golos',
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '1,873 шт',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xff0F172A),
-                        fontFamily: 'Golos',
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
         ],
       ),
     );
@@ -261,13 +353,13 @@ class ProductsChart extends StatelessWidget {
           toY: value,
           gradient: LinearGradient(
             colors: colors[x % colors.length],
-            begin: Alignment.centerLeft,
-            end: Alignment.centerRight,
+            begin: Alignment.bottomCenter,
+            end: Alignment.topCenter,
           ),
           width: 20,
           borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(6),
             topRight: Radius.circular(6),
-            bottomRight: Radius.circular(6),
           ),
         ),
       ],

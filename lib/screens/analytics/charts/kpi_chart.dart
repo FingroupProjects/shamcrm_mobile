@@ -14,7 +14,9 @@ class _KpiChartState extends State<KpiChart> {
   int _touchedIndex = -1;
   bool _isLoading = true;
   String? _error;
-  List<double> _taskData = [];
+  List<int> _taskData = [];
+  double _completionRate = 0.0;
+  int _totalTasks = 0;
 
   @override
   void initState() {
@@ -30,10 +32,12 @@ class _KpiChartState extends State<KpiChart> {
 
     try {
       final apiService = ApiService();
-      final response = await apiService.getTaskChartData();
+      final response = await apiService.getTaskChartDataV2();
 
       setState(() {
         _taskData = response.data;
+        _completionRate = response.completionRate;
+        _totalTasks = response.total;
         _isLoading = false;
       });
     } catch (e) {
@@ -44,15 +48,17 @@ class _KpiChartState extends State<KpiChart> {
     }
   }
 
-  int get _total =>
-      _taskData.isEmpty ? 0 : _taskData.reduce((a, b) => a + b).toInt();
+  int get _total => _totalTasks > 0
+      ? _totalTasks
+      : (_taskData.isEmpty
+          ? 0
+          : _taskData.reduce((a, b) => a + b));
   int get _completed =>
-      _taskData.isNotEmpty && _taskData.length > 0 ? _taskData[0].toInt() : 0;
+      _taskData.isNotEmpty && _taskData.length > 2 ? _taskData[2] : 0;
   int get _inProgress =>
-      _taskData.isNotEmpty && _taskData.length > 1 ? _taskData[1].toInt() : 0;
+      _taskData.isNotEmpty && _taskData.length > 1 ? _taskData[1] : 0;
   int get _overdue =>
-      _taskData.isNotEmpty && _taskData.length > 2 ? _taskData[2].toInt() : 0;
-  double get _completionRate => _total > 0 ? (_completed / _total * 100) : 0.0;
+      _taskData.isNotEmpty && _taskData.length > 0 ? _taskData[0] : 0;
 
   @override
   Widget build(BuildContext context) {

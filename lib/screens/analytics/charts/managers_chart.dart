@@ -1,9 +1,80 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:crm_task_manager/screens/analytics/utils/responsive_helper.dart';
+import 'package:crm_task_manager/screens/analytics/models/deals_by_managers_model.dart';
+import 'package:crm_task_manager/api/service/api_service.dart';
 
-class ManagersChart extends StatelessWidget {
+class ManagersChart extends StatefulWidget {
   const ManagersChart({Key? key}) : super(key: key);
+
+  @override
+  State<ManagersChart> createState() => _ManagersChartState();
+}
+
+class _ManagersChartState extends State<ManagersChart> {
+  bool _isLoading = true;
+  String? _error;
+  List<ManagerDealsStats> _managers = [];
+  String _bestManager = '';
+  double _totalRevenue = 0;
+  int _totalManagers = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      final apiService = ApiService();
+      final response = await apiService.getDealsByManagersV2();
+
+      setState(() {
+        _managers = response.managers;
+        _bestManager = response.bestManager;
+        _totalRevenue = response.totalRevenue;
+        _totalManagers = response.totalManagers > 0
+            ? response.totalManagers
+            : response.managers.length;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _error = 'Ошибка: $e';
+        _isLoading = false;
+      });
+    }
+  }
+
+  String _shortName(String name) {
+    if (name.trim().isEmpty) return '-';
+    final parts = name.trim().split(' ');
+    if (parts.length == 1) return parts.first;
+    return parts.first;
+  }
+
+  String _formatMoney(double value) {
+    if (value >= 1000000) {
+      return '${(value / 1000000).toStringAsFixed(1)}M';
+    }
+    if (value >= 1000) {
+      return '${(value / 1000).toStringAsFixed(1)}K';
+    }
+    return value.toStringAsFixed(0);
+  }
+
+  double get _maxDeals {
+    if (_managers.isEmpty) return 0;
+    return _managers
+        .map((m) => m.totalDeals.toDouble())
+        .reduce((a, b) => a > b ? a : b);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -70,181 +141,230 @@ class ManagersChart extends StatelessWidget {
           // Chart
           SizedBox(
             height: 350,
-            child: Padding(
-              padding: const EdgeInsets.only(
-                  right: 20, left: 10, bottom: 20, top: 10),
-              child: BarChart(
-                BarChartData(
-                  alignment: BarChartAlignment.spaceAround,
-                  maxY: 140,
-                  barTouchData: BarTouchData(
-                    enabled: true,
-                    touchTooltipData: BarTouchTooltipData(
-                      getTooltipColor: (group) => Colors.white,
-                      tooltipBorder: const BorderSide(color: Color(0xffE2E8F0)),
-                      tooltipRoundedRadius: 8,
+            child: _isLoading
+                ? const Center(
+                    child: CircularProgressIndicator(
+                      color: Color(0xffF59E0B),
                     ),
-                  ),
-                  titlesData: FlTitlesData(
-                    show: true,
-                    bottomTitles: AxisTitles(
-                      sideTitles: SideTitles(
-                        showTitles: true,
-                        getTitlesWidget: (value, meta) {
-                          const managers = [
-                            'Иван П.',
-                            'Анна С.',
-                            'Дмитрий К.',
-                            'Елена В.',
-                            'Сергей Н.'
-                          ];
-                          if (value.toInt() >= 0 &&
-                              value.toInt() < managers.length) {
-                            return Padding(
-                              padding: const EdgeInsets.only(top: 8),
-                              child: Text(
-                                managers[value.toInt()],
-                                style: const TextStyle(
-                                  color: Color(0xff64748B),
-                                  fontSize: 11,
-                                  fontFamily: 'Golos',
-                                ),
+                  )
+                : _error != null
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.error_outline,
+                                size: 48, color: Color(0xffEF4444)),
+                            const SizedBox(height: 12),
+                            Text(
+                              _error!,
+                              style: const TextStyle(
+                                color: Color(0xff64748B),
+                                fontSize: 14,
+                                fontFamily: 'Golos',
                               ),
-                            );
-                          }
-                          return Text('');
-                        },
-                      ),
-                    ),
-                    leftTitles: AxisTitles(
-                      sideTitles: SideTitles(
-                        showTitles: true,
-                        reservedSize: 40,
-                        getTitlesWidget: (value, meta) {
-                          return Text(
-                            value.toInt().toString(),
-                            style: const TextStyle(
-                              color: Color(0xff64748B),
-                              fontSize: 12,
-                              fontFamily: 'Golos',
+                              textAlign: TextAlign.center,
                             ),
-                          );
-                        },
-                      ),
-                    ),
-                    topTitles: const AxisTitles(
-                      sideTitles: SideTitles(showTitles: false),
-                    ),
-                    rightTitles: const AxisTitles(
-                      sideTitles: SideTitles(showTitles: false),
-                    ),
-                  ),
-                  gridData: FlGridData(
-                    show: true,
-                    drawVerticalLine: false,
-                    horizontalInterval: 20,
-                    getDrawingHorizontalLine: (value) {
-                      return const FlLine(
-                        color: Color(0xffE2E8F0),
-                        strokeWidth: 1,
-                      );
-                    },
-                  ),
-                  borderData: FlBorderData(show: false),
-                  barGroups: [
-                    _makeGroupData(0, 89, 67),
-                    _makeGroupData(1, 124, 98),
-                    _makeGroupData(2, 97, 74),
-                    _makeGroupData(3, 112, 89),
-                    _makeGroupData(4, 87, 65),
-                  ],
-                ),
-              ),
-            ),
+                            const SizedBox(height: 12),
+                            TextButton(
+                              onPressed: _loadData,
+                              child: const Text('Повторить'),
+                            ),
+                          ],
+                        ),
+                      )
+                    : _managers.isEmpty
+                        ? const Center(
+                            child: Text(
+                              'Нет данных',
+                              style: TextStyle(
+                                color: Color(0xff64748B),
+                                fontSize: 14,
+                                fontFamily: 'Golos',
+                              ),
+                            ),
+                          )
+                        : Padding(
+                            padding: const EdgeInsets.only(
+                                right: 20, left: 10, bottom: 20, top: 10),
+                            child: BarChart(
+                              BarChartData(
+                                alignment: BarChartAlignment.spaceAround,
+                                maxY: _maxDeals <= 0 ? 1 : _maxDeals + 5,
+                                barTouchData: BarTouchData(
+                                  enabled: true,
+                                  touchTooltipData: BarTouchTooltipData(
+                                    getTooltipColor: (group) => Colors.white,
+                                    tooltipBorder: const BorderSide(
+                                        color: Color(0xffE2E8F0)),
+                                    tooltipRoundedRadius: 8,
+                                  ),
+                                ),
+                                titlesData: FlTitlesData(
+                                  show: true,
+                                  bottomTitles: AxisTitles(
+                                    sideTitles: SideTitles(
+                                      showTitles: true,
+                                      getTitlesWidget: (value, meta) {
+                                        final index = value.toInt();
+                                        if (index >= 0 &&
+                                            index < _managers.length) {
+                                          return Padding(
+                                            padding:
+                                                const EdgeInsets.only(top: 8),
+                                            child: Text(
+                                              _shortName(
+                                                  _managers[index].managerName),
+                                              style: const TextStyle(
+                                                color: Color(0xff64748B),
+                                                fontSize: 11,
+                                                fontFamily: 'Golos',
+                                              ),
+                                            ),
+                                          );
+                                        }
+                                        return const Text('');
+                                      },
+                                    ),
+                                  ),
+                                  leftTitles: AxisTitles(
+                                    sideTitles: SideTitles(
+                                      showTitles: true,
+                                      reservedSize: 40,
+                                      getTitlesWidget: (value, meta) {
+                                        return Text(
+                                          value.toInt().toString(),
+                                          style: const TextStyle(
+                                            color: Color(0xff64748B),
+                                            fontSize: 12,
+                                            fontFamily: 'Golos',
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                  topTitles: const AxisTitles(
+                                    sideTitles: SideTitles(showTitles: false),
+                                  ),
+                                  rightTitles: const AxisTitles(
+                                    sideTitles: SideTitles(showTitles: false),
+                                  ),
+                                ),
+                                gridData: FlGridData(
+                                  show: true,
+                                  drawVerticalLine: false,
+                                  horizontalInterval: _maxDeals <= 0
+                                      ? 1
+                                      : (_maxDeals / 5).ceilToDouble(),
+                                  getDrawingHorizontalLine: (value) {
+                                    return const FlLine(
+                                      color: Color(0xffE2E8F0),
+                                      strokeWidth: 1,
+                                    );
+                                  },
+                                ),
+                                borderData: FlBorderData(show: false),
+                                barGroups: _managers
+                                    .asMap()
+                                    .entries
+                                    .map((entry) {
+                                  final m = entry.value;
+                                  return _makeGroupData(
+                                      entry.key,
+                                      m.totalDeals.toDouble(),
+                                      m.successfulDeals.toDouble());
+                                }).toList(),
+                              ),
+                            ),
+                          ),
           ),
           // Footer
-          Container(
-            padding: EdgeInsets.all(responsive.cardPadding),
-            decoration: const BoxDecoration(
-              border: Border(
-                top: BorderSide(color: Color(0xffE2E8F0)),
+          if (!_isLoading && _error == null)
+            Container(
+              padding: EdgeInsets.all(responsive.cardPadding),
+              decoration: const BoxDecoration(
+                border: Border(
+                  top: BorderSide(color: Color(0xffE2E8F0)),
+                ),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Лучший менеджер',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Color(0xff64748B),
+                          fontFamily: 'Golos',
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        _bestManager.isNotEmpty
+                            ? _bestManager
+                            : (_managers.isNotEmpty
+                                ? _managers.first.managerName
+                                : '-'),
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xff0F172A),
+                          fontFamily: 'Golos',
+                        ),
+                      ),
+                    ],
+                  ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      const Text(
+                        'Общая выручка',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Color(0xff64748B),
+                          fontFamily: 'Golos',
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        _formatMoney(_totalRevenue),
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xff0F172A),
+                          fontFamily: 'Golos',
+                        ),
+                      ),
+                    ],
+                  ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      const Text(
+                        'Менеджеров',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Color(0xff64748B),
+                          fontFamily: 'Golos',
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '$_totalManagers',
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xff0F172A),
+                          fontFamily: 'Golos',
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Лучший менеджер',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Color(0xff64748B),
-                        fontFamily: 'Golos',
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Анна С.',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xff0F172A),
-                        fontFamily: 'Golos',
-                      ),
-                    ),
-                  ],
-                ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Text(
-                      'Общая выручка',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Color(0xff64748B),
-                        fontFamily: 'Golos',
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '\$284,500',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xff0F172A),
-                        fontFamily: 'Golos',
-                      ),
-                    ),
-                  ],
-                ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      'Менеджеров',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Color(0xff64748B),
-                        fontFamily: 'Golos',
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '5',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xff0F172A),
-                        fontFamily: 'Golos',
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
         ],
       ),
     );

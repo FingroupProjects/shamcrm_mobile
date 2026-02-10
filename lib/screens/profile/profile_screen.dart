@@ -59,6 +59,7 @@ import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'dart:io' show Platform; // Добавляем импорт для проверки платформы
+import 'package:crm_task_manager/screens/profile/profile_widget/http_inspector_toggle.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -87,7 +88,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   // final GlobalKey keyUpdateWidget1C = GlobalKey();
   // final GlobalKey keySupportChat = GlobalKey();
   // final GlobalKey keyPhoneCall = GlobalKey();
-  
+
   List<TargetFocus> targets = [];
   bool _isTutorialShown = false;
 
@@ -157,7 +158,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _openAppStoreLink() async {
-    const androidUrl = 'https://play.google.com/store/apps/details?id=com.softtech.crm_task_manager';
+    const androidUrl =
+        'https://play.google.com/store/apps/details?id=com.softtech.crm_task_manager';
     const iosUrl = 'https://apps.apple.com/tj/app/shamcrm/id6745598713';
     final url = Platform.isAndroid ? androidUrl : iosUrl;
 
@@ -167,7 +169,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
       } else {
         showCustomSnackBar(
           context: context,
-          message: AppLocalizations.of(context)!.translate('failed_to_open_link'),
+          message:
+              AppLocalizations.of(context)!.translate('failed_to_open_link'),
           isSuccess: false,
         );
       }
@@ -306,18 +309,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
     });
   }
 
- Future<void> _loadSelectedOrganization() async {
-  final savedOrganization = await ApiService().getSelectedOrganization();
-  setState(() {
-    _selectedOrganization = savedOrganization;
-  });
-  if (_selectedOrganization == null) {
-    final firstOrganization = await _getFirstOrganization();
-    if (firstOrganization != null) {
-      await _onOrganizationChanged(firstOrganization);
+  Future<void> _loadSelectedOrganization() async {
+    final savedOrganization = await ApiService().getSelectedOrganization();
+    setState(() {
+      _selectedOrganization = savedOrganization;
+    });
+    if (_selectedOrganization == null) {
+      final firstOrganization = await _getFirstOrganization();
+      if (firstOrganization != null) {
+        await _onOrganizationChanged(firstOrganization);
+      }
     }
   }
-}
 
   Future<String?> _getFirstOrganization() async {
     final state = context.read<OrganizationBloc>().state;
@@ -380,7 +383,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-   @override
+  @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
     return Scaffold(
@@ -401,13 +404,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             child: Padding(
                               padding: EdgeInsets.symmetric(vertical: 20),
                               child: PlayStoreImageLoading(
-                                  size: 80.0, duration: Duration(milliseconds: 1000)),
+                                  size: 80.0,
+                                  duration: Duration(milliseconds: 1000)),
                             ),
                           );
                         } else if (state is OrganizationLoaded) {
                           final selectedOrg = _selectedOrganization != null
                               ? state.organizations.firstWhere(
-                                  (org) => org.id.toString() == _selectedOrganization,
+                                  (org) =>
+                                      org.id.toString() ==
+                                      _selectedOrganization,
                                   orElse: () => state.organizations.first,
                                 )
                               : state.organizations.first;
@@ -424,7 +430,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               LogoutButtonWidget(),
                               if (_hasPermissionToAddLeadAndSwitch)
                                 ToggleFeatureButton(),
-                              BiometricToggleWidget(),  
+                              BiometricToggleWidget(),
+                              const HttpInspectorToggleWidget(),
                               if (_hasPermissionForOneC)
                                 UpdateWidget1C(organization: selectedOrg),
                               const SizedBox(height: 20),
@@ -456,11 +463,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               child: Padding(
                                 padding: EdgeInsets.all(20),
                                 child: PlayStoreImageLoading(
-                                    size: 80.0, duration: Duration(milliseconds: 1000)),
+                                    size: 80.0,
+                                    duration: Duration(milliseconds: 1000)),
                               ),
                             );
                           }
-                          
+
                           // Для других ошибок показываем сообщение и стандартную кнопку выхода
                           return Column(
                             mainAxisAlignment: MainAxisAlignment.center,
@@ -473,7 +481,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               ),
                               const SizedBox(height: 20),
                               Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 20),
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 20),
                                 child: Text(
                                   state.message,
                                   textAlign: TextAlign.center,

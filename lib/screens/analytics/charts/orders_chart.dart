@@ -1,14 +1,77 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:crm_task_manager/screens/analytics/utils/responsive_helper.dart';
+import 'package:crm_task_manager/screens/analytics/models/online_store_orders_model.dart';
+import 'package:crm_task_manager/api/service/api_service.dart';
 
-class OrdersChart extends StatelessWidget {
+class OrdersChart extends StatefulWidget {
   const OrdersChart({Key? key}) : super(key: key);
+
+  @override
+  State<OrdersChart> createState() => _OrdersChartState();
+}
+
+class _OrdersChartState extends State<OrdersChart> {
+  bool _isLoading = true;
+  String? _error;
+  OnlineStoreOrdersResponse? _data;
+
+  static const List<String> _monthNames = [
+    '',
+    'Янв',
+    'Фев',
+    'Мар',
+    'Апр',
+    'Май',
+    'Июн',
+    'Июл',
+    'Авг',
+    'Сен',
+    'Окт',
+    'Ноя',
+    'Дек',
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      final apiService = ApiService();
+      final response = await apiService.getOnlineStoreOrdersChartV2();
+
+      setState(() {
+        _data = response;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _error = 'Ошибка: $e';
+        _isLoading = false;
+      });
+    }
+  }
+
+  double get _maxOrders {
+    final list = _data?.chartData ?? [];
+    if (list.isEmpty) return 0;
+    return list
+        .map((e) => e.totalOrders.toDouble())
+        .reduce((a, b) => a > b ? a : b);
+  }
 
   @override
   Widget build(BuildContext context) {
     final responsive = ResponsiveHelper(context);
-    
+
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -58,7 +121,7 @@ class OrdersChart extends StatelessWidget {
                   style: TextStyle(
                     fontSize: responsive.titleFontSize,
                     fontWeight: FontWeight.w600,
-                    color: Color(0xff0F172A),
+                    color: const Color(0xff0F172A),
                     fontFamily: 'Golos',
                   ),
                 ),
@@ -68,184 +131,230 @@ class OrdersChart extends StatelessWidget {
           // Chart
           SizedBox(
             height: responsive.chartHeight,
-            child: Padding(
-              padding: const EdgeInsets.only(right: 20, left: 10, bottom: 20),
-              child: BarChart(
-                BarChartData(
-                  alignment: BarChartAlignment.spaceAround,
-                  maxY: 180,
-                  barTouchData: BarTouchData(
-                    enabled: true,
-                    touchTooltipData: BarTouchTooltipData(
-                      getTooltipColor: (group) => Colors.white,
-                      tooltipBorder: const BorderSide(color: Color(0xffE2E8F0)),
-                      tooltipRoundedRadius: 8,
+            child: _isLoading
+                ? const Center(
+                    child: CircularProgressIndicator(
+                      color: Color(0xff14B8A6),
                     ),
-                  ),
-                  titlesData: FlTitlesData(
-                    show: true,
-                    bottomTitles: AxisTitles(
-                      sideTitles: SideTitles(
-                        showTitles: true,
-                        getTitlesWidget: (value, meta) {
-                          const days = [
-                            'Пн',
-                            'Вт',
-                            'Ср',
-                            'Чт',
-                            'Пт',
-                            'Сб',
-                            'Вс'
-                          ];
-                          if (value.toInt() >= 0 &&
-                              value.toInt() < days.length) {
-                            return Padding(
-                              padding: const EdgeInsets.only(top: 8),
-                              child: Text(
-                                days[value.toInt()],
-                                style: const TextStyle(
-                                  color: Color(0xff64748B),
-                                  fontSize: 12,
-                                  fontFamily: 'Golos',
-                                ),
+                  )
+                : _error != null
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.error_outline,
+                                size: 48, color: Color(0xffEF4444)),
+                            const SizedBox(height: 12),
+                            Text(
+                              _error!,
+                              style: const TextStyle(
+                                color: Color(0xff64748B),
+                                fontSize: 14,
+                                fontFamily: 'Golos',
                               ),
-                            );
-                          }
-                          return Text('');
-                        },
-                      ),
-                    ),
-                    leftTitles: AxisTitles(
-                      sideTitles: SideTitles(
-                        showTitles: true,
-                        reservedSize: 40,
-                        getTitlesWidget: (value, meta) {
-                          return Text(
-                            value.toInt().toString(),
-                            style: const TextStyle(
-                              color: Color(0xff64748B),
-                              fontSize: 12,
-                              fontFamily: 'Golos',
+                              textAlign: TextAlign.center,
                             ),
-                          );
-                        },
-                      ),
-                    ),
-                    topTitles: const AxisTitles(
-                      sideTitles: SideTitles(showTitles: false),
-                    ),
-                    rightTitles: const AxisTitles(
-                      sideTitles: SideTitles(showTitles: false),
-                    ),
-                  ),
-                  gridData: FlGridData(
-                    show: true,
-                    drawVerticalLine: false,
-                    horizontalInterval: 30,
-                    getDrawingHorizontalLine: (value) {
-                      return const FlLine(
-                        color: Color(0xffE2E8F0),
-                        strokeWidth: 1,
-                      );
-                    },
-                  ),
-                  borderData: FlBorderData(show: false),
-                  barGroups: [
-                    _makeGroupData(0, 124, 98),
-                    _makeGroupData(1, 142, 115),
-                    _makeGroupData(2, 135, 109),
-                    _makeGroupData(3, 156, 128),
-                    _makeGroupData(4, 148, 121),
-                    _makeGroupData(5, 167, 142),
-                    _makeGroupData(6, 132, 105),
-                  ],
-                ),
-              ),
-            ),
+                            const SizedBox(height: 12),
+                            TextButton(
+                              onPressed: _loadData,
+                              child: const Text('Повторить'),
+                            ),
+                          ],
+                        ),
+                      )
+                    : (_data == null || _data!.chartData.isEmpty)
+                        ? const Center(
+                            child: Text(
+                              'Нет данных',
+                              style: TextStyle(
+                                color: Color(0xff64748B),
+                                fontSize: 14,
+                                fontFamily: 'Golos',
+                              ),
+                            ),
+                          )
+                        : Padding(
+                            padding: const EdgeInsets.only(
+                                right: 20, left: 10, bottom: 20),
+                            child: BarChart(
+                              BarChartData(
+                                alignment: BarChartAlignment.spaceAround,
+                                maxY: _maxOrders <= 0 ? 1 : _maxOrders + 2,
+                                barTouchData: BarTouchData(
+                                  enabled: true,
+                                  touchTooltipData: BarTouchTooltipData(
+                                    getTooltipColor: (group) => Colors.white,
+                                    tooltipBorder:
+                                        const BorderSide(color: Color(0xffE2E8F0)),
+                                    tooltipRoundedRadius: 8,
+                                  ),
+                                ),
+                                titlesData: FlTitlesData(
+                                  show: true,
+                                  bottomTitles: AxisTitles(
+                                    sideTitles: SideTitles(
+                                      showTitles: true,
+                                      getTitlesWidget: (value, meta) {
+                                        final index = value.toInt();
+                                        final points = _data!.chartData;
+                                        if (index >= 0 && index < points.length) {
+                                          final month = points[index].month;
+                                          final label = month >= 0 &&
+                                                  month < _monthNames.length
+                                              ? _monthNames[month]
+                                              : month.toString();
+                                          return Padding(
+                                            padding: const EdgeInsets.only(top: 8),
+                                            child: Text(
+                                              label,
+                                              style: const TextStyle(
+                                                color: Color(0xff64748B),
+                                                fontSize: 12,
+                                                fontFamily: 'Golos',
+                                              ),
+                                            ),
+                                          );
+                                        }
+                                        return const Text('');
+                                      },
+                                    ),
+                                  ),
+                                  leftTitles: AxisTitles(
+                                    sideTitles: SideTitles(
+                                      showTitles: true,
+                                      reservedSize: 40,
+                                      getTitlesWidget: (value, meta) {
+                                        return Text(
+                                          value.toInt().toString(),
+                                          style: const TextStyle(
+                                            color: Color(0xff64748B),
+                                            fontSize: 12,
+                                            fontFamily: 'Golos',
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                  topTitles: const AxisTitles(
+                                    sideTitles: SideTitles(showTitles: false),
+                                  ),
+                                  rightTitles: const AxisTitles(
+                                    sideTitles: SideTitles(showTitles: false),
+                                  ),
+                                ),
+                                gridData: FlGridData(
+                                  show: true,
+                                  drawVerticalLine: false,
+                                  horizontalInterval: _maxOrders <= 0
+                                      ? 1
+                                      : (_maxOrders / 5).ceilToDouble(),
+                                  getDrawingHorizontalLine: (value) {
+                                    return const FlLine(
+                                      color: Color(0xffE2E8F0),
+                                      strokeWidth: 1,
+                                    );
+                                  },
+                                ),
+                                borderData: FlBorderData(show: false),
+                                barGroups: _data!.chartData
+                                    .asMap()
+                                    .entries
+                                    .map((entry) {
+                                  final p = entry.value;
+                                  return _makeGroupData(
+                                    entry.key,
+                                    p.totalOrders.toDouble(),
+                                    p.successfulOrders.toDouble(),
+                                  );
+                                }).toList(),
+                              ),
+                            ),
+                          ),
           ),
           // Footer
-          Container(
-            padding: EdgeInsets.all(responsive.cardPadding),
-            decoration: const BoxDecoration(
-              border: Border(
-                top: BorderSide(color: Color(0xffE2E8F0)),
+          if (!_isLoading && _error == null)
+            Container(
+              padding: EdgeInsets.all(responsive.cardPadding),
+              decoration: const BoxDecoration(
+                border: Border(
+                  top: BorderSide(color: Color(0xffE2E8F0)),
+                ),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Всего заказов',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Color(0xff64748B),
+                          fontFamily: 'Golos',
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${_data?.totalOrders ?? 0}',
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xff0F172A),
+                          fontFamily: 'Golos',
+                        ),
+                      ),
+                    ],
+                  ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      const Text(
+                        'Успешных',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Color(0xff64748B),
+                          fontFamily: 'Golos',
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${_data?.successfulOrders ?? 0}',
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xff10B981),
+                          fontFamily: 'Golos',
+                        ),
+                      ),
+                    ],
+                  ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      const Text(
+                        'Средний чек',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Color(0xff64748B),
+                          fontFamily: 'Golos',
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${_data?.averageCheck.toStringAsFixed(1) ?? '0'}',
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xff0F172A),
+                          fontFamily: 'Golos',
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Всего заказов',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Color(0xff64748B),
-                        fontFamily: 'Golos',
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '1,004',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xff0F172A),
-                        fontFamily: 'Golos',
-                      ),
-                    ),
-                  ],
-                ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Text(
-                      'Успешных',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Color(0xff64748B),
-                        fontFamily: 'Golos',
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '818',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xff10B981),
-                        fontFamily: 'Golos',
-                      ),
-                    ),
-                  ],
-                ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      'Средний чек',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Color(0xff64748B),
-                        fontFamily: 'Golos',
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '\$287',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xff0F172A),
-                        fontFamily: 'Golos',
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
         ],
       ),
     );

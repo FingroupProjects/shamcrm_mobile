@@ -14,6 +14,7 @@ class _SpeedGaugeState extends State<SpeedGauge> {
   bool _isLoading = true;
   String? _error;
   double _speedHours = 0.0;
+  String _speedLabel = '0 ч';
 
   @override
   void initState() {
@@ -29,10 +30,14 @@ class _SpeedGaugeState extends State<SpeedGauge> {
 
     try {
       final apiService = ApiService();
-      final response = await apiService.getProcessSpeedData();
+      final response = await apiService.getLeadProcessSpeedV2();
+      final speedHours = response.leadsFormat == 'days'
+          ? response.averageProcessingSpeed * 24
+          : response.averageProcessingSpeed;
 
       setState(() {
-        _speedHours = response.speed;
+        _speedHours = speedHours;
+        _speedLabel = response.displayText;
         _isLoading = false;
       });
     } catch (e) {
@@ -151,7 +156,7 @@ class _SpeedGaugeState extends State<SpeedGauge> {
                               children: [
                                 const SizedBox(height: 130),
                                 Text(
-                                  '${_speedHours.toStringAsFixed(1)} ч',
+                                  _speedLabel,
                                   style: const TextStyle(
                                     fontSize: 32,
                                     fontWeight: FontWeight.w700,
@@ -199,7 +204,7 @@ class _SpeedGaugeState extends State<SpeedGauge> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        '${_speedHours.toStringAsFixed(1)} ч',
+                        _speedLabel,
                         style: const TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.w700,

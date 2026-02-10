@@ -59,7 +59,7 @@ class _ConversionChartState extends State<ConversionChart> {
 
     try {
       final apiService = ApiService();
-      final response = await apiService.getLeadConversionData();
+      final response = await apiService.getLeadConversionDataV2();
 
       setState(() {
         _conversionData = response.monthlyData;

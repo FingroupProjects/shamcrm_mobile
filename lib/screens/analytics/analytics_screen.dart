@@ -10,6 +10,7 @@ import 'package:crm_task_manager/screens/analytics/charts/goals_chart.dart';
 import 'package:crm_task_manager/screens/analytics/charts/kpi_chart.dart';
 import 'package:crm_task_manager/screens/analytics/charts/orders_chart.dart';
 import 'package:crm_task_manager/screens/analytics/charts/products_chart.dart';
+import 'package:crm_task_manager/api/service/api_service.dart';
 
 class AnalyticsScreen extends StatefulWidget {
   const AnalyticsScreen({Key? key}) : super(key: key);
@@ -23,6 +24,87 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   String _selectedManager = 'Все менеджеры';
   String _selectedFunnel = 'Все воронки';
   String _selectedSource = 'Все источники';
+
+  // Stats data
+  bool _isLoadingStats = true;
+  String _totalLeads = '0';
+  String _closedDeals = '0';
+  String _totalRevenue = '0';
+  String _conversionRate = '0%';
+  double _leadsChange = 0.0;
+  double _dealsChange = 0.0;
+  double _revenueChange = 0.0;
+  double _conversionChange = 0.0;
+
+  // Keys for refreshing charts
+  final GlobalKey<State> _conversionChartKey = GlobalKey();
+  final GlobalKey<State> _sourcesChartKey = GlobalKey();
+  final GlobalKey<State> _managersChartKey = GlobalKey();
+  final GlobalKey<State> _speedGaugeKey = GlobalKey();
+  final GlobalKey<State> _goalsChartKey = GlobalKey();
+  final GlobalKey<State> _kpiChartKey = GlobalKey();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadStats();
+  }
+
+  Future<void> _loadStats() async {
+    setState(() {
+      _isLoadingStats = true;
+    });
+
+    try {
+      final apiService = ApiService();
+
+      final stats = await apiService.getDashboardStatisticsV2();
+
+      setState(() {
+        _totalLeads = _formatCount(stats.leads.count);
+        _closedDeals = _formatCount(stats.deals.count);
+        _totalRevenue = _formatMoney(stats.totalSum.count);
+        _conversionRate = '${stats.conversion.count.toStringAsFixed(2)}%';
+        _leadsChange = stats.leads.percent;
+        _dealsChange = stats.deals.percent;
+        _revenueChange = stats.totalSum.percent;
+        _conversionChange = stats.conversion.percent;
+        _isLoadingStats = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoadingStats = false;
+      });
+      // Keep default values on error
+    }
+  }
+
+  String _formatCount(double value) {
+    if (value == value.roundToDouble()) {
+      return value.toInt().toString();
+    }
+    return value.toStringAsFixed(2);
+  }
+
+  String _formatMoney(double value) {
+    if (value >= 1000000) {
+      return '${(value / 1000000).toStringAsFixed(1)}M';
+    }
+    if (value >= 1000) {
+      return '${(value / 1000).toStringAsFixed(1)}K';
+    }
+    return _formatCount(value);
+  }
+
+  Future<void> _refreshData() async {
+    // Reload stats
+    await _loadStats();
+
+    // Force rebuild of all charts by updating their keys
+    setState(() {
+      // Charts will rebuild automatically when parent rebuilds
+    });
+  }
 
   void _showFilterSheet() {
     showModalBottomSheet(
@@ -45,6 +127,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
               _selectedFunnel = funnel;
               _selectedSource = source;
             });
+            // TODO: Apply filters to API calls
           },
         ),
       ),
@@ -122,17 +205,14 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         ),
       ),
       body: RefreshIndicator(
-        onRefresh: () async {
-          // TODO: Implement data refresh
-          await Future.delayed(const Duration(seconds: 1));
-        },
+        onRefresh: _refreshData,
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           padding: EdgeInsets.all(horizontalPadding),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Quick Stats Grid - Responsive
+              // Quick Stats Grid - Responsive with real data
               LayoutBuilder(
                 builder: (context, constraints) {
                   final cardWidth = (constraints.maxWidth -
@@ -151,36 +231,45 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                       AnalyticsStatCard(
                         title: localizations?.translate('stat_total_leads') ??
                             'Всего лидов',
-                        value: '1,847',
-                        change: '+12.5%',
-                        isPositive: true,
+                        value: _isLoadingStats ? '...' : _totalLeads,
+                        change: _isLoadingStats
+                            ? '...'
+                            : '${_leadsChange.toStringAsFixed(2)}%',
+                        isPositive: !_isLoadingStats && _leadsChange >= 0,
                         icon: Icons.people_outline,
                         iconColor: const Color(0xff6366F1),
                       ),
                       AnalyticsStatCard(
                         title: localizations?.translate('stat_closed_deals') ??
                             'Закрытых сделок',
-                        value: '487',
-                        change: '+8.2%',
-                        isPositive: true,
+                        value: _isLoadingStats ? '...' : _closedDeals,
+                        change: _isLoadingStats
+                            ? '...'
+                            : '${_dealsChange.toStringAsFixed(2)}%',
+                        isPositive: !_isLoadingStats && _dealsChange >= 0,
                         icon: Icons.handshake_outlined,
                         iconColor: const Color(0xff10B981),
                       ),
                       AnalyticsStatCard(
                         title: localizations?.translate('stat_total_revenue') ??
                             'Общая выручка',
-                        value: '\$284K',
-                        change: '+15.3%',
-                        isPositive: true,
+                        value: _isLoadingStats ? '...' : _totalRevenue,
+                        change: _isLoadingStats
+                            ? '...'
+                            : '${_revenueChange.toStringAsFixed(2)}%',
+                        isPositive: !_isLoadingStats && _revenueChange >= 0,
                         icon: Icons.attach_money,
                         iconColor: const Color(0xffF59E0B),
                       ),
                       AnalyticsStatCard(
                         title: localizations?.translate('stat_conversion') ??
                             'Конверсия',
-                        value: '26.4%',
-                        change: '-2.1%',
-                        isPositive: false,
+                        value: _isLoadingStats ? '...' : _conversionRate,
+                        change: _isLoadingStats
+                            ? '...'
+                            : '${_conversionChange.toStringAsFixed(2)}%',
+                        isPositive:
+                            !_isLoadingStats && _conversionChange >= 0,
                         icon: Icons.trending_up,
                         iconColor: const Color(0xffEC4899),
                       ),
@@ -190,23 +279,23 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
               ),
               SizedBox(height: chartSpacing * 1.5),
 
-              // Charts - All responsive
-              const ConversionChart(),
+              // Charts - All responsive with keys for refresh
+              ConversionChart(key: _conversionChartKey),
               SizedBox(height: chartSpacing),
 
-              const SourcesChart(),
+              SourcesChart(key: _sourcesChartKey),
               SizedBox(height: chartSpacing),
 
-              const ManagersChart(),
+              ManagersChart(key: _managersChartKey),
               SizedBox(height: chartSpacing),
 
-              const SpeedGauge(),
+              SpeedGauge(key: _speedGaugeKey),
               SizedBox(height: chartSpacing),
 
-              const GoalsChart(),
+              GoalsChart(key: _goalsChartKey),
               SizedBox(height: chartSpacing),
 
-              const KpiChart(),
+              KpiChart(key: _kpiChartKey),
               SizedBox(height: chartSpacing),
 
               const OrdersChart(),
@@ -220,4 +309,5 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       ),
     );
   }
+
 }
