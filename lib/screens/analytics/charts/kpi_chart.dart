@@ -48,6 +48,124 @@ class _KpiChartState extends State<KpiChart> {
     }
   }
 
+  void _showDetails() {
+    if (_total == 0) return;
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (context) {
+        return Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'KPI задач',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xff0F172A),
+                  fontFamily: 'Golos',
+                ),
+              ),
+              const SizedBox(height: 12),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text(
+                  'Выполнено',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xff0F172A),
+                    fontFamily: 'Golos',
+                  ),
+                ),
+                trailing: Text(
+                  '$_completed',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xff10B981),
+                    fontFamily: 'Golos',
+                  ),
+                ),
+              ),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text(
+                  'В работе',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xff0F172A),
+                    fontFamily: 'Golos',
+                  ),
+                ),
+                trailing: Text(
+                  '$_inProgress',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xffF59E0B),
+                    fontFamily: 'Golos',
+                  ),
+                ),
+              ),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text(
+                  'Просрочено',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xff0F172A),
+                    fontFamily: 'Golos',
+                  ),
+                ),
+                trailing: Text(
+                  '$_overdue',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xffEF4444),
+                    fontFamily: 'Golos',
+                  ),
+                ),
+              ),
+              const Divider(height: 1),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text(
+                  'Всего задач',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xff0F172A),
+                    fontFamily: 'Golos',
+                  ),
+                ),
+                trailing: Text(
+                  '$_total',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xff64748B),
+                    fontFamily: 'Golos',
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   int get _total => _totalTasks > 0
       ? _totalTasks
       : (_taskData.isEmpty
@@ -119,6 +237,11 @@ class _KpiChartState extends State<KpiChart> {
                     ),
                   ),
                 ),
+                IconButton(
+                  onPressed: _showDetails,
+                  icon: const Icon(Icons.more_vert, color: Color(0xff64748B)),
+                  splashRadius: 18,
+                ),
               ],
             ),
           ),
@@ -167,75 +290,76 @@ class _KpiChartState extends State<KpiChart> {
                               ),
                             ),
                           )
-                        : Padding(
-                            padding: EdgeInsets.all(responsive.cardPadding),
-                            child: PieChart(
-                              PieChartData(
-                                sectionsSpace: 2,
-                                centerSpaceRadius: 50,
-                                pieTouchData: PieTouchData(
-                                  touchCallback:
-                                      (FlTouchEvent event, pieTouchResponse) {
-                                    setState(() {
-                                      if (!event.isInterestedForInteractions ||
-                                          pieTouchResponse == null ||
-                                          pieTouchResponse.touchedSection ==
-                                              null) {
-                                        _touchedIndex = -1;
-                                        return;
-                                      }
-                                      _touchedIndex = pieTouchResponse
-                                          .touchedSection!.touchedSectionIndex;
-                                    });
-                                  },
+                        : GestureDetector(
+                            onTap: _showDetails,
+                            child: Padding(
+                              padding: EdgeInsets.all(responsive.cardPadding),
+                              child: PieChart(
+                                PieChartData(
+                                  sectionsSpace: 2,
+                                  centerSpaceRadius: 50,
+                                  pieTouchData: PieTouchData(
+                                    touchCallback:
+                                        (FlTouchEvent event, pieTouchResponse) {
+                                      setState(() {
+                                        if (!event.isInterestedForInteractions ||
+                                            pieTouchResponse == null ||
+                                            pieTouchResponse.touchedSection ==
+                                                null) {
+                                          _touchedIndex = -1;
+                                          return;
+                                        }
+                                        _touchedIndex = pieTouchResponse
+                                            .touchedSection!
+                                            .touchedSectionIndex;
+                                      });
+                                    },
+                                  ),
+                                  sections: [
+                                    PieChartSectionData(
+                                      value: _completed.toDouble(),
+                                      title: _touchedIndex == 0
+                                          ? 'Выполнено\n$_completed'
+                                          : '',
+                                      color: const Color(0xff10B981),
+                                      radius: _touchedIndex == 0 ? 55 : 50,
+                                      titleStyle: TextStyle(
+                                        fontSize: _touchedIndex == 0 ? 14 : 12,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.white,
+                                        fontFamily: 'Golos',
+                                      ),
+                                    ),
+                                    PieChartSectionData(
+                                      value: _inProgress.toDouble(),
+                                      title: _touchedIndex == 1
+                                          ? 'В работе\n$_inProgress'
+                                          : '',
+                                      color: const Color(0xffF59E0B),
+                                      radius: _touchedIndex == 1 ? 55 : 50,
+                                      titleStyle: TextStyle(
+                                        fontSize: _touchedIndex == 1 ? 14 : 12,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.white,
+                                        fontFamily: 'Golos',
+                                      ),
+                                    ),
+                                    PieChartSectionData(
+                                      value: _overdue.toDouble(),
+                                      title: _touchedIndex == 2
+                                          ? 'Просрочено\n$_overdue'
+                                          : '',
+                                      color: const Color(0xffEF4444),
+                                      radius: _touchedIndex == 2 ? 55 : 50,
+                                      titleStyle: TextStyle(
+                                        fontSize: _touchedIndex == 2 ? 14 : 12,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.white,
+                                        fontFamily: 'Golos',
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                                sections: [
-                                  // Completed
-                                  PieChartSectionData(
-                                    value: _completed.toDouble(),
-                                    title: _touchedIndex == 0
-                                        ? 'Выполнено\n$_completed'
-                                        : '',
-                                    color: const Color(0xff10B981),
-                                    radius: _touchedIndex == 0 ? 55 : 50,
-                                    titleStyle: TextStyle(
-                                      fontSize: _touchedIndex == 0 ? 14 : 12,
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.white,
-                                      fontFamily: 'Golos',
-                                    ),
-                                  ),
-                                  // In Progress
-                                  PieChartSectionData(
-                                    value: _inProgress.toDouble(),
-                                    title: _touchedIndex == 1
-                                        ? 'В работе\n$_inProgress'
-                                        : '',
-                                    color: const Color(0xffF59E0B),
-                                    radius: _touchedIndex == 1 ? 55 : 50,
-                                    titleStyle: TextStyle(
-                                      fontSize: _touchedIndex == 1 ? 14 : 12,
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.white,
-                                      fontFamily: 'Golos',
-                                    ),
-                                  ),
-                                  // Overdue
-                                  PieChartSectionData(
-                                    value: _overdue.toDouble(),
-                                    title: _touchedIndex == 2
-                                        ? 'Просрочено\n$_overdue'
-                                        : '',
-                                    color: const Color(0xffEF4444),
-                                    radius: _touchedIndex == 2 ? 55 : 50,
-                                    titleStyle: TextStyle(
-                                      fontSize: _touchedIndex == 2 ? 14 : 12,
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.white,
-                                      fontFamily: 'Golos',
-                                    ),
-                                  ),
-                                ],
                               ),
                             ),
                           ),

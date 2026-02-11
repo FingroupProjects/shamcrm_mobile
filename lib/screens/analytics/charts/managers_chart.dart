@@ -52,6 +52,78 @@ class _ManagersChartState extends State<ManagersChart> {
     }
   }
 
+  void _showDetails() {
+    if (_managers.isEmpty) return;
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (context) {
+        return Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Сделки по менеджерам',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xff0F172A),
+                  fontFamily: 'Golos',
+                ),
+              ),
+              const SizedBox(height: 12),
+              Flexible(
+                child: ListView.separated(
+                  shrinkWrap: true,
+                  itemCount: _managers.length,
+                  separatorBuilder: (_, __) => const Divider(height: 1),
+                  itemBuilder: (context, index) {
+                    final m = _managers[index];
+                    return ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: Text(
+                        m.managerName,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xff0F172A),
+                          fontFamily: 'Golos',
+                        ),
+                      ),
+                      subtitle: Text(
+                        'Сделки: ${m.totalDeals} • Успешные: ${m.successfulDeals}',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Color(0xff64748B),
+                          fontFamily: 'Golos',
+                        ),
+                      ),
+                      trailing: Text(
+                        _formatMoney(m.totalSum),
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xff10B981),
+                          fontFamily: 'Golos',
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   String _shortName(String name) {
     if (name.trim().isEmpty) return '-';
     final parts = name.trim().split(' ');
@@ -135,6 +207,11 @@ class _ManagersChartState extends State<ManagersChart> {
                     ),
                   ),
                 ),
+                IconButton(
+                  onPressed: _showDetails,
+                  icon: const Icon(Icons.more_vert, color: Color(0xff64748B)),
+                  splashRadius: 18,
+                ),
               ],
             ),
           ),
@@ -183,96 +260,99 @@ class _ManagersChartState extends State<ManagersChart> {
                               ),
                             ),
                           )
-                        : Padding(
-                            padding: const EdgeInsets.only(
-                                right: 20, left: 10, bottom: 20, top: 10),
-                            child: BarChart(
-                              BarChartData(
-                                alignment: BarChartAlignment.spaceAround,
-                                maxY: _maxDeals <= 0 ? 1 : _maxDeals + 5,
-                                barTouchData: BarTouchData(
-                                  enabled: true,
-                                  touchTooltipData: BarTouchTooltipData(
-                                    getTooltipColor: (group) => Colors.white,
-                                    tooltipBorder: const BorderSide(
-                                        color: Color(0xffE2E8F0)),
-                                    tooltipRoundedRadius: 8,
+                        : GestureDetector(
+                            onTap: _showDetails,
+                            child: Padding(
+                              padding: const EdgeInsets.only(
+                                  right: 20, left: 10, bottom: 20, top: 10),
+                              child: BarChart(
+                                BarChartData(
+                                  alignment: BarChartAlignment.spaceAround,
+                                  maxY: _maxDeals <= 0 ? 1 : _maxDeals + 5,
+                                  barTouchData: BarTouchData(
+                                    enabled: true,
+                                    touchTooltipData: BarTouchTooltipData(
+                                      getTooltipColor: (group) => Colors.white,
+                                      tooltipBorder: const BorderSide(
+                                          color: Color(0xffE2E8F0)),
+                                      tooltipRoundedRadius: 8,
+                                    ),
                                   ),
-                                ),
-                                titlesData: FlTitlesData(
-                                  show: true,
-                                  bottomTitles: AxisTitles(
-                                    sideTitles: SideTitles(
-                                      showTitles: true,
-                                      getTitlesWidget: (value, meta) {
-                                        final index = value.toInt();
-                                        if (index >= 0 &&
-                                            index < _managers.length) {
-                                          return Padding(
-                                            padding:
-                                                const EdgeInsets.only(top: 8),
-                                            child: Text(
-                                              _shortName(
-                                                  _managers[index].managerName),
-                                              style: const TextStyle(
-                                                color: Color(0xff64748B),
-                                                fontSize: 11,
-                                                fontFamily: 'Golos',
+                                  titlesData: FlTitlesData(
+                                    show: true,
+                                    bottomTitles: AxisTitles(
+                                      sideTitles: SideTitles(
+                                        showTitles: true,
+                                        getTitlesWidget: (value, meta) {
+                                          final index = value.toInt();
+                                          if (index >= 0 &&
+                                              index < _managers.length) {
+                                            return Padding(
+                                              padding:
+                                                  const EdgeInsets.only(top: 8),
+                                              child: Text(
+                                                _shortName(_managers[index]
+                                                    .managerName),
+                                                style: const TextStyle(
+                                                  color: Color(0xff64748B),
+                                                  fontSize: 11,
+                                                  fontFamily: 'Golos',
+                                                ),
                                               ),
+                                            );
+                                          }
+                                          return const Text('');
+                                        },
+                                      ),
+                                    ),
+                                    leftTitles: AxisTitles(
+                                      sideTitles: SideTitles(
+                                        showTitles: true,
+                                        reservedSize: 40,
+                                        getTitlesWidget: (value, meta) {
+                                          return Text(
+                                            value.toInt().toString(),
+                                            style: const TextStyle(
+                                              color: Color(0xff64748B),
+                                              fontSize: 12,
+                                              fontFamily: 'Golos',
                                             ),
                                           );
-                                        }
-                                        return const Text('');
-                                      },
+                                        },
+                                      ),
+                                    ),
+                                    topTitles: const AxisTitles(
+                                      sideTitles: SideTitles(showTitles: false),
+                                    ),
+                                    rightTitles: const AxisTitles(
+                                      sideTitles: SideTitles(showTitles: false),
                                     ),
                                   ),
-                                  leftTitles: AxisTitles(
-                                    sideTitles: SideTitles(
-                                      showTitles: true,
-                                      reservedSize: 40,
-                                      getTitlesWidget: (value, meta) {
-                                        return Text(
-                                          value.toInt().toString(),
-                                          style: const TextStyle(
-                                            color: Color(0xff64748B),
-                                            fontSize: 12,
-                                            fontFamily: 'Golos',
-                                          ),
-                                        );
-                                      },
-                                    ),
+                                  gridData: FlGridData(
+                                    show: true,
+                                    drawVerticalLine: false,
+                                    horizontalInterval: _maxDeals <= 0
+                                        ? 1
+                                        : (_maxDeals / 5).ceilToDouble(),
+                                    getDrawingHorizontalLine: (value) {
+                                      return const FlLine(
+                                        color: Color(0xffE2E8F0),
+                                        strokeWidth: 1,
+                                      );
+                                    },
                                   ),
-                                  topTitles: const AxisTitles(
-                                    sideTitles: SideTitles(showTitles: false),
-                                  ),
-                                  rightTitles: const AxisTitles(
-                                    sideTitles: SideTitles(showTitles: false),
-                                  ),
+                                  borderData: FlBorderData(show: false),
+                                  barGroups: _managers
+                                      .asMap()
+                                      .entries
+                                      .map((entry) {
+                                    final m = entry.value;
+                                    return _makeGroupData(
+                                        entry.key,
+                                        m.totalDeals.toDouble(),
+                                        m.successfulDeals.toDouble());
+                                  }).toList(),
                                 ),
-                                gridData: FlGridData(
-                                  show: true,
-                                  drawVerticalLine: false,
-                                  horizontalInterval: _maxDeals <= 0
-                                      ? 1
-                                      : (_maxDeals / 5).ceilToDouble(),
-                                  getDrawingHorizontalLine: (value) {
-                                    return const FlLine(
-                                      color: Color(0xffE2E8F0),
-                                      strokeWidth: 1,
-                                    );
-                                  },
-                                ),
-                                borderData: FlBorderData(show: false),
-                                barGroups: _managers
-                                    .asMap()
-                                    .entries
-                                    .map((entry) {
-                                  final m = entry.value;
-                                  return _makeGroupData(
-                                      entry.key,
-                                      m.totalDeals.toDouble(),
-                                      m.successfulDeals.toDouble());
-                                }).toList(),
                               ),
                             ),
                           ),

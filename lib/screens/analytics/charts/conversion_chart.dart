@@ -105,6 +105,72 @@ class _ConversionChartState extends State<ConversionChart> {
         : 'Неизвестно';
   }
 
+  void _showDetails() {
+    if (_conversionData.isEmpty) return;
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (context) {
+        return Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Конверсия по месяцам',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xff0F172A),
+                  fontFamily: 'Golos',
+                ),
+              ),
+              const SizedBox(height: 12),
+              Flexible(
+                child: ListView.separated(
+                  shrinkWrap: true,
+                  itemCount: _conversionData.length,
+                  separatorBuilder: (_, __) => const Divider(height: 1),
+                  itemBuilder: (context, index) {
+                    final monthName = index < _fullMonthNames.length
+                        ? _fullMonthNames[index]
+                        : 'Месяц ${index + 1}';
+                    return ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: Text(
+                        monthName,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xff0F172A),
+                          fontFamily: 'Golos',
+                        ),
+                      ),
+                      trailing: Text(
+                        '${_conversionData[index].toStringAsFixed(1)}%',
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xff6366F1),
+                          fontFamily: 'Golos',
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final responsive = ResponsiveHelper(context);
@@ -162,6 +228,12 @@ class _ConversionChartState extends State<ConversionChart> {
                     fontFamily: 'Golos',
                   ),
                 ),
+                const Spacer(),
+                IconButton(
+                  onPressed: _showDetails,
+                  icon: const Icon(Icons.more_vert, color: Color(0xff64748B)),
+                  splashRadius: 18,
+                ),
               ],
             ),
           ),
@@ -210,101 +282,104 @@ class _ConversionChartState extends State<ConversionChart> {
                               ),
                             ),
                           )
-                        : Padding(
-                            padding: const EdgeInsets.only(
-                                right: 20, left: 10, bottom: 20),
-                            child: BarChart(
-                              BarChartData(
-                                alignment: BarChartAlignment.spaceAround,
-                                maxY: _maxPercentage + 5,
-                                barTouchData: BarTouchData(
-                                  enabled: true,
-                                  touchTooltipData: BarTouchTooltipData(
-                                    getTooltipColor: (group) => Colors.white,
-                                    tooltipBorder: const BorderSide(
-                                        color: Color(0xffE2E8F0)),
-                                    tooltipRoundedRadius: 8,
-                                    getTooltipItem:
-                                        (group, groupIndex, rod, rodIndex) {
-                                      return BarTooltipItem(
-                                        '${rod.toY.toStringAsFixed(1)}%',
-                                        const TextStyle(
-                                          color: Color(0xff0F172A),
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 14,
-                                          fontFamily: 'Golos',
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                ),
-                                titlesData: FlTitlesData(
-                                  show: true,
-                                  bottomTitles: AxisTitles(
-                                    sideTitles: SideTitles(
-                                      showTitles: true,
-                                      getTitlesWidget: (value, meta) {
-                                        if (value.toInt() >= 0 &&
-                                            value.toInt() <
-                                                _conversionData.length) {
-                                          return Padding(
-                                            padding:
-                                                const EdgeInsets.only(top: 8),
-                                            child: Text(
-                                              _monthNames[value.toInt()],
-                                              style: const TextStyle(
-                                                color: Color(0xff64748B),
-                                                fontSize: 12,
-                                                fontFamily: 'Golos',
-                                              ),
-                                            ),
-                                          );
-                                        }
-                                        return const Text('');
-                                      },
-                                    ),
-                                  ),
-                                  leftTitles: AxisTitles(
-                                    sideTitles: SideTitles(
-                                      showTitles: true,
-                                      reservedSize: 40,
-                                      getTitlesWidget: (value, meta) {
-                                        return Text(
-                                          '${value.toInt()}%',
-                                          style: const TextStyle(
-                                            color: Color(0xff64748B),
-                                            fontSize: 12,
+                        : GestureDetector(
+                            onTap: _showDetails,
+                            child: Padding(
+                              padding: const EdgeInsets.only(
+                                  right: 20, left: 10, bottom: 20),
+                              child: BarChart(
+                                BarChartData(
+                                  alignment: BarChartAlignment.spaceAround,
+                                  maxY: _maxPercentage + 5,
+                                  barTouchData: BarTouchData(
+                                    enabled: true,
+                                    touchTooltipData: BarTouchTooltipData(
+                                      getTooltipColor: (group) => Colors.white,
+                                      tooltipBorder: const BorderSide(
+                                          color: Color(0xffE2E8F0)),
+                                      tooltipRoundedRadius: 8,
+                                      getTooltipItem:
+                                          (group, groupIndex, rod, rodIndex) {
+                                        return BarTooltipItem(
+                                          '${rod.toY.toStringAsFixed(1)}%',
+                                          const TextStyle(
+                                            color: Color(0xff0F172A),
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 14,
                                             fontFamily: 'Golos',
                                           ),
                                         );
                                       },
                                     ),
                                   ),
-                                  topTitles: const AxisTitles(
-                                    sideTitles: SideTitles(showTitles: false),
+                                  titlesData: FlTitlesData(
+                                    show: true,
+                                    bottomTitles: AxisTitles(
+                                      sideTitles: SideTitles(
+                                        showTitles: true,
+                                        getTitlesWidget: (value, meta) {
+                                          if (value.toInt() >= 0 &&
+                                              value.toInt() <
+                                                  _conversionData.length) {
+                                            return Padding(
+                                              padding:
+                                                  const EdgeInsets.only(top: 8),
+                                              child: Text(
+                                                _monthNames[value.toInt()],
+                                                style: const TextStyle(
+                                                  color: Color(0xff64748B),
+                                                  fontSize: 12,
+                                                  fontFamily: 'Golos',
+                                                ),
+                                              ),
+                                            );
+                                          }
+                                          return const Text('');
+                                        },
+                                      ),
+                                    ),
+                                    leftTitles: AxisTitles(
+                                      sideTitles: SideTitles(
+                                        showTitles: true,
+                                        reservedSize: 40,
+                                        getTitlesWidget: (value, meta) {
+                                          return Text(
+                                            '${value.toInt()}%',
+                                            style: const TextStyle(
+                                              color: Color(0xff64748B),
+                                              fontSize: 12,
+                                              fontFamily: 'Golos',
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                    ),
+                                    topTitles: const AxisTitles(
+                                      sideTitles: SideTitles(showTitles: false),
+                                    ),
+                                    rightTitles: const AxisTitles(
+                                      sideTitles: SideTitles(showTitles: false),
+                                    ),
                                   ),
-                                  rightTitles: const AxisTitles(
-                                    sideTitles: SideTitles(showTitles: false),
+                                  gridData: FlGridData(
+                                    show: true,
+                                    drawVerticalLine: false,
+                                    horizontalInterval: 5,
+                                    getDrawingHorizontalLine: (value) {
+                                      return const FlLine(
+                                        color: Color(0xffE2E8F0),
+                                        strokeWidth: 1,
+                                      );
+                                    },
                                   ),
+                                  borderData: FlBorderData(show: false),
+                                  barGroups: _conversionData
+                                      .asMap()
+                                      .entries
+                                      .map((entry) => _makeGroupData(
+                                          entry.key, entry.value))
+                                      .toList(),
                                 ),
-                                gridData: FlGridData(
-                                  show: true,
-                                  drawVerticalLine: false,
-                                  horizontalInterval: 5,
-                                  getDrawingHorizontalLine: (value) {
-                                    return const FlLine(
-                                      color: Color(0xffE2E8F0),
-                                      strokeWidth: 1,
-                                    );
-                                  },
-                                ),
-                                borderData: FlBorderData(show: false),
-                                barGroups: _conversionData
-                                    .asMap()
-                                    .entries
-                                    .map((entry) =>
-                                        _makeGroupData(entry.key, entry.value))
-                                    .toList(),
                               ),
                             ),
                           ),

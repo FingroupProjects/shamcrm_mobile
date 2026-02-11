@@ -44,6 +44,82 @@ class _ProductsChartState extends State<ProductsChart> {
     }
   }
 
+  void _showDetails() {
+    if (_data == null || _data!.list.isEmpty) return;
+    final items = _data!.list;
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (context) {
+        return Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'ТОП продаваемых товаров',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xff0F172A),
+                  fontFamily: 'Golos',
+                ),
+                maxLines: 2,
+              ),
+              const SizedBox(height: 12),
+              Flexible(
+                child: ListView.separated(
+                  shrinkWrap: true,
+                  itemCount: items.length,
+                  separatorBuilder: (_, __) => const Divider(height: 1),
+                  itemBuilder: (context, index) {
+                    final item = items[index];
+                    return ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: Text(
+                        item.name,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xff0F172A),
+                          fontFamily: 'Golos',
+                        ),
+                      ),
+                      subtitle: Text(
+                        'Продано: ${item.totalSold} • Успешные: ${item.successful}',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Color(0xff64748B),
+                          fontFamily: 'Golos',
+                        ),
+                      ),
+                      trailing: Text(
+                        item.revenueFormatted.isNotEmpty
+                            ? item.revenueFormatted
+                            : item.revenue.toStringAsFixed(0),
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xffF97316),
+                          fontFamily: 'Golos',
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   List<TopSellingProductItem> get _topItems {
     final list = _data?.list ?? [];
     final sorted = List<TopSellingProductItem>.from(list)
@@ -112,14 +188,24 @@ class _ProductsChartState extends State<ProductsChart> {
                   ),
                 ),
                 const SizedBox(width: 12),
-                Text(
-                  'ТОП продаваемых товаров',
-                  style: TextStyle(
-                    fontSize: responsive.titleFontSize,
-                    fontWeight: FontWeight.w600,
-                    color: const Color(0xff0F172A),
-                    fontFamily: 'Golos',
+                Expanded(
+                  child: Text(
+                    'ТОП продаваемых товаров',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: responsive.titleFontSize,
+                      fontWeight: FontWeight.w600,
+                      color: const Color(0xff0F172A),
+                      fontFamily: 'Golos',
+                    ),
                   ),
+                ),
+                const SizedBox(width: 8),
+                IconButton(
+                  onPressed: _showDetails,
+                  icon: const Icon(Icons.more_vert, color: Color(0xff64748B)),
+                  splashRadius: 18,
                 ),
               ],
             ),
@@ -169,100 +255,108 @@ class _ProductsChartState extends State<ProductsChart> {
                               ),
                             ),
                           )
-                        : Padding(
-                            padding: const EdgeInsets.only(
-                                right: 20, left: 10, bottom: 20),
-                            child: BarChart(
-                              BarChartData(
-                                alignment: BarChartAlignment.spaceAround,
-                                maxY: _maxSold <= 0 ? 1 : _maxSold + 5,
-                                barTouchData: BarTouchData(
-                                  enabled: true,
-                                  touchTooltipData: BarTouchTooltipData(
-                                    getTooltipColor: (group) => Colors.white,
-                                    tooltipBorder:
-                                        const BorderSide(color: Color(0xffE2E8F0)),
-                                    tooltipRoundedRadius: 8,
-                                    getTooltipItem: (group, groupIndex, rod, rodIndex) {
-                                      return BarTooltipItem(
-                                        '${rod.toY.toInt()} шт',
-                                        const TextStyle(
-                                          color: Color(0xff0F172A),
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 14,
-                                          fontFamily: 'Golos',
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                ),
-                                titlesData: FlTitlesData(
-                                  show: true,
-                                  bottomTitles: AxisTitles(
-                                    sideTitles: SideTitles(
-                                      showTitles: true,
-                                      getTitlesWidget: (value, meta) {
-                                        final index = value.toInt();
-                                        if (index >= 0 && index < _topItems.length) {
-                                          return Padding(
-                                            padding: const EdgeInsets.only(top: 8),
-                                            child: Text(
-                                              _shortName(_topItems[index].name),
-                                              style: const TextStyle(
-                                                color: Color(0xff64748B),
-                                                fontSize: 11,
-                                                fontFamily: 'Golos',
-                                              ),
-                                            ),
-                                          );
-                                        }
-                                        return const Text('');
-                                      },
-                                    ),
-                                  ),
-                                  leftTitles: AxisTitles(
-                                    sideTitles: SideTitles(
-                                      showTitles: true,
-                                      reservedSize: 40,
-                                      getTitlesWidget: (value, meta) {
-                                        return Text(
-                                          value.toInt().toString(),
-                                          style: const TextStyle(
-                                            color: Color(0xff64748B),
-                                            fontSize: 12,
+                        : GestureDetector(
+                            onTap: _showDetails,
+                            child: Padding(
+                              padding: const EdgeInsets.only(
+                                  right: 20, left: 10, bottom: 20),
+                              child: BarChart(
+                                BarChartData(
+                                  alignment: BarChartAlignment.spaceAround,
+                                  maxY: _maxSold <= 0 ? 1 : _maxSold + 5,
+                                  barTouchData: BarTouchData(
+                                    enabled: true,
+                                    touchTooltipData: BarTouchTooltipData(
+                                      getTooltipColor: (group) => Colors.white,
+                                      tooltipBorder: const BorderSide(
+                                          color: Color(0xffE2E8F0)),
+                                      tooltipRoundedRadius: 8,
+                                      getTooltipItem:
+                                          (group, groupIndex, rod, rodIndex) {
+                                        return BarTooltipItem(
+                                          '${rod.toY.toInt()} шт',
+                                          const TextStyle(
+                                            color: Color(0xff0F172A),
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 14,
                                             fontFamily: 'Golos',
                                           ),
                                         );
                                       },
                                     ),
                                   ),
-                                  topTitles: const AxisTitles(
-                                    sideTitles: SideTitles(showTitles: false),
+                                  titlesData: FlTitlesData(
+                                    show: true,
+                                    bottomTitles: AxisTitles(
+                                      sideTitles: SideTitles(
+                                        showTitles: true,
+                                        getTitlesWidget: (value, meta) {
+                                          final index = value.toInt();
+                                          if (index >= 0 &&
+                                              index < _topItems.length) {
+                                            return Padding(
+                                              padding: const EdgeInsets.only(
+                                                  top: 8),
+                                              child: Text(
+                                                _shortName(
+                                                    _topItems[index].name),
+                                                style: const TextStyle(
+                                                  color: Color(0xff64748B),
+                                                  fontSize: 11,
+                                                  fontFamily: 'Golos',
+                                                ),
+                                              ),
+                                            );
+                                          }
+                                          return const Text('');
+                                        },
+                                      ),
+                                    ),
+                                    leftTitles: AxisTitles(
+                                      sideTitles: SideTitles(
+                                        showTitles: true,
+                                        reservedSize: 40,
+                                        getTitlesWidget: (value, meta) {
+                                          return Text(
+                                            value.toInt().toString(),
+                                            style: const TextStyle(
+                                              color: Color(0xff64748B),
+                                              fontSize: 12,
+                                              fontFamily: 'Golos',
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                    ),
+                                    topTitles: const AxisTitles(
+                                      sideTitles: SideTitles(showTitles: false),
+                                    ),
+                                    rightTitles: const AxisTitles(
+                                      sideTitles: SideTitles(showTitles: false),
+                                    ),
                                   ),
-                                  rightTitles: const AxisTitles(
-                                    sideTitles: SideTitles(showTitles: false),
+                                  gridData: FlGridData(
+                                    show: true,
+                                    drawVerticalLine: false,
+                                    horizontalInterval: _maxSold <= 0
+                                        ? 1
+                                        : (_maxSold / 5).ceilToDouble(),
+                                    getDrawingHorizontalLine: (value) {
+                                      return const FlLine(
+                                        color: Color(0xffE2E8F0),
+                                        strokeWidth: 1,
+                                      );
+                                    },
                                   ),
+                                  borderData: FlBorderData(show: false),
+                                  barGroups: _topItems
+                                      .asMap()
+                                      .entries
+                                      .map((entry) => _makeGroupData(
+                                          entry.key,
+                                          entry.value.totalSold.toDouble()))
+                                      .toList(),
                                 ),
-                                gridData: FlGridData(
-                                  show: true,
-                                  drawVerticalLine: false,
-                                  horizontalInterval: _maxSold <= 0
-                                      ? 1
-                                      : (_maxSold / 5).ceilToDouble(),
-                                  getDrawingHorizontalLine: (value) {
-                                    return const FlLine(
-                                      color: Color(0xffE2E8F0),
-                                      strokeWidth: 1,
-                                    );
-                                  },
-                                ),
-                                borderData: FlBorderData(show: false),
-                                barGroups: _topItems
-                                    .asMap()
-                                    .entries
-                                    .map((entry) =>
-                                        _makeGroupData(entry.key, entry.value.totalSold.toDouble()))
-                                    .toList(),
                               ),
                             ),
                           ),

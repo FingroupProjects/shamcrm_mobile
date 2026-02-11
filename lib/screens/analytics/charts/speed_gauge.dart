@@ -48,6 +48,60 @@ class _SpeedGaugeState extends State<SpeedGauge> {
     }
   }
 
+  void _showDetails() {
+    if (_isLoading || _error != null) return;
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (context) {
+        return Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Скорость обработки лидов',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xff0F172A),
+                  fontFamily: 'Golos',
+                ),
+              ),
+              const SizedBox(height: 12),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text(
+                  'Среднее время',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xff0F172A),
+                    fontFamily: 'Golos',
+                  ),
+                ),
+                trailing: Text(
+                  _speedLabel,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xffEC4899),
+                    fontFamily: 'Golos',
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final responsive = ResponsiveHelper(context);
@@ -107,6 +161,11 @@ class _SpeedGaugeState extends State<SpeedGauge> {
                     ),
                   ),
                 ),
+                IconButton(
+                  onPressed: _showDetails,
+                  icon: const Icon(Icons.more_vert, color: Color(0xff64748B)),
+                  splashRadius: 18,
+                ),
               ],
             ),
           ),
@@ -144,36 +203,39 @@ class _SpeedGaugeState extends State<SpeedGauge> {
                           ],
                         ),
                       )
-                    : Padding(
-                        padding: EdgeInsets.all(responsive.cardPadding),
-                        child: CustomPaint(
-                          painter: SpeedGaugePainter(
-                            speedHours: _speedHours,
-                          ),
-                          child: Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                const SizedBox(height: 130),
-                                Text(
-                                  _speedLabel,
-                                  style: const TextStyle(
-                                    fontSize: 32,
-                                    fontWeight: FontWeight.w700,
-                                    color: Color(0xff1E2E52),
-                                    fontFamily: 'Golos',
+                    : GestureDetector(
+                        onTap: _showDetails,
+                        child: Padding(
+                          padding: EdgeInsets.all(responsive.cardPadding),
+                          child: CustomPaint(
+                            painter: SpeedGaugePainter(
+                              speedHours: _speedHours,
+                            ),
+                            child: Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const SizedBox(height: 130),
+                                  Text(
+                                    _speedLabel,
+                                    style: const TextStyle(
+                                      fontSize: 32,
+                                      fontWeight: FontWeight.w700,
+                                      color: Color(0xff1E2E52),
+                                      fontFamily: 'Golos',
+                                    ),
                                   ),
-                                ),
-                                const SizedBox(height: 8),
-                                const Text(
-                                  'Среднее время',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    color: Color(0xff64748B),
-                                    fontFamily: 'Golos',
+                                  const SizedBox(height: 8),
+                                  const Text(
+                                    'Среднее время',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: Color(0xff64748B),
+                                      fontFamily: 'Golos',
+                                    ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
                           ),
                         ),

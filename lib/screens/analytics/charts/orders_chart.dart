@@ -60,6 +60,82 @@ class _OrdersChartState extends State<OrdersChart> {
     }
   }
 
+  void _showDetails() {
+    if (_data == null || _data!.chartData.isEmpty) return;
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (context) {
+        return Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Заказы интернет-магазина',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xff0F172A),
+                  fontFamily: 'Golos',
+                ),
+              ),
+              const SizedBox(height: 12),
+              Flexible(
+                child: ListView.separated(
+                  shrinkWrap: true,
+                  itemCount: _data!.chartData.length,
+                  separatorBuilder: (_, __) => const Divider(height: 1),
+                  itemBuilder: (context, index) {
+                    final point = _data!.chartData[index];
+                    final month = point.month >= 0 &&
+                            point.month < _monthNames.length
+                        ? _monthNames[point.month]
+                        : point.month.toString();
+                    return ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: Text(
+                        month,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xff0F172A),
+                          fontFamily: 'Golos',
+                        ),
+                      ),
+                      subtitle: Text(
+                        'Успешные: ${point.successfulOrders} • Отменённые: ${point.canceledOrders}',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Color(0xff64748B),
+                          fontFamily: 'Golos',
+                        ),
+                      ),
+                      trailing: Text(
+                        '${point.totalOrders}',
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xff14B8A6),
+                          fontFamily: 'Golos',
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   double get _maxOrders {
     final list = _data?.chartData ?? [];
     if (list.isEmpty) return 0;
@@ -116,14 +192,24 @@ class _OrdersChartState extends State<OrdersChart> {
                   ),
                 ),
                 const SizedBox(width: 12),
-                Text(
-                  'Заказы интернет-магазина',
-                  style: TextStyle(
-                    fontSize: responsive.titleFontSize,
-                    fontWeight: FontWeight.w600,
-                    color: const Color(0xff0F172A),
-                    fontFamily: 'Golos',
+                Expanded(
+                  child: Text(
+                    'Заказы интернет-магазина',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: responsive.titleFontSize,
+                      fontWeight: FontWeight.w600,
+                      color: const Color(0xff0F172A),
+                      fontFamily: 'Golos',
+                    ),
                   ),
+                ),
+                const SizedBox(width: 8),
+                IconButton(
+                  onPressed: _showDetails,
+                  icon: const Icon(Icons.more_vert, color: Color(0xff64748B)),
+                  splashRadius: 18,
                 ),
               ],
             ),
@@ -173,100 +259,105 @@ class _OrdersChartState extends State<OrdersChart> {
                               ),
                             ),
                           )
-                        : Padding(
-                            padding: const EdgeInsets.only(
-                                right: 20, left: 10, bottom: 20),
-                            child: BarChart(
-                              BarChartData(
-                                alignment: BarChartAlignment.spaceAround,
-                                maxY: _maxOrders <= 0 ? 1 : _maxOrders + 2,
-                                barTouchData: BarTouchData(
-                                  enabled: true,
-                                  touchTooltipData: BarTouchTooltipData(
-                                    getTooltipColor: (group) => Colors.white,
-                                    tooltipBorder:
-                                        const BorderSide(color: Color(0xffE2E8F0)),
-                                    tooltipRoundedRadius: 8,
+                        : GestureDetector(
+                            onTap: _showDetails,
+                            child: Padding(
+                              padding: const EdgeInsets.only(
+                                  right: 20, left: 10, bottom: 20),
+                              child: BarChart(
+                                BarChartData(
+                                  alignment: BarChartAlignment.spaceAround,
+                                  maxY: _maxOrders <= 0 ? 1 : _maxOrders + 2,
+                                  barTouchData: BarTouchData(
+                                    enabled: true,
+                                    touchTooltipData: BarTouchTooltipData(
+                                      getTooltipColor: (group) => Colors.white,
+                                      tooltipBorder: const BorderSide(
+                                          color: Color(0xffE2E8F0)),
+                                      tooltipRoundedRadius: 8,
+                                    ),
                                   ),
-                                ),
-                                titlesData: FlTitlesData(
-                                  show: true,
-                                  bottomTitles: AxisTitles(
-                                    sideTitles: SideTitles(
-                                      showTitles: true,
-                                      getTitlesWidget: (value, meta) {
-                                        final index = value.toInt();
-                                        final points = _data!.chartData;
-                                        if (index >= 0 && index < points.length) {
-                                          final month = points[index].month;
-                                          final label = month >= 0 &&
-                                                  month < _monthNames.length
-                                              ? _monthNames[month]
-                                              : month.toString();
-                                          return Padding(
-                                            padding: const EdgeInsets.only(top: 8),
-                                            child: Text(
-                                              label,
-                                              style: const TextStyle(
-                                                color: Color(0xff64748B),
-                                                fontSize: 12,
-                                                fontFamily: 'Golos',
+                                  titlesData: FlTitlesData(
+                                    show: true,
+                                    bottomTitles: AxisTitles(
+                                      sideTitles: SideTitles(
+                                        showTitles: true,
+                                        getTitlesWidget: (value, meta) {
+                                          final index = value.toInt();
+                                          final points = _data!.chartData;
+                                          if (index >= 0 &&
+                                              index < points.length) {
+                                            final month = points[index].month;
+                                            final label = month >= 0 &&
+                                                    month < _monthNames.length
+                                                ? _monthNames[month]
+                                                : month.toString();
+                                            return Padding(
+                                              padding: const EdgeInsets.only(
+                                                  top: 8),
+                                              child: Text(
+                                                label,
+                                                style: const TextStyle(
+                                                  color: Color(0xff64748B),
+                                                  fontSize: 12,
+                                                  fontFamily: 'Golos',
+                                                ),
                                               ),
+                                            );
+                                          }
+                                          return const Text('');
+                                        },
+                                      ),
+                                    ),
+                                    leftTitles: AxisTitles(
+                                      sideTitles: SideTitles(
+                                        showTitles: true,
+                                        reservedSize: 40,
+                                        getTitlesWidget: (value, meta) {
+                                          return Text(
+                                            value.toInt().toString(),
+                                            style: const TextStyle(
+                                              color: Color(0xff64748B),
+                                              fontSize: 12,
+                                              fontFamily: 'Golos',
                                             ),
                                           );
-                                        }
-                                        return const Text('');
-                                      },
+                                        },
+                                      ),
+                                    ),
+                                    topTitles: const AxisTitles(
+                                      sideTitles: SideTitles(showTitles: false),
+                                    ),
+                                    rightTitles: const AxisTitles(
+                                      sideTitles: SideTitles(showTitles: false),
                                     ),
                                   ),
-                                  leftTitles: AxisTitles(
-                                    sideTitles: SideTitles(
-                                      showTitles: true,
-                                      reservedSize: 40,
-                                      getTitlesWidget: (value, meta) {
-                                        return Text(
-                                          value.toInt().toString(),
-                                          style: const TextStyle(
-                                            color: Color(0xff64748B),
-                                            fontSize: 12,
-                                            fontFamily: 'Golos',
-                                          ),
-                                        );
-                                      },
-                                    ),
+                                  gridData: FlGridData(
+                                    show: true,
+                                    drawVerticalLine: false,
+                                    horizontalInterval: _maxOrders <= 0
+                                        ? 1
+                                        : (_maxOrders / 5).ceilToDouble(),
+                                    getDrawingHorizontalLine: (value) {
+                                      return const FlLine(
+                                        color: Color(0xffE2E8F0),
+                                        strokeWidth: 1,
+                                      );
+                                    },
                                   ),
-                                  topTitles: const AxisTitles(
-                                    sideTitles: SideTitles(showTitles: false),
-                                  ),
-                                  rightTitles: const AxisTitles(
-                                    sideTitles: SideTitles(showTitles: false),
-                                  ),
-                                ),
-                                gridData: FlGridData(
-                                  show: true,
-                                  drawVerticalLine: false,
-                                  horizontalInterval: _maxOrders <= 0
-                                      ? 1
-                                      : (_maxOrders / 5).ceilToDouble(),
-                                  getDrawingHorizontalLine: (value) {
-                                    return const FlLine(
-                                      color: Color(0xffE2E8F0),
-                                      strokeWidth: 1,
+                                  borderData: FlBorderData(show: false),
+                                  barGroups: _data!.chartData
+                                      .asMap()
+                                      .entries
+                                      .map((entry) {
+                                    final p = entry.value;
+                                    return _makeGroupData(
+                                      entry.key,
+                                      p.totalOrders.toDouble(),
+                                      p.successfulOrders.toDouble(),
                                     );
-                                  },
+                                  }).toList(),
                                 ),
-                                borderData: FlBorderData(show: false),
-                                barGroups: _data!.chartData
-                                    .asMap()
-                                    .entries
-                                    .map((entry) {
-                                  final p = entry.value;
-                                  return _makeGroupData(
-                                    entry.key,
-                                    p.totalOrders.toDouble(),
-                                    p.successfulOrders.toDouble(),
-                                  );
-                                }).toList(),
                               ),
                             ),
                           ),

@@ -68,6 +68,12 @@ import 'package:crm_task_manager/screens/analytics/models/source_of_leads_model.
 import 'package:crm_task_manager/screens/analytics/models/task_chart_v2_model.dart';
 import 'package:crm_task_manager/screens/analytics/models/top_selling_products_model.dart';
 import 'package:crm_task_manager/screens/analytics/models/users_chart_model.dart';
+import 'package:crm_task_manager/screens/analytics/models/completed_tasks_model.dart';
+import 'package:crm_task_manager/screens/analytics/models/telephony_events_model.dart';
+import 'package:crm_task_manager/screens/analytics/models/replies_messages_model.dart';
+import 'package:crm_task_manager/screens/analytics/models/task_stats_by_project_model.dart';
+import 'package:crm_task_manager/screens/analytics/models/connected_accounts_model.dart';
+import 'package:crm_task_manager/screens/analytics/models/advertising_roi_model.dart';
 import 'package:crm_task_manager/models/organization_model.dart';
 import 'package:crm_task_manager/models/overdue_task_response.dart';
 import 'package:crm_task_manager/models/page_2/branch_model.dart';
@@ -6445,6 +6451,144 @@ class ApiService {
     } catch (e) {
       debugPrint('ApiService: getOnlineStoreOrdersChartV2 error: $e');
       throw Exception('Ошибка получения заказов интернет-магазина: $e');
+    }
+  }
+
+  /// Выполненные задачи (график)
+  /// Endpoint: /api/v2/dashboard/completed-task-chart
+  Future<CompletedTasksChartResponse> getCompletedTasksChartV2() async {
+    final path = await _appendQueryParams('/v2/dashboard/completed-task-chart');
+
+    if (kDebugMode) {
+      debugPrint('ApiService: getCompletedTasksChartV2 - Generated path: $path');
+    }
+
+    try {
+      final response = await _getRequest(path);
+      if (response.statusCode == 200) {
+        final jsonData = json.decode(response.body);
+        return CompletedTasksChartResponse.fromJson(jsonData);
+      } else {
+        throw Exception('Ошибка загрузки выполненных задач!');
+      }
+    } catch (e) {
+      debugPrint('ApiService: getCompletedTasksChartV2 error: $e');
+      throw Exception('Ошибка получения выполненных задач: $e');
+    }
+  }
+
+  /// Телефония и события (график)
+  /// Endpoint: /api/v2/dashboard/telephony-and-events-chart
+  Future<TelephonyEventsResponse> getTelephonyAndEventsChartV2() async {
+    final path = await _appendQueryParams('/v2/dashboard/telephony-and-events-chart');
+
+    if (kDebugMode) {
+      debugPrint('ApiService: getTelephonyAndEventsChartV2 - Generated path: $path');
+    }
+
+    try {
+      final response = await _getRequest(path);
+      if (response.statusCode == 200) {
+        final jsonData = json.decode(response.body);
+        return TelephonyEventsResponse.fromJson(jsonData);
+      } else {
+        throw Exception('Ошибка загрузки телефонии и событий!');
+      }
+    } catch (e) {
+      debugPrint('ApiService: getTelephonyAndEventsChartV2 error: $e');
+      throw Exception('Ошибка получения телефонии и событий: $e');
+    }
+  }
+
+  /// Ответы на сообщения (график)
+  /// Endpoint: /api/v2/dashboard/replies-to-messages-chart
+  Future<RepliesToMessagesResponse> getRepliesToMessagesChartV2() async {
+    final path = await _appendQueryParams('/v2/dashboard/replies-to-messages-chart');
+
+    if (kDebugMode) {
+      debugPrint('ApiService: getRepliesToMessagesChartV2 - Generated path: $path');
+    }
+
+    try {
+      final response = await _getRequest(path);
+      if (response.statusCode == 200) {
+        final jsonData = json.decode(response.body);
+        return RepliesToMessagesResponse.fromJson(jsonData);
+      } else {
+        throw Exception('Ошибка загрузки ответов на сообщения!');
+      }
+    } catch (e) {
+      debugPrint('ApiService: getRepliesToMessagesChartV2 error: $e');
+      throw Exception('Ошибка получения ответов на сообщения: $e');
+    }
+  }
+
+  /// Статистика задач по проектам
+  /// Endpoint: /api/v2/dashboard/task-statistics-by-project-chart
+  Future<TaskStatsByProjectResponse> getTaskStatsByProjectChartV2() async {
+    final path = await _appendQueryParams('/v2/dashboard/task-statistics-by-project-chart');
+
+    if (kDebugMode) {
+      debugPrint('ApiService: getTaskStatsByProjectChartV2 - Generated path: $path');
+    }
+
+    try {
+      final response = await _getRequest(path);
+      if (response.statusCode == 200) {
+        final jsonData = json.decode(response.body);
+        return TaskStatsByProjectResponse.fromJson(jsonData);
+      } else {
+        throw Exception('Ошибка загрузки статистики задач по проектам!');
+      }
+    } catch (e) {
+      debugPrint('ApiService: getTaskStatsByProjectChartV2 error: $e');
+      throw Exception('Ошибка получения статистики задач по проектам: $e');
+    }
+  }
+
+  /// Подключенные аккаунты
+  /// Endpoint: /api/v2/dashboard/connected-accounts-chart
+  Future<ConnectedAccountsResponse> getConnectedAccountsChartV2() async {
+    final path = await _appendQueryParams('/v2/dashboard/connected-accounts-chart');
+
+    if (kDebugMode) {
+      debugPrint('ApiService: getConnectedAccountsChartV2 - Generated path: $path');
+    }
+
+    try {
+      final response = await _getRequest(path);
+      if (response.statusCode == 200) {
+        final jsonData = json.decode(response.body);
+        return ConnectedAccountsResponse.fromJson(jsonData);
+      } else {
+        throw Exception('Ошибка загрузки подключенных аккаунтов!');
+      }
+    } catch (e) {
+      debugPrint('ApiService: getConnectedAccountsChartV2 error: $e');
+      throw Exception('Ошибка получения подключенных аккаунтов: $e');
+    }
+  }
+
+  /// ROI рекламы (график)
+  /// Endpoint: /api/v2/dashboard/advertising-ROI-chart
+  Future<AdvertisingRoiResponse> getAdvertisingRoiChartV2() async {
+    final path = await _appendQueryParams('/v2/dashboard/advertising-ROI-chart');
+
+    if (kDebugMode) {
+      debugPrint('ApiService: getAdvertisingRoiChartV2 - Generated path: $path');
+    }
+
+    try {
+      final response = await _getRequest(path);
+      if (response.statusCode == 200) {
+        final jsonData = json.decode(response.body);
+        return AdvertisingRoiResponse.fromJson(jsonData);
+      } else {
+        throw Exception('Ошибка загрузки ROI рекламы!');
+      }
+    } catch (e) {
+      debugPrint('ApiService: getAdvertisingRoiChartV2 error: $e');
+      throw Exception('Ошибка получения ROI рекламы: $e');
     }
   }
 

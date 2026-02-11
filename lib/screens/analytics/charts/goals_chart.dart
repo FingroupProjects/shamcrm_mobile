@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:crm_task_manager/screens/analytics/utils/responsive_helper.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/screens/analytics/models/users_chart_model.dart';
+import 'package:crm_task_manager/screens/dashboard/dialogs/user_overdue_task_dialog.dart';
 
 class GoalsChart extends StatefulWidget {
   const GoalsChart({super.key});
@@ -45,17 +46,86 @@ class _GoalsChartState extends State<GoalsChart> {
     }
   }
 
-  final List<Color> _employeeColors = [
-    Color(0xff8B5CF6), // Purple
-    Color(0xff6366F1), // Indigo
-    Color(0xff10B981), // Green
-    Color(0xffF59E0B), // Amber
-    Color(0xffEF4444), // Red
-    Color(0xff06B6D4), // Cyan
-  ];
+  void _showDetails() {
+    if (_goals.isEmpty) return;
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (context) {
+        return Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Выполнение целей',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xff0F172A),
+                  fontFamily: 'Golos',
+                ),
+              ),
+              const SizedBox(height: 12),
+              Flexible(
+                child: ListView.separated(
+                  shrinkWrap: true,
+                  itemCount: _goals.length,
+                  separatorBuilder: (_, __) => const Divider(height: 1),
+                  itemBuilder: (context, index) {
+                    final goal = _goals[index];
+                    return ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      dense: true,
+                      title: Text(
+                        goal.name,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xff0F172A),
+                          fontFamily: 'Golos',
+                          decoration: TextDecoration.underline,
+                        ),
+                      ),
+                      trailing: Text(
+                        '${goal.finishedTasksPercent.toStringAsFixed(1)}%',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: _colorForPercent(goal.finishedTasksPercent),
+                          fontFamily: 'Golos',
+                        ),
+                      ),
+                      onTap: () => showUserOverdueTasksDialog(
+                        context,
+                        goal.userId,
+                        goal.name,
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
 
-  Color _getColorForIndex(int index) {
-    return _employeeColors[index % _employeeColors.length];
+  Color _colorForPercent(double percent) {
+    if (percent >= 100) return const Color(0xff10B981); // green
+    if (percent >= 70) return const Color(0xff3B82F6); // blue
+    if (percent >= 30) return const Color(0xffF59E0B); // orange
+    return const Color(0xffEF4444); // red
+  }
+
+  void _openUserOverdue(UserPerformance user) {
+    showUserOverdueTasksDialog(context, user.userId, user.name);
   }
 
   @override
@@ -117,6 +187,11 @@ class _GoalsChartState extends State<GoalsChart> {
                     ),
                   ),
                 ),
+                IconButton(
+                  onPressed: _showDetails,
+                  icon: const Icon(Icons.more_vert, color: Color(0xff64748B)),
+                  splashRadius: 18,
+                ),
               ],
             ),
           ),
@@ -169,15 +244,14 @@ class _GoalsChartState extends State<GoalsChart> {
                             padding: EdgeInsets.all(responsive.cardPadding),
                             child: Column(
                               children: _goals.asMap().entries.map((entry) {
-                                final index = entry.key;
                                 final goal = entry.value;
-                                final color = _getColorForIndex(index);
+                                final color =
+                                    _colorForPercent(goal.finishedTasksPercent);
 
                                 return Padding(
                                   padding: const EdgeInsets.only(bottom: 20),
                                   child: _buildEmployeeProgress(
-                                    goal.name,
-                                    goal.finishedTasksPercent.round(),
+                                    goal,
                                     color,
                                   ),
                                 );
@@ -251,32 +325,41 @@ class _GoalsChartState extends State<GoalsChart> {
     );
   }
 
-  Widget _buildEmployeeProgress(String name, int percentage, Color color) {
+  Widget _buildEmployeeProgress(UserPerformance goal, Color color) {
+    final percentage = goal.finishedTasksPercent.round();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              name,
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: Color(0xff0F172A),
-                fontFamily: 'Golos',
+        InkWell(
+          onTap: () => _openUserOverdue(goal),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Text(
+                  goal.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xff0F172A),
+                    fontFamily: 'Golos',
+                    decoration: TextDecoration.underline,
+                  ),
+                ),
               ),
-            ),
-            Text(
-              '$percentage%',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w700,
-                color: color,
-                fontFamily: 'Golos',
+              Text(
+                '$percentage%',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: color,
+                  fontFamily: 'Golos',
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
         const SizedBox(height: 8),
         Stack(

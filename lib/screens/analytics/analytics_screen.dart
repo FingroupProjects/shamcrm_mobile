@@ -10,6 +10,17 @@ import 'package:crm_task_manager/screens/analytics/charts/goals_chart.dart';
 import 'package:crm_task_manager/screens/analytics/charts/kpi_chart.dart';
 import 'package:crm_task_manager/screens/analytics/charts/orders_chart.dart';
 import 'package:crm_task_manager/screens/analytics/charts/products_chart.dart';
+import 'package:crm_task_manager/screens/analytics/charts/lead_statuses_chart.dart';
+import 'package:crm_task_manager/screens/analytics/charts/deal_stats_chart.dart';
+import 'package:crm_task_manager/screens/analytics/charts/lead_conversion_statuses_chart.dart';
+import 'package:crm_task_manager/screens/analytics/charts/lead_channels_chart.dart';
+import 'package:crm_task_manager/screens/analytics/charts/message_stats_chart.dart';
+import 'package:crm_task_manager/screens/analytics/charts/replies_messages_chart.dart';
+import 'package:crm_task_manager/screens/analytics/charts/completed_tasks_chart.dart';
+import 'package:crm_task_manager/screens/analytics/charts/telephony_events_chart.dart';
+import 'package:crm_task_manager/screens/analytics/charts/task_stats_by_project_chart.dart';
+import 'package:crm_task_manager/screens/analytics/charts/connected_accounts_chart.dart';
+import 'package:crm_task_manager/screens/analytics/charts/advertising_roi_chart.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 
 class AnalyticsScreen extends StatefulWidget {
@@ -302,6 +313,39 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
               SizedBox(height: chartSpacing),
 
               const ProductsChart(),
+              SizedBox(height: chartSpacing),
+
+              const LeadStatusesChart(),
+              SizedBox(height: chartSpacing),
+
+              const DealStatsChart(),
+              SizedBox(height: chartSpacing),
+
+              const LeadConversionStatusesChart(),
+              SizedBox(height: chartSpacing),
+
+              const LeadChannelsChart(),
+              SizedBox(height: chartSpacing),
+
+              const MessageStatsChart(),
+              SizedBox(height: chartSpacing),
+
+              const RepliesMessagesChart(),
+              SizedBox(height: chartSpacing),
+
+              const CompletedTasksChart(),
+              SizedBox(height: chartSpacing),
+
+              const TelephonyEventsChart(),
+              SizedBox(height: chartSpacing),
+
+              const TaskStatsByProjectChart(),
+              SizedBox(height: chartSpacing),
+
+              const ConnectedAccountsChart(),
+              SizedBox(height: chartSpacing),
+
+              const AdvertisingRoiChart(),
               SizedBox(height: chartSpacing),
             ],
           ),

@@ -50,22 +50,98 @@ class _SourcesChartState extends State<SourcesChart> {
     }
   }
 
-  // Predefined colors for channels
-  final List<Color> _channelColors = [
-    Color(0xffE1306C), // Instagram pink
-    Color(0xff25D366), // WhatsApp green
-    Color(0xff0088CC), // Telegram blue
-    Color(0xff6366F1), // Indigo
-    Color(0xffF59E0B), // Amber
-    Color(0xff10B981), // Emerald
-    Color(0xffEF4444), // Red
-    Color(0xff8B5CF6), // Purple
-    Color(0xff64748B), // Slate
-    Color(0xff94A3B8), // Gray
-  ];
+  Color _colorForSource(String name) {
+    final key = name.toLowerCase();
+    if (key.contains('whatsapp')) return const Color(0xff25D366);
+    if (key.contains('инстаграм') || key.contains('instagram')) {
+      return const Color(0xffE1306C);
+    }
+    if (key.contains('телеграм') || key.contains('telegram')) {
+      return const Color(0xff0088CC);
+    }
+    if (key.contains('messenger')) return const Color(0xff1877F2);
+    if (key.contains('телефон')) return const Color(0xff8BC34A);
+    if (key.contains('демо')) return const Color(0xffBCAAA4);
+    if (key.contains('личные')) return const Color(0xff5C6BC0);
+    if (key.contains('маркет')) return const Color(0xff7E57C2);
+    if (key.contains('радио')) return const Color(0xffF59E0B);
+    if (key.contains('сайт')) return const Color(0xff94A3B8);
+    return const Color(0xff64748B);
+  }
 
-  Color _getColorForIndex(int index) {
-    return _channelColors[index % _channelColors.length];
+  void _showDetails() {
+    if (_channels.isEmpty) return;
+    final total = _channels.fold<int>(0, (sum, item) => sum + item.count);
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (context) {
+        return Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Источники лидов',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xff0F172A),
+                  fontFamily: 'Golos',
+                ),
+              ),
+              const SizedBox(height: 12),
+              Flexible(
+                child: ListView.separated(
+                  shrinkWrap: true,
+                  itemCount: _channels.length,
+                  separatorBuilder: (_, __) => const Divider(height: 1),
+                  itemBuilder: (context, index) {
+                    final channel = _channels[index];
+                    final percent =
+                        total == 0 ? 0 : (channel.count / total * 100);
+                    return ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: Container(
+                        width: 10,
+                        height: 10,
+                        decoration: BoxDecoration(
+                          color: _colorForSource(channel.name),
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      title: Text(
+                        channel.name,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xff0F172A),
+                          fontFamily: 'Golos',
+                        ),
+                      ),
+                      trailing: Text(
+                        '${channel.count} (${percent.toStringAsFixed(2)}%)',
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xff64748B),
+                          fontFamily: 'Golos',
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   @override
@@ -127,6 +203,11 @@ class _SourcesChartState extends State<SourcesChart> {
                     ),
                   ),
                 ),
+                IconButton(
+                  onPressed: _showDetails,
+                  icon: const Icon(Icons.more_vert, color: Color(0xff64748B)),
+                  splashRadius: 18,
+                ),
               ],
             ),
           ),
@@ -175,49 +256,53 @@ class _SourcesChartState extends State<SourcesChart> {
                               ),
                             ),
                           )
-                        : Padding(
-                            padding: EdgeInsets.all(responsive.cardPadding),
-                            child: PieChart(
-                              PieChartData(
-                                sectionsSpace: 2,
-                                centerSpaceRadius: 60,
-                                pieTouchData: PieTouchData(
-                                  touchCallback:
-                                      (FlTouchEvent event, pieTouchResponse) {
-                                    setState(() {
-                                      if (!event.isInterestedForInteractions ||
-                                          pieTouchResponse == null ||
-                                          pieTouchResponse.touchedSection ==
-                                              null) {
-                                        _touchedIndex = -1;
-                                        return;
-                                      }
-                                      _touchedIndex = pieTouchResponse
-                                          .touchedSection!.touchedSectionIndex;
-                                    });
-                                  },
-                                ),
-                                sections:
-                                    List.generate(_channels.length, (index) {
-                                  final isTouched = index == _touchedIndex;
-                                  final channel = _channels[index];
-                                  final color = _getColorForIndex(index);
+                        : GestureDetector(
+                            onTap: _showDetails,
+                            child: Padding(
+                              padding: EdgeInsets.all(responsive.cardPadding),
+                              child: PieChart(
+                                PieChartData(
+                                  sectionsSpace: 2,
+                                  centerSpaceRadius: 60,
+                                  pieTouchData: PieTouchData(
+                                    touchCallback:
+                                        (FlTouchEvent event, pieTouchResponse) {
+                                      setState(() {
+                                        if (!event.isInterestedForInteractions ||
+                                            pieTouchResponse == null ||
+                                            pieTouchResponse.touchedSection ==
+                                                null) {
+                                          _touchedIndex = -1;
+                                          return;
+                                        }
+                                        _touchedIndex = pieTouchResponse
+                                            .touchedSection!
+                                            .touchedSectionIndex;
+                                      });
+                                    },
+                                  ),
+                                  sections: List.generate(_channels.length,
+                                      (index) {
+                                    final isTouched = index == _touchedIndex;
+                                    final channel = _channels[index];
+                                    final color = _colorForSource(channel.name);
 
-                                  return PieChartSectionData(
-                                    value: channel.count.toDouble(),
-                                    title: isTouched
-                                        ? '${channel.name}\n${channel.count}'
-                                        : '',
-                                    color: color,
-                                    radius: isTouched ? 65 : 60,
-                                    titleStyle: TextStyle(
-                                      fontSize: isTouched ? 14 : 12,
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.white,
-                                      fontFamily: 'Golos',
-                                    ),
-                                  );
-                                }),
+                                    return PieChartSectionData(
+                                      value: channel.count.toDouble(),
+                                      title: isTouched
+                                          ? '${channel.name}\n${channel.count}'
+                                          : '',
+                                      color: color,
+                                      radius: isTouched ? 65 : 60,
+                                      titleStyle: TextStyle(
+                                        fontSize: isTouched ? 14 : 12,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.white,
+                                        fontFamily: 'Golos',
+                                      ),
+                                    );
+                                  }),
+                                ),
                               ),
                             ),
                           ),
