@@ -1971,10 +1971,18 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                                     if (_formKey.currentState!.validate()) {
                                       print(
                                           'whatsAppToSend: $_fullWhatsAppNumber'); // Логирование для отладки
-                                      String phoneToSend = selectedDialCode +
-                                          phoneController.text;
+                                      final String phoneDigits =
+                                          phoneController.text.trim();
+                                      final String phoneToSend =
+                                          phoneDigits.isEmpty
+                                              ? ''
+                                              : selectedDialCode + phoneDigits;
                                       String? whatsAppToSend =
                                           _fullWhatsAppNumber; // Используем полный номер
+                                      if (whatsAppToSend != null &&
+                                          whatsAppToSend.trim().isEmpty) {
+                                        whatsAppToSend = null;
+                                      }
 
                                       DateTime? parsedBirthday;
                                       if (birthdayController.text.isNotEmpty) {
