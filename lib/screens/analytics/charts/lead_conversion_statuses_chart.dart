@@ -3,6 +3,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:crm_task_manager/screens/analytics/utils/responsive_helper.dart';
 import 'package:crm_task_manager/screens/analytics/models/lead_conversion_by_statuses_model.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/screens/analytics/widgets/chart_empty_overlay.dart';
 
 class LeadConversionStatusesChart extends StatefulWidget {
   const LeadConversionStatusesChart({super.key});
@@ -17,6 +18,34 @@ class _LeadConversionStatusesChartState
   bool _isLoading = true;
   String? _error;
   LeadConversionByStatusesResponse? _data;
+
+  static final List<StatusConversion> _previewStatuses = [
+    StatusConversion(
+        statusName: 'Неизвестный',
+        totalLeads: 214,
+        conversionFromPrevious: 214,
+        conversionRate: '100%'),
+    StatusConversion(
+        statusName: 'Звонок без ответа',
+        totalLeads: 65,
+        conversionFromPrevious: 65,
+        conversionRate: '30%'),
+    StatusConversion(
+        statusName: 'В работе',
+        totalLeads: 93,
+        conversionFromPrevious: 93,
+        conversionRate: '43%'),
+    StatusConversion(
+        statusName: 'Холодное обращение',
+        totalLeads: 138,
+        conversionFromPrevious: 138,
+        conversionRate: '64%'),
+    StatusConversion(
+        statusName: 'Клиент',
+        totalLeads: 59,
+        conversionFromPrevious: 59,
+        conversionRate: '28%'),
+  ];
 
   @override
   void initState() {
@@ -67,7 +96,7 @@ class _LeadConversionStatusesChartState
                 children: [
                   const Expanded(
                     child: Text(
-                      'Конверсия по статусам',
+                      'Конверсия и количество по статусам',
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w700,
@@ -153,9 +182,14 @@ class _LeadConversionStatusesChartState
   Widget build(BuildContext context) {
     final responsive = ResponsiveHelper(context);
     final items = _data?.statuses ?? [];
-    final maxValue = items.isEmpty
+    final isEmpty =
+        items.isEmpty || items.every((e) => e.totalLeads == 0);
+    final displayItems = isEmpty ? _previewStatuses : items;
+    final maxValue = displayItems.isEmpty
         ? 1
-        : items.map((e) => e.totalLeads).reduce((a, b) => a > b ? a : b);
+        : displayItems
+            .map((e) => e.totalLeads)
+            .reduce((a, b) => a > b ? a : b);
 
     return Container(
       decoration: BoxDecoration(
@@ -202,7 +236,7 @@ class _LeadConversionStatusesChartState
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    'Конверсия по статусам',
+                    'Конверсия и количество по статусам',
                     style: TextStyle(
                       fontSize: responsive.titleFontSize,
                       fontWeight: FontWeight.w600,
@@ -237,83 +271,99 @@ class _LeadConversionStatusesChartState
                           ),
                         ),
                       )
-                    : Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                        child: BarChart(
-                          BarChartData(
-                            maxY: maxValue * 1.2,
-                            barGroups: _buildGroups(items),
-                            gridData: FlGridData(
-                              show: true,
-                              drawVerticalLine: false,
-                              getDrawingHorizontalLine: (value) => FlLine(
-                                color: const Color(0xffE2E8F0),
-                                strokeWidth: 1,
-                              ),
-                            ),
-                            borderData: FlBorderData(show: false),
-                            titlesData: FlTitlesData(
-                              leftTitles: AxisTitles(
-                                sideTitles: SideTitles(
-                                  showTitles: true,
-                                  reservedSize: 40,
-                                  getTitlesWidget: (value, meta) {
-                                    return Text(
-                                      value.toInt().toString(),
-                                      style: const TextStyle(
-                                        fontSize: 10,
-                                        color: Color(0xff64748B),
-                                        fontFamily: 'Golos',
-                                      ),
-                                    );
-                                  },
+                    : ChartEmptyOverlay(
+                        show: isEmpty,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          child: RotatedBox(
+                            quarterTurns: 1,
+                            child: BarChart(
+                              BarChartData(
+                                maxY: maxValue * 1.2,
+                                barGroups: _buildGroups(displayItems),
+                                gridData: FlGridData(
+                                  show: true,
+                                  drawVerticalLine: false,
+                                  getDrawingHorizontalLine: (value) => FlLine(
+                                    color: const Color(0xffE2E8F0),
+                                    strokeWidth: 1,
+                                  ),
                                 ),
-                              ),
-                              bottomTitles: AxisTitles(
-                                sideTitles: SideTitles(
-                                  showTitles: true,
-                                  getTitlesWidget: (value, meta) {
-                                    final index = value.toInt();
-                                    if (index < 0 || index >= items.length) {
-                                      return const SizedBox.shrink();
-                                    }
-                                    return Padding(
-                                      padding: const EdgeInsets.only(top: 6),
-                                      child: Text(
-                                        items[index].statusName,
-                                        style: const TextStyle(
-                                          fontSize: 9,
-                                          color: Color(0xff64748B),
+                                borderData: FlBorderData(show: false),
+                                titlesData: FlTitlesData(
+                                  leftTitles: AxisTitles(
+                                    sideTitles: SideTitles(
+                                      showTitles: true,
+                                      reservedSize: 36,
+                                      getTitlesWidget: (value, meta) {
+                                        return RotatedBox(
+                                          quarterTurns: 3,
+                                          child: Text(
+                                            value.toInt().toString(),
+                                            style: const TextStyle(
+                                              fontSize: 10,
+                                              color: Color(0xff64748B),
+                                              fontFamily: 'Golos',
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                  bottomTitles: AxisTitles(
+                                    sideTitles: SideTitles(
+                                      showTitles: true,
+                                      reservedSize: 140,
+                                      getTitlesWidget: (value, meta) {
+                                        final index = value.toInt();
+                                        if (index < 0 ||
+                                            index >= displayItems.length) {
+                                          return const SizedBox.shrink();
+                                        }
+                                        return RotatedBox(
+                                          quarterTurns: 3,
+                                          child: Padding(
+                                            padding:
+                                                const EdgeInsets.only(top: 6),
+                                            child: Text(
+                                              displayItems[index].statusName,
+                                              style: const TextStyle(
+                                                fontSize: 9,
+                                                color: Color(0xff64748B),
+                                                fontFamily: 'Golos',
+                                              ),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                  topTitles: const AxisTitles(
+                                    sideTitles: SideTitles(showTitles: false),
+                                  ),
+                                  rightTitles: const AxisTitles(
+                                    sideTitles: SideTitles(showTitles: false),
+                                  ),
+                                ),
+                                barTouchData: BarTouchData(
+                                  enabled: true,
+                                  touchTooltipData: BarTouchTooltipData(
+                                    getTooltipItem:
+                                        (group, groupIndex, rod, rodIndex) {
+                                      final item = items[group.x.toInt()];
+                                      return BarTooltipItem(
+                                        '${item.statusName}\n${item.totalLeads} (${item.conversionRate})',
+                                        const TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w600,
                                           fontFamily: 'Golos',
                                         ),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    );
-                                  },
+                                      );
+                                    },
+                                  ),
                                 ),
-                              ),
-                              topTitles: const AxisTitles(
-                                sideTitles: SideTitles(showTitles: false),
-                              ),
-                              rightTitles: const AxisTitles(
-                                sideTitles: SideTitles(showTitles: false),
-                              ),
-                            ),
-                            barTouchData: BarTouchData(
-                              enabled: true,
-                              touchTooltipData: BarTouchTooltipData(
-                                getTooltipItem: (group, groupIndex, rod, rodIndex) {
-                                  final item = items[group.x.toInt()];
-                                  return BarTooltipItem(
-                                    '${item.statusName}\n${item.totalLeads} (${item.conversionRate})',
-                                    const TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.w600,
-                                      fontFamily: 'Golos',
-                                    ),
-                                  );
-                                },
                               ),
                             ),
                           ),

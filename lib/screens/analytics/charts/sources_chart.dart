@@ -3,6 +3,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:crm_task_manager/screens/analytics/utils/responsive_helper.dart';
 import 'package:crm_task_manager/screens/analytics/models/source_of_leads_model.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/screens/analytics/widgets/chart_empty_overlay.dart';
 
 class SourcesChart extends StatefulWidget {
   const SourcesChart({Key? key}) : super(key: key);
@@ -18,6 +19,15 @@ class _SourcesChartState extends State<SourcesChart> {
   List<LeadSourceItem> _channels = [];
   String _bestSource = '';
   int _totalSources = 0;
+
+  static final List<LeadSourceItem> _previewSources = [
+    LeadSourceItem(name: 'WhatsApp', count: 420),
+    LeadSourceItem(name: 'Instagram', count: 210),
+    LeadSourceItem(name: 'Telegram', count: 160),
+    LeadSourceItem(name: 'Сайт', count: 120),
+    LeadSourceItem(name: 'Телефон', count: 80),
+    LeadSourceItem(name: 'Прочее', count: 45),
+  ];
 
   @override
   void initState() {
@@ -147,6 +157,9 @@ class _SourcesChartState extends State<SourcesChart> {
   @override
   Widget build(BuildContext context) {
     final responsive = ResponsiveHelper(context);
+    final isEmpty =
+        _channels.isEmpty || _channels.every((item) => item.count == 0);
+    final displayChannels = isEmpty ? _previewSources : _channels;
 
     return Container(
       decoration: BoxDecoration(
@@ -245,67 +258,59 @@ class _SourcesChartState extends State<SourcesChart> {
                           ],
                         ),
                       )
-                    : _channels.isEmpty
-                        ? const Center(
-                            child: Text(
-                              'Нет данных',
-                              style: TextStyle(
-                                color: Color(0xff64748B),
-                                fontSize: 14,
-                                fontFamily: 'Golos',
-                              ),
-                            ),
-                          )
-                        : GestureDetector(
-                            onTap: _showDetails,
-                            child: Padding(
-                              padding: EdgeInsets.all(responsive.cardPadding),
-                              child: PieChart(
-                                PieChartData(
-                                  sectionsSpace: 2,
-                                  centerSpaceRadius: 60,
-                                  pieTouchData: PieTouchData(
-                                    touchCallback:
-                                        (FlTouchEvent event, pieTouchResponse) {
-                                      setState(() {
-                                        if (!event.isInterestedForInteractions ||
-                                            pieTouchResponse == null ||
-                                            pieTouchResponse.touchedSection ==
-                                                null) {
-                                          _touchedIndex = -1;
-                                          return;
-                                        }
-                                        _touchedIndex = pieTouchResponse
-                                            .touchedSection!
-                                            .touchedSectionIndex;
-                                      });
-                                    },
-                                  ),
-                                  sections: List.generate(_channels.length,
-                                      (index) {
-                                    final isTouched = index == _touchedIndex;
-                                    final channel = _channels[index];
-                                    final color = _colorForSource(channel.name);
-
-                                    return PieChartSectionData(
-                                      value: channel.count.toDouble(),
-                                      title: isTouched
-                                          ? '${channel.name}\n${channel.count}'
-                                          : '',
-                                      color: color,
-                                      radius: isTouched ? 65 : 60,
-                                      titleStyle: TextStyle(
-                                        fontSize: isTouched ? 14 : 12,
-                                        fontWeight: FontWeight.w600,
-                                        color: Colors.white,
-                                        fontFamily: 'Golos',
-                                      ),
-                                    );
-                                  }),
+                    : ChartEmptyOverlay(
+                        show: isEmpty,
+                        child: GestureDetector(
+                          onTap: _showDetails,
+                          child: Padding(
+                            padding: EdgeInsets.all(responsive.cardPadding),
+                            child: PieChart(
+                              PieChartData(
+                                sectionsSpace: 2,
+                                centerSpaceRadius: 60,
+                                pieTouchData: PieTouchData(
+                                  touchCallback:
+                                      (FlTouchEvent event, pieTouchResponse) {
+                                    setState(() {
+                                      if (!event.isInterestedForInteractions ||
+                                          pieTouchResponse == null ||
+                                          pieTouchResponse.touchedSection ==
+                                              null) {
+                                        _touchedIndex = -1;
+                                        return;
+                                      }
+                                      _touchedIndex = pieTouchResponse
+                                          .touchedSection!
+                                          .touchedSectionIndex;
+                                    });
+                                  },
                                 ),
+                                sections: List.generate(displayChannels.length,
+                                    (index) {
+                                  final isTouched = index == _touchedIndex;
+                                  final channel = displayChannels[index];
+                                  final color = _colorForSource(channel.name);
+
+                                  return PieChartSectionData(
+                                    value: channel.count.toDouble(),
+                                    title: isTouched
+                                        ? '${channel.name}\n${channel.count}'
+                                        : '',
+                                    color: color,
+                                    radius: isTouched ? 65 : 60,
+                                    titleStyle: TextStyle(
+                                      fontSize: isTouched ? 14 : 12,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.white,
+                                      fontFamily: 'Golos',
+                                    ),
+                                  );
+                                }),
                               ),
                             ),
                           ),
+                        ),
+                      ),
           ),
           // Footer
           if (!_isLoading && _error == null && _channels.isNotEmpty)

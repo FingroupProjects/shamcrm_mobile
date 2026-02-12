@@ -3,6 +3,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:crm_task_manager/screens/analytics/utils/responsive_helper.dart';
 import 'package:crm_task_manager/screens/analytics/models/connected_accounts_model.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/screens/analytics/widgets/chart_empty_overlay.dart';
 
 class ConnectedAccountsChart extends StatefulWidget {
   const ConnectedAccountsChart({super.key});
@@ -16,6 +17,53 @@ class _ConnectedAccountsChartState extends State<ConnectedAccountsChart> {
   String? _error;
   ConnectedAccountsResponse? _data;
   List<ConnectedAccount> _accounts = [];
+
+  static final List<ConnectedAccount> _previewAccounts = [
+    ConnectedAccount(
+      integrationId: 1,
+      displayName: 'Instagram @shop_main',
+      channelType: 'instagram',
+      username: 'shop_main',
+      totalChats: 847,
+      answered: 812,
+      unanswered: 35,
+      successfulLeads: 187,
+      coldLeads: 98,
+    ),
+    ConnectedAccount(
+      integrationId: 2,
+      displayName: 'WhatsApp +992 90 123-45-67',
+      channelType: 'whatsapp',
+      username: 'wa_main',
+      totalChats: 512,
+      answered: 498,
+      unanswered: 14,
+      successfulLeads: 142,
+      coldLeads: 67,
+    ),
+    ConnectedAccount(
+      integrationId: 3,
+      displayName: 'Telegram @shopbot',
+      channelType: 'telegram',
+      username: 'shopbot',
+      totalChats: 312,
+      answered: 298,
+      unanswered: 14,
+      successfulLeads: 76,
+      coldLeads: 42,
+    ),
+    ConnectedAccount(
+      integrationId: 4,
+      displayName: 'Сайт виджет',
+      channelType: 'site',
+      username: 'site_widget',
+      totalChats: 231,
+      answered: 224,
+      unanswered: 7,
+      successfulLeads: 54,
+      coldLeads: 28,
+    ),
+  ];
 
   @override
   void initState() {
@@ -68,7 +116,7 @@ class _ConnectedAccountsChartState extends State<ConnectedAccountsChart> {
                 children: [
                   const Expanded(
                     child: Text(
-                      'Подключенные аккаунты',
+                      'Подключенные аккаунты (по каналам)',
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w700,
@@ -133,9 +181,9 @@ class _ConnectedAccountsChartState extends State<ConnectedAccountsChart> {
     );
   }
 
-  List<BarChartGroupData> _buildGroups() {
-    return List.generate(_accounts.length, (index) {
-      final item = _accounts[index];
+  List<BarChartGroupData> _buildGroups(List<ConnectedAccount> items) {
+    return List.generate(items.length, (index) {
+      final item = items[index];
       return BarChartGroupData(
         x: index,
         barRods: [
@@ -153,9 +201,12 @@ class _ConnectedAccountsChartState extends State<ConnectedAccountsChart> {
   @override
   Widget build(BuildContext context) {
     final responsive = ResponsiveHelper(context);
-    final maxValue = _accounts.isEmpty
+    final isEmpty =
+        _accounts.isEmpty || _accounts.every((a) => a.totalChats == 0);
+    final displayAccounts = isEmpty ? _previewAccounts : _accounts;
+    final maxValue = displayAccounts.isEmpty
         ? 1
-        : _accounts
+        : displayAccounts
             .map((e) => e.totalChats)
             .reduce((a, b) => a > b ? a : b)
             .toDouble();
@@ -205,7 +256,7 @@ class _ConnectedAccountsChartState extends State<ConnectedAccountsChart> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    'Подключенные аккаунты',
+                    'Подключенные аккаунты (по каналам)',
                     style: TextStyle(
                       fontSize: responsive.titleFontSize,
                       fontWeight: FontWeight.w600,
@@ -240,67 +291,82 @@ class _ConnectedAccountsChartState extends State<ConnectedAccountsChart> {
                           ),
                         ),
                       )
-                    : Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                        child: BarChart(
-                          BarChartData(
-                            maxY: maxValue * 1.2,
-                            barGroups: _buildGroups(),
-                            gridData: FlGridData(
-                              show: true,
-                              drawVerticalLine: false,
-                              getDrawingHorizontalLine: (value) => FlLine(
-                                color: const Color(0xffE2E8F0),
-                                strokeWidth: 1,
-                              ),
-                            ),
-                            borderData: FlBorderData(show: false),
-                            titlesData: FlTitlesData(
-                              leftTitles: AxisTitles(
-                                sideTitles: SideTitles(
-                                  showTitles: true,
-                                  reservedSize: 40,
-                                  getTitlesWidget: (value, meta) {
-                                    return Text(
-                                      value.toInt().toString(),
-                                      style: const TextStyle(
-                                        fontSize: 10,
-                                        color: Color(0xff64748B),
-                                        fontFamily: 'Golos',
-                                      ),
-                                    );
-                                  },
+                    : ChartEmptyOverlay(
+                        show: isEmpty,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          child: RotatedBox(
+                            quarterTurns: 1,
+                            child: BarChart(
+                              BarChartData(
+                                maxY: maxValue * 1.2,
+                                barGroups: _buildGroups(displayAccounts),
+                                gridData: FlGridData(
+                                  show: true,
+                                  drawVerticalLine: false,
+                                  getDrawingHorizontalLine: (value) => FlLine(
+                                    color: const Color(0xffE2E8F0),
+                                    strokeWidth: 1,
+                                  ),
                                 ),
-                              ),
-                              bottomTitles: AxisTitles(
-                                sideTitles: SideTitles(
-                                  showTitles: true,
-                                  getTitlesWidget: (value, meta) {
-                                    final index = value.toInt();
-                                    if (index < 0 || index >= _accounts.length) {
-                                      return const SizedBox.shrink();
-                                    }
-                                    return Padding(
-                                      padding: const EdgeInsets.only(top: 6),
-                                      child: Text(
-                                        _accounts[index].displayName,
-                                        style: const TextStyle(
-                                          fontSize: 9,
-                                          color: Color(0xff64748B),
-                                          fontFamily: 'Golos',
-                                        ),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    );
-                                  },
+                                borderData: FlBorderData(show: false),
+                                titlesData: FlTitlesData(
+                                  leftTitles: AxisTitles(
+                                    sideTitles: SideTitles(
+                                      showTitles: true,
+                                      reservedSize: 36,
+                                      getTitlesWidget: (value, meta) {
+                                        return RotatedBox(
+                                          quarterTurns: 3,
+                                          child: Text(
+                                            value.toInt().toString(),
+                                            style: const TextStyle(
+                                              fontSize: 10,
+                                              color: Color(0xff64748B),
+                                              fontFamily: 'Golos',
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                  bottomTitles: AxisTitles(
+                                    sideTitles: SideTitles(
+                                      showTitles: true,
+                                      reservedSize: 150,
+                                      getTitlesWidget: (value, meta) {
+                                        final index = value.toInt();
+                                        if (index < 0 ||
+                                            index >= displayAccounts.length) {
+                                          return const SizedBox.shrink();
+                                        }
+                                        return RotatedBox(
+                                          quarterTurns: 3,
+                                          child: Padding(
+                                            padding:
+                                                const EdgeInsets.only(top: 6),
+                                            child: Text(
+                                              displayAccounts[index].displayName,
+                                              style: const TextStyle(
+                                                fontSize: 9,
+                                                color: Color(0xff64748B),
+                                                fontFamily: 'Golos',
+                                              ),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                  topTitles: const AxisTitles(
+                                    sideTitles: SideTitles(showTitles: false),
+                                  ),
+                                  rightTitles: const AxisTitles(
+                                    sideTitles: SideTitles(showTitles: false),
+                                  ),
                                 ),
-                              ),
-                              topTitles: const AxisTitles(
-                                sideTitles: SideTitles(showTitles: false),
-                              ),
-                              rightTitles: const AxisTitles(
-                                sideTitles: SideTitles(showTitles: false),
                               ),
                             ),
                           ),
@@ -327,6 +393,6 @@ class _ConnectedAccountsChartState extends State<ConnectedAccountsChart> {
             ),
         ],
       ),
-    );
+      );
   }
 }

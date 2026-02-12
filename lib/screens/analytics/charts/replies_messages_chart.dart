@@ -3,6 +3,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:crm_task_manager/screens/analytics/utils/responsive_helper.dart';
 import 'package:crm_task_manager/screens/analytics/models/replies_messages_model.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/screens/analytics/widgets/chart_empty_overlay.dart';
 
 class RepliesMessagesChart extends StatefulWidget {
   const RepliesMessagesChart({super.key});
@@ -15,6 +16,29 @@ class _RepliesMessagesChartState extends State<RepliesMessagesChart> {
   bool _isLoading = true;
   String? _error;
   RepliesToMessagesResponse? _data;
+
+  static final List<ReplyChannelStats> _previewChannels = [
+    ReplyChannelStats(
+        channelName: 'instagram',
+        sentMessages: 298,
+        receivedMessages: 312,
+        unansweredChats: 14),
+    ReplyChannelStats(
+        channelName: 'whatsapp',
+        sentMessages: 274,
+        receivedMessages: 287,
+        unansweredChats: 13),
+    ReplyChannelStats(
+        channelName: 'telegram',
+        sentMessages: 189,
+        receivedMessages: 198,
+        unansweredChats: 9),
+    ReplyChannelStats(
+        channelName: 'email',
+        sentMessages: 138,
+        receivedMessages: 145,
+        unansweredChats: 7),
+  ];
 
   @override
   void initState() {
@@ -65,7 +89,7 @@ class _RepliesMessagesChartState extends State<RepliesMessagesChart> {
                 children: [
                   const Expanded(
                     child: Text(
-                      'Ответы на сообщения',
+                      'Ответы на сообщение',
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w700,
@@ -164,9 +188,16 @@ class _RepliesMessagesChartState extends State<RepliesMessagesChart> {
   Widget build(BuildContext context) {
     final responsive = ResponsiveHelper(context);
     final items = _data?.byChannel ?? [];
-    final maxValue = items.isEmpty
+    final totals = _data?.totals;
+    final isEmpty = items.isEmpty ||
+        ((totals?.receivedMessages ?? 0) +
+                (totals?.sentMessages ?? 0) +
+                (totals?.unansweredChats ?? 0)) ==
+            0;
+    final displayItems = isEmpty ? _previewChannels : items;
+    final maxValue = displayItems.isEmpty
         ? 1
-        : items
+        : displayItems
             .map((e) => e.sentMessages > e.receivedMessages
                 ? e.sentMessages
                 : e.receivedMessages)
@@ -218,7 +249,7 @@ class _RepliesMessagesChartState extends State<RepliesMessagesChart> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    'Ответы на сообщения',
+                    'Ответы на сообщение',
                     style: TextStyle(
                       fontSize: responsive.titleFontSize,
                       fontWeight: FontWeight.w600,
@@ -253,67 +284,76 @@ class _RepliesMessagesChartState extends State<RepliesMessagesChart> {
                           ),
                         ),
                       )
-                    : Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                        child: BarChart(
-                          BarChartData(
-                            maxY: maxValue * 1.2,
-                            barGroups: _buildGroups(items),
-                            gridData: FlGridData(
-                              show: true,
-                              drawVerticalLine: false,
-                              getDrawingHorizontalLine: (value) => FlLine(
-                                color: const Color(0xffE2E8F0),
-                                strokeWidth: 1,
-                              ),
-                            ),
-                            borderData: FlBorderData(show: false),
-                            titlesData: FlTitlesData(
-                              leftTitles: AxisTitles(
-                                sideTitles: SideTitles(
-                                  showTitles: true,
-                                  reservedSize: 40,
-                                  getTitlesWidget: (value, meta) {
-                                    return Text(
-                                      value.toInt().toString(),
-                                      style: const TextStyle(
-                                        fontSize: 10,
-                                        color: Color(0xff64748B),
-                                        fontFamily: 'Golos',
-                                      ),
-                                    );
-                                  },
+                    : ChartEmptyOverlay(
+                        show: isEmpty,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          child: BarChart(
+                            BarChartData(
+                              maxY: maxValue * 1.2,
+                              barGroups: _buildGroups(displayItems),
+                              gridData: FlGridData(
+                                show: true,
+                                drawVerticalLine: false,
+                                getDrawingHorizontalLine: (value) => FlLine(
+                                  color: const Color(0xffE2E8F0),
+                                  strokeWidth: 1,
                                 ),
                               ),
-                              bottomTitles: AxisTitles(
-                                sideTitles: SideTitles(
-                                  showTitles: true,
-                                  getTitlesWidget: (value, meta) {
-                                    final index = value.toInt();
-                                    if (index < 0 || index >= items.length) {
-                                      return const SizedBox.shrink();
-                                    }
-                                    return Padding(
-                                      padding: const EdgeInsets.only(top: 6),
-                                      child: Text(
-                                        items[index].channelName,
+                              borderData: FlBorderData(show: false),
+                              titlesData: FlTitlesData(
+                                leftTitles: AxisTitles(
+                                  sideTitles: SideTitles(
+                                    showTitles: true,
+                                    reservedSize: 40,
+                                    getTitlesWidget: (value, meta) {
+                                      return Text(
+                                        value.toInt().toString(),
                                         style: const TextStyle(
-                                          fontSize: 9,
+                                          fontSize: 10,
                                           color: Color(0xff64748B),
                                           fontFamily: 'Golos',
                                         ),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    );
-                                  },
+                                      );
+                                    },
+                                  ),
                                 ),
-                              ),
-                              topTitles: const AxisTitles(
-                                sideTitles: SideTitles(showTitles: false),
-                              ),
-                              rightTitles: const AxisTitles(
-                                sideTitles: SideTitles(showTitles: false),
+                                bottomTitles: AxisTitles(
+                                  sideTitles: SideTitles(
+                                    showTitles: true,
+                                    reservedSize: 48,
+                                    getTitlesWidget: (value, meta) {
+                                      final index = value.toInt();
+                                      if (index < 0 ||
+                                          index >= displayItems.length) {
+                                        return const SizedBox.shrink();
+                                      }
+                                      return RotatedBox(
+                                        quarterTurns: 3,
+                                        child: Padding(
+                                          padding:
+                                              const EdgeInsets.only(top: 6),
+                                          child: Text(
+                                            displayItems[index].channelName,
+                                            style: const TextStyle(
+                                              fontSize: 9,
+                                              color: Color(0xff64748B),
+                                              fontFamily: 'Golos',
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ),
+                                topTitles: const AxisTitles(
+                                  sideTitles: SideTitles(showTitles: false),
+                                ),
+                                rightTitles: const AxisTitles(
+                                  sideTitles: SideTitles(showTitles: false),
+                                ),
                               ),
                             ),
                           ),

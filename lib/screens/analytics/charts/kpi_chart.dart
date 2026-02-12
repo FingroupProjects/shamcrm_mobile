@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:crm_task_manager/screens/analytics/utils/responsive_helper.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/screens/analytics/widgets/chart_empty_overlay.dart';
 
 class KpiChart extends StatefulWidget {
   const KpiChart({super.key});
@@ -17,6 +18,8 @@ class _KpiChartState extends State<KpiChart> {
   List<int> _taskData = [];
   double _completionRate = 0.0;
   int _totalTasks = 0;
+
+  static const List<int> _previewTaskData = [35, 48, 129];
 
   @override
   void initState() {
@@ -181,6 +184,18 @@ class _KpiChartState extends State<KpiChart> {
   @override
   Widget build(BuildContext context) {
     final responsive = ResponsiveHelper(context);
+    final isEmpty = _total == 0;
+    final displayTaskData = isEmpty ? _previewTaskData : _taskData;
+    final displayCompleted =
+        displayTaskData.isNotEmpty && displayTaskData.length > 2
+            ? displayTaskData[2]
+            : 0;
+    final displayInProgress =
+        displayTaskData.isNotEmpty && displayTaskData.length > 1
+            ? displayTaskData[1]
+            : 0;
+    final displayOverdue =
+        displayTaskData.isNotEmpty ? displayTaskData[0] : 0;
 
     return Container(
       decoration: BoxDecoration(
@@ -279,90 +294,82 @@ class _KpiChartState extends State<KpiChart> {
                           ],
                         ),
                       )
-                    : _total == 0
-                        ? const Center(
-                            child: Text(
-                              'Нет данных',
-                              style: TextStyle(
-                                color: Color(0xff64748B),
-                                fontSize: 14,
-                                fontFamily: 'Golos',
-                              ),
-                            ),
-                          )
-                        : GestureDetector(
-                            onTap: _showDetails,
-                            child: Padding(
-                              padding: EdgeInsets.all(responsive.cardPadding),
-                              child: PieChart(
-                                PieChartData(
-                                  sectionsSpace: 2,
-                                  centerSpaceRadius: 50,
-                                  pieTouchData: PieTouchData(
-                                    touchCallback:
-                                        (FlTouchEvent event, pieTouchResponse) {
-                                      setState(() {
-                                        if (!event.isInterestedForInteractions ||
-                                            pieTouchResponse == null ||
-                                            pieTouchResponse.touchedSection ==
-                                                null) {
-                                          _touchedIndex = -1;
-                                          return;
-                                        }
-                                        _touchedIndex = pieTouchResponse
-                                            .touchedSection!
-                                            .touchedSectionIndex;
-                                      });
-                                    },
-                                  ),
-                                  sections: [
-                                    PieChartSectionData(
-                                      value: _completed.toDouble(),
-                                      title: _touchedIndex == 0
-                                          ? 'Выполнено\n$_completed'
-                                          : '',
-                                      color: const Color(0xff10B981),
-                                      radius: _touchedIndex == 0 ? 55 : 50,
-                                      titleStyle: TextStyle(
-                                        fontSize: _touchedIndex == 0 ? 14 : 12,
-                                        fontWeight: FontWeight.w600,
-                                        color: Colors.white,
-                                        fontFamily: 'Golos',
-                                      ),
-                                    ),
-                                    PieChartSectionData(
-                                      value: _inProgress.toDouble(),
-                                      title: _touchedIndex == 1
-                                          ? 'В работе\n$_inProgress'
-                                          : '',
-                                      color: const Color(0xffF59E0B),
-                                      radius: _touchedIndex == 1 ? 55 : 50,
-                                      titleStyle: TextStyle(
-                                        fontSize: _touchedIndex == 1 ? 14 : 12,
-                                        fontWeight: FontWeight.w600,
-                                        color: Colors.white,
-                                        fontFamily: 'Golos',
-                                      ),
-                                    ),
-                                    PieChartSectionData(
-                                      value: _overdue.toDouble(),
-                                      title: _touchedIndex == 2
-                                          ? 'Просрочено\n$_overdue'
-                                          : '',
-                                      color: const Color(0xffEF4444),
-                                      radius: _touchedIndex == 2 ? 55 : 50,
-                                      titleStyle: TextStyle(
-                                        fontSize: _touchedIndex == 2 ? 14 : 12,
-                                        fontWeight: FontWeight.w600,
-                                        color: Colors.white,
-                                        fontFamily: 'Golos',
-                                      ),
-                                    ),
-                                  ],
+                    : ChartEmptyOverlay(
+                        show: isEmpty,
+                        child: GestureDetector(
+                          onTap: _showDetails,
+                          child: Padding(
+                            padding: EdgeInsets.all(responsive.cardPadding),
+                            child: PieChart(
+                              PieChartData(
+                                sectionsSpace: 2,
+                                centerSpaceRadius: 50,
+                                pieTouchData: PieTouchData(
+                                  touchCallback:
+                                      (FlTouchEvent event, pieTouchResponse) {
+                                    setState(() {
+                                      if (!event.isInterestedForInteractions ||
+                                          pieTouchResponse == null ||
+                                          pieTouchResponse.touchedSection ==
+                                              null) {
+                                        _touchedIndex = -1;
+                                        return;
+                                      }
+                                      _touchedIndex = pieTouchResponse
+                                          .touchedSection!
+                                          .touchedSectionIndex;
+                                    });
+                                  },
                                 ),
+                                sections: [
+                                  PieChartSectionData(
+                                    value: displayCompleted.toDouble(),
+                                    title: _touchedIndex == 0
+                                        ? 'Выполнено\n$displayCompleted'
+                                        : '',
+                                    color: const Color(0xff10B981),
+                                    radius: _touchedIndex == 0 ? 55 : 50,
+                                    titleStyle: TextStyle(
+                                      fontSize: _touchedIndex == 0 ? 14 : 12,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.white,
+                                      fontFamily: 'Golos',
+                                    ),
+                                  ),
+                                  PieChartSectionData(
+                                    value: displayInProgress.toDouble(),
+                                    title: _touchedIndex == 1
+                                        ? 'В работе\n$displayInProgress'
+                                        : '',
+                                    color: const Color(0xffF59E0B),
+                                    radius: _touchedIndex == 1 ? 55 : 50,
+                                    titleStyle: TextStyle(
+                                      fontSize: _touchedIndex == 1 ? 14 : 12,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.white,
+                                      fontFamily: 'Golos',
+                                    ),
+                                  ),
+                                  PieChartSectionData(
+                                    value: displayOverdue.toDouble(),
+                                    title: _touchedIndex == 2
+                                        ? 'Просрочено\n$displayOverdue'
+                                        : '',
+                                    color: const Color(0xffEF4444),
+                                    radius: _touchedIndex == 2 ? 55 : 50,
+                                    titleStyle: TextStyle(
+                                      fontSize: _touchedIndex == 2 ? 14 : 12,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.white,
+                                      fontFamily: 'Golos',
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           ),
+                        ),
+                      ),
           ),
           // Footer
           if (!_isLoading && _error == null && _total > 0)

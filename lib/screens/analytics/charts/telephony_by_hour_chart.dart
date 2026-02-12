@@ -1,72 +1,63 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:crm_task_manager/screens/analytics/utils/responsive_helper.dart';
-import 'package:crm_task_manager/screens/analytics/models/telephony_events_model.dart';
+import 'package:crm_task_manager/screens/analytics/models/telephony_by_hour_model.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/screens/analytics/widgets/chart_empty_overlay.dart';
 
-class TelephonyEventsChart extends StatefulWidget {
-  const TelephonyEventsChart({super.key});
+class TelephonyByHourChart extends StatefulWidget {
+  const TelephonyByHourChart({super.key});
 
   @override
-  State<TelephonyEventsChart> createState() => _TelephonyEventsChartState();
+  State<TelephonyByHourChart> createState() => _TelephonyByHourChartState();
 }
 
-class _TelephonyEventsChartState extends State<TelephonyEventsChart> {
+class _TelephonyByHourChartState extends State<TelephonyByHourChart> {
   bool _isLoading = true;
   String? _error;
-  TelephonyEventsResponse? _data;
+  TelephonyByHourResponse? _data;
 
-  static final List<TelephonyEventDay> _previewDays = [
-    TelephonyEventDay(
-        day: 1,
-        incoming: 12,
-        outgoing: 8,
-        missed: 2,
-        noticesCreated: 6,
-        noticesFinished: 5),
-    TelephonyEventDay(
-        day: 2,
-        incoming: 15,
-        outgoing: 10,
-        missed: 3,
-        noticesCreated: 8,
-        noticesFinished: 7),
-    TelephonyEventDay(
-        day: 3,
-        incoming: 9,
-        outgoing: 7,
+  static final List<TelephonyHourItem> _previewHours = [
+    TelephonyHourItem(
+        hour: '08:00',
+        hourNumber: 8,
+        incoming: 4,
+        outgoing: 2,
         missed: 1,
-        noticesCreated: 4,
-        noticesFinished: 4),
-    TelephonyEventDay(
-        day: 4,
-        incoming: 18,
-        outgoing: 12,
-        missed: 4,
-        noticesCreated: 9,
-        noticesFinished: 8),
-    TelephonyEventDay(
-        day: 5,
-        incoming: 11,
+        minutes: 20,
+        total: 7),
+    TelephonyHourItem(
+        hour: '10:00',
+        hourNumber: 10,
+        incoming: 8,
+        outgoing: 5,
+        missed: 2,
+        minutes: 45,
+        total: 15),
+    TelephonyHourItem(
+        hour: '12:00',
+        hourNumber: 12,
+        incoming: 12,
+        outgoing: 7,
+        missed: 3,
+        minutes: 60,
+        total: 22),
+    TelephonyHourItem(
+        hour: '14:00',
+        hourNumber: 14,
+        incoming: 10,
         outgoing: 6,
         missed: 2,
-        noticesCreated: 5,
-        noticesFinished: 5),
-    TelephonyEventDay(
-        day: 6,
-        incoming: 7,
-        outgoing: 5,
-        missed: 1,
-        noticesCreated: 3,
-        noticesFinished: 3),
-    TelephonyEventDay(
-        day: 7,
+        minutes: 50,
+        total: 18),
+    TelephonyHourItem(
+        hour: '16:00',
+        hourNumber: 16,
         incoming: 6,
         outgoing: 4,
         missed: 1,
-        noticesCreated: 2,
-        noticesFinished: 2),
+        minutes: 30,
+        total: 11),
   ];
 
   @override
@@ -83,7 +74,7 @@ class _TelephonyEventsChartState extends State<TelephonyEventsChart> {
 
     try {
       final apiService = ApiService();
-      final response = await apiService.getTelephonyAndEventsChartV2();
+      final response = await apiService.getTelephonyByHourChartV2();
 
       setState(() {
         _data = response;
@@ -118,7 +109,7 @@ class _TelephonyEventsChartState extends State<TelephonyEventsChart> {
                 children: [
                   const Expanded(
                     child: Text(
-                      'Телефония и события',
+                      'Аналитика звонков по часам',
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w700,
@@ -147,7 +138,7 @@ class _TelephonyEventsChartState extends State<TelephonyEventsChart> {
                     return ListTile(
                       contentPadding: EdgeInsets.zero,
                       title: Text(
-                        'День ${item.day}',
+                        item.hour,
                         style: const TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
@@ -164,11 +155,11 @@ class _TelephonyEventsChartState extends State<TelephonyEventsChart> {
                         ),
                       ),
                       trailing: Text(
-                        'События: ${item.noticesCreated}/${item.noticesFinished}',
+                        'Всего: ${item.total}',
                         style: const TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
-                          color: Color(0xff8B5CF6),
+                          color: Color(0xff0EA5E9),
                           fontFamily: 'Golos',
                         ),
                       ),
@@ -183,7 +174,7 @@ class _TelephonyEventsChartState extends State<TelephonyEventsChart> {
     );
   }
 
-  List<BarChartGroupData> _buildGroups(List<TelephonyEventDay> items) {
+  List<BarChartGroupData> _buildGroups(List<TelephonyHourItem> items) {
     return List.generate(items.length, (index) {
       final item = items[index];
       return BarChartGroupData(
@@ -192,23 +183,23 @@ class _TelephonyEventsChartState extends State<TelephonyEventsChart> {
           BarChartRodData(
             toY: item.incoming.toDouble(),
             color: const Color(0xff10B981),
-            width: 6,
-            borderRadius: BorderRadius.circular(4),
+            width: 4,
+            borderRadius: BorderRadius.circular(2),
           ),
           BarChartRodData(
             toY: item.outgoing.toDouble(),
             color: const Color(0xff6366F1),
-            width: 6,
-            borderRadius: BorderRadius.circular(4),
+            width: 4,
+            borderRadius: BorderRadius.circular(2),
           ),
           BarChartRodData(
             toY: item.missed.toDouble(),
             color: const Color(0xffEF4444),
-            width: 6,
-            borderRadius: BorderRadius.circular(4),
+            width: 4,
+            borderRadius: BorderRadius.circular(2),
           ),
         ],
-        barsSpace: 3,
+        barsSpace: 2,
       );
     });
   }
@@ -218,13 +209,12 @@ class _TelephonyEventsChartState extends State<TelephonyEventsChart> {
     final responsive = ResponsiveHelper(context);
     final items = _data?.chart ?? [];
     final isEmpty = items.isEmpty ||
-        (items.every((e) =>
+        items.every((e) =>
             e.incoming == 0 &&
             e.outgoing == 0 &&
             e.missed == 0 &&
-            e.noticesCreated == 0 &&
-            e.noticesFinished == 0));
-    final displayItems = isEmpty ? _previewDays : items;
+            e.total == 0);
+    final displayItems = isEmpty ? _previewHours : items;
     final maxValue = displayItems.isEmpty
         ? 1
         : displayItems
@@ -257,19 +247,19 @@ class _TelephonyEventsChartState extends State<TelephonyEventsChart> {
                   height: 36,
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
-                      colors: [Color(0xff8B5CF6), Color(0xff7C3AED)],
+                      colors: [Color(0xff0EA5E9), Color(0xff2563EB)],
                     ),
                     borderRadius: BorderRadius.circular(10),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xff8B5CF6).withValues(alpha: 0.3),
+                        color: const Color(0xff0EA5E9).withValues(alpha: 0.3),
                         blurRadius: 8,
                         offset: const Offset(0, 4),
                       ),
                     ],
                   ),
                   child: const Icon(
-                    Icons.phone_in_talk,
+                    Icons.schedule,
                     color: Colors.white,
                     size: 20,
                   ),
@@ -277,7 +267,7 @@ class _TelephonyEventsChartState extends State<TelephonyEventsChart> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    'Телефония и события',
+                    'Аналитика звонков по часам',
                     style: TextStyle(
                       fontSize: responsive.titleFontSize,
                       fontWeight: FontWeight.w600,
@@ -299,7 +289,7 @@ class _TelephonyEventsChartState extends State<TelephonyEventsChart> {
             child: _isLoading
                 ? const Center(
                     child: CircularProgressIndicator(
-                      color: Color(0xff8B5CF6),
+                      color: Color(0xff0EA5E9),
                     ),
                   )
                 : _error != null
@@ -315,7 +305,7 @@ class _TelephonyEventsChartState extends State<TelephonyEventsChart> {
                     : ChartEmptyOverlay(
                         show: isEmpty,
                         child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
                           child: BarChart(
                             BarChartData(
                               maxY: maxValue * 1.2,
@@ -349,24 +339,23 @@ class _TelephonyEventsChartState extends State<TelephonyEventsChart> {
                               bottomTitles: AxisTitles(
                                 sideTitles: SideTitles(
                                   showTitles: true,
-                                  reservedSize: 36,
                                   getTitlesWidget: (value, meta) {
                                     final index = value.toInt();
                                     if (index < 0 ||
                                         index >= displayItems.length) {
                                       return const SizedBox.shrink();
                                     }
-                                    return RotatedBox(
-                                      quarterTurns: 3,
-                                      child: Padding(
-                                        padding: const EdgeInsets.only(top: 6),
-                                        child: Text(
-                                          'Д${displayItems[index].day}',
-                                          style: const TextStyle(
-                                            fontSize: 10,
-                                            color: Color(0xff64748B),
-                                            fontFamily: 'Golos',
-                                          ),
+                                    if (index % 3 != 0) {
+                                      return const SizedBox.shrink();
+                                    }
+                                    return Padding(
+                                      padding: const EdgeInsets.only(top: 6),
+                                      child: Text(
+                                        displayItems[index].hour,
+                                        style: const TextStyle(
+                                          fontSize: 9,
+                                          color: Color(0xff64748B),
+                                          fontFamily: 'Golos',
                                         ),
                                       ),
                                     );
@@ -393,51 +382,24 @@ class _TelephonyEventsChartState extends State<TelephonyEventsChart> {
                 responsive.cardPadding,
                 responsive.cardPadding,
               ),
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  final isNarrow = constraints.maxWidth < 360;
-                  final legend = Wrap(
-                    spacing: 12,
-                    runSpacing: 8,
-                    children: const [
-                      _LegendDot(color: Color(0xff10B981), label: 'Входящие'),
-                      _LegendDot(color: Color(0xff6366F1), label: 'Исходящие'),
-                      _LegendDot(color: Color(0xffEF4444), label: 'Пропущенные'),
-                    ],
-                  );
-
-                  final eventsText = Text(
-                    'События: ${_data!.totalNoticesCreated}/${_data!.totalNoticesFinished}',
+              child: Row(
+                children: [
+                  const _LegendDot(color: Color(0xff10B981), label: 'Входящие'),
+                  const SizedBox(width: 12),
+                  const _LegendDot(color: Color(0xff6366F1), label: 'Исходящие'),
+                  const SizedBox(width: 12),
+                  const _LegendDot(color: Color(0xffEF4444), label: 'Пропущенные'),
+                  const Spacer(),
+                  Text(
+                    'Пик: ${_data!.peakHour ?? '-'}',
                     style: const TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
                       color: Color(0xff64748B),
                       fontFamily: 'Golos',
                     ),
-                  );
-
-                  if (isNarrow) {
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        legend,
-                        const SizedBox(height: 8),
-                        Align(
-                          alignment: Alignment.centerRight,
-                          child: eventsText,
-                        ),
-                      ],
-                    );
-                  }
-
-                  return Row(
-                    children: [
-                      legend,
-                      const Spacer(),
-                      eventsText,
-                    ],
-                  );
-                },
+                  ),
+                ],
               ),
             ),
         ],

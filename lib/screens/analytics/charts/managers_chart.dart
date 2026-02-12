@@ -3,6 +3,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:crm_task_manager/screens/analytics/utils/responsive_helper.dart';
 import 'package:crm_task_manager/screens/analytics/models/deals_by_managers_model.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/screens/analytics/widgets/chart_empty_overlay.dart';
 
 class ManagersChart extends StatefulWidget {
   const ManagersChart({Key? key}) : super(key: key);
@@ -18,6 +19,37 @@ class _ManagersChartState extends State<ManagersChart> {
   String _bestManager = '';
   double _totalRevenue = 0;
   int _totalManagers = 0;
+
+  static final List<ManagerDealsStats> _previewManagers = [
+    ManagerDealsStats(
+      managerName: 'Анна Смирнова',
+      totalDeals: 120,
+      successfulDeals: 95,
+      totalSum: 68000,
+      successfulSum: 62000,
+    ),
+    ManagerDealsStats(
+      managerName: 'Иван Петров',
+      totalDeals: 98,
+      successfulDeals: 72,
+      totalSum: 54000,
+      successfulSum: 47000,
+    ),
+    ManagerDealsStats(
+      managerName: 'Дмитрий Козлов',
+      totalDeals: 84,
+      successfulDeals: 61,
+      totalSum: 43000,
+      successfulSum: 38000,
+    ),
+    ManagerDealsStats(
+      managerName: 'Елена Васильева',
+      totalDeals: 76,
+      successfulDeals: 58,
+      totalSum: 39000,
+      successfulSum: 34000,
+    ),
+  ];
 
   @override
   void initState() {
@@ -151,6 +183,18 @@ class _ManagersChartState extends State<ManagersChart> {
   @override
   Widget build(BuildContext context) {
     final responsive = ResponsiveHelper(context);
+    final isEmpty = _managers.isEmpty ||
+        _managers.every((m) =>
+            m.totalDeals == 0 &&
+            m.successfulDeals == 0 &&
+            m.totalSum == 0 &&
+            m.successfulSum == 0);
+    final displayManagers = isEmpty ? _previewManagers : _managers;
+    final maxDeals = displayManagers.isEmpty
+        ? 0.0
+        : displayManagers
+            .map((m) => m.totalDeals.toDouble())
+            .reduce((a, b) => a > b ? a : b);
 
     return Container(
       decoration: BoxDecoration(
@@ -249,62 +293,58 @@ class _ManagersChartState extends State<ManagersChart> {
                           ],
                         ),
                       )
-                    : _managers.isEmpty
-                        ? const Center(
-                            child: Text(
-                              'Нет данных',
-                              style: TextStyle(
-                                color: Color(0xff64748B),
-                                fontSize: 14,
-                                fontFamily: 'Golos',
-                              ),
-                            ),
-                          )
-                        : GestureDetector(
-                            onTap: _showDetails,
-                            child: Padding(
-                              padding: const EdgeInsets.only(
-                                  right: 20, left: 10, bottom: 20, top: 10),
-                              child: BarChart(
-                                BarChartData(
-                                  alignment: BarChartAlignment.spaceAround,
-                                  maxY: _maxDeals <= 0 ? 1 : _maxDeals + 5,
-                                  barTouchData: BarTouchData(
-                                    enabled: true,
-                                    touchTooltipData: BarTouchTooltipData(
-                                      getTooltipColor: (group) => Colors.white,
-                                      tooltipBorder: const BorderSide(
-                                          color: Color(0xffE2E8F0)),
-                                      tooltipRoundedRadius: 8,
-                                    ),
+                    : ChartEmptyOverlay(
+                        show: isEmpty,
+                        child: GestureDetector(
+                          onTap: _showDetails,
+                          child: Padding(
+                            padding: const EdgeInsets.only(
+                                right: 20, left: 10, bottom: 20, top: 10),
+                            child: BarChart(
+                              BarChartData(
+                                alignment: BarChartAlignment.spaceAround,
+                                maxY: maxDeals <= 0 ? 1 : maxDeals + 5,
+                                barTouchData: BarTouchData(
+                                  enabled: true,
+                                  touchTooltipData: BarTouchTooltipData(
+                                    getTooltipColor: (group) => Colors.white,
+                                    tooltipBorder: const BorderSide(
+                                        color: Color(0xffE2E8F0)),
+                                    tooltipRoundedRadius: 8,
                                   ),
-                                  titlesData: FlTitlesData(
-                                    show: true,
-                                    bottomTitles: AxisTitles(
-                                      sideTitles: SideTitles(
-                                        showTitles: true,
-                                        getTitlesWidget: (value, meta) {
-                                          final index = value.toInt();
-                                          if (index >= 0 &&
-                                              index < _managers.length) {
-                                            return Padding(
+                                ),
+                                titlesData: FlTitlesData(
+                                  show: true,
+                                  bottomTitles: AxisTitles(
+                                    sideTitles: SideTitles(
+                                      showTitles: true,
+                                      reservedSize: 48,
+                                      getTitlesWidget: (value, meta) {
+                                        final index = value.toInt();
+                                        if (index >= 0 &&
+                                            index < displayManagers.length) {
+                                          return RotatedBox(
+                                            quarterTurns: 3,
+                                            child: Padding(
                                               padding:
                                                   const EdgeInsets.only(top: 8),
                                               child: Text(
-                                                _shortName(_managers[index]
-                                                    .managerName),
+                                                _shortName(
+                                                    displayManagers[index]
+                                                        .managerName),
                                                 style: const TextStyle(
                                                   color: Color(0xff64748B),
                                                   fontSize: 11,
                                                   fontFamily: 'Golos',
                                                 ),
                                               ),
-                                            );
-                                          }
-                                          return const Text('');
-                                        },
-                                      ),
+                                            ),
+                                          );
+                                        }
+                                        return const Text('');
+                                      },
                                     ),
+                                  ),
                                     leftTitles: AxisTitles(
                                       sideTitles: SideTitles(
                                         showTitles: true,
@@ -328,34 +368,35 @@ class _ManagersChartState extends State<ManagersChart> {
                                       sideTitles: SideTitles(showTitles: false),
                                     ),
                                   ),
-                                  gridData: FlGridData(
-                                    show: true,
-                                    drawVerticalLine: false,
-                                    horizontalInterval: _maxDeals <= 0
-                                        ? 1
-                                        : (_maxDeals / 5).ceilToDouble(),
-                                    getDrawingHorizontalLine: (value) {
-                                      return const FlLine(
-                                        color: Color(0xffE2E8F0),
-                                        strokeWidth: 1,
-                                      );
-                                    },
-                                  ),
-                                  borderData: FlBorderData(show: false),
-                                  barGroups: _managers
-                                      .asMap()
-                                      .entries
-                                      .map((entry) {
-                                    final m = entry.value;
-                                    return _makeGroupData(
-                                        entry.key,
-                                        m.totalDeals.toDouble(),
-                                        m.successfulDeals.toDouble());
-                                  }).toList(),
+                                gridData: FlGridData(
+                                  show: true,
+                                  drawVerticalLine: false,
+                                  horizontalInterval: maxDeals <= 0
+                                      ? 1
+                                      : (maxDeals / 5).ceilToDouble(),
+                                  getDrawingHorizontalLine: (value) {
+                                    return const FlLine(
+                                      color: Color(0xffE2E8F0),
+                                      strokeWidth: 1,
+                                    );
+                                  },
                                 ),
+                                borderData: FlBorderData(show: false),
+                                barGroups: displayManagers
+                                    .asMap()
+                                    .entries
+                                    .map((entry) {
+                                  final m = entry.value;
+                                  return _makeGroupData(
+                                      entry.key,
+                                      m.totalDeals.toDouble(),
+                                      m.successfulDeals.toDouble());
+                                }).toList(),
                               ),
                             ),
                           ),
+                        ),
+                      ),
           ),
           // Footer
           if (!_isLoading && _error == null)

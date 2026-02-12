@@ -3,6 +3,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:crm_task_manager/screens/analytics/utils/responsive_helper.dart';
 import 'package:crm_task_manager/screens/analytics/models/advertising_roi_model.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/screens/analytics/widgets/chart_empty_overlay.dart';
 
 class AdvertisingRoiChart extends StatefulWidget {
   const AdvertisingRoiChart({super.key});
@@ -16,6 +17,45 @@ class _AdvertisingRoiChartState extends State<AdvertisingRoiChart> {
   String? _error;
   AdvertisingRoiResponse? _data;
   List<AdvertisingRoiIntegration> _integrations = [];
+
+  static final List<AdvertisingRoiIntegration> _previewIntegrations = [
+    AdvertisingRoiIntegration(
+      integrationId: 1,
+      integrationName: 'WhatsApp Ads',
+      integrationType: 'whatsapp',
+      totalLeads: 653,
+      clients: 6,
+      cold: 619,
+      spent: 1600,
+      cpl: 2.45,
+      revenue: 2910,
+      roi: 81.9,
+    ),
+    AdvertisingRoiIntegration(
+      integrationId: 2,
+      integrationName: 'Instagram Ads',
+      integrationType: 'instagram',
+      totalLeads: 120,
+      clients: 2,
+      cold: 110,
+      spent: 300,
+      cpl: 2.5,
+      revenue: 0,
+      roi: -100,
+    ),
+    AdvertisingRoiIntegration(
+      integrationId: 3,
+      integrationName: 'Facebook Ads',
+      integrationType: 'facebook',
+      totalLeads: 95,
+      clients: 1,
+      cold: 90,
+      spent: 250,
+      cpl: 2.63,
+      revenue: 0,
+      roi: -100,
+    ),
+  ];
 
   @override
   void initState() {
@@ -68,7 +108,7 @@ class _AdvertisingRoiChartState extends State<AdvertisingRoiChart> {
                 children: [
                   const Expanded(
                     child: Text(
-                      'ROI рекламы',
+                      'Эффективность рекламы (ROI)',
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w700,
@@ -135,9 +175,9 @@ class _AdvertisingRoiChartState extends State<AdvertisingRoiChart> {
     );
   }
 
-  List<BarChartGroupData> _buildGroups() {
-    return List.generate(_integrations.length, (index) {
-      final item = _integrations[index];
+  List<BarChartGroupData> _buildGroups(List<AdvertisingRoiIntegration> items) {
+    return List.generate(items.length, (index) {
+      final item = items[index];
       return BarChartGroupData(
         x: index,
         barRods: [
@@ -155,9 +195,13 @@ class _AdvertisingRoiChartState extends State<AdvertisingRoiChart> {
   @override
   Widget build(BuildContext context) {
     final responsive = ResponsiveHelper(context);
-    final maxValue = _integrations.isEmpty
+    final isEmpty =
+        _integrations.isEmpty || _integrations.every((i) => i.totalLeads == 0);
+    final displayIntegrations =
+        isEmpty ? _previewIntegrations : _integrations;
+    final maxValue = displayIntegrations.isEmpty
         ? 1
-        : _integrations
+        : displayIntegrations
             .map((e) => e.totalLeads)
             .reduce((a, b) => a > b ? a : b)
             .toDouble();
@@ -207,7 +251,7 @@ class _AdvertisingRoiChartState extends State<AdvertisingRoiChart> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    'ROI рекламы',
+                    'Эффективность рекламы (ROI)',
                     style: TextStyle(
                       fontSize: responsive.titleFontSize,
                       fontWeight: FontWeight.w600,
@@ -242,67 +286,77 @@ class _AdvertisingRoiChartState extends State<AdvertisingRoiChart> {
                           ),
                         ),
                       )
-                    : Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                        child: BarChart(
-                          BarChartData(
-                            maxY: maxValue * 1.2,
-                            barGroups: _buildGroups(),
-                            gridData: FlGridData(
-                              show: true,
-                              drawVerticalLine: false,
-                              getDrawingHorizontalLine: (value) => FlLine(
-                                color: const Color(0xffE2E8F0),
-                                strokeWidth: 1,
-                              ),
-                            ),
-                            borderData: FlBorderData(show: false),
-                            titlesData: FlTitlesData(
-                              leftTitles: AxisTitles(
-                                sideTitles: SideTitles(
-                                  showTitles: true,
-                                  reservedSize: 40,
-                                  getTitlesWidget: (value, meta) {
-                                    return Text(
-                                      value.toInt().toString(),
-                                      style: const TextStyle(
-                                        fontSize: 10,
-                                        color: Color(0xff64748B),
-                                        fontFamily: 'Golos',
-                                      ),
-                                    );
-                                  },
+                    : ChartEmptyOverlay(
+                        show: isEmpty,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          child: BarChart(
+                            BarChartData(
+                              maxY: maxValue * 1.2,
+                              barGroups: _buildGroups(displayIntegrations),
+                              gridData: FlGridData(
+                                show: true,
+                                drawVerticalLine: false,
+                                getDrawingHorizontalLine: (value) => FlLine(
+                                  color: const Color(0xffE2E8F0),
+                                  strokeWidth: 1,
                                 ),
                               ),
-                              bottomTitles: AxisTitles(
-                                sideTitles: SideTitles(
-                                  showTitles: true,
-                                  getTitlesWidget: (value, meta) {
-                                    final index = value.toInt();
-                                    if (index < 0 || index >= _integrations.length) {
-                                      return const SizedBox.shrink();
-                                    }
-                                    return Padding(
-                                      padding: const EdgeInsets.only(top: 6),
-                                      child: Text(
-                                        _integrations[index].integrationName,
+                              borderData: FlBorderData(show: false),
+                              titlesData: FlTitlesData(
+                                leftTitles: AxisTitles(
+                                  sideTitles: SideTitles(
+                                    showTitles: true,
+                                    reservedSize: 40,
+                                    getTitlesWidget: (value, meta) {
+                                      return Text(
+                                        value.toInt().toString(),
                                         style: const TextStyle(
-                                          fontSize: 9,
+                                          fontSize: 10,
                                           color: Color(0xff64748B),
                                           fontFamily: 'Golos',
                                         ),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    );
-                                  },
+                                      );
+                                    },
+                                  ),
                                 ),
-                              ),
-                              topTitles: const AxisTitles(
-                                sideTitles: SideTitles(showTitles: false),
-                              ),
-                              rightTitles: const AxisTitles(
-                                sideTitles: SideTitles(showTitles: false),
+                                bottomTitles: AxisTitles(
+                                  sideTitles: SideTitles(
+                                    showTitles: true,
+                                    reservedSize: 80,
+                                    getTitlesWidget: (value, meta) {
+                                      final index = value.toInt();
+                                      if (index < 0 ||
+                                          index >= displayIntegrations.length) {
+                                        return const SizedBox.shrink();
+                                      }
+                                      return RotatedBox(
+                                        quarterTurns: 3,
+                                        child: Padding(
+                                          padding:
+                                              const EdgeInsets.only(top: 6),
+                                          child: Text(
+                                            displayIntegrations[index]
+                                                .integrationName,
+                                            style: const TextStyle(
+                                              fontSize: 9,
+                                              color: Color(0xff64748B),
+                                              fontFamily: 'Golos',
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ),
+                                topTitles: const AxisTitles(
+                                  sideTitles: SideTitles(showTitles: false),
+                                ),
+                                rightTitles: const AxisTitles(
+                                  sideTitles: SideTitles(showTitles: false),
+                                ),
                               ),
                             ),
                           ),

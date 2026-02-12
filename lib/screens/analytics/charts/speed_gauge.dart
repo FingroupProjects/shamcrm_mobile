@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:crm_task_manager/screens/analytics/utils/responsive_helper.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/screens/analytics/widgets/chart_empty_overlay.dart';
 import 'dart:math' as math;
 
 class SpeedGauge extends StatefulWidget {
@@ -15,6 +16,9 @@ class _SpeedGaugeState extends State<SpeedGauge> {
   String? _error;
   double _speedHours = 0.0;
   String _speedLabel = '0 ч';
+
+  static const double _previewSpeedHours = 2.4;
+  static const String _previewSpeedLabel = '2.4 ч';
 
   @override
   void initState() {
@@ -105,6 +109,9 @@ class _SpeedGaugeState extends State<SpeedGauge> {
   @override
   Widget build(BuildContext context) {
     final responsive = ResponsiveHelper(context);
+    final isEmpty = _speedHours <= 0;
+    final displaySpeedHours = isEmpty ? _previewSpeedHours : _speedHours;
+    final displaySpeedLabel = isEmpty ? _previewSpeedLabel : _speedLabel;
 
     return Container(
       decoration: BoxDecoration(
@@ -203,38 +210,41 @@ class _SpeedGaugeState extends State<SpeedGauge> {
                           ],
                         ),
                       )
-                    : GestureDetector(
-                        onTap: _showDetails,
-                        child: Padding(
-                          padding: EdgeInsets.all(responsive.cardPadding),
-                          child: CustomPaint(
-                            painter: SpeedGaugePainter(
-                              speedHours: _speedHours,
-                            ),
-                            child: Center(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  const SizedBox(height: 130),
-                                  Text(
-                                    _speedLabel,
-                                    style: const TextStyle(
-                                      fontSize: 32,
-                                      fontWeight: FontWeight.w700,
-                                      color: Color(0xff1E2E52),
-                                      fontFamily: 'Golos',
+                    : ChartEmptyOverlay(
+                        show: isEmpty,
+                        child: GestureDetector(
+                          onTap: _showDetails,
+                          child: Padding(
+                            padding: EdgeInsets.all(responsive.cardPadding),
+                            child: CustomPaint(
+                              painter: SpeedGaugePainter(
+                                speedHours: displaySpeedHours,
+                              ),
+                              child: Center(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    const SizedBox(height: 130),
+                                    Text(
+                                      displaySpeedLabel,
+                                      style: const TextStyle(
+                                        fontSize: 32,
+                                        fontWeight: FontWeight.w700,
+                                        color: Color(0xff1E2E52),
+                                        fontFamily: 'Golos',
+                                      ),
                                     ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  const Text(
-                                    'Среднее время',
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      color: Color(0xff64748B),
-                                      fontFamily: 'Golos',
+                                    const SizedBox(height: 8),
+                                    const Text(
+                                      'Среднее время',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: Color(0xff64748B),
+                                        fontFamily: 'Golos',
+                                      ),
                                     ),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
                             ),
                           ),
@@ -266,7 +276,7 @@ class _SpeedGaugeState extends State<SpeedGauge> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        _speedLabel,
+                        displaySpeedLabel,
                         style: const TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.w700,
@@ -289,7 +299,7 @@ class _SpeedGaugeState extends State<SpeedGauge> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        '${(_speedHours * 0.6).toStringAsFixed(1)} ч',
+                        '${(displaySpeedHours * 0.6).toStringAsFixed(1)} ч',
                         style: const TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.w700,

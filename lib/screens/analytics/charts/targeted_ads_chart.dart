@@ -1,46 +1,71 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:crm_task_manager/screens/analytics/utils/responsive_helper.dart';
-import 'package:crm_task_manager/screens/analytics/models/task_stats_by_project_model.dart';
+import 'package:crm_task_manager/screens/analytics/models/targeted_ads_model.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/screens/analytics/widgets/chart_empty_overlay.dart';
 
-class TaskStatsByProjectChart extends StatefulWidget {
-  const TaskStatsByProjectChart({super.key});
+class TargetedAdsChart extends StatefulWidget {
+  const TargetedAdsChart({super.key});
 
   @override
-  State<TaskStatsByProjectChart> createState() => _TaskStatsByProjectChartState();
+  State<TargetedAdsChart> createState() => _TargetedAdsChartState();
 }
 
-class _TaskStatsByProjectChartState extends State<TaskStatsByProjectChart> {
+class _TargetedAdsChartState extends State<TargetedAdsChart> {
   bool _isLoading = true;
   String? _error;
-  List<ProjectTaskStats> _projects = [];
+  TargetedAdsResponse? _data;
+  List<TargetedAdCampaign> _campaigns = [];
 
-  static final List<ProjectTaskStats> _previewProjects = [
-    ProjectTaskStats(
-      projectName: 'Веб-платформа CRM',
-      projectId: 1,
-      totalTasks: 47,
-      statuses: const [],
+  static final List<TargetedAdCampaign> _previewCampaigns = [
+    TargetedAdCampaign(
+      campaignId: 1,
+      campaignName: 'Reels Promo',
+      adType: 'Unknown',
+      adSource: 'instagram',
+      integrationName: 'Instagram Ads',
+      integrationType: 'instagram',
+      totalReaches: 847,
+      successful: 204,
+      cold: 321,
+      inProgress: 322,
+      cost: 300,
+      revenue: 0,
+      costPerLead: 3.5,
+      conversionRate: 24.1,
     ),
-    ProjectTaskStats(
-      projectName: 'Мобильное приложение',
-      projectId: 2,
-      totalTasks: 38,
-      statuses: const [],
+    TargetedAdCampaign(
+      campaignId: 2,
+      campaignName: 'Lead Ads Form',
+      adType: 'Unknown',
+      adSource: 'facebook',
+      integrationName: 'Facebook Ads',
+      integrationType: 'facebook',
+      totalReaches: 654,
+      successful: 187,
+      cold: 245,
+      inProgress: 222,
+      cost: 280,
+      revenue: 0,
+      costPerLead: 4.2,
+      conversionRate: 22.5,
     ),
-    ProjectTaskStats(
-      projectName: 'Интеграция с Instagram',
-      projectId: 3,
-      totalTasks: 24,
-      statuses: const [],
-    ),
-    ProjectTaskStats(
-      projectName: 'Система аналитики',
-      projectId: 4,
-      totalTasks: 31,
-      statuses: const [],
+    TargetedAdCampaign(
+      campaignId: 3,
+      campaignName: 'Story Clicks',
+      adType: 'Unknown',
+      adSource: 'instagram',
+      integrationName: 'Instagram Ads',
+      integrationType: 'instagram',
+      totalReaches: 512,
+      successful: 128,
+      cold: 198,
+      inProgress: 186,
+      cost: 260,
+      revenue: 0,
+      costPerLead: 5.1,
+      conversionRate: 19.8,
     ),
   ];
 
@@ -58,12 +83,13 @@ class _TaskStatsByProjectChartState extends State<TaskStatsByProjectChart> {
 
     try {
       final apiService = ApiService();
-      final response = await apiService.getTaskStatsByProjectChartV2();
-      final sorted = List<ProjectTaskStats>.from(response.projects)
-        ..sort((a, b) => b.totalTasks.compareTo(a.totalTasks));
+      final response = await apiService.getTargetedAdvertisingChartV2();
+      final sorted = List<TargetedAdCampaign>.from(response.topCampaigns)
+        ..sort((a, b) => b.totalReaches.compareTo(a.totalReaches));
 
       setState(() {
-        _projects = sorted.take(10).toList();
+        _data = response;
+        _campaigns = sorted.take(8).toList();
         _isLoading = false;
       });
     } catch (e) {
@@ -75,7 +101,7 @@ class _TaskStatsByProjectChartState extends State<TaskStatsByProjectChart> {
   }
 
   void _showDetails() {
-    if (_projects.isEmpty) return;
+    if (_campaigns.isEmpty) return;
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -94,7 +120,7 @@ class _TaskStatsByProjectChartState extends State<TaskStatsByProjectChart> {
                 children: [
                   const Expanded(
                     child: Text(
-                      'Статистика по проектам',
+                      'Таргетированная реклама (Meta Ads)',
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w700,
@@ -116,27 +142,37 @@ class _TaskStatsByProjectChartState extends State<TaskStatsByProjectChart> {
               Flexible(
                 child: ListView.separated(
                   shrinkWrap: true,
-                  itemCount: _projects.length,
+                  itemCount: _campaigns.length,
                   separatorBuilder: (_, __) => const Divider(height: 1),
                   itemBuilder: (context, index) {
-                    final item = _projects[index];
+                    final item = _campaigns[index];
                     return ListTile(
                       contentPadding: EdgeInsets.zero,
                       title: Text(
-                        item.projectName,
+                        item.campaignName,
                         style: const TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
                           color: Color(0xff0F172A),
                           fontFamily: 'Golos',
                         ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      subtitle: Text(
+                        'Охват: ${item.totalReaches}, Успешные: ${item.successful}',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Color(0xff64748B),
+                          fontFamily: 'Golos',
+                        ),
                       ),
                       trailing: Text(
-                        item.totalTasks.toString(),
+                        'CPL: ${item.costPerLead.toStringAsFixed(2)}',
                         style: const TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
-                          color: Color(0xffEF4444),
+                          color: Color(0xffE1306C),
                           fontFamily: 'Golos',
                         ),
                       ),
@@ -151,19 +187,26 @@ class _TaskStatsByProjectChartState extends State<TaskStatsByProjectChart> {
     );
   }
 
-  List<BarChartGroupData> _buildGroups(List<ProjectTaskStats> items) {
+  List<BarChartGroupData> _buildGroups(List<TargetedAdCampaign> items) {
     return List.generate(items.length, (index) {
       final item = items[index];
       return BarChartGroupData(
         x: index,
         barRods: [
           BarChartRodData(
-            toY: item.totalTasks.toDouble(),
-            color: const Color(0xffEF4444),
-            width: 12,
+            toY: item.totalReaches.toDouble(),
+            color: const Color(0xffE1306C),
+            width: 10,
+            borderRadius: BorderRadius.circular(6),
+          ),
+          BarChartRodData(
+            toY: item.successful.toDouble(),
+            color: const Color(0xff10B981),
+            width: 10,
             borderRadius: BorderRadius.circular(6),
           ),
         ],
+        barsSpace: 4,
       );
     });
   }
@@ -172,12 +215,12 @@ class _TaskStatsByProjectChartState extends State<TaskStatsByProjectChart> {
   Widget build(BuildContext context) {
     final responsive = ResponsiveHelper(context);
     final isEmpty =
-        _projects.isEmpty || _projects.every((p) => p.totalTasks == 0);
-    final displayProjects = isEmpty ? _previewProjects : _projects;
-    final maxValue = displayProjects.isEmpty
+        _campaigns.isEmpty || _campaigns.every((c) => c.totalReaches == 0);
+    final displayCampaigns = isEmpty ? _previewCampaigns : _campaigns;
+    final maxValue = displayCampaigns.isEmpty
         ? 1
-        : displayProjects
-            .map((e) => e.totalTasks)
+        : displayCampaigns
+            .map((e) => e.totalReaches)
             .reduce((a, b) => a > b ? a : b)
             .toDouble();
 
@@ -206,19 +249,19 @@ class _TaskStatsByProjectChartState extends State<TaskStatsByProjectChart> {
                   height: 36,
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
-                      colors: [Color(0xffEF4444), Color(0xffDC2626)],
+                      colors: [Color(0xffE1306C), Color(0xffC13584)],
                     ),
                     borderRadius: BorderRadius.circular(10),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xffEF4444).withValues(alpha: 0.3),
+                        color: const Color(0xffE1306C).withValues(alpha: 0.3),
                         blurRadius: 8,
                         offset: const Offset(0, 4),
                       ),
                     ],
                   ),
                   child: const Icon(
-                    Icons.assignment_outlined,
+                    Icons.campaign,
                     color: Colors.white,
                     size: 20,
                   ),
@@ -226,7 +269,7 @@ class _TaskStatsByProjectChartState extends State<TaskStatsByProjectChart> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    'Статистика по проектам',
+                    'Таргетированная реклама (Meta Ads)',
                     style: TextStyle(
                       fontSize: responsive.titleFontSize,
                       fontWeight: FontWeight.w600,
@@ -248,7 +291,7 @@ class _TaskStatsByProjectChartState extends State<TaskStatsByProjectChart> {
             child: _isLoading
                 ? const Center(
                     child: CircularProgressIndicator(
-                      color: Color(0xffEF4444),
+                      color: Color(0xffE1306C),
                     ),
                   )
                 : _error != null
@@ -270,7 +313,7 @@ class _TaskStatsByProjectChartState extends State<TaskStatsByProjectChart> {
                             child: BarChart(
                               BarChartData(
                                 maxY: maxValue * 1.2,
-                                barGroups: _buildGroups(displayProjects),
+                                barGroups: _buildGroups(displayCampaigns),
                                 gridData: FlGridData(
                                   show: true,
                                   drawVerticalLine: false,
@@ -303,11 +346,11 @@ class _TaskStatsByProjectChartState extends State<TaskStatsByProjectChart> {
                                   bottomTitles: AxisTitles(
                                     sideTitles: SideTitles(
                                       showTitles: true,
-                                      reservedSize: 150,
+                                      reservedSize: 140,
                                       getTitlesWidget: (value, meta) {
                                         final index = value.toInt();
                                         if (index < 0 ||
-                                            index >= displayProjects.length) {
+                                            index >= displayCampaigns.length) {
                                           return const SizedBox.shrink();
                                         }
                                         return RotatedBox(
@@ -316,7 +359,8 @@ class _TaskStatsByProjectChartState extends State<TaskStatsByProjectChart> {
                                             padding:
                                                 const EdgeInsets.only(top: 6),
                                             child: Text(
-                                              displayProjects[index].projectName,
+                                              displayCampaigns[index]
+                                                  .campaignName,
                                               style: const TextStyle(
                                                 fontSize: 9,
                                                 color: Color(0xff64748B),
@@ -343,8 +387,66 @@ class _TaskStatsByProjectChartState extends State<TaskStatsByProjectChart> {
                         ),
                       ),
           ),
+          if (_data != null)
+            Padding(
+              padding: EdgeInsets.fromLTRB(
+                responsive.cardPadding,
+                0,
+                responsive.cardPadding,
+                responsive.cardPadding,
+              ),
+              child: Row(
+                children: [
+                  const _LegendDot(color: Color(0xffE1306C), label: 'Охват'),
+                  const SizedBox(width: 12),
+                  const _LegendDot(color: Color(0xff10B981), label: 'Успешные'),
+                  const Spacer(),
+                  Text(
+                    'CPL: ${_data!.summary.costPerLead.toStringAsFixed(2)}',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xff64748B),
+                      fontFamily: 'Golos',
+                    ),
+                  ),
+                ],
+              ),
+            ),
         ],
       ),
+    );
+  }
+}
+
+class _LegendDot extends StatelessWidget {
+  final Color color;
+  final String label;
+
+  const _LegendDot({
+    required this.color,
+    required this.label,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(
+          width: 8,
+          height: 8,
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+        ),
+        const SizedBox(width: 6),
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 12,
+            color: Color(0xff64748B),
+            fontFamily: 'Golos',
+          ),
+        ),
+      ],
     );
   }
 }

@@ -9,7 +9,7 @@ class HttpLogger {
   HttpLogger._internal();
 
   // Максимальное количество логов в памяти
-  static const int _maxLogs = 100;
+  static const int _maxLogs = 1000;
 
   // Список всех логов
   final List<HttpLogModel> _logs = [];

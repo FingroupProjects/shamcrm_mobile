@@ -74,6 +74,8 @@ import 'package:crm_task_manager/screens/analytics/models/replies_messages_model
 import 'package:crm_task_manager/screens/analytics/models/task_stats_by_project_model.dart';
 import 'package:crm_task_manager/screens/analytics/models/connected_accounts_model.dart';
 import 'package:crm_task_manager/screens/analytics/models/advertising_roi_model.dart';
+import 'package:crm_task_manager/screens/analytics/models/telephony_by_hour_model.dart';
+import 'package:crm_task_manager/screens/analytics/models/targeted_ads_model.dart';
 import 'package:crm_task_manager/models/organization_model.dart';
 import 'package:crm_task_manager/models/overdue_task_response.dart';
 import 'package:crm_task_manager/models/page_2/branch_model.dart';
@@ -193,6 +195,7 @@ import '../../models/page_2/dashboard/top_selling_model.dart';
 // HTTP Inspector imports (только для DEBUG)
 import 'http_logger.dart';
 import 'http_log_model.dart';
+import 'dio_client.dart';
 
 // final String baseUrl = 'https://fingroup-back.shamcrm.com/api';
 // final String baseUrl = 'https://ede8-95-142-94-22.ngrok-free.app';
@@ -812,8 +815,37 @@ class ApiService {
 
     //debugPrint('ApiService: _multipartPostRequest with path: ${request.url}');
 
+    // HTTP Inspector: логируем multipart запрос/ответ (только в DEBUG)
+    String? logId;
+    if (kDebugMode) {
+      logId = DateTime.now().millisecondsSinceEpoch.toString();
+      HttpLogger().addLog(HttpLogModel(
+        id: logId,
+        timestamp: DateTime.now(),
+        method: 'POST',
+        url: request.url.toString(),
+        requestHeaders: request.headers,
+      ));
+    }
+
+    final startTime = DateTime.now();
     final streamedResponse = await request.send();
     final response = await http.Response.fromStream(streamedResponse);
+
+    if (kDebugMode && logId != null) {
+      final existingLog = HttpLogger().getLogById(logId);
+      if (existingLog != null) {
+        HttpLogger().updateLog(
+          logId,
+          existingLog.copyWith(
+            statusCode: response.statusCode,
+            responseHeaders: response.headers,
+            responseBody: response.body,
+            duration: DateTime.now().difference(startTime),
+          ),
+        );
+      }
+    }
 
     //debugPrint(
     // 'ApiService: _multipartPostRequest response status: ${response.statusCode}');
@@ -1027,8 +1059,39 @@ class ApiService {
     });
     request.body = json.encode(body);
 
+    // HTTP Inspector: логируем DELETE с body (только в DEBUG)
+    String? logId;
+    if (kDebugMode) {
+      logId = DateTime.now().millisecondsSinceEpoch.toString();
+      HttpLogger().addLog(HttpLogModel(
+        id: logId,
+        timestamp: DateTime.now(),
+        method: 'DELETE',
+        url: request.url.toString(),
+        requestHeaders: request.headers.map((k, v) => MapEntry(k, v.toString())),
+        requestBody: json.encode(body),
+      ));
+    }
+
+    final startTime = DateTime.now();
     final streamedResponse = await request.send();
     final response = await http.Response.fromStream(streamedResponse);
+
+    if (kDebugMode && logId != null) {
+      final existingLog = HttpLogger().getLogById(logId);
+      if (existingLog != null) {
+        HttpLogger().updateLog(
+          logId,
+          existingLog.copyWith(
+            statusCode: response.statusCode,
+            responseHeaders: response.headers,
+            responseBody: response.body,
+            duration: DateTime.now().difference(startTime),
+          ),
+        );
+      }
+    }
+
     return _handleResponse(response);
   }
 
@@ -6592,6 +6655,55 @@ class ApiService {
     }
   }
 
+  /// Аналитика звонков по часам
+  /// Endpoint: /api/v2/dashboard/telephony-and-events-by-hour
+  Future<TelephonyByHourResponse> getTelephonyByHourChartV2() async {
+    final path =
+        await _appendQueryParams('/v2/dashboard/telephony-and-events-by-hour');
+
+    if (kDebugMode) {
+      debugPrint('ApiService: getTelephonyByHourChartV2 - Generated path: $path');
+    }
+
+    try {
+      final response = await _getRequest(path);
+      if (response.statusCode == 200) {
+        final jsonData = json.decode(response.body);
+        return TelephonyByHourResponse.fromJson(jsonData);
+      } else {
+        throw Exception('Ошибка загрузки аналитики звонков по часам!');
+      }
+    } catch (e) {
+      debugPrint('ApiService: getTelephonyByHourChartV2 error: $e');
+      throw Exception('Ошибка получения аналитики звонков по часам: $e');
+    }
+  }
+
+  /// Таргетированная реклама (Meta Ads)
+  /// Endpoint: /api/v2/dashboard/targeted-advertising-chart
+  Future<TargetedAdsResponse> getTargetedAdvertisingChartV2() async {
+    final path =
+        await _appendQueryParams('/v2/dashboard/targeted-advertising-chart');
+
+    if (kDebugMode) {
+      debugPrint(
+          'ApiService: getTargetedAdvertisingChartV2 - Generated path: $path');
+    }
+
+    try {
+      final response = await _getRequest(path);
+      if (response.statusCode == 200) {
+        final jsonData = json.decode(response.body);
+        return TargetedAdsResponse.fromJson(jsonData);
+      } else {
+        throw Exception('Ошибка загрузки таргетированной рекламы!');
+      }
+    } catch (e) {
+      debugPrint('ApiService: getTargetedAdvertisingChartV2 error: $e');
+      throw Exception('Ошибка получения таргетированной рекламы: $e');
+    }
+  }
+
   /// ТОП продаваемых товаров (V2)
   /// Endpoint: /api/v2/dashboard/top-selling-products-chart
   Future<TopSellingProductsResponse> getTopSellingProductsChartV2() async {
@@ -7320,7 +7432,7 @@ class ApiService {
 
     String requestUrl = '$baseUrl$path';
 
-    Dio dio = Dio();
+    Dio dio = LoggedDioClient.create();
     try {
       final voice = await MultipartFile.fromFile(audio.path,
           contentType: MediaType('audio', 'm4a'));
@@ -7375,7 +7487,7 @@ class ApiService {
 
     String requestUrl = '$baseUrl$path';
 
-    Dio dio = Dio();
+    Dio dio = LoggedDioClient.create();
     try {
       FormData formData = FormData.fromMap({
         'file': await MultipartFile.fromFile(pathFile),

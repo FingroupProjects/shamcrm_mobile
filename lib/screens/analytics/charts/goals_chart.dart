@@ -3,6 +3,7 @@ import 'package:crm_task_manager/screens/analytics/utils/responsive_helper.dart'
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/screens/analytics/models/users_chart_model.dart';
 import 'package:crm_task_manager/screens/dashboard/dialogs/user_overdue_task_dialog.dart';
+import 'package:crm_task_manager/screens/analytics/widgets/chart_empty_overlay.dart';
 
 class GoalsChart extends StatefulWidget {
   const GoalsChart({super.key});
@@ -16,6 +17,33 @@ class _GoalsChartState extends State<GoalsChart> {
   String? _error;
   List<UserPerformance> _goals = [];
   int _averageKpi = 0;
+
+  static final List<UserPerformance> _previewGoals = [
+    UserPerformance(
+      name: 'Иван Петров',
+      userId: 1,
+      finishedTasksPercent: 92,
+      status: 'best',
+    ),
+    UserPerformance(
+      name: 'Анна Смирнова',
+      userId: 2,
+      finishedTasksPercent: 86,
+      status: 'good',
+    ),
+    UserPerformance(
+      name: 'Дмитрий Козлов',
+      userId: 3,
+      finishedTasksPercent: 68,
+      status: 'requires_attention',
+    ),
+    UserPerformance(
+      name: 'Елена Васильева',
+      userId: 4,
+      finishedTasksPercent: 95,
+      status: 'best',
+    ),
+  ];
 
   @override
   void initState() {
@@ -131,6 +159,9 @@ class _GoalsChartState extends State<GoalsChart> {
   @override
   Widget build(BuildContext context) {
     final responsive = ResponsiveHelper(context);
+    final isEmpty = _goals.isEmpty ||
+        _goals.every((g) => g.finishedTasksPercent == 0);
+    final displayGoals = isEmpty ? _previewGoals : _goals;
 
     return Container(
       decoration: BoxDecoration(
@@ -229,35 +260,27 @@ class _GoalsChartState extends State<GoalsChart> {
                           ],
                         ),
                       )
-                    : _goals.isEmpty
-                        ? const Center(
-                            child: Text(
-                              'Нет данных',
-                              style: TextStyle(
-                                color: Color(0xff64748B),
-                                fontSize: 14,
-                                fontFamily: 'Golos',
-                              ),
-                            ),
-                          )
-                        : SingleChildScrollView(
-                            padding: EdgeInsets.all(responsive.cardPadding),
-                            child: Column(
-                              children: _goals.asMap().entries.map((entry) {
-                                final goal = entry.value;
-                                final color =
-                                    _colorForPercent(goal.finishedTasksPercent);
+                    : ChartEmptyOverlay(
+                        show: isEmpty,
+                        child: SingleChildScrollView(
+                          padding: EdgeInsets.all(responsive.cardPadding),
+                          child: Column(
+                            children: displayGoals.asMap().entries.map((entry) {
+                              final goal = entry.value;
+                              final color =
+                                  _colorForPercent(goal.finishedTasksPercent);
 
-                                return Padding(
-                                  padding: const EdgeInsets.only(bottom: 20),
-                                  child: _buildEmployeeProgress(
-                                    goal,
-                                    color,
-                                  ),
-                                );
-                              }).toList(),
-                            ),
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 20),
+                                child: _buildEmployeeProgress(
+                                  goal,
+                                  color,
+                                ),
+                              );
+                            }).toList(),
                           ),
+                        ),
+                      ),
           ),
           // Footer
           if (!_isLoading && _error == null && _goals.isNotEmpty)

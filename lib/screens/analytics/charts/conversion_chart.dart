@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:crm_task_manager/screens/analytics/utils/responsive_helper.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/screens/analytics/widgets/chart_empty_overlay.dart';
 
 class ConversionChart extends StatefulWidget {
   const ConversionChart({super.key});
@@ -43,6 +44,21 @@ class _ConversionChartState extends State<ConversionChart> {
     'Октябрь',
     'Ноябрь',
     'Декабрь'
+  ];
+
+  static const List<double> _previewData = [
+    18.2,
+    21.5,
+    19.8,
+    24.1,
+    22.4,
+    25.3,
+    27.6,
+    29.1,
+    26.8,
+    28.0,
+    27.2,
+    26.4
   ];
 
   @override
@@ -122,7 +138,7 @@ class _ConversionChartState extends State<ConversionChart> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text(
-                'Конверсия по месяцам',
+                    'Конверсия клиентов',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
@@ -174,6 +190,12 @@ class _ConversionChartState extends State<ConversionChart> {
   @override
   Widget build(BuildContext context) {
     final responsive = ResponsiveHelper(context);
+    final isEmpty =
+        _conversionData.isEmpty || _conversionData.every((v) => v == 0);
+    final chartData = isEmpty ? _previewData : _conversionData;
+    final maxPercentage = chartData.isEmpty
+        ? 0.0
+        : chartData.reduce((a, b) => a > b ? a : b);
 
     return Container(
       decoration: BoxDecoration(
@@ -271,57 +293,50 @@ class _ConversionChartState extends State<ConversionChart> {
                           ],
                         ),
                       )
-                    : _conversionData.isEmpty
-                        ? const Center(
-                            child: Text(
-                              'Нет данных',
-                              style: TextStyle(
-                                color: Color(0xff64748B),
-                                fontSize: 14,
-                                fontFamily: 'Golos',
-                              ),
-                            ),
-                          )
-                        : GestureDetector(
-                            onTap: _showDetails,
-                            child: Padding(
-                              padding: const EdgeInsets.only(
-                                  right: 20, left: 10, bottom: 20),
-                              child: BarChart(
-                                BarChartData(
-                                  alignment: BarChartAlignment.spaceAround,
-                                  maxY: _maxPercentage + 5,
-                                  barTouchData: BarTouchData(
-                                    enabled: true,
-                                    touchTooltipData: BarTouchTooltipData(
-                                      getTooltipColor: (group) => Colors.white,
-                                      tooltipBorder: const BorderSide(
-                                          color: Color(0xffE2E8F0)),
-                                      tooltipRoundedRadius: 8,
-                                      getTooltipItem:
-                                          (group, groupIndex, rod, rodIndex) {
-                                        return BarTooltipItem(
-                                          '${rod.toY.toStringAsFixed(1)}%',
-                                          const TextStyle(
-                                            color: Color(0xff0F172A),
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 14,
-                                            fontFamily: 'Golos',
-                                          ),
-                                        );
-                                      },
-                                    ),
+                    : ChartEmptyOverlay(
+                        show: isEmpty,
+                        child: GestureDetector(
+                          onTap: _showDetails,
+                          child: Padding(
+                            padding: const EdgeInsets.only(
+                                right: 20, left: 10, bottom: 20),
+                            child: BarChart(
+                              BarChartData(
+                                alignment: BarChartAlignment.spaceAround,
+                                maxY: maxPercentage + 5,
+                                barTouchData: BarTouchData(
+                                  enabled: true,
+                                  touchTooltipData: BarTouchTooltipData(
+                                    getTooltipColor: (group) => Colors.white,
+                                    tooltipBorder: const BorderSide(
+                                        color: Color(0xffE2E8F0)),
+                                    tooltipRoundedRadius: 8,
+                                    getTooltipItem:
+                                        (group, groupIndex, rod, rodIndex) {
+                                      return BarTooltipItem(
+                                        '${rod.toY.toStringAsFixed(1)}%',
+                                        const TextStyle(
+                                          color: Color(0xff0F172A),
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 14,
+                                          fontFamily: 'Golos',
+                                        ),
+                                      );
+                                    },
                                   ),
-                                  titlesData: FlTitlesData(
-                                    show: true,
-                                    bottomTitles: AxisTitles(
-                                      sideTitles: SideTitles(
-                                        showTitles: true,
-                                        getTitlesWidget: (value, meta) {
-                                          if (value.toInt() >= 0 &&
-                                              value.toInt() <
-                                                  _conversionData.length) {
-                                            return Padding(
+                                ),
+                                titlesData: FlTitlesData(
+                                  show: true,
+                                  bottomTitles: AxisTitles(
+                                    sideTitles: SideTitles(
+                                      showTitles: true,
+                                      reservedSize: 36,
+                                      getTitlesWidget: (value, meta) {
+                                        if (value.toInt() >= 0 &&
+                                            value.toInt() < chartData.length) {
+                                          return RotatedBox(
+                                            quarterTurns: 3,
+                                            child: Padding(
                                               padding:
                                                   const EdgeInsets.only(top: 8),
                                               child: Text(
@@ -332,57 +347,59 @@ class _ConversionChartState extends State<ConversionChart> {
                                                   fontFamily: 'Golos',
                                                 ),
                                               ),
-                                            );
-                                          }
-                                          return const Text('');
-                                        },
-                                      ),
-                                    ),
-                                    leftTitles: AxisTitles(
-                                      sideTitles: SideTitles(
-                                        showTitles: true,
-                                        reservedSize: 40,
-                                        getTitlesWidget: (value, meta) {
-                                          return Text(
-                                            '${value.toInt()}%',
-                                            style: const TextStyle(
-                                              color: Color(0xff64748B),
-                                              fontSize: 12,
-                                              fontFamily: 'Golos',
                                             ),
                                           );
-                                        },
-                                      ),
-                                    ),
-                                    topTitles: const AxisTitles(
-                                      sideTitles: SideTitles(showTitles: false),
-                                    ),
-                                    rightTitles: const AxisTitles(
-                                      sideTitles: SideTitles(showTitles: false),
+                                        }
+                                        return const Text('');
+                                      },
                                     ),
                                   ),
-                                  gridData: FlGridData(
-                                    show: true,
-                                    drawVerticalLine: false,
-                                    horizontalInterval: 5,
-                                    getDrawingHorizontalLine: (value) {
-                                      return const FlLine(
-                                        color: Color(0xffE2E8F0),
-                                        strokeWidth: 1,
-                                      );
-                                    },
+                                  leftTitles: AxisTitles(
+                                    sideTitles: SideTitles(
+                                      showTitles: true,
+                                      reservedSize: 40,
+                                      getTitlesWidget: (value, meta) {
+                                        return Text(
+                                          '${value.toInt()}%',
+                                          style: const TextStyle(
+                                            color: Color(0xff64748B),
+                                            fontSize: 12,
+                                            fontFamily: 'Golos',
+                                          ),
+                                        );
+                                      },
+                                    ),
                                   ),
-                                  borderData: FlBorderData(show: false),
-                                  barGroups: _conversionData
-                                      .asMap()
-                                      .entries
-                                      .map((entry) => _makeGroupData(
-                                          entry.key, entry.value))
-                                      .toList(),
+                                  topTitles: const AxisTitles(
+                                    sideTitles: SideTitles(showTitles: false),
+                                  ),
+                                  rightTitles: const AxisTitles(
+                                    sideTitles: SideTitles(showTitles: false),
+                                  ),
                                 ),
+                                gridData: FlGridData(
+                                  show: true,
+                                  drawVerticalLine: false,
+                                  horizontalInterval: 5,
+                                  getDrawingHorizontalLine: (value) {
+                                    return const FlLine(
+                                      color: Color(0xffE2E8F0),
+                                      strokeWidth: 1,
+                                    );
+                                  },
+                                ),
+                                borderData: FlBorderData(show: false),
+                                barGroups: chartData
+                                    .asMap()
+                                    .entries
+                                    .map((entry) =>
+                                        _makeGroupData(entry.key, entry.value))
+                                    .toList(),
                               ),
                             ),
                           ),
+                        ),
+                      ),
           ),
           // Footer
           if (!_isLoading && _error == null && _conversionData.isNotEmpty)

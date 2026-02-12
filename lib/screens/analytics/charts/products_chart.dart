@@ -3,6 +3,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:crm_task_manager/screens/analytics/utils/responsive_helper.dart';
 import 'package:crm_task_manager/screens/analytics/models/top_selling_products_model.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/screens/analytics/widgets/chart_empty_overlay.dart';
 
 class ProductsChart extends StatefulWidget {
   const ProductsChart({Key? key}) : super(key: key);
@@ -15,6 +16,49 @@ class _ProductsChartState extends State<ProductsChart> {
   bool _isLoading = true;
   String? _error;
   TopSellingProductsResponse? _data;
+
+  static final List<TopSellingProductItem> _previewItems = [
+    TopSellingProductItem(
+      goodId: 1,
+      name: 'Кольцо 585',
+      totalSold: 120,
+      successful: 97,
+      cancelled: 23,
+      conversion: 80.8,
+      revenue: 54000000,
+      revenueFormatted: '54 000 000 сум',
+    ),
+    TopSellingProductItem(
+      goodId: 2,
+      name: 'Серьги "Classic"',
+      totalSold: 85,
+      successful: 71,
+      cancelled: 14,
+      conversion: 83.5,
+      revenue: 31500000,
+      revenueFormatted: '31 500 000 сум',
+    ),
+    TopSellingProductItem(
+      goodId: 3,
+      name: 'Цепочка серебро',
+      totalSold: 93,
+      successful: 81,
+      cancelled: 12,
+      conversion: 87.1,
+      revenue: 22400000,
+      revenueFormatted: '22 400 000 сум',
+    ),
+    TopSellingProductItem(
+      goodId: 4,
+      name: 'Браслет золотой',
+      totalSold: 67,
+      successful: 58,
+      cancelled: 9,
+      conversion: 86.6,
+      revenue: 28900000,
+      revenueFormatted: '28 900 000 сум',
+    ),
+  ];
 
   @override
   void initState() {
@@ -143,6 +187,14 @@ class _ProductsChartState extends State<ProductsChart> {
   @override
   Widget build(BuildContext context) {
     final responsive = ResponsiveHelper(context);
+    final isEmpty =
+        _topItems.isEmpty || _topItems.every((item) => item.totalSold == 0);
+    final displayItems = isEmpty ? _previewItems : _topItems;
+    final maxSold = displayItems.isEmpty
+        ? 0.0
+        : displayItems
+            .map((e) => e.totalSold.toDouble())
+            .reduce((a, b) => a > b ? a : b);
 
     return Container(
       decoration: BoxDecoration(
@@ -244,26 +296,19 @@ class _ProductsChartState extends State<ProductsChart> {
                           ],
                         ),
                       )
-                    : _topItems.isEmpty
-                        ? const Center(
-                            child: Text(
-                              'Нет данных',
-                              style: TextStyle(
-                                color: Color(0xff64748B),
-                                fontSize: 14,
-                                fontFamily: 'Golos',
-                              ),
-                            ),
-                          )
-                        : GestureDetector(
-                            onTap: _showDetails,
-                            child: Padding(
-                              padding: const EdgeInsets.only(
-                                  right: 20, left: 10, bottom: 20),
+                    : ChartEmptyOverlay(
+                        show: isEmpty,
+                        child: GestureDetector(
+                          onTap: _showDetails,
+                          child: Padding(
+                            padding: const EdgeInsets.only(
+                                right: 20, left: 10, bottom: 20),
+                            child: RotatedBox(
+                              quarterTurns: 1,
                               child: BarChart(
                                 BarChartData(
                                   alignment: BarChartAlignment.spaceAround,
-                                  maxY: _maxSold <= 0 ? 1 : _maxSold + 5,
+                                  maxY: maxSold <= 0 ? 1 : maxSold + 5,
                                   barTouchData: BarTouchData(
                                     enabled: true,
                                     touchTooltipData: BarTouchTooltipData(
@@ -290,39 +335,46 @@ class _ProductsChartState extends State<ProductsChart> {
                                     bottomTitles: AxisTitles(
                                       sideTitles: SideTitles(
                                         showTitles: true,
+                                        reservedSize: 120,
                                         getTitlesWidget: (value, meta) {
                                           final index = value.toInt();
                                           if (index >= 0 &&
-                                              index < _topItems.length) {
-                                            return Padding(
-                                              padding: const EdgeInsets.only(
-                                                  top: 8),
-                                              child: Text(
-                                                _shortName(
-                                                    _topItems[index].name),
-                                                style: const TextStyle(
-                                                  color: Color(0xff64748B),
-                                                  fontSize: 11,
-                                                  fontFamily: 'Golos',
+                                              index < displayItems.length) {
+                                            return RotatedBox(
+                                              quarterTurns: 3,
+                                              child: Padding(
+                                                padding: const EdgeInsets.only(
+                                                    top: 8),
+                                                child: Text(
+                                                  _shortName(
+                                                      displayItems[index].name),
+                                                  style: const TextStyle(
+                                                    color: Color(0xff64748B),
+                                                    fontSize: 11,
+                                                    fontFamily: 'Golos',
+                                                  ),
                                                 ),
                                               ),
                                             );
                                           }
-                                          return const Text('');
+                                          return const SizedBox.shrink();
                                         },
                                       ),
                                     ),
                                     leftTitles: AxisTitles(
                                       sideTitles: SideTitles(
                                         showTitles: true,
-                                        reservedSize: 40,
+                                        reservedSize: 36,
                                         getTitlesWidget: (value, meta) {
-                                          return Text(
-                                            value.toInt().toString(),
-                                            style: const TextStyle(
-                                              color: Color(0xff64748B),
-                                              fontSize: 12,
-                                              fontFamily: 'Golos',
+                                          return RotatedBox(
+                                            quarterTurns: 3,
+                                            child: Text(
+                                              value.toInt().toString(),
+                                              style: const TextStyle(
+                                                color: Color(0xff64748B),
+                                                fontSize: 12,
+                                                fontFamily: 'Golos',
+                                              ),
                                             ),
                                           );
                                         },
@@ -338,9 +390,9 @@ class _ProductsChartState extends State<ProductsChart> {
                                   gridData: FlGridData(
                                     show: true,
                                     drawVerticalLine: false,
-                                    horizontalInterval: _maxSold <= 0
+                                    horizontalInterval: maxSold <= 0
                                         ? 1
-                                        : (_maxSold / 5).ceilToDouble(),
+                                        : (maxSold / 5).ceilToDouble(),
                                     getDrawingHorizontalLine: (value) {
                                       return const FlLine(
                                         color: Color(0xffE2E8F0),
@@ -349,7 +401,7 @@ class _ProductsChartState extends State<ProductsChart> {
                                     },
                                   ),
                                   borderData: FlBorderData(show: false),
-                                  barGroups: _topItems
+                                  barGroups: displayItems
                                       .asMap()
                                       .entries
                                       .map((entry) => _makeGroupData(
@@ -360,6 +412,8 @@ class _ProductsChartState extends State<ProductsChart> {
                               ),
                             ),
                           ),
+                        ),
+                      ),
           ),
           // Footer
           if (!_isLoading && _error == null)

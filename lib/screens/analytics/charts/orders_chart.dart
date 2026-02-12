@@ -3,6 +3,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:crm_task_manager/screens/analytics/utils/responsive_helper.dart';
 import 'package:crm_task_manager/screens/analytics/models/online_store_orders_model.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/screens/analytics/widgets/chart_empty_overlay.dart';
 
 class OrdersChart extends StatefulWidget {
   const OrdersChart({Key? key}) : super(key: key);
@@ -30,6 +31,15 @@ class _OrdersChartState extends State<OrdersChart> {
     'Окт',
     'Ноя',
     'Дек',
+  ];
+
+  static final List<OrdersChartPoint> _previewPoints = [
+    OrdersChartPoint(month: 1, totalOrders: 120, successfulOrders: 92, canceledOrders: 28),
+    OrdersChartPoint(month: 2, totalOrders: 135, successfulOrders: 104, canceledOrders: 31),
+    OrdersChartPoint(month: 3, totalOrders: 148, successfulOrders: 121, canceledOrders: 27),
+    OrdersChartPoint(month: 4, totalOrders: 162, successfulOrders: 129, canceledOrders: 33),
+    OrdersChartPoint(month: 5, totalOrders: 175, successfulOrders: 143, canceledOrders: 32),
+    OrdersChartPoint(month: 6, totalOrders: 190, successfulOrders: 156, canceledOrders: 34),
   ];
 
   @override
@@ -147,6 +157,14 @@ class _OrdersChartState extends State<OrdersChart> {
   @override
   Widget build(BuildContext context) {
     final responsive = ResponsiveHelper(context);
+    final points = _data?.chartData ?? [];
+    final isEmpty = points.isEmpty || (_data?.totalOrders ?? 0) == 0;
+    final displayPoints = isEmpty ? _previewPoints : points;
+    final maxOrders = displayPoints.isEmpty
+        ? 0.0
+        : displayPoints
+            .map((p) => p.totalOrders.toDouble())
+            .reduce((a, b) => a > b ? a : b);
 
     return Container(
       decoration: BoxDecoration(
@@ -248,119 +266,111 @@ class _OrdersChartState extends State<OrdersChart> {
                           ],
                         ),
                       )
-                    : (_data == null || _data!.chartData.isEmpty)
-                        ? const Center(
-                            child: Text(
-                              'Нет данных',
-                              style: TextStyle(
-                                color: Color(0xff64748B),
-                                fontSize: 14,
-                                fontFamily: 'Golos',
-                              ),
-                            ),
-                          )
-                        : GestureDetector(
-                            onTap: _showDetails,
-                            child: Padding(
-                              padding: const EdgeInsets.only(
-                                  right: 20, left: 10, bottom: 20),
-                              child: BarChart(
-                                BarChartData(
-                                  alignment: BarChartAlignment.spaceAround,
-                                  maxY: _maxOrders <= 0 ? 1 : _maxOrders + 2,
-                                  barTouchData: BarTouchData(
-                                    enabled: true,
-                                    touchTooltipData: BarTouchTooltipData(
-                                      getTooltipColor: (group) => Colors.white,
-                                      tooltipBorder: const BorderSide(
-                                          color: Color(0xffE2E8F0)),
-                                      tooltipRoundedRadius: 8,
-                                    ),
+                    : ChartEmptyOverlay(
+                        show: isEmpty,
+                        child: GestureDetector(
+                          onTap: _showDetails,
+                          child: Padding(
+                            padding: const EdgeInsets.only(
+                                right: 20, left: 10, bottom: 20),
+                            child: BarChart(
+                              BarChartData(
+                                alignment: BarChartAlignment.spaceAround,
+                                maxY: maxOrders <= 0 ? 1 : maxOrders + 2,
+                                barTouchData: BarTouchData(
+                                  enabled: true,
+                                  touchTooltipData: BarTouchTooltipData(
+                                    getTooltipColor: (group) => Colors.white,
+                                    tooltipBorder: const BorderSide(
+                                        color: Color(0xffE2E8F0)),
+                                    tooltipRoundedRadius: 8,
                                   ),
-                                  titlesData: FlTitlesData(
-                                    show: true,
-                                    bottomTitles: AxisTitles(
-                                      sideTitles: SideTitles(
-                                        showTitles: true,
-                                        getTitlesWidget: (value, meta) {
-                                          final index = value.toInt();
-                                          final points = _data!.chartData;
-                                          if (index >= 0 &&
-                                              index < points.length) {
-                                            final month = points[index].month;
-                                            final label = month >= 0 &&
-                                                    month < _monthNames.length
-                                                ? _monthNames[month]
-                                                : month.toString();
-                                            return Padding(
-                                              padding: const EdgeInsets.only(
-                                                  top: 8),
-                                              child: Text(
-                                                label,
-                                                style: const TextStyle(
-                                                  color: Color(0xff64748B),
-                                                  fontSize: 12,
-                                                  fontFamily: 'Golos',
-                                                ),
+                                ),
+                                titlesData: FlTitlesData(
+                                  show: true,
+                                  bottomTitles: AxisTitles(
+                                    sideTitles: SideTitles(
+                                      showTitles: true,
+                                      getTitlesWidget: (value, meta) {
+                                        final index = value.toInt();
+                                        if (index >= 0 &&
+                                            index < displayPoints.length) {
+                                          final month =
+                                              displayPoints[index].month;
+                                          final label = month >= 0 &&
+                                                  month < _monthNames.length
+                                              ? _monthNames[month]
+                                              : month.toString();
+                                          return Padding(
+                                            padding:
+                                                const EdgeInsets.only(top: 8),
+                                            child: Text(
+                                              label,
+                                              style: const TextStyle(
+                                                color: Color(0xff64748B),
+                                                fontSize: 12,
+                                                fontFamily: 'Golos',
                                               ),
-                                            );
-                                          }
-                                          return const Text('');
-                                        },
-                                      ),
-                                    ),
-                                    leftTitles: AxisTitles(
-                                      sideTitles: SideTitles(
-                                        showTitles: true,
-                                        reservedSize: 40,
-                                        getTitlesWidget: (value, meta) {
-                                          return Text(
-                                            value.toInt().toString(),
-                                            style: const TextStyle(
-                                              color: Color(0xff64748B),
-                                              fontSize: 12,
-                                              fontFamily: 'Golos',
                                             ),
                                           );
-                                        },
-                                      ),
-                                    ),
-                                    topTitles: const AxisTitles(
-                                      sideTitles: SideTitles(showTitles: false),
-                                    ),
-                                    rightTitles: const AxisTitles(
-                                      sideTitles: SideTitles(showTitles: false),
+                                        }
+                                        return const Text('');
+                                      },
                                     ),
                                   ),
-                                  gridData: FlGridData(
-                                    show: true,
-                                    drawVerticalLine: false,
-                                    horizontalInterval: _maxOrders <= 0
-                                        ? 1
-                                        : (_maxOrders / 5).ceilToDouble(),
-                                    getDrawingHorizontalLine: (value) {
-                                      return const FlLine(
-                                        color: Color(0xffE2E8F0),
-                                        strokeWidth: 1,
-                                      );
-                                    },
+                                  leftTitles: AxisTitles(
+                                    sideTitles: SideTitles(
+                                      showTitles: true,
+                                      reservedSize: 40,
+                                      getTitlesWidget: (value, meta) {
+                                        return Text(
+                                          value.toInt().toString(),
+                                          style: const TextStyle(
+                                            color: Color(0xff64748B),
+                                            fontSize: 12,
+                                            fontFamily: 'Golos',
+                                          ),
+                                        );
+                                      },
+                                    ),
                                   ),
-                                  borderData: FlBorderData(show: false),
-                                  barGroups: _data!.chartData
-                                      .asMap()
-                                      .entries
-                                      .map((entry) {
-                                    final p = entry.value;
-                                    return _makeGroupData(
-                                      entry.key,
-                                      p.totalOrders.toDouble(),
-                                      p.successfulOrders.toDouble(),
-                                    );
-                                  }).toList(),
+                                  topTitles: const AxisTitles(
+                                    sideTitles: SideTitles(showTitles: false),
+                                  ),
+                                  rightTitles: const AxisTitles(
+                                    sideTitles: SideTitles(showTitles: false),
+                                  ),
                                 ),
+                                gridData: FlGridData(
+                                  show: true,
+                                  drawVerticalLine: false,
+                                  horizontalInterval: maxOrders <= 0
+                                      ? 1
+                                      : (maxOrders / 5).ceilToDouble(),
+                                  getDrawingHorizontalLine: (value) {
+                                    return const FlLine(
+                                      color: Color(0xffE2E8F0),
+                                      strokeWidth: 1,
+                                    );
+                                  },
+                                ),
+                                borderData: FlBorderData(show: false),
+                                barGroups: displayPoints
+                                    .asMap()
+                                    .entries
+                                    .map((entry) {
+                                  final p = entry.value;
+                                  return _makeGroupData(
+                                    entry.key,
+                                    p.totalOrders.toDouble(),
+                                    p.successfulOrders.toDouble(),
+                                  );
+                                }).toList(),
                               ),
                             ),
                           ),
+                        ),
+                      ),
           ),
           // Footer
           if (!_isLoading && _error == null)
