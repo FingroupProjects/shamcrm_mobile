@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/analytics/widgets/analytics_stat_card.dart';
 import 'package:crm_task_manager/screens/analytics/widgets/analytics_filter_sheet.dart';
@@ -28,10 +29,11 @@ class AnalyticsScreen extends StatefulWidget {
 }
 
 class _AnalyticsScreenState extends State<AnalyticsScreen> {
-  String _selectedPeriod = 'Последние 30 дней';
-  String _selectedManager = 'Все менеджеры';
-  String _selectedFunnel = 'Все воронки';
-  String _selectedSource = 'Все источники';
+  String? _selectedPeriodKey;
+  List<String> _selectedManagerIds = [];
+  List<String> _selectedFunnelIds = [];
+  List<String> _selectedSourceIds = [];
+  int _chartsVersion = 0;
 
   // Stats data
   bool _isLoadingStats = true;
@@ -43,14 +45,6 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   double _dealsChange = 0.0;
   double _revenueChange = 0.0;
   double _conversionChange = 0.0;
-
-  // Keys for refreshing charts
-  final GlobalKey<State> _conversionChartKey = GlobalKey();
-  final GlobalKey<State> _sourcesChartKey = GlobalKey();
-  final GlobalKey<State> _managersChartKey = GlobalKey();
-  final GlobalKey<State> _speedGaugeKey = GlobalKey();
-  final GlobalKey<State> _goalsChartKey = GlobalKey();
-  final GlobalKey<State> _kpiChartKey = GlobalKey();
 
   @override
   void initState() {
@@ -110,7 +104,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
 
     // Force rebuild of all charts by updating their keys
     setState(() {
-      // Charts will rebuild automatically when parent rebuilds
+      _chartsVersion++;
     });
   }
 
@@ -124,22 +118,57 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
           bottom: MediaQuery.of(context).viewInsets.bottom,
         ),
         child: AnalyticsFilterSheet(
-          selectedPeriod: _selectedPeriod,
-          selectedManager: _selectedManager,
-          selectedFunnel: _selectedFunnel,
-          selectedSource: _selectedSource,
-          onApply: (period, manager, funnel, source) {
-            setState(() {
-              _selectedPeriod = period;
-              _selectedManager = manager;
-              _selectedFunnel = funnel;
-              _selectedSource = source;
-            });
-            // TODO: Apply filters to API calls
-          },
+          selectedPeriodKey: _selectedPeriodKey,
+          selectedManagers: _selectedManagerIds,
+          selectedFunnels: _selectedFunnelIds,
+          selectedSources: _selectedSourceIds,
+          onApply: _applyAnalyticsFilters,
         ),
       ),
     );
+  }
+
+  Future<void> _applyAnalyticsFilters(
+    String? periodKey,
+    List<String> managerIds,
+    List<String> funnelIds,
+    List<String> sourceIds,
+  ) async {
+    setState(() {
+      _selectedPeriodKey = periodKey;
+      _selectedManagerIds = managerIds;
+      _selectedFunnelIds = funnelIds;
+      _selectedSourceIds = sourceIds;
+    });
+
+    final apiService = ApiService();
+    final organizationId = await apiService.getSelectedOrganization() ?? '1';
+    final selectedSalesFunnelId = funnelIds.isNotEmpty
+        ? funnelIds.first
+        : await apiService.getSelectedSalesFunnel();
+
+    final payload = <String, dynamic>{
+      'organization_id': organizationId,
+      if (selectedSalesFunnelId != null && selectedSalesFunnelId.isNotEmpty)
+        'sales_funnel_id': selectedSalesFunnelId,
+      if (periodKey != null && periodKey.isNotEmpty) 'period': periodKey,
+      if (managerIds.isNotEmpty) 'managers': managerIds,
+      if (funnelIds.isNotEmpty) 'salesFunnels': funnelIds,
+      if (sourceIds.isNotEmpty) 'sources': sourceIds,
+    };
+
+    if (kDebugMode) {
+      debugPrint('🔵 AnalyticsScreen: Applying filters with payload: $payload');
+    }
+
+    ApiService.setAnalyticsFilters(payload);
+
+    if (kDebugMode) {
+      debugPrint(
+          '🟢 AnalyticsScreen: Filters set globally, refreshing charts...');
+    }
+
+    await _refreshData();
   }
 
   @override
@@ -276,8 +305,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                         change: _isLoadingStats
                             ? '...'
                             : '${_conversionChange.toStringAsFixed(2)}%',
-                        isPositive:
-                            !_isLoadingStats && _conversionChange >= 0,
+                        isPositive: !_isLoadingStats && _conversionChange >= 0,
                         icon: Icons.trending_up,
                         iconColor: const Color(0xffEC4899),
                       ),
@@ -288,52 +316,60 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
               SizedBox(height: chartSpacing * 1.5),
 
               // Charts - All responsive with keys for refresh
-              ConversionChart(key: _conversionChartKey),
+              ConversionChart(key: ValueKey('conversion_$_chartsVersion')),
               SizedBox(height: chartSpacing),
 
-              SourcesChart(key: _sourcesChartKey),
+              SourcesChart(key: ValueKey('sources_$_chartsVersion')),
               SizedBox(height: chartSpacing),
 
-              ManagersChart(key: _managersChartKey),
+              ManagersChart(key: ValueKey('managers_$_chartsVersion')),
               SizedBox(height: chartSpacing),
 
-              SpeedGauge(key: _speedGaugeKey),
+              SpeedGauge(key: ValueKey('speed_$_chartsVersion')),
               SizedBox(height: chartSpacing),
 
-              GoalsChart(key: _goalsChartKey),
+              GoalsChart(key: ValueKey('goals_$_chartsVersion')),
               SizedBox(height: chartSpacing),
 
-              KpiChart(key: _kpiChartKey),
+              KpiChart(key: ValueKey('kpi_$_chartsVersion')),
               SizedBox(height: chartSpacing),
 
-              const OrdersChart(),
+              OrdersChart(key: ValueKey('orders_$_chartsVersion')),
               SizedBox(height: chartSpacing),
 
-              const ProductsChart(),
+              ProductsChart(key: ValueKey('products_$_chartsVersion')),
               SizedBox(height: chartSpacing),
 
-              const TelephonyEventsChart(),
+              TelephonyEventsChart(key: ValueKey('telephony_$_chartsVersion')),
               SizedBox(height: chartSpacing),
 
-              const RepliesMessagesChart(),
+              RepliesMessagesChart(key: ValueKey('replies_$_chartsVersion')),
               SizedBox(height: chartSpacing),
 
-              const TaskStatsByProjectChart(),
+              TaskStatsByProjectChart(
+                key: ValueKey('task_stats_$_chartsVersion'),
+              ),
               SizedBox(height: chartSpacing),
 
-              const TargetedAdsChart(),
+              TargetedAdsChart(key: ValueKey('targeted_ads_$_chartsVersion')),
               SizedBox(height: chartSpacing),
 
-              const ConnectedAccountsChart(),
+              ConnectedAccountsChart(
+                key: ValueKey('connected_$_chartsVersion'),
+              ),
               SizedBox(height: chartSpacing),
 
-              const AdvertisingRoiChart(),
+              AdvertisingRoiChart(key: ValueKey('roi_$_chartsVersion')),
               SizedBox(height: chartSpacing),
 
-              const LeadConversionStatusesChart(),
+              LeadConversionStatusesChart(
+                key: ValueKey('lead_statuses_$_chartsVersion'),
+              ),
               SizedBox(height: chartSpacing),
 
-              const TelephonyByHourChart(),
+              TelephonyByHourChart(
+                key: ValueKey('telephony_hour_$_chartsVersion'),
+              ),
               SizedBox(height: chartSpacing),
             ],
           ),
@@ -341,5 +377,4 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       ),
     );
   }
-
 }

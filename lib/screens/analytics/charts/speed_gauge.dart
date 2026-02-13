@@ -11,19 +11,33 @@ class SpeedGauge extends StatefulWidget {
   State<SpeedGauge> createState() => _SpeedGaugeState();
 }
 
-class _SpeedGaugeState extends State<SpeedGauge> {
+class _SpeedGaugeState extends State<SpeedGauge>
+    with SingleTickerProviderStateMixin {
   bool _isLoading = true;
   String? _error;
   double _speedHours = 0.0;
   String _speedLabel = '0 ч';
+  late final AnimationController _needleController;
+  late Animation<double> _needleAnimation;
 
-  static const double _previewSpeedHours = 2.4;
-  static const String _previewSpeedLabel = '2.4 ч';
+  static const double _previewSpeedHours = 0.41;
+  static const String _previewSpeedLabel = '0.41 часов';
+
+  static const Duration _needleDuration = Duration(milliseconds: 1200);
 
   @override
   void initState() {
     super.initState();
+    _needleController = AnimationController(vsync: this);
+    _needleAnimation =
+        CurvedAnimation(parent: _needleController, curve: Curves.easeOutCubic);
     _loadData();
+  }
+
+  @override
+  void dispose() {
+    _needleController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadData() async {
@@ -44,12 +58,19 @@ class _SpeedGaugeState extends State<SpeedGauge> {
         _speedLabel = response.displayText;
         _isLoading = false;
       });
+      _animateNeedle();
     } catch (e) {
       setState(() {
         _error = 'Ошибка: $e';
         _isLoading = false;
       });
     }
+  }
+
+  void _animateNeedle() {
+    _needleController.stop();
+    _needleController.duration = _needleDuration;
+    _needleController.forward(from: 0);
   }
 
   void _showDetails() {
@@ -106,12 +127,28 @@ class _SpeedGaugeState extends State<SpeedGauge> {
     );
   }
 
+  double _computeMaxHours(double hours) {
+    if (hours <= 0) return 10;
+    if (hours <= 10) return 10;
+    final rounded = (hours / 10).ceil() * 10;
+    return rounded < 10 ? 10 : rounded.toDouble();
+  }
+
+  String _formatHoursLabel(double hours) {
+    if (hours <= 0) {
+      return '0 часов';
+    }
+    return '${hours.toStringAsFixed(2)} часов';
+  }
+
   @override
   Widget build(BuildContext context) {
     final responsive = ResponsiveHelper(context);
     final isEmpty = _speedHours <= 0;
     final displaySpeedHours = isEmpty ? _previewSpeedHours : _speedHours;
-    final displaySpeedLabel = isEmpty ? _previewSpeedLabel : _speedLabel;
+    final displaySpeedLabel =
+        isEmpty ? _previewSpeedLabel : _formatHoursLabel(_speedHours);
+    final maxHours = _computeMaxHours(displaySpeedHours);
 
     return Container(
       decoration: BoxDecoration(
@@ -135,25 +172,23 @@ class _SpeedGaugeState extends State<SpeedGauge> {
             child: Row(
               children: [
                 Container(
-                  width: 36,
-                  height: 36,
+                  width: 34,
+                  height: 34,
                   decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xffEC4899), Color(0xffDB2777)],
-                    ),
-                    borderRadius: BorderRadius.circular(10),
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(17),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xffEC4899).withValues(alpha: 0.3),
-                        blurRadius: 8,
-                        offset: const Offset(0, 4),
+                        color: Colors.black.withValues(alpha: 0.08),
+                        blurRadius: 6,
+                        offset: const Offset(0, 2),
                       ),
                     ],
                   ),
                   child: const Icon(
-                    Icons.speed,
-                    color: Colors.white,
-                    size: 20,
+                    Icons.speed_rounded,
+                    color: Color(0xff0F172A),
+                    size: 18,
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -216,102 +251,52 @@ class _SpeedGaugeState extends State<SpeedGauge> {
                           onTap: _showDetails,
                           child: Padding(
                             padding: EdgeInsets.all(responsive.cardPadding),
-                            child: CustomPaint(
-                              painter: SpeedGaugePainter(
-                                speedHours: displaySpeedHours,
-                              ),
-                              child: Center(
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    const SizedBox(height: 130),
-                                    Text(
-                                      displaySpeedLabel,
-                                      style: const TextStyle(
-                                        fontSize: 32,
-                                        fontWeight: FontWeight.w700,
-                                        color: Color(0xff1E2E52),
-                                        fontFamily: 'Golos',
-                                      ),
-                                    ),
-                                    const SizedBox(height: 8),
-                                    const Text(
-                                      'Среднее время',
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        color: Color(0xff64748B),
-                                        fontFamily: 'Golos',
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
+                            child: LayoutBuilder(
+                              builder: (context, constraints) {
+                                final size = Size(
+                                  constraints.maxWidth,
+                                  constraints.maxHeight,
+                                );
+                                return AnimatedBuilder(
+                                  animation: _needleAnimation,
+                                  builder: (context, child) {
+                                    final animatedSpeed =
+                                        displaySpeedHours * _needleAnimation.value;
+                                    return Stack(
+                                      children: [
+                                        CustomPaint(
+                                          size: size,
+                                          painter: SpeedGaugePainter(
+                                            speedHours: animatedSpeed,
+                                            maxHours: maxHours,
+                                          ),
+                                        ),
+                                        Positioned(
+                                          left: 0,
+                                          right: 0,
+                                          bottom: 12,
+                                          child: Center(
+                                            child: Text(
+                                              displaySpeedLabel,
+                                              style: const TextStyle(
+                                                fontSize: 28,
+                                                fontWeight: FontWeight.w700,
+                                                color: Color(0xff22C55E),
+                                                fontFamily: 'Golos',
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    );
+                                  },
+                                );
+                              },
                             ),
                           ),
                         ),
                       ),
           ),
-          // Footer
-          if (!_isLoading && _error == null)
-            Container(
-              padding: EdgeInsets.all(responsive.cardPadding),
-              decoration: const BoxDecoration(
-                border: Border(
-                  top: BorderSide(color: Color(0xffE2E8F0)),
-                ),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Среднее время',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Color(0xff64748B),
-                          fontFamily: 'Golos',
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        displaySpeedLabel,
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w700,
-                          color: Color(0xff0F172A),
-                          fontFamily: 'Golos',
-                        ),
-                      ),
-                    ],
-                  ),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      const Text(
-                        'Лучшее время',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Color(0xff64748B),
-                          fontFamily: 'Golos',
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        '${(displaySpeedHours * 0.6).toStringAsFixed(1)} ч',
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w700,
-                          color: Color(0xff0F172A),
-                          fontFamily: 'Golos',
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
         ],
       ),
     );
@@ -320,77 +305,143 @@ class _SpeedGaugeState extends State<SpeedGauge> {
 
 class SpeedGaugePainter extends CustomPainter {
   final double speedHours;
+  final double maxHours;
 
-  SpeedGaugePainter({required this.speedHours});
+  SpeedGaugePainter({required this.speedHours, this.maxHours = 10});
 
   @override
   void paint(Canvas canvas, Size size) {
-    final center = Offset(size.width / 2, size.height / 2 + 20);
-    final radius = size.width * 0.35;
+    final center = Offset(size.width / 2, size.height * 0.7);
+    final radius = math.min(size.width, size.height) * 0.38;
+    final startAngle = math.pi;
+    final totalSweep = math.pi;
+    final rect = Rect.fromCircle(center: center, radius: radius);
 
-    // Background arc
-    final backgroundPaint = Paint()
-      ..color = const Color(0xffF1F5F9)
+    final basePaint = Paint()
+      ..color = const Color(0xff334155)
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 20
+      ..strokeWidth = 14
       ..strokeCap = StrokeCap.round;
 
-    canvas.drawArc(
-      Rect.fromCircle(center: center, radius: radius),
-      math.pi, // Start from left (180 degrees)
-      math.pi, // Sweep 180 degrees
-      false,
-      backgroundPaint,
-    );
+    canvas.drawArc(rect, startAngle, totalSweep, false, basePaint);
 
-    // Gradient arc (progress)
-    final gradientPaint = Paint()
-      ..shader = const LinearGradient(
-        colors: [Color(0xffEF4444), Color(0xffF59E0B), Color(0xff10B981)],
-      ).createShader(Rect.fromCircle(center: center, radius: radius))
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 20
-      ..strokeCap = StrokeCap.round;
-
-    // Calculate progress (0-24 hours mapped to 0-180 degrees)
-    final maxHours = 24.0;
     final normalizedSpeed = (speedHours / maxHours).clamp(0.0, 1.0);
-    final sweepAngle = math.pi * normalizedSpeed;
+    final sweepAngle = totalSweep * normalizedSpeed;
 
-    canvas.drawArc(
-      Rect.fromCircle(center: center, radius: radius),
-      math.pi,
-      sweepAngle,
-      false,
-      gradientPaint,
+    final progressPaint = Paint()
+      ..shader = SweepGradient(
+        startAngle: startAngle,
+        endAngle: startAngle + sweepAngle,
+        colors: const [
+          Color(0xff22C55E),
+          Color(0xffF59E0B),
+          Color(0xffEF4444),
+        ],
+        stops: const [0.0, 0.6, 1.0],
+      ).createShader(rect)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 14
+      ..strokeCap = StrokeCap.round;
+
+    if (sweepAngle > 0) {
+      canvas.drawArc(rect, startAngle, sweepAngle, false, progressPaint);
+      final endCapPaint = Paint()
+        ..color = const Color(0xffEF4444)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 14
+        ..strokeCap = StrokeCap.round;
+      final capSweep = math.min(0.03, sweepAngle);
+      canvas.drawArc(
+        rect,
+        startAngle + sweepAngle - capSweep,
+        capSweep,
+        false,
+        endCapPaint,
+      );
+    }
+
+    final majorTickPaint = Paint()
+      ..color = const Color(0xffE2E8F0)
+      ..strokeWidth = 2
+      ..strokeCap = StrokeCap.round;
+
+    final minorTickPaint = Paint()
+      ..color = const Color(0xffCBD5E1)
+      ..strokeWidth = 1.5
+      ..strokeCap = StrokeCap.round;
+
+    const divisions = 10;
+    final steps = divisions * 2;
+    for (int i = 0; i <= steps; i++) {
+      final t = i / steps;
+      final angle = startAngle + totalSweep * t;
+      final isMajor = i % 2 == 0;
+      final tickLength = isMajor ? 10.0 : 6.0;
+      final tickStart = Offset(
+        center.dx + (radius - 8) * math.cos(angle),
+        center.dy + (radius - 8) * math.sin(angle),
+      );
+      final tickEnd = Offset(
+        center.dx + (radius - 8 + tickLength) * math.cos(angle),
+        center.dy + (radius - 8 + tickLength) * math.sin(angle),
+      );
+      canvas.drawLine(
+        tickStart,
+        tickEnd,
+        isMajor ? majorTickPaint : minorTickPaint,
+      );
+    }
+
+    final labelStyle = const TextStyle(
+      fontSize: 12,
+      fontWeight: FontWeight.w600,
+      color: Color(0xff94A3B8),
+      fontFamily: 'Golos',
     );
 
-    // Pointer
-    final pointerAngle = math.pi + sweepAngle;
-    final pointerLength = radius + 10;
-    final pointerEnd = Offset(
-      center.dx + pointerLength * math.cos(pointerAngle),
-      center.dy + pointerLength * math.sin(pointerAngle),
-    );
+    final step = maxHours / divisions;
+    for (int i = 0; i <= divisions; i++) {
+      final value = step * i;
+      final angle = startAngle + totalSweep * (i / divisions);
+      final label = i == 0 ? '0' : '${value.toStringAsFixed(0)}ч';
+      final textPainter = TextPainter(
+        text: TextSpan(text: label, style: labelStyle),
+        textDirection: TextDirection.ltr,
+      )..layout();
+      final labelOffset = Offset(
+        center.dx + (radius + 28) * math.cos(angle) - textPainter.width / 2,
+        center.dy + (radius + 28) * math.sin(angle) - textPainter.height / 2,
+      );
+      textPainter.paint(canvas, labelOffset);
+    }
 
-    final pointerPaint = Paint()
-      ..color = const Color(0xff1E2E52)
-      ..style = PaintingStyle.fill
-      ..strokeWidth = 4;
+    if (speedHours > 0) {
+      final pointerAngle = startAngle + sweepAngle;
+      final pointerLength = radius - 12;
+      final pointerEnd = Offset(
+        center.dx + pointerLength * math.cos(pointerAngle),
+        center.dy + pointerLength * math.sin(pointerAngle),
+      );
+      final pointerShadow = Paint()
+        ..color = Colors.black.withValues(alpha: 0.12)
+        ..strokeWidth = 7
+        ..strokeCap = StrokeCap.round;
+      final pointerPaint = Paint()
+        ..shader = const LinearGradient(
+          colors: [Color(0xFFE5E7EB), Color(0xFFCBD5E1)],
+        ).createShader(Rect.fromPoints(center, pointerEnd))
+        ..strokeWidth = 4
+        ..strokeCap = StrokeCap.round;
+      canvas.drawLine(center, pointerEnd, pointerShadow);
+      canvas.drawLine(center, pointerEnd, pointerPaint);
+    }
 
-    // Draw pointer with shadow
-    canvas.drawCircle(
-        center, 8, pointerPaint..color = Colors.black.withValues(alpha: 0.2));
-    canvas.drawCircle(center, 6, pointerPaint..color = const Color(0xff1E2E52));
-    canvas.drawLine(center, pointerEnd, pointerPaint..strokeWidth = 3);
-
-    // Center circle
-    final centerCirclePaint = Paint()
-      ..color = const Color(0xff1E2E52)
+    final shadowPaint = Paint()
+      ..color = Colors.black.withValues(alpha: 0.12)
       ..style = PaintingStyle.fill;
-
-    canvas.drawCircle(center, 12, centerCirclePaint);
-    canvas.drawCircle(center, 8, Paint()..color = Colors.white);
+    canvas.drawCircle(center, 8, shadowPaint);
+    canvas.drawCircle(center, 7, Paint()..color = const Color(0xff6366F1));
+    canvas.drawCircle(center, 3, Paint()..color = Colors.white);
   }
 
   @override

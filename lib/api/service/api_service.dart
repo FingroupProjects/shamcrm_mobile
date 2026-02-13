@@ -214,6 +214,93 @@ class ApiService {
     '/checkDomain',
     // '/add-fcm-token',
   ];
+  // Актуальные фильтры аналитики, применяемые ко всем графикам.
+  static Map<String, dynamic>? _analyticsFilters;
+
+  static void setAnalyticsFilters(Map<String, dynamic>? filters) {
+    if (filters == null) {
+      _analyticsFilters = null;
+      return;
+    }
+    _analyticsFilters = Map<String, dynamic>.from(filters);
+  }
+
+  static void clearAnalyticsFilters() {
+    _analyticsFilters = null;
+  }
+
+  String _appendAnalyticsFiltersToPath(String path) {
+    final filters = _analyticsFilters;
+    if (filters == null || filters.isEmpty) {
+      if (kDebugMode) {
+        debugPrint(
+            '🟡 _appendAnalyticsFiltersToPath: No filters to apply to $path');
+      }
+      return path;
+    }
+
+    try {
+      final uri = Uri.parse(path);
+      // Create mutable copies of the lists to avoid "Cannot add to an unmodifiable list" error
+      final params = uri.queryParametersAll.map(
+        (key, value) => MapEntry(key, List<String>.from(value)),
+      );
+
+      void addValue(String key, dynamic value) {
+        if (value == null) {
+          if (key == 'channel') {
+            params.putIfAbsent(key, () => []).add('');
+          }
+          return;
+        }
+        if (value is String && value.isEmpty) return;
+
+        if (value is Iterable) {
+          for (final item in value) {
+            if (item == null) continue;
+            final stringValue = item.toString();
+            if (stringValue.isEmpty) continue;
+            // Use bracket notation for arrays: managers[] instead of managers[0]
+            params.putIfAbsent('$key[]', () => []).add(stringValue);
+          }
+          return;
+        }
+
+        final stringValue = value.toString();
+        if (stringValue.isEmpty) return;
+        params.putIfAbsent(key, () => []).add(stringValue);
+      }
+
+      filters.forEach(addValue);
+
+      final queryParts = <String>[];
+      params.forEach((key, values) {
+        for (final value in values) {
+          queryParts
+              .add('${Uri.encodeComponent(key)}=${Uri.encodeComponent(value)}');
+        }
+      });
+
+      final queryString =
+          queryParts.isNotEmpty ? '?${queryParts.join('&')}' : '';
+      final result = '${uri.path}$queryString';
+
+      if (kDebugMode) {
+        debugPrint(
+            '🟢 _appendAnalyticsFiltersToPath: Applied filters to $path');
+        debugPrint('   Filters: $filters');
+        debugPrint('   Result: $result');
+      }
+
+      return result;
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('🔴 _appendAnalyticsFiltersToPath: Exception caught: $e');
+        debugPrint('   Original path: $path');
+      }
+      return path;
+    }
+  }
 
   // ОПТИМИЗАЦИЯ: Флаги для предотвращения повторной инициализации
   bool _isInitializing = false;
@@ -803,6 +890,18 @@ class ApiService {
     }
   }
 
+  Future<http.Response> _analyticsRequest(String path) async {
+    if (kDebugMode) {
+      debugPrint('🔵 _analyticsRequest called with path: $path');
+      debugPrint('   Current _analyticsFilters: $_analyticsFilters');
+    }
+    final filteredPath = _appendAnalyticsFiltersToPath(path);
+    if (kDebugMode) {
+      debugPrint('🔵 _analyticsRequest filtered path: $filteredPath');
+    }
+    return _getRequest(filteredPath);
+  }
+
   /// Новый метод для обработки MultipartRequest
   Future<http.Response> _multipartPostRequest(
       String path, http.MultipartRequest request) async {
@@ -1068,7 +1167,8 @@ class ApiService {
         timestamp: DateTime.now(),
         method: 'DELETE',
         url: request.url.toString(),
-        requestHeaders: request.headers.map((k, v) => MapEntry(k, v.toString())),
+        requestHeaders:
+            request.headers.map((k, v) => MapEntry(k, v.toString())),
         requestBody: json.encode(body),
       ));
     }
@@ -1661,7 +1761,7 @@ class ApiService {
     }
 
     try {
-      final response = await _getRequest(path);
+      final response = await _analyticsRequest(path);
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -1755,7 +1855,7 @@ class ApiService {
       final path = await _appendQueryParams('/lead/$leadId');
       //debugPrint('ApiService: getLeadById - Generated path: $path');
 
-      final response = await _getRequest(path);
+      final response = await _analyticsRequest(path);
       if (response.statusCode == 200) {
         final Map<String, dynamic> decodedJson = json.decode(response.body);
         final Map<String, dynamic> jsonLead = decodedJson['result'];
@@ -1967,7 +2067,7 @@ class ApiService {
     if (kDebugMode) {
       debugPrint('ApiService: getLeads - Final path: $path');
     }
-    final response = await _getRequest(path);
+    final response = await _analyticsRequest(path);
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
       if (data['result']['data'] != null) {
@@ -2077,7 +2177,7 @@ class ApiService {
         debugPrint('📤 getLeadStatuses WITH FILTERS - Final path: $path');
       }
 
-      final response = await _getRequest(path);
+      final response = await _analyticsRequest(path);
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -2209,7 +2309,7 @@ class ApiService {
         //debugPrint('ApiService: getLeadHistory - Generated path: $path');
       }
 
-      final response = await _getRequest(path);
+      final response = await _analyticsRequest(path);
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> decodedJson = json.decode(response.body);
@@ -2234,7 +2334,7 @@ class ApiService {
         //debugPrint('ApiService: getNoticeHistory - Generated path: $path');
       }
 
-      final response = await _getRequest(path);
+      final response = await _analyticsRequest(path);
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> decodedJson = json.decode(response.body);
@@ -2256,7 +2356,7 @@ class ApiService {
         //debugPrint('ApiService: getDealHistoryLead - Generated path: $path');
       }
 
-      final response = await _getRequest(path);
+      final response = await _analyticsRequest(path);
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> decodedJson = json.decode(response.body);
@@ -2280,7 +2380,7 @@ class ApiService {
       //debugPrint('ApiService: getLeadNotes - Generated path: $path');
     }
 
-    final response = await _getRequest(path);
+    final response = await _analyticsRequest(path);
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
@@ -2433,7 +2533,7 @@ class ApiService {
       //debugPrint('ApiService: getLeadDeals - Generated path: $path');
     }
 
-    final response = await _getRequest(path);
+    final response = await _analyticsRequest(path);
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
@@ -2864,7 +2964,7 @@ class ApiService {
       //debugPrint('ApiService: getAllDealNames - Generated path: $path');
     }
 
-    final response = await _getRequest(path);
+    final response = await _analyticsRequest(path);
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
@@ -3009,7 +3109,7 @@ class ApiService {
       }
 
       // Выполняем GET запрос
-      final response = await _getRequest(path);
+      final response = await _analyticsRequest(path);
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -3442,7 +3542,7 @@ class ApiService {
         debugPrint('ApiService: getDealById - Generated path: $path');
       }
 
-      final response = await _getRequest(path);
+      final response = await _analyticsRequest(path);
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> decodedJson = json.decode(response.body);
@@ -3717,7 +3817,7 @@ class ApiService {
         debugPrint('📤 getDealStatuses - Final path: $path');
       }
 
-      final response = await _getRequest(path);
+      final response = await _analyticsRequest(path);
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -3868,7 +3968,7 @@ class ApiService {
         //debugPrint('ApiService: getDealHistory - Generated path: $path');
       }
 
-      final response = await _getRequest(path);
+      final response = await _analyticsRequest(path);
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> decodedJson = json.decode(response.body);
@@ -3892,7 +3992,7 @@ class ApiService {
         //debugPrint('ApiService: getOrderHistory - Generated path: $path');
       }
 
-      final response = await _getRequest(path);
+      final response = await _analyticsRequest(path);
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> decodedJson = json.decode(response.body);
@@ -4427,7 +4527,7 @@ class ApiService {
         //debugPrint('ApiService: getTaskById - Generated path: $path');
       }
 
-      final response = await _getRequest(path);
+      final response = await _analyticsRequest(path);
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> decodedJson = json.decode(response.body);
@@ -4699,7 +4799,7 @@ class ApiService {
         debugPrint('📤 getTaskStatuses WITH FILTERS - Final path: $path');
       }
 
-      final response = await _getRequest(path);
+      final response = await _analyticsRequest(path);
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -5461,7 +5561,7 @@ class ApiService {
         //debugPrint('ApiService: getTaskHistory - Generated path: $path');
       }
 
-      final response = await _getRequest(path);
+      final response = await _analyticsRequest(path);
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> decodedJson = json.decode(response.body);
@@ -5486,7 +5586,7 @@ class ApiService {
         debugPrint('ApiService: getTaskOverdueHistory - Path: $path');
       }
 
-      final response = await _getRequest(path);
+      final response = await _analyticsRequest(path);
 
       if (kDebugMode) {
         debugPrint(
@@ -5597,7 +5697,7 @@ class ApiService {
       }
 
       ////debugPrint('Отправка запроса на /user');
-      final response = await _getRequest(path);
+      final response = await _analyticsRequest(path);
       // ////debugPrint('Статус ответа!');
       // ////debugPrint('Тело ответа!');
 
@@ -6040,7 +6140,7 @@ class ApiService {
       //debugPrint('ApiService: getLeadChart - Generated path: $path');
     }
 
-    final response = await _getRequest(path);
+    final response = await _analyticsRequest(path);
 
     if (response.statusCode == 200) {
       final List<dynamic> data = json.decode(response.body);
@@ -6061,7 +6161,7 @@ class ApiService {
       //debugPrint('ApiService: getLeadConversionData - Generated path: $path');
     }
 
-    final response = await _getRequest(path);
+    final response = await _analyticsRequest(path);
 
     if (response.statusCode == 200) {
       final Map<String, dynamic> data = json.decode(response.body);
@@ -6088,7 +6188,7 @@ class ApiService {
     }
 
     try {
-      final response = await _getRequest(path);
+      final response = await _analyticsRequest(path);
       if (response.statusCode == 200) {
         final jsonData = json.decode(response.body);
         return DealStatsResponse.fromJson(jsonData);
@@ -6112,7 +6212,7 @@ class ApiService {
     }
 
     try {
-      final response = await _getRequest(path);
+      final response = await _analyticsRequest(path);
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> jsonMap = json.decode(response.body);
@@ -6146,7 +6246,7 @@ class ApiService {
       //debugPrint('ApiService: getProcessSpeedData - Generated path: $path');
     }
 
-    final response = await _getRequest(path);
+    final response = await _analyticsRequest(path);
 
     if (response.statusCode == 200) {
       final Map<String, dynamic> data = json.decode(response.body);
@@ -6171,7 +6271,7 @@ class ApiService {
       //debugPrint('ApiService: getUsersChartData - Generated path: $path');
     }
 
-    final response = await _getRequest(path);
+    final response = await _analyticsRequest(path);
 
     if (response.statusCode == 200) {
       final Map<String, dynamic> data = json.decode(response.body);
@@ -6201,7 +6301,7 @@ class ApiService {
       // debugPrint('ApiService: getUserOverdueTasksData - Generated path: $path');
     }
 
-    final response = await _getRequest(path);
+    final response = await _analyticsRequest(path);
 
     if (response.statusCode == 200) {
       final Map<String, dynamic> data = json.decode(response.body);
@@ -6235,7 +6335,7 @@ class ApiService {
     }
 
     try {
-      final response = await _getRequest(path);
+      final response = await _analyticsRequest(path);
 
       if (response.statusCode == 200) {
         final jsonData = json.decode(response.body);
@@ -6261,7 +6361,7 @@ class ApiService {
     }
 
     try {
-      final response = await _getRequest(path);
+      final response = await _analyticsRequest(path);
 
       if (response.statusCode == 200) {
         final jsonData = json.decode(response.body);
@@ -6285,7 +6385,7 @@ class ApiService {
     }
 
     try {
-      final response = await _getRequest(path);
+      final response = await _analyticsRequest(path);
 
       if (response.statusCode == 200) {
         final jsonData = json.decode(response.body);
@@ -6309,7 +6409,7 @@ class ApiService {
     }
 
     try {
-      final response = await _getRequest(path);
+      final response = await _analyticsRequest(path);
 
       if (response.statusCode == 200) {
         final jsonData = json.decode(response.body);
@@ -6333,7 +6433,7 @@ class ApiService {
     }
 
     try {
-      final response = await _getRequest(path);
+      final response = await _analyticsRequest(path);
 
       if (response.statusCode == 200) {
         final jsonData = json.decode(response.body);
@@ -6357,7 +6457,7 @@ class ApiService {
     }
 
     try {
-      final response = await _getRequest(path);
+      final response = await _analyticsRequest(path);
 
       if (response.statusCode == 200) {
         final jsonData = json.decode(response.body);
@@ -6377,11 +6477,12 @@ class ApiService {
     final path = await _appendQueryParams('/v2/dashboard/statistics');
 
     if (kDebugMode) {
-      debugPrint('ApiService: getDashboardStatisticsV2 - Generated path: $path');
+      debugPrint(
+          'ApiService: getDashboardStatisticsV2 - Generated path: $path');
     }
 
     try {
-      final response = await _getRequest(path);
+      final response = await _analyticsRequest(path);
 
       if (response.statusCode == 200) {
         final jsonData = json.decode(response.body);
@@ -6395,6 +6496,28 @@ class ApiService {
     }
   }
 
+  /// Применение фильтров аналитики (V2)
+  /// Endpoint: /api/v2/dashboard/filters
+  Future<void> applyAnalyticsFiltersV2(Map<String, dynamic> filters) async {
+    const path = '/v2/dashboard/filters';
+
+    if (kDebugMode) {
+      debugPrint('ApiService: applyAnalyticsFiltersV2 - Filters: $filters');
+    }
+
+    try {
+      final response = await _postRequest(path, filters);
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return;
+      }
+      throw Exception('Ошибка применения фильтров аналитики!');
+    } catch (e) {
+      debugPrint('ApiService: applyAnalyticsFiltersV2 error: $e');
+      throw Exception('Ошибка применения фильтров аналитики: $e');
+    }
+  }
+
   /// Конверсия лидов (V2)
   /// Endpoint: /api/v2/dashboard/leadConversion-chart
   Future<LeadConversion> getLeadConversionDataV2() async {
@@ -6404,7 +6527,7 @@ class ApiService {
       debugPrint('ApiService: getLeadConversionDataV2 - Generated path: $path');
     }
 
-    final response = await _getRequest(path);
+    final response = await _analyticsRequest(path);
 
     if (response.statusCode == 200) {
       final Map<String, dynamic> data = json.decode(response.body);
@@ -6431,7 +6554,7 @@ class ApiService {
     }
 
     try {
-      final response = await _getRequest(path);
+      final response = await _analyticsRequest(path);
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> jsonMap = json.decode(response.body);
@@ -6449,14 +6572,15 @@ class ApiService {
   /// Источники лидов (V2)
   /// Endpoint: /api/v2/dashboard/source-of-leads-chart
   Future<SourceOfLeadsChartResponse> getSourceOfLeadsChartV2() async {
-    final path = await _appendQueryParams('/v2/dashboard/source-of-leads-chart');
+    final path =
+        await _appendQueryParams('/v2/dashboard/source-of-leads-chart');
 
     if (kDebugMode) {
       debugPrint('ApiService: getSourceOfLeadsChartV2 - Generated path: $path');
     }
 
     try {
-      final response = await _getRequest(path);
+      final response = await _analyticsRequest(path);
       if (response.statusCode == 200) {
         final jsonData = json.decode(response.body);
         return SourceOfLeadsChartResponse.fromJson(jsonData);
@@ -6479,7 +6603,7 @@ class ApiService {
     }
 
     try {
-      final response = await _getRequest(path);
+      final response = await _analyticsRequest(path);
       if (response.statusCode == 200) {
         final jsonData = json.decode(response.body);
         return DealsByManagersResponse.fromJson(jsonData);
@@ -6504,7 +6628,7 @@ class ApiService {
     }
 
     try {
-      final response = await _getRequest(path);
+      final response = await _analyticsRequest(path);
       if (response.statusCode == 200) {
         final jsonData = json.decode(response.body);
         return OnlineStoreOrdersResponse.fromJson(jsonData);
@@ -6523,11 +6647,12 @@ class ApiService {
     final path = await _appendQueryParams('/v2/dashboard/completed-task-chart');
 
     if (kDebugMode) {
-      debugPrint('ApiService: getCompletedTasksChartV2 - Generated path: $path');
+      debugPrint(
+          'ApiService: getCompletedTasksChartV2 - Generated path: $path');
     }
 
     try {
-      final response = await _getRequest(path);
+      final response = await _analyticsRequest(path);
       if (response.statusCode == 200) {
         final jsonData = json.decode(response.body);
         return CompletedTasksChartResponse.fromJson(jsonData);
@@ -6543,14 +6668,16 @@ class ApiService {
   /// Телефония и события (график)
   /// Endpoint: /api/v2/dashboard/telephony-and-events-chart
   Future<TelephonyEventsResponse> getTelephonyAndEventsChartV2() async {
-    final path = await _appendQueryParams('/v2/dashboard/telephony-and-events-chart');
+    final path =
+        await _appendQueryParams('/v2/dashboard/telephony-and-events-chart');
 
     if (kDebugMode) {
-      debugPrint('ApiService: getTelephonyAndEventsChartV2 - Generated path: $path');
+      debugPrint(
+          'ApiService: getTelephonyAndEventsChartV2 - Generated path: $path');
     }
 
     try {
-      final response = await _getRequest(path);
+      final response = await _analyticsRequest(path);
       if (response.statusCode == 200) {
         final jsonData = json.decode(response.body);
         return TelephonyEventsResponse.fromJson(jsonData);
@@ -6566,14 +6693,16 @@ class ApiService {
   /// Ответы на сообщения (график)
   /// Endpoint: /api/v2/dashboard/replies-to-messages-chart
   Future<RepliesToMessagesResponse> getRepliesToMessagesChartV2() async {
-    final path = await _appendQueryParams('/v2/dashboard/replies-to-messages-chart');
+    final path =
+        await _appendQueryParams('/v2/dashboard/replies-to-messages-chart');
 
     if (kDebugMode) {
-      debugPrint('ApiService: getRepliesToMessagesChartV2 - Generated path: $path');
+      debugPrint(
+          'ApiService: getRepliesToMessagesChartV2 - Generated path: $path');
     }
 
     try {
-      final response = await _getRequest(path);
+      final response = await _analyticsRequest(path);
       if (response.statusCode == 200) {
         final jsonData = json.decode(response.body);
         return RepliesToMessagesResponse.fromJson(jsonData);
@@ -6589,14 +6718,16 @@ class ApiService {
   /// Статистика задач по проектам
   /// Endpoint: /api/v2/dashboard/task-statistics-by-project-chart
   Future<TaskStatsByProjectResponse> getTaskStatsByProjectChartV2() async {
-    final path = await _appendQueryParams('/v2/dashboard/task-statistics-by-project-chart');
+    final path = await _appendQueryParams(
+        '/v2/dashboard/task-statistics-by-project-chart');
 
     if (kDebugMode) {
-      debugPrint('ApiService: getTaskStatsByProjectChartV2 - Generated path: $path');
+      debugPrint(
+          'ApiService: getTaskStatsByProjectChartV2 - Generated path: $path');
     }
 
     try {
-      final response = await _getRequest(path);
+      final response = await _analyticsRequest(path);
       if (response.statusCode == 200) {
         final jsonData = json.decode(response.body);
         return TaskStatsByProjectResponse.fromJson(jsonData);
@@ -6612,14 +6743,16 @@ class ApiService {
   /// Подключенные аккаунты
   /// Endpoint: /api/v2/dashboard/connected-accounts-chart
   Future<ConnectedAccountsResponse> getConnectedAccountsChartV2() async {
-    final path = await _appendQueryParams('/v2/dashboard/connected-accounts-chart');
+    final path =
+        await _appendQueryParams('/v2/dashboard/connected-accounts-chart');
 
     if (kDebugMode) {
-      debugPrint('ApiService: getConnectedAccountsChartV2 - Generated path: $path');
+      debugPrint(
+          'ApiService: getConnectedAccountsChartV2 - Generated path: $path');
     }
 
     try {
-      final response = await _getRequest(path);
+      final response = await _analyticsRequest(path);
       if (response.statusCode == 200) {
         final jsonData = json.decode(response.body);
         return ConnectedAccountsResponse.fromJson(jsonData);
@@ -6635,14 +6768,16 @@ class ApiService {
   /// ROI рекламы (график)
   /// Endpoint: /api/v2/dashboard/advertising-ROI-chart
   Future<AdvertisingRoiResponse> getAdvertisingRoiChartV2() async {
-    final path = await _appendQueryParams('/v2/dashboard/advertising-ROI-chart');
+    final path =
+        await _appendQueryParams('/v2/dashboard/advertising-ROI-chart');
 
     if (kDebugMode) {
-      debugPrint('ApiService: getAdvertisingRoiChartV2 - Generated path: $path');
+      debugPrint(
+          'ApiService: getAdvertisingRoiChartV2 - Generated path: $path');
     }
 
     try {
-      final response = await _getRequest(path);
+      final response = await _analyticsRequest(path);
       if (response.statusCode == 200) {
         final jsonData = json.decode(response.body);
         return AdvertisingRoiResponse.fromJson(jsonData);
@@ -6662,11 +6797,12 @@ class ApiService {
         await _appendQueryParams('/v2/dashboard/telephony-and-events-by-hour');
 
     if (kDebugMode) {
-      debugPrint('ApiService: getTelephonyByHourChartV2 - Generated path: $path');
+      debugPrint(
+          'ApiService: getTelephonyByHourChartV2 - Generated path: $path');
     }
 
     try {
-      final response = await _getRequest(path);
+      final response = await _analyticsRequest(path);
       if (response.statusCode == 200) {
         final jsonData = json.decode(response.body);
         return TelephonyByHourResponse.fromJson(jsonData);
@@ -6691,7 +6827,7 @@ class ApiService {
     }
 
     try {
-      final response = await _getRequest(path);
+      final response = await _analyticsRequest(path);
       if (response.statusCode == 200) {
         final jsonData = json.decode(response.body);
         return TargetedAdsResponse.fromJson(jsonData);
@@ -6716,7 +6852,7 @@ class ApiService {
     }
 
     try {
-      final response = await _getRequest(path);
+      final response = await _analyticsRequest(path);
       if (response.statusCode == 200) {
         final jsonData = json.decode(response.body);
         return TopSellingProductsResponse.fromJson(jsonData);
@@ -6742,7 +6878,7 @@ class ApiService {
     }
 
     try {
-      final response = await _getRequest(path);
+      final response = await _analyticsRequest(path);
       if (response.statusCode == 200) {
         final jsonData = json.decode(response.body);
         return DealStatsResponseManager.fromJson(jsonData);
@@ -6765,7 +6901,7 @@ class ApiService {
       //debugPrint('ApiService: getLeadChartManager - Generated path: $path');
     }
 
-    final response = await _getRequest(path);
+    final response = await _analyticsRequest(path);
 
     if (response.statusCode == 200) {
       final List<dynamic> data = json.decode(response.body);
@@ -6787,7 +6923,7 @@ class ApiService {
       //debugPrint('ApiService: getLeadConversionDataManager - Generated path: $path');
     }
 
-    final response = await _getRequest(path);
+    final response = await _analyticsRequest(path);
 
     if (response.statusCode == 200) {
       final Map<String, dynamic> data = json.decode(response.body);
@@ -6813,7 +6949,7 @@ class ApiService {
       //debugPrint('ApiService: getProcessSpeedDataManager - Generated path: $path');
     }
 
-    final response = await _getRequest(path);
+    final response = await _analyticsRequest(path);
 
     if (response.statusCode == 200) {
       final Map<String, dynamic> data = json.decode(response.body);
@@ -6840,7 +6976,7 @@ class ApiService {
     }
 
     try {
-      final response = await _getRequest(path);
+      final response = await _analyticsRequest(path);
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> jsonMap = json.decode(response.body);
@@ -6869,7 +7005,7 @@ class ApiService {
       //debugPrint('ApiService: getUserStatsManager - Generated path: $path');
     }
 
-    final response = await _getRequest(path);
+    final response = await _analyticsRequest(path);
 
     if (response.statusCode == 200) {
       final Map<String, dynamic> data = json.decode(response.body);

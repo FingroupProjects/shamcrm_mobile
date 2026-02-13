@@ -1,19 +1,28 @@
+import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:flutter/material.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/custom_widget/filter/lead/multi_manager_list.dart';
+import 'package:crm_task_manager/custom_widget/filter/lead/multi_source_list.dart';
+import 'package:crm_task_manager/custom_widget/filter/lead/multi_sales_funnel_list.dart';
 
 class AnalyticsFilterSheet extends StatefulWidget {
-  final String selectedPeriod;
-  final String selectedManager;
-  final String selectedFunnel;
-  final String selectedSource;
-  final Function(String, String, String, String) onApply;
+  final String? selectedPeriodKey;
+  final List<String> selectedManagers;
+  final List<String> selectedFunnels;
+  final List<String> selectedSources;
+  final Future<void> Function(
+    String? periodKey,
+    List<String> managerIds,
+    List<String> funnelIds,
+    List<String> sourceIds,
+  ) onApply;
 
   const AnalyticsFilterSheet({
     Key? key,
-    required this.selectedPeriod,
-    required this.selectedManager,
-    required this.selectedFunnel,
-    required this.selectedSource,
+    required this.selectedPeriodKey,
+    required this.selectedManagers,
+    required this.selectedFunnels,
+    required this.selectedSources,
     required this.onApply,
   }) : super(key: key);
 
@@ -22,23 +31,41 @@ class AnalyticsFilterSheet extends StatefulWidget {
 }
 
 class _AnalyticsFilterSheetState extends State<AnalyticsFilterSheet> {
-  late String _period;
-  late String _manager;
-  late String _funnel;
-  late String _source;
+  late String? _periodKey;
+  late List<String> _managerIds;
+  late List<String> _funnelIds;
+  late List<String> _sourceIds;
 
   @override
   void initState() {
     super.initState();
-    _period = widget.selectedPeriod;
-    _manager = widget.selectedManager;
-    _funnel = widget.selectedFunnel;
-    _source = widget.selectedSource;
+    _periodKey = widget.selectedPeriodKey;
+    _managerIds = List<String>.from(widget.selectedManagers);
+    _funnelIds = List<String>.from(widget.selectedFunnels);
+    _sourceIds = List<String>.from(widget.selectedSources);
   }
 
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context);
+    final periodKeys = <String>[
+      'week',
+      'month',
+      '3month',
+      'current_year',
+      'last_year',
+    ];
+    final periodLabels = <String>[
+      localizations?.translate('period_7_days') ?? 'Последние 7 дней',
+      localizations?.translate('period_30_days') ?? 'Последние 30 дней',
+      localizations?.translate('period_90_days') ?? 'Последние 90 дней',
+      localizations?.translate('period_current_year') ?? 'Текущий год',
+      localizations?.translate('period_last_year') ?? 'Прошлый год',
+    ];
+    final periodIndex =
+        _periodKey != null ? periodKeys.indexOf(_periodKey!) : -1;
+    final selectedPeriodLabel =
+        periodIndex >= 0 ? periodLabels[periodIndex] : null;
 
     return Container(
       decoration: const BoxDecoration(
@@ -95,64 +122,46 @@ class _AnalyticsFilterSheetState extends State<AnalyticsFilterSheet> {
                   _buildFilterSection(
                     label: localizations?.translate('analytics_period') ??
                         'Период',
-                    value: _period,
-                    items: [
-                      localizations?.translate('period_7_days') ??
-                          'Последние 7 дней',
-                      localizations?.translate('period_30_days') ??
-                          'Последние 30 дней',
-                      localizations?.translate('period_90_days') ??
-                          'Последние 90 дней',
-                      localizations?.translate('period_current_year') ??
-                          'Текущий год',
-                      localizations?.translate('period_last_year') ??
-                          'Прошлый год',
-                    ],
-                    onChanged: (value) => setState(() => _period = value!),
+                    items: periodLabels,
+                    selectedLabel: selectedPeriodLabel,
+                    onChanged: (label) {
+                      final index = periodLabels.indexOf(label);
+                      if (index >= 0) {
+                        setState(() => _periodKey = periodKeys[index]);
+                      }
+                    },
+                    hint: localizations?.translate('analytics_period') ??
+                        'Период',
                   ),
                   const SizedBox(height: 20),
-                  _buildFilterSection(
-                    label: localizations?.translate('analytics_manager') ??
-                        'Менеджер',
-                    value: _manager,
-                    items: [
-                      localizations?.translate('all_managers') ??
-                          'Все менеджеры',
-                      'Иван Петров',
-                      'Анна Смирнова',
-                      'Дмитрий Козлов',
-                      'Елена Васильева',
-                    ],
-                    onChanged: (value) => setState(() => _manager = value!),
+                  ManagerMultiSelectWidget(
+                    selectedManagers: _managerIds,
+                    onSelectManagers: (managers) {
+                      setState(() {
+                        _managerIds =
+                            managers.map((m) => m.id.toString()).toList();
+                      });
+                    },
                   ),
                   const SizedBox(height: 20),
-                  _buildFilterSection(
-                    label: localizations?.translate('analytics_funnel') ??
-                        'Воронка',
-                    value: _funnel,
-                    items: [
-                      localizations?.translate('all_funnels') ?? 'Все воронки',
-                      localizations?.translate('funnel_sales') ?? 'Продажи',
-                      localizations?.translate('funnel_consultations') ??
-                          'Консультации',
-                      localizations?.translate('funnel_vip') ?? 'VIP клиенты',
-                    ],
-                    onChanged: (value) => setState(() => _funnel = value!),
+                  SalesFunnelMultiSelectWidget(
+                    selectedFunnels: _funnelIds,
+                    onSelectFunnels: (funnels) {
+                      setState(() {
+                        _funnelIds =
+                            funnels.map((f) => f.id.toString()).toList();
+                      });
+                    },
                   ),
                   const SizedBox(height: 20),
-                  _buildFilterSection(
-                    label: localizations?.translate('analytics_source') ??
-                        'Источник',
-                    value: _source,
-                    items: [
-                      localizations?.translate('all_sources') ??
-                          'Все источники',
-                      'Instagram',
-                      'WhatsApp',
-                      'Telegram',
-                      localizations?.translate('source_website') ?? 'Сайт',
-                    ],
-                    onChanged: (value) => setState(() => _source = value!),
+                  SourcesMultiSelectWidget(
+                    selectedSources: _sourceIds,
+                    onSelectSources: (sources) {
+                      setState(() {
+                        _sourceIds =
+                            sources.map((s) => s.id.toString()).toList();
+                      });
+                    },
                   ),
                 ],
               ),
@@ -173,14 +182,10 @@ class _AnalyticsFilterSheetState extends State<AnalyticsFilterSheet> {
                   child: OutlinedButton(
                     onPressed: () {
                       setState(() {
-                        _period = localizations?.translate('period_30_days') ??
-                            'Последние 30 дней';
-                        _manager = localizations?.translate('all_managers') ??
-                            'Все менеджеры';
-                        _funnel = localizations?.translate('all_funnels') ??
-                            'Все воронки';
-                        _source = localizations?.translate('all_sources') ??
-                            'Все источники';
+                        _periodKey = null;
+                        _managerIds = [];
+                        _funnelIds = [];
+                        _sourceIds = [];
                       });
                     },
                     style: OutlinedButton.styleFrom(
@@ -205,9 +210,16 @@ class _AnalyticsFilterSheetState extends State<AnalyticsFilterSheet> {
                 Expanded(
                   flex: 2,
                   child: ElevatedButton(
-                    onPressed: () {
-                      widget.onApply(_period, _manager, _funnel, _source);
-                      Navigator.pop(context);
+                    onPressed: () async {
+                      await widget.onApply(
+                        _periodKey,
+                        _managerIds,
+                        _funnelIds,
+                        _sourceIds,
+                      );
+                      if (mounted) {
+                        Navigator.pop(context);
+                      }
                     },
                     style: ElevatedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 16),
@@ -238,9 +250,10 @@ class _AnalyticsFilterSheetState extends State<AnalyticsFilterSheet> {
 
   Widget _buildFilterSection({
     required String label,
-    required String value,
     required List<String> items,
-    required ValueChanged<String?> onChanged,
+    required ValueChanged<String> onChanged,
+    required String hint,
+    required String? selectedLabel,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -248,43 +261,74 @@ class _AnalyticsFilterSheetState extends State<AnalyticsFilterSheet> {
         Text(
           label,
           style: const TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-            color: Color(0xff64748B),
-            fontFamily: 'Golos',
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            fontFamily: 'Gilroy',
+            color: Color(0xff1E2E52),
           ),
         ),
-        const SizedBox(height: 8),
-        Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0xffE2E8F0)),
+        const SizedBox(height: 4),
+        CustomDropdown<String>.search(
+          closeDropDownOnClearFilterSearch: true,
+          items: items,
+          searchHintText: AppLocalizations.of(context)!.translate('search'),
+          overlayHeight: 300,
+          enabled: true,
+          decoration: CustomDropdownDecoration(
+            closedFillColor: const Color(0xffF4F7FD),
+            expandedFillColor: Colors.white,
+            closedBorder: Border.all(
+              color: const Color(0xffF4F7FD),
+              width: 1,
+            ),
+            closedBorderRadius: BorderRadius.circular(12),
+            expandedBorder: Border.all(
+              color: const Color(0xffF4F7FD),
+              width: 1,
+            ),
+            expandedBorderRadius: BorderRadius.circular(12),
           ),
-          child: DropdownButtonHideUnderline(
-            child: DropdownButton<String>(
-              value: value,
-              isExpanded: true,
-              icon: const Icon(Icons.keyboard_arrow_down,
-                  color: Color(0xff64748B)),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-              borderRadius: BorderRadius.circular(12),
-              items: items.map((String item) {
-                return DropdownMenuItem<String>(
-                  value: item,
-                  child: Text(
-                    item,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: Color(0xff0F172A),
-                      fontFamily: 'Golos',
-                    ),
-                  ),
-                );
-              }).toList(),
-              onChanged: onChanged,
+          listItemBuilder: (context, item, isSelected, onItemSelect) {
+            return Text(
+              item,
+              style: const TextStyle(
+                color: Color(0xff1E2E52),
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                fontFamily: 'Gilroy',
+              ),
+            );
+          },
+          headerBuilder: (context, selectedItem, enabled) {
+            return Text(
+              selectedItem ?? hint,
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                fontFamily: 'Gilroy',
+                color: Color(0xff1E2E52),
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            );
+          },
+          hintBuilder: (context, hintValue, enabled) => Text(
+            hint,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              fontFamily: 'Gilroy',
+              color: Color(0xff1E2E52),
             ),
           ),
+          excludeSelected: false,
+          initialItem: selectedLabel,
+          onChanged: (value) {
+            if (value != null) {
+              onChanged(value);
+              FocusScope.of(context).unfocus();
+            }
+          },
         ),
       ],
     );
