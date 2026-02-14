@@ -39,7 +39,7 @@ class NotificationCacheHandler {
       return null;
     }
   }
-
+  
   // Очистка кэша уведомлений
   static Future<void> clearCache() async {
     final prefs = await SharedPreferences.getInstance();
