@@ -134,6 +134,7 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
   String? _selectedPriceType;
   String selectedDialCode = '+992';
   String selectedWhatsAppDialCode = '+992';
+  String? _fullPhoneNumber;
   String?
       _fullWhatsAppNumber; // Новая переменная для хранения полного номера WhatsApp
   List<CustomField> customFields = [];
@@ -167,6 +168,7 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
 
     if (widget.phone != null) {
       String phoneNumber = widget.phone!;
+      _fullPhoneNumber = phoneNumber;
       for (var code in countryCodes) {
         if (phoneNumber.startsWith(code)) {
           setState(() {
@@ -179,6 +181,8 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
       if (phoneController.text.isEmpty) {
         phoneController.text = phoneNumber;
       }
+    } else {
+      _fullPhoneNumber = null;
     }
 
     if (widget.whatsApp != null) {
@@ -624,7 +628,9 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
           controller: phoneController,
           selectedDialCode: selectedDialCode,
           onInputChanged: (String number) {
-            // Номер обновляется автоматически
+            setState(() {
+              _fullPhoneNumber = number.trim().isEmpty ? null : number;
+            });
           },
           label: AppLocalizations.of(context)!.translate('phone'),
         );
@@ -1974,9 +1980,15 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                                       final String phoneDigits =
                                           phoneController.text.trim();
                                       final String phoneToSend =
-                                          phoneDigits.isEmpty
-                                              ? ''
-                                              : selectedDialCode + phoneDigits;
+                                          _fullPhoneNumber != null &&
+                                                  _fullPhoneNumber!
+                                                      .trim()
+                                                      .isNotEmpty
+                                              ? _fullPhoneNumber!.trim()
+                                              : (phoneDigits.isEmpty
+                                                  ? ''
+                                                  : selectedDialCode +
+                                                      phoneDigits);
                                       String? whatsAppToSend =
                                           _fullWhatsAppNumber; // Используем полный номер
                                       if (whatsAppToSend != null &&
