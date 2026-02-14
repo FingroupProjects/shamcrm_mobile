@@ -80,6 +80,8 @@ class _ChatsScreenState extends State<ChatsScreen>
       {}; // Последняя запрошенная страница для каждого endpoint
   static const Duration _pageRequestCooldown =
       Duration(milliseconds: 1000); // Задержка между запросами
+  final Map<String, Timer?> _pendingPageRequests =
+      {}; // Отложенные запросы страниц
 
   final Map<String, PagingController<int, Chats>> _pagingControllers = {
     'lead': PagingController(firstPageKey: 0),
@@ -309,24 +311,45 @@ class _ChatsScreenState extends State<ChatsScreen>
         if (endPointInTab == endPoint) {
           final now = DateTime.now();
           final lastRequestTime = _lastPageRequestTime[endPoint];
-          final lastRequestedPage = _lastRequestedPage[endPoint];
 
-          // Проверяем, не слишком ли часто запрашиваем страницы
+          // ✅ ИСПРАВЛЕНИЕ: Вместо того чтобы пропускать запрос, мы его откладываем.
+          // Это гарантирует, что если запрос пришел раньше чем через 1с (например от сокета),
+          // он все равно будет выполнен, но с соблюдением интервала.
           if (lastRequestTime != null) {
             final timeSinceLastRequest = now.difference(lastRequestTime);
             if (timeSinceLastRequest < _pageRequestCooldown) {
+              final delay = _pageRequestCooldown - timeSinceLastRequest;
               debugPrint(
-                  '=================-=== ChatsScreen: Page request too soon (${timeSinceLastRequest.inMilliseconds}ms), skipping for endpoint $endPoint');
+                  '=================-=== ChatsScreen: Delaying page $pageKey request for $endPoint by ${delay.inMilliseconds}ms');
+
+              // Отменяем предыдущий отложенный запрос для этого эндпоинта, если он был
+              _pendingPageRequests[endPoint]?.cancel();
+
+              _pendingPageRequests[endPoint] = Timer(delay, () {
+                if (mounted &&
+                    endPointInTab == endPoint &&
+                    _lastRequestedPage[endPoint] != pageKey) {
+                  // Only execute if pageKey is different or it's the first request
+                  debugPrint(
+                      '=================-=== ChatsScreen: Executing delayed page $pageKey request for $endPoint');
+                  _lastPageRequestTime[endPoint] = DateTime.now();
+                  _lastRequestedPage[endPoint] =
+                      pageKey; // Update last requested page here
+                  _chatsBlocs[endPoint]!.add(GetNextPageChats());
+                } else if (mounted &&
+                    endPointInTab == endPoint &&
+                    _lastRequestedPage[endPoint] == pageKey) {
+                  debugPrint(
+                      '=================-=== ChatsScreen: Delayed request for page $pageKey for endpoint $endPoint was for the same page, skipping.');
+                }
+              });
               return;
             }
           }
 
-          // Проверяем, не запрашиваем ли мы ту же страницу
-          if (lastRequestedPage == pageKey) {
-            debugPrint(
-                '=================-=== ChatsScreen: Same page requested ($pageKey), skipping for endpoint $endPoint');
-            return;
-          }
+          // ✅ ИСПРАВЛЕНИЕ: Убрали блокировку по номеру страницы (lastRequestedPage == pageKey),
+          // так как она вызывала застревание пагинации при сокет-обновлениях.
+          // Теперь полагаемся только на временной cooldown и защиту внутри BLoC.
 
           // Обновляем время и номер страницы
           _lastPageRequestTime[endPoint] = now;
@@ -1370,10 +1393,9 @@ class _ChatsScreenState extends State<ChatsScreen>
 
   @override
   void dispose() {
-    // ✅ ДОБАВЛЕНО: Отписываемся от lifecycle events
-    WidgetsBinding.instance.removeObserver(this);
-
     _tabController.dispose();
+    _pendingPageRequests.values.forEach((timer) => timer?.cancel());
+    WidgetsBinding.instance.removeObserver(this);
     chatSubscribtion.cancel();
     socketClient.dispose();
     _pagingControllers.forEach((_, controller) => controller.dispose());
@@ -1598,18 +1620,27 @@ class _ChatItemsWidgetState extends State<_ChatItemsWidget> {
               widget.pagingController.appendPage(newItemsOnly, currentPage + 1);
             }
           } else {
-            // ✅ Обычное обновление (изменения в существующих чатах)
-            // ✅ ИСПРАВЛЕНИЕ: Проверяем, действительно ли нужно обновлять
+            // ✅ Обычное обновление (изменения в существующих чатах или prepending от сокета)
+
+            // Если количество элементов совпадает и IDs те же - это просто обновление данных внутри чатов
             if (currentItems.length == newChats.length &&
                 currentIds.containsAll(newIds) &&
                 newIds.containsAll(currentIds)) {
-              // Только изменения в данных, не в структуре - просто заменяем список
-              // appendPage здесь нельзя использовать, иначе список будет удваиваться
               debugPrint(
-                  '=================-=== _ChatItemsWidget: Only data changes detected, replacing itemList');
+                  '=================-=== _ChatItemsWidget: Only data changes or reorder detected, updating itemList');
+              widget.pagingController.itemList = List<Chats>.from(newChats);
+            } else if (newChats.length > currentItems.length &&
+                newIds.containsAll(currentIds)) {
+              // ✅ КЕЙС: Prepending (новые чаты сверху от сокета)
+              // Мы не сбрасываем itemList в null, а просто заменяем его.
+              // PagingController при замене itemList сохраняет scroll position, если элементы имеют те же Key/ID
+              debugPrint(
+                  '=================-=== _ChatItemsWidget: Prepending/Socket update detected (${currentItems.length} -> ${newChats.length}), updating itemList without reset');
               widget.pagingController.itemList = List<Chats>.from(newChats);
             } else {
-              // Структурные изменения - нужен полный сброс
+              // Структурные изменения (фильтры, переключение табов и т.д.) - нужен полный сброс
+              debugPrint(
+                  '=================-=== _ChatItemsWidget: Structural changes detected, performing full reset');
               widget.pagingController.itemList = null;
 
               if (currentPage >= totalPage) {
@@ -1691,6 +1722,7 @@ class _ChatItemsWidgetState extends State<_ChatItemsWidget> {
           itemBuilder: (context, item, index) {
             //print('_ChatItemsWidget: Rendering chat ID: ${item.id} at index $index for endpoint ${widget.endPointInTab}, unreadCount: ${item.unreadCount}');
             return InkWell(
+              key: ValueKey(item.uniqueId ?? item.id.toString()),
               onTap: () => onTap(item),
               onLongPress: () => onLongPress(item),
               splashColor: Colors.grey,
