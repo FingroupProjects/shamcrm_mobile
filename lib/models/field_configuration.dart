@@ -16,6 +16,7 @@ class FieldConfiguration extends Equatable {
   final String? type;
   final bool isDirectory;
   final bool showOnTable;
+  final bool showOnSite;
   final bool originalRequired; // Оригинальное значение required с бэкенда
 
   FieldConfiguration({
@@ -33,6 +34,7 @@ class FieldConfiguration extends Equatable {
     this.type,
     required this.isDirectory,
     required this.showOnTable,
+    this.showOnSite = false,
     required this.originalRequired,
   });
 
@@ -52,6 +54,7 @@ class FieldConfiguration extends Equatable {
     type,
     isDirectory,
     showOnTable,
+    showOnSite,
     originalRequired,
   ];
 
@@ -61,6 +64,9 @@ class FieldConfiguration extends Equatable {
 
     // Сохраняем оригинальное значение required
     final originalRequiredValue = json['required'] == 1;
+
+    final showOnSiteValue =
+        json['show_on_site'] ?? json['show_to_site'] ?? json['show_to_sitee'];
 
     return FieldConfiguration(
       id: json['id'],
@@ -77,6 +83,7 @@ class FieldConfiguration extends Equatable {
       type: json['type'],
       isDirectory: json['is_directory'] == true || json['is_directory'] == 1,
       showOnTable: json['show_on_table'] == 1,
+      showOnSite: showOnSiteValue == true || showOnSiteValue == 1,
       originalRequired: originalRequiredValue, // Сохраняем оригинальное значение
     );
   }
@@ -97,6 +104,7 @@ class FieldConfiguration extends Equatable {
       'type': type,
       'is_directory': isDirectory,
       'show_on_table': showOnTable ? 1 : 0,
+      'show_on_site': showOnSite ? 1 : 0,
     };
   }
 }

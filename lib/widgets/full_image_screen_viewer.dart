@@ -1,5 +1,6 @@
 import 'package:crm_task_manager/utils/app_colors.dart';
 import 'package:dio/dio.dart';
+import 'package:crm_task_manager/api/service/dio_client.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -30,7 +31,7 @@ class _FullImageScreenViewerState extends State<FullImageScreenViewer> {
       });
 
       // Tarmoqdan rasmni yuklab olish
-      var response = await Dio().get(
+      var response = await LoggedDioClient.create().get(
         url,
         options: Options(responseType: ResponseType.bytes),
         onReceiveProgress: (received, total) {

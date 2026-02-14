@@ -56,6 +56,26 @@ import 'package:crm_task_manager/models/notice_history_model.dart';
 import 'package:crm_task_manager/models/notice_subject_model.dart';
 import 'package:crm_task_manager/models/notifications_model.dart';
 import 'package:crm_task_manager/models/dashboard_charts_models/task_chart_model.dart';
+import 'package:crm_task_manager/screens/analytics/models/dashboard_statistics_model.dart';
+import 'package:crm_task_manager/screens/analytics/models/deals_by_managers_model.dart';
+import 'package:crm_task_manager/screens/analytics/models/lead_chart_model.dart';
+import 'package:crm_task_manager/screens/analytics/models/lead_conversion_by_statuses_model.dart';
+import 'package:crm_task_manager/screens/analytics/models/lead_process_speed_model.dart';
+import 'package:crm_task_manager/screens/analytics/models/lead_channels_model.dart';
+import 'package:crm_task_manager/screens/analytics/models/message_stats_model.dart';
+import 'package:crm_task_manager/screens/analytics/models/online_store_orders_model.dart';
+import 'package:crm_task_manager/screens/analytics/models/source_of_leads_model.dart';
+import 'package:crm_task_manager/screens/analytics/models/task_chart_v2_model.dart';
+import 'package:crm_task_manager/screens/analytics/models/top_selling_products_model.dart';
+import 'package:crm_task_manager/screens/analytics/models/users_chart_model.dart';
+import 'package:crm_task_manager/screens/analytics/models/completed_tasks_model.dart';
+import 'package:crm_task_manager/screens/analytics/models/telephony_events_model.dart';
+import 'package:crm_task_manager/screens/analytics/models/replies_messages_model.dart';
+import 'package:crm_task_manager/screens/analytics/models/task_stats_by_project_model.dart';
+import 'package:crm_task_manager/screens/analytics/models/connected_accounts_model.dart';
+import 'package:crm_task_manager/screens/analytics/models/advertising_roi_model.dart';
+import 'package:crm_task_manager/screens/analytics/models/telephony_by_hour_model.dart';
+import 'package:crm_task_manager/screens/analytics/models/targeted_ads_model.dart';
 import 'package:crm_task_manager/models/organization_model.dart';
 import 'package:crm_task_manager/models/overdue_task_response.dart';
 import 'package:crm_task_manager/models/page_2/branch_model.dart';
@@ -172,6 +192,11 @@ import '../../models/page_2/dashboard/expense_structure_content.dart';
 import '../../models/page_2/dashboard/top_selling_card_model.dart';
 import '../../models/page_2/dashboard/top_selling_model.dart';
 
+// HTTP Inspector imports (только для DEBUG)
+import 'http_logger.dart';
+import 'http_log_model.dart';
+import 'dio_client.dart';
+
 // final String baseUrl = 'https://fingroup-back.shamcrm.com/api';
 // final String baseUrl = 'https://ede8-95-142-94-22.ngrok-free.app';
 
@@ -189,6 +214,93 @@ class ApiService {
     '/checkDomain',
     // '/add-fcm-token',
   ];
+  // Актуальные фильтры аналитики, применяемые ко всем графикам.
+  static Map<String, dynamic>? _analyticsFilters;
+
+  static void setAnalyticsFilters(Map<String, dynamic>? filters) {
+    if (filters == null) {
+      _analyticsFilters = null;
+      return;
+    }
+    _analyticsFilters = Map<String, dynamic>.from(filters);
+  }
+
+  static void clearAnalyticsFilters() {
+    _analyticsFilters = null;
+  }
+
+  String _appendAnalyticsFiltersToPath(String path) {
+    final filters = _analyticsFilters;
+    if (filters == null || filters.isEmpty) {
+      if (kDebugMode) {
+        debugPrint(
+            '🟡 _appendAnalyticsFiltersToPath: No filters to apply to $path');
+      }
+      return path;
+    }
+
+    try {
+      final uri = Uri.parse(path);
+      // Create mutable copies of the lists to avoid "Cannot add to an unmodifiable list" error
+      final params = uri.queryParametersAll.map(
+        (key, value) => MapEntry(key, List<String>.from(value)),
+      );
+
+      void addValue(String key, dynamic value) {
+        if (value == null) {
+          if (key == 'channel') {
+            params.putIfAbsent(key, () => []).add('');
+          }
+          return;
+        }
+        if (value is String && value.isEmpty) return;
+
+        if (value is Iterable) {
+          for (final item in value) {
+            if (item == null) continue;
+            final stringValue = item.toString();
+            if (stringValue.isEmpty) continue;
+            // Use bracket notation for arrays: managers[] instead of managers[0]
+            params.putIfAbsent('$key[]', () => []).add(stringValue);
+          }
+          return;
+        }
+
+        final stringValue = value.toString();
+        if (stringValue.isEmpty) return;
+        params.putIfAbsent(key, () => []).add(stringValue);
+      }
+
+      filters.forEach(addValue);
+
+      final queryParts = <String>[];
+      params.forEach((key, values) {
+        for (final value in values) {
+          queryParts
+              .add('${Uri.encodeComponent(key)}=${Uri.encodeComponent(value)}');
+        }
+      });
+
+      final queryString =
+          queryParts.isNotEmpty ? '?${queryParts.join('&')}' : '';
+      final result = '${uri.path}$queryString';
+
+      if (kDebugMode) {
+        debugPrint(
+            '🟢 _appendAnalyticsFiltersToPath: Applied filters to $path');
+        debugPrint('   Filters: $filters');
+        debugPrint('   Result: $result');
+      }
+
+      return result;
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('🔴 _appendAnalyticsFiltersToPath: Exception caught: $e');
+        debugPrint('   Original path: $path');
+      }
+      return path;
+    }
+  }
 
   // ОПТИМИЗАЦИЯ: Флаги для предотвращения повторной инициализации
   bool _isInitializing = false;
@@ -610,16 +722,74 @@ class ApiService {
 
     final token = await getToken();
     final updatedPath = await _appendQueryParams(path);
-    final response = await http.get(
-      Uri.parse('$baseUrl$updatedPath'),
-      headers: {
+    final fullUrl = '$baseUrl$updatedPath';
+
+    // HTTP Inspector: Создаем лог запроса (только в DEBUG)
+    String? logId;
+    if (kDebugMode) {
+      logId = DateTime.now().millisecondsSinceEpoch.toString();
+      final headers = {
         'Authorization': 'Bearer $token',
         'Content-Type': 'application/json',
         'Accept': 'application/json',
         'Device': 'mobile'
-      },
-    );
-    return _handleResponse(response);
+      };
+      HttpLogger().addLog(HttpLogModel(
+        id: logId,
+        timestamp: DateTime.now(),
+        method: 'GET',
+        url: fullUrl,
+        requestHeaders: headers,
+      ));
+    }
+
+    final startTime = DateTime.now();
+    try {
+      final response = await http.get(
+        Uri.parse(fullUrl),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Device': 'mobile'
+        },
+      );
+
+      // HTTP Inspector: Обновляем лог с ответом (только в DEBUG)
+      if (kDebugMode && logId != null) {
+        final duration = DateTime.now().difference(startTime);
+        final existingLog = HttpLogger().getLogById(logId);
+        if (existingLog != null) {
+          HttpLogger().updateLog(
+            logId,
+            existingLog.copyWith(
+              statusCode: response.statusCode,
+              responseHeaders: response.headers,
+              responseBody: response.body,
+              duration: duration,
+            ),
+          );
+        }
+      }
+
+      return _handleResponse(response);
+    } catch (e) {
+      // HTTP Inspector: Логируем ошибку (только в DEBUG)
+      if (kDebugMode && logId != null) {
+        final duration = DateTime.now().difference(startTime);
+        final existingLog = HttpLogger().getLogById(logId);
+        if (existingLog != null) {
+          HttpLogger().updateLog(
+            logId,
+            existingLog.copyWith(
+              error: e.toString(),
+              duration: duration,
+            ),
+          );
+        }
+      }
+      rethrow;
+    }
   }
 
   Future<http.Response> _postRequest(
@@ -642,25 +812,94 @@ class ApiService {
 
     final token = await getToken();
     final updatedPath = await _appendQueryParams(path);
-    debugPrint(
-        'ApiService: _postRequest with updatedPath: $baseUrl$updatedPath');
+    final fullUrl = '$baseUrl$updatedPath';
+    debugPrint('ApiService: _postRequest with updatedPath: $fullUrl');
     debugPrint('ApiService: Request body: ${json.encode(body)}');
 
-    final response = await http.post(
-      Uri.parse('$baseUrl$updatedPath'),
-      headers: {
+    // HTTP Inspector: Создаем лог запроса (только в DEBUG)
+    String? logId;
+    if (kDebugMode) {
+      logId = DateTime.now().millisecondsSinceEpoch.toString();
+      final headers = {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
         if (token != null) 'Authorization': 'Bearer $token',
         'Device': 'mobile'
-      },
-      body: json.encode(body),
-    );
+      };
+      HttpLogger().addLog(HttpLogModel(
+        id: logId,
+        timestamp: DateTime.now(),
+        method: 'POST',
+        url: fullUrl,
+        requestHeaders: headers,
+        requestBody: json.encode(body),
+      ));
+    }
 
-    debugPrint(
-        'ApiService: _postRequest response status: ${response.statusCode}');
-    debugPrint('ApiService: _postRequest response body: ${response.body}');
-    return _handleResponse(response);
+    final startTime = DateTime.now();
+    try {
+      final response = await http.post(
+        Uri.parse(fullUrl),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          if (token != null) 'Authorization': 'Bearer $token',
+          'Device': 'mobile'
+        },
+        body: json.encode(body),
+      );
+
+      debugPrint(
+          'ApiService: _postRequest response status: ${response.statusCode}');
+      debugPrint('ApiService: _postRequest response body: ${response.body}');
+
+      // HTTP Inspector: Обновляем лог с ответом (только в DEBUG)
+      if (kDebugMode && logId != null) {
+        final duration = DateTime.now().difference(startTime);
+        final existingLog = HttpLogger().getLogById(logId);
+        if (existingLog != null) {
+          HttpLogger().updateLog(
+            logId,
+            existingLog.copyWith(
+              statusCode: response.statusCode,
+              responseHeaders: response.headers,
+              responseBody: response.body,
+              duration: duration,
+            ),
+          );
+        }
+      }
+
+      return _handleResponse(response);
+    } catch (e) {
+      // HTTP Inspector: Логируем ошибку (только в DEBUG)
+      if (kDebugMode && logId != null) {
+        final duration = DateTime.now().difference(startTime);
+        final existingLog = HttpLogger().getLogById(logId);
+        if (existingLog != null) {
+          HttpLogger().updateLog(
+            logId,
+            existingLog.copyWith(
+              error: e.toString(),
+              duration: duration,
+            ),
+          );
+        }
+      }
+      rethrow;
+    }
+  }
+
+  Future<http.Response> _analyticsRequest(String path) async {
+    if (kDebugMode) {
+      debugPrint('🔵 _analyticsRequest called with path: $path');
+      debugPrint('   Current _analyticsFilters: $_analyticsFilters');
+    }
+    final filteredPath = _appendAnalyticsFiltersToPath(path);
+    if (kDebugMode) {
+      debugPrint('🔵 _analyticsRequest filtered path: $filteredPath');
+    }
+    return _getRequest(filteredPath);
   }
 
   /// Новый метод для обработки MultipartRequest
@@ -675,8 +914,37 @@ class ApiService {
 
     //debugPrint('ApiService: _multipartPostRequest with path: ${request.url}');
 
+    // HTTP Inspector: логируем multipart запрос/ответ (только в DEBUG)
+    String? logId;
+    if (kDebugMode) {
+      logId = DateTime.now().millisecondsSinceEpoch.toString();
+      HttpLogger().addLog(HttpLogModel(
+        id: logId,
+        timestamp: DateTime.now(),
+        method: 'POST',
+        url: request.url.toString(),
+        requestHeaders: request.headers,
+      ));
+    }
+
+    final startTime = DateTime.now();
     final streamedResponse = await request.send();
     final response = await http.Response.fromStream(streamedResponse);
+
+    if (kDebugMode && logId != null) {
+      final existingLog = HttpLogger().getLogById(logId);
+      if (existingLog != null) {
+        HttpLogger().updateLog(
+          logId,
+          existingLog.copyWith(
+            statusCode: response.statusCode,
+            responseHeaders: response.headers,
+            responseBody: response.body,
+            duration: DateTime.now().difference(startTime),
+          ),
+        );
+      }
+    }
 
     //debugPrint(
     // 'ApiService: _multipartPostRequest response status: ${response.statusCode}');
@@ -693,17 +961,60 @@ class ApiService {
 
     final token = await getToken();
     final updatedPath = await _appendQueryParams(path);
-    final response = await http.patch(
-      Uri.parse('$baseUrl$updatedPath'),
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        if (token != null) 'Authorization': 'Bearer $token',
-        'Device': 'mobile'
-      },
-      body: json.encode(body),
-    );
-    return _handleResponse(response);
+    final fullUrl = '$baseUrl$updatedPath';
+
+    // HTTP Inspector: Создаем лог запроса (только в DEBUG)
+    String? logId;
+    if (kDebugMode) {
+      logId = DateTime.now().millisecondsSinceEpoch.toString();
+      HttpLogger().addLog(HttpLogModel(
+        id: logId,
+        timestamp: DateTime.now(),
+        method: 'PATCH',
+        url: fullUrl,
+        requestBody: json.encode(body),
+      ));
+    }
+
+    final startTime = DateTime.now();
+    try {
+      final response = await http.patch(
+        Uri.parse(fullUrl),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          if (token != null) 'Authorization': 'Bearer $token',
+          'Device': 'mobile'
+        },
+        body: json.encode(body),
+      );
+
+      // HTTP Inspector: Обновляем лог с ответом (только в DEBUG)
+      if (kDebugMode && logId != null) {
+        final existingLog = HttpLogger().getLogById(logId);
+        if (existingLog != null) {
+          HttpLogger().updateLog(
+            logId,
+            existingLog.copyWith(
+              statusCode: response.statusCode,
+              responseBody: response.body,
+              duration: DateTime.now().difference(startTime),
+            ),
+          );
+        }
+      }
+
+      return _handleResponse(response);
+    } catch (e) {
+      if (kDebugMode && logId != null) {
+        final existingLog = HttpLogger().getLogById(logId);
+        if (existingLog != null) {
+          HttpLogger()
+              .updateLog(logId, existingLog.copyWith(error: e.toString()));
+        }
+      }
+      rethrow;
+    }
   }
 
   Future<http.Response> _putRequest(
@@ -715,17 +1026,60 @@ class ApiService {
 
     final token = await getToken();
     final updatedPath = await _appendQueryParams(path);
-    final response = await http.put(
-      Uri.parse('$baseUrl$updatedPath'),
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        if (token != null) 'Authorization': 'Bearer $token',
-        'Device': 'mobile'
-      },
-      body: json.encode(body),
-    );
-    return _handleResponse(response);
+    final fullUrl = '$baseUrl$updatedPath';
+
+    // HTTP Inspector: Создаем лог запроса (только в DEBUG)
+    String? logId;
+    if (kDebugMode) {
+      logId = DateTime.now().millisecondsSinceEpoch.toString();
+      HttpLogger().addLog(HttpLogModel(
+        id: logId,
+        timestamp: DateTime.now(),
+        method: 'PUT',
+        url: fullUrl,
+        requestBody: json.encode(body),
+      ));
+    }
+
+    final startTime = DateTime.now();
+    try {
+      final response = await http.put(
+        Uri.parse(fullUrl),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          if (token != null) 'Authorization': 'Bearer $token',
+          'Device': 'mobile'
+        },
+        body: json.encode(body),
+      );
+
+      // HTTP Inspector: Обновляем лог с ответом (только в DEBUG)
+      if (kDebugMode && logId != null) {
+        final existingLog = HttpLogger().getLogById(logId);
+        if (existingLog != null) {
+          HttpLogger().updateLog(
+            logId,
+            existingLog.copyWith(
+              statusCode: response.statusCode,
+              responseBody: response.body,
+              duration: DateTime.now().difference(startTime),
+            ),
+          );
+        }
+      }
+
+      return _handleResponse(response);
+    } catch (e) {
+      if (kDebugMode && logId != null) {
+        final existingLog = HttpLogger().getLogById(logId);
+        if (existingLog != null) {
+          HttpLogger()
+              .updateLog(logId, existingLog.copyWith(error: e.toString()));
+        }
+      }
+      rethrow;
+    }
   }
 
   Future<http.Response> _deleteRequest(String path) async {
@@ -736,16 +1090,58 @@ class ApiService {
 
     final token = await getToken();
     final updatedPath = await _appendQueryParams(path);
-    final response = await http.delete(
-      Uri.parse('$baseUrl$updatedPath'),
-      headers: {
-        'Authorization': 'Bearer $token',
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'Device': 'mobile'
-      },
-    );
-    return _handleResponse(response);
+    final fullUrl = '$baseUrl$updatedPath';
+
+    // HTTP Inspector: Создаем лог запроса (только в DEBUG)
+    String? logId;
+    if (kDebugMode) {
+      logId = DateTime.now().millisecondsSinceEpoch.toString();
+      HttpLogger().addLog(HttpLogModel(
+        id: logId,
+        timestamp: DateTime.now(),
+        method: 'DELETE',
+        url: fullUrl,
+      ));
+    }
+
+    final startTime = DateTime.now();
+    try {
+      final response = await http.delete(
+        Uri.parse(fullUrl),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Device': 'mobile'
+        },
+      );
+
+      // HTTP Inspector: Обновляем лог с ответом (только в DEBUG)
+      if (kDebugMode && logId != null) {
+        final existingLog = HttpLogger().getLogById(logId);
+        if (existingLog != null) {
+          HttpLogger().updateLog(
+            logId,
+            existingLog.copyWith(
+              statusCode: response.statusCode,
+              responseBody: response.body,
+              duration: DateTime.now().difference(startTime),
+            ),
+          );
+        }
+      }
+
+      return _handleResponse(response);
+    } catch (e) {
+      if (kDebugMode && logId != null) {
+        final existingLog = HttpLogger().getLogById(logId);
+        if (existingLog != null) {
+          HttpLogger()
+              .updateLog(logId, existingLog.copyWith(error: e.toString()));
+        }
+      }
+      rethrow;
+    }
   }
 
   //delete with body
@@ -762,8 +1158,40 @@ class ApiService {
     });
     request.body = json.encode(body);
 
+    // HTTP Inspector: логируем DELETE с body (только в DEBUG)
+    String? logId;
+    if (kDebugMode) {
+      logId = DateTime.now().millisecondsSinceEpoch.toString();
+      HttpLogger().addLog(HttpLogModel(
+        id: logId,
+        timestamp: DateTime.now(),
+        method: 'DELETE',
+        url: request.url.toString(),
+        requestHeaders:
+            request.headers.map((k, v) => MapEntry(k, v.toString())),
+        requestBody: json.encode(body),
+      ));
+    }
+
+    final startTime = DateTime.now();
     final streamedResponse = await request.send();
     final response = await http.Response.fromStream(streamedResponse);
+
+    if (kDebugMode && logId != null) {
+      final existingLog = HttpLogger().getLogById(logId);
+      if (existingLog != null) {
+        HttpLogger().updateLog(
+          logId,
+          existingLog.copyWith(
+            statusCode: response.statusCode,
+            responseHeaders: response.headers,
+            responseBody: response.body,
+            duration: DateTime.now().difference(startTime),
+          ),
+        );
+      }
+    }
+
     return _handleResponse(response);
   }
 
@@ -1333,7 +1761,7 @@ class ApiService {
     }
 
     try {
-      final response = await _getRequest(path);
+      final response = await _analyticsRequest(path);
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -1427,7 +1855,7 @@ class ApiService {
       final path = await _appendQueryParams('/lead/$leadId');
       //debugPrint('ApiService: getLeadById - Generated path: $path');
 
-      final response = await _getRequest(path);
+      final response = await _analyticsRequest(path);
       if (response.statusCode == 200) {
         final Map<String, dynamic> decodedJson = json.decode(response.body);
         final Map<String, dynamic> jsonLead = decodedJson['result'];
@@ -1639,7 +2067,7 @@ class ApiService {
     if (kDebugMode) {
       debugPrint('ApiService: getLeads - Final path: $path');
     }
-    final response = await _getRequest(path);
+    final response = await _analyticsRequest(path);
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
       if (data['result']['data'] != null) {
@@ -1749,12 +2177,17 @@ class ApiService {
         debugPrint('📤 getLeadStatuses WITH FILTERS - Final path: $path');
       }
 
-      final response = await _getRequest(path);
+    final cacheKey =
+        'cachedLeadStatuses_${organizationId}_funnel_${salesFunnelId ?? "null"}';
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
 
-        List<dynamic>? statusList;
+      if (salesFunnelId != null &&
+          salesFunnelId.isNotEmpty &&
+          salesFunnelId != 'null') {
+        path += '&sales_funnel_id=$salesFunnelId';
+      }
 
         if (data is List) {
           statusList = data;
@@ -1881,7 +2314,7 @@ class ApiService {
         //debugPrint('ApiService: getLeadHistory - Generated path: $path');
       }
 
-      final response = await _getRequest(path);
+      final response = await _analyticsRequest(path);
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> decodedJson = json.decode(response.body);
@@ -1906,7 +2339,7 @@ class ApiService {
         //debugPrint('ApiService: getNoticeHistory - Generated path: $path');
       }
 
-      final response = await _getRequest(path);
+      final response = await _analyticsRequest(path);
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> decodedJson = json.decode(response.body);
@@ -1928,7 +2361,7 @@ class ApiService {
         //debugPrint('ApiService: getDealHistoryLead - Generated path: $path');
       }
 
-      final response = await _getRequest(path);
+      final response = await _analyticsRequest(path);
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> decodedJson = json.decode(response.body);
@@ -1952,7 +2385,7 @@ class ApiService {
       //debugPrint('ApiService: getLeadNotes - Generated path: $path');
     }
 
-    final response = await _getRequest(path);
+    final response = await _analyticsRequest(path);
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
@@ -2105,7 +2538,7 @@ class ApiService {
       //debugPrint('ApiService: getLeadDeals - Generated path: $path');
     }
 
-    final response = await _getRequest(path);
+    final response = await _analyticsRequest(path);
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
@@ -2536,7 +2969,7 @@ class ApiService {
       //debugPrint('ApiService: getAllDealNames - Generated path: $path');
     }
 
-    final response = await _getRequest(path);
+    final response = await _analyticsRequest(path);
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
@@ -2681,7 +3114,7 @@ class ApiService {
       }
 
       // Выполняем GET запрос
-      final response = await _getRequest(path);
+      final response = await _analyticsRequest(path);
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -3114,7 +3547,7 @@ class ApiService {
         debugPrint('ApiService: getDealById - Generated path: $path');
       }
 
-      final response = await _getRequest(path);
+      final response = await _analyticsRequest(path);
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> decodedJson = json.decode(response.body);
@@ -3389,7 +3822,7 @@ class ApiService {
         debugPrint('📤 getDealStatuses - Final path: $path');
       }
 
-      final response = await _getRequest(path);
+      final response = await _analyticsRequest(path);
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -3540,7 +3973,7 @@ class ApiService {
         //debugPrint('ApiService: getDealHistory - Generated path: $path');
       }
 
-      final response = await _getRequest(path);
+      final response = await _analyticsRequest(path);
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> decodedJson = json.decode(response.body);
@@ -3564,7 +3997,7 @@ class ApiService {
         //debugPrint('ApiService: getOrderHistory - Generated path: $path');
       }
 
-      final response = await _getRequest(path);
+      final response = await _analyticsRequest(path);
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> decodedJson = json.decode(response.body);
@@ -4067,6 +4500,59 @@ class ApiService {
     }
   }
 
+// Метод для изменения статуса Сделки в ApiService
+  Future<Map<String, dynamic>> updateDealStatusEdit(
+    int dealStatusId,
+    String title,
+    int day,
+    bool isSuccess,
+    bool isFailure,
+    String notificationMessage,
+    bool showOnMainPage,
+    List<int>? userIds, // пользователи, которые могут ВИДЕТЬ сделки
+    List<int>?
+        changeStatusUserIds, // ✅ НОВОЕ: пользователи, которые могут ИЗМЕНЯТЬ статус
+  ) async {
+    final path = await _appendQueryParams('/deal/statuses/$dealStatusId');
+
+    if (kDebugMode) {
+      debugPrint('ApiService: updateDealStatusEdit - userIds: $userIds');
+      debugPrint(
+          'ApiService: updateDealStatusEdit - changeStatusUserIds: $changeStatusUserIds'); // ✅ НОВОЕ
+    }
+
+    final organizationId = await getSelectedOrganization();
+    final salesFunnelId = await getSelectedSalesFunnel();
+
+    final payload = {
+      "title": title,
+      "day": day,
+      "color": "#000",
+      "is_success": isSuccess ? 1 : 0,
+      "is_failure": isFailure ? 1 : 0,
+      "notification_message": notificationMessage,
+      "show_on_main_page": showOnMainPage ? 1 : 0,
+      "organization_id": organizationId?.toString() ?? '',
+      if (salesFunnelId != null) "sales_funnel_id": salesFunnelId.toString(),
+      // ✅ Добавляем оба массива пользователей
+      if (userIds != null && userIds.isNotEmpty) "users": userIds,
+      if (changeStatusUserIds != null && changeStatusUserIds.isNotEmpty)
+        "change_status_users": changeStatusUserIds, // ✅ НОВОЕ
+    };
+
+    if (kDebugMode) {
+      debugPrint('ApiService: updateDealStatusEdit payload: $payload');
+    }
+
+    final response = await _patchRequest(path, payload);
+
+    if (response.statusCode == 200) {
+      return {'result': 'Success'};
+    } else {
+      throw Exception('Failed to update dealStatus!');
+    }
+  }
+
   Future<DealStatus> getDealStatus(int dealStatusId) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/deal/statuses/$dealStatusId');
@@ -4099,7 +4585,7 @@ class ApiService {
         //debugPrint('ApiService: getTaskById - Generated path: $path');
       }
 
-      final response = await _getRequest(path);
+      final response = await _analyticsRequest(path);
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> decodedJson = json.decode(response.body);
@@ -4371,7 +4857,7 @@ class ApiService {
         debugPrint('📤 getTaskStatuses WITH FILTERS - Final path: $path');
       }
 
-      final response = await _getRequest(path);
+      final response = await _analyticsRequest(path);
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -5133,7 +5619,7 @@ class ApiService {
         //debugPrint('ApiService: getTaskHistory - Generated path: $path');
       }
 
-      final response = await _getRequest(path);
+      final response = await _analyticsRequest(path);
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> decodedJson = json.decode(response.body);
@@ -5158,7 +5644,7 @@ class ApiService {
         debugPrint('ApiService: getTaskOverdueHistory - Path: $path');
       }
 
-      final response = await _getRequest(path);
+      final response = await _analyticsRequest(path);
 
       if (kDebugMode) {
         debugPrint(
@@ -5269,7 +5755,7 @@ class ApiService {
       }
 
       ////debugPrint('Отправка запроса на /user');
-      final response = await _getRequest(path);
+      final response = await _analyticsRequest(path);
       // ////debugPrint('Статус ответа!');
       // ////debugPrint('Тело ответа!');
 
@@ -5712,7 +6198,7 @@ class ApiService {
       //debugPrint('ApiService: getLeadChart - Generated path: $path');
     }
 
-    final response = await _getRequest(path);
+    final response = await _analyticsRequest(path);
 
     if (response.statusCode == 200) {
       final List<dynamic> data = json.decode(response.body);
@@ -5733,7 +6219,7 @@ class ApiService {
       //debugPrint('ApiService: getLeadConversionData - Generated path: $path');
     }
 
-    final response = await _getRequest(path);
+    final response = await _analyticsRequest(path);
 
     if (response.statusCode == 200) {
       final Map<String, dynamic> data = json.decode(response.body);
@@ -5760,7 +6246,7 @@ class ApiService {
     }
 
     try {
-      final response = await _getRequest(path);
+      final response = await _analyticsRequest(path);
       if (response.statusCode == 200) {
         final jsonData = json.decode(response.body);
         return DealStatsResponse.fromJson(jsonData);
@@ -5784,7 +6270,7 @@ class ApiService {
     }
 
     try {
-      final response = await _getRequest(path);
+      final response = await _analyticsRequest(path);
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> jsonMap = json.decode(response.body);
@@ -5818,7 +6304,7 @@ class ApiService {
       //debugPrint('ApiService: getProcessSpeedData - Generated path: $path');
     }
 
-    final response = await _getRequest(path);
+    final response = await _analyticsRequest(path);
 
     if (response.statusCode == 200) {
       final Map<String, dynamic> data = json.decode(response.body);
@@ -5843,7 +6329,7 @@ class ApiService {
       //debugPrint('ApiService: getUsersChartData - Generated path: $path');
     }
 
-    final response = await _getRequest(path);
+    final response = await _analyticsRequest(path);
 
     if (response.statusCode == 200) {
       final Map<String, dynamic> data = json.decode(response.body);
@@ -5873,7 +6359,7 @@ class ApiService {
       // debugPrint('ApiService: getUserOverdueTasksData - Generated path: $path');
     }
 
-    final response = await _getRequest(path);
+    final response = await _analyticsRequest(path);
 
     if (response.statusCode == 200) {
       final Map<String, dynamic> data = json.decode(response.body);
@@ -5890,6 +6376,553 @@ class ApiService {
     }
   }
 
+  // ============ NEW ANALYTICS API METHODS ============
+
+  /// Получение графика лидов с датами
+  /// Endpoint: /api/dashboard/lead-chart?fromDate=YYYY-MM-DD&toDate=YYYY-MM-DD
+  Future<LeadChartResponse> getLeadChartWithDates({
+    required String fromDate,
+    required String toDate,
+  }) async {
+    final path = await _appendQueryParams(
+      '/dashboard/lead-chart?fromDate=$fromDate&toDate=$toDate',
+    );
+
+    if (kDebugMode) {
+      debugPrint('ApiService: getLeadChartWithDates - Generated path: $path');
+    }
+
+    try {
+      final response = await _analyticsRequest(path);
+
+      if (response.statusCode == 200) {
+        final jsonData = json.decode(response.body);
+        return LeadChartResponse.fromJson(jsonData);
+      } else {
+        throw Exception('Ошибка загрузки данных графика лидов!');
+      }
+    } catch (e) {
+      debugPrint('ApiService: getLeadChartWithDates error: $e');
+      throw Exception('Ошибка получения данных графика лидов: $e');
+    }
+  }
+
+  /// Получение конверсии по статусам
+  /// Endpoint: /api/v2/dashboard/leadConversion-by-statuses-chart
+  Future<LeadConversionByStatusesResponse> getLeadConversionByStatuses() async {
+    final path = await _appendQueryParams(
+        '/v2/dashboard/leadConversion-by-statuses-chart');
+
+    if (kDebugMode) {
+      debugPrint(
+          'ApiService: getLeadConversionByStatuses - Generated path: $path');
+    }
+
+    try {
+      final response = await _analyticsRequest(path);
+
+      if (response.statusCode == 200) {
+        final jsonData = json.decode(response.body);
+        return LeadConversionByStatusesResponse.fromJson(jsonData);
+      } else {
+        throw Exception('Ошибка загрузки данных конверсии по статусам!');
+      }
+    } catch (e) {
+      debugPrint('ApiService: getLeadConversionByStatuses error: $e');
+      throw Exception('Ошибка получения данных конверсии: $e');
+    }
+  }
+
+  /// Получение скорости обработки лидов (V2)
+  /// Endpoint: /api/v2/dashboard/lead-process-speed
+  Future<LeadProcessSpeedResponse> getLeadProcessSpeedV2() async {
+    final path = await _appendQueryParams('/v2/dashboard/lead-process-speed');
+
+    if (kDebugMode) {
+      debugPrint('ApiService: getLeadProcessSpeedV2 - Generated path: $path');
+    }
+
+    try {
+      final response = await _analyticsRequest(path);
+
+      if (response.statusCode == 200) {
+        final jsonData = json.decode(response.body);
+        return LeadProcessSpeedResponse.fromJson(jsonData);
+      } else {
+        throw Exception('Ошибка загрузки данных скорости обработки!');
+      }
+    } catch (e) {
+      debugPrint('ApiService: getLeadProcessSpeedV2 error: $e');
+      throw Exception('Ошибка получения данных скорости обработки: $e');
+    }
+  }
+
+  /// Получение каналов привлечения лидов
+  /// Endpoint: /api/dashboard/lead-channels
+  Future<LeadChannelsResponse> getLeadChannels() async {
+    final path = await _appendQueryParams('/dashboard/lead-channels');
+
+    if (kDebugMode) {
+      debugPrint('ApiService: getLeadChannels - Generated path: $path');
+    }
+
+    try {
+      final response = await _analyticsRequest(path);
+
+      if (response.statusCode == 200) {
+        final jsonData = json.decode(response.body);
+        return LeadChannelsResponse.fromJson(jsonData);
+      } else {
+        throw Exception('Ошибка загрузки данных каналов!');
+      }
+    } catch (e) {
+      debugPrint('ApiService: getLeadChannels error: $e');
+      throw Exception('Ошибка получения данных каналов: $e');
+    }
+  }
+
+  /// Получение статистики сообщений
+  /// Endpoint: /api/dashboard/message-stats
+  Future<MessageStatsResponse> getMessageStats() async {
+    final path = await _appendQueryParams('/dashboard/message-stats');
+
+    if (kDebugMode) {
+      debugPrint('ApiService: getMessageStats - Generated path: $path');
+    }
+
+    try {
+      final response = await _analyticsRequest(path);
+
+      if (response.statusCode == 200) {
+        final jsonData = json.decode(response.body);
+        return MessageStatsResponse.fromJson(jsonData);
+      } else {
+        throw Exception('Ошибка загрузки статистики сообщений!');
+      }
+    } catch (e) {
+      debugPrint('ApiService: getMessageStats error: $e');
+      throw Exception('Ошибка получения статистики сообщений: $e');
+    }
+  }
+
+  /// Получение графика пользователей (V2)
+  /// Endpoint: /api/v2/dashboard/users-chart
+  Future<UsersChartResponse> getUsersChartV2() async {
+    final path = await _appendQueryParams('/v2/dashboard/users-chart');
+
+    if (kDebugMode) {
+      debugPrint('ApiService: getUsersChartV2 - Generated path: $path');
+    }
+
+    try {
+      final response = await _analyticsRequest(path);
+
+      if (response.statusCode == 200) {
+        final jsonData = json.decode(response.body);
+        return UsersChartResponse.fromJson(jsonData);
+      } else {
+        throw Exception('Ошибка загрузки данных пользователей!');
+      }
+    } catch (e) {
+      debugPrint('ApiService: getUsersChartV2 error: $e');
+      throw Exception('Ошибка получения данных пользователей: $e');
+    }
+  }
+
+  /// Получение статистики для 4 карточек (V2)
+  /// Endpoint: /api/v2/dashboard/statistics
+  Future<DashboardStatisticsResponse> getDashboardStatisticsV2() async {
+    final path = await _appendQueryParams('/v2/dashboard/statistics');
+
+    if (kDebugMode) {
+      debugPrint(
+          'ApiService: getDashboardStatisticsV2 - Generated path: $path');
+    }
+
+    try {
+      final response = await _analyticsRequest(path);
+
+      if (response.statusCode == 200) {
+        final jsonData = json.decode(response.body);
+        return DashboardStatisticsResponse.fromJson(jsonData);
+      } else {
+        throw Exception('Ошибка загрузки статистики!');
+      }
+    } catch (e) {
+      debugPrint('ApiService: getDashboardStatisticsV2 error: $e');
+      throw Exception('Ошибка получения статистики: $e');
+    }
+  }
+
+  /// Применение фильтров аналитики (V2)
+  /// Endpoint: /api/v2/dashboard/filters
+  Future<void> applyAnalyticsFiltersV2(Map<String, dynamic> filters) async {
+    const path = '/v2/dashboard/filters';
+
+    if (kDebugMode) {
+      debugPrint('ApiService: applyAnalyticsFiltersV2 - Filters: $filters');
+    }
+
+    try {
+      final response = await _postRequest(path, filters);
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return;
+      }
+      throw Exception('Ошибка применения фильтров аналитики!');
+    } catch (e) {
+      debugPrint('ApiService: applyAnalyticsFiltersV2 error: $e');
+      throw Exception('Ошибка применения фильтров аналитики: $e');
+    }
+  }
+
+  /// Конверсия лидов (V2)
+  /// Endpoint: /api/v2/dashboard/leadConversion-chart
+  Future<LeadConversion> getLeadConversionDataV2() async {
+    final path = await _appendQueryParams('/v2/dashboard/leadConversion-chart');
+
+    if (kDebugMode) {
+      debugPrint('ApiService: getLeadConversionDataV2 - Generated path: $path');
+    }
+
+    final response = await _analyticsRequest(path);
+
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> data = json.decode(response.body);
+
+      if (data.isNotEmpty) {
+        return LeadConversion.fromJson(data);
+      } else {
+        throw ('Нет данных графика в ответе "Конверсия лидов"');
+      }
+    } else if (response.statusCode == 500) {
+      throw ('Ошибка сервера: 500');
+    } else {
+      throw ('');
+    }
+  }
+
+  /// Задачи (V2)
+  /// Endpoint: /api/v2/dashboard/task-chart
+  Future<TaskChartV2Response> getTaskChartDataV2() async {
+    final path = await _appendQueryParams('/v2/dashboard/task-chart');
+
+    if (kDebugMode) {
+      debugPrint('ApiService: getTaskChartDataV2 - Generated path: $path');
+    }
+
+    try {
+      final response = await _analyticsRequest(path);
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> jsonMap = json.decode(response.body);
+        return TaskChartV2Response.fromJson(jsonMap);
+      } else if (response.statusCode == 500) {
+        throw ('Ошибка сервера!');
+      } else {
+        throw ('Ошибка загрузки данных графика!');
+      }
+    } catch (e) {
+      throw ('Ошибка получения данных!');
+    }
+  }
+
+  /// Источники лидов (V2)
+  /// Endpoint: /api/v2/dashboard/source-of-leads-chart
+  Future<SourceOfLeadsChartResponse> getSourceOfLeadsChartV2() async {
+    final path =
+        await _appendQueryParams('/v2/dashboard/source-of-leads-chart');
+
+    if (kDebugMode) {
+      debugPrint('ApiService: getSourceOfLeadsChartV2 - Generated path: $path');
+    }
+
+    try {
+      final response = await _analyticsRequest(path);
+      if (response.statusCode == 200) {
+        final jsonData = json.decode(response.body);
+        return SourceOfLeadsChartResponse.fromJson(jsonData);
+      } else {
+        throw Exception('Ошибка загрузки источников лидов!');
+      }
+    } catch (e) {
+      debugPrint('ApiService: getSourceOfLeadsChartV2 error: $e');
+      throw Exception('Ошибка получения источников лидов: $e');
+    }
+  }
+
+  /// Сделки по менеджерам (V2)
+  /// Endpoint: /api/v2/dashboard/deals-by-managers
+  Future<DealsByManagersResponse> getDealsByManagersV2() async {
+    final path = await _appendQueryParams('/v2/dashboard/deals-by-managers');
+
+    if (kDebugMode) {
+      debugPrint('ApiService: getDealsByManagersV2 - Generated path: $path');
+    }
+
+    try {
+      final response = await _analyticsRequest(path);
+      if (response.statusCode == 200) {
+        final jsonData = json.decode(response.body);
+        return DealsByManagersResponse.fromJson(jsonData);
+      } else {
+        throw Exception('Ошибка загрузки данных менеджеров!');
+      }
+    } catch (e) {
+      debugPrint('ApiService: getDealsByManagersV2 error: $e');
+      throw Exception('Ошибка получения данных менеджеров: $e');
+    }
+  }
+
+  /// Заказы интернет-магазина (V2)
+  /// Endpoint: /api/v2/dashboard/online-store-orders-chart
+  Future<OnlineStoreOrdersResponse> getOnlineStoreOrdersChartV2() async {
+    final path =
+        await _appendQueryParams('/v2/dashboard/online-store-orders-chart');
+
+    if (kDebugMode) {
+      debugPrint(
+          'ApiService: getOnlineStoreOrdersChartV2 - Generated path: $path');
+    }
+
+    try {
+      final response = await _analyticsRequest(path);
+      if (response.statusCode == 200) {
+        final jsonData = json.decode(response.body);
+        return OnlineStoreOrdersResponse.fromJson(jsonData);
+      } else {
+        throw Exception('Ошибка загрузки заказов интернет-магазина!');
+      }
+    } catch (e) {
+      debugPrint('ApiService: getOnlineStoreOrdersChartV2 error: $e');
+      throw Exception('Ошибка получения заказов интернет-магазина: $e');
+    }
+  }
+
+  /// Выполненные задачи (график)
+  /// Endpoint: /api/v2/dashboard/completed-task-chart
+  Future<CompletedTasksChartResponse> getCompletedTasksChartV2() async {
+    final path = await _appendQueryParams('/v2/dashboard/completed-task-chart');
+
+    if (kDebugMode) {
+      debugPrint(
+          'ApiService: getCompletedTasksChartV2 - Generated path: $path');
+    }
+
+    try {
+      final response = await _analyticsRequest(path);
+      if (response.statusCode == 200) {
+        final jsonData = json.decode(response.body);
+        return CompletedTasksChartResponse.fromJson(jsonData);
+      } else {
+        throw Exception('Ошибка загрузки выполненных задач!');
+      }
+    } catch (e) {
+      debugPrint('ApiService: getCompletedTasksChartV2 error: $e');
+      throw Exception('Ошибка получения выполненных задач: $e');
+    }
+  }
+
+  /// Телефония и события (график)
+  /// Endpoint: /api/v2/dashboard/telephony-and-events-chart
+  Future<TelephonyEventsResponse> getTelephonyAndEventsChartV2() async {
+    final path =
+        await _appendQueryParams('/v2/dashboard/telephony-and-events-chart');
+
+    if (kDebugMode) {
+      debugPrint(
+          'ApiService: getTelephonyAndEventsChartV2 - Generated path: $path');
+    }
+
+    try {
+      final response = await _analyticsRequest(path);
+      if (response.statusCode == 200) {
+        final jsonData = json.decode(response.body);
+        return TelephonyEventsResponse.fromJson(jsonData);
+      } else {
+        throw Exception('Ошибка загрузки телефонии и событий!');
+      }
+    } catch (e) {
+      debugPrint('ApiService: getTelephonyAndEventsChartV2 error: $e');
+      throw Exception('Ошибка получения телефонии и событий: $e');
+    }
+  }
+
+  /// Ответы на сообщения (график)
+  /// Endpoint: /api/v2/dashboard/replies-to-messages-chart
+  Future<RepliesToMessagesResponse> getRepliesToMessagesChartV2() async {
+    final path =
+        await _appendQueryParams('/v2/dashboard/replies-to-messages-chart');
+
+    if (kDebugMode) {
+      debugPrint(
+          'ApiService: getRepliesToMessagesChartV2 - Generated path: $path');
+    }
+
+    try {
+      final response = await _analyticsRequest(path);
+      if (response.statusCode == 200) {
+        final jsonData = json.decode(response.body);
+        return RepliesToMessagesResponse.fromJson(jsonData);
+      } else {
+        throw Exception('Ошибка загрузки ответов на сообщения!');
+      }
+    } catch (e) {
+      debugPrint('ApiService: getRepliesToMessagesChartV2 error: $e');
+      throw Exception('Ошибка получения ответов на сообщения: $e');
+    }
+  }
+
+  /// Статистика задач по проектам
+  /// Endpoint: /api/v2/dashboard/task-statistics-by-project-chart
+  Future<TaskStatsByProjectResponse> getTaskStatsByProjectChartV2() async {
+    final path = await _appendQueryParams(
+        '/v2/dashboard/task-statistics-by-project-chart');
+
+    if (kDebugMode) {
+      debugPrint(
+          'ApiService: getTaskStatsByProjectChartV2 - Generated path: $path');
+    }
+
+    try {
+      final response = await _analyticsRequest(path);
+      if (response.statusCode == 200) {
+        final jsonData = json.decode(response.body);
+        return TaskStatsByProjectResponse.fromJson(jsonData);
+      } else {
+        throw Exception('Ошибка загрузки статистики задач по проектам!');
+      }
+    } catch (e) {
+      debugPrint('ApiService: getTaskStatsByProjectChartV2 error: $e');
+      throw Exception('Ошибка получения статистики задач по проектам: $e');
+    }
+  }
+
+  /// Подключенные аккаунты
+  /// Endpoint: /api/v2/dashboard/connected-accounts-chart
+  Future<ConnectedAccountsResponse> getConnectedAccountsChartV2() async {
+    final path =
+        await _appendQueryParams('/v2/dashboard/connected-accounts-chart');
+
+    if (kDebugMode) {
+      debugPrint(
+          'ApiService: getConnectedAccountsChartV2 - Generated path: $path');
+    }
+
+    try {
+      final response = await _analyticsRequest(path);
+      if (response.statusCode == 200) {
+        final jsonData = json.decode(response.body);
+        return ConnectedAccountsResponse.fromJson(jsonData);
+      } else {
+        throw Exception('Ошибка загрузки подключенных аккаунтов!');
+      }
+    } catch (e) {
+      debugPrint('ApiService: getConnectedAccountsChartV2 error: $e');
+      throw Exception('Ошибка получения подключенных аккаунтов: $e');
+    }
+  }
+
+  /// ROI рекламы (график)
+  /// Endpoint: /api/v2/dashboard/advertising-ROI-chart
+  Future<AdvertisingRoiResponse> getAdvertisingRoiChartV2() async {
+    final path =
+        await _appendQueryParams('/v2/dashboard/advertising-ROI-chart');
+
+    if (kDebugMode) {
+      debugPrint(
+          'ApiService: getAdvertisingRoiChartV2 - Generated path: $path');
+    }
+
+    try {
+      final response = await _analyticsRequest(path);
+      if (response.statusCode == 200) {
+        final jsonData = json.decode(response.body);
+        return AdvertisingRoiResponse.fromJson(jsonData);
+      } else {
+        throw Exception('Ошибка загрузки ROI рекламы!');
+      }
+    } catch (e) {
+      debugPrint('ApiService: getAdvertisingRoiChartV2 error: $e');
+      throw Exception('Ошибка получения ROI рекламы: $e');
+    }
+  }
+
+  /// Аналитика звонков по часам
+  /// Endpoint: /api/v2/dashboard/telephony-and-events-by-hour
+  Future<TelephonyByHourResponse> getTelephonyByHourChartV2() async {
+    final path =
+        await _appendQueryParams('/v2/dashboard/telephony-and-events-by-hour');
+
+    if (kDebugMode) {
+      debugPrint(
+          'ApiService: getTelephonyByHourChartV2 - Generated path: $path');
+    }
+
+    try {
+      final response = await _analyticsRequest(path);
+      if (response.statusCode == 200) {
+        final jsonData = json.decode(response.body);
+        return TelephonyByHourResponse.fromJson(jsonData);
+      } else {
+        throw Exception('Ошибка загрузки аналитики звонков по часам!');
+      }
+    } catch (e) {
+      debugPrint('ApiService: getTelephonyByHourChartV2 error: $e');
+      throw Exception('Ошибка получения аналитики звонков по часам: $e');
+    }
+  }
+
+  /// Таргетированная реклама (Meta Ads)
+  /// Endpoint: /api/v2/dashboard/targeted-advertising-chart
+  Future<TargetedAdsResponse> getTargetedAdvertisingChartV2() async {
+    final path =
+        await _appendQueryParams('/v2/dashboard/targeted-advertising-chart');
+
+    if (kDebugMode) {
+      debugPrint(
+          'ApiService: getTargetedAdvertisingChartV2 - Generated path: $path');
+    }
+
+    try {
+      final response = await _analyticsRequest(path);
+      if (response.statusCode == 200) {
+        final jsonData = json.decode(response.body);
+        return TargetedAdsResponse.fromJson(jsonData);
+      } else {
+        throw Exception('Ошибка загрузки таргетированной рекламы!');
+      }
+    } catch (e) {
+      debugPrint('ApiService: getTargetedAdvertisingChartV2 error: $e');
+      throw Exception('Ошибка получения таргетированной рекламы: $e');
+    }
+  }
+
+  /// ТОП продаваемых товаров (V2)
+  /// Endpoint: /api/v2/dashboard/top-selling-products-chart
+  Future<TopSellingProductsResponse> getTopSellingProductsChartV2() async {
+    final path =
+        await _appendQueryParams('/v2/dashboard/top-selling-products-chart');
+
+    if (kDebugMode) {
+      debugPrint(
+          'ApiService: getTopSellingProductsChartV2 - Generated path: $path');
+    }
+
+    try {
+      final response = await _analyticsRequest(path);
+      if (response.statusCode == 200) {
+        final jsonData = json.decode(response.body);
+        return TopSellingProductsResponse.fromJson(jsonData);
+      } else {
+        throw Exception('Ошибка загрузки данных товаров!');
+      }
+    } catch (e) {
+      debugPrint('ApiService: getTopSellingProductsChartV2 error: $e');
+      throw Exception('Ошибка получения данных товаров: $e');
+    }
+  }
+
 //_________________________________ END_____API_SCREEN__DASHBOARD____________________________________________//
 
 //_________________________________ START_____API_SCREEN__DASHBOARD_Manager____________________________________________//
@@ -5903,7 +6936,7 @@ class ApiService {
     }
 
     try {
-      final response = await _getRequest(path);
+      final response = await _analyticsRequest(path);
       if (response.statusCode == 200) {
         final jsonData = json.decode(response.body);
         return DealStatsResponseManager.fromJson(jsonData);
@@ -5926,7 +6959,7 @@ class ApiService {
       //debugPrint('ApiService: getLeadChartManager - Generated path: $path');
     }
 
-    final response = await _getRequest(path);
+    final response = await _analyticsRequest(path);
 
     if (response.statusCode == 200) {
       final List<dynamic> data = json.decode(response.body);
@@ -5948,7 +6981,7 @@ class ApiService {
       //debugPrint('ApiService: getLeadConversionDataManager - Generated path: $path');
     }
 
-    final response = await _getRequest(path);
+    final response = await _analyticsRequest(path);
 
     if (response.statusCode == 200) {
       final Map<String, dynamic> data = json.decode(response.body);
@@ -5974,7 +7007,7 @@ class ApiService {
       //debugPrint('ApiService: getProcessSpeedDataManager - Generated path: $path');
     }
 
-    final response = await _getRequest(path);
+    final response = await _analyticsRequest(path);
 
     if (response.statusCode == 200) {
       final Map<String, dynamic> data = json.decode(response.body);
@@ -6001,7 +7034,7 @@ class ApiService {
     }
 
     try {
-      final response = await _getRequest(path);
+      final response = await _analyticsRequest(path);
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> jsonMap = json.decode(response.body);
@@ -6030,7 +7063,7 @@ class ApiService {
       //debugPrint('ApiService: getUserStatsManager - Generated path: $path');
     }
 
-    final response = await _getRequest(path);
+    final response = await _analyticsRequest(path);
 
     if (response.statusCode == 200) {
       final Map<String, dynamic> data = json.decode(response.body);
@@ -6594,7 +7627,7 @@ class ApiService {
 
     String requestUrl = '$baseUrl$path';
 
-    Dio dio = Dio();
+    Dio dio = LoggedDioClient.create();
     try {
       final voice = await MultipartFile.fromFile(audio.path,
           contentType: MediaType('audio', 'm4a'));
@@ -6649,7 +7682,7 @@ class ApiService {
 
     String requestUrl = '$baseUrl$path';
 
-    Dio dio = Dio();
+    Dio dio = LoggedDioClient.create();
     try {
       FormData formData = FormData.fromMap({
         'file': await MultipartFile.fromFile(pathFile),
@@ -10234,6 +11267,8 @@ class ApiService {
     int? managerId,
     int? integration,
     required double sum,
+    List<Map<String, dynamic>>? customFields,
+    List<Map<String, int>>? directoryValues,
   }) async {
     try {
       final token = await getToken();
@@ -10274,6 +11309,14 @@ class ApiService {
 
       // Всегда отправляем branch_id, если он указан
       body['branch_id'] = branchId;
+
+      if (customFields != null && customFields.isNotEmpty) {
+        body['custom_fields'] = customFields;
+      }
+
+      if (directoryValues != null && directoryValues.isNotEmpty) {
+        body['directory_values'] = directoryValues;
+      }
 
       ////debugPrint('ApiService: Тело запроса для создания заказа: ${jsonEncode(body)}');
 
@@ -10337,6 +11380,8 @@ class ApiService {
     String? commentToCourier,
     int? managerId, // Новое поле
     required double sum,
+    List<Map<String, dynamic>>? customFields,
+    List<Map<String, int>>? directoryValues,
   }) async {
     try {
       final token = await getToken();
@@ -10379,6 +11424,14 @@ class ApiService {
 
       // Всегда отправляем branch_id, если он указан
       body['branch_id'] = branchId;
+
+      if (customFields != null && customFields.isNotEmpty) {
+        body['custom_fields'] = customFields;
+      }
+
+      if (directoryValues != null && directoryValues.isNotEmpty) {
+        body['directory_values'] = directoryValues;
+      }
 
       ////debugPrint('ApiService: Тело запроса для обновления заказа: ${jsonEncode(body)}');
 
@@ -17141,7 +18194,7 @@ class ApiService {
         debugPrint('ApiService: Loading all field configurations');
       }
 
-      final tables = ['leads', 'tasks', 'deals'];
+      final tables = ['leads', 'tasks', 'deals', 'orders'];
 
       for (final tableName in tables) {
         try {
@@ -17180,7 +18233,7 @@ class ApiService {
       final prefs = await SharedPreferences.getInstance();
       final organizationId = await getSelectedOrganization();
 
-      final tables = ['leads', 'tasks', 'deals'];
+      final tables = ['leads', 'tasks', 'deals', 'orders'];
 
       for (final tableName in tables) {
         final cacheKey = 'field_config_${tableName}_org_${organizationId}';
@@ -17239,8 +18292,18 @@ class ApiService {
       final organizationId = await getSelectedOrganization();
       final salesFunnelId = await getSelectedSalesFunnel();
 
+      final normalizedUpdates = updates.map((update) {
+        if (update.containsKey('show_on_site')) {
+          return {
+            ...update,
+            'show_to_site': update['show_on_site'],
+          }..remove('show_on_site');
+        }
+        return update;
+      }).toList();
+
       final body = {
-        'updates': updates,
+        'updates': normalizedUpdates,
         'organization_id': organizationId,
         'sales_funnel_id': salesFunnelId,
       };

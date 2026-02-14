@@ -131,9 +131,11 @@ import 'package:crm_task_manager/screens/profile/profile_screen.dart';
 import 'package:crm_task_manager/update_dialog.dart';
 import 'package:crm_task_manager/widgets/native_internet_aware_wrapper_WITH_GAME.dart';
 import 'package:crm_task_manager/widgets/native_internet_monitor_simple.dart';
+import 'package:crm_task_manager/widgets/http_inspector_fab.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:new_version_plus/new_version_plus.dart';
@@ -764,9 +766,15 @@ class _MyAppState extends State<MyApp> {
         },
         // ✅ ДОБАВЬТЕ/РАСКОММЕНТИРУЙТЕ builder
         builder: (context, child) {
-          return NativeInternetAwareWrapper(
-            // ← НОВОЕ ИМЯ
-            child: child ?? const SizedBox.shrink(),
+          return Stack(
+            children: [
+              NativeInternetAwareWrapper(
+                // ← НОВОЕ ИМЯ
+                child: child ?? const SizedBox.shrink(),
+              ),
+              // HTTP Inspector FAB (только в DEBUG режиме)
+              if (kDebugMode) const HttpInspectorFab(),
+            ],
           );
         },
         home: Builder(

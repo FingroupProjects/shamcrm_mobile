@@ -1,5 +1,6 @@
   import 'package:crm_task_manager/models/manager_model.dart';
 import 'package:crm_task_manager/models/page_2/order_status_model.dart';
+import 'package:crm_task_manager/models/dealById_model.dart';
   class Order {
     final int id;
     final String phone;
@@ -20,6 +21,8 @@ import 'package:crm_task_manager/models/page_2/order_status_model.dart';
     final String? paymentStatus; // Новое поле
     final DateTime? createdAt;
     final int? storageId; // Новое поле для storage_id (пока используется вместо branchId)
+    final List<CustomFieldValue> customFieldValues;
+    final List<DirectoryValue> directoryValues;
 
     Order({
       required this.id,
@@ -41,6 +44,8 @@ import 'package:crm_task_manager/models/page_2/order_status_model.dart';
       this.paymentStatus, // Добавляем в конструктор
       this.createdAt,
       this.storageId,
+      this.customFieldValues = const [],
+      this.directoryValues = const [],
     });
 
   factory Order.fromJson(Map<String, dynamic> json) {
@@ -79,6 +84,12 @@ import 'package:crm_task_manager/models/page_2/order_status_model.dart';
         storageId: json['storage_id'] != null
             ? int.tryParse(json['storage_id'].toString())
             : null,
+        customFieldValues: (json['customFieldValues'] as List<dynamic>? ?? [])
+            .map((item) => CustomFieldValue.fromJson(item as Map<String, dynamic>))
+            .toList(),
+        directoryValues: (json['directory_values'] as List<dynamic>? ?? [])
+            .map((item) => DirectoryValue.fromJson(item as Map<String, dynamic>))
+            .toList(),
       );
     } catch (e) {
       //print('Error parsing Order: $e');
@@ -108,6 +119,8 @@ import 'package:crm_task_manager/models/page_2/order_status_model.dart';
         'payment_status': paymentStatus, // Добавляем в JSON
         'payment_type': paymentMethod, // Add to JSON
         'storage_id': storageId,
+        'customFieldValues': customFieldValues.map((e) => e.toJson()).toList(),
+        'directory_values': directoryValues.map((e) => e.toJson()).toList(),
       };
     }
 
@@ -128,6 +141,8 @@ import 'package:crm_task_manager/models/page_2/order_status_model.dart';
       double? sum,
       String? paymentStatus,
       int? storageId,
+      List<CustomFieldValue>? customFieldValues,
+      List<DirectoryValue>? directoryValues,
     }) {
       return Order(
         id: id ?? this.id,
@@ -146,6 +161,8 @@ import 'package:crm_task_manager/models/page_2/order_status_model.dart';
         sum: sum ?? this.sum,
         paymentStatus: paymentStatus ?? this.paymentStatus,
         storageId: storageId ?? this.storageId,
+        customFieldValues: customFieldValues ?? this.customFieldValues,
+        directoryValues: directoryValues ?? this.directoryValues,
       );
     }
   }
