@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:crm_task_manager/screens/analytics/widgets/chart_shimmer_loader.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:crm_task_manager/screens/analytics/utils/responsive_helper.dart';
 import 'package:crm_task_manager/screens/analytics/models/lead_conversion_by_statuses_model.dart';
@@ -6,7 +7,9 @@ import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/screens/analytics/widgets/chart_empty_overlay.dart';
 
 class LeadConversionStatusesChart extends StatefulWidget {
-  const LeadConversionStatusesChart({super.key});
+  const LeadConversionStatusesChart({super.key, required this.title});
+
+  final String title;
 
   @override
   State<LeadConversionStatusesChart> createState() =>
@@ -18,6 +21,8 @@ class _LeadConversionStatusesChartState
   bool _isLoading = true;
   String? _error;
   LeadConversionByStatusesResponse? _data;
+
+  String get _title => widget.title;
 
   static final List<StatusConversion> _previewStatuses = [
     StatusConversion(
@@ -69,7 +74,7 @@ class _LeadConversionStatusesChartState
       });
     } catch (e) {
       setState(() {
-        _error = 'Ошибка: $e';
+        _error = 'Не удалось загрузить данные. Попробуйте позже.';
         _isLoading = false;
       });
     }
@@ -94,9 +99,9 @@ class _LeadConversionStatusesChartState
             children: [
               Row(
                 children: [
-                  const Expanded(
+                  Expanded(
                     child: Text(
-                      'Конверсия и количество по статусам',
+                      _title,
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w700,
@@ -182,14 +187,13 @@ class _LeadConversionStatusesChartState
   Widget build(BuildContext context) {
     final responsive = ResponsiveHelper(context);
     final items = _data?.statuses ?? [];
-    final isEmpty =
-        items.isEmpty || items.every((e) => e.totalLeads == 0);
+    final isEmpty = items.isEmpty || items.every((e) => e.totalLeads == 0);
     final displayItems = isEmpty ? _previewStatuses : items;
     final maxValue = displayItems.isEmpty
         ? 1
-        : displayItems
-            .map((e) => e.totalLeads)
-            .reduce((a, b) => a > b ? a : b);
+        : displayItems.map((e) => e.totalLeads).reduce((a, b) => a > b ? a : b);
+    final chartMaxY = maxValue * 1.2;
+    final leftInterval = (chartMaxY / 5).ceilToDouble();
 
     return Container(
       decoration: BoxDecoration(
@@ -236,7 +240,7 @@ class _LeadConversionStatusesChartState
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    'Конверсия и количество по статусам',
+                    _title,
                     style: TextStyle(
                       fontSize: responsive.titleFontSize,
                       fontWeight: FontWeight.w600,
@@ -247,8 +251,15 @@ class _LeadConversionStatusesChartState
                 ),
                 IconButton(
                   onPressed: _showDetails,
-                  icon: const Icon(Icons.more_vert, color: Color(0xff64748B)),
-                  splashRadius: 18,
+                  icon: const Icon(Icons.crop_free, color: Color(0xff64748B), size: 22),
+                  style: IconButton.styleFrom(
+                    backgroundColor: Color(0xffF1F5F9),
+                    minimumSize: Size(44, 44),
+                    padding: EdgeInsets.zero,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.all(Radius.circular(16)),
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -256,11 +267,7 @@ class _LeadConversionStatusesChartState
           SizedBox(
             height: responsive.chartHeight,
             child: _isLoading
-                ? const Center(
-                    child: CircularProgressIndicator(
-                      color: Color(0xff8B5CF6),
-                    ),
-                  )
+                ? const AnalyticsChartShimmerLoader()
                 : _error != null
                     ? Center(
                         child: Text(
@@ -279,7 +286,7 @@ class _LeadConversionStatusesChartState
                             quarterTurns: 1,
                             child: BarChart(
                               BarChartData(
-                                maxY: maxValue * 1.2,
+                                maxY: chartMaxY,
                                 barGroups: _buildGroups(displayItems),
                                 gridData: FlGridData(
                                   show: true,
@@ -295,6 +302,8 @@ class _LeadConversionStatusesChartState
                                     sideTitles: SideTitles(
                                       showTitles: true,
                                       reservedSize: 36,
+                                      interval: leftInterval,
+                                      maxIncluded: false,
                                       getTitlesWidget: (value, meta) {
                                         return RotatedBox(
                                           quarterTurns: 3,

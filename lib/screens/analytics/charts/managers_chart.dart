@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:crm_task_manager/screens/analytics/widgets/chart_shimmer_loader.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:crm_task_manager/screens/analytics/utils/responsive_helper.dart';
 import 'package:crm_task_manager/screens/analytics/models/deals_by_managers_model.dart';
@@ -6,7 +7,9 @@ import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/screens/analytics/widgets/chart_empty_overlay.dart';
 
 class ManagersChart extends StatefulWidget {
-  const ManagersChart({Key? key}) : super(key: key);
+  const ManagersChart({super.key, required this.title});
+
+  final String title;
 
   @override
   State<ManagersChart> createState() => _ManagersChartState();
@@ -19,6 +22,8 @@ class _ManagersChartState extends State<ManagersChart> {
   String _bestManager = '';
   double _totalRevenue = 0;
   int _totalManagers = 0;
+
+  String get _title => widget.title;
 
   static final List<ManagerDealsStats> _previewManagers = [
     ManagerDealsStats(
@@ -78,7 +83,7 @@ class _ManagersChartState extends State<ManagersChart> {
       });
     } catch (e) {
       setState(() {
-        _error = 'Ошибка: $e';
+        _error = 'Не удалось загрузить данные. Попробуйте позже.';
         _isLoading = false;
       });
     }
@@ -100,8 +105,7 @@ class _ManagersChartState extends State<ManagersChart> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'Сделки по менеджерам',
+              Text(_title,
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
@@ -242,7 +246,7 @@ class _ManagersChartState extends State<ManagersChart> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    'Сделки и выручка по менеджерам',
+                    _title,
                     style: TextStyle(
                       fontSize: responsive.titleFontSize,
                       fontWeight: FontWeight.w600,
@@ -253,8 +257,15 @@ class _ManagersChartState extends State<ManagersChart> {
                 ),
                 IconButton(
                   onPressed: _showDetails,
-                  icon: const Icon(Icons.more_vert, color: Color(0xff64748B)),
-                  splashRadius: 18,
+                  icon: const Icon(Icons.crop_free, color: Color(0xff64748B), size: 22),
+                  style: IconButton.styleFrom(
+                    backgroundColor: Color(0xffF1F5F9),
+                    minimumSize: Size(44, 44),
+                    padding: EdgeInsets.zero,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.all(Radius.circular(16)),
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -263,11 +274,7 @@ class _ManagersChartState extends State<ManagersChart> {
           SizedBox(
             height: 350,
             child: _isLoading
-                ? const Center(
-                    child: CircularProgressIndicator(
-                      color: Color(0xffF59E0B),
-                    ),
-                  )
+                ? const AnalyticsChartShimmerLoader()
                 : _error != null
                     ? Center(
                         child: Column(
@@ -345,29 +352,29 @@ class _ManagersChartState extends State<ManagersChart> {
                                       },
                                     ),
                                   ),
-                                    leftTitles: AxisTitles(
-                                      sideTitles: SideTitles(
-                                        showTitles: true,
-                                        reservedSize: 40,
-                                        getTitlesWidget: (value, meta) {
-                                          return Text(
-                                            value.toInt().toString(),
-                                            style: const TextStyle(
-                                              color: Color(0xff64748B),
-                                              fontSize: 12,
-                                              fontFamily: 'Golos',
-                                            ),
-                                          );
-                                        },
-                                      ),
-                                    ),
-                                    topTitles: const AxisTitles(
-                                      sideTitles: SideTitles(showTitles: false),
-                                    ),
-                                    rightTitles: const AxisTitles(
-                                      sideTitles: SideTitles(showTitles: false),
+                                  leftTitles: AxisTitles(
+                                    sideTitles: SideTitles(
+                                      showTitles: true,
+                                      reservedSize: 40,
+                                      getTitlesWidget: (value, meta) {
+                                        return Text(
+                                          value.toInt().toString(),
+                                          style: const TextStyle(
+                                            color: Color(0xff64748B),
+                                            fontSize: 12,
+                                            fontFamily: 'Golos',
+                                          ),
+                                        );
+                                      },
                                     ),
                                   ),
+                                  topTitles: const AxisTitles(
+                                    sideTitles: SideTitles(showTitles: false),
+                                  ),
+                                  rightTitles: const AxisTitles(
+                                    sideTitles: SideTitles(showTitles: false),
+                                  ),
+                                ),
                                 gridData: FlGridData(
                                   show: true,
                                   drawVerticalLine: false,
@@ -408,80 +415,94 @@ class _ManagersChartState extends State<ManagersChart> {
                 ),
               ),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Лучший менеджер',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Color(0xff64748B),
-                          fontFamily: 'Golos',
+                  Expanded(
+                    flex: 2,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Лучший менеджер',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Color(0xff64748B),
+                            fontFamily: 'Golos',
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        _bestManager.isNotEmpty
-                            ? _bestManager
-                            : (_managers.isNotEmpty
-                                ? _managers.first.managerName
-                                : '-'),
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w700,
-                          color: Color(0xff0F172A),
-                          fontFamily: 'Golos',
+                        const SizedBox(height: 4),
+                        Text(
+                          _bestManager.isNotEmpty
+                              ? _bestManager
+                              : (_managers.isNotEmpty
+                                  ? _managers.first.managerName
+                                  : '-'),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xff0F172A),
+                            fontFamily: 'Golos',
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      const Text(
-                        'Общая выручка',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Color(0xff64748B),
-                          fontFamily: 'Golos',
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        const Text(
+                          'Общая выручка',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Color(0xff64748B),
+                            fontFamily: 'Golos',
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        _formatMoney(_totalRevenue),
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w700,
-                          color: Color(0xff0F172A),
-                          fontFamily: 'Golos',
+                        const SizedBox(height: 4),
+                        Text(
+                          _formatMoney(_totalRevenue),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xff0F172A),
+                            fontFamily: 'Golos',
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      const Text(
-                        'Менеджеров',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Color(0xff64748B),
-                          fontFamily: 'Golos',
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        const Text(
+                          'Менеджеров',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Color(0xff64748B),
+                            fontFamily: 'Golos',
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        '$_totalManagers',
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w700,
-                          color: Color(0xff0F172A),
-                          fontFamily: 'Golos',
+                        const SizedBox(height: 4),
+                        Text(
+                          '$_totalManagers',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xff0F172A),
+                            fontFamily: 'Golos',
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ],
               ),

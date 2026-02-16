@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:crm_task_manager/screens/analytics/widgets/chart_shimmer_loader.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:crm_task_manager/screens/analytics/utils/responsive_helper.dart';
 import 'package:crm_task_manager/screens/analytics/models/message_stats_model.dart';
@@ -38,7 +39,7 @@ class _MessageStatsChartState extends State<MessageStatsChart> {
       });
     } catch (e) {
       setState(() {
-        _error = 'Ошибка: $e';
+        _error = 'Не удалось загрузить данные. Попробуйте позже.';
         _isLoading = false;
       });
     }
@@ -221,8 +222,15 @@ class _MessageStatsChartState extends State<MessageStatsChart> {
                 ),
                 IconButton(
                   onPressed: _showDetails,
-                  icon: const Icon(Icons.more_vert, color: Color(0xff64748B)),
-                  splashRadius: 18,
+                  icon: const Icon(Icons.crop_free, color: Color(0xff64748B), size: 22),
+                  style: IconButton.styleFrom(
+                    backgroundColor: Color(0xffF1F5F9),
+                    minimumSize: Size(44, 44),
+                    padding: EdgeInsets.zero,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.all(Radius.circular(16)),
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -230,11 +238,7 @@ class _MessageStatsChartState extends State<MessageStatsChart> {
           SizedBox(
             height: responsive.chartHeight,
             child: _isLoading
-                ? const Center(
-                    child: CircularProgressIndicator(
-                      color: Color(0xff14B8A6),
-                    ),
-                  )
+                ? const AnalyticsChartShimmerLoader()
                 : _error != null
                     ? Center(
                         child: Text(

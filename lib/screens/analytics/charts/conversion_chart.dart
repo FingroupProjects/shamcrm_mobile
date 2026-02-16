@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:crm_task_manager/screens/analytics/widgets/chart_shimmer_loader.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:crm_task_manager/screens/analytics/utils/responsive_helper.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/screens/analytics/widgets/chart_empty_overlay.dart';
 
 class ConversionChart extends StatefulWidget {
-  const ConversionChart({super.key});
+  const ConversionChart({super.key, required this.title});
+
+  final String title;
 
   @override
   State<ConversionChart> createState() => _ConversionChartState();
@@ -15,6 +18,8 @@ class _ConversionChartState extends State<ConversionChart> {
   bool _isLoading = true;
   String? _error;
   List<double> _conversionData = [];
+
+  String get _title => widget.title;
 
   static const List<String> _monthNames = [
     'Янв',
@@ -83,7 +88,7 @@ class _ConversionChartState extends State<ConversionChart> {
       });
     } catch (e) {
       setState(() {
-        _error = 'Ошибка: $e';
+        _error = 'Не удалось загрузить данные. Попробуйте позже.';
         _isLoading = false;
       });
     }
@@ -137,8 +142,7 @@ class _ConversionChartState extends State<ConversionChart> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                    'Конверсия клиентов',
+              Text(_title,
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
@@ -242,7 +246,7 @@ class _ConversionChartState extends State<ConversionChart> {
                 ),
                 const SizedBox(width: 12),
                 Text(
-                  'Конверсия клиентов',
+                  _title,
                   style: TextStyle(
                     fontSize: responsive.titleFontSize,
                     fontWeight: FontWeight.w600,
@@ -253,8 +257,15 @@ class _ConversionChartState extends State<ConversionChart> {
                 const Spacer(),
                 IconButton(
                   onPressed: _showDetails,
-                  icon: const Icon(Icons.more_vert, color: Color(0xff64748B)),
-                  splashRadius: 18,
+                  icon: const Icon(Icons.crop_free, color: Color(0xff64748B), size: 22),
+                  style: IconButton.styleFrom(
+                    backgroundColor: Color(0xffF1F5F9),
+                    minimumSize: Size(44, 44),
+                    padding: EdgeInsets.zero,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.all(Radius.circular(16)),
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -263,11 +274,7 @@ class _ConversionChartState extends State<ConversionChart> {
           SizedBox(
             height: responsive.chartHeight,
             child: _isLoading
-                ? const Center(
-                    child: CircularProgressIndicator(
-                      color: Color(0xff6366F1),
-                    ),
-                  )
+                ? const AnalyticsChartShimmerLoader()
                 : _error != null
                     ? Center(
                         child: Column(

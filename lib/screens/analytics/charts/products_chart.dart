@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:crm_task_manager/screens/analytics/widgets/chart_shimmer_loader.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:crm_task_manager/screens/analytics/utils/responsive_helper.dart';
 import 'package:crm_task_manager/screens/analytics/models/top_selling_products_model.dart';
@@ -6,7 +7,9 @@ import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/screens/analytics/widgets/chart_empty_overlay.dart';
 
 class ProductsChart extends StatefulWidget {
-  const ProductsChart({Key? key}) : super(key: key);
+  const ProductsChart({super.key, required this.title});
+
+  final String title;
 
   @override
   State<ProductsChart> createState() => _ProductsChartState();
@@ -16,6 +19,8 @@ class _ProductsChartState extends State<ProductsChart> {
   bool _isLoading = true;
   String? _error;
   TopSellingProductsResponse? _data;
+
+  String get _title => widget.title;
 
   static final List<TopSellingProductItem> _previewItems = [
     TopSellingProductItem(
@@ -82,7 +87,7 @@ class _ProductsChartState extends State<ProductsChart> {
       });
     } catch (e) {
       setState(() {
-        _error = 'Ошибка: $e';
+        _error = 'Не удалось загрузить данные. Попробуйте позже.';
         _isLoading = false;
       });
     }
@@ -105,8 +110,7 @@ class _ProductsChartState extends State<ProductsChart> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'ТОП продаваемых товаров',
+              Text(_title,
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w700,
@@ -242,7 +246,7 @@ class _ProductsChartState extends State<ProductsChart> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    'ТОП продаваемых товаров',
+                    _title,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
@@ -256,8 +260,15 @@ class _ProductsChartState extends State<ProductsChart> {
                 const SizedBox(width: 8),
                 IconButton(
                   onPressed: _showDetails,
-                  icon: const Icon(Icons.more_vert, color: Color(0xff64748B)),
-                  splashRadius: 18,
+                  icon: const Icon(Icons.crop_free, color: Color(0xff64748B), size: 22),
+                  style: IconButton.styleFrom(
+                    backgroundColor: Color(0xffF1F5F9),
+                    minimumSize: Size(44, 44),
+                    padding: EdgeInsets.zero,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.all(Radius.circular(16)),
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -266,11 +277,7 @@ class _ProductsChartState extends State<ProductsChart> {
           SizedBox(
             height: 400,
             child: _isLoading
-                ? const Center(
-                    child: CircularProgressIndicator(
-                      color: Color(0xffF97316),
-                    ),
-                  )
+                ? const AnalyticsChartShimmerLoader()
                 : _error != null
                     ? Center(
                         child: Column(

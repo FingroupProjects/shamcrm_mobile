@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:crm_task_manager/screens/analytics/widgets/chart_shimmer_loader.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:crm_task_manager/screens/analytics/utils/responsive_helper.dart';
 import 'package:crm_task_manager/screens/analytics/models/advertising_roi_model.dart';
@@ -6,7 +7,9 @@ import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/screens/analytics/widgets/chart_empty_overlay.dart';
 
 class AdvertisingRoiChart extends StatefulWidget {
-  const AdvertisingRoiChart({super.key});
+  const AdvertisingRoiChart({super.key, required this.title});
+
+  final String title;
 
   @override
   State<AdvertisingRoiChart> createState() => _AdvertisingRoiChartState();
@@ -17,6 +20,8 @@ class _AdvertisingRoiChartState extends State<AdvertisingRoiChart> {
   String? _error;
   AdvertisingRoiResponse? _data;
   List<AdvertisingRoiIntegration> _integrations = [];
+
+  String get _title => widget.title;
 
   static final List<AdvertisingRoiIntegration> _previewIntegrations = [
     AdvertisingRoiIntegration(
@@ -82,7 +87,7 @@ class _AdvertisingRoiChartState extends State<AdvertisingRoiChart> {
       });
     } catch (e) {
       setState(() {
-        _error = 'Ошибка: $e';
+        _error = 'Не удалось загрузить данные. Попробуйте позже.';
         _isLoading = false;
       });
     }
@@ -106,9 +111,9 @@ class _AdvertisingRoiChartState extends State<AdvertisingRoiChart> {
             children: [
               Row(
                 children: [
-                  const Expanded(
+                  Expanded(
                     child: Text(
-                      'Эффективность рекламы (ROI)',
+                      _title,
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w700,
@@ -251,7 +256,7 @@ class _AdvertisingRoiChartState extends State<AdvertisingRoiChart> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    'Эффективность рекламы (ROI)',
+                    _title,
                     style: TextStyle(
                       fontSize: responsive.titleFontSize,
                       fontWeight: FontWeight.w600,
@@ -262,8 +267,15 @@ class _AdvertisingRoiChartState extends State<AdvertisingRoiChart> {
                 ),
                 IconButton(
                   onPressed: _showDetails,
-                  icon: const Icon(Icons.more_vert, color: Color(0xff64748B)),
-                  splashRadius: 18,
+                  icon: const Icon(Icons.crop_free, color: Color(0xff64748B), size: 22),
+                  style: IconButton.styleFrom(
+                    backgroundColor: Color(0xffF1F5F9),
+                    minimumSize: Size(44, 44),
+                    padding: EdgeInsets.zero,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.all(Radius.circular(16)),
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -271,11 +283,7 @@ class _AdvertisingRoiChartState extends State<AdvertisingRoiChart> {
           SizedBox(
             height: responsive.chartHeight,
             child: _isLoading
-                ? const Center(
-                    child: CircularProgressIndicator(
-                      color: Color(0xffF59E0B),
-                    ),
-                  )
+                ? const AnalyticsChartShimmerLoader()
                 : _error != null
                     ? Center(
                         child: Text(

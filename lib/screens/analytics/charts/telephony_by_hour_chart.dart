@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:crm_task_manager/screens/analytics/widgets/chart_shimmer_loader.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:crm_task_manager/screens/analytics/utils/responsive_helper.dart';
 import 'package:crm_task_manager/screens/analytics/models/telephony_by_hour_model.dart';
@@ -6,7 +7,9 @@ import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/screens/analytics/widgets/chart_empty_overlay.dart';
 
 class TelephonyByHourChart extends StatefulWidget {
-  const TelephonyByHourChart({super.key});
+  const TelephonyByHourChart({super.key, required this.title});
+
+  final String title;
 
   @override
   State<TelephonyByHourChart> createState() => _TelephonyByHourChartState();
@@ -16,6 +19,8 @@ class _TelephonyByHourChartState extends State<TelephonyByHourChart> {
   bool _isLoading = true;
   String? _error;
   TelephonyByHourResponse? _data;
+
+  String get _title => widget.title;
 
   static final List<TelephonyHourItem> _previewHours = [
     TelephonyHourItem(
@@ -82,7 +87,7 @@ class _TelephonyByHourChartState extends State<TelephonyByHourChart> {
       });
     } catch (e) {
       setState(() {
-        _error = 'Ошибка: $e';
+        _error = 'Не удалось загрузить данные. Попробуйте позже.';
         _isLoading = false;
       });
     }
@@ -107,9 +112,9 @@ class _TelephonyByHourChartState extends State<TelephonyByHourChart> {
             children: [
               Row(
                 children: [
-                  const Expanded(
+                  Expanded(
                     child: Text(
-                      'Аналитика звонков по часам',
+                      _title,
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w700,
@@ -267,7 +272,7 @@ class _TelephonyByHourChartState extends State<TelephonyByHourChart> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    'Аналитика звонков по часам',
+                    _title,
                     style: TextStyle(
                       fontSize: responsive.titleFontSize,
                       fontWeight: FontWeight.w600,
@@ -278,8 +283,15 @@ class _TelephonyByHourChartState extends State<TelephonyByHourChart> {
                 ),
                 IconButton(
                   onPressed: _showDetails,
-                  icon: const Icon(Icons.more_vert, color: Color(0xff64748B)),
-                  splashRadius: 18,
+                  icon: const Icon(Icons.crop_free, color: Color(0xff64748B), size: 22),
+                  style: IconButton.styleFrom(
+                    backgroundColor: Color(0xffF1F5F9),
+                    minimumSize: Size(44, 44),
+                    padding: EdgeInsets.zero,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.all(Radius.circular(16)),
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -287,11 +299,7 @@ class _TelephonyByHourChartState extends State<TelephonyByHourChart> {
           SizedBox(
             height: responsive.chartHeight,
             child: _isLoading
-                ? const Center(
-                    child: CircularProgressIndicator(
-                      color: Color(0xff0EA5E9),
-                    ),
-                  )
+                ? const AnalyticsChartShimmerLoader()
                 : _error != null
                     ? Center(
                         child: Text(
@@ -310,65 +318,65 @@ class _TelephonyByHourChartState extends State<TelephonyByHourChart> {
                             BarChartData(
                               maxY: maxValue * 1.2,
                               barGroups: _buildGroups(displayItems),
-                            gridData: FlGridData(
-                              show: true,
-                              drawVerticalLine: false,
-                              getDrawingHorizontalLine: (value) => FlLine(
-                                color: const Color(0xffE2E8F0),
-                                strokeWidth: 1,
-                              ),
-                            ),
-                            borderData: FlBorderData(show: false),
-                            titlesData: FlTitlesData(
-                              leftTitles: AxisTitles(
-                                sideTitles: SideTitles(
-                                  showTitles: true,
-                                  reservedSize: 40,
-                                  getTitlesWidget: (value, meta) {
-                                    return Text(
-                                      value.toInt().toString(),
-                                      style: const TextStyle(
-                                        fontSize: 10,
-                                        color: Color(0xff64748B),
-                                        fontFamily: 'Golos',
-                                      ),
-                                    );
-                                  },
+                              gridData: FlGridData(
+                                show: true,
+                                drawVerticalLine: false,
+                                getDrawingHorizontalLine: (value) => FlLine(
+                                  color: const Color(0xffE2E8F0),
+                                  strokeWidth: 1,
                                 ),
                               ),
-                              bottomTitles: AxisTitles(
-                                sideTitles: SideTitles(
-                                  showTitles: true,
-                                  getTitlesWidget: (value, meta) {
-                                    final index = value.toInt();
-                                    if (index < 0 ||
-                                        index >= displayItems.length) {
-                                      return const SizedBox.shrink();
-                                    }
-                                    if (index % 3 != 0) {
-                                      return const SizedBox.shrink();
-                                    }
-                                    return Padding(
-                                      padding: const EdgeInsets.only(top: 6),
-                                      child: Text(
-                                        displayItems[index].hour,
+                              borderData: FlBorderData(show: false),
+                              titlesData: FlTitlesData(
+                                leftTitles: AxisTitles(
+                                  sideTitles: SideTitles(
+                                    showTitles: true,
+                                    reservedSize: 40,
+                                    getTitlesWidget: (value, meta) {
+                                      return Text(
+                                        value.toInt().toString(),
                                         style: const TextStyle(
-                                          fontSize: 9,
+                                          fontSize: 10,
                                           color: Color(0xff64748B),
                                           fontFamily: 'Golos',
                                         ),
-                                      ),
-                                    );
-                                  },
+                                      );
+                                    },
+                                  ),
+                                ),
+                                bottomTitles: AxisTitles(
+                                  sideTitles: SideTitles(
+                                    showTitles: true,
+                                    getTitlesWidget: (value, meta) {
+                                      final index = value.toInt();
+                                      if (index < 0 ||
+                                          index >= displayItems.length) {
+                                        return const SizedBox.shrink();
+                                      }
+                                      if (index % 3 != 0) {
+                                        return const SizedBox.shrink();
+                                      }
+                                      return Padding(
+                                        padding: const EdgeInsets.only(top: 6),
+                                        child: Text(
+                                          displayItems[index].hour,
+                                          style: const TextStyle(
+                                            fontSize: 9,
+                                            color: Color(0xff64748B),
+                                            fontFamily: 'Golos',
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ),
+                                topTitles: const AxisTitles(
+                                  sideTitles: SideTitles(showTitles: false),
+                                ),
+                                rightTitles: const AxisTitles(
+                                  sideTitles: SideTitles(showTitles: false),
                                 ),
                               ),
-                              topTitles: const AxisTitles(
-                                sideTitles: SideTitles(showTitles: false),
-                              ),
-                              rightTitles: const AxisTitles(
-                                sideTitles: SideTitles(showTitles: false),
-                              ),
-                            ),
                             ),
                           ),
                         ),
@@ -382,15 +390,21 @@ class _TelephonyByHourChartState extends State<TelephonyByHourChart> {
                 responsive.cardPadding,
                 responsive.cardPadding,
               ),
-              child: Row(
-                children: [
-                  const _LegendDot(color: Color(0xff10B981), label: 'Входящие'),
-                  const SizedBox(width: 12),
-                  const _LegendDot(color: Color(0xff6366F1), label: 'Исходящие'),
-                  const SizedBox(width: 12),
-                  const _LegendDot(color: Color(0xffEF4444), label: 'Пропущенные'),
-                  const Spacer(),
-                  Text(
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final isNarrow = constraints.maxWidth < 360;
+                  final legend = Wrap(
+                    spacing: 12,
+                    runSpacing: 8,
+                    children: const [
+                      _LegendDot(color: Color(0xff10B981), label: 'Входящие'),
+                      _LegendDot(color: Color(0xff6366F1), label: 'Исходящие'),
+                      _LegendDot(
+                          color: Color(0xffEF4444), label: 'Пропущенные'),
+                    ],
+                  );
+
+                  final peakText = Text(
                     'Пик: ${_data!.peakHour ?? '-'}',
                     style: const TextStyle(
                       fontSize: 12,
@@ -398,8 +412,30 @@ class _TelephonyByHourChartState extends State<TelephonyByHourChart> {
                       color: Color(0xff64748B),
                       fontFamily: 'Golos',
                     ),
-                  ),
-                ],
+                  );
+
+                  if (isNarrow) {
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        legend,
+                        const SizedBox(height: 8),
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: peakText,
+                        ),
+                      ],
+                    );
+                  }
+
+                  return Row(
+                    children: [
+                      legend,
+                      const Spacer(),
+                      peakText,
+                    ],
+                  );
+                },
               ),
             ),
         ],

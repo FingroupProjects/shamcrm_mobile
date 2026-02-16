@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:crm_task_manager/screens/analytics/widgets/chart_shimmer_loader.dart';
 import 'package:crm_task_manager/screens/analytics/utils/responsive_helper.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/screens/analytics/models/users_chart_model.dart';
@@ -6,7 +7,9 @@ import 'package:crm_task_manager/screens/dashboard/dialogs/user_overdue_task_dia
 import 'package:crm_task_manager/screens/analytics/widgets/chart_empty_overlay.dart';
 
 class GoalsChart extends StatefulWidget {
-  const GoalsChart({super.key});
+  const GoalsChart({super.key, required this.title});
+
+  final String title;
 
   @override
   State<GoalsChart> createState() => _GoalsChartState();
@@ -17,6 +20,8 @@ class _GoalsChartState extends State<GoalsChart> {
   String? _error;
   List<UserPerformance> _goals = [];
   int _averageKpi = 0;
+
+  String get _title => widget.title;
 
   static final List<UserPerformance> _previewGoals = [
     UserPerformance(
@@ -68,7 +73,7 @@ class _GoalsChartState extends State<GoalsChart> {
       });
     } catch (e) {
       setState(() {
-        _error = 'Ошибка: $e';
+        _error = 'Не удалось загрузить данные. Попробуйте позже.';
         _isLoading = false;
       });
     }
@@ -90,8 +95,7 @@ class _GoalsChartState extends State<GoalsChart> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'Выполнение целей',
+              Text(_title,
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
@@ -209,7 +213,7 @@ class _GoalsChartState extends State<GoalsChart> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    'Выполнение целей',
+                    _title,
                     style: TextStyle(
                       fontSize: responsive.titleFontSize,
                       fontWeight: FontWeight.w600,
@@ -220,8 +224,15 @@ class _GoalsChartState extends State<GoalsChart> {
                 ),
                 IconButton(
                   onPressed: _showDetails,
-                  icon: const Icon(Icons.more_vert, color: Color(0xff64748B)),
-                  splashRadius: 18,
+                  icon: const Icon(Icons.crop_free, color: Color(0xff64748B), size: 22),
+                  style: IconButton.styleFrom(
+                    backgroundColor: Color(0xffF1F5F9),
+                    minimumSize: Size(44, 44),
+                    padding: EdgeInsets.zero,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.all(Radius.circular(16)),
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -230,11 +241,7 @@ class _GoalsChartState extends State<GoalsChart> {
           SizedBox(
             height: responsive.chartHeight,
             child: _isLoading
-                ? const Center(
-                    child: CircularProgressIndicator(
-                      color: Color(0xff8B5CF6),
-                    ),
-                  )
+                ? const AnalyticsChartShimmerLoader()
                 : _error != null
                     ? Center(
                         child: Column(

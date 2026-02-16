@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:crm_task_manager/screens/analytics/widgets/chart_shimmer_loader.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:crm_task_manager/screens/analytics/utils/responsive_helper.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/screens/analytics/widgets/chart_empty_overlay.dart';
 
 class KpiChart extends StatefulWidget {
-  const KpiChart({super.key});
+  const KpiChart({super.key, required this.title});
+
+  final String title;
 
   @override
   State<KpiChart> createState() => _KpiChartState();
@@ -18,6 +21,8 @@ class _KpiChartState extends State<KpiChart> {
   List<int> _taskData = [];
   double _completionRate = 0.0;
   int _totalTasks = 0;
+
+  String get _title => widget.title;
 
   static const List<int> _previewTaskData = [35, 48, 129];
 
@@ -45,7 +50,7 @@ class _KpiChartState extends State<KpiChart> {
       });
     } catch (e) {
       setState(() {
-        _error = 'Ошибка: $e';
+        _error = 'Не удалось загрузить данные. Попробуйте позже.';
         _isLoading = false;
       });
     }
@@ -67,8 +72,7 @@ class _KpiChartState extends State<KpiChart> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'KPI задач',
+              Text(_title,
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
@@ -243,7 +247,7 @@ class _KpiChartState extends State<KpiChart> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    'KPI задач',
+                    _title,
                     style: TextStyle(
                       fontSize: responsive.titleFontSize,
                       fontWeight: FontWeight.w600,
@@ -254,8 +258,15 @@ class _KpiChartState extends State<KpiChart> {
                 ),
                 IconButton(
                   onPressed: _showDetails,
-                  icon: const Icon(Icons.more_vert, color: Color(0xff64748B)),
-                  splashRadius: 18,
+                  icon: const Icon(Icons.crop_free, color: Color(0xff64748B), size: 22),
+                  style: IconButton.styleFrom(
+                    backgroundColor: Color(0xffF1F5F9),
+                    minimumSize: Size(44, 44),
+                    padding: EdgeInsets.zero,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.all(Radius.circular(16)),
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -264,11 +275,7 @@ class _KpiChartState extends State<KpiChart> {
           SizedBox(
             height: responsive.smallChartHeight,
             child: _isLoading
-                ? const Center(
-                    child: CircularProgressIndicator(
-                      color: Color(0xff6366F1),
-                    ),
-                  )
+                ? const AnalyticsChartShimmerLoader()
                 : _error != null
                     ? Center(
                         child: Column(

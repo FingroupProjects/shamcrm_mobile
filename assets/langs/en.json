@@ -1950,5 +1950,6 @@
   "lead_status": "Lead status",
   "later": "Later",
   "additional_client_info": "Additional client information",
-  "clientreturn": "Client Return"
+  "clientreturn": "Client Return",
+  "all_periods": "All periods"
 }

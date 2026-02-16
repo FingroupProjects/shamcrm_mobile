@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:crm_task_manager/screens/analytics/widgets/chart_shimmer_loader.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:crm_task_manager/screens/analytics/utils/responsive_helper.dart';
 import 'package:crm_task_manager/screens/analytics/models/connected_accounts_model.dart';
@@ -6,7 +7,9 @@ import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/screens/analytics/widgets/chart_empty_overlay.dart';
 
 class ConnectedAccountsChart extends StatefulWidget {
-  const ConnectedAccountsChart({super.key});
+  const ConnectedAccountsChart({super.key, required this.title});
+
+  final String title;
 
   @override
   State<ConnectedAccountsChart> createState() => _ConnectedAccountsChartState();
@@ -17,6 +20,8 @@ class _ConnectedAccountsChartState extends State<ConnectedAccountsChart> {
   String? _error;
   ConnectedAccountsResponse? _data;
   List<ConnectedAccount> _accounts = [];
+
+  String get _title => widget.title;
 
   static final List<ConnectedAccount> _previewAccounts = [
     ConnectedAccount(
@@ -90,7 +95,7 @@ class _ConnectedAccountsChartState extends State<ConnectedAccountsChart> {
       });
     } catch (e) {
       setState(() {
-        _error = 'Ошибка: $e';
+        _error = 'Не удалось загрузить данные. Попробуйте позже.';
         _isLoading = false;
       });
     }
@@ -114,9 +119,9 @@ class _ConnectedAccountsChartState extends State<ConnectedAccountsChart> {
             children: [
               Row(
                 children: [
-                  const Expanded(
+                  Expanded(
                     child: Text(
-                      'Подключенные аккаунты (по каналам)',
+                      _title,
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w700,
@@ -210,6 +215,8 @@ class _ConnectedAccountsChartState extends State<ConnectedAccountsChart> {
             .map((e) => e.totalChats)
             .reduce((a, b) => a > b ? a : b)
             .toDouble();
+    final chartMaxY = maxValue * 1.2;
+    final leftInterval = (chartMaxY / 5).ceilToDouble();
 
     return Container(
       decoration: BoxDecoration(
@@ -256,7 +263,7 @@ class _ConnectedAccountsChartState extends State<ConnectedAccountsChart> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    'Подключенные аккаунты (по каналам)',
+                    _title,
                     style: TextStyle(
                       fontSize: responsive.titleFontSize,
                       fontWeight: FontWeight.w600,
@@ -267,8 +274,15 @@ class _ConnectedAccountsChartState extends State<ConnectedAccountsChart> {
                 ),
                 IconButton(
                   onPressed: _showDetails,
-                  icon: const Icon(Icons.more_vert, color: Color(0xff64748B)),
-                  splashRadius: 18,
+                  icon: const Icon(Icons.crop_free, color: Color(0xff64748B), size: 22),
+                  style: IconButton.styleFrom(
+                    backgroundColor: Color(0xffF1F5F9),
+                    minimumSize: Size(44, 44),
+                    padding: EdgeInsets.zero,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.all(Radius.circular(16)),
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -276,11 +290,7 @@ class _ConnectedAccountsChartState extends State<ConnectedAccountsChart> {
           SizedBox(
             height: responsive.chartHeight,
             child: _isLoading
-                ? const Center(
-                    child: CircularProgressIndicator(
-                      color: Color(0xff25D366),
-                    ),
-                  )
+                ? const AnalyticsChartShimmerLoader()
                 : _error != null
                     ? Center(
                         child: Text(
@@ -299,7 +309,7 @@ class _ConnectedAccountsChartState extends State<ConnectedAccountsChart> {
                             quarterTurns: 1,
                             child: BarChart(
                               BarChartData(
-                                maxY: maxValue * 1.2,
+                                maxY: chartMaxY,
                                 barGroups: _buildGroups(displayAccounts),
                                 gridData: FlGridData(
                                   show: true,
@@ -315,6 +325,8 @@ class _ConnectedAccountsChartState extends State<ConnectedAccountsChart> {
                                     sideTitles: SideTitles(
                                       showTitles: true,
                                       reservedSize: 36,
+                                      interval: leftInterval,
+                                      maxIncluded: false,
                                       getTitlesWidget: (value, meta) {
                                         return RotatedBox(
                                           quarterTurns: 3,
@@ -346,7 +358,8 @@ class _ConnectedAccountsChartState extends State<ConnectedAccountsChart> {
                                             padding:
                                                 const EdgeInsets.only(top: 6),
                                             child: Text(
-                                              displayAccounts[index].displayName,
+                                              displayAccounts[index]
+                                                  .displayName,
                                               style: const TextStyle(
                                                 fontSize: 9,
                                                 color: Color(0xff64748B),
@@ -393,6 +406,6 @@ class _ConnectedAccountsChartState extends State<ConnectedAccountsChart> {
             ),
         ],
       ),
-      );
+    );
   }
 }

@@ -31,6 +31,9 @@ class AnalyticsFilterSheet extends StatefulWidget {
 }
 
 class _AnalyticsFilterSheetState extends State<AnalyticsFilterSheet> {
+  static const String _defaultPeriodKey = 'current_year';
+  static const String _allPeriodKey = 'all';
+
   late String? _periodKey;
   late List<String> _managerIds;
   late List<String> _funnelIds;
@@ -39,7 +42,7 @@ class _AnalyticsFilterSheetState extends State<AnalyticsFilterSheet> {
   @override
   void initState() {
     super.initState();
-    _periodKey = widget.selectedPeriodKey;
+    _periodKey = widget.selectedPeriodKey ?? _defaultPeriodKey;
     _managerIds = List<String>.from(widget.selectedManagers);
     _funnelIds = List<String>.from(widget.selectedFunnels);
     _sourceIds = List<String>.from(widget.selectedSources);
@@ -49,6 +52,7 @@ class _AnalyticsFilterSheetState extends State<AnalyticsFilterSheet> {
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context);
     final periodKeys = <String>[
+      _allPeriodKey,
       'week',
       'month',
       '3month',
@@ -56,6 +60,7 @@ class _AnalyticsFilterSheetState extends State<AnalyticsFilterSheet> {
       'last_year',
     ];
     final periodLabels = <String>[
+      localizations?.translate('all_periods') ?? 'Все периоды',
       localizations?.translate('period_7_days') ?? 'Последние 7 дней',
       localizations?.translate('period_30_days') ?? 'Последние 30 дней',
       localizations?.translate('period_90_days') ?? 'Последние 90 дней',
@@ -182,7 +187,7 @@ class _AnalyticsFilterSheetState extends State<AnalyticsFilterSheet> {
                   child: OutlinedButton(
                     onPressed: () {
                       setState(() {
-                        _periodKey = null;
+                        _periodKey = _allPeriodKey;
                         _managerIds = [];
                         _funnelIds = [];
                         _sourceIds = [];

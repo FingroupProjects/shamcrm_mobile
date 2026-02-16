@@ -76,6 +76,7 @@ import 'package:crm_task_manager/screens/analytics/models/connected_accounts_mod
 import 'package:crm_task_manager/screens/analytics/models/advertising_roi_model.dart';
 import 'package:crm_task_manager/screens/analytics/models/telephony_by_hour_model.dart';
 import 'package:crm_task_manager/screens/analytics/models/targeted_ads_model.dart';
+import 'package:crm_task_manager/screens/analytics/models/dashboard_setting_item.dart';
 import 'package:crm_task_manager/models/organization_model.dart';
 import 'package:crm_task_manager/models/overdue_task_response.dart';
 import 'package:crm_task_manager/models/page_2/branch_model.dart';
@@ -216,6 +217,8 @@ class ApiService {
   ];
   // Актуальные фильтры аналитики, применяемые ко всем графикам.
   static Map<String, dynamic>? _analyticsFilters;
+  // In-memory cache аналитических GET-запросов (живет до перезапуска приложения).
+  static final Map<String, String> _analyticsResponseCache = {};
 
   static void setAnalyticsFilters(Map<String, dynamic>? filters) {
     if (filters == null) {
@@ -227,6 +230,10 @@ class ApiService {
 
   static void clearAnalyticsFilters() {
     _analyticsFilters = null;
+  }
+
+  static void clearAnalyticsResponseCache() {
+    _analyticsResponseCache.clear();
   }
 
   String _appendAnalyticsFiltersToPath(String path) {
@@ -899,7 +906,26 @@ class ApiService {
     if (kDebugMode) {
       debugPrint('🔵 _analyticsRequest filtered path: $filteredPath');
     }
-    return _getRequest(filteredPath);
+    final cachedBody = _analyticsResponseCache[filteredPath];
+    if (cachedBody != null) {
+      if (kDebugMode) {
+        debugPrint('🟢 _analyticsRequest cache HIT: $filteredPath');
+      }
+      return http.Response(
+        cachedBody,
+        200,
+        headers: const {'x-analytics-cache': 'HIT'},
+      );
+    }
+
+    final response = await _getRequest(filteredPath);
+    if (response.statusCode == 200) {
+      _analyticsResponseCache[filteredPath] = response.body;
+      if (kDebugMode) {
+        debugPrint('🟢 _analyticsRequest cache SAVE: $filteredPath');
+      }
+    }
+    return response;
   }
 
   /// Новый метод для обработки MultipartRequest
@@ -6551,6 +6577,44 @@ class ApiService {
     } catch (e) {
       debugPrint('ApiService: getDashboardStatisticsV2 error: $e');
       throw Exception('Ошибка получения статистики: $e');
+    }
+  }
+
+  /// Получение настроек/доступов графиков для аналитики (V2)
+  /// Endpoint: /api/v2/dashboard-settings
+  Future<List<DashboardSettingItem>> getDashboardSettingsV2() async {
+    final path = await _appendQueryParams('/v2/dashboard-settings');
+
+    if (kDebugMode) {
+      debugPrint('ApiService: getDashboardSettingsV2 - Generated path: $path');
+    }
+
+    try {
+      final response = await _analyticsRequest(path);
+
+      if (response.statusCode != 200) {
+        throw Exception(
+          'Ошибка загрузки настроек графиков! Код: ${response.statusCode}',
+        );
+      }
+
+      final dynamic jsonData = json.decode(response.body);
+      final dynamic result = jsonData is Map<String, dynamic>
+          ? jsonData['result']
+          : null;
+
+      if (result is! List) {
+        return [];
+      }
+
+      return result
+          .whereType<Map<String, dynamic>>()
+          .map(DashboardSettingItem.fromJson)
+          .where((item) => item.nameEn.isNotEmpty)
+          .toList();
+    } catch (e) {
+      debugPrint('ApiService: getDashboardSettingsV2 error: $e');
+      rethrow;
     }
   }
 

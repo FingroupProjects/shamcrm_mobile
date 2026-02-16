@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:crm_task_manager/screens/analytics/widgets/chart_shimmer_loader.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:crm_task_manager/screens/analytics/utils/responsive_helper.dart';
 import 'package:crm_task_manager/screens/analytics/models/targeted_ads_model.dart';
@@ -6,7 +7,9 @@ import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/screens/analytics/widgets/chart_empty_overlay.dart';
 
 class TargetedAdsChart extends StatefulWidget {
-  const TargetedAdsChart({super.key});
+  const TargetedAdsChart({super.key, required this.title});
+
+  final String title;
 
   @override
   State<TargetedAdsChart> createState() => _TargetedAdsChartState();
@@ -17,6 +20,8 @@ class _TargetedAdsChartState extends State<TargetedAdsChart> {
   String? _error;
   TargetedAdsResponse? _data;
   List<TargetedAdCampaign> _campaigns = [];
+
+  String get _title => widget.title;
 
   static final List<TargetedAdCampaign> _previewCampaigns = [
     TargetedAdCampaign(
@@ -94,7 +99,7 @@ class _TargetedAdsChartState extends State<TargetedAdsChart> {
       });
     } catch (e) {
       setState(() {
-        _error = 'Ошибка: $e';
+        _error = 'Не удалось загрузить данные. Попробуйте позже.';
         _isLoading = false;
       });
     }
@@ -118,9 +123,9 @@ class _TargetedAdsChartState extends State<TargetedAdsChart> {
             children: [
               Row(
                 children: [
-                  const Expanded(
+                  Expanded(
                     child: Text(
-                      'Таргетированная реклама (Meta Ads)',
+                      _title,
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w700,
@@ -223,6 +228,8 @@ class _TargetedAdsChartState extends State<TargetedAdsChart> {
             .map((e) => e.totalReaches)
             .reduce((a, b) => a > b ? a : b)
             .toDouble();
+    final chartMaxY = maxValue * 1.2;
+    final leftInterval = (chartMaxY / 5).ceilToDouble();
 
     return Container(
       decoration: BoxDecoration(
@@ -269,7 +276,7 @@ class _TargetedAdsChartState extends State<TargetedAdsChart> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    'Таргетированная реклама (Meta Ads)',
+                    _title,
                     style: TextStyle(
                       fontSize: responsive.titleFontSize,
                       fontWeight: FontWeight.w600,
@@ -280,8 +287,15 @@ class _TargetedAdsChartState extends State<TargetedAdsChart> {
                 ),
                 IconButton(
                   onPressed: _showDetails,
-                  icon: const Icon(Icons.more_vert, color: Color(0xff64748B)),
-                  splashRadius: 18,
+                  icon: const Icon(Icons.crop_free, color: Color(0xff64748B), size: 22),
+                  style: IconButton.styleFrom(
+                    backgroundColor: Color(0xffF1F5F9),
+                    minimumSize: Size(44, 44),
+                    padding: EdgeInsets.zero,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.all(Radius.circular(16)),
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -289,11 +303,7 @@ class _TargetedAdsChartState extends State<TargetedAdsChart> {
           SizedBox(
             height: responsive.chartHeight,
             child: _isLoading
-                ? const Center(
-                    child: CircularProgressIndicator(
-                      color: Color(0xffE1306C),
-                    ),
-                  )
+                ? const AnalyticsChartShimmerLoader()
                 : _error != null
                     ? Center(
                         child: Text(
@@ -312,7 +322,7 @@ class _TargetedAdsChartState extends State<TargetedAdsChart> {
                             quarterTurns: 1,
                             child: BarChart(
                               BarChartData(
-                                maxY: maxValue * 1.2,
+                                maxY: chartMaxY,
                                 barGroups: _buildGroups(displayCampaigns),
                                 gridData: FlGridData(
                                   show: true,
@@ -328,6 +338,8 @@ class _TargetedAdsChartState extends State<TargetedAdsChart> {
                                     sideTitles: SideTitles(
                                       showTitles: true,
                                       reservedSize: 36,
+                                      interval: leftInterval,
+                                      maxIncluded: false,
                                       getTitlesWidget: (value, meta) {
                                         return RotatedBox(
                                           quarterTurns: 3,

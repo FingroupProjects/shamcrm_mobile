@@ -1966,5 +1966,6 @@
   "order_type": "Тип заказа",
   "deal_single": "Сделка",
   "lead_status": "Статус лида",
-  "additional_client_info": "Доп. информация клиента"
+  "additional_client_info": "Доп. информация клиента",
+  "all_periods": "Все периоды"
 }

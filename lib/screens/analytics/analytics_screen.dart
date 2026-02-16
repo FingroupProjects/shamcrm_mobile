@@ -20,6 +20,8 @@ import 'package:crm_task_manager/screens/analytics/charts/advertising_roi_chart.
 import 'package:crm_task_manager/screens/analytics/charts/targeted_ads_chart.dart';
 import 'package:crm_task_manager/screens/analytics/charts/telephony_by_hour_chart.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/screens/analytics/models/dashboard_setting_item.dart';
+import 'package:crm_task_manager/custom_widget/shimmer_wave.dart';
 
 class AnalyticsScreen extends StatefulWidget {
   const AnalyticsScreen({Key? key}) : super(key: key);
@@ -29,14 +31,39 @@ class AnalyticsScreen extends StatefulWidget {
 }
 
 class _AnalyticsScreenState extends State<AnalyticsScreen> {
+  static const String _defaultPeriodKey = 'current_year';
+  static const String _allPeriodKey = 'all';
+  static const Map<String, String> _fallbackChartTitles = {
+    'conversion': 'Конверсия лидов',
+    'lead_sources': 'Источник лидов',
+    'manager_deals': 'Сделки по менеджерам',
+    'speed_chart': 'Средняя скорость обработки лидов',
+    'achieving_goals': 'Выполнение целей',
+    'achieving_tasks': 'Выполнение задач (KPI)',
+    'online_store_orders': 'Заказы интернет-магазина',
+    'top_selling_products': 'ТОП продаваемых товаров',
+    'telephony_and_events': 'Телефония и события',
+    'replies_to_messages': 'Ответы на сообщения',
+    'task_statistics_by_project': 'Статистика задач по проектам',
+    'targeted_advertising': 'Таргетированная реклама (Meta Ads)',
+    'connected_accounts': 'Подключённые аккаунты (по каналам)',
+    'advertising_effectiveness': 'Эффективность рекламы (ROI)',
+    'conversion_by_statuses': 'Конверсия и количество по статусам',
+    'calls_by_hour': 'Аналитика звонков по часам',
+  };
+
   String? _selectedPeriodKey;
   List<String> _selectedManagerIds = [];
   List<String> _selectedFunnelIds = [];
   List<String> _selectedSourceIds = [];
   int _chartsVersion = 0;
+  bool _isLoadingChartSettings = true;
+  String? _chartSettingsError;
+  final Map<String, String> _chartTitlesByKey = {};
+  final Set<String> _availableChartKeys = {};
 
   // Stats data
-  bool _isLoadingStats = true;
+  bool _hasLoadedStatsOnce = false;
   String _totalLeads = '0';
   String _closedDeals = '0';
   String _totalRevenue = '0';
@@ -49,14 +76,54 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   @override
   void initState() {
     super.initState();
+    _selectedPeriodKey = _defaultPeriodKey;
+    ApiService.setAnalyticsFilters({
+      'period': _defaultPeriodKey,
+    });
     _loadStats();
+    _loadDashboardSettings();
+  }
+
+  Future<void> _loadDashboardSettings() async {
+    setState(() {
+      _isLoadingChartSettings = true;
+      _chartSettingsError = null;
+    });
+
+    try {
+      final apiService = ApiService();
+      final settings = await apiService.getDashboardSettingsV2();
+
+      final titlesByKey = <String, String>{};
+      final keys = <String>{};
+
+      for (final DashboardSettingItem item in settings) {
+        final key = item.nameEn.trim();
+        if (key.isEmpty) continue;
+        keys.add(key);
+        titlesByKey[key] = item.name;
+      }
+
+      if (!mounted) return;
+      setState(() {
+        _availableChartKeys
+          ..clear()
+          ..addAll(keys);
+        _chartTitlesByKey
+          ..clear()
+          ..addAll(titlesByKey);
+        _isLoadingChartSettings = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _chartSettingsError = 'Не удалось загрузить настройки графиков.';
+        _isLoadingChartSettings = false;
+      });
+    }
   }
 
   Future<void> _loadStats() async {
-    setState(() {
-      _isLoadingStats = true;
-    });
-
     try {
       final apiService = ApiService();
 
@@ -71,12 +138,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         _dealsChange = stats.deals.percent;
         _revenueChange = stats.totalSum.percent;
         _conversionChange = stats.conversion.percent;
-        _isLoadingStats = false;
+        _hasLoadedStatsOnce = true;
       });
     } catch (e) {
-      setState(() {
-        _isLoadingStats = false;
-      });
       // Keep default values on error
     }
   }
@@ -99,13 +163,220 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   }
 
   Future<void> _refreshData() async {
-    // Reload stats
-    await _loadStats();
+    ApiService.clearAnalyticsResponseCache();
+    await Future.wait([
+      _loadStats(),
+      _loadDashboardSettings(),
+    ]);
 
     // Force rebuild of all charts by updating their keys
     setState(() {
       _chartsVersion++;
     });
+  }
+
+  bool _hasChartAccess(List<String> keys) {
+    if (_availableChartKeys.isEmpty) return false;
+    return keys.any(_availableChartKeys.contains);
+  }
+
+  String _chartTitle(List<String> keys, String fallbackKey) {
+    for (final key in keys) {
+      final title = _chartTitlesByKey[key];
+      if (title != null && title.trim().isNotEmpty) return title;
+    }
+    return _fallbackChartTitles[fallbackKey] ?? fallbackKey;
+  }
+
+  Widget _buildStatsSkeletonCard() {
+    return ShimmerWave(
+      child: Container(
+        decoration: BoxDecoration(
+          color: const Color(0xffE5E7EB),
+          borderRadius: BorderRadius.circular(16),
+        ),
+      ),
+    );
+  }
+
+  List<Widget> _buildChartWidgets() {
+    if (_isLoadingChartSettings) {
+      return const [
+        Padding(
+          padding: EdgeInsets.symmetric(vertical: 24),
+          child: Center(
+            child: CircularProgressIndicator(color: Color(0xff1E2E52)),
+          ),
+        ),
+      ];
+    }
+
+    if (_chartSettingsError != null && _availableChartKeys.isEmpty) {
+      return [
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          child: Column(
+            children: [
+              Text(
+                _chartSettingsError!,
+                style: const TextStyle(
+                  color: Color(0xff64748B),
+                  fontSize: 14,
+                  fontFamily: 'Golos',
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+              TextButton(
+                onPressed: _loadDashboardSettings,
+                child: const Text('Повторить'),
+              ),
+            ],
+          ),
+        ),
+      ];
+    }
+
+    final widgets = <Widget>[];
+
+    void addChart({
+      required List<String> keys,
+      required String fallbackKey,
+      required Widget Function(String title) builder,
+    }) {
+      if (!_hasChartAccess(keys)) return;
+      widgets.add(
+        _KeepAliveChart(
+          child: builder(_chartTitle(keys, fallbackKey)),
+        ),
+      );
+    }
+
+    addChart(
+      keys: const ['conversion'],
+      fallbackKey: 'conversion',
+      builder: (title) =>
+          ConversionChart(key: ValueKey('conversion_$_chartsVersion'), title: title),
+    );
+    addChart(
+      keys: const ['lead_sources'],
+      fallbackKey: 'lead_sources',
+      builder: (title) =>
+          SourcesChart(key: ValueKey('sources_$_chartsVersion'), title: title),
+    );
+    addChart(
+      keys: const ['manager_deals'],
+      fallbackKey: 'manager_deals',
+      builder: (title) =>
+          ManagersChart(key: ValueKey('managers_$_chartsVersion'), title: title),
+    );
+    addChart(
+      keys: const ['speed_chart'],
+      fallbackKey: 'speed_chart',
+      builder: (title) =>
+          SpeedGauge(key: ValueKey('speed_$_chartsVersion'), title: title),
+    );
+    addChart(
+      keys: const ['achieving_goals'],
+      fallbackKey: 'achieving_goals',
+      builder: (title) =>
+          GoalsChart(key: ValueKey('goals_$_chartsVersion'), title: title),
+    );
+    addChart(
+      keys: const ['achieving_tasks', 'kpi_tasks', 'task_kpi', 'task_chart'],
+      fallbackKey: 'achieving_tasks',
+      builder: (title) => KpiChart(key: ValueKey('kpi_$_chartsVersion'), title: title),
+    );
+    addChart(
+      keys: const ['online_store_orders'],
+      fallbackKey: 'online_store_orders',
+      builder: (title) =>
+          OrdersChart(key: ValueKey('orders_$_chartsVersion'), title: title),
+    );
+    addChart(
+      keys: const ['top_selling_products'],
+      fallbackKey: 'top_selling_products',
+      builder: (title) =>
+          ProductsChart(key: ValueKey('products_$_chartsVersion'), title: title),
+    );
+    addChart(
+      keys: const ['telephony_and_events'],
+      fallbackKey: 'telephony_and_events',
+      builder: (title) => TelephonyEventsChart(
+        key: ValueKey('telephony_$_chartsVersion'),
+        title: title,
+      ),
+    );
+    addChart(
+      keys: const ['replies_to_messages', 'message_replies'],
+      fallbackKey: 'replies_to_messages',
+      builder: (title) => RepliesMessagesChart(
+        key: ValueKey('replies_$_chartsVersion'),
+        title: title,
+      ),
+    );
+    addChart(
+      keys: const ['task_statistics_by_project', 'task_stats_by_project'],
+      fallbackKey: 'task_statistics_by_project',
+      builder: (title) => TaskStatsByProjectChart(
+        key: ValueKey('task_stats_$_chartsVersion'),
+        title: title,
+      ),
+    );
+    addChart(
+      keys: const ['targeted_advertising'],
+      fallbackKey: 'targeted_advertising',
+      builder: (title) => TargetedAdsChart(
+        key: ValueKey('targeted_ads_$_chartsVersion'),
+        title: title,
+      ),
+    );
+    addChart(
+      keys: const ['connected_accounts'],
+      fallbackKey: 'connected_accounts',
+      builder: (title) => ConnectedAccountsChart(
+        key: ValueKey('connected_$_chartsVersion'),
+        title: title,
+      ),
+    );
+    addChart(
+      keys: const ['advertising_effectiveness'],
+      fallbackKey: 'advertising_effectiveness',
+      builder: (title) =>
+          AdvertisingRoiChart(key: ValueKey('roi_$_chartsVersion'), title: title),
+    );
+    addChart(
+      keys: const ['conversion_by_statuses'],
+      fallbackKey: 'conversion_by_statuses',
+      builder: (title) => LeadConversionStatusesChart(
+        key: ValueKey('lead_statuses_$_chartsVersion'),
+        title: title,
+      ),
+    );
+    addChart(
+      keys: const ['calls_by_hour', 'telephony_and_events_by_hour'],
+      fallbackKey: 'calls_by_hour',
+      builder: (title) => TelephonyByHourChart(
+        key: ValueKey('telephony_hour_$_chartsVersion'),
+        title: title,
+      ),
+    );
+
+    if (widgets.isNotEmpty) return widgets;
+
+    return const [
+      Padding(
+        padding: EdgeInsets.symmetric(vertical: 16),
+        child: Text(
+          'Нет доступных графиков',
+          style: TextStyle(
+            color: Color(0xff64748B),
+            fontSize: 14,
+            fontFamily: 'Golos',
+          ),
+        ),
+      ),
+    ];
   }
 
   void _showFilterSheet() {
@@ -118,7 +389,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
           bottom: MediaQuery.of(context).viewInsets.bottom,
         ),
         child: AnalyticsFilterSheet(
-          selectedPeriodKey: _selectedPeriodKey,
+          selectedPeriodKey: _selectedPeriodKey ?? _defaultPeriodKey,
           selectedManagers: _selectedManagerIds,
           selectedFunnels: _selectedFunnelIds,
           selectedSources: _selectedSourceIds,
@@ -134,8 +405,13 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     List<String> funnelIds,
     List<String> sourceIds,
   ) async {
+    final appliedPeriodKey = (periodKey != null && periodKey.isNotEmpty)
+        ? periodKey
+        : _defaultPeriodKey;
+    final hasSpecificPeriod = appliedPeriodKey != _allPeriodKey;
+
     setState(() {
-      _selectedPeriodKey = periodKey;
+      _selectedPeriodKey = appliedPeriodKey;
       _selectedManagerIds = managerIds;
       _selectedFunnelIds = funnelIds;
       _selectedSourceIds = sourceIds;
@@ -151,7 +427,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       'organization_id': organizationId,
       if (selectedSalesFunnelId != null && selectedSalesFunnelId.isNotEmpty)
         'sales_funnel_id': selectedSalesFunnelId,
-      if (periodKey != null && periodKey.isNotEmpty) 'period': periodKey,
+      if (hasSpecificPeriod) 'period': appliedPeriodKey,
       if (managerIds.isNotEmpty) 'managers': managerIds,
       if (funnelIds.isNotEmpty) 'salesFunnels': funnelIds,
       if (sourceIds.isNotEmpty) 'sources': sourceIds,
@@ -243,138 +519,128 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       ),
       body: RefreshIndicator(
         onRefresh: _refreshData,
-        child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: EdgeInsets.all(horizontalPadding),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Quick Stats Grid - Responsive with real data
-              LayoutBuilder(
-                builder: (context, constraints) {
-                  final cardWidth = (constraints.maxWidth -
-                          (cardSpacing * (gridCrossAxisCount - 1))) /
-                      gridCrossAxisCount;
-                  final cardHeight = cardWidth * 1.15; // Aspect ratio
+        child: Builder(
+          builder: (context) {
+            final chartWidgets = _buildChartWidgets();
+            final viewportHeight = MediaQuery.of(context).size.height;
 
-                  return GridView.count(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    crossAxisCount: gridCrossAxisCount,
-                    mainAxisSpacing: cardSpacing,
-                    crossAxisSpacing: cardSpacing,
-                    childAspectRatio: cardWidth / cardHeight,
+            return ListView.builder(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: EdgeInsets.all(horizontalPadding),
+              cacheExtent: viewportHeight * 1.2,
+              itemCount: 1 + chartWidgets.length,
+              itemBuilder: (context, index) {
+                if (index == 0) {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      AnalyticsStatCard(
-                        title: localizations?.translate('stat_total_leads') ??
-                            'Всего лидов',
-                        value: _isLoadingStats ? '...' : _totalLeads,
-                        change: _isLoadingStats
-                            ? '...'
-                            : '${_leadsChange.toStringAsFixed(2)}%',
-                        isPositive: !_isLoadingStats && _leadsChange >= 0,
-                        icon: Icons.people_outline,
-                        iconColor: const Color(0xff6366F1),
+                      LayoutBuilder(
+                        builder: (context, constraints) {
+                          final cardWidth = (constraints.maxWidth -
+                                  (cardSpacing * (gridCrossAxisCount - 1))) /
+                              gridCrossAxisCount;
+                          final cardHeight = cardWidth * 1.15;
+
+                          return GridView.count(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            crossAxisCount: gridCrossAxisCount,
+                            mainAxisSpacing: cardSpacing,
+                            crossAxisSpacing: cardSpacing,
+                            childAspectRatio: cardWidth / cardHeight,
+                            children: _hasLoadedStatsOnce
+                                ? [
+                                    AnalyticsStatCard(
+                                      title: localizations
+                                              ?.translate('stat_total_leads') ??
+                                          'Всего лидов',
+                                      value: _totalLeads,
+                                      change:
+                                          '${_leadsChange.toStringAsFixed(2)}%',
+                                      isPositive: _leadsChange >= 0,
+                                      icon: Icons.people_outline,
+                                      iconColor: const Color(0xff6366F1),
+                                    ),
+                                    AnalyticsStatCard(
+                                      title: localizations?.translate(
+                                              'stat_closed_deals') ??
+                                          'Закрытых сделок',
+                                      value: _closedDeals,
+                                      change:
+                                          '${_dealsChange.toStringAsFixed(2)}%',
+                                      isPositive: _dealsChange >= 0,
+                                      icon: Icons.handshake_outlined,
+                                      iconColor: const Color(0xff10B981),
+                                    ),
+                                    AnalyticsStatCard(
+                                      title: localizations?.translate(
+                                              'stat_total_revenue') ??
+                                          'Общая выручка',
+                                      value: _totalRevenue,
+                                      change:
+                                          '${_revenueChange.toStringAsFixed(2)}%',
+                                      isPositive: _revenueChange >= 0,
+                                      icon: Icons.attach_money,
+                                      iconColor: const Color(0xffF59E0B),
+                                    ),
+                                    AnalyticsStatCard(
+                                      title: localizations
+                                              ?.translate('stat_conversion') ??
+                                          'Конверсия',
+                                      value: _conversionRate,
+                                      change:
+                                          '${_conversionChange.toStringAsFixed(2)}%',
+                                      isPositive: _conversionChange >= 0,
+                                      icon: Icons.trending_up,
+                                      iconColor: const Color(0xffEC4899),
+                                    ),
+                                  ]
+                                : [
+                                    _buildStatsSkeletonCard(),
+                                    _buildStatsSkeletonCard(),
+                                    _buildStatsSkeletonCard(),
+                                    _buildStatsSkeletonCard(),
+                                  ],
+                          );
+                        },
                       ),
-                      AnalyticsStatCard(
-                        title: localizations?.translate('stat_closed_deals') ??
-                            'Закрытых сделок',
-                        value: _isLoadingStats ? '...' : _closedDeals,
-                        change: _isLoadingStats
-                            ? '...'
-                            : '${_dealsChange.toStringAsFixed(2)}%',
-                        isPositive: !_isLoadingStats && _dealsChange >= 0,
-                        icon: Icons.handshake_outlined,
-                        iconColor: const Color(0xff10B981),
-                      ),
-                      AnalyticsStatCard(
-                        title: localizations?.translate('stat_total_revenue') ??
-                            'Общая выручка',
-                        value: _isLoadingStats ? '...' : _totalRevenue,
-                        change: _isLoadingStats
-                            ? '...'
-                            : '${_revenueChange.toStringAsFixed(2)}%',
-                        isPositive: !_isLoadingStats && _revenueChange >= 0,
-                        icon: Icons.attach_money,
-                        iconColor: const Color(0xffF59E0B),
-                      ),
-                      AnalyticsStatCard(
-                        title: localizations?.translate('stat_conversion') ??
-                            'Конверсия',
-                        value: _isLoadingStats ? '...' : _conversionRate,
-                        change: _isLoadingStats
-                            ? '...'
-                            : '${_conversionChange.toStringAsFixed(2)}%',
-                        isPositive: !_isLoadingStats && _conversionChange >= 0,
-                        icon: Icons.trending_up,
-                        iconColor: const Color(0xffEC4899),
-                      ),
+                      SizedBox(height: chartSpacing * 1.5),
                     ],
                   );
-                },
-              ),
-              SizedBox(height: chartSpacing * 1.5),
+                }
 
-              // Charts - All responsive with keys for refresh
-              ConversionChart(key: ValueKey('conversion_$_chartsVersion')),
-              SizedBox(height: chartSpacing),
-
-              SourcesChart(key: ValueKey('sources_$_chartsVersion')),
-              SizedBox(height: chartSpacing),
-
-              ManagersChart(key: ValueKey('managers_$_chartsVersion')),
-              SizedBox(height: chartSpacing),
-
-              SpeedGauge(key: ValueKey('speed_$_chartsVersion')),
-              SizedBox(height: chartSpacing),
-
-              GoalsChart(key: ValueKey('goals_$_chartsVersion')),
-              SizedBox(height: chartSpacing),
-
-              KpiChart(key: ValueKey('kpi_$_chartsVersion')),
-              SizedBox(height: chartSpacing),
-
-              OrdersChart(key: ValueKey('orders_$_chartsVersion')),
-              SizedBox(height: chartSpacing),
-
-              ProductsChart(key: ValueKey('products_$_chartsVersion')),
-              SizedBox(height: chartSpacing),
-
-              TelephonyEventsChart(key: ValueKey('telephony_$_chartsVersion')),
-              SizedBox(height: chartSpacing),
-
-              RepliesMessagesChart(key: ValueKey('replies_$_chartsVersion')),
-              SizedBox(height: chartSpacing),
-
-              TaskStatsByProjectChart(
-                key: ValueKey('task_stats_$_chartsVersion'),
-              ),
-              SizedBox(height: chartSpacing),
-
-              TargetedAdsChart(key: ValueKey('targeted_ads_$_chartsVersion')),
-              SizedBox(height: chartSpacing),
-
-              ConnectedAccountsChart(
-                key: ValueKey('connected_$_chartsVersion'),
-              ),
-              SizedBox(height: chartSpacing),
-
-              AdvertisingRoiChart(key: ValueKey('roi_$_chartsVersion')),
-              SizedBox(height: chartSpacing),
-
-              LeadConversionStatusesChart(
-                key: ValueKey('lead_statuses_$_chartsVersion'),
-              ),
-              SizedBox(height: chartSpacing),
-
-              TelephonyByHourChart(
-                key: ValueKey('telephony_hour_$_chartsVersion'),
-              ),
-              SizedBox(height: chartSpacing),
-            ],
-          ),
+                final chartIndex = index - 1;
+                final isLast = chartIndex == chartWidgets.length - 1;
+                return Padding(
+                  padding: EdgeInsets.only(bottom: isLast ? 0 : chartSpacing),
+                  child: chartWidgets[chartIndex],
+                );
+              },
+            );
+          },
         ),
       ),
     );
+  }
+}
+
+class _KeepAliveChart extends StatefulWidget {
+  final Widget child;
+
+  const _KeepAliveChart({required this.child});
+
+  @override
+  State<_KeepAliveChart> createState() => _KeepAliveChartState();
+}
+
+class _KeepAliveChartState extends State<_KeepAliveChart>
+    with AutomaticKeepAliveClientMixin<_KeepAliveChart> {
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
+  Widget build(BuildContext context) {
+    super.build(context);
+    return widget.child;
   }
 }
