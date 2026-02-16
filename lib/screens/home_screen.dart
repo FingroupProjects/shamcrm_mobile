@@ -34,6 +34,7 @@ import 'package:crm_task_manager/screens/no_access_screen.dart';
 import 'package:crm_task_manager/screens/lead/lead_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/task/task_screen.dart';
+import 'package:crm_task_manager/screens/analytics/analytics_screen.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
@@ -149,7 +150,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   void _checkPendingWidgetNavigation() {
     debugPrint('HomeScreen: === _checkPendingWidgetNavigation() ===');
     debugPrint('HomeScreen: _isInitialized = $_isInitialized');
-    debugPrint('HomeScreen: _widgetOptionsGroup1.length = ${_widgetOptionsGroup1.length}');
+    debugPrint(
+        'HomeScreen: _widgetOptionsGroup1.length = ${_widgetOptionsGroup1.length}');
 
     final pendingScreen = WidgetService.consumePendingNavigation();
     debugPrint('HomeScreen: pendingScreen from WidgetService: $pendingScreen');
@@ -179,7 +181,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   // ==========================================================================
 
   void _navigateToScreenByIdentifier(String screenIdentifier) {
-    debugPrint('HomeScreen: === _navigateToScreenByIdentifier($screenIdentifier) ===');
+    debugPrint(
+        'HomeScreen: === _navigateToScreenByIdentifier($screenIdentifier) ===');
     debugPrint('HomeScreen: _isInitialized = $_isInitialized');
     debugPrint('HomeScreen: mounted = $mounted');
 
@@ -280,7 +283,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     ];
 
     if (referenceScreenIdentifiers.contains(screenIdentifier)) {
-      debugPrint('HomeScreen: Reference screen identifier detected: $screenIdentifier');
+      debugPrint(
+          'HomeScreen: Reference screen identifier detected: $screenIdentifier');
 
       // Close all pushed screens first
       if (Navigator.canPop(context)) {
@@ -342,7 +346,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
     // Handle accounting document screen identifiers
     if (accountingScreenIdentifiers.contains(screenIdentifier)) {
-      debugPrint('HomeScreen: Accounting screen identifier detected: $screenIdentifier');
+      debugPrint(
+          'HomeScreen: Accounting screen identifier detected: $screenIdentifier');
 
       // First, navigate to warehouse screen
       int? warehouseIndex;
@@ -408,17 +413,20 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                 MaterialPageRoute(builder: (context) => targetScreen!),
               );
             }
-            debugPrint('HomeScreen: ✅ Navigated to accounting document: $screenIdentifier');
+            debugPrint(
+                'HomeScreen: ✅ Navigated to accounting document: $screenIdentifier');
           }
         });
 
         return;
       } else {
-        debugPrint('HomeScreen: ⚠️ Warehouse screen not found, cannot navigate to accounting document');
+        debugPrint(
+            'HomeScreen: ⚠️ Warehouse screen not found, cannot navigate to accounting document');
       }
     }
 
-    debugPrint('HomeScreen: Searching in Group1 (${_widgetOptionsGroup1.length} screens)');
+    debugPrint(
+        'HomeScreen: Searching in Group1 (${_widgetOptionsGroup1.length} screens)');
 
     // Ищем экран в группе 1
     for (int i = 0; i < _widgetOptionsGroup1.length; i++) {
@@ -446,7 +454,12 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         targetIndexGroup1 = i;
         debugPrint('HomeScreen: Found chats at index $i');
         break;
-      } else if (screenIdentifier == 'warehouse' && widget is WarehouseAccountingScreen) {
+      } else if (screenIdentifier == 'analytics' && widget is AnalyticsScreen) {
+        targetIndexGroup1 = i;
+        debugPrint('HomeScreen: Found analytics at index $i');
+        break;
+      } else if (screenIdentifier == 'warehouse' &&
+          widget is WarehouseAccountingScreen) {
         targetIndexGroup1 = i;
         debugPrint('HomeScreen: Found warehouse at index $i');
         break;
@@ -455,7 +468,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
     // Ищем экран в группе 2 (Orders, Online Store)
     if (targetIndexGroup1 == null) {
-      debugPrint('HomeScreen: Not found in Group1, searching Group2 (${_widgetOptionsGroup2.length} screens)');
+      debugPrint(
+          'HomeScreen: Not found in Group1, searching Group2 (${_widgetOptionsGroup2.length} screens)');
       for (int i = 0; i < _widgetOptionsGroup2.length; i++) {
         final widget = _widgetOptionsGroup2[i];
         debugPrint('HomeScreen: Group2[$i] = ${widget.runtimeType}');
@@ -464,7 +478,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           targetIndexGroup2 = i;
           debugPrint('HomeScreen: Found orders at index $i');
           break;
-        } else if (screenIdentifier == 'online_store' && widget is OnlineStoreScreen) {
+        } else if (screenIdentifier == 'online_store' &&
+            widget is OnlineStoreScreen) {
           targetIndexGroup2 = i;
           debugPrint('HomeScreen: Found online_store at index $i');
           break;
@@ -476,21 +491,26 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     debugPrint('HomeScreen: targetIndexGroup2 = $targetIndexGroup2');
 
     if (targetIndexGroup1 != null) {
-      debugPrint('HomeScreen: Setting _selectedIndexGroup1 = $targetIndexGroup1');
+      debugPrint(
+          'HomeScreen: Setting _selectedIndexGroup1 = $targetIndexGroup1');
       setState(() {
         _selectedIndexGroup1 = targetIndexGroup1!;
         _selectedIndexGroup2 = -1;
       });
-      debugPrint('HomeScreen: ✅ Navigated to Group1 screen=$screenIdentifier at index=$targetIndexGroup1');
+      debugPrint(
+          'HomeScreen: ✅ Navigated to Group1 screen=$screenIdentifier at index=$targetIndexGroup1');
     } else if (targetIndexGroup2 != null) {
-      debugPrint('HomeScreen: Setting _selectedIndexGroup2 = $targetIndexGroup2');
+      debugPrint(
+          'HomeScreen: Setting _selectedIndexGroup2 = $targetIndexGroup2');
       setState(() {
         _selectedIndexGroup2 = targetIndexGroup2!;
         _selectedIndexGroup1 = -1;
       });
-      debugPrint('HomeScreen: ✅ Navigated to Group2 screen=$screenIdentifier at index=$targetIndexGroup2');
+      debugPrint(
+          'HomeScreen: ✅ Navigated to Group2 screen=$screenIdentifier at index=$targetIndexGroup2');
     } else {
-      debugPrint('HomeScreen: ❌ Screen $screenIdentifier not found or not available');
+      debugPrint(
+          'HomeScreen: ❌ Screen $screenIdentifier not found or not available');
     }
   }
 
@@ -549,8 +569,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     try {
       debugPrint('HomeScreen: 🔍 Проверка наличия initialMessage');
 
-      final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
-      final RemoteMessage? initialMessage = args?['initialMessage'] as RemoteMessage?;
+      final args =
+          ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+      final RemoteMessage? initialMessage =
+          args?['initialMessage'] as RemoteMessage?;
 
       if (initialMessage != null) {
         debugPrint('HomeScreen: ✅ Получено initialMessage из PinScreen');
@@ -604,15 +626,16 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     final permissionsBloc = context.read<PermissionsBloc>();
 
     // Если разрешения еще не загружены, загружаем их
-    if (permissionsBloc.state is! PermissionsLoaded && 
+    if (permissionsBloc.state is! PermissionsLoaded &&
         permissionsBloc.state is! PermissionsNoAccess) {
       permissionsBloc.add(FetchPermissionsEvent());
       // Ждем загрузки разрешений (включая новые состояния)
       await permissionsBloc.stream.firstWhere(
-            (state) => state is PermissionsLoaded || 
-                       state is PermissionsError || 
-                       state is PermissionsNoAccess ||
-                       state is PermissionsNetworkError,
+        (state) =>
+            state is PermissionsLoaded ||
+            state is PermissionsError ||
+            state is PermissionsNoAccess ||
+            state is PermissionsNetworkError,
       );
     }
 
@@ -641,10 +664,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     // ✅ Если сетевая ошибка - не показываем экран "нет доступа", используем сохраненные permissions
     bool isNetworkError = permissionsBloc.state is PermissionsNetworkError;
     List<String> savedPermissions = [];
-    
+
     if (isNetworkError) {
       if (kDebugMode) {
-        debugPrint('HomeScreen: Сетевая ошибка, используем сохраненные permissions');
+        debugPrint(
+            'HomeScreen: Сетевая ошибка, используем сохраненные permissions');
       }
       // Загружаем сохраненные permissions из SharedPreferences
       final apiService = context.read<ApiService>();
@@ -652,7 +676,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       if (savedPermissions.isEmpty) {
         // Если нет сохраненных permissions, показываем загрузку
         if (kDebugMode) {
-          debugPrint('HomeScreen: Нет сохраненных permissions, показываем загрузку');
+          debugPrint(
+              'HomeScreen: Нет сохраненных permissions, показываем загрузку');
         }
         if (mounted) {
           setState(() {
@@ -664,7 +689,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         return;
       } else {
         if (kDebugMode) {
-          debugPrint('HomeScreen: Используем ${savedPermissions.length} сохраненных permissions');
+          debugPrint(
+              'HomeScreen: Используем ${savedPermissions.length} сохраненных permissions');
         }
       }
     }
@@ -726,14 +752,23 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     }
 
     // Чаты - показываем если есть доступ хотя бы к одной из вкладок
-    if (hasPermission('chat.read') || 
-        hasPermission('task.read') || 
+    if (hasPermission('chat.read') ||
+        hasPermission('task.read') ||
         hasPermission('corporateChat.read')) {
       widgetsGroup1.add(ChatsScreen());
       titleKeysGroup1.add('appbar_chats');
       navBarTitleKeysGroup1.add('appbar_chats');
       activeIconsGroup1.add('assets/icons/MyNavBar/chats_ON.png');
       inactiveIconsGroup1.add('assets/icons/MyNavBar/chats_OFF.png');
+    }
+
+    // Аналитика - новый раздел
+    if (hasPermission('section.dashboard')) {
+      widgetsGroup1.add(AnalyticsScreen());
+      titleKeysGroup1.add('appbar_analytics');
+      navBarTitleKeysGroup1.add('appbar_analytics');
+      activeIconsGroup1.add('assets/icons/MyNavBar/dashboard_ON.png');
+      inactiveIconsGroup1.add('assets/icons/MyNavBar/dashboard_OFF.png');
     }
 
     // ========== КЛЮЧЕВАЯ ЛОГИКА ==========
@@ -760,7 +795,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         activeIconsGroup2.add('assets/icons/MyNavBar/orderon.png');
         inactiveIconsGroup2.add('assets/icons/MyNavBar/order_OFF.png');
       }
-
     } else {
       if (hasOrderAccess) {
         widgetsGroup2.add(OnlineStoreScreen());
@@ -820,7 +854,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+    final args =
+        ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
 
     if (args != null && !_isPushHandled && _isInitialized) {
       setState(() {
@@ -850,14 +885,14 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     return BlocListener<PermissionsBloc, PermissionsState>(
       listener: (context, state) {
         // При изменении состояния разрешений пересоздаем экраны
-        if (state is PermissionsLoaded || 
-            state is PermissionsError || 
+        if (state is PermissionsLoaded ||
+            state is PermissionsError ||
             state is PermissionsNoAccess ||
             state is PermissionsNetworkError) {
           if (_isInitialized && mounted) {
             // Вызываем асинхронно, чтобы не блокировать listener
             initializeScreensWithPermissions();
-          }
+          } 
         }
       },
       child: BlocBuilder<PermissionsBloc, PermissionsState>(
@@ -865,9 +900,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           Widget currentWidget;
 
           // ✅ ИСПРАВЛЕНИЕ: Всегда показываем валидный виджет
-          if (_selectedIndexGroup1 != -1 && _selectedIndexGroup1 < _widgetOptionsGroup1.length) {
+          if (_selectedIndexGroup1 != -1 &&
+              _selectedIndexGroup1 < _widgetOptionsGroup1.length) {
             currentWidget = _widgetOptionsGroup1[_selectedIndexGroup1];
-          } else if (_selectedIndexGroup2 != -1 && _selectedIndexGroup2 < _widgetOptionsGroup2.length) {
+          } else if (_selectedIndexGroup2 != -1 &&
+              _selectedIndexGroup2 < _widgetOptionsGroup2.length) {
             currentWidget = _widgetOptionsGroup2[_selectedIndexGroup2];
           } else if (_widgetOptionsGroup1.isNotEmpty) {
             currentWidget = _widgetOptionsGroup1[0];
@@ -883,39 +920,48 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           return Scaffold(
             body: safeBody,
             backgroundColor: Colors.white,
-            bottomNavigationBar: _isInitialized && currentWidget is! NoAccessScreen
+            bottomNavigationBar: _isInitialized &&
+                    currentWidget is! NoAccessScreen
                 ? MyNavBar(
-              currentIndexGroup1: _selectedIndexGroup1,
-              currentIndexGroup2: _selectedIndexGroup2,
-              onItemSelected: (groupIndex, itemIndex) {
-                // Обновляем разрешения при переключении табов (с ограничением частоты)
-                final now = DateTime.now();
-                if (_lastPermissionUpdate == null || now.difference(_lastPermissionUpdate!) > const Duration(seconds: 5)) {
-                  context.read<PermissionsBloc>().add(FetchPermissionsEvent());
-                  _lastPermissionUpdate = now;
-                }
+                    currentIndexGroup1: _selectedIndexGroup1,
+                    currentIndexGroup2: _selectedIndexGroup2,
+                    onItemSelected: (groupIndex, itemIndex) {
+                      // Обновляем разрешения при переключении табов (с ограничением частоты)
+                      final now = DateTime.now();
+                      if (_lastPermissionUpdate == null ||
+                          now.difference(_lastPermissionUpdate!) >
+                              const Duration(seconds: 5)) {
+                        context
+                            .read<PermissionsBloc>()
+                            .add(FetchPermissionsEvent());
+                        _lastPermissionUpdate = now;
+                      }
 
-                setState(() {
-                  if (groupIndex == 1) {
-                    _selectedIndexGroup1 = itemIndex;
-                    _selectedIndexGroup2 = -1;
-                  } else if (groupIndex == 2) {
-                    _selectedIndexGroup2 = itemIndex;
-                    _selectedIndexGroup1 = -1;
-                  }
-                });
-              },
-              navBarTitlesGroup1: _navBarTitleKeysGroup1
-                  .map((key) => key.isEmpty ? '' : AppLocalizations.of(context)!.translate(key))
-                  .toList(),
-              navBarTitlesGroup2: _navBarTitleKeysGroup2
-                  .map((key) => key.isEmpty ? '' : AppLocalizations.of(context)!.translate(key))
-                  .toList(),
-              activeIconsGroup1: _activeIconsGroup1,
-              activeIconsGroup2: _activeIconsGroup2,
-              inactiveIconsGroup1: _inactiveIconsGroup1,
-              inactiveIconsGroup2: _inactiveIconsGroup2,
-            )
+                      setState(() {
+                        if (groupIndex == 1) {
+                          _selectedIndexGroup1 = itemIndex;
+                          _selectedIndexGroup2 = -1;
+                        } else if (groupIndex == 2) {
+                          _selectedIndexGroup2 = itemIndex;
+                          _selectedIndexGroup1 = -1;
+                        }
+                      });
+                    },
+                    navBarTitlesGroup1: _navBarTitleKeysGroup1
+                        .map((key) => key.isEmpty
+                            ? ''
+                            : AppLocalizations.of(context)!.translate(key))
+                        .toList(),
+                    navBarTitlesGroup2: _navBarTitleKeysGroup2
+                        .map((key) => key.isEmpty
+                            ? ''
+                            : AppLocalizations.of(context)!.translate(key))
+                        .toList(),
+                    activeIconsGroup1: _activeIconsGroup1,
+                    activeIconsGroup2: _activeIconsGroup2,
+                    inactiveIconsGroup1: _inactiveIconsGroup1,
+                    inactiveIconsGroup2: _inactiveIconsGroup2,
+                  )
                 : SizedBox.shrink(), // Скрываем навбар пока не инициализировано
           );
         },

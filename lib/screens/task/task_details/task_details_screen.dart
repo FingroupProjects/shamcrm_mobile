@@ -523,6 +523,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
     bool authorAdded = false;
     bool createdAtAdded = false;
     bool dealAdded = false;
+    bool statusAdded = false;
     
     for (var fc in _fieldConfiguration) {
       // Пропускаем поле 'files', так как оно всегда показывается в конце
@@ -537,6 +538,8 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
         createdAtAdded = true;
       } else if (fc.fieldName == 'deal') {
         dealAdded = true;
+      } else if (fc.fieldName == 'task_status_id' || fc.fieldName == 'taskStatus') {
+        statusAdded = true;
       }
 
       final value = _getFieldValue(fc, task);
@@ -576,6 +579,14 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
       });
     }
 
+    // Всегда добавляем статус, если он не был добавлен из конфигурации
+    if (!statusAdded && task.taskStatus?.taskStatus?.name != null) {
+      details.add({
+        'label': AppLocalizations.of(context)!.translate('status_details'),
+        'value': task.taskStatus?.taskStatus?.name ?? '',
+      });
+    }
+
     // Всегда добавляем файлы в конец списка, если они есть
     if (task.files != null && task.files!.isNotEmpty) {
       details.add({
@@ -592,12 +603,15 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
 
     switch (fc.fieldName) {
       case 'name':          return AppLocalizations.of(context)!.translate('task_name');
-      case 'task_status_id':return AppLocalizations.of(context)!.translate('priority_level_colon');
+      case 'task_status_id':return AppLocalizations.of(context)!.translate('status_details');
       case 'description':   return AppLocalizations.of(context)!.translate('description_details');
       case 'executor':      return AppLocalizations.of(context)!.translate('assignee');
       case 'project':       return AppLocalizations.of(context)!.translate('project_details');
       case 'deadline':      return AppLocalizations.of(context)!.translate('dead_line');
       case 'taskStatus':    return AppLocalizations.of(context)!.translate('status_details');
+      case 'priority':
+      case 'priority_level':
+        return AppLocalizations.of(context)!.translate('priority_level_colon');
       case 'author':        return AppLocalizations.of(context)!.translate('author_details');
       case 'createdAt':     return AppLocalizations.of(context)!.translate('creation_date_details');
       case 'deal':          return AppLocalizations.of(context)!.translate('task_by_deal');
@@ -645,7 +659,8 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
 
     switch (fc.fieldName) {
       case 'name':        return task.name ?? '';
-      case 'task_status_id':    return priorityLevels[task.priority] ?? AppLocalizations.of(context)!.translate('normal');
+      case 'task_status_id':
+        return task.taskStatus?.taskStatus?.name ?? '';
       case 'description': return task.description ?? '';
       case 'executor':
         if (task.user == null || task.user!.isEmpty) return '';
@@ -654,8 +669,11 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
       case 'deadline':
         if (task.endDate == null || task.endDate!.isEmpty) return '';
         return DateFormat('dd.MM.yyyy').format(DateTime.parse(task.endDate!));
-      case 'taskStatus':  
+      case 'taskStatus':
         return task.taskStatus?.taskStatus?.name ?? '';
+      case 'priority':
+      case 'priority_level':
+        return priorityLevels[task.priority] ?? AppLocalizations.of(context)!.translate('normal');
       case 'author':      
         if (task.author == null) return '';
         return task.author!.fullName ?? 

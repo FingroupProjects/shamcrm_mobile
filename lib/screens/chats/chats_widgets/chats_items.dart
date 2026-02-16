@@ -35,10 +35,10 @@ class ChatListItem extends StatelessWidget {
   final String endPointInTab;
 
   const ChatListItem({
-    super.key,
+    Key? key,
     required this.chatItem,
     required this.endPointInTab,
-  });
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -63,9 +63,11 @@ class ChatListItem extends StatelessWidget {
                       child: Text(
                         chatItem.name.isNotEmpty
                             ? (chatItem.name == 'support'
-                                ? AppLocalizations.of(context)!.translate('support_chat_name')
+                                ? AppLocalizations.of(context)!
+                                    .translate('support_chat_name')
                                 : chatItem.name)
-                            : AppLocalizations.of(context)!.translate('no_name'),
+                            : AppLocalizations.of(context)!
+                                .translate('no_name'),
                         style: AppStyles.chatNameStyle,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -145,7 +147,8 @@ class ChatListItem extends StatelessWidget {
       );
     }
 
-    if (isLeadsSection && (avatar.isEmpty || avatar == 'assets/icons/leads/default.png')) {
+    if (isLeadsSection &&
+        (avatar.isEmpty || avatar == 'assets/icons/leads/default.png')) {
       return CircleAvatar(
         backgroundImage: const AssetImage('assets/images/AvatarChat.png'),
         radius: 24,
@@ -156,7 +159,9 @@ class ChatListItem extends StatelessWidget {
       );
     }
 
-    if (isLeadsSection && chatItem.icon.isNotEmpty && chatItem.icon != 'assets/icons/leads/default.png') {
+    if (isLeadsSection &&
+        chatItem.icon.isNotEmpty &&
+        chatItem.icon != 'assets/icons/leads/default.png') {
       return Container(
         width: 52,
         height: 52,
@@ -169,7 +174,7 @@ class ChatListItem extends StatelessWidget {
           ),
         ),
         child: Center(
-          child: chatItem.icon == ''  // Для site используется Flutter иконка
+          child: chatItem.icon == '' // Для site используется Flutter иконка
               ? Icon(
                   Icons.language,
                   size: 32,
@@ -258,7 +263,9 @@ class ChatListItem extends StatelessWidget {
     } catch (e) {
       // print('Fallback avatar due to error: $e');
       return CircleAvatar(
-        backgroundImage: AssetImage(isTaskSection ? 'assets/images/AvatarTask.png' : 'assets/images/AvatarChat.png'),
+        backgroundImage: AssetImage(isTaskSection
+            ? 'assets/images/AvatarTask.png'
+            : 'assets/images/AvatarChat.png'),
         radius: 24,
         backgroundColor: isSupportAvatar ? Colors.black : Colors.white,
       );
@@ -322,7 +329,7 @@ class ChatListItem extends StatelessWidget {
   List<TextSpan> parseHtmlToTextSpans(String html, TextStyle baseStyle) {
     // Проверяем, содержит ли текст HTML-теги
     final bool isHtml = html.contains('<') && html.contains('>');
-    
+
     if (!isHtml) {
       // Простой текст - возвращаем как есть
       return [TextSpan(text: html, style: baseStyle)];
@@ -331,7 +338,9 @@ class ChatListItem extends StatelessWidget {
     // Предобработка HTML: убираем служебные теги
     String cleanedHtml = html
         // Убираем служебные теги Quill-редактора
-        .replaceAll(RegExp(r'<span class="ql-cursor"[^>]*>.*?</span>', dotAll: true), '')
+        .replaceAll(
+            RegExp(r'<span class="ql-cursor"[^>]*>.*?</span>', dotAll: true),
+            '')
         .replaceAll(RegExp(r'<span[^>]*>\s*</span>'), '') // Пустые span
         // Убираем невидимые символы
         .replaceAll(RegExp(r'[\u200B-\u200D\uFEFF]'), '');
@@ -348,19 +357,21 @@ class ChatListItem extends StatelessWidget {
         }
       } else if (node is dom.Element) {
         // Игнорируем служебные элементы
-        if (node.localName == 'span' && 
+        if (node.localName == 'span' &&
             (node.attributes['class']?.contains('ql-') ?? false)) {
           return; // Пропускаем служебные span от Quill
         }
-        
+
         TextStyle newStyle = currentStyle;
-        
+
         // Обработка форматирования
         if (node.localName == 'strong' || node.localName == 'b') {
           newStyle = newStyle.copyWith(fontWeight: FontWeight.bold);
         } else if (node.localName == 'em' || node.localName == 'i') {
           newStyle = newStyle.copyWith(fontStyle: FontStyle.italic);
-        } else if (node.localName == 's' || node.localName == 'strike' || node.localName == 'del') {
+        } else if (node.localName == 's' ||
+            node.localName == 'strike' ||
+            node.localName == 'del') {
           newStyle = newStyle.copyWith(decoration: TextDecoration.lineThrough);
         } else if (node.localName == 'u') {
           newStyle = newStyle.copyWith(decoration: TextDecoration.underline);
@@ -379,7 +390,8 @@ class ChatListItem extends StatelessWidget {
                   ..onTap = () async {
                     final uri = Uri.parse(url);
                     if (await canLaunchUrl(uri)) {
-                      await launchUrl(uri, mode: LaunchMode.externalApplication);
+                      await launchUrl(uri,
+                          mode: LaunchMode.externalApplication);
                     }
                   },
               ),
@@ -389,9 +401,9 @@ class ChatListItem extends StatelessWidget {
         } else if (node.localName == 'br') {
           spans.add(TextSpan(text: ' ', style: currentStyle));
           return;
-        } else if (node.localName == 'p' || 
-                   node.localName == 'div' || 
-                   node.localName == 'span') {
+        } else if (node.localName == 'p' ||
+            node.localName == 'div' ||
+            node.localName == 'span') {
           // Блочные элементы и span - просто обрабатываем содержимое
           for (var child in node.nodes) {
             parseNode(child, newStyle);
@@ -414,7 +426,10 @@ class ChatListItem extends StatelessWidget {
     if (spans.isEmpty) {
       // Убираем все HTML теги и возвращаем чистый текст
       final plainText = cleanedHtml.replaceAll(RegExp(r'<[^>]*>'), '').trim();
-      return [TextSpan(text: plainText.isNotEmpty ? plainText : html, style: baseStyle)];
+      return [
+        TextSpan(
+            text: plainText.isNotEmpty ? plainText : html, style: baseStyle)
+      ];
     }
 
     return spans;
