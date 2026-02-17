@@ -1,10 +1,11 @@
-import 'package:flutter/material.dart';
+import 'dart:math' as math;
+
+import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/screens/analytics/models/telephony_events_model.dart';
+import 'package:crm_task_manager/screens/analytics/widgets/chart_empty_overlay.dart';
 import 'package:crm_task_manager/screens/analytics/widgets/chart_shimmer_loader.dart';
 import 'package:fl_chart/fl_chart.dart';
-import 'package:crm_task_manager/screens/analytics/utils/responsive_helper.dart';
-import 'package:crm_task_manager/screens/analytics/models/telephony_events_model.dart';
-import 'package:crm_task_manager/api/service/api_service.dart';
-import 'package:crm_task_manager/screens/analytics/widgets/chart_empty_overlay.dart';
+import 'package:flutter/material.dart';
 
 class TelephonyEventsChart extends StatefulWidget {
   const TelephonyEventsChart({super.key, required this.title});
@@ -16,62 +17,83 @@ class TelephonyEventsChart extends StatefulWidget {
 }
 
 class _TelephonyEventsChartState extends State<TelephonyEventsChart> {
+  static const Color _incomingColor = Color(0xff20B486);
+  static const Color _outgoingColor = Color(0xff5F62E0);
+  static const Color _missedColor = Color(0xffEF4444);
+  static const Color _createdColor = Color(0xff7B4CE2);
+  static const Color _closedColor = Color(0xffF59E0B);
+  static const Color _labelColor = Color(0xff64748B);
+
+  static const List<String> _weekDays = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+
   bool _isLoading = true;
   String? _error;
   TelephonyEventsResponse? _data;
+  bool _showIncoming = true;
+  bool _showOutgoing = true;
+  bool _showMissed = true;
+  bool _showCreated = true;
+  bool _showClosed = true;
 
   String get _title => widget.title;
 
   static final List<TelephonyEventDay> _previewDays = [
     TelephonyEventDay(
-        day: 1,
-        incoming: 12,
-        outgoing: 8,
-        missed: 2,
-        noticesCreated: 6,
-        noticesFinished: 5),
+      day: 1,
+      incoming: 140,
+      outgoing: 98,
+      missed: 12,
+      noticesCreated: 45,
+      noticesFinished: 38,
+    ),
     TelephonyEventDay(
-        day: 2,
-        incoming: 15,
-        outgoing: 10,
-        missed: 3,
-        noticesCreated: 8,
-        noticesFinished: 7),
+      day: 2,
+      incoming: 155,
+      outgoing: 112,
+      missed: 18,
+      noticesCreated: 52,
+      noticesFinished: 48,
+    ),
     TelephonyEventDay(
-        day: 3,
-        incoming: 9,
-        outgoing: 7,
-        missed: 1,
-        noticesCreated: 4,
-        noticesFinished: 4),
+      day: 3,
+      incoming: 132,
+      outgoing: 89,
+      missed: 14,
+      noticesCreated: 47,
+      noticesFinished: 42,
+    ),
     TelephonyEventDay(
-        day: 4,
-        incoming: 18,
-        outgoing: 12,
-        missed: 4,
-        noticesCreated: 9,
-        noticesFinished: 8),
+      day: 4,
+      incoming: 166,
+      outgoing: 134,
+      missed: 21,
+      noticesCreated: 60,
+      noticesFinished: 53,
+    ),
     TelephonyEventDay(
-        day: 5,
-        incoming: 11,
-        outgoing: 6,
-        missed: 2,
-        noticesCreated: 5,
-        noticesFinished: 5),
+      day: 5,
+      incoming: 188,
+      outgoing: 145,
+      missed: 24,
+      noticesCreated: 68,
+      noticesFinished: 58,
+    ),
     TelephonyEventDay(
-        day: 6,
-        incoming: 7,
-        outgoing: 5,
-        missed: 1,
-        noticesCreated: 3,
-        noticesFinished: 3),
+      day: 6,
+      incoming: 97,
+      outgoing: 68,
+      missed: 8,
+      noticesCreated: 32,
+      noticesFinished: 28,
+    ),
     TelephonyEventDay(
-        day: 7,
-        incoming: 6,
-        outgoing: 4,
-        missed: 1,
-        noticesCreated: 2,
-        noticesFinished: 2),
+      day: 7,
+      incoming: 86,
+      outgoing: 57,
+      missed: 6,
+      noticesCreated: 29,
+      noticesFinished: 25,
+    ),
   ];
 
   @override
@@ -90,11 +112,13 @@ class _TelephonyEventsChartState extends State<TelephonyEventsChart> {
       final apiService = ApiService();
       final response = await apiService.getTelephonyAndEventsChartV2();
 
+      if (!mounted) return;
       setState(() {
         _data = response;
         _isLoading = false;
       });
-    } catch (e) {
+    } catch (_) {
+      if (!mounted) return;
       setState(() {
         _error = 'Не удалось загрузить данные. Попробуйте позже.';
         _isLoading = false;
@@ -103,8 +127,9 @@ class _TelephonyEventsChartState extends State<TelephonyEventsChart> {
   }
 
   void _showDetails() {
-    final items = _data?.chart ?? [];
+    final items = _data?.chart ?? const <TelephonyEventDay>[];
     if (items.isEmpty) return;
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -124,7 +149,7 @@ class _TelephonyEventsChartState extends State<TelephonyEventsChart> {
                   Expanded(
                     child: Text(
                       _title,
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w700,
                         color: Color(0xff0F172A),
@@ -137,7 +162,7 @@ class _TelephonyEventsChartState extends State<TelephonyEventsChart> {
                       Navigator.of(context).pop();
                       _loadData();
                     },
-                    icon: const Icon(Icons.refresh, color: Color(0xff64748B)),
+                    icon: const Icon(Icons.refresh, color: _labelColor),
                   ),
                 ],
               ),
@@ -149,31 +174,35 @@ class _TelephonyEventsChartState extends State<TelephonyEventsChart> {
                   separatorBuilder: (_, __) => const Divider(height: 1),
                   itemBuilder: (context, index) {
                     final item = items[index];
+                    final dayLabel = index < _weekDays.length
+                        ? _weekDays[index]
+                        : 'Д${item.day}';
+
                     return ListTile(
                       contentPadding: EdgeInsets.zero,
                       title: Text(
-                        'День ${item.day}',
+                        dayLabel,
                         style: const TextStyle(
-                          fontSize: 14,
+                          fontSize: 16,
                           fontWeight: FontWeight.w600,
                           color: Color(0xff0F172A),
                           fontFamily: 'Golos',
                         ),
                       ),
                       subtitle: Text(
-                        'Вход: ${item.incoming}, Исход: ${item.outgoing}, Пропущ: ${item.missed}',
+                        'Входящие: ${item.incoming}, Исходящие: ${item.outgoing}, Пропущенные: ${item.missed}',
                         style: const TextStyle(
-                          fontSize: 12,
-                          color: Color(0xff64748B),
+                          fontSize: 13,
+                          color: _labelColor,
                           fontFamily: 'Golos',
                         ),
                       ),
                       trailing: Text(
-                        'События: ${item.noticesCreated}/${item.noticesFinished}',
+                        '${item.noticesCreated}/${item.noticesFinished}',
                         style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xff8B5CF6),
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: _createdColor,
                           fontFamily: 'Golos',
                         ),
                       ),
@@ -191,297 +220,712 @@ class _TelephonyEventsChartState extends State<TelephonyEventsChart> {
   List<BarChartGroupData> _buildGroups(List<TelephonyEventDay> items) {
     return List.generate(items.length, (index) {
       final item = items[index];
+      final incoming = item.incoming.toDouble();
+      final outgoing = item.outgoing.toDouble();
+      final missed = item.missed.toDouble();
+      var sum = 0.0;
+      final stackItems = <BarChartRodStackItem>[];
+
+      if (_showIncoming) {
+        stackItems.add(BarChartRodStackItem(sum, sum + incoming, _incomingColor));
+        sum += incoming;
+      }
+      if (_showOutgoing) {
+        stackItems.add(BarChartRodStackItem(sum, sum + outgoing, _outgoingColor));
+        sum += outgoing;
+      }
+      if (_showMissed) {
+        stackItems.add(BarChartRodStackItem(sum, sum + missed, _missedColor));
+        sum += missed;
+      }
+
+      if (stackItems.isEmpty) {
+        stackItems.add(BarChartRodStackItem(0, 0.001, Colors.transparent));
+      }
+
       return BarChartGroupData(
         x: index,
+        barsSpace: 0,
         barRods: [
           BarChartRodData(
-            toY: item.incoming.toDouble(),
-            color: const Color(0xff10B981),
-            width: 6,
-            borderRadius: BorderRadius.circular(4),
-          ),
-          BarChartRodData(
-            toY: item.outgoing.toDouble(),
-            color: const Color(0xff6366F1),
-            width: 6,
-            borderRadius: BorderRadius.circular(4),
-          ),
-          BarChartRodData(
-            toY: item.missed.toDouble(),
-            color: const Color(0xffEF4444),
-            width: 6,
-            borderRadius: BorderRadius.circular(4),
+            toY: sum,
+            width: 38,
+            borderRadius: BorderRadius.circular(2),
+            rodStackItems: stackItems,
           ),
         ],
-        barsSpace: 3,
       );
     });
   }
 
+  List<LineChartBarData> _buildLineBars(List<TelephonyEventDay> items) {
+    final createdSpots = <FlSpot>[];
+    final closedSpots = <FlSpot>[];
+
+    for (int i = 0; i < items.length; i++) {
+      createdSpots.add(FlSpot(i.toDouble(), items[i].noticesCreated.toDouble()));
+      closedSpots.add(FlSpot(i.toDouble(), items[i].noticesFinished.toDouble()));
+    }
+
+    final bars = <LineChartBarData>[];
+
+    if (_showCreated) {
+      bars.add(
+        LineChartBarData(
+          spots: createdSpots,
+          color: _createdColor,
+          isCurved: false,
+          barWidth: 3,
+          isStrokeCapRound: true,
+          dotData: FlDotData(
+            show: true,
+            getDotPainter: (_, __, ___, ____) => FlDotCirclePainter(
+              radius: 4,
+              color: Colors.white,
+              strokeColor: _createdColor,
+              strokeWidth: 3,
+            ),
+          ),
+        ),
+      );
+    }
+
+    if (_showClosed) {
+      bars.add(
+        LineChartBarData(
+          spots: closedSpots,
+          color: _closedColor,
+          isCurved: false,
+          barWidth: 4,
+          isStrokeCapRound: true,
+          dotData: FlDotData(
+            show: true,
+            getDotPainter: (_, __, ___, ____) => FlDotCirclePainter(
+              radius: 3,
+              color: Colors.white,
+              strokeColor: _closedColor,
+              strokeWidth: 3,
+            ),
+          ),
+        ),
+      );
+    }
+
+    return bars;
+  }
+
+  double _maxY(List<TelephonyEventDay> items) {
+    if (items.isEmpty) return 6;
+
+    final maxBar = items
+        .map((e) =>
+            (_showIncoming ? e.incoming : 0) +
+            (_showOutgoing ? e.outgoing : 0) +
+            (_showMissed ? e.missed : 0))
+        .fold<int>(0, (prev, curr) => math.max(prev, curr));
+    final maxCreated = _showCreated
+        ? items
+        .map((e) => e.noticesCreated)
+        .fold<int>(0, (prev, curr) => math.max(prev, curr))
+        : 0;
+    final maxClosed = _showClosed
+        ? items
+        .map((e) => e.noticesFinished)
+        .fold<int>(0, (prev, curr) => math.max(prev, curr))
+        : 0;
+
+    final maxBase = math.max(maxBar, math.max(maxCreated, maxClosed));
+    final padded = (maxBase * 1.1).ceil();
+
+    if (padded <= 6) return 6;
+    if (padded <= 12) return 12;
+    if (padded <= 18) return 18;
+    if (padded <= 24) return 24;
+    return padded.toDouble();
+  }
+
+  int _leftInterval(double maxY) {
+    if (maxY <= 6) return 1;
+    if (maxY <= 12) return 2;
+    if (maxY <= 18) return 3;
+    if (maxY <= 24) return 4;
+    return math.max(1, (maxY / 6).round());
+  }
+
   @override
   Widget build(BuildContext context) {
-    final responsive = ResponsiveHelper(context);
-    final items = _data?.chart ?? [];
+    final items = _data?.chart ?? const <TelephonyEventDay>[];
     final isEmpty = items.isEmpty ||
-        (items.every((e) =>
+        items.every((e) =>
             e.incoming == 0 &&
             e.outgoing == 0 &&
             e.missed == 0 &&
             e.noticesCreated == 0 &&
-            e.noticesFinished == 0));
+            e.noticesFinished == 0);
     final displayItems = isEmpty ? _previewDays : items;
-    final maxValue = displayItems.isEmpty
-        ? 1
-        : displayItems
-            .map((e) => e.incoming + e.outgoing + e.missed)
-            .reduce((a, b) => a > b ? a : b)
-            .toDouble();
 
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(responsive.borderRadius),
-        border: Border.all(color: const Color(0xffE2E8F0)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+    final maxY = _maxY(displayItems);
+    final leftInterval = _leftInterval(maxY);
+
+    final totalCalls = _data?.totalCalls ?? 0;
+    final totalMissed = _data?.totalMissed ?? 0;
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isCompact = constraints.maxWidth < 400;
+        final isVeryCompact = constraints.maxWidth < 360;
+        final headerIconSize = isVeryCompact
+            ? 30.0
+            : (isCompact ? 34.0 : 38.0);
+        final headerPadding = isVeryCompact
+            ? 10.0
+            : (isCompact ? 12.0 : 14.0);
+        final chartHeight = isVeryCompact
+            ? 220.0
+            : (isCompact ? 245.0 : 270.0);
+        final numberFontSize = isVeryCompact
+            ? 24.0
+            : (isCompact ? 34.0 : 38.0);
+        final titleSize = isVeryCompact ? 16.0 : (isCompact ? 17.0 : 18.0);
+        final leftReserved = isVeryCompact ? 28.0 : 32.0;
+        final bottomReserved = isVeryCompact ? 28.0 : 32.0;
+
+        return Container(
+          decoration: BoxDecoration(
+            color: const Color(0xffF8FAFC),
+            borderRadius: BorderRadius.circular(isCompact ? 18 : 20),
+            border: Border.all(color: const Color(0xffE2E8F0)),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xff0F172A).withValues(alpha: 0.05),
+                blurRadius: 14,
+                offset: const Offset(0, 6),
+              ),
+            ],
           ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: EdgeInsets.all(responsive.cardPadding),
-            child: Row(
+          child: Padding(
+            padding: EdgeInsets.all(headerPadding),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xff8B5CF6), Color(0xff7C3AED)],
-                    ),
-                    borderRadius: BorderRadius.circular(10),
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xff8B5CF6).withValues(alpha: 0.3),
-                        blurRadius: 8,
-                        offset: const Offset(0, 4),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: headerIconSize,
+                      height: headerIconSize,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(7),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.10),
+                            blurRadius: 8,
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                  child: const Icon(
-                    Icons.phone_in_talk,
-                    color: Colors.white,
-                    size: 20,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    _title,
-                    style: TextStyle(
-                      fontSize: responsive.titleFontSize,
-                      fontWeight: FontWeight.w600,
-                      color: const Color(0xff0F172A),
-                      fontFamily: 'Golos',
+                      child: Icon(
+                        Icons.call,
+                        color: Colors.black,
+                        size: isVeryCompact ? 13 : (isCompact ? 14 : 16),
+                      ),
                     ),
-                  ),
-                ),
-                IconButton(
-                  onPressed: _showDetails,
-                  icon: const Icon(Icons.crop_free, color: Color(0xff64748B), size: 22),
-                  style: IconButton.styleFrom(
-                    backgroundColor: Color(0xffF1F5F9),
-                    minimumSize: Size(44, 44),
-                    padding: EdgeInsets.zero,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.all(Radius.circular(16)),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        _title,
+                        maxLines: isVeryCompact ? 1 : 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: titleSize,
+                          height: 1.12,
+                          fontWeight: FontWeight.w700,
+                          color: const Color(0xff0F172A),
+                          fontFamily: 'Golos',
+                        ),
+                      ),
                     ),
-                  ),
+                    const SizedBox(width: 8),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          onPressed: _showDetails,
+                          icon: const Icon(
+                            Icons.crop_free,
+                            color: Color(0xff64748B),
+                            size: 22,
+                          ),
+                          style: IconButton.styleFrom(
+                            backgroundColor: const Color(0xffF1F5F9),
+                            minimumSize: Size(
+                              isVeryCompact ? 36 : 40,
+                              isVeryCompact ? 36 : 40,
+                            ),
+                            padding: EdgeInsets.zero,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.all(
+                                Radius.circular(isVeryCompact ? 12 : 14),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Wrap(
+                  spacing: isVeryCompact ? 8 : 10,
+                  runSpacing: 6,
+                  children: [
+                    _LegendRect(
+                      color: _incomingColor,
+                      label: 'Входящие',
+                      enabled: _showIncoming,
+                      onTap: () => setState(() => _showIncoming = !_showIncoming),
+                    ),
+                    _LegendRect(
+                      color: _outgoingColor,
+                      label: 'Исходящие',
+                      enabled: _showOutgoing,
+                      onTap: () => setState(() => _showOutgoing = !_showOutgoing),
+                    ),
+                    _LegendRect(
+                      color: _missedColor,
+                      label: 'Пропущенные',
+                      enabled: _showMissed,
+                      onTap: () => setState(() => _showMissed = !_showMissed),
+                    ),
+                    _LegendLine(
+                      color: _createdColor,
+                      label: 'События создано',
+                      enabled: _showCreated,
+                      onTap: () => setState(() => _showCreated = !_showCreated),
+                    ),
+                    _LegendLine(
+                      color: _closedColor,
+                      label: 'События закрыто',
+                      enabled: _showClosed,
+                      onTap: () => setState(() => _showClosed = !_showClosed),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                SizedBox(
+                  height: chartHeight,
+              child: _isLoading
+                  ? const AnalyticsChartShimmerLoader()
+                  : _error != null
+                      ? Center(
+                          child: Text(
+                            _error!,
+                            style: const TextStyle(
+                              color: _missedColor,
+                              fontFamily: 'Golos',
+                            ),
+                          ),
+                        )
+                      : ChartEmptyOverlay(
+                          show: isEmpty,
+                          child: Padding(
+                            padding: const EdgeInsets.only(right: 10),
+                            child: Stack(
+                              children: [
+                                BarChart(
+                                  BarChartData(
+                                    maxY: maxY,
+                                    minY: 0,
+                                    alignment: BarChartAlignment.spaceAround,
+                                    barGroups: _buildGroups(displayItems),
+                                    gridData: FlGridData(
+                                      show: true,
+                                      drawVerticalLine: false,
+                                horizontalInterval: math.max(1, leftInterval).toDouble(),
+                                      getDrawingHorizontalLine: (_) => FlLine(
+                                        color: const Color(0xffD5DEE8),
+                                        strokeWidth: 1,
+                                      ),
+                                    ),
+                                    borderData: FlBorderData(
+                                      show: true,
+                                      border: const Border(
+                                        bottom: BorderSide(color: Color(0xffD5DEE8), width: 1),
+                                        left: BorderSide(color: Colors.transparent),
+                                        right: BorderSide(color: Colors.transparent),
+                                        top: BorderSide(color: Colors.transparent),
+                                      ),
+                                    ),
+                                    barTouchData: BarTouchData(
+                                      enabled: true,
+                                      handleBuiltInTouches: true,
+                                      touchTooltipData: BarTouchTooltipData(
+                                        getTooltipColor: (_) => const Color(0xffF8FAFC),
+                                        tooltipRoundedRadius: 12,
+                                        tooltipPadding: const EdgeInsets.symmetric(
+                                          horizontal: 16,
+                                          vertical: 12,
+                                        ),
+                                        getTooltipItem: (group, _, __, ___) {
+                                          final index = group.x.toInt();
+                                          if (index < 0 || index >= displayItems.length) {
+                                            return null;
+                                          }
+                                          final item = displayItems[index];
+                                          final day = index < _weekDays.length
+                                              ? _weekDays[index]
+                                              : 'Д${item.day}';
+
+                                          final spans = <TextSpan>[];
+                                          if (_showIncoming) {
+                                            spans.add(
+                                              TextSpan(
+                                                text: '● Входящие                ${item.incoming}\n',
+                                                style: const TextStyle(
+                                                  color: _incomingColor,
+                                                  fontWeight: FontWeight.w600,
+                                                  fontSize: 13,
+                                                  fontFamily: 'Golos',
+                                                ),
+                                              ),
+                                            );
+                                          }
+                                          if (_showOutgoing) {
+                                            spans.add(
+                                              TextSpan(
+                                                text: '● Исходящие               ${item.outgoing}\n',
+                                                style: const TextStyle(
+                                                  color: _outgoingColor,
+                                                  fontWeight: FontWeight.w600,
+                                                  fontSize: 13,
+                                                  fontFamily: 'Golos',
+                                                ),
+                                              ),
+                                            );
+                                          }
+                                          if (_showMissed) {
+                                            spans.add(
+                                              TextSpan(
+                                                text: '● Пропущенные             ${item.missed}\n',
+                                                style: const TextStyle(
+                                                  color: _missedColor,
+                                                  fontWeight: FontWeight.w600,
+                                                  fontSize: 13,
+                                                  fontFamily: 'Golos',
+                                                ),
+                                              ),
+                                            );
+                                          }
+                                          if (_showCreated) {
+                                            spans.add(
+                                              TextSpan(
+                                                text: '● События создано         ${item.noticesCreated}\n',
+                                                style: const TextStyle(
+                                                  color: _createdColor,
+                                                  fontWeight: FontWeight.w600,
+                                                  fontSize: 13,
+                                                  fontFamily: 'Golos',
+                                                ),
+                                              ),
+                                            );
+                                          }
+                                          if (_showClosed) {
+                                            spans.add(
+                                              TextSpan(
+                                                text: '● События закрыто         ${item.noticesFinished}',
+                                                style: const TextStyle(
+                                                  color: _closedColor,
+                                                  fontWeight: FontWeight.w600,
+                                                  fontSize: 13,
+                                                  fontFamily: 'Golos',
+                                                ),
+                                              ),
+                                            );
+                                          }
+
+                                          return BarTooltipItem(
+                                            '$day\n',
+                                            const TextStyle(
+                                              color: Color(0xff0F172A),
+                                              fontWeight: FontWeight.w700,
+                                              fontSize: 16,
+                                              fontFamily: 'Golos',
+                                            ),
+                                            children: spans,
+                                          );
+                                        },
+                                      ),
+                                    ),
+                                    titlesData: FlTitlesData(
+                                      topTitles: const AxisTitles(
+                                        sideTitles: SideTitles(showTitles: false),
+                                      ),
+                                      rightTitles: const AxisTitles(
+                                        sideTitles: SideTitles(showTitles: false),
+                                      ),
+                                      leftTitles: AxisTitles(
+                                        sideTitles: SideTitles(
+                                          showTitles: true,
+                                          interval: leftInterval.toDouble(),
+                                          reservedSize: leftReserved,
+                                          getTitlesWidget: (value, meta) {
+                                            return Text(
+                                              value.toInt().toString(),
+                                              style: TextStyle(
+                                                fontSize: isVeryCompact ? 10 : 11,
+                                                color: _labelColor,
+                                                fontWeight: FontWeight.w600,
+                                                fontFamily: 'Golos',
+                                              ),
+                                            );
+                                          },
+                                        ),
+                                      ),
+                                      bottomTitles: AxisTitles(
+                                        sideTitles: SideTitles(
+                                          showTitles: true,
+                                          reservedSize: bottomReserved,
+                                          getTitlesWidget: (value, meta) {
+                                            final index = value.toInt();
+                                            if (index < 0 || index >= displayItems.length) {
+                                              return const SizedBox.shrink();
+                                            }
+                                            final text = index < _weekDays.length
+                                                ? _weekDays[index]
+                                                : 'Д${displayItems[index].day}';
+                                            return Padding(
+                                              padding: const EdgeInsets.only(top: 6),
+                                              child: Text(
+                                                text,
+                                                style: TextStyle(
+                                                  fontSize: isVeryCompact ? 12 : 14,
+                                                  color: _labelColor,
+                                                  fontWeight: FontWeight.w600,
+                                                  fontFamily: 'Golos',
+                                                ),
+                                              ),
+                                            );
+                                          },
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                if (_showCreated || _showClosed)
+                                  Positioned.fill(
+                                    child: Padding(
+                                      padding: EdgeInsets.only(
+                                        left: leftReserved,
+                                        bottom: bottomReserved,
+                                      ),
+                                      child: IgnorePointer(
+                                        child: LineChart(
+                                          LineChartData(
+                                            minX: 0,
+                                            maxX: (displayItems.length - 1).toDouble(),
+                                            minY: 0,
+                                            maxY: maxY,
+                                            clipData: const FlClipData.all(),
+                                            lineBarsData: _buildLineBars(displayItems),
+                                            gridData: const FlGridData(show: false),
+                                            borderData: FlBorderData(show: false),
+                                            titlesData: const FlTitlesData(
+                                              topTitles: AxisTitles(
+                                                sideTitles: SideTitles(showTitles: false),
+                                              ),
+                                              rightTitles: AxisTitles(
+                                                sideTitles: SideTitles(showTitles: false),
+                                              ),
+                                              leftTitles: AxisTitles(
+                                                sideTitles: SideTitles(showTitles: false),
+                                              ),
+                                              bottomTitles: AxisTitles(
+                                                sideTitles: SideTitles(showTitles: false),
+                                              ),
+                                            ),
+                                            lineTouchData: const LineTouchData(enabled: false),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ),
+                ),
+                const SizedBox(height: 8),
+                const Divider(color: Color(0xffD5DEE8), height: 1),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Всего звонков',
+                            style: TextStyle(
+                              color: _labelColor,
+                              fontSize: isVeryCompact ? 13 : 14,
+                              fontWeight: FontWeight.w500,
+                              fontFamily: 'Golos',
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            '$totalCalls',
+                            style: TextStyle(
+                              color: const Color(0xff0F172A),
+                              fontSize: numberFontSize,
+                              height: 0.92,
+                              fontWeight: FontWeight.w700,
+                              fontFamily: 'Golos',
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text(
+                            'Пропущенные',
+                            style: TextStyle(
+                              color: _labelColor,
+                              fontSize: isVeryCompact ? 13 : 14,
+                              fontWeight: FontWeight.w500,
+                              fontFamily: 'Golos',
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            '$totalMissed',
+                            style: TextStyle(
+                              color: _missedColor,
+                              fontSize: numberFontSize,
+                              height: 0.92,
+                              fontWeight: FontWeight.w700,
+                              fontFamily: 'Golos',
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
           ),
-          SizedBox(
-            height: responsive.chartHeight,
-            child: _isLoading
-                ? const AnalyticsChartShimmerLoader()
-                : _error != null
-                    ? Center(
-                        child: Text(
-                          _error!,
-                          style: const TextStyle(
-                            color: Color(0xffEF4444),
-                            fontFamily: 'Golos',
-                          ),
-                        ),
-                      )
-                    : ChartEmptyOverlay(
-                        show: isEmpty,
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
-                          child: BarChart(
-                            BarChartData(
-                              maxY: maxValue * 1.2,
-                              barGroups: _buildGroups(displayItems),
-                            gridData: FlGridData(
-                              show: true,
-                              drawVerticalLine: false,
-                              getDrawingHorizontalLine: (value) => FlLine(
-                                color: const Color(0xffE2E8F0),
-                                strokeWidth: 1,
-                              ),
-                            ),
-                            borderData: FlBorderData(show: false),
-                            titlesData: FlTitlesData(
-                              leftTitles: AxisTitles(
-                                sideTitles: SideTitles(
-                                  showTitles: true,
-                                  reservedSize: 40,
-                                  getTitlesWidget: (value, meta) {
-                                    return Text(
-                                      value.toInt().toString(),
-                                      style: const TextStyle(
-                                        fontSize: 10,
-                                        color: Color(0xff64748B),
-                                        fontFamily: 'Golos',
-                                      ),
-                                    );
-                                  },
-                                ),
-                              ),
-                              bottomTitles: AxisTitles(
-                                sideTitles: SideTitles(
-                                  showTitles: true,
-                                  reservedSize: 36,
-                                  getTitlesWidget: (value, meta) {
-                                    final index = value.toInt();
-                                    if (index < 0 ||
-                                        index >= displayItems.length) {
-                                      return const SizedBox.shrink();
-                                    }
-                                    return RotatedBox(
-                                      quarterTurns: 3,
-                                      child: Padding(
-                                        padding: const EdgeInsets.only(top: 6),
-                                        child: Text(
-                                          'Д${displayItems[index].day}',
-                                          style: const TextStyle(
-                                            fontSize: 10,
-                                            color: Color(0xff64748B),
-                                            fontFamily: 'Golos',
-                                          ),
-                                        ),
-                                      ),
-                                    );
-                                  },
-                                ),
-                              ),
-                              topTitles: const AxisTitles(
-                                sideTitles: SideTitles(showTitles: false),
-                              ),
-                              rightTitles: const AxisTitles(
-                                sideTitles: SideTitles(showTitles: false),
-                              ),
-                            ),
-                            ),
-                          ),
-                        ),
-                      ),
-          ),
-          if (_data != null)
-            Padding(
-              padding: EdgeInsets.fromLTRB(
-                responsive.cardPadding,
-                0,
-                responsive.cardPadding,
-                responsive.cardPadding,
-              ),
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  final isNarrow = constraints.maxWidth < 360;
-                  final legend = Wrap(
-                    spacing: 12,
-                    runSpacing: 8,
-                    children: const [
-                      _LegendDot(color: Color(0xff10B981), label: 'Входящие'),
-                      _LegendDot(color: Color(0xff6366F1), label: 'Исходящие'),
-                      _LegendDot(color: Color(0xffEF4444), label: 'Пропущенные'),
-                    ],
-                  );
+        );
+      },
+    );
+  }
+}
 
-                  final eventsText = Text(
-                    'События: ${_data!.totalNoticesCreated}/${_data!.totalNoticesFinished}',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xff64748B),
-                      fontFamily: 'Golos',
-                    ),
-                  );
+class _LegendRect extends StatelessWidget {
+  const _LegendRect({
+    required this.color,
+    required this.label,
+    required this.enabled,
+    required this.onTap,
+  });
 
-                  if (isNarrow) {
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        legend,
-                        const SizedBox(height: 8),
-                        Align(
-                          alignment: Alignment.centerRight,
-                          child: eventsText,
-                        ),
-                      ],
-                    );
-                  }
+  final Color color;
+  final String label;
+  final bool enabled;
+  final VoidCallback onTap;
 
-                  return Row(
-                    children: [
-                      legend,
-                      const Spacer(),
-                      eventsText,
-                    ],
-                  );
-                },
-              ),
+  @override
+  Widget build(BuildContext context) {
+    final effectiveColor = enabled ? color : const Color(0xffCBD5E1);
+    final effectiveText = enabled ? const Color(0xff64748B) : const Color(0xff94A3B8);
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 34,
+            height: 22,
+            decoration: BoxDecoration(
+              color: effectiveColor,
+              borderRadius: BorderRadius.circular(6),
             ),
+          ),
+          const SizedBox(width: 7),
+          Text(
+            label,
+            style: TextStyle(
+              color: effectiveText,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              fontFamily: 'Golos',
+            ),
+          ),
         ],
       ),
     );
   }
 }
 
-class _LegendDot extends StatelessWidget {
-  final Color color;
-  final String label;
-
-  const _LegendDot({
+class _LegendLine extends StatelessWidget {
+  const _LegendLine({
     required this.color,
     required this.label,
+    required this.enabled,
+    required this.onTap,
   });
+
+  final Color color;
+  final String label;
+  final bool enabled;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Container(
-          width: 8,
-          height: 8,
-          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-        ),
-        const SizedBox(width: 6),
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 12,
-            color: Color(0xff64748B),
-            fontFamily: 'Golos',
+    final effectiveColor = enabled ? color : const Color(0xffCBD5E1);
+    final effectiveText = enabled ? const Color(0xff64748B) : const Color(0xff94A3B8);
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SizedBox(
+            width: 34,
+            child: Row(
+              children: [
+                Expanded(child: Container(height: 2.5, color: effectiveColor)),
+                Container(
+                  width: 14,
+                  height: 14,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.white,
+                    border: Border.all(color: effectiveColor, width: 3),
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
-      ],
+          const SizedBox(width: 7),
+          Text(
+            label,
+            style: TextStyle(
+              color: effectiveText,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              fontFamily: 'Golos',
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

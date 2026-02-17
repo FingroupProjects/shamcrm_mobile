@@ -61,6 +61,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   String? _chartSettingsError;
   final Map<String, String> _chartTitlesByKey = {};
   final Set<String> _availableChartKeys = {};
+  List<DashboardSettingItem> _orderedChartSettings = [];
 
   // Stats data
   bool _hasLoadedStatsOnce = false;
@@ -96,13 +97,22 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
 
       final titlesByKey = <String, String>{};
       final keys = <String>{};
+      final orderedSettings = <DashboardSettingItem>[];
 
       for (final DashboardSettingItem item in settings) {
         final key = item.nameEn.trim();
         if (key.isEmpty) continue;
         keys.add(key);
         titlesByKey[key] = item.name;
+        orderedSettings.add(item);
       }
+
+      orderedSettings.sort((a, b) {
+        final aPos = a.position > 0 ? a.position : 1 << 30;
+        final bPos = b.position > 0 ? b.position : 1 << 30;
+        if (aPos != bPos) return aPos.compareTo(bPos);
+        return a.id.compareTo(b.id);
+      });
 
       if (!mounted) return;
       setState(() {
@@ -112,12 +122,14 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         _chartTitlesByKey
           ..clear()
           ..addAll(titlesByKey);
+        _orderedChartSettings = orderedSettings;
         _isLoadingChartSettings = false;
       });
     } catch (_) {
       if (!mounted) return;
       setState(() {
         _chartSettingsError = 'Не удалось загрузить настройки графиков.';
+        _orderedChartSettings = [];
         _isLoadingChartSettings = false;
       });
     }
@@ -188,6 +200,34 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     return _fallbackChartTitles[fallbackKey] ?? fallbackKey;
   }
 
+  String? _chartCanonicalKey(String key) {
+    const aliases = <String, String>{
+      'conversion': 'conversion',
+      'lead_sources': 'lead_sources',
+      'manager_deals': 'manager_deals',
+      'speed_chart': 'speed_chart',
+      'achieving_goals': 'achieving_goals',
+      'achieving_tasks': 'achieving_tasks',
+      'kpi_tasks': 'achieving_tasks',
+      'task_kpi': 'achieving_tasks',
+      'task_chart': 'achieving_tasks',
+      'online_store_orders': 'online_store_orders',
+      'top_selling_products': 'top_selling_products',
+      'telephony_and_events': 'telephony_and_events',
+      'replies_to_messages': 'replies_to_messages',
+      'message_replies': 'replies_to_messages',
+      'task_statistics_by_project': 'task_statistics_by_project',
+      'task_stats_by_project': 'task_statistics_by_project',
+      'targeted_advertising': 'targeted_advertising',
+      'connected_accounts': 'connected_accounts',
+      'advertising_effectiveness': 'advertising_effectiveness',
+      'conversion_by_statuses': 'conversion_by_statuses',
+      'calls_by_hour': 'calls_by_hour',
+      'telephony_and_events_by_hour': 'calls_by_hour',
+    };
+    return aliases[key];
+  }
+
   Widget _buildStatsSkeletonCard() {
     return ShimmerWave(
       child: Container(
@@ -238,129 +278,105 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     }
 
     final widgets = <Widget>[];
+    final addedCanonicalKeys = <String>{};
 
-    void addChart({
-      required List<String> keys,
-      required String fallbackKey,
-      required Widget Function(String title) builder,
-    }) {
-      if (!_hasChartAccess(keys)) return;
-      widgets.add(
-        _KeepAliveChart(
-          child: builder(_chartTitle(keys, fallbackKey)),
-        ),
-      );
+    for (final item in _orderedChartSettings) {
+      final rawKey = item.nameEn.trim();
+      if (rawKey.isEmpty) continue;
+
+      final canonicalKey = _chartCanonicalKey(rawKey);
+      if (canonicalKey == null || addedCanonicalKeys.contains(canonicalKey)) {
+        continue;
+      }
+
+      final title = item.name.trim().isNotEmpty
+          ? item.name
+          : (_fallbackChartTitles[canonicalKey] ?? canonicalKey);
+
+      Widget? chartWidget;
+      switch (canonicalKey) {
+        case 'conversion':
+          chartWidget =
+              ConversionChart(key: ValueKey('conversion_$_chartsVersion'), title: title);
+          break;
+        case 'lead_sources':
+          chartWidget =
+              SourcesChart(key: ValueKey('sources_$_chartsVersion'), title: title);
+          break;
+        case 'manager_deals':
+          chartWidget =
+              ManagersChart(key: ValueKey('managers_$_chartsVersion'), title: title);
+          break;
+        case 'speed_chart':
+          chartWidget =
+              SpeedGauge(key: ValueKey('speed_$_chartsVersion'), title: title);
+          break;
+        case 'achieving_goals':
+          chartWidget = GoalsChart(key: ValueKey('goals_$_chartsVersion'), title: title);
+          break;
+        case 'achieving_tasks':
+          chartWidget = KpiChart(key: ValueKey('kpi_$_chartsVersion'), title: title);
+          break;
+        case 'online_store_orders':
+          chartWidget =
+              OrdersChart(key: ValueKey('orders_$_chartsVersion'), title: title);
+          break;
+        case 'top_selling_products':
+          chartWidget =
+              ProductsChart(key: ValueKey('products_$_chartsVersion'), title: title);
+          break;
+        case 'telephony_and_events':
+          chartWidget = TelephonyEventsChart(
+            key: ValueKey('telephony_$_chartsVersion'),
+            title: title,
+          );
+          break;
+        case 'replies_to_messages':
+          chartWidget = RepliesMessagesChart(
+            key: ValueKey('replies_$_chartsVersion'),
+            title: title,
+          );
+          break;
+        case 'task_statistics_by_project':
+          chartWidget = TaskStatsByProjectChart(
+            key: ValueKey('task_stats_$_chartsVersion'),
+            title: title,
+          );
+          break;
+        case 'targeted_advertising':
+          chartWidget = TargetedAdsChart(
+            key: ValueKey('targeted_ads_$_chartsVersion'),
+            title: title,
+          );
+          break;
+        case 'connected_accounts':
+          chartWidget = ConnectedAccountsChart(
+            key: ValueKey('connected_$_chartsVersion'),
+            title: title,
+          );
+          break;
+        case 'advertising_effectiveness':
+          chartWidget =
+              AdvertisingRoiChart(key: ValueKey('roi_$_chartsVersion'), title: title);
+          break;
+        case 'conversion_by_statuses':
+          chartWidget = LeadConversionStatusesChart(
+            key: ValueKey('lead_statuses_$_chartsVersion'),
+            title: title,
+          );
+          break;
+        case 'calls_by_hour':
+          chartWidget = TelephonyByHourChart(
+            key: ValueKey('telephony_hour_$_chartsVersion'),
+            title: title,
+          );
+          break;
+      }
+
+      if (chartWidget == null) continue;
+      addedCanonicalKeys.add(canonicalKey);
+      widgets.add(_KeepAliveChart(child: chartWidget));
     }
-
-    addChart(
-      keys: const ['conversion'],
-      fallbackKey: 'conversion',
-      builder: (title) =>
-          ConversionChart(key: ValueKey('conversion_$_chartsVersion'), title: title),
-    );
-    addChart(
-      keys: const ['lead_sources'],
-      fallbackKey: 'lead_sources',
-      builder: (title) =>
-          SourcesChart(key: ValueKey('sources_$_chartsVersion'), title: title),
-    );
-    addChart(
-      keys: const ['manager_deals'],
-      fallbackKey: 'manager_deals',
-      builder: (title) =>
-          ManagersChart(key: ValueKey('managers_$_chartsVersion'), title: title),
-    );
-    addChart(
-      keys: const ['speed_chart'],
-      fallbackKey: 'speed_chart',
-      builder: (title) =>
-          SpeedGauge(key: ValueKey('speed_$_chartsVersion'), title: title),
-    );
-    addChart(
-      keys: const ['achieving_goals'],
-      fallbackKey: 'achieving_goals',
-      builder: (title) =>
-          GoalsChart(key: ValueKey('goals_$_chartsVersion'), title: title),
-    );
-    addChart(
-      keys: const ['achieving_tasks', 'kpi_tasks', 'task_kpi', 'task_chart'],
-      fallbackKey: 'achieving_tasks',
-      builder: (title) => KpiChart(key: ValueKey('kpi_$_chartsVersion'), title: title),
-    );
-    addChart(
-      keys: const ['online_store_orders'],
-      fallbackKey: 'online_store_orders',
-      builder: (title) =>
-          OrdersChart(key: ValueKey('orders_$_chartsVersion'), title: title),
-    );
-    addChart(
-      keys: const ['top_selling_products'],
-      fallbackKey: 'top_selling_products',
-      builder: (title) =>
-          ProductsChart(key: ValueKey('products_$_chartsVersion'), title: title),
-    );
-    addChart(
-      keys: const ['telephony_and_events'],
-      fallbackKey: 'telephony_and_events',
-      builder: (title) => TelephonyEventsChart(
-        key: ValueKey('telephony_$_chartsVersion'),
-        title: title,
-      ),
-    );
-    addChart(
-      keys: const ['replies_to_messages', 'message_replies'],
-      fallbackKey: 'replies_to_messages',
-      builder: (title) => RepliesMessagesChart(
-        key: ValueKey('replies_$_chartsVersion'),
-        title: title,
-      ),
-    );
-    addChart(
-      keys: const ['task_statistics_by_project', 'task_stats_by_project'],
-      fallbackKey: 'task_statistics_by_project',
-      builder: (title) => TaskStatsByProjectChart(
-        key: ValueKey('task_stats_$_chartsVersion'),
-        title: title,
-      ),
-    );
-    addChart(
-      keys: const ['targeted_advertising'],
-      fallbackKey: 'targeted_advertising',
-      builder: (title) => TargetedAdsChart(
-        key: ValueKey('targeted_ads_$_chartsVersion'),
-        title: title,
-      ),
-    );
-    addChart(
-      keys: const ['connected_accounts'],
-      fallbackKey: 'connected_accounts',
-      builder: (title) => ConnectedAccountsChart(
-        key: ValueKey('connected_$_chartsVersion'),
-        title: title,
-      ),
-    );
-    addChart(
-      keys: const ['advertising_effectiveness'],
-      fallbackKey: 'advertising_effectiveness',
-      builder: (title) =>
-          AdvertisingRoiChart(key: ValueKey('roi_$_chartsVersion'), title: title),
-    );
-    addChart(
-      keys: const ['conversion_by_statuses'],
-      fallbackKey: 'conversion_by_statuses',
-      builder: (title) => LeadConversionStatusesChart(
-        key: ValueKey('lead_statuses_$_chartsVersion'),
-        title: title,
-      ),
-    );
-    addChart(
-      keys: const ['calls_by_hour', 'telephony_and_events_by_hour'],
-      fallbackKey: 'calls_by_hour',
-      builder: (title) => TelephonyByHourChart(
-        key: ValueKey('telephony_hour_$_chartsVersion'),
-        title: title,
-      ),
-    );
 
     if (widgets.isNotEmpty) return widgets;
 

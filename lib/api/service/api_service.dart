@@ -2203,50 +2203,50 @@ class ApiService {
         debugPrint('📤 getLeadStatuses WITH FILTERS - Final path: $path');
       }
 
-    final cacheKey =
-        'cachedLeadStatuses_${organizationId}_funnel_${salesFunnelId ?? "null"}';
+      final response = await _analyticsRequest(path);
 
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-
-      if (salesFunnelId != null &&
-          salesFunnelId.isNotEmpty &&
-          salesFunnelId != 'null') {
-        path += '&sales_funnel_id=$salesFunnelId';
-      }
-
-        if (data is List) {
-          statusList = data;
-        } else if (data is Map) {
-          if (data['result'] != null) {
-            statusList = data['result'] as List;
-          } else if (data['data'] != null) {
-            statusList = data['data'] as List;
-          } else if (data['statuses'] != null) {
-            statusList = data['statuses'] as List;
-          }
-        }
-
-        if (statusList != null && statusList.isNotEmpty) {
-          await prefs.setString(cacheKey, json.encode(statusList));
-
-          final statuses =
-              statusList.map((status) => LeadStatus.fromJson(status)).toList();
-
-          await LeadCache.updatePersistentCountsFromStatuses(statuses);
-
-          if (kDebugMode) {
-            debugPrint(
-                '✅ getLeadStatuses WITH FILTERS - Got ${statuses.length} statuses');
-          }
-
-          return statuses;
-        } else {
-          throw Exception('Результат отсутствует в ответе или пустой');
-        }
-      } else {
+      if (response.statusCode != 200) {
         throw Exception('Ошибка ${response.statusCode}!');
       }
+
+      final dynamic data = json.decode(response.body);
+      List<dynamic>? statusList;
+
+      if (data is List) {
+        statusList = data;
+      } else if (data is Map<String, dynamic>) {
+        if (data['result'] is List) {
+          statusList = data['result'] as List;
+        } else if (data['data'] is List) {
+          statusList = data['data'] as List;
+        } else if (data['statuses'] is List) {
+          statusList = data['statuses'] as List;
+        } else if (data['result'] is Map<String, dynamic> &&
+            (data['result'] as Map<String, dynamic>)['statuses'] is List) {
+          statusList =
+              (data['result'] as Map<String, dynamic>)['statuses'] as List;
+        }
+      }
+
+      if (statusList == null || statusList.isEmpty) {
+        throw Exception('Результат отсутствует в ответе или пустой');
+      }
+
+      await prefs.setString(cacheKey, json.encode(statusList));
+
+      final statuses = statusList
+          .whereType<Map<String, dynamic>>()
+          .map(LeadStatus.fromJson)
+          .toList();
+
+      await LeadCache.updatePersistentCountsFromStatuses(statuses);
+
+      if (kDebugMode) {
+        debugPrint(
+            '✅ getLeadStatuses WITH FILTERS - Got ${statuses.length} statuses');
+      }
+
+      return statuses;
     } catch (e) {
       if (kDebugMode) {
         debugPrint('❌ getLeadStatuses WITH FILTERS - Error: $e');
@@ -4470,59 +4470,6 @@ class ApiService {
       }
     } else {
       throw Exception('Ошибка ${response.statusCode}!');
-    }
-  }
-
-// Метод для изменения статуса Сделки в ApiService
-  Future<Map<String, dynamic>> updateDealStatusEdit(
-    int dealStatusId,
-    String title,
-    int day,
-    bool isSuccess,
-    bool isFailure,
-    String notificationMessage,
-    bool showOnMainPage,
-    List<int>? userIds, // пользователи, которые могут ВИДЕТЬ сделки
-    List<int>?
-        changeStatusUserIds, // ✅ НОВОЕ: пользователи, которые могут ИЗМЕНЯТЬ статус
-  ) async {
-    final path = await _appendQueryParams('/deal/statuses/$dealStatusId');
-
-    if (kDebugMode) {
-      debugPrint('ApiService: updateDealStatusEdit - userIds: $userIds');
-      debugPrint(
-          'ApiService: updateDealStatusEdit - changeStatusUserIds: $changeStatusUserIds'); // ✅ НОВОЕ
-    }
-
-    final organizationId = await getSelectedOrganization();
-    final salesFunnelId = await getSelectedSalesFunnel();
-
-    final payload = {
-      "title": title,
-      "day": day,
-      "color": "#000",
-      "is_success": isSuccess ? 1 : 0,
-      "is_failure": isFailure ? 1 : 0,
-      "notification_message": notificationMessage,
-      "show_on_main_page": showOnMainPage ? 1 : 0,
-      "organization_id": organizationId?.toString() ?? '',
-      if (salesFunnelId != null) "sales_funnel_id": salesFunnelId.toString(),
-      // ✅ Добавляем оба массива пользователей
-      if (userIds != null && userIds.isNotEmpty) "users": userIds,
-      if (changeStatusUserIds != null && changeStatusUserIds.isNotEmpty)
-        "change_status_users": changeStatusUserIds, // ✅ НОВОЕ
-    };
-
-    if (kDebugMode) {
-      debugPrint('ApiService: updateDealStatusEdit payload: $payload');
-    }
-
-    final response = await _patchRequest(path, payload);
-
-    if (response.statusCode == 200) {
-      return {'result': 'Success'};
-    } else {
-      throw Exception('Failed to update dealStatus!');
     }
   }
 

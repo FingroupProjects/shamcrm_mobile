@@ -2,11 +2,13 @@ class DashboardSettingItem {
   final int id;
   final String name;
   final String nameEn;
+  final int position;
 
   const DashboardSettingItem({
     required this.id,
     required this.name,
     required this.nameEn,
+    required this.position,
   });
 
   factory DashboardSettingItem.fromJson(Map<String, dynamic> json) {
@@ -26,6 +28,7 @@ class DashboardSettingItem {
       id: toInt(json['id']),
       name: toStringSafe(json['name']),
       nameEn: toStringSafe(json['name_en']),
+      position: toInt(json['position']),
     );
   }
 }
