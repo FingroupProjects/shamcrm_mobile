@@ -24,7 +24,14 @@ import 'package:crm_task_manager/screens/analytics/models/dashboard_setting_item
 import 'package:crm_task_manager/custom_widget/shimmer_wave.dart';
 
 class AnalyticsScreen extends StatefulWidget {
-  const AnalyticsScreen({Key? key}) : super(key: key);
+  const AnalyticsScreen({
+    Key? key,
+    this.showAppBar = true,
+    this.filterTrigger = 0,
+  }) : super(key: key);
+
+  final bool showAppBar;
+  final int filterTrigger;
 
   @override
   _AnalyticsScreenState createState() => _AnalyticsScreenState();
@@ -73,16 +80,31 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   double _dealsChange = 0.0;
   double _revenueChange = 0.0;
   double _conversionChange = 0.0;
+  int _lastFilterTrigger = 0;
 
   @override
   void initState() {
     super.initState();
+    _lastFilterTrigger = widget.filterTrigger;
     _selectedPeriodKey = _defaultPeriodKey;
     ApiService.setAnalyticsFilters({
       'period': _defaultPeriodKey,
     });
     _loadStats();
     _loadDashboardSettings();
+  }
+
+  @override
+  void didUpdateWidget(covariant AnalyticsScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!widget.showAppBar && widget.filterTrigger != _lastFilterTrigger) {
+      _lastFilterTrigger = widget.filterTrigger;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _showFilterSheet();
+        }
+      });
+    }
   }
 
   Future<void> _loadDashboardSettings() async {
@@ -174,30 +196,19 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     return _formatCount(value);
   }
 
-  Future<void> _refreshData() async {
+  Future<void> _refreshData({bool reloadCharts = true}) async {
     ApiService.clearAnalyticsResponseCache();
     await Future.wait([
       _loadStats(),
       _loadDashboardSettings(),
     ]);
 
-    // Force rebuild of all charts by updating their keys
-    setState(() {
-      _chartsVersion++;
-    });
-  }
-
-  bool _hasChartAccess(List<String> keys) {
-    if (_availableChartKeys.isEmpty) return false;
-    return keys.any(_availableChartKeys.contains);
-  }
-
-  String _chartTitle(List<String> keys, String fallbackKey) {
-    for (final key in keys) {
-      final title = _chartTitlesByKey[key];
-      if (title != null && title.trim().isNotEmpty) return title;
+    if (reloadCharts) {
+      // Hard reload for filter changes: recreate chart widgets.
+      setState(() {
+        _chartsVersion++;
+      });
     }
-    return _fallbackChartTitles[fallbackKey] ?? fallbackKey;
   }
 
   String? _chartCanonicalKey(String key) {
@@ -460,15 +471,13 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
           '🟢 AnalyticsScreen: Filters set globally, refreshing charts...');
     }
 
-    await _refreshData();
+    await _refreshData(reloadCharts: true);
   }
 
-  @override
-  Widget build(BuildContext context) {
+  Widget _buildAnalyticsBody(BuildContext context) {
     final localizations = AppLocalizations.of(context);
     final screenWidth = MediaQuery.of(context).size.width;
 
-    // Adaptive values based on screen width
     final isTablet = screenWidth > 600;
     final isSmallPhone = screenWidth < 360;
 
@@ -477,6 +486,123 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     final cardSpacing = isTablet ? 20.0 : (isSmallPhone ? 12.0 : 16.0);
     final chartSpacing = isTablet ? 20.0 : (isSmallPhone ? 12.0 : 16.0);
 
+    return RefreshIndicator(
+      color: const Color(0xff1E2E52),
+      backgroundColor: Colors.white,
+      onRefresh: () => _refreshData(reloadCharts: false),
+      child: Builder(
+        builder: (context) {
+          final chartWidgets = _buildChartWidgets();
+          final viewportHeight = MediaQuery.of(context).size.height;
+
+          return ListView.builder(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: EdgeInsets.all(horizontalPadding),
+            cacheExtent: viewportHeight * 1.2,
+            itemCount: 1 + chartWidgets.length,
+            itemBuilder: (context, index) {
+              if (index == 0) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        final cardWidth = (constraints.maxWidth -
+                                (cardSpacing * (gridCrossAxisCount - 1))) /
+                            gridCrossAxisCount;
+                        final cardHeight = cardWidth * 1.15;
+
+                        return GridView.count(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          crossAxisCount: gridCrossAxisCount,
+                          mainAxisSpacing: cardSpacing,
+                          crossAxisSpacing: cardSpacing,
+                          childAspectRatio: cardWidth / cardHeight,
+                          children: _hasLoadedStatsOnce
+                              ? [
+                                  AnalyticsStatCard(
+                                    title: localizations?.translate('stat_total_leads') ??
+                                        'Всего лидов',
+                                    value: _totalLeads,
+                                    change: '${_leadsChange.toStringAsFixed(2)}%',
+                                    isPositive: _leadsChange >= 0,
+                                    icon: Icons.people_outline,
+                                    iconColor: const Color(0xff6366F1),
+                                  ),
+                                  AnalyticsStatCard(
+                                    title: localizations?.translate('stat_closed_deals') ??
+                                        'Закрытых сделок',
+                                    value: _closedDeals,
+                                    change: '${_dealsChange.toStringAsFixed(2)}%',
+                                    isPositive: _dealsChange >= 0,
+                                    icon: Icons.handshake_outlined,
+                                    iconColor: const Color(0xff10B981),
+                                  ),
+                                  AnalyticsStatCard(
+                                    title: localizations?.translate('stat_total_revenue') ??
+                                        'Общая выручка',
+                                    value: _totalRevenue,
+                                    change: '${_revenueChange.toStringAsFixed(2)}%',
+                                    isPositive: _revenueChange >= 0,
+                                    icon: Icons.attach_money,
+                                    iconColor: const Color(0xffF59E0B),
+                                  ),
+                                  AnalyticsStatCard(
+                                    title:
+                                        localizations?.translate('stat_conversion') ??
+                                            'Конверсия',
+                                    value: _conversionRate,
+                                    change: '${_conversionChange.toStringAsFixed(2)}%',
+                                    isPositive: _conversionChange >= 0,
+                                    icon: Icons.trending_up,
+                                    iconColor: const Color(0xffEC4899),
+                                  ),
+                                ]
+                              : [
+                                  _buildStatsSkeletonCard(),
+                                  _buildStatsSkeletonCard(),
+                                  _buildStatsSkeletonCard(),
+                                  _buildStatsSkeletonCard(),
+                                ],
+                        );
+                      },
+                    ),
+                    SizedBox(height: chartSpacing * 1.5),
+                  ],
+                );
+              }
+
+              final chartIndex = index - 1;
+              final isLast = chartIndex == chartWidgets.length - 1;
+              return Padding(
+                padding: EdgeInsets.only(bottom: isLast ? 0 : chartSpacing),
+                child: chartWidgets[chartIndex],
+              );
+            },
+          );
+        },
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!widget.showAppBar) {
+      return Container(
+        color: const Color(0xffF8FAFC),
+        child: _buildAnalyticsBody(context),
+      );
+    }
+
+    final localizations = AppLocalizations.of(context);
+    final screenWidth = MediaQuery.of(context).size.width;
+
+    // Adaptive values based on screen width
+    final isTablet = screenWidth > 600;
+    final isSmallPhone = screenWidth < 360;
+
+    final horizontalPadding = isTablet ? 24.0 : (isSmallPhone ? 12.0 : 16.0);
     return Scaffold(
       backgroundColor: const Color(0xffF8FAFC),
       appBar: AppBar(
@@ -533,109 +659,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
           ),
         ),
       ),
-      body: RefreshIndicator(
-        onRefresh: _refreshData,
-        child: Builder(
-          builder: (context) {
-            final chartWidgets = _buildChartWidgets();
-            final viewportHeight = MediaQuery.of(context).size.height;
-
-            return ListView.builder(
-              physics: const AlwaysScrollableScrollPhysics(),
-              padding: EdgeInsets.all(horizontalPadding),
-              cacheExtent: viewportHeight * 1.2,
-              itemCount: 1 + chartWidgets.length,
-              itemBuilder: (context, index) {
-                if (index == 0) {
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      LayoutBuilder(
-                        builder: (context, constraints) {
-                          final cardWidth = (constraints.maxWidth -
-                                  (cardSpacing * (gridCrossAxisCount - 1))) /
-                              gridCrossAxisCount;
-                          final cardHeight = cardWidth * 1.15;
-
-                          return GridView.count(
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            crossAxisCount: gridCrossAxisCount,
-                            mainAxisSpacing: cardSpacing,
-                            crossAxisSpacing: cardSpacing,
-                            childAspectRatio: cardWidth / cardHeight,
-                            children: _hasLoadedStatsOnce
-                                ? [
-                                    AnalyticsStatCard(
-                                      title: localizations
-                                              ?.translate('stat_total_leads') ??
-                                          'Всего лидов',
-                                      value: _totalLeads,
-                                      change:
-                                          '${_leadsChange.toStringAsFixed(2)}%',
-                                      isPositive: _leadsChange >= 0,
-                                      icon: Icons.people_outline,
-                                      iconColor: const Color(0xff6366F1),
-                                    ),
-                                    AnalyticsStatCard(
-                                      title: localizations?.translate(
-                                              'stat_closed_deals') ??
-                                          'Закрытых сделок',
-                                      value: _closedDeals,
-                                      change:
-                                          '${_dealsChange.toStringAsFixed(2)}%',
-                                      isPositive: _dealsChange >= 0,
-                                      icon: Icons.handshake_outlined,
-                                      iconColor: const Color(0xff10B981),
-                                    ),
-                                    AnalyticsStatCard(
-                                      title: localizations?.translate(
-                                              'stat_total_revenue') ??
-                                          'Общая выручка',
-                                      value: _totalRevenue,
-                                      change:
-                                          '${_revenueChange.toStringAsFixed(2)}%',
-                                      isPositive: _revenueChange >= 0,
-                                      icon: Icons.attach_money,
-                                      iconColor: const Color(0xffF59E0B),
-                                    ),
-                                    AnalyticsStatCard(
-                                      title: localizations
-                                              ?.translate('stat_conversion') ??
-                                          'Конверсия',
-                                      value: _conversionRate,
-                                      change:
-                                          '${_conversionChange.toStringAsFixed(2)}%',
-                                      isPositive: _conversionChange >= 0,
-                                      icon: Icons.trending_up,
-                                      iconColor: const Color(0xffEC4899),
-                                    ),
-                                  ]
-                                : [
-                                    _buildStatsSkeletonCard(),
-                                    _buildStatsSkeletonCard(),
-                                    _buildStatsSkeletonCard(),
-                                    _buildStatsSkeletonCard(),
-                                  ],
-                          );
-                        },
-                      ),
-                      SizedBox(height: chartSpacing * 1.5),
-                    ],
-                  );
-                }
-
-                final chartIndex = index - 1;
-                final isLast = chartIndex == chartWidgets.length - 1;
-                return Padding(
-                  padding: EdgeInsets.only(bottom: isLast ? 0 : chartSpacing),
-                  child: chartWidgets[chartIndex],
-                );
-              },
-            );
-          },
-        ),
-      ),
+      body: _buildAnalyticsBody(context),
     );
   }
 }

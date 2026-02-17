@@ -34,7 +34,6 @@ import 'package:crm_task_manager/screens/no_access_screen.dart';
 import 'package:crm_task_manager/screens/lead/lead_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/task/task_screen.dart';
-import 'package:crm_task_manager/screens/analytics/analytics_screen.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
@@ -454,9 +453,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         targetIndexGroup1 = i;
         debugPrint('HomeScreen: Found chats at index $i');
         break;
-      } else if (screenIdentifier == 'analytics' && widget is AnalyticsScreen) {
+      } else if (screenIdentifier == 'analytics' && widget is DashboardScreen) {
         targetIndexGroup1 = i;
-        debugPrint('HomeScreen: Found analytics at index $i');
+        debugPrint('HomeScreen: Found dashboard (analytics mapped) at index $i');
         break;
       } else if (screenIdentifier == 'warehouse' &&
           widget is WarehouseAccountingScreen) {
@@ -760,15 +759,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       navBarTitleKeysGroup1.add('appbar_chats');
       activeIconsGroup1.add('assets/icons/MyNavBar/chats_ON.png');
       inactiveIconsGroup1.add('assets/icons/MyNavBar/chats_OFF.png');
-    }
-
-    // Аналитика - новый раздел
-    if (hasPermission('section.dashboard')) {
-      widgetsGroup1.add(AnalyticsScreen());
-      titleKeysGroup1.add('appbar_analytics');
-      navBarTitleKeysGroup1.add('appbar_analytics');
-      activeIconsGroup1.add('assets/icons/MyNavBar/dashboard_ON.png');
-      inactiveIconsGroup1.add('assets/icons/MyNavBar/dashboard_OFF.png');
     }
 
     // ========== КЛЮЧЕВАЯ ЛОГИКА ==========

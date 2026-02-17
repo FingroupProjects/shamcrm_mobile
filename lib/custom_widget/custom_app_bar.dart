@@ -169,6 +169,9 @@ class CustomAppBar extends StatefulWidget {
 
   final Widget? titleWidget; // Новый параметр для кастомного заголовка
   final VoidCallback? onFiltersReset; // Добавляем этот параметр
+  final bool showDashboardFilterMenuItem;
+  final bool hasActiveDashboardFilters;
+  final VoidCallback? onDashboardFilterPressed;
 
   final VoidCallback? onChatTaskFiltersReset; // Новый параметр для сброса
 
@@ -298,6 +301,9 @@ class CustomAppBar extends StatefulWidget {
 
     this.titleWidget, // Добавляем в конструктор
     this.onFiltersReset,
+    this.showDashboardFilterMenuItem = false,
+    this.hasActiveDashboardFilters = false,
+    this.onDashboardFilterPressed,
     this.showGps = true, // Добавляем по умолчанию true
     this.currentSalesFunnelId,
     this.initialDealNames, // Добавляем новый параметр
@@ -1551,6 +1557,9 @@ class _CustomAppBarState extends State<CustomAppBar>
                             ),
                           );
                           break;
+                        case 'filter_dashboard':
+                          widget.onDashboardFilterPressed?.call();
+                          break;
                       // case 'gps':
                       //   Navigator.push(
                       //     context,
@@ -1563,6 +1572,25 @@ class _CustomAppBarState extends State<CustomAppBar>
                     },
                     itemBuilder: (BuildContext context) =>
                     <PopupMenuEntry<String>>[
+                      if (widget.showDashboardFilterMenuItem)
+                        PopupMenuItem<String>(
+                          value: 'filter_dashboard',
+                          child: Row(
+                            children: [
+                              Image.asset(
+                                'assets/icons/AppBar/filter.png',
+                                width: 24,
+                                height: 24,
+                                color: widget.hasActiveDashboardFilters
+                                    ? Colors.blue
+                                    : _iconColor,
+                              ),
+                              SizedBox(width: 8),
+                              Text(AppLocalizations.of(context)!
+                                  .translate('filtr')),
+                            ],
+                          ),
+                        ),
                       if (widget.showFilterIcon)
                         PopupMenuItem<String>(
                           value: 'filter_lead',

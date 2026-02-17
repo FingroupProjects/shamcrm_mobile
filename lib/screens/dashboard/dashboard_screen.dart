@@ -42,6 +42,7 @@ import 'package:crm_task_manager/screens/dashboard_for_manager/lead_conversion.d
 import 'package:crm_task_manager/screens/dashboard_for_manager/process_speed.dart';
 import 'package:crm_task_manager/screens/dashboard_for_manager/task_chart.dart';
 import 'package:crm_task_manager/screens/dashboard_for_manager/users_chart.dart';
+import 'package:crm_task_manager/screens/analytics/analytics_screen.dart';
 import 'package:crm_task_manager/page_2/dashboard/widgets/charts/top_selling_products_chart.dart';
 import 'package:crm_task_manager/page_2/dashboard/widgets/charts/sales_dynamics_line_chart.dart';
 import 'package:crm_task_manager/page_2/dashboard/widgets/charts/net_profit_chart.dart';
@@ -110,6 +111,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Map<String, dynamic>? tutorialProgress;
   bool _hasDashboardIndexPermission = false;
   bool _isPermissionsChecked = false;
+  int _analyticsFilterTrigger = 0;
 
   final ScrollController _scrollController = ScrollController();
   final ApiService _apiService = ApiService();
@@ -661,12 +663,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
             showSearchIcon: false,
             showFilterTaskIcon: false,
             showFilterIcon: false,
+            showFilterIconDeal: false,
             showMyTaskIcon: true,
             showCallCenter: true,
+            showNotification: false,
             showEvent: false,
-            showSeparateMyTasks: true,
-            showMenuIcon: false,
-            showCalendarDashboard: true,
+            showSeparateMyTasks: false,
+            showMenuIcon: true,
+            showCalendarDashboard: false,
+            showCalendar: true,
+            showDashboardFilterMenuItem:
+                !isClickAvatarIcon && _activeDashboard == DashboardType.crm,
+            hasActiveDashboardFilters: false,
+            onDashboardFilterPressed: () {
+              setState(() {
+                _analyticsFilterTrigger++;
+              });
+            },
             clearButtonClickFiltr: (bool) {},
             NotificationIconKey: keyNotificationIcon,
             MyTaskIconKey: keyMyTaskIcon,
@@ -689,26 +702,29 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           },
                         ),
                       Expanded(
-                        child: RefreshIndicator(
-                          color: const Color(0xff1E2E52),
-                          backgroundColor: Colors.white,
-                          onRefresh: _onRefresh,
-                          child: SingleChildScrollView(
-                            controller: _scrollController,
-                            physics: const AlwaysScrollableScrollPhysics(),
-                            padding: const EdgeInsets.all(16),
-                            child: Column(
-                              // ИЗМЕНЕНО: Показываем дашборд учёта только если есть право
-                              children: (_hasAccountingDashboardPermission && _activeDashboard == DashboardType.accounting)
-                                  ? _buildAccountingDashboard()
-                                  : _buildDashboardContent(),
-                            ),
-                          ),
-                        ),
+                        child: _activeDashboard == DashboardType.crm
+                            ? AnalyticsScreen(
+                                key: const ValueKey('dashboard_crm_analytics'),
+                                showAppBar: false,
+                                filterTrigger: _analyticsFilterTrigger,
+                              )
+                            : RefreshIndicator(
+                                color: const Color(0xff1E2E52),
+                                backgroundColor: Colors.white,
+                                onRefresh: _onRefresh,
+                                child: SingleChildScrollView(
+                                  controller: _scrollController,
+                                  physics: const AlwaysScrollableScrollPhysics(),
+                                  padding: const EdgeInsets.all(16),
+                                  child: Column(
+                                    children: _buildAccountingDashboard(),
+                                  ),
+                                ),
+                              ),
                       ),
                     ],
                   ),
-                  if (isLoading || isRefreshing)
+                  if (isLoading)
                     Container(
                       color: Colors.white,
                       child: const Center(
