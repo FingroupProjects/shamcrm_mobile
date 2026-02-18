@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:crm_task_manager/screens/analytics/widgets/chart_shimmer_loader.dart';
 import 'package:fl_chart/fl_chart.dart';
@@ -158,6 +160,140 @@ class _SourcesChartState extends State<SourcesChart> {
     );
   }
 
+  double _centerLabelMaxWidth(double width) {
+    final target = width * 0.44;
+    return target.clamp(120.0, 180.0);
+  }
+
+  String _truncateCalloutLabel(String value, {int maxChars = 20}) {
+    final normalized = value.trim();
+    if (normalized.length <= maxChars) return normalized;
+    return '${normalized.substring(0, maxChars)}...';
+  }
+
+  Widget _buildPieCallout(Size size, List<LeadSourceItem> channels) {
+    if (_touchedIndex < 0 || _touchedIndex >= channels.length) {
+      return const SizedBox.shrink();
+    }
+
+    final total = channels.fold<int>(0, (sum, item) => sum + item.count);
+    if (total <= 0) return const SizedBox.shrink();
+
+    final selected = channels[_touchedIndex];
+    final color = _colorForSource(selected.name);
+
+    const startAngleDeg = -90.0;
+    var cumulativeDeg = 0.0;
+    for (int i = 0; i < _touchedIndex; i++) {
+      cumulativeDeg += (channels[i].count / total) * 360.0;
+    }
+    final sweepDeg = (selected.count / total) * 360.0;
+    final midAngleDeg = startAngleDeg + cumulativeDeg + (sweepDeg / 2);
+    final rad = midAngleDeg * math.pi / 180;
+
+    final center = Offset(size.width / 2, size.height / 2);
+    final outerRadius = size.shortestSide * 0.34;
+    final anchor = Offset(
+      center.dx + math.cos(rad) * outerRadius,
+      center.dy + math.sin(rad) * outerRadius,
+    );
+    final isRight = math.cos(rad) >= 0;
+
+    final bubbleWidth = _centerLabelMaxWidth(size.width);
+    const bubbleHeight = 52.0;
+    const outerPadding = 8.0;
+    final bubbleTop = anchor.dy >= center.dy
+        ? outerPadding
+        : (size.height - bubbleHeight - outerPadding);
+    final bubbleLeft = isRight
+        ? (size.width - bubbleWidth - outerPadding)
+        : outerPadding;
+    final bubbleCenterY = bubbleTop + (bubbleHeight / 2);
+
+    final radialOut = Offset(
+      center.dx + math.cos(rad) * (outerRadius + 12),
+      center.dy + math.sin(rad) * (outerRadius + 12),
+    );
+    final verticalTurn = Offset(
+      radialOut.dx,
+      bubbleCenterY.clamp(12.0, size.height - 12.0),
+    );
+    final lineEndX = isRight ? bubbleLeft : (bubbleLeft + bubbleWidth);
+    final lineEnd = Offset(lineEndX, bubbleCenterY);
+
+    return Stack(
+      children: [
+        CustomPaint(
+          size: size,
+          painter: _PieCalloutPainter(
+            color: color,
+            anchor: anchor,
+            radialOut: radialOut,
+            verticalTurn: verticalTurn,
+            end: lineEnd,
+          ),
+        ),
+        Positioned(
+          left: bubbleLeft,
+          top: bubbleTop,
+          width: bubbleWidth,
+          height: bubbleHeight,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: color.withValues(alpha: 0.35)),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xff0F172A).withValues(alpha: 0.08),
+                  blurRadius: 10,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: color,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    _truncateCalloutLabel(selected.name),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xff334155),
+                      fontFamily: 'Golos',
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  '${selected.count}',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: color,
+                    fontFamily: 'Golos',
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final responsive = ResponsiveHelper(context);
@@ -172,7 +308,7 @@ class _SourcesChartState extends State<SourcesChart> {
         border: Border.all(color: const Color(0xffE2E8F0)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -196,7 +332,7 @@ class _SourcesChartState extends State<SourcesChart> {
                     borderRadius: BorderRadius.circular(10),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xff10B981).withOpacity(0.3),
+                        color: const Color(0xff10B981).withValues(alpha: 0.3),
                         blurRadius: 8,
                         offset: const Offset(0, 4),
                       ),
@@ -271,49 +407,57 @@ class _SourcesChartState extends State<SourcesChart> {
                           onTap: _showDetails,
                           child: Padding(
                             padding: EdgeInsets.all(responsive.cardPadding),
-                            child: PieChart(
-                              PieChartData(
-                                sectionsSpace: 2,
-                                centerSpaceRadius: 60,
-                                pieTouchData: PieTouchData(
-                                  touchCallback:
-                                      (FlTouchEvent event, pieTouchResponse) {
-                                    setState(() {
-                                      if (!event.isInterestedForInteractions ||
-                                          pieTouchResponse == null ||
-                                          pieTouchResponse.touchedSection ==
-                                              null) {
-                                        _touchedIndex = -1;
-                                        return;
-                                      }
-                                      _touchedIndex = pieTouchResponse
-                                          .touchedSection!
-                                          .touchedSectionIndex;
-                                    });
-                                  },
-                                ),
-                                sections: List.generate(displayChannels.length,
-                                    (index) {
-                                  final isTouched = index == _touchedIndex;
-                                  final channel = displayChannels[index];
-                                  final color = _colorForSource(channel.name);
+                            child: LayoutBuilder(
+                              builder: (context, constraints) {
+                                final size = Size(
+                                  constraints.maxWidth,
+                                  constraints.maxHeight,
+                                );
+                                return Stack(
+                                  children: [
+                                    PieChart(
+                                      PieChartData(
+                                        sectionsSpace: 2,
+                                        centerSpaceRadius: 60,
+                                        startDegreeOffset: -90,
+                                        pieTouchData: PieTouchData(
+                                          touchCallback:
+                                              (FlTouchEvent event, pieTouchResponse) {
+                                            setState(() {
+                                              if (!event.isInterestedForInteractions ||
+                                                  pieTouchResponse == null ||
+                                                  pieTouchResponse.touchedSection ==
+                                                      null) {
+                                                _touchedIndex = -1;
+                                                return;
+                                              }
+                                              _touchedIndex = pieTouchResponse
+                                                  .touchedSection!
+                                                  .touchedSectionIndex;
+                                            });
+                                          },
+                                        ),
+                                        sections: List.generate(displayChannels.length,
+                                            (index) {
+                                          final isTouched = index == _touchedIndex;
+                                          final channel = displayChannels[index];
+                                          final color = _colorForSource(channel.name);
 
-                                  return PieChartSectionData(
-                                    value: channel.count.toDouble(),
-                                    title: isTouched
-                                        ? '${channel.name}\n${channel.count}'
-                                        : '',
-                                    color: color,
-                                    radius: isTouched ? 65 : 60,
-                                    titleStyle: TextStyle(
-                                      fontSize: isTouched ? 14 : 12,
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.white,
-                                      fontFamily: 'Golos',
+                                          return PieChartSectionData(
+                                            value: channel.count.toDouble(),
+                                            title: '',
+                                            color: color,
+                                            radius: isTouched ? 65 : 60,
+                                          );
+                                        }),
+                                      ),
                                     ),
-                                  );
-                                }),
-                              ),
+                                    IgnorePointer(
+                                      child: _buildPieCallout(size, displayChannels),
+                                    ),
+                                  ],
+                                );
+                              },
                             ),
                           ),
                         ),
@@ -385,5 +529,56 @@ class _SourcesChartState extends State<SourcesChart> {
         ],
       ),
     );
+  }
+}
+
+class _PieCalloutPainter extends CustomPainter {
+  const _PieCalloutPainter({
+    required this.color,
+    required this.anchor,
+    required this.radialOut,
+    required this.verticalTurn,
+    required this.end,
+  });
+
+  final Color color;
+  final Offset anchor;
+  final Offset radialOut;
+  final Offset verticalTurn;
+  final Offset end;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final linePaint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.2
+      ..strokeCap = StrokeCap.round;
+
+    final path = Path()
+      ..moveTo(anchor.dx, anchor.dy)
+      ..lineTo(radialOut.dx, radialOut.dy)
+      ..lineTo(verticalTurn.dx, verticalTurn.dy)
+      ..lineTo(end.dx, end.dy);
+
+    canvas.drawPath(path, linePaint);
+    canvas.drawCircle(anchor, 3.2, Paint()..color = color);
+    canvas.drawCircle(
+      anchor,
+      5.2,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.6
+        ..color = Colors.white,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _PieCalloutPainter oldDelegate) {
+    return oldDelegate.color != color ||
+        oldDelegate.anchor != anchor ||
+        oldDelegate.radialOut != radialOut ||
+        oldDelegate.verticalTurn != verticalTurn ||
+        oldDelegate.end != end;
   }
 }

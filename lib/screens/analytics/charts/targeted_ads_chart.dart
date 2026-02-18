@@ -201,19 +201,24 @@ class _TargetedAdsChartState extends State<TargetedAdsChart> {
           BarChartRodData(
             toY: item.totalReaches.toDouble(),
             color: const Color(0xffE1306C),
-            width: 10,
+            width: 14,
             borderRadius: BorderRadius.circular(6),
           ),
           BarChartRodData(
             toY: item.successful.toDouble(),
             color: const Color(0xff10B981),
-            width: 10,
+            width: 14,
             borderRadius: BorderRadius.circular(6),
           ),
         ],
         barsSpace: 4,
       );
     });
+  }
+
+  String _shortLabel(String value) {
+    if (value.length <= 12) return value;
+    return '${value.substring(0, 12)}...';
   }
 
   @override
@@ -322,77 +327,116 @@ class _TargetedAdsChartState extends State<TargetedAdsChart> {
                             quarterTurns: 1,
                             child: BarChart(
                               BarChartData(
-                                maxY: chartMaxY,
-                                barGroups: _buildGroups(displayCampaigns),
-                                gridData: FlGridData(
-                                  show: true,
-                                  drawVerticalLine: false,
-                                  getDrawingHorizontalLine: (value) => FlLine(
-                                    color: const Color(0xffE2E8F0),
-                                    strokeWidth: 1,
+                              maxY: chartMaxY,
+                              barGroups: _buildGroups(displayCampaigns),
+                              barTouchData: BarTouchData(
+                                enabled: true,
+                                touchTooltipData: BarTouchTooltipData(
+                                  getTooltipColor: (_) => Colors.white,
+                                  tooltipBorder: const BorderSide(
+                                      color: Color(0xffE2E8F0)),
+                                  tooltipRoundedRadius: 10,
+                                  tooltipPadding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 8,
+                                  ),
+                                  tooltipMargin: 10,
+                                  fitInsideHorizontally: true,
+                                  fitInsideVertically: true,
+                                  getTooltipItem:
+                                      (group, groupIndex, rod, rodIndex) {
+                                    final item =
+                                        displayCampaigns[group.x.toInt()];
+                                    final label =
+                                        rodIndex == 0 ? 'Охват' : 'Успешные';
+                                    final value = rodIndex == 0
+                                        ? item.totalReaches
+                                        : item.successful;
+                                    return BarTooltipItem(
+                                      '${_shortLabel(item.campaignName)}\n$label: $value',
+                                      const TextStyle(
+                                        color: Color(0xff0F172A),
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 12,
+                                        fontFamily: 'Golos',
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
+                              gridData: FlGridData(
+                                show: true,
+                                drawVerticalLine: false,
+                                getDrawingHorizontalLine: (value) => FlLine(
+                                  color: const Color(0xffE2E8F0),
+                                  strokeWidth: 1,
+                                ),
+                              ),
+                              borderData: FlBorderData(show: false),
+                              titlesData: FlTitlesData(
+                                leftTitles: AxisTitles(
+                                  sideTitles: SideTitles(
+                                    showTitles: true,
+                                    reservedSize: 36,
+                                    interval: leftInterval,
+                                    maxIncluded: false,
+                                    getTitlesWidget: (value, meta) {
+                                      return RotatedBox(
+                                        quarterTurns: 3,
+                                        child: Text(
+                                          value.toInt().toString(),
+                                          style: const TextStyle(
+                                            fontSize: 10,
+                                            color: Color(0xff64748B),
+                                            fontFamily: 'Golos',
+                                          ),
+                                        ),
+                                      );
+                                    },
                                   ),
                                 ),
-                                borderData: FlBorderData(show: false),
-                                titlesData: FlTitlesData(
-                                  leftTitles: AxisTitles(
-                                    sideTitles: SideTitles(
-                                      showTitles: true,
-                                      reservedSize: 36,
-                                      interval: leftInterval,
-                                      maxIncluded: false,
-                                      getTitlesWidget: (value, meta) {
-                                        return RotatedBox(
-                                          quarterTurns: 3,
-                                          child: Text(
-                                            value.toInt().toString(),
-                                            style: const TextStyle(
-                                              fontSize: 10,
-                                              color: Color(0xff64748B),
-                                              fontFamily: 'Golos',
-                                            ),
-                                          ),
-                                        );
-                                      },
-                                    ),
-                                  ),
-                                  bottomTitles: AxisTitles(
-                                    sideTitles: SideTitles(
-                                      showTitles: true,
-                                      reservedSize: 140,
+                                bottomTitles: AxisTitles(
+                                  sideTitles: SideTitles(
+                                    showTitles: true,
+                                      reservedSize: 120,
                                       getTitlesWidget: (value, meta) {
                                         final index = value.toInt();
                                         if (index < 0 ||
                                             index >= displayCampaigns.length) {
                                           return const SizedBox.shrink();
                                         }
+                                        if (displayCampaigns.length > 6 &&
+                                            index.isOdd) {
+                                          return const SizedBox.shrink();
+                                        }
                                         return RotatedBox(
-                                          quarterTurns: 3,
-                                          child: Padding(
-                                            padding:
-                                                const EdgeInsets.only(top: 6),
-                                            child: Text(
-                                              displayCampaigns[index]
-                                                  .campaignName,
-                                              style: const TextStyle(
-                                                fontSize: 9,
-                                                color: Color(0xff64748B),
-                                                fontFamily: 'Golos',
-                                              ),
-                                              maxLines: 1,
-                                              overflow: TextOverflow.ellipsis,
+                                        quarterTurns: 3,
+                                        child: Padding(
+                                          padding: const EdgeInsets.only(top: 6),
+                                          child: Text(
+                                            _shortLabel(
+                                                displayCampaigns[index]
+                                                    .campaignName),
+                                            style: const TextStyle(
+                                              fontSize: 10,
+                                              color: Color(0xff64748B),
+                                              fontFamily: 'Golos',
                                             ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
                                           ),
-                                        );
-                                      },
-                                    ),
-                                  ),
-                                  topTitles: const AxisTitles(
-                                    sideTitles: SideTitles(showTitles: false),
-                                  ),
-                                  rightTitles: const AxisTitles(
-                                    sideTitles: SideTitles(showTitles: false),
+                                        ),
+                                      );
+                                    },
                                   ),
                                 ),
+                                topTitles: const AxisTitles(
+                                  sideTitles: SideTitles(showTitles: false),
+                                ),
+                                rightTitles: const AxisTitles(
+                                  sideTitles: SideTitles(showTitles: false),
+                                ),
+                              ),
                               ),
                             ),
                           ),

@@ -322,22 +322,25 @@ class _LeadConversionStatusesChartState
                                   bottomTitles: AxisTitles(
                                     sideTitles: SideTitles(
                                       showTitles: true,
-                                      reservedSize: 140,
+                                      reservedSize: 120,
                                       getTitlesWidget: (value, meta) {
                                         final index = value.toInt();
                                         if (index < 0 ||
                                             index >= displayItems.length) {
                                           return const SizedBox.shrink();
                                         }
+                                        if (displayItems.length > 6 &&
+                                            index.isOdd) {
+                                          return const SizedBox.shrink();
+                                        }
                                         return RotatedBox(
                                           quarterTurns: 3,
                                           child: Padding(
-                                            padding:
-                                                const EdgeInsets.only(top: 6),
+                                            padding: const EdgeInsets.only(top: 6),
                                             child: Text(
                                               displayItems[index].statusName,
                                               style: const TextStyle(
-                                                fontSize: 9,
+                                                fontSize: 10,
                                                 color: Color(0xff64748B),
                                                 fontFamily: 'Golos',
                                               ),
@@ -359,23 +362,37 @@ class _LeadConversionStatusesChartState
                                 barTouchData: BarTouchData(
                                   enabled: true,
                                   touchTooltipData: BarTouchTooltipData(
+                                    getTooltipColor: (_) => Colors.white,
+                                    tooltipBorder: const BorderSide(
+                                      color: Color(0xffE2E8F0),
+                                    ),
+                                    tooltipRoundedRadius: 10,
+                                    tooltipPadding: const EdgeInsets.symmetric(
+                                      horizontal: 10,
+                                      vertical: 8,
+                                    ),
+                                    tooltipMargin: 10,
+                                    fitInsideHorizontally: true,
+                                    fitInsideVertically: true,
                                     getTooltipItem:
                                         (group, groupIndex, rod, rodIndex) {
-                                      final item = items[group.x.toInt()];
+                                      final item =
+                                          displayItems[group.x.toInt()];
                                       return BarTooltipItem(
                                         '${item.statusName}\n${item.totalLeads} (${item.conversionRate})',
                                         const TextStyle(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.w600,
+                                          color: Color(0xff0F172A),
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 12,
                                           fontFamily: 'Golos',
                                         ),
                                       );
                                     },
-                                  ),
-                                ),
                               ),
                             ),
                           ),
+                        ),
+                      ),
                         ),
                       ),
           ),

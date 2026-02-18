@@ -25,7 +25,7 @@ class _HttpRequestDetailScreenState extends State<HttpRequestDetailScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 4, vsync: this);
     _tabController.addListener(() {
       setState(() => _currentTab = _tabController.index);
     });
@@ -73,6 +73,7 @@ class _HttpRequestDetailScreenState extends State<HttpRequestDetailScreen>
               children: [
                 _buildOverviewTab(isDark, surfaceColor, textColor),
                 _buildRequestTab(isDark, surfaceColor, textColor),
+                _buildPayloadTab(isDark, surfaceColor, textColor),
                 _buildResponseTab(isDark, surfaceColor, textColor),
               ],
             ),
@@ -224,6 +225,7 @@ class _HttpRequestDetailScreenState extends State<HttpRequestDetailScreen>
           tabs: const [
             Tab(text: 'Overview'),
             Tab(text: 'Request'),
+            Tab(text: 'Payload'),
             Tab(text: 'Response'),
           ],
         ),
@@ -298,18 +300,48 @@ class _HttpRequestDetailScreenState extends State<HttpRequestDetailScreen>
 
   Widget _buildRequestTab(bool isDark, Color surfaceColor, Color textColor) {
     final log = widget.log;
+    final queryParams = _extractQueryParams(log.url);
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          _buildSectionHeader(isDark, 'Endpoint', Icons.public_rounded),
+          const SizedBox(height: 12),
+          _buildModernInfoCard(
+            isDark: isDark,
+            icon: Icons.link_rounded,
+            label: 'URL',
+            value: log.url,
+            copyable: true,
+            color: const Color(0xFF3B82F6),
+          ),
+          const SizedBox(height: 24),
+          _buildSectionHeader(
+              isDark, 'Query Params', Icons.tune_rounded),
+          const SizedBox(height: 12),
+          _buildModernHeadersCard(isDark, queryParams),
+          const SizedBox(height: 24),
           _buildSectionHeader(isDark, 'Headers', Icons.label_outline_rounded),
           const SizedBox(height: 12),
           _buildModernHeadersCard(isDark, log.requestHeaders),
-          const SizedBox(height: 24),
-          _buildSectionHeader(isDark, 'Body', Icons.description_outlined),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPayloadTab(bool isDark, Color surfaceColor, Color textColor) {
+    final log = widget.log;
+    final payloadToShow = _resolvePayload(log);
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildSectionHeader(
+              isDark, 'Request Payload', Icons.description_outlined),
           const SizedBox(height: 12),
-          _buildModernBodyCard(isDark, log.requestBody, 'request'),
+          _buildModernBodyCard(isDark, payloadToShow, 'request'),
         ],
       ),
     );
@@ -758,6 +790,29 @@ class _HttpRequestDetailScreenState extends State<HttpRequestDetailScreen>
       default:
         return const Color(0xFF64748B);
     }
+  }
+
+  Map<String, String>? _extractQueryParams(String url) {
+    try {
+      final uri = Uri.parse(url);
+      if (uri.queryParametersAll.isEmpty) return null;
+      return uri.queryParametersAll.map(
+        (key, values) => MapEntry(key, values.join(', ')),
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+
+  String? _resolvePayload(HttpLogModel log) {
+    if (log.requestBody != null && log.requestBody!.isNotEmpty) {
+      return log.requestBody;
+    }
+    final queryParams = _extractQueryParams(log.url);
+    if (queryParams == null || queryParams.isEmpty) {
+      return null;
+    }
+    return json.encode(queryParams);
   }
 
   String _formatFullTime(DateTime time) {

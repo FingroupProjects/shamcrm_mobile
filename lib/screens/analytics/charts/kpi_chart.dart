@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:crm_task_manager/screens/analytics/widgets/chart_shimmer_loader.dart';
 import 'package:fl_chart/fl_chart.dart';
@@ -182,8 +184,143 @@ class _KpiChartState extends State<KpiChart> {
       _taskData.isNotEmpty && _taskData.length > 2 ? _taskData[2] : 0;
   int get _inProgress =>
       _taskData.isNotEmpty && _taskData.length > 1 ? _taskData[1] : 0;
-  int get _overdue =>
-      _taskData.isNotEmpty && _taskData.length > 0 ? _taskData[0] : 0;
+  int get _overdue => _taskData.isNotEmpty ? _taskData[0] : 0;
+
+  double _calloutMaxWidth(double width) {
+    final target = width * 0.44;
+    return target.clamp(120.0, 180.0);
+  }
+
+  String _truncateCalloutLabel(String value, {int maxChars = 20}) {
+    final normalized = value.trim();
+    if (normalized.length <= maxChars) return normalized;
+    return '${normalized.substring(0, maxChars)}...';
+  }
+
+  Widget _buildPieCallout(
+    Size size,
+    List<_KpiSlice> slices,
+  ) {
+    if (_touchedIndex < 0 || _touchedIndex >= slices.length) {
+      return const SizedBox.shrink();
+    }
+
+    final total = slices.fold<double>(0, (sum, item) => sum + item.value);
+    if (total <= 0) return const SizedBox.shrink();
+
+    final selected = slices[_touchedIndex];
+
+    const startAngleDeg = -90.0;
+    var cumulativeDeg = 0.0;
+    for (int i = 0; i < _touchedIndex; i++) {
+      cumulativeDeg += (slices[i].value / total) * 360.0;
+    }
+    final sweepDeg = (selected.value / total) * 360.0;
+    final midAngleDeg = startAngleDeg + cumulativeDeg + (sweepDeg / 2);
+    final rad = midAngleDeg * math.pi / 180;
+
+    final center = Offset(size.width / 2, size.height / 2);
+    final outerRadius = size.shortestSide * 0.32;
+    final anchor = Offset(
+      center.dx + math.cos(rad) * outerRadius,
+      center.dy + math.sin(rad) * outerRadius,
+    );
+    final isRight = math.cos(rad) >= 0;
+
+    final bubbleWidth = _calloutMaxWidth(size.width);
+    const bubbleHeight = 52.0;
+    const outerPadding = 8.0;
+    final bubbleTop = anchor.dy >= center.dy
+        ? outerPadding
+        : (size.height - bubbleHeight - outerPadding);
+    final bubbleLeft = isRight
+        ? (size.width - bubbleWidth - outerPadding)
+        : outerPadding;
+    final bubbleCenterY = bubbleTop + (bubbleHeight / 2);
+
+    final radialOut = Offset(
+      center.dx + math.cos(rad) * (outerRadius + 12),
+      center.dy + math.sin(rad) * (outerRadius + 12),
+    );
+    final verticalTurn = Offset(
+      radialOut.dx,
+      bubbleCenterY.clamp(12.0, size.height - 12.0),
+    );
+    final lineEndX = isRight ? bubbleLeft : (bubbleLeft + bubbleWidth);
+    final lineEnd = Offset(lineEndX, bubbleCenterY);
+
+    return Stack(
+      children: [
+        CustomPaint(
+          size: size,
+          painter: _KpiCalloutPainter(
+            color: selected.color,
+            anchor: anchor,
+            radialOut: radialOut,
+            verticalTurn: verticalTurn,
+            end: lineEnd,
+          ),
+        ),
+        Positioned(
+          left: bubbleLeft,
+          top: bubbleTop,
+          width: bubbleWidth,
+          height: bubbleHeight,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: selected.color.withValues(alpha: 0.35)),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xff0F172A).withValues(alpha: 0.08),
+                  blurRadius: 10,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: selected.color,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    _truncateCalloutLabel(selected.label),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xff334155),
+                      fontFamily: 'Golos',
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  '${selected.value.toInt()}',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: selected.color,
+                    fontFamily: 'Golos',
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -200,6 +337,23 @@ class _KpiChartState extends State<KpiChart> {
             : 0;
     final displayOverdue =
         displayTaskData.isNotEmpty ? displayTaskData[0] : 0;
+    final slices = <_KpiSlice>[
+      _KpiSlice(
+        label: 'Выполнено',
+        value: displayCompleted.toDouble(),
+        color: const Color(0xff10B981),
+      ),
+      _KpiSlice(
+        label: 'В работе',
+        value: displayInProgress.toDouble(),
+        color: const Color(0xffF59E0B),
+      ),
+      _KpiSlice(
+        label: 'Просрочено',
+        value: displayOverdue.toDouble(),
+        color: const Color(0xffEF4444),
+      ),
+    ];
 
     return Container(
       decoration: BoxDecoration(
@@ -307,72 +461,55 @@ class _KpiChartState extends State<KpiChart> {
                           onTap: _showDetails,
                           child: Padding(
                             padding: EdgeInsets.all(responsive.cardPadding),
-                            child: PieChart(
-                              PieChartData(
-                                sectionsSpace: 2,
-                                centerSpaceRadius: 50,
-                                pieTouchData: PieTouchData(
-                                  touchCallback:
-                                      (FlTouchEvent event, pieTouchResponse) {
-                                    setState(() {
-                                      if (!event.isInterestedForInteractions ||
-                                          pieTouchResponse == null ||
-                                          pieTouchResponse.touchedSection ==
-                                              null) {
-                                        _touchedIndex = -1;
-                                        return;
-                                      }
-                                      _touchedIndex = pieTouchResponse
-                                          .touchedSection!
-                                          .touchedSectionIndex;
-                                    });
-                                  },
-                                ),
-                                sections: [
-                                  PieChartSectionData(
-                                    value: displayCompleted.toDouble(),
-                                    title: _touchedIndex == 0
-                                        ? 'Выполнено\n$displayCompleted'
-                                        : '',
-                                    color: const Color(0xff10B981),
-                                    radius: _touchedIndex == 0 ? 55 : 50,
-                                    titleStyle: TextStyle(
-                                      fontSize: _touchedIndex == 0 ? 14 : 12,
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.white,
-                                      fontFamily: 'Golos',
+                            child: LayoutBuilder(
+                              builder: (context, constraints) {
+                                final size = Size(
+                                  constraints.maxWidth,
+                                  constraints.maxHeight,
+                                );
+
+                                return Stack(
+                                  children: [
+                                    PieChart(
+                                      PieChartData(
+                                        sectionsSpace: 2,
+                                        centerSpaceRadius: 50,
+                                        startDegreeOffset: -90,
+                                        pieTouchData: PieTouchData(
+                                          touchCallback:
+                                              (FlTouchEvent event, pieTouchResponse) {
+                                            setState(() {
+                                              if (!event.isInterestedForInteractions ||
+                                                  pieTouchResponse == null ||
+                                                  pieTouchResponse.touchedSection ==
+                                                      null) {
+                                                _touchedIndex = -1;
+                                                return;
+                                              }
+                                              _touchedIndex = pieTouchResponse
+                                                  .touchedSection!
+                                                  .touchedSectionIndex;
+                                            });
+                                          },
+                                        ),
+                                        sections: List.generate(slices.length, (index) {
+                                          final isTouched = index == _touchedIndex;
+                                          final slice = slices[index];
+                                          return PieChartSectionData(
+                                            value: slice.value,
+                                            title: '',
+                                            color: slice.color,
+                                            radius: isTouched ? 55 : 50,
+                                          );
+                                        }),
+                                      ),
                                     ),
-                                  ),
-                                  PieChartSectionData(
-                                    value: displayInProgress.toDouble(),
-                                    title: _touchedIndex == 1
-                                        ? 'В работе\n$displayInProgress'
-                                        : '',
-                                    color: const Color(0xffF59E0B),
-                                    radius: _touchedIndex == 1 ? 55 : 50,
-                                    titleStyle: TextStyle(
-                                      fontSize: _touchedIndex == 1 ? 14 : 12,
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.white,
-                                      fontFamily: 'Golos',
+                                    IgnorePointer(
+                                      child: _buildPieCallout(size, slices),
                                     ),
-                                  ),
-                                  PieChartSectionData(
-                                    value: displayOverdue.toDouble(),
-                                    title: _touchedIndex == 2
-                                        ? 'Просрочено\n$displayOverdue'
-                                        : '',
-                                    color: const Color(0xffEF4444),
-                                    radius: _touchedIndex == 2 ? 55 : 50,
-                                    titleStyle: TextStyle(
-                                      fontSize: _touchedIndex == 2 ? 14 : 12,
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.white,
-                                      fontFamily: 'Golos',
-                                    ),
-                                  ),
-                                ],
-                              ),
+                                  ],
+                                );
+                              },
                             ),
                           ),
                         ),
@@ -442,5 +579,68 @@ class _KpiChartState extends State<KpiChart> {
         ],
       ),
     );
+  }
+}
+
+class _KpiSlice {
+  const _KpiSlice({
+    required this.label,
+    required this.value,
+    required this.color,
+  });
+
+  final String label;
+  final double value;
+  final Color color;
+}
+
+class _KpiCalloutPainter extends CustomPainter {
+  const _KpiCalloutPainter({
+    required this.color,
+    required this.anchor,
+    required this.radialOut,
+    required this.verticalTurn,
+    required this.end,
+  });
+
+  final Color color;
+  final Offset anchor;
+  final Offset radialOut;
+  final Offset verticalTurn;
+  final Offset end;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final linePaint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.2
+      ..strokeCap = StrokeCap.round;
+
+    final path = Path()
+      ..moveTo(anchor.dx, anchor.dy)
+      ..lineTo(radialOut.dx, radialOut.dy)
+      ..lineTo(verticalTurn.dx, verticalTurn.dy)
+      ..lineTo(end.dx, end.dy);
+
+    canvas.drawPath(path, linePaint);
+    canvas.drawCircle(anchor, 3.2, Paint()..color = color);
+    canvas.drawCircle(
+      anchor,
+      5.2,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.6
+        ..color = Colors.white,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _KpiCalloutPainter oldDelegate) {
+    return oldDelegate.color != color ||
+        oldDelegate.anchor != anchor ||
+        oldDelegate.radialOut != radialOut ||
+        oldDelegate.verticalTurn != verticalTurn ||
+        oldDelegate.end != end;
   }
 }

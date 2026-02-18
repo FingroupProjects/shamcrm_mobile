@@ -180,7 +180,7 @@ void main() async {
     } else {
       await _clearAllApplicationData(apiService, authService);
     }
-
+    
     await AppTrackingTransparency.requestTrackingAuthorization();
     await _initializeFirebaseMessaging(apiService);
 

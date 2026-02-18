@@ -19,6 +19,9 @@ class _RepliesMessagesChartState extends State<RepliesMessagesChart> {
   bool _isLoading = true;
   String? _error;
   RepliesToMessagesResponse? _data;
+  bool _showReceived = true;
+  bool _showAnswered = true;
+  bool _showUnanswered = true;
 
   String get _title => widget.title;
 
@@ -162,31 +165,57 @@ class _RepliesMessagesChartState extends State<RepliesMessagesChart> {
   List<BarChartGroupData> _buildGroups(List<ReplyChannelStats> items) {
     return List.generate(items.length, (index) {
       final item = items[index];
-      return BarChartGroupData(
-        x: index,
-        barRods: [
+      final rods = <BarChartRodData>[];
+      if (_showReceived) {
+        rods.add(
           BarChartRodData(
             toY: item.receivedMessages.toDouble(),
             color: const Color(0xff6366F1),
-            width: 6,
+            width: 10,
             borderRadius: BorderRadius.circular(4),
           ),
+        );
+      }
+      if (_showAnswered) {
+        rods.add(
           BarChartRodData(
             toY: item.sentMessages.toDouble(),
             color: const Color(0xff10B981),
-            width: 6,
+            width: 10,
             borderRadius: BorderRadius.circular(4),
           ),
+        );
+      }
+      if (_showUnanswered) {
+        rods.add(
           BarChartRodData(
             toY: item.unansweredChats.toDouble(),
             color: const Color(0xffEF4444),
-            width: 6,
+            width: 10,
             borderRadius: BorderRadius.circular(4),
           ),
-        ],
+        );
+      }
+      if (rods.isEmpty) {
+        rods.add(
+          BarChartRodData(
+            toY: 0.001,
+            color: Colors.transparent,
+            width: 10,
+          ),
+        );
+      }
+      return BarChartGroupData(
+        x: index,
+        barRods: rods,
         barsSpace: 3,
       );
     });
+  }
+
+  String _shortLabel(String value) {
+    if (value.length <= 10) return value;
+    return '${value.substring(0, 10)}...';
   }
 
   @override
@@ -202,12 +231,13 @@ class _RepliesMessagesChartState extends State<RepliesMessagesChart> {
     final displayItems = isEmpty ? _previewChannels : items;
     final maxValue = displayItems.isEmpty
         ? 1
-        : displayItems
-            .map((e) => e.sentMessages > e.receivedMessages
-                ? e.sentMessages
-                : e.receivedMessages)
-            .reduce((a, b) => a > b ? a : b)
-            .toDouble();
+        : displayItems.map((e) {
+            final received = _showReceived ? e.receivedMessages : 0;
+            final answered = _showAnswered ? e.sentMessages : 0;
+            final unanswered = _showUnanswered ? e.unansweredChats : 0;
+            return [received, answered, unanswered]
+                .reduce((a, b) => a > b ? a : b);
+          }).reduce((a, b) => a > b ? a : b).toDouble();
 
     return Container(
       decoration: BoxDecoration(
@@ -300,6 +330,47 @@ class _RepliesMessagesChartState extends State<RepliesMessagesChart> {
                             BarChartData(
                               maxY: maxValue * 1.2,
                               barGroups: _buildGroups(displayItems),
+                              barTouchData: BarTouchData(
+                                enabled: true,
+                                touchTooltipData: BarTouchTooltipData(
+                                  getTooltipColor: (_) => Colors.white,
+                                  tooltipBorder: const BorderSide(
+                                    color: Color(0xffE2E8F0),
+                                  ),
+                                  tooltipRoundedRadius: 10,
+                                  tooltipPadding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 8,
+                                  ),
+                                  tooltipMargin: 10,
+                                  fitInsideHorizontally: true,
+                                  fitInsideVertically: true,
+                                  getTooltipItem:
+                                      (group, groupIndex, rod, rodIndex) {
+                                    final item = displayItems[group.x.toInt()];
+                                    final label = switch (rodIndex) {
+                                      0 => 'Получено',
+                                      1 => 'Отвечено',
+                                      _ => 'Без ответа',
+                                    };
+                                    final value = switch (rodIndex) {
+                                      0 => item.receivedMessages,
+                                      1 => item.sentMessages,
+                                      _ => item.unansweredChats,
+                                    };
+
+                                    return BarTooltipItem(
+                                      '${item.channelName}\n$label: $value',
+                                      const TextStyle(
+                                        color: Color(0xff0F172A),
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 12,
+                                        fontFamily: 'Golos',
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
                               gridData: FlGridData(
                                 show: true,
                                 drawVerticalLine: false,
@@ -329,22 +400,26 @@ class _RepliesMessagesChartState extends State<RepliesMessagesChart> {
                                 bottomTitles: AxisTitles(
                                   sideTitles: SideTitles(
                                     showTitles: true,
-                                    reservedSize: 48,
+                                    reservedSize: 80,
                                     getTitlesWidget: (value, meta) {
                                       final index = value.toInt();
                                       if (index < 0 ||
                                           index >= displayItems.length) {
                                         return const SizedBox.shrink();
                                       }
+                                      if (displayItems.length > 6 &&
+                                          index.isOdd) {
+                                        return const SizedBox.shrink();
+                                      }
                                       return RotatedBox(
                                         quarterTurns: 3,
                                         child: Padding(
-                                          padding:
-                                              const EdgeInsets.only(top: 6),
+                                          padding: const EdgeInsets.only(top: 6),
                                           child: Text(
-                                            displayItems[index].channelName,
+                                            _shortLabel(
+                                                displayItems[index].channelName),
                                             style: const TextStyle(
-                                              fontSize: 9,
+                                              fontSize: 10,
                                               color: Color(0xff64748B),
                                               fontFamily: 'Golos',
                                             ),
@@ -376,12 +451,28 @@ class _RepliesMessagesChartState extends State<RepliesMessagesChart> {
               responsive.cardPadding,
             ),
             child: Row(
-              children: const [
-                _LegendDot(color: Color(0xff6366F1), label: 'Получено'),
-                SizedBox(width: 12),
-                _LegendDot(color: Color(0xff10B981), label: 'Отвечено'),
-                SizedBox(width: 12),
-                _LegendDot(color: Color(0xffEF4444), label: 'Без ответа'),
+              children: [
+                _LegendToggleDot(
+                  color: const Color(0xff6366F1),
+                  label: 'Получено',
+                  enabled: _showReceived,
+                  onTap: () => setState(() => _showReceived = !_showReceived),
+                ),
+                const SizedBox(width: 12),
+                _LegendToggleDot(
+                  color: const Color(0xff10B981),
+                  label: 'Отвечено',
+                  enabled: _showAnswered,
+                  onTap: () => setState(() => _showAnswered = !_showAnswered),
+                ),
+                const SizedBox(width: 12),
+                _LegendToggleDot(
+                  color: const Color(0xffEF4444),
+                  label: 'Без ответа',
+                  enabled: _showUnanswered,
+                  onTap: () =>
+                      setState(() => _showUnanswered = !_showUnanswered),
+                ),
               ],
             ),
           ),
@@ -391,34 +482,45 @@ class _RepliesMessagesChartState extends State<RepliesMessagesChart> {
   }
 }
 
-class _LegendDot extends StatelessWidget {
+class _LegendToggleDot extends StatelessWidget {
   final Color color;
   final String label;
+  final bool enabled;
+  final VoidCallback onTap;
 
-  const _LegendDot({
+  const _LegendToggleDot({
     required this.color,
     required this.label,
+    required this.enabled,
+    required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Container(
-          width: 8,
-          height: 8,
-          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-        ),
-        const SizedBox(width: 6),
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 12,
-            color: Color(0xff64748B),
-            fontFamily: 'Golos',
+    final dotColor = enabled ? color : const Color(0xffCBD5E1);
+    final textColor =
+        enabled ? const Color(0xff64748B) : const Color(0xff94A3B8);
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Row(
+        children: [
+          Container(
+            width: 8,
+            height: 8,
+            decoration: BoxDecoration(color: dotColor, shape: BoxShape.circle),
           ),
-        ),
-      ],
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              color: textColor,
+              fontFamily: 'Golos',
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

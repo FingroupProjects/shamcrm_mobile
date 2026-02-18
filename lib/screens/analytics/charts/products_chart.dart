@@ -175,14 +175,6 @@ class _ProductsChartState extends State<ProductsChart> {
     return sorted.take(7).toList();
   }
 
-  double get _maxSold {
-    final list = _topItems;
-    if (list.isEmpty) return 0;
-    return list
-        .map((e) => e.totalSold.toDouble())
-        .reduce((a, b) => a > b ? a : b);
-  }
-
   String _shortName(String name) {
     if (name.length <= 12) return name;
     return '${name.substring(0, 12)}…';
@@ -207,7 +199,7 @@ class _ProductsChartState extends State<ProductsChart> {
         border: Border.all(color: const Color(0xffE2E8F0)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -231,7 +223,7 @@ class _ProductsChartState extends State<ProductsChart> {
                     borderRadius: BorderRadius.circular(10),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xffF97316).withOpacity(0.3),
+                        color: const Color(0xffF97316).withValues(alpha: 0.3),
                         blurRadius: 8,
                         offset: const Offset(0, 4),
                       ),
@@ -247,7 +239,7 @@ class _ProductsChartState extends State<ProductsChart> {
                 Expanded(
                   child: Text(
                     _title,
-                    maxLines: 1,
+                    maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       fontSize: responsive.titleFontSize,
@@ -322,15 +314,24 @@ class _ProductsChartState extends State<ProductsChart> {
                                       getTooltipColor: (group) => Colors.white,
                                       tooltipBorder: const BorderSide(
                                           color: Color(0xffE2E8F0)),
-                                      tooltipRoundedRadius: 8,
+                                      tooltipRoundedRadius: 10,
+                                      tooltipPadding: const EdgeInsets.symmetric(
+                                        horizontal: 10,
+                                        vertical: 8,
+                                      ),
+                                      tooltipMargin: 10,
+                                      fitInsideHorizontally: true,
+                                      fitInsideVertically: true,
                                       getTooltipItem:
                                           (group, groupIndex, rod, rodIndex) {
+                                        final item =
+                                            displayItems[group.x.toInt()];
                                         return BarTooltipItem(
-                                          '${rod.toY.toInt()} шт',
+                                          '${item.name}\n${rod.toY.toInt()} шт',
                                           const TextStyle(
                                             color: Color(0xff0F172A),
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 14,
+                                            fontWeight: FontWeight.w700,
+                                            fontSize: 12,
                                             fontFamily: 'Golos',
                                           ),
                                         );
@@ -375,12 +376,15 @@ class _ProductsChartState extends State<ProductsChart> {
                                         getTitlesWidget: (value, meta) {
                                           return RotatedBox(
                                             quarterTurns: 3,
-                                            child: Text(
-                                              value.toInt().toString(),
-                                              style: const TextStyle(
-                                                color: Color(0xff64748B),
-                                                fontSize: 12,
-                                                fontFamily: 'Golos',
+                                            child: Padding(
+                                              padding: EdgeInsets.zero,
+                                              child: Text(
+                                                value.toInt().toString(),
+                                                style: const TextStyle(
+                                                  color: Color(0xff64748B),
+                                                  fontSize: 12,
+                                                  fontFamily: 'Golos',
+                                                ),
                                               ),
                                             ),
                                           );
@@ -417,10 +421,10 @@ class _ProductsChartState extends State<ProductsChart> {
                                       .toList(),
                                 ),
                               ),
-                            ),
                           ),
                         ),
                       ),
+          ),
           ),
           // Footer
           if (!_isLoading && _error == null)

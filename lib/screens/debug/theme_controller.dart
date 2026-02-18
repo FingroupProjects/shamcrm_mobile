@@ -4,9 +4,12 @@ import 'package:flutter/material.dart';
 class ThemeController extends ChangeNotifier {
   static final ThemeController _instance = ThemeController._internal();
   factory ThemeController() => _instance;
-  ThemeController._internal();
+  ThemeController._internal()
+      : _isDarkMode = WidgetsBinding
+                .instance.platformDispatcher.platformBrightness ==
+            Brightness.dark;
 
-  bool _isDarkMode = true;
+  bool _isDarkMode;
   bool get isDarkMode => _isDarkMode;
 
   void toggleTheme() {

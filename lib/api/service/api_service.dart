@@ -741,12 +741,24 @@ class ApiService {
         'Accept': 'application/json',
         'Device': 'mobile'
       };
+      String? requestPayload;
+      try {
+        final query = Uri.parse(fullUrl).queryParametersAll;
+        if (query.isNotEmpty) {
+          requestPayload = json.encode(
+            query.map((k, v) => MapEntry(k, v.length == 1 ? v.first : v)),
+          );
+        }
+      } catch (_) {
+        requestPayload = null;
+      }
       HttpLogger().addLog(HttpLogModel(
         id: logId,
         timestamp: DateTime.now(),
         method: 'GET',
         url: fullUrl,
         requestHeaders: headers,
+        requestBody: requestPayload,
       ));
     }
 
@@ -944,12 +956,24 @@ class ApiService {
     String? logId;
     if (kDebugMode) {
       logId = DateTime.now().millisecondsSinceEpoch.toString();
+      final multipartPayload = <String, dynamic>{
+        'fields': request.fields,
+        'files': request.files
+            .map((file) => {
+                  'field': file.field,
+                  'filename': file.filename,
+                  'length': file.length,
+                  'contentType': file.contentType.toString(),
+                })
+            .toList(),
+      };
       HttpLogger().addLog(HttpLogModel(
         id: logId,
         timestamp: DateTime.now(),
         method: 'POST',
         url: request.url.toString(),
         requestHeaders: request.headers,
+        requestBody: json.encode(multipartPayload),
       ));
     }
 
@@ -2469,8 +2493,7 @@ class ApiService {
         }
       }
 
-      final streamedResponse = await request.send();
-      final response = await http.Response.fromStream(streamedResponse);
+      final response = await _multipartPostRequest('', request);
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         return {'success': true, 'message': 'note_created_successfully'};
@@ -2663,8 +2686,7 @@ class ApiService {
       });
     }
 
-    final streamedResponse = await request.send();
-    final response = await http.Response.fromStream(streamedResponse);
+    final response = await _multipartPostRequest(updatedPath, request);
 
     if (kDebugMode) {
       debugPrint(
@@ -2933,8 +2955,7 @@ class ApiService {
       }
     }
 
-    final streamedResponse = await request.send();
-    final response = await http.Response.fromStream(streamedResponse);
+    final response = await _multipartPostRequest(path, request);
 
     if (response.statusCode == 200 || response.statusCode == 201) {
       return {'success': true, 'message': 'lead_updated_successfully'};
@@ -5176,8 +5197,7 @@ class ApiService {
         }
       }
 
-      final streamedResponse = await request.send();
-      final response = await http.Response.fromStream(streamedResponse);
+      final response = await _multipartPostRequest('', request);
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         return {
@@ -5348,8 +5368,7 @@ class ApiService {
         }
       }
 
-      final streamedResponse = await request.send();
-      final response = await http.Response.fromStream(streamedResponse);
+      final response = await _multipartPostRequest('', request);
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         return {
@@ -5520,8 +5539,7 @@ class ApiService {
         }
       }
       // Отправляем запрос
-      final streamedResponse = await request.send();
-      final response = await http.Response.fromStream(streamedResponse);
+      final response = await _multipartPostRequest('', request);
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         return {
@@ -6861,9 +6879,17 @@ class ApiService {
 
   /// Аналитика звонков по часам
   /// Endpoint: /api/v2/dashboard/telephony-and-events-by-hour
-  Future<TelephonyByHourResponse> getTelephonyByHourChartV2() async {
-    final path =
+  Future<TelephonyByHourResponse> getTelephonyByHourChartV2({
+    DateTime? date,
+  }) async {
+    var path =
         await _appendQueryParams('/v2/dashboard/telephony-and-events-by-hour');
+    if (date != null) {
+      final oneDay = DateFormat('yyyy/MM/dd').format(date);
+      final separator = path.contains('?') ? '&' : '?';
+      path +=
+          '${separator}date_from=${Uri.encodeComponent(oneDay)}&date_to=${Uri.encodeComponent(oneDay)}';
+    }
 
     if (kDebugMode) {
       debugPrint(
@@ -8959,8 +8985,7 @@ class ApiService {
       }
 
       // Отправляем запрос
-      final streamedResponse = await request.send();
-      final response = await http.Response.fromStream(streamedResponse);
+      final response = await _multipartPostRequest('', request);
 
       if (response.statusCode == 200) {
         return {'success': true, 'message': 'profile_updated_successfully'};
@@ -9397,8 +9422,7 @@ class ApiService {
       }
 
       // Отправляем запрос
-      final streamedResponse = await request.send();
-      final response = await http.Response.fromStream(streamedResponse);
+      final response = await _multipartPostRequest('', request);
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         final responseData = json.decode(response.body);
@@ -9511,8 +9535,7 @@ class ApiService {
       }
 
       // Отправляем запрос
-      final streamedResponse = await request.send();
-      final response = await http.Response.fromStream(streamedResponse);
+      final response = await _multipartPostRequest('', request);
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         final responseData = json.decode(response.body);
@@ -10298,8 +10321,7 @@ class ApiService {
         request.files.add(imageFile);
       }
 
-      final streamedResponse = await request.send();
-      final response = await http.Response.fromStream(streamedResponse);
+      final response = await _multipartPostRequest('', request);
 
       final responseBody = json.decode(response.body);
 
@@ -10354,8 +10376,7 @@ class ApiService {
         request.files.add(imageFile);
       }
 
-      final streamedResponse = await request.send();
-      final response = await http.Response.fromStream(streamedResponse);
+      final response = await _multipartPostRequest('', request);
       final responseBody = json.decode(response.body);
 
       if (response.statusCode == 200 || response.statusCode == 201) {
@@ -10437,8 +10458,7 @@ class ApiService {
         request.files.add(imageFile);
       }
 
-      final streamedResponse = await request.send();
-      final response = await http.Response.fromStream(streamedResponse);
+      final response = await _multipartPostRequest('', request);
       final responseBody = json.decode(response.body);
 
       if (response.statusCode == 200 || response.statusCode == 201) {
@@ -10765,8 +10785,7 @@ class ApiService {
         }
       }
 
-      final streamedResponse = await request.send();
-      final response = await http.Response.fromStream(streamedResponse);
+      final response = await _multipartPostRequest('', request);
       final responseBody = json.decode(response.body);
 
       if (response.statusCode == 200 || response.statusCode == 201) {
@@ -10924,8 +10943,7 @@ class ApiService {
         }
       }
 
-      final streamedResponse = await request.send();
-      final response = await http.Response.fromStream(streamedResponse);
+      final response = await _multipartPostRequest('', request);
       final responseBody = json.decode(response.body);
 
       ////debugPrint('ApiService: Response status: ${response.statusCode}');
