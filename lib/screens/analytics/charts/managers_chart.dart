@@ -107,13 +107,13 @@ class _ManagersChartState extends State<ManagersChart> {
             children: [
               Text(_title,
                 style: TextStyle(
-                  fontSize: 18,
+                  fontSize: ResponsiveHelper(context).titleFontSize,
                   fontWeight: FontWeight.w700,
                   color: Color(0xff0F172A),
                   fontFamily: 'Golos',
                 ),
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: 12),
               Flexible(
                 child: ListView.separated(
                   shrinkWrap: true,
@@ -125,8 +125,8 @@ class _ManagersChartState extends State<ManagersChart> {
                       contentPadding: EdgeInsets.zero,
                       title: Text(
                         m.managerName,
-                        style: const TextStyle(
-                          fontSize: 14,
+                        style: TextStyle(
+                          fontSize: ResponsiveHelper(context).bodyFontSize,
                           fontWeight: FontWeight.w600,
                           color: Color(0xff0F172A),
                           fontFamily: 'Golos',
@@ -134,16 +134,16 @@ class _ManagersChartState extends State<ManagersChart> {
                       ),
                       subtitle: Text(
                         'Сделки: ${m.totalDeals} • Успешные: ${m.successfulDeals}',
-                        style: const TextStyle(
-                          fontSize: 12,
+                        style: TextStyle(
+                          fontSize: ResponsiveHelper(context).smallFontSize,
                           color: Color(0xff64748B),
                           fontFamily: 'Golos',
                         ),
                       ),
                       trailing: Text(
                         _formatMoney(m.totalSum),
-                        style: const TextStyle(
-                          fontSize: 14,
+                        style: TextStyle(
+                          fontSize: ResponsiveHelper(context).bodyFontSize,
                           fontWeight: FontWeight.w600,
                           color: Color(0xff10B981),
                           fontFamily: 'Golos',
@@ -243,7 +243,7 @@ class _ManagersChartState extends State<ManagersChart> {
                     size: 20,
                   ),
                 ),
-                const SizedBox(width: 12),
+                SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     _title,
@@ -282,12 +282,12 @@ class _ManagersChartState extends State<ManagersChart> {
                           children: [
                             const Icon(Icons.error_outline,
                                 size: 48, color: Color(0xffEF4444)),
-                            const SizedBox(height: 12),
+                            SizedBox(height: 12),
                             Text(
                               _error!,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 color: Color(0xff64748B),
-                                fontSize: 14,
+                                fontSize: responsive.bodyFontSize,
                                 fontFamily: 'Golos',
                               ),
                               textAlign: TextAlign.center,
@@ -339,16 +339,16 @@ class _ManagersChartState extends State<ManagersChart> {
                                                 _shortName(
                                                     displayManagers[index]
                                                         .managerName),
-                                                style: const TextStyle(
+                                                style: TextStyle(
                                                   color: Color(0xff64748B),
-                                                  fontSize: 11,
+                                                  fontSize: responsive.xSmallFontSize,
                                                   fontFamily: 'Golos',
                                                 ),
                                               ),
                                             ),
                                           );
                                         }
-                                        return const Text('');
+                                        return Text('');
                                       },
                                     ),
                                   ),
@@ -359,9 +359,9 @@ class _ManagersChartState extends State<ManagersChart> {
                                       getTitlesWidget: (value, meta) {
                                         return Text(
                                           value.toInt().toString(),
-                                          style: const TextStyle(
+                                          style: TextStyle(
                                             color: Color(0xff64748B),
-                                            fontSize: 12,
+                                            fontSize: responsive.smallFontSize,
                                             fontFamily: 'Golos',
                                           ),
                                         );
@@ -421,15 +421,15 @@ class _ManagersChartState extends State<ManagersChart> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
+                        Text(
                           'Лучший менеджер',
                           style: TextStyle(
-                            fontSize: 12,
+                            fontSize: responsive.smallFontSize,
                             color: Color(0xff64748B),
                             fontFamily: 'Golos',
                           ),
                         ),
-                        const SizedBox(height: 4),
+                        SizedBox(height: 4),
                         Text(
                           _bestManager.isNotEmpty
                               ? _bestManager
@@ -438,8 +438,8 @@ class _ManagersChartState extends State<ManagersChart> {
                                   : '-'),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontSize: 20,
+                          style: TextStyle(
+                            fontSize: responsive.largeFontSize,
                             fontWeight: FontWeight.w700,
                             color: Color(0xff0F172A),
                             fontFamily: 'Golos',
@@ -453,21 +453,21 @@ class _ManagersChartState extends State<ManagersChart> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        const Text(
+                        Text(
                           'Общая выручка',
                           style: TextStyle(
-                            fontSize: 12,
+                            fontSize: responsive.smallFontSize,
                             color: Color(0xff64748B),
                             fontFamily: 'Golos',
                           ),
                         ),
-                        const SizedBox(height: 4),
+                        SizedBox(height: 4),
                         Text(
                           _formatMoney(_totalRevenue),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontSize: 20,
+                          style: TextStyle(
+                            fontSize: responsive.largeFontSize,
                             fontWeight: FontWeight.w700,
                             color: Color(0xff0F172A),
                             fontFamily: 'Golos',
@@ -481,21 +481,21 @@ class _ManagersChartState extends State<ManagersChart> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
-                        const Text(
+                        Text(
                           'Менеджеров',
                           style: TextStyle(
-                            fontSize: 12,
+                            fontSize: responsive.smallFontSize,
                             color: Color(0xff64748B),
                             fontFamily: 'Golos',
                           ),
                         ),
-                        const SizedBox(height: 4),
+                        SizedBox(height: 4),
                         Text(
                           '$_totalManagers',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontSize: 20,
+                          style: TextStyle(
+                            fontSize: responsive.largeFontSize,
                             fontWeight: FontWeight.w700,
                             color: Color(0xff0F172A),
                             fontFamily: 'Golos',

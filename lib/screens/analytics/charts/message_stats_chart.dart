@@ -64,11 +64,11 @@ class _MessageStatsChartState extends State<MessageStatsChart> {
             children: [
               Row(
                 children: [
-                  const Expanded(
+                  Expanded(
                     child: Text(
                       'Статистика сообщений',
                       style: TextStyle(
-                        fontSize: 18,
+                        fontSize: ResponsiveHelper(context).titleFontSize,
                         fontWeight: FontWeight.w700,
                         color: Color(0xff0F172A),
                         fontFamily: 'Golos',
@@ -84,7 +84,7 @@ class _MessageStatsChartState extends State<MessageStatsChart> {
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: 12),
               Flexible(
                 child: ListView.separated(
                   shrinkWrap: true,
@@ -96,8 +96,8 @@ class _MessageStatsChartState extends State<MessageStatsChart> {
                       contentPadding: EdgeInsets.zero,
                       title: Text(
                         item.name,
-                        style: const TextStyle(
-                          fontSize: 14,
+                        style: TextStyle(
+                          fontSize: ResponsiveHelper(context).bodyFontSize,
                           fontWeight: FontWeight.w600,
                           color: Color(0xff0F172A),
                           fontFamily: 'Golos',
@@ -105,16 +105,16 @@ class _MessageStatsChartState extends State<MessageStatsChart> {
                       ),
                       subtitle: Text(
                         'Получено: ${item.received}',
-                        style: const TextStyle(
-                          fontSize: 12,
+                        style: TextStyle(
+                          fontSize: ResponsiveHelper(context).smallFontSize,
                           color: Color(0xff64748B),
                           fontFamily: 'Golos',
                         ),
                       ),
                       trailing: Text(
                         'Отправлено: ${item.sent}',
-                        style: const TextStyle(
-                          fontSize: 12,
+                        style: TextStyle(
+                          fontSize: ResponsiveHelper(context).smallFontSize,
                           fontWeight: FontWeight.w600,
                           color: Color(0xff10B981),
                           fontFamily: 'Golos',
@@ -161,10 +161,7 @@ class _MessageStatsChartState extends State<MessageStatsChart> {
     final items = _data?.activeChannels ?? [];
     final maxValue = items.isEmpty
         ? 1
-        : items
-            .map((e) => e.total)
-            .reduce((a, b) => a > b ? a : b)
-            .toDouble();
+        : items.map((e) => e.total).reduce((a, b) => a > b ? a : b).toDouble();
 
     return Container(
       decoration: BoxDecoration(
@@ -208,7 +205,7 @@ class _MessageStatsChartState extends State<MessageStatsChart> {
                     size: 20,
                   ),
                 ),
-                const SizedBox(width: 12),
+                SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     'Статистика сообщений',
@@ -222,7 +219,8 @@ class _MessageStatsChartState extends State<MessageStatsChart> {
                 ),
                 IconButton(
                   onPressed: _showDetails,
-                  icon: const Icon(Icons.crop_free, color: Color(0xff64748B), size: 22),
+                  icon:
+                      Icon(Icons.crop_free, color: Color(0xff64748B), size: 22),
                   style: IconButton.styleFrom(
                     backgroundColor: Color(0xffF1F5F9),
                     minimumSize: Size(44, 44),
@@ -272,8 +270,8 @@ class _MessageStatsChartState extends State<MessageStatsChart> {
                                   getTitlesWidget: (value, meta) {
                                     return Text(
                                       value.toInt().toString(),
-                                      style: const TextStyle(
-                                        fontSize: 10,
+                                      style: TextStyle(
+                                        fontSize: responsive.xSmallFontSize,
                                         color: Color(0xff64748B),
                                         fontFamily: 'Golos',
                                       ),
@@ -293,8 +291,8 @@ class _MessageStatsChartState extends State<MessageStatsChart> {
                                       padding: const EdgeInsets.only(top: 6),
                                       child: Text(
                                         items[index].name,
-                                        style: const TextStyle(
-                                          fontSize: 9,
+                                        style: TextStyle(
+                                          fontSize: responsive.xSmallFontSize,
                                           color: Color(0xff64748B),
                                           fontFamily: 'Golos',
                                         ),
@@ -355,11 +353,11 @@ class _LegendDot extends StatelessWidget {
           height: 8,
           decoration: BoxDecoration(color: color, shape: BoxShape.circle),
         ),
-        const SizedBox(width: 6),
+        SizedBox(width: 6),
         Text(
           label,
-          style: const TextStyle(
-            fontSize: 12,
+          style: TextStyle(
+            fontSize: ResponsiveHelper(context).smallFontSize,
             color: Color(0xff64748B),
             fontFamily: 'Golos',
           ),

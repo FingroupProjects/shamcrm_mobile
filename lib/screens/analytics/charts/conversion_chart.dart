@@ -144,13 +144,13 @@ class _ConversionChartState extends State<ConversionChart> {
             children: [
               Text(_title,
                 style: TextStyle(
-                  fontSize: 18,
+                  fontSize: ResponsiveHelper(context).titleFontSize,
                   fontWeight: FontWeight.w700,
                   color: Color(0xff0F172A),
                   fontFamily: 'Golos',
                 ),
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: 12),
               Flexible(
                 child: ListView.separated(
                   shrinkWrap: true,
@@ -164,8 +164,8 @@ class _ConversionChartState extends State<ConversionChart> {
                       contentPadding: EdgeInsets.zero,
                       title: Text(
                         monthName,
-                        style: const TextStyle(
-                          fontSize: 14,
+                        style: TextStyle(
+                          fontSize: ResponsiveHelper(context).bodyFontSize,
                           fontWeight: FontWeight.w600,
                           color: Color(0xff0F172A),
                           fontFamily: 'Golos',
@@ -173,8 +173,8 @@ class _ConversionChartState extends State<ConversionChart> {
                       ),
                       trailing: Text(
                         '${_conversionData[index].toStringAsFixed(1)}%',
-                        style: const TextStyle(
-                          fontSize: 14,
+                        style: TextStyle(
+                          fontSize: ResponsiveHelper(context).bodyFontSize,
                           fontWeight: FontWeight.w600,
                           color: Color(0xff6366F1),
                           fontFamily: 'Golos',
@@ -244,7 +244,7 @@ class _ConversionChartState extends State<ConversionChart> {
                     size: 20,
                   ),
                 ),
-                const SizedBox(width: 12),
+                SizedBox(width: 12),
                 Text(
                   _title,
                   style: TextStyle(
@@ -257,7 +257,7 @@ class _ConversionChartState extends State<ConversionChart> {
                 const Spacer(),
                 IconButton(
                   onPressed: _showDetails,
-                  icon: const Icon(Icons.crop_free, color: Color(0xff64748B), size: 22),
+                  icon: Icon(Icons.crop_free, color: Color(0xff64748B), size: 22),
                   style: IconButton.styleFrom(
                     backgroundColor: Color(0xffF1F5F9),
                     minimumSize: Size(44, 44),
@@ -282,12 +282,12 @@ class _ConversionChartState extends State<ConversionChart> {
                           children: [
                             const Icon(Icons.error_outline,
                                 size: 48, color: Color(0xffEF4444)),
-                            const SizedBox(height: 12),
+                            SizedBox(height: 12),
                             Text(
                               _error!,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 color: Color(0xff64748B),
-                                fontSize: 14,
+                                fontSize: responsive.bodyFontSize,
                                 fontFamily: 'Golos',
                               ),
                               textAlign: TextAlign.center,
@@ -322,10 +322,10 @@ class _ConversionChartState extends State<ConversionChart> {
                                         (group, groupIndex, rod, rodIndex) {
                                       return BarTooltipItem(
                                         '${rod.toY.toStringAsFixed(1)}%',
-                                        const TextStyle(
+                                        TextStyle(
                                           color: Color(0xff0F172A),
                                           fontWeight: FontWeight.bold,
-                                          fontSize: 14,
+                                          fontSize: responsive.bodyFontSize,
                                           fontFamily: 'Golos',
                                         ),
                                       );
@@ -348,16 +348,16 @@ class _ConversionChartState extends State<ConversionChart> {
                                                   const EdgeInsets.only(top: 8),
                                               child: Text(
                                                 _monthNames[value.toInt()],
-                                                style: const TextStyle(
+                                                style: TextStyle(
                                                   color: Color(0xff64748B),
-                                                  fontSize: 12,
+                                                  fontSize: responsive.smallFontSize,
                                                   fontFamily: 'Golos',
                                                 ),
                                               ),
                                             ),
                                           );
                                         }
-                                        return const Text('');
+                                        return Text('');
                                       },
                                     ),
                                   ),
@@ -368,9 +368,9 @@ class _ConversionChartState extends State<ConversionChart> {
                                       getTitlesWidget: (value, meta) {
                                         return Text(
                                           '${value.toInt()}%',
-                                          style: const TextStyle(
+                                          style: TextStyle(
                                             color: Color(0xff64748B),
-                                            fontSize: 12,
+                                            fontSize: responsive.smallFontSize,
                                             fontFamily: 'Golos',
                                           ),
                                         );
@@ -423,19 +423,19 @@ class _ConversionChartState extends State<ConversionChart> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         'Средняя конверсия',
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: responsive.smallFontSize,
                           color: Color(0xff64748B),
                           fontFamily: 'Golos',
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      SizedBox(height: 4),
                       Text(
                         '${_averagePercentage.toStringAsFixed(1)}%',
-                        style: const TextStyle(
-                          fontSize: 20,
+                        style: TextStyle(
+                          fontSize: responsive.largeFontSize,
                           fontWeight: FontWeight.w700,
                           color: Color(0xff0F172A),
                           fontFamily: 'Golos',
@@ -446,19 +446,19 @@ class _ConversionChartState extends State<ConversionChart> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      const Text(
+                      Text(
                         'Лучший период',
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: responsive.smallFontSize,
                           color: Color(0xff64748B),
                           fontFamily: 'Golos',
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      SizedBox(height: 4),
                       Text(
                         _bestMonth,
-                        style: const TextStyle(
-                          fontSize: 20,
+                        style: TextStyle(
+                          fontSize: responsive.largeFontSize,
                           fontWeight: FontWeight.w700,
                           color: Color(0xff0F172A),
                           fontFamily: 'Golos',

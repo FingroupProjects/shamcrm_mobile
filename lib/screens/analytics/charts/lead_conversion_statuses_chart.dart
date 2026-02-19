@@ -103,7 +103,7 @@ class _LeadConversionStatusesChartState
                     child: Text(
                       _title,
                       style: TextStyle(
-                        fontSize: 18,
+                        fontSize: ResponsiveHelper(context).titleFontSize,
                         fontWeight: FontWeight.w700,
                         color: Color(0xff0F172A),
                         fontFamily: 'Golos',
@@ -119,7 +119,7 @@ class _LeadConversionStatusesChartState
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: 12),
               Flexible(
                 child: ListView.separated(
                   shrinkWrap: true,
@@ -131,8 +131,8 @@ class _LeadConversionStatusesChartState
                       contentPadding: EdgeInsets.zero,
                       title: Text(
                         item.statusName,
-                        style: const TextStyle(
-                          fontSize: 14,
+                        style: TextStyle(
+                          fontSize: ResponsiveHelper(context).bodyFontSize,
                           fontWeight: FontWeight.w600,
                           color: Color(0xff0F172A),
                           fontFamily: 'Golos',
@@ -140,16 +140,16 @@ class _LeadConversionStatusesChartState
                       ),
                       subtitle: Text(
                         'Лидов: ${item.totalLeads}',
-                        style: const TextStyle(
-                          fontSize: 12,
+                        style: TextStyle(
+                          fontSize: ResponsiveHelper(context).smallFontSize,
                           color: Color(0xff64748B),
                           fontFamily: 'Golos',
                         ),
                       ),
                       trailing: Text(
                         item.conversionRate,
-                        style: const TextStyle(
-                          fontSize: 12,
+                        style: TextStyle(
+                          fontSize: ResponsiveHelper(context).smallFontSize,
                           fontWeight: FontWeight.w600,
                           color: Color(0xff8B5CF6),
                           fontFamily: 'Golos',
@@ -237,7 +237,7 @@ class _LeadConversionStatusesChartState
                     size: 20,
                   ),
                 ),
-                const SizedBox(width: 12),
+                SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     _title,
@@ -251,7 +251,7 @@ class _LeadConversionStatusesChartState
                 ),
                 IconButton(
                   onPressed: _showDetails,
-                  icon: const Icon(Icons.crop_free, color: Color(0xff64748B), size: 22),
+                  icon: Icon(Icons.crop_free, color: Color(0xff64748B), size: 22),
                   style: IconButton.styleFrom(
                     backgroundColor: Color(0xffF1F5F9),
                     minimumSize: Size(44, 44),
@@ -309,8 +309,8 @@ class _LeadConversionStatusesChartState
                                           quarterTurns: 3,
                                           child: Text(
                                             value.toInt().toString(),
-                                            style: const TextStyle(
-                                              fontSize: 10,
+                                            style: TextStyle(
+                                              fontSize: responsive.xSmallFontSize,
                                               color: Color(0xff64748B),
                                               fontFamily: 'Golos',
                                             ),
@@ -339,8 +339,8 @@ class _LeadConversionStatusesChartState
                                             padding: const EdgeInsets.only(top: 6),
                                             child: Text(
                                               displayItems[index].statusName,
-                                              style: const TextStyle(
-                                                fontSize: 10,
+                                              style: TextStyle(
+                                                fontSize: responsive.xSmallFontSize,
                                                 color: Color(0xff64748B),
                                                 fontFamily: 'Golos',
                                               ),
@@ -380,10 +380,10 @@ class _LeadConversionStatusesChartState
                                           displayItems[group.x.toInt()];
                                       return BarTooltipItem(
                                         '${item.statusName}\n${item.totalLeads} (${item.conversionRate})',
-                                        const TextStyle(
+                                        TextStyle(
                                           color: Color(0xff0F172A),
                                           fontWeight: FontWeight.w700,
-                                          fontSize: 12,
+                                          fontSize: responsive.smallFontSize,
                                           fontFamily: 'Golos',
                                         ),
                                       );
@@ -406,8 +406,8 @@ class _LeadConversionStatusesChartState
               ),
               child: Text(
                 'Средняя конверсия: ${_data!.averageConversion}',
-                style: const TextStyle(
-                  fontSize: 12,
+                style: TextStyle(
+                  fontSize: responsive.smallFontSize,
                   fontWeight: FontWeight.w600,
                   color: Color(0xff64748B),
                   fontFamily: 'Golos',

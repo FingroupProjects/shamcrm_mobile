@@ -6,6 +6,7 @@ import 'package:crm_task_manager/screens/analytics/widgets/chart_empty_overlay.d
 import 'package:crm_task_manager/screens/analytics/widgets/chart_shimmer_loader.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:crm_task_manager/screens/analytics/utils/responsive_helper.dart';
 
 class TelephonyEventsChart extends StatefulWidget {
   const TelephonyEventsChart({super.key, required this.title});
@@ -24,7 +25,15 @@ class _TelephonyEventsChartState extends State<TelephonyEventsChart> {
   static const Color _closedColor = Color(0xffF59E0B);
   static const Color _labelColor = Color(0xff64748B);
 
-  static const List<String> _weekDays = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+  static const List<String> _weekDays = [
+    'Пн',
+    'Вт',
+    'Ср',
+    'Чт',
+    'Пт',
+    'Сб',
+    'Вс'
+  ];
 
   bool _isLoading = true;
   String? _error;
@@ -149,8 +158,8 @@ class _TelephonyEventsChartState extends State<TelephonyEventsChart> {
                   Expanded(
                     child: Text(
                       _title,
-                      style: const TextStyle(
-                        fontSize: 18,
+                      style: TextStyle(
+                        fontSize: ResponsiveHelper(context).titleFontSize,
                         fontWeight: FontWeight.w700,
                         color: Color(0xff0F172A),
                         fontFamily: 'Golos',
@@ -166,7 +175,7 @@ class _TelephonyEventsChartState extends State<TelephonyEventsChart> {
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: 12),
               Flexible(
                 child: ListView.separated(
                   shrinkWrap: true,
@@ -182,8 +191,8 @@ class _TelephonyEventsChartState extends State<TelephonyEventsChart> {
                       contentPadding: EdgeInsets.zero,
                       title: Text(
                         dayLabel,
-                        style: const TextStyle(
-                          fontSize: 16,
+                        style: TextStyle(
+                          fontSize: ResponsiveHelper(context).subtitleFontSize,
                           fontWeight: FontWeight.w600,
                           color: Color(0xff0F172A),
                           fontFamily: 'Golos',
@@ -191,16 +200,16 @@ class _TelephonyEventsChartState extends State<TelephonyEventsChart> {
                       ),
                       subtitle: Text(
                         'Входящие: ${item.incoming}, Исходящие: ${item.outgoing}, Пропущенные: ${item.missed}',
-                        style: const TextStyle(
-                          fontSize: 13,
+                        style: TextStyle(
+                          fontSize: ResponsiveHelper(context).captionFontSize,
                           color: _labelColor,
                           fontFamily: 'Golos',
                         ),
                       ),
                       trailing: Text(
                         '${item.noticesCreated}/${item.noticesFinished}',
-                        style: const TextStyle(
-                          fontSize: 14,
+                        style: TextStyle(
+                          fontSize: ResponsiveHelper(context).bodyFontSize,
                           fontWeight: FontWeight.w700,
                           color: _createdColor,
                           fontFamily: 'Golos',
@@ -227,11 +236,13 @@ class _TelephonyEventsChartState extends State<TelephonyEventsChart> {
       final stackItems = <BarChartRodStackItem>[];
 
       if (_showIncoming) {
-        stackItems.add(BarChartRodStackItem(sum, sum + incoming, _incomingColor));
+        stackItems
+            .add(BarChartRodStackItem(sum, sum + incoming, _incomingColor));
         sum += incoming;
       }
       if (_showOutgoing) {
-        stackItems.add(BarChartRodStackItem(sum, sum + outgoing, _outgoingColor));
+        stackItems
+            .add(BarChartRodStackItem(sum, sum + outgoing, _outgoingColor));
         sum += outgoing;
       }
       if (_showMissed) {
@@ -263,8 +274,10 @@ class _TelephonyEventsChartState extends State<TelephonyEventsChart> {
     final closedSpots = <FlSpot>[];
 
     for (int i = 0; i < items.length; i++) {
-      createdSpots.add(FlSpot(i.toDouble(), items[i].noticesCreated.toDouble()));
-      closedSpots.add(FlSpot(i.toDouble(), items[i].noticesFinished.toDouble()));
+      createdSpots
+          .add(FlSpot(i.toDouble(), items[i].noticesCreated.toDouble()));
+      closedSpots
+          .add(FlSpot(i.toDouble(), items[i].noticesFinished.toDouble()));
     }
 
     final bars = <LineChartBarData>[];
@@ -325,13 +338,13 @@ class _TelephonyEventsChartState extends State<TelephonyEventsChart> {
         .fold<int>(0, (prev, curr) => math.max(prev, curr));
     final maxCreated = _showCreated
         ? items
-        .map((e) => e.noticesCreated)
-        .fold<int>(0, (prev, curr) => math.max(prev, curr))
+            .map((e) => e.noticesCreated)
+            .fold<int>(0, (prev, curr) => math.max(prev, curr))
         : 0;
     final maxClosed = _showClosed
         ? items
-        .map((e) => e.noticesFinished)
-        .fold<int>(0, (prev, curr) => math.max(prev, curr))
+            .map((e) => e.noticesFinished)
+            .fold<int>(0, (prev, curr) => math.max(prev, curr))
         : 0;
 
     final maxBase = math.max(maxBar, math.max(maxCreated, maxClosed));
@@ -374,18 +387,10 @@ class _TelephonyEventsChartState extends State<TelephonyEventsChart> {
       builder: (context, constraints) {
         final isCompact = constraints.maxWidth < 400;
         final isVeryCompact = constraints.maxWidth < 360;
-        final headerIconSize = isVeryCompact
-            ? 30.0
-            : (isCompact ? 34.0 : 38.0);
-        final headerPadding = isVeryCompact
-            ? 10.0
-            : (isCompact ? 12.0 : 14.0);
-        final chartHeight = isVeryCompact
-            ? 220.0
-            : (isCompact ? 245.0 : 270.0);
-        final numberFontSize = isVeryCompact
-            ? 24.0
-            : (isCompact ? 34.0 : 38.0);
+        final headerIconSize = isVeryCompact ? 30.0 : (isCompact ? 34.0 : 38.0);
+        final headerPadding = isVeryCompact ? 10.0 : (isCompact ? 12.0 : 14.0);
+        final chartHeight = isVeryCompact ? 220.0 : (isCompact ? 245.0 : 270.0);
+        final numberFontSize = isVeryCompact ? 24.0 : (isCompact ? 34.0 : 38.0);
         final titleSize = isVeryCompact ? 16.0 : (isCompact ? 17.0 : 18.0);
         final leftReserved = isVeryCompact ? 28.0 : 32.0;
         final bottomReserved = isVeryCompact ? 28.0 : 32.0;
@@ -484,13 +489,15 @@ class _TelephonyEventsChartState extends State<TelephonyEventsChart> {
                       color: _incomingColor,
                       label: 'Входящие',
                       enabled: _showIncoming,
-                      onTap: () => setState(() => _showIncoming = !_showIncoming),
+                      onTap: () =>
+                          setState(() => _showIncoming = !_showIncoming),
                     ),
                     _LegendRect(
                       color: _outgoingColor,
                       label: 'Исходящие',
                       enabled: _showOutgoing,
-                      onTap: () => setState(() => _showOutgoing = !_showOutgoing),
+                      onTap: () =>
+                          setState(() => _showOutgoing = !_showOutgoing),
                     ),
                     _LegendRect(
                       color: _missedColor,
@@ -515,245 +522,310 @@ class _TelephonyEventsChartState extends State<TelephonyEventsChart> {
                 const SizedBox(height: 6),
                 SizedBox(
                   height: chartHeight,
-              child: _isLoading
-                  ? const AnalyticsChartShimmerLoader()
-                  : _error != null
-                      ? Center(
-                          child: Text(
-                            _error!,
-                            style: const TextStyle(
-                              color: _missedColor,
-                              fontFamily: 'Golos',
-                            ),
-                          ),
-                        )
-                      : ChartEmptyOverlay(
-                          show: isEmpty,
-                          child: Padding(
-                            padding: const EdgeInsets.only(right: 10),
-                            child: Stack(
-                              children: [
-                                BarChart(
-                                  BarChartData(
-                                    maxY: maxY,
-                                    minY: 0,
-                                    alignment: BarChartAlignment.spaceAround,
-                                    barGroups: _buildGroups(displayItems),
-                                    gridData: FlGridData(
-                                      show: true,
-                                      drawVerticalLine: false,
-                                horizontalInterval: math.max(1, leftInterval).toDouble(),
-                                      getDrawingHorizontalLine: (_) => FlLine(
-                                        color: const Color(0xffD5DEE8),
-                                        strokeWidth: 1,
-                                      ),
-                                    ),
-                                    borderData: FlBorderData(
-                                      show: true,
-                                      border: const Border(
-                                        bottom: BorderSide(color: Color(0xffD5DEE8), width: 1),
-                                        left: BorderSide(color: Colors.transparent),
-                                        right: BorderSide(color: Colors.transparent),
-                                        top: BorderSide(color: Colors.transparent),
-                                      ),
-                                    ),
-                                    barTouchData: BarTouchData(
-                                      enabled: true,
-                                      handleBuiltInTouches: true,
-                                      touchTooltipData: BarTouchTooltipData(
-                                        getTooltipColor: (_) => const Color(0xffF8FAFC),
-                                        tooltipRoundedRadius: 12,
-                                        tooltipPadding: const EdgeInsets.symmetric(
-                                          horizontal: 16,
-                                          vertical: 12,
-                                        ),
-                                        getTooltipItem: (group, _, __, ___) {
-                                          final index = group.x.toInt();
-                                          if (index < 0 || index >= displayItems.length) {
-                                            return null;
-                                          }
-                                          final item = displayItems[index];
-                                          final day = index < _weekDays.length
-                                              ? _weekDays[index]
-                                              : 'Д${item.day}';
-
-                                          final spans = <TextSpan>[];
-                                          if (_showIncoming) {
-                                            spans.add(
-                                              TextSpan(
-                                                text: '● Входящие                ${item.incoming}\n',
-                                                style: const TextStyle(
-                                                  color: _incomingColor,
-                                                  fontWeight: FontWeight.w600,
-                                                  fontSize: 13,
-                                                  fontFamily: 'Golos',
-                                                ),
-                                              ),
-                                            );
-                                          }
-                                          if (_showOutgoing) {
-                                            spans.add(
-                                              TextSpan(
-                                                text: '● Исходящие               ${item.outgoing}\n',
-                                                style: const TextStyle(
-                                                  color: _outgoingColor,
-                                                  fontWeight: FontWeight.w600,
-                                                  fontSize: 13,
-                                                  fontFamily: 'Golos',
-                                                ),
-                                              ),
-                                            );
-                                          }
-                                          if (_showMissed) {
-                                            spans.add(
-                                              TextSpan(
-                                                text: '● Пропущенные             ${item.missed}\n',
-                                                style: const TextStyle(
-                                                  color: _missedColor,
-                                                  fontWeight: FontWeight.w600,
-                                                  fontSize: 13,
-                                                  fontFamily: 'Golos',
-                                                ),
-                                              ),
-                                            );
-                                          }
-                                          if (_showCreated) {
-                                            spans.add(
-                                              TextSpan(
-                                                text: '● События создано         ${item.noticesCreated}\n',
-                                                style: const TextStyle(
-                                                  color: _createdColor,
-                                                  fontWeight: FontWeight.w600,
-                                                  fontSize: 13,
-                                                  fontFamily: 'Golos',
-                                                ),
-                                              ),
-                                            );
-                                          }
-                                          if (_showClosed) {
-                                            spans.add(
-                                              TextSpan(
-                                                text: '● События закрыто         ${item.noticesFinished}',
-                                                style: const TextStyle(
-                                                  color: _closedColor,
-                                                  fontWeight: FontWeight.w600,
-                                                  fontSize: 13,
-                                                  fontFamily: 'Golos',
-                                                ),
-                                              ),
-                                            );
-                                          }
-
-                                          return BarTooltipItem(
-                                            '$day\n',
-                                            const TextStyle(
-                                              color: Color(0xff0F172A),
-                                              fontWeight: FontWeight.w700,
-                                              fontSize: 16,
-                                              fontFamily: 'Golos',
-                                            ),
-                                            children: spans,
-                                          );
-                                        },
-                                      ),
-                                    ),
-                                    titlesData: FlTitlesData(
-                                      topTitles: const AxisTitles(
-                                        sideTitles: SideTitles(showTitles: false),
-                                      ),
-                                      rightTitles: const AxisTitles(
-                                        sideTitles: SideTitles(showTitles: false),
-                                      ),
-                                      leftTitles: AxisTitles(
-                                        sideTitles: SideTitles(
-                                          showTitles: true,
-                                          interval: leftInterval.toDouble(),
-                                          reservedSize: leftReserved,
-                                          getTitlesWidget: (value, meta) {
-                                            return Text(
-                                              value.toInt().toString(),
-                                              style: TextStyle(
-                                                fontSize: isVeryCompact ? 10 : 11,
-                                                color: _labelColor,
-                                                fontWeight: FontWeight.w600,
-                                                fontFamily: 'Golos',
-                                              ),
-                                            );
-                                          },
-                                        ),
-                                      ),
-                                      bottomTitles: AxisTitles(
-                                        sideTitles: SideTitles(
-                                          showTitles: true,
-                                          reservedSize: bottomReserved,
-                                          getTitlesWidget: (value, meta) {
-                                            final index = value.toInt();
-                                            if (index < 0 || index >= displayItems.length) {
-                                              return const SizedBox.shrink();
-                                            }
-                                            final text = index < _weekDays.length
-                                                ? _weekDays[index]
-                                                : 'Д${displayItems[index].day}';
-                                            return Padding(
-                                              padding: const EdgeInsets.only(top: 6),
-                                              child: Text(
-                                                text,
-                                                style: TextStyle(
-                                                  fontSize: isVeryCompact ? 12 : 14,
-                                                  color: _labelColor,
-                                                  fontWeight: FontWeight.w600,
-                                                  fontFamily: 'Golos',
-                                                ),
-                                              ),
-                                            );
-                                          },
-                                        ),
-                                      ),
-                                    ),
-                                  ),
+                  child: _isLoading
+                      ? const AnalyticsChartShimmerLoader()
+                      : _error != null
+                          ? Center(
+                              child: Text(
+                                _error!,
+                                style: const TextStyle(
+                                  color: _missedColor,
+                                  fontFamily: 'Golos',
                                 ),
-                                if (_showCreated || _showClosed)
-                                  Positioned.fill(
-                                    child: Padding(
-                                      padding: EdgeInsets.only(
-                                        left: leftReserved,
-                                        bottom: bottomReserved,
-                                      ),
-                                      child: IgnorePointer(
-                                        child: LineChart(
-                                          LineChartData(
-                                            minX: 0,
-                                            maxX: (displayItems.length - 1).toDouble(),
-                                            minY: 0,
-                                            maxY: maxY,
-                                            clipData: const FlClipData.all(),
-                                            lineBarsData: _buildLineBars(displayItems),
-                                            gridData: const FlGridData(show: false),
-                                            borderData: FlBorderData(show: false),
-                                            titlesData: const FlTitlesData(
-                                              topTitles: AxisTitles(
-                                                sideTitles: SideTitles(showTitles: false),
-                                              ),
-                                              rightTitles: AxisTitles(
-                                                sideTitles: SideTitles(showTitles: false),
-                                              ),
-                                              leftTitles: AxisTitles(
-                                                sideTitles: SideTitles(showTitles: false),
-                                              ),
-                                              bottomTitles: AxisTitles(
-                                                sideTitles: SideTitles(showTitles: false),
-                                              ),
+                              ),
+                            )
+                          : ChartEmptyOverlay(
+                              show: isEmpty,
+                              child: Padding(
+                                padding: const EdgeInsets.only(right: 10),
+                                child: Stack(
+                                  children: [
+                                    BarChart(
+                                      BarChartData(
+                                        maxY: maxY,
+                                        minY: 0,
+                                        alignment:
+                                            BarChartAlignment.spaceAround,
+                                        barGroups: _buildGroups(displayItems),
+                                        gridData: FlGridData(
+                                          show: true,
+                                          drawVerticalLine: false,
+                                          horizontalInterval: math
+                                              .max(1, leftInterval)
+                                              .toDouble(),
+                                          getDrawingHorizontalLine: (_) =>
+                                              FlLine(
+                                            color: const Color(0xffD5DEE8),
+                                            strokeWidth: 1,
+                                          ),
+                                        ),
+                                        borderData: FlBorderData(
+                                          show: true,
+                                          border: const Border(
+                                            bottom: BorderSide(
+                                                color: Color(0xffD5DEE8),
+                                                width: 1),
+                                            left: BorderSide(
+                                                color: Colors.transparent),
+                                            right: BorderSide(
+                                                color: Colors.transparent),
+                                            top: BorderSide(
+                                                color: Colors.transparent),
+                                          ),
+                                        ),
+                                        barTouchData: BarTouchData(
+                                          enabled: true,
+                                          handleBuiltInTouches: true,
+                                          touchTooltipData: BarTouchTooltipData(
+                                            getTooltipColor: (_) =>
+                                                const Color(0xffF8FAFC),
+                                            tooltipRoundedRadius: 12,
+                                            tooltipPadding:
+                                                const EdgeInsets.symmetric(
+                                              horizontal: 16,
+                                              vertical: 12,
                                             ),
-                                            lineTouchData: const LineTouchData(enabled: false),
+                                            getTooltipItem:
+                                                (group, _, __, ___) {
+                                              final index = group.x.toInt();
+                                              if (index < 0 ||
+                                                  index >=
+                                                      displayItems.length) {
+                                                return null;
+                                              }
+                                              final item = displayItems[index];
+                                              final day =
+                                                  index < _weekDays.length
+                                                      ? _weekDays[index]
+                                                      : 'Д${item.day}';
+
+                                              final spans = <TextSpan>[];
+                                              if (_showIncoming) {
+                                                spans.add(
+                                                  TextSpan(
+                                                    text:
+                                                        '● Входящие                ${item.incoming}\n',
+                                                    style: TextStyle(
+                                                      color: _incomingColor,
+                                                      fontWeight:
+                                                          FontWeight.w600,
+                                                      fontSize:
+                                                          ResponsiveHelper(
+                                                                  context)
+                                                              .captionFontSize,
+                                                      fontFamily: 'Golos',
+                                                    ),
+                                                  ),
+                                                );
+                                              }
+                                              if (_showOutgoing) {
+                                                spans.add(
+                                                  TextSpan(
+                                                    text:
+                                                        '● Исходящие               ${item.outgoing}\n',
+                                                    style: TextStyle(
+                                                      color: _outgoingColor,
+                                                      fontWeight:
+                                                          FontWeight.w600,
+                                                      fontSize:
+                                                          ResponsiveHelper(
+                                                                  context)
+                                                              .captionFontSize,
+                                                      fontFamily: 'Golos',
+                                                    ),
+                                                  ),
+                                                );
+                                              }
+                                              if (_showMissed) {
+                                                spans.add(
+                                                  TextSpan(
+                                                    text:
+                                                        '● Пропущенные             ${item.missed}\n',
+                                                    style: TextStyle(
+                                                      color: _missedColor,
+                                                      fontWeight:
+                                                          FontWeight.w600,
+                                                      fontSize:
+                                                          ResponsiveHelper(
+                                                                  context)
+                                                              .captionFontSize,
+                                                      fontFamily: 'Golos',
+                                                    ),
+                                                  ),
+                                                );
+                                              }
+                                              if (_showCreated) {
+                                                spans.add(
+                                                  TextSpan(
+                                                    text:
+                                                        '● События создано         ${item.noticesCreated}\n',
+                                                    style: TextStyle(
+                                                      color: _createdColor,
+                                                      fontWeight:
+                                                          FontWeight.w600,
+                                                      fontSize:
+                                                          ResponsiveHelper(
+                                                                  context)
+                                                              .captionFontSize,
+                                                      fontFamily: 'Golos',
+                                                    ),
+                                                  ),
+                                                );
+                                              }
+                                              if (_showClosed) {
+                                                spans.add(
+                                                  TextSpan(
+                                                    text:
+                                                        '● События закрыто         ${item.noticesFinished}',
+                                                    style: TextStyle(
+                                                      color: _closedColor,
+                                                      fontWeight:
+                                                          FontWeight.w600,
+                                                      fontSize:
+                                                          ResponsiveHelper(
+                                                                  context)
+                                                              .captionFontSize,
+                                                      fontFamily: 'Golos',
+                                                    ),
+                                                  ),
+                                                );
+                                              }
+
+                                              return BarTooltipItem(
+                                                '$day\n',
+                                                TextStyle(
+                                                  color: Color(0xff0F172A),
+                                                  fontWeight: FontWeight.w700,
+                                                  fontSize:
+                                                      ResponsiveHelper(context)
+                                                          .subtitleFontSize,
+                                                  fontFamily: 'Golos',
+                                                ),
+                                                children: spans,
+                                              );
+                                            },
+                                          ),
+                                        ),
+                                        titlesData: FlTitlesData(
+                                          topTitles: const AxisTitles(
+                                            sideTitles:
+                                                SideTitles(showTitles: false),
+                                          ),
+                                          rightTitles: const AxisTitles(
+                                            sideTitles:
+                                                SideTitles(showTitles: false),
+                                          ),
+                                          leftTitles: AxisTitles(
+                                            sideTitles: SideTitles(
+                                              showTitles: true,
+                                              interval: leftInterval.toDouble(),
+                                              reservedSize: leftReserved,
+                                              getTitlesWidget: (value, meta) {
+                                                return Text(
+                                                  value.toInt().toString(),
+                                                  style: TextStyle(
+                                                    fontSize:
+                                                        isVeryCompact ? 10 : 11,
+                                                    color: _labelColor,
+                                                    fontWeight: FontWeight.w600,
+                                                    fontFamily: 'Golos',
+                                                  ),
+                                                );
+                                              },
+                                            ),
+                                          ),
+                                          bottomTitles: AxisTitles(
+                                            sideTitles: SideTitles(
+                                              showTitles: true,
+                                              reservedSize: bottomReserved,
+                                              getTitlesWidget: (value, meta) {
+                                                final index = value.toInt();
+                                                if (index < 0 ||
+                                                    index >=
+                                                        displayItems.length) {
+                                                  return const SizedBox
+                                                      .shrink();
+                                                }
+                                                final text = index <
+                                                        _weekDays.length
+                                                    ? _weekDays[index]
+                                                    : 'Д${displayItems[index].day}';
+                                                return Padding(
+                                                  padding:
+                                                      const EdgeInsets.only(
+                                                          top: 6),
+                                                  child: Text(
+                                                    text,
+                                                    style: TextStyle(
+                                                      fontSize: isVeryCompact
+                                                          ? 12
+                                                          : 14,
+                                                      color: _labelColor,
+                                                      fontWeight:
+                                                          FontWeight.w600,
+                                                      fontFamily: 'Golos',
+                                                    ),
+                                                  ),
+                                                );
+                                              },
+                                            ),
                                           ),
                                         ),
                                       ),
                                     ),
-                                  ),
-                              ],
+                                    if (_showCreated || _showClosed)
+                                      Positioned.fill(
+                                        child: Padding(
+                                          padding: EdgeInsets.only(
+                                            left: leftReserved,
+                                            bottom: bottomReserved,
+                                          ),
+                                          child: IgnorePointer(
+                                            child: LineChart(
+                                              LineChartData(
+                                                minX: 0,
+                                                maxX: (displayItems.length - 1)
+                                                    .toDouble(),
+                                                minY: 0,
+                                                maxY: maxY,
+                                                clipData:
+                                                    const FlClipData.all(),
+                                                lineBarsData: _buildLineBars(
+                                                    displayItems),
+                                                gridData: const FlGridData(
+                                                    show: false),
+                                                borderData:
+                                                    FlBorderData(show: false),
+                                                titlesData: const FlTitlesData(
+                                                  topTitles: AxisTitles(
+                                                    sideTitles: SideTitles(
+                                                        showTitles: false),
+                                                  ),
+                                                  rightTitles: AxisTitles(
+                                                    sideTitles: SideTitles(
+                                                        showTitles: false),
+                                                  ),
+                                                  leftTitles: AxisTitles(
+                                                    sideTitles: SideTitles(
+                                                        showTitles: false),
+                                                  ),
+                                                  bottomTitles: AxisTitles(
+                                                    sideTitles: SideTitles(
+                                                        showTitles: false),
+                                                  ),
+                                                ),
+                                                lineTouchData:
+                                                    const LineTouchData(
+                                                        enabled: false),
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                              ),
                             ),
-                          ),
-                        ),
                 ),
                 const SizedBox(height: 8),
                 const Divider(color: Color(0xffD5DEE8), height: 1),
@@ -841,7 +913,8 @@ class _LegendRect extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final effectiveColor = enabled ? color : const Color(0xffCBD5E1);
-    final effectiveText = enabled ? const Color(0xff64748B) : const Color(0xff94A3B8);
+    final effectiveText =
+        enabled ? const Color(0xff64748B) : const Color(0xff94A3B8);
 
     return InkWell(
       onTap: onTap,
@@ -857,12 +930,12 @@ class _LegendRect extends StatelessWidget {
               borderRadius: BorderRadius.circular(6),
             ),
           ),
-          const SizedBox(width: 7),
+          SizedBox(width: 7),
           Text(
             label,
             style: TextStyle(
               color: effectiveText,
-              fontSize: 13,
+              fontSize: ResponsiveHelper(context).captionFontSize,
               fontWeight: FontWeight.w600,
               fontFamily: 'Golos',
             ),
@@ -889,7 +962,8 @@ class _LegendLine extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final effectiveColor = enabled ? color : const Color(0xffCBD5E1);
-    final effectiveText = enabled ? const Color(0xff64748B) : const Color(0xff94A3B8);
+    final effectiveText =
+        enabled ? const Color(0xff64748B) : const Color(0xff94A3B8);
 
     return InkWell(
       onTap: onTap,
@@ -914,12 +988,12 @@ class _LegendLine extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(width: 7),
+          SizedBox(width: 7),
           Text(
             label,
             style: TextStyle(
               color: effectiveText,
-              fontSize: 13,
+              fontSize: ResponsiveHelper(context).captionFontSize,
               fontWeight: FontWeight.w600,
               fontFamily: 'Golos',
             ),

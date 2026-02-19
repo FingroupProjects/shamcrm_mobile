@@ -93,13 +93,13 @@ class _OrdersChartState extends State<OrdersChart> {
             children: [
               Text(_title,
                 style: TextStyle(
-                  fontSize: 18,
+                  fontSize: ResponsiveHelper(context).titleFontSize,
                   fontWeight: FontWeight.w700,
                   color: Color(0xff0F172A),
                   fontFamily: 'Golos',
                 ),
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: 12),
               Flexible(
                 child: ListView.separated(
                   shrinkWrap: true,
@@ -115,8 +115,8 @@ class _OrdersChartState extends State<OrdersChart> {
                       contentPadding: EdgeInsets.zero,
                       title: Text(
                         month,
-                        style: const TextStyle(
-                          fontSize: 14,
+                        style: TextStyle(
+                          fontSize: ResponsiveHelper(context).bodyFontSize,
                           fontWeight: FontWeight.w600,
                           color: Color(0xff0F172A),
                           fontFamily: 'Golos',
@@ -124,16 +124,16 @@ class _OrdersChartState extends State<OrdersChart> {
                       ),
                       subtitle: Text(
                         'Успешные: ${point.successfulOrders} • Отменённые: ${point.canceledOrders}',
-                        style: const TextStyle(
-                          fontSize: 12,
+                        style: TextStyle(
+                          fontSize: ResponsiveHelper(context).smallFontSize,
                           color: Color(0xff64748B),
                           fontFamily: 'Golos',
                         ),
                       ),
                       trailing: Text(
                         '${point.totalOrders}',
-                        style: const TextStyle(
-                          fontSize: 14,
+                        style: TextStyle(
+                          fontSize: ResponsiveHelper(context).bodyFontSize,
                           fontWeight: FontWeight.w600,
                           color: Color(0xff14B8A6),
                           fontFamily: 'Golos',
@@ -213,7 +213,7 @@ class _OrdersChartState extends State<OrdersChart> {
                     size: 20,
                   ),
                 ),
-                const SizedBox(width: 12),
+                SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     _title,
@@ -230,7 +230,7 @@ class _OrdersChartState extends State<OrdersChart> {
                 const SizedBox(width: 8),
                 IconButton(
                   onPressed: _showDetails,
-                  icon: const Icon(Icons.crop_free, color: Color(0xff64748B), size: 22),
+                  icon: Icon(Icons.crop_free, color: Color(0xff64748B), size: 22),
                   style: IconButton.styleFrom(
                     backgroundColor: Color(0xffF1F5F9),
                     minimumSize: Size(44, 44),
@@ -255,12 +255,12 @@ class _OrdersChartState extends State<OrdersChart> {
                           children: [
                             const Icon(Icons.error_outline,
                                 size: 48, color: Color(0xffEF4444)),
-                            const SizedBox(height: 12),
+                            SizedBox(height: 12),
                             Text(
                               _error!,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 color: Color(0xff64748B),
-                                fontSize: 14,
+                                fontSize: responsive.bodyFontSize,
                                 fontFamily: 'Golos',
                               ),
                               textAlign: TextAlign.center,
@@ -313,15 +313,15 @@ class _OrdersChartState extends State<OrdersChart> {
                                                 const EdgeInsets.only(top: 8),
                                             child: Text(
                                               label,
-                                              style: const TextStyle(
+                                              style: TextStyle(
                                                 color: Color(0xff64748B),
-                                                fontSize: 12,
+                                                fontSize: responsive.smallFontSize,
                                                 fontFamily: 'Golos',
                                               ),
                                             ),
                                           );
                                         }
-                                        return const Text('');
+                                        return Text('');
                                       },
                                     ),
                                   ),
@@ -332,9 +332,9 @@ class _OrdersChartState extends State<OrdersChart> {
                                       getTitlesWidget: (value, meta) {
                                         return Text(
                                           value.toInt().toString(),
-                                          style: const TextStyle(
+                                          style: TextStyle(
                                             color: Color(0xff64748B),
-                                            fontSize: 12,
+                                            fontSize: responsive.smallFontSize,
                                             fontFamily: 'Golos',
                                           ),
                                         );
@@ -394,19 +394,19 @@ class _OrdersChartState extends State<OrdersChart> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         'Всего заказов',
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: responsive.smallFontSize,
                           color: Color(0xff64748B),
                           fontFamily: 'Golos',
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      SizedBox(height: 4),
                       Text(
                         '${_data?.totalOrders ?? 0}',
-                        style: const TextStyle(
-                          fontSize: 20,
+                        style: TextStyle(
+                          fontSize: responsive.largeFontSize,
                           fontWeight: FontWeight.w700,
                           color: Color(0xff0F172A),
                           fontFamily: 'Golos',
@@ -417,19 +417,19 @@ class _OrdersChartState extends State<OrdersChart> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      const Text(
+                      Text(
                         'Успешных',
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: responsive.smallFontSize,
                           color: Color(0xff64748B),
                           fontFamily: 'Golos',
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      SizedBox(height: 4),
                       Text(
                         '${_data?.successfulOrders ?? 0}',
-                        style: const TextStyle(
-                          fontSize: 20,
+                        style: TextStyle(
+                          fontSize: responsive.largeFontSize,
                           fontWeight: FontWeight.w700,
                           color: Color(0xff10B981),
                           fontFamily: 'Golos',
@@ -440,19 +440,19 @@ class _OrdersChartState extends State<OrdersChart> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      const Text(
+                      Text(
                         'Средний чек',
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: responsive.smallFontSize,
                           color: Color(0xff64748B),
                           fontFamily: 'Golos',
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      SizedBox(height: 4),
                       Text(
                         '${_data?.averageCheck.toStringAsFixed(1) ?? '0'}',
-                        style: const TextStyle(
-                          fontSize: 20,
+                        style: TextStyle(
+                          fontSize: responsive.largeFontSize,
                           fontWeight: FontWeight.w700,
                           color: Color(0xff0F172A),
                           fontFamily: 'Golos',

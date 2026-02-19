@@ -76,19 +76,19 @@ class _KpiChartState extends State<KpiChart> {
             children: [
               Text(_title,
                 style: TextStyle(
-                  fontSize: 18,
+                  fontSize: ResponsiveHelper(context).titleFontSize,
                   fontWeight: FontWeight.w700,
                   color: Color(0xff0F172A),
                   fontFamily: 'Golos',
                 ),
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: 12),
               ListTile(
                 contentPadding: EdgeInsets.zero,
-                title: const Text(
+                title: Text(
                   'Выполнено',
                   style: TextStyle(
-                    fontSize: 14,
+                    fontSize: ResponsiveHelper(context).bodyFontSize,
                     fontWeight: FontWeight.w600,
                     color: Color(0xff0F172A),
                     fontFamily: 'Golos',
@@ -96,8 +96,8 @@ class _KpiChartState extends State<KpiChart> {
                 ),
                 trailing: Text(
                   '$_completed',
-                  style: const TextStyle(
-                    fontSize: 14,
+                  style: TextStyle(
+                    fontSize: ResponsiveHelper(context).bodyFontSize,
                     fontWeight: FontWeight.w600,
                     color: Color(0xff10B981),
                     fontFamily: 'Golos',
@@ -106,10 +106,10 @@ class _KpiChartState extends State<KpiChart> {
               ),
               ListTile(
                 contentPadding: EdgeInsets.zero,
-                title: const Text(
+                title: Text(
                   'В работе',
                   style: TextStyle(
-                    fontSize: 14,
+                    fontSize: ResponsiveHelper(context).bodyFontSize,
                     fontWeight: FontWeight.w600,
                     color: Color(0xff0F172A),
                     fontFamily: 'Golos',
@@ -117,8 +117,8 @@ class _KpiChartState extends State<KpiChart> {
                 ),
                 trailing: Text(
                   '$_inProgress',
-                  style: const TextStyle(
-                    fontSize: 14,
+                  style: TextStyle(
+                    fontSize: ResponsiveHelper(context).bodyFontSize,
                     fontWeight: FontWeight.w600,
                     color: Color(0xffF59E0B),
                     fontFamily: 'Golos',
@@ -127,10 +127,10 @@ class _KpiChartState extends State<KpiChart> {
               ),
               ListTile(
                 contentPadding: EdgeInsets.zero,
-                title: const Text(
+                title: Text(
                   'Просрочено',
                   style: TextStyle(
-                    fontSize: 14,
+                    fontSize: ResponsiveHelper(context).bodyFontSize,
                     fontWeight: FontWeight.w600,
                     color: Color(0xff0F172A),
                     fontFamily: 'Golos',
@@ -138,8 +138,8 @@ class _KpiChartState extends State<KpiChart> {
                 ),
                 trailing: Text(
                   '$_overdue',
-                  style: const TextStyle(
-                    fontSize: 14,
+                  style: TextStyle(
+                    fontSize: ResponsiveHelper(context).bodyFontSize,
                     fontWeight: FontWeight.w600,
                     color: Color(0xffEF4444),
                     fontFamily: 'Golos',
@@ -149,10 +149,10 @@ class _KpiChartState extends State<KpiChart> {
               const Divider(height: 1),
               ListTile(
                 contentPadding: EdgeInsets.zero,
-                title: const Text(
+                title: Text(
                   'Всего задач',
                   style: TextStyle(
-                    fontSize: 14,
+                    fontSize: ResponsiveHelper(context).bodyFontSize,
                     fontWeight: FontWeight.w600,
                     color: Color(0xff0F172A),
                     fontFamily: 'Golos',
@@ -160,8 +160,8 @@ class _KpiChartState extends State<KpiChart> {
                 ),
                 trailing: Text(
                   '$_total',
-                  style: const TextStyle(
-                    fontSize: 14,
+                  style: TextStyle(
+                    fontSize: ResponsiveHelper(context).bodyFontSize,
                     fontWeight: FontWeight.w600,
                     color: Color(0xff64748B),
                     fontFamily: 'Golos',
@@ -290,25 +290,25 @@ class _KpiChartState extends State<KpiChart> {
                     shape: BoxShape.circle,
                   ),
                 ),
-                const SizedBox(width: 8),
+                SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     _truncateCalloutLabel(selected.label),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 12,
+                    style: TextStyle(
+                      fontSize: ResponsiveHelper(context).smallFontSize,
                       fontWeight: FontWeight.w600,
                       color: Color(0xff334155),
                       fontFamily: 'Golos',
                     ),
                   ),
                 ),
-                const SizedBox(width: 8),
+                SizedBox(width: 8),
                 Text(
                   '${selected.value.toInt()}',
                   style: TextStyle(
-                    fontSize: 13,
+                    fontSize: ResponsiveHelper(context).captionFontSize,
                     fontWeight: FontWeight.w700,
                     color: selected.color,
                     fontFamily: 'Golos',
@@ -398,7 +398,7 @@ class _KpiChartState extends State<KpiChart> {
                     size: 20,
                   ),
                 ),
-                const SizedBox(width: 12),
+                SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     _title,
@@ -412,7 +412,7 @@ class _KpiChartState extends State<KpiChart> {
                 ),
                 IconButton(
                   onPressed: _showDetails,
-                  icon: const Icon(Icons.crop_free, color: Color(0xff64748B), size: 22),
+                  icon: Icon(Icons.crop_free, color: Color(0xff64748B), size: 22),
                   style: IconButton.styleFrom(
                     backgroundColor: Color(0xffF1F5F9),
                     minimumSize: Size(44, 44),
@@ -437,12 +437,12 @@ class _KpiChartState extends State<KpiChart> {
                           children: [
                             const Icon(Icons.error_outline,
                                 size: 48, color: Color(0xffEF4444)),
-                            const SizedBox(height: 12),
+                            SizedBox(height: 12),
                             Text(
                               _error!,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 color: Color(0xff64748B),
-                                fontSize: 14,
+                                fontSize: responsive.bodyFontSize,
                                 fontFamily: 'Golos',
                               ),
                               textAlign: TextAlign.center,
@@ -450,7 +450,7 @@ class _KpiChartState extends State<KpiChart> {
                             const SizedBox(height: 12),
                             TextButton(
                               onPressed: _loadData,
-                              child: const Text('Повторить'),
+                              child: Text('Повторить'),
                             ),
                           ],
                         ),
@@ -530,19 +530,19 @@ class _KpiChartState extends State<KpiChart> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         'Всего задач',
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: responsive.smallFontSize,
                           color: Color(0xff64748B),
                           fontFamily: 'Golos',
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      SizedBox(height: 4),
                       Text(
                         '$_total',
-                        style: const TextStyle(
-                          fontSize: 20,
+                        style: TextStyle(
+                          fontSize: responsive.largeFontSize,
                           fontWeight: FontWeight.w700,
                           color: Color(0xff0F172A),
                           fontFamily: 'Golos',
@@ -553,19 +553,19 @@ class _KpiChartState extends State<KpiChart> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      const Text(
+                      Text(
                         'Выполнено',
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: responsive.smallFontSize,
                           color: Color(0xff64748B),
                           fontFamily: 'Golos',
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      SizedBox(height: 4),
                       Text(
                         '${_completionRate.toStringAsFixed(1)}%',
-                        style: const TextStyle(
-                          fontSize: 20,
+                        style: TextStyle(
+                          fontSize: responsive.largeFontSize,
                           fontWeight: FontWeight.w700,
                           color: Color(0xff0F172A),
                           fontFamily: 'Golos',

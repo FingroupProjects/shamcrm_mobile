@@ -112,14 +112,14 @@ class _ProductsChartState extends State<ProductsChart> {
             children: [
               Text(_title,
                 style: TextStyle(
-                  fontSize: 14,
+                  fontSize: ResponsiveHelper(context).bodyFontSize,
                   fontWeight: FontWeight.w700,
                   color: Color(0xff0F172A),
                   fontFamily: 'Golos',
                 ),
                 maxLines: 2,
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: 12),
               Flexible(
                 child: ListView.separated(
                   shrinkWrap: true,
@@ -131,8 +131,8 @@ class _ProductsChartState extends State<ProductsChart> {
                       contentPadding: EdgeInsets.zero,
                       title: Text(
                         item.name,
-                        style: const TextStyle(
-                          fontSize: 14,
+                        style: TextStyle(
+                          fontSize: ResponsiveHelper(context).bodyFontSize,
                           fontWeight: FontWeight.w600,
                           color: Color(0xff0F172A),
                           fontFamily: 'Golos',
@@ -140,8 +140,8 @@ class _ProductsChartState extends State<ProductsChart> {
                       ),
                       subtitle: Text(
                         'Продано: ${item.totalSold} • Успешные: ${item.successful}',
-                        style: const TextStyle(
-                          fontSize: 12,
+                        style: TextStyle(
+                          fontSize: ResponsiveHelper(context).smallFontSize,
                           color: Color(0xff64748B),
                           fontFamily: 'Golos',
                         ),
@@ -150,8 +150,8 @@ class _ProductsChartState extends State<ProductsChart> {
                         item.revenueFormatted.isNotEmpty
                             ? item.revenueFormatted
                             : item.revenue.toStringAsFixed(0),
-                        style: const TextStyle(
-                          fontSize: 14,
+                        style: TextStyle(
+                          fontSize: ResponsiveHelper(context).bodyFontSize,
                           fontWeight: FontWeight.w600,
                           color: Color(0xffF97316),
                           fontFamily: 'Golos',
@@ -235,7 +235,7 @@ class _ProductsChartState extends State<ProductsChart> {
                     size: 20,
                   ),
                 ),
-                const SizedBox(width: 12),
+                SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     _title,
@@ -277,12 +277,12 @@ class _ProductsChartState extends State<ProductsChart> {
                           children: [
                             const Icon(Icons.error_outline,
                                 size: 48, color: Color(0xffEF4444)),
-                            const SizedBox(height: 12),
+                            SizedBox(height: 12),
                             Text(
                               _error!,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 color: Color(0xff64748B),
-                                fontSize: 14,
+                                fontSize: responsive.bodyFontSize,
                                 fontFamily: 'Golos',
                               ),
                               textAlign: TextAlign.center,
@@ -328,10 +328,10 @@ class _ProductsChartState extends State<ProductsChart> {
                                             displayItems[group.x.toInt()];
                                         return BarTooltipItem(
                                           '${item.name}\n${rod.toY.toInt()} шт',
-                                          const TextStyle(
+                                          TextStyle(
                                             color: Color(0xff0F172A),
                                             fontWeight: FontWeight.w700,
-                                            fontSize: 12,
+                                            fontSize: responsive.smallFontSize,
                                             fontFamily: 'Golos',
                                           ),
                                         );
@@ -356,9 +356,9 @@ class _ProductsChartState extends State<ProductsChart> {
                                                 child: Text(
                                                   _shortName(
                                                       displayItems[index].name),
-                                                  style: const TextStyle(
+                                                  style: TextStyle(
                                                     color: Color(0xff64748B),
-                                                    fontSize: 11,
+                                                    fontSize: responsive.xSmallFontSize,
                                                     fontFamily: 'Golos',
                                                   ),
                                                 ),
@@ -380,9 +380,9 @@ class _ProductsChartState extends State<ProductsChart> {
                                               padding: EdgeInsets.zero,
                                               child: Text(
                                                 value.toInt().toString(),
-                                                style: const TextStyle(
+                                                style: TextStyle(
                                                   color: Color(0xff64748B),
-                                                  fontSize: 12,
+                                                  fontSize: responsive.smallFontSize,
                                                   fontFamily: 'Golos',
                                                 ),
                                               ),
@@ -441,21 +441,21 @@ class _ProductsChartState extends State<ProductsChart> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         'Топ товар',
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: responsive.smallFontSize,
                           color: Color(0xff64748B),
                           fontFamily: 'Golos',
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      SizedBox(height: 4),
                       Text(
                         _data?.top.name.isNotEmpty == true
                             ? _data!.top.name
                             : (_topItems.isNotEmpty ? _topItems.first.name : '-'),
-                        style: const TextStyle(
-                          fontSize: 20,
+                        style: TextStyle(
+                          fontSize: responsive.largeFontSize,
                           fontWeight: FontWeight.w700,
                           color: Color(0xff0F172A),
                           fontFamily: 'Golos',
@@ -466,19 +466,19 @@ class _ProductsChartState extends State<ProductsChart> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      const Text(
+                      Text(
                         'Всего продано',
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: responsive.smallFontSize,
                           color: Color(0xff64748B),
                           fontFamily: 'Golos',
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      SizedBox(height: 4),
                       Text(
                         '${_topItems.isNotEmpty ? _topItems.fold<int>(0, (sum, item) => sum + item.totalSold) : 0} шт',
-                        style: const TextStyle(
-                          fontSize: 20,
+                        style: TextStyle(
+                          fontSize: responsive.largeFontSize,
                           fontWeight: FontWeight.w700,
                           color: Color(0xff0F172A),
                           fontFamily: 'Golos',

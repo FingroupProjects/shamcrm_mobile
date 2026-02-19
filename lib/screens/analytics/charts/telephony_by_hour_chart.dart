@@ -195,7 +195,7 @@ class _TelephonyByHourChartState extends State<TelephonyByHourChart> {
                     child: Text(
                       _title,
                       style: TextStyle(
-                        fontSize: 18,
+                        fontSize: ResponsiveHelper(context).titleFontSize,
                         fontWeight: FontWeight.w700,
                         color: Color(0xff0F172A),
                         fontFamily: 'Golos',
@@ -211,7 +211,7 @@ class _TelephonyByHourChartState extends State<TelephonyByHourChart> {
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: 12),
               Flexible(
                 child: ListView.separated(
                   shrinkWrap: true,
@@ -223,8 +223,8 @@ class _TelephonyByHourChartState extends State<TelephonyByHourChart> {
                       contentPadding: EdgeInsets.zero,
                       title: Text(
                         item.hour,
-                        style: const TextStyle(
-                          fontSize: 14,
+                        style: TextStyle(
+                          fontSize: ResponsiveHelper(context).bodyFontSize,
                           fontWeight: FontWeight.w600,
                           color: Color(0xff0F172A),
                           fontFamily: 'Golos',
@@ -232,16 +232,16 @@ class _TelephonyByHourChartState extends State<TelephonyByHourChart> {
                       ),
                       subtitle: Text(
                         'Вход: ${item.incoming}, Исход: ${item.outgoing}, Пропущ: ${item.missed}',
-                        style: const TextStyle(
-                          fontSize: 12,
+                        style: TextStyle(
+                          fontSize: ResponsiveHelper(context).smallFontSize,
                           color: Color(0xff64748B),
                           fontFamily: 'Golos',
                         ),
                       ),
                       trailing: Text(
                         'Всего: ${item.total}',
-                        style: const TextStyle(
-                          fontSize: 12,
+                        style: TextStyle(
+                          fontSize: ResponsiveHelper(context).smallFontSize,
                           fontWeight: FontWeight.w600,
                           color: Color(0xff0EA5E9),
                           fontFamily: 'Golos',
@@ -321,12 +321,15 @@ class _TelephonyByHourChartState extends State<TelephonyByHourChart> {
     final displayItems = isEmpty ? _previewHours : items;
     final maxValue = displayItems.isEmpty
         ? 1.0
-        : displayItems.map((e) {
-            final incoming = _showIncoming ? e.incoming : 0;
-            final outgoing = _showOutgoing ? e.outgoing : 0;
-            final missed = _showMissed ? e.missed : 0;
-            return incoming + outgoing + missed;
-          }).reduce((a, b) => a > b ? a : b).toDouble();
+        : displayItems
+            .map((e) {
+              final incoming = _showIncoming ? e.incoming : 0;
+              final outgoing = _showOutgoing ? e.outgoing : 0;
+              final missed = _showMissed ? e.missed : 0;
+              return incoming + outgoing + missed;
+            })
+            .reduce((a, b) => a > b ? a : b)
+            .toDouble();
     final safeMaxY = maxValue <= 0 ? 1.0 : maxValue * 1.2;
     final selectedDateLabel = DateFormat('dd/MM/yyyy').format(_selectedDate);
     final isCompact = MediaQuery.of(context).size.width < 420;
@@ -365,7 +368,8 @@ class _TelephonyByHourChartState extends State<TelephonyByHourChart> {
                         borderRadius: BorderRadius.circular(10),
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xff0EA5E9).withValues(alpha: 0.3),
+                            color:
+                                const Color(0xff0EA5E9).withValues(alpha: 0.3),
                             blurRadius: 8,
                             offset: const Offset(0, 4),
                           ),
@@ -377,7 +381,7 @@ class _TelephonyByHourChartState extends State<TelephonyByHourChart> {
                         size: 20,
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    SizedBox(width: 12),
                     Expanded(
                       child: Text(
                         _title,
@@ -394,7 +398,8 @@ class _TelephonyByHourChartState extends State<TelephonyByHourChart> {
                     const SizedBox(width: 8),
                     IconButton(
                       onPressed: _showDetails,
-                      icon: const Icon(Icons.crop_free, color: Color(0xff64748B), size: 22),
+                      icon: const Icon(Icons.crop_free,
+                          color: Color(0xff64748B), size: 22),
                       style: IconButton.styleFrom(
                         backgroundColor: Color(0xffF1F5F9),
                         minimumSize: Size(40, 40),
@@ -430,7 +435,7 @@ class _TelephonyByHourChartState extends State<TelephonyByHourChart> {
                             size: 16,
                             color: Color(0xff64748B),
                           ),
-                          const SizedBox(width: 6),
+                          SizedBox(width: 6),
                           Text(
                             selectedDateLabel,
                             style: TextStyle(
@@ -490,8 +495,8 @@ class _TelephonyByHourChartState extends State<TelephonyByHourChart> {
                                     getTitlesWidget: (value, meta) {
                                       return Text(
                                         value.toInt().toString(),
-                                        style: const TextStyle(
-                                          fontSize: 10,
+                                        style: TextStyle(
+                                          fontSize: responsive.xSmallFontSize,
                                           color: Color(0xff64748B),
                                           fontFamily: 'Golos',
                                         ),
@@ -515,8 +520,8 @@ class _TelephonyByHourChartState extends State<TelephonyByHourChart> {
                                         padding: const EdgeInsets.only(top: 6),
                                         child: Text(
                                           displayItems[index].hour,
-                                          style: const TextStyle(
-                                            fontSize: 9,
+                                          style: TextStyle(
+                                            fontSize: responsive.xSmallFontSize,
                                             color: Color(0xff64748B),
                                             fontFamily: 'Golos',
                                           ),
@@ -556,13 +561,15 @@ class _TelephonyByHourChartState extends State<TelephonyByHourChart> {
                         color: const Color(0xff10B981),
                         label: 'Входящие',
                         enabled: _showIncoming,
-                        onTap: () => setState(() => _showIncoming = !_showIncoming),
+                        onTap: () =>
+                            setState(() => _showIncoming = !_showIncoming),
                       ),
                       _LegendToggle(
                         color: const Color(0xff22B3D6),
                         label: 'Исходящие',
                         enabled: _showOutgoing,
-                        onTap: () => setState(() => _showOutgoing = !_showOutgoing),
+                        onTap: () =>
+                            setState(() => _showOutgoing = !_showOutgoing),
                       ),
                       _LegendToggle(
                         color: const Color(0xffEF4444),
@@ -575,8 +582,8 @@ class _TelephonyByHourChartState extends State<TelephonyByHourChart> {
 
                   final peakText = Text(
                     'Пик: ${_data!.peakHour ?? '-'}',
-                    style: const TextStyle(
-                      fontSize: 12,
+                    style: TextStyle(
+                      fontSize: responsive.smallFontSize,
                       fontWeight: FontWeight.w600,
                       color: Color(0xff64748B),
                       fontFamily: 'Golos',
@@ -640,12 +647,13 @@ class _LegendToggle extends StatelessWidget {
             height: 12,
             decoration: BoxDecoration(color: baseColor, shape: BoxShape.circle),
           ),
-          const SizedBox(width: 6),
+          SizedBox(width: 6),
           Text(
             label,
             style: TextStyle(
-              fontSize: 12,
-              color: enabled ? const Color(0xff64748B) : const Color(0xff94A3B8),
+              fontSize: ResponsiveHelper(context).smallFontSize,
+              color:
+                  enabled ? const Color(0xff64748B) : const Color(0xff94A3B8),
               fontFamily: 'Golos',
             ),
           ),

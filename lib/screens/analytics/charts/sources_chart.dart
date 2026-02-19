@@ -105,7 +105,7 @@ class _SourcesChartState extends State<SourcesChart> {
             children: [
               Text(_title,
                 style: TextStyle(
-                  fontSize: 18,
+                  fontSize: ResponsiveHelper(context).titleFontSize,
                   fontWeight: FontWeight.w700,
                   color: Color(0xff0F172A),
                   fontFamily: 'Golos',
@@ -133,8 +133,8 @@ class _SourcesChartState extends State<SourcesChart> {
                       ),
                       title: Text(
                         channel.name,
-                        style: const TextStyle(
-                          fontSize: 14,
+                        style: TextStyle(
+                          fontSize: ResponsiveHelper(context).bodyFontSize,
                           fontWeight: FontWeight.w600,
                           color: Color(0xff0F172A),
                           fontFamily: 'Golos',
@@ -142,8 +142,8 @@ class _SourcesChartState extends State<SourcesChart> {
                       ),
                       trailing: Text(
                         '${channel.count} (${percent.toStringAsFixed(2)}%)',
-                        style: const TextStyle(
-                          fontSize: 14,
+                        style: TextStyle(
+                          fontSize: ResponsiveHelper(context).bodyFontSize,
                           fontWeight: FontWeight.w600,
                           color: Color(0xff64748B),
                           fontFamily: 'Golos',
@@ -262,25 +262,25 @@ class _SourcesChartState extends State<SourcesChart> {
                     shape: BoxShape.circle,
                   ),
                 ),
-                const SizedBox(width: 8),
+                SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     _truncateCalloutLabel(selected.name),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 12,
+                    style: TextStyle(
+                      fontSize: ResponsiveHelper(context).smallFontSize,
                       fontWeight: FontWeight.w600,
                       color: Color(0xff334155),
                       fontFamily: 'Golos',
                     ),
                   ),
                 ),
-                const SizedBox(width: 8),
+                SizedBox(width: 8),
                 Text(
                   '${selected.count}',
                   style: TextStyle(
-                    fontSize: 13,
+                    fontSize: ResponsiveHelper(context).captionFontSize,
                     fontWeight: FontWeight.w700,
                     color: color,
                     fontFamily: 'Golos',
@@ -344,7 +344,7 @@ class _SourcesChartState extends State<SourcesChart> {
                     size: 20,
                   ),
                 ),
-                const SizedBox(width: 12),
+                SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     _title,
@@ -358,7 +358,7 @@ class _SourcesChartState extends State<SourcesChart> {
                 ),
                 IconButton(
                   onPressed: _showDetails,
-                  icon: const Icon(Icons.crop_free, color: Color(0xff64748B), size: 22),
+                  icon: Icon(Icons.crop_free, color: Color(0xff64748B), size: 22),
                   style: IconButton.styleFrom(
                     backgroundColor: Color(0xffF1F5F9),
                     minimumSize: Size(44, 44),
@@ -383,12 +383,12 @@ class _SourcesChartState extends State<SourcesChart> {
                           children: [
                             const Icon(Icons.error_outline,
                                 size: 48, color: Color(0xffEF4444)),
-                            const SizedBox(height: 12),
+                            SizedBox(height: 12),
                             Text(
                               _error!,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 color: Color(0xff64748B),
-                                fontSize: 14,
+                                fontSize: responsive.bodyFontSize,
                                 fontFamily: 'Golos',
                               ),
                               textAlign: TextAlign.center,
@@ -396,7 +396,7 @@ class _SourcesChartState extends State<SourcesChart> {
                             const SizedBox(height: 12),
                             TextButton(
                               onPressed: _loadData,
-                              child: const Text('Повторить'),
+                              child: Text('Повторить'),
                             ),
                           ],
                         ),
@@ -478,21 +478,21 @@ class _SourcesChartState extends State<SourcesChart> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         'Топ источник',
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: responsive.smallFontSize,
                           color: Color(0xff64748B),
                           fontFamily: 'Golos',
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      SizedBox(height: 4),
                       Text(
                         _bestSource.isNotEmpty
                             ? _bestSource
                             : (_channels.isNotEmpty ? _channels.first.name : '-'),
-                        style: const TextStyle(
-                          fontSize: 20,
+                        style: TextStyle(
+                          fontSize: responsive.largeFontSize,
                           fontWeight: FontWeight.w700,
                           color: Color(0xff0F172A),
                           fontFamily: 'Golos',
@@ -503,19 +503,19 @@ class _SourcesChartState extends State<SourcesChart> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      const Text(
+                      Text(
                         'Всего источников',
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: responsive.smallFontSize,
                           color: Color(0xff64748B),
                           fontFamily: 'Golos',
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      SizedBox(height: 4),
                       Text(
                         '$_totalSources',
-                        style: const TextStyle(
-                          fontSize: 20,
+                        style: TextStyle(
+                          fontSize: responsive.largeFontSize,
                           fontWeight: FontWeight.w700,
                           color: Color(0xff0F172A),
                           fontFamily: 'Golos',

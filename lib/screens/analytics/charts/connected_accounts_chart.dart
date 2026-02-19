@@ -123,7 +123,7 @@ class _ConnectedAccountsChartState extends State<ConnectedAccountsChart> {
                     child: Text(
                       _title,
                       style: TextStyle(
-                        fontSize: 18,
+                        fontSize: ResponsiveHelper(context).titleFontSize,
                         fontWeight: FontWeight.w700,
                         color: Color(0xff0F172A),
                         fontFamily: 'Golos',
@@ -139,7 +139,7 @@ class _ConnectedAccountsChartState extends State<ConnectedAccountsChart> {
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: 12),
               Flexible(
                 child: ListView.separated(
                   shrinkWrap: true,
@@ -151,8 +151,8 @@ class _ConnectedAccountsChartState extends State<ConnectedAccountsChart> {
                       contentPadding: EdgeInsets.zero,
                       title: Text(
                         item.displayName,
-                        style: const TextStyle(
-                          fontSize: 14,
+                        style: TextStyle(
+                          fontSize: ResponsiveHelper(context).bodyFontSize,
                           fontWeight: FontWeight.w600,
                           color: Color(0xff0F172A),
                           fontFamily: 'Golos',
@@ -160,16 +160,16 @@ class _ConnectedAccountsChartState extends State<ConnectedAccountsChart> {
                       ),
                       subtitle: Text(
                         'Ответов: ${item.answered} / Без ответа: ${item.unanswered}',
-                        style: const TextStyle(
-                          fontSize: 12,
+                        style: TextStyle(
+                          fontSize: ResponsiveHelper(context).smallFontSize,
                           color: Color(0xff64748B),
                           fontFamily: 'Golos',
                         ),
                       ),
                       trailing: Text(
                         'Чатов: ${item.totalChats}',
-                        style: const TextStyle(
-                          fontSize: 12,
+                        style: TextStyle(
+                          fontSize: ResponsiveHelper(context).smallFontSize,
                           fontWeight: FontWeight.w600,
                           color: Color(0xff25D366),
                           fontFamily: 'Golos',
@@ -265,7 +265,7 @@ class _ConnectedAccountsChartState extends State<ConnectedAccountsChart> {
                     size: 20,
                   ),
                 ),
-                const SizedBox(width: 12),
+                SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     _title,
@@ -279,7 +279,7 @@ class _ConnectedAccountsChartState extends State<ConnectedAccountsChart> {
                 ),
                 IconButton(
                   onPressed: _showDetails,
-                  icon: const Icon(Icons.crop_free, color: Color(0xff64748B), size: 22),
+                  icon: Icon(Icons.crop_free, color: Color(0xff64748B), size: 22),
                   style: IconButton.styleFrom(
                     backgroundColor: Color(0xffF1F5F9),
                     minimumSize: Size(44, 44),
@@ -337,10 +337,10 @@ class _ConnectedAccountsChartState extends State<ConnectedAccountsChart> {
                                           displayAccounts[group.x.toInt()];
                                       return BarTooltipItem(
                                         '${_shortLabel(item.displayName)}\nЧаты: ${rod.toY.toInt()}',
-                                        const TextStyle(
+                                        TextStyle(
                                           color: Color(0xff0F172A),
                                           fontWeight: FontWeight.w700,
-                                          fontSize: 12,
+                                          fontSize: responsive.smallFontSize,
                                           fontFamily: 'Golos',
                                         ),
                                       );
@@ -368,8 +368,8 @@ class _ConnectedAccountsChartState extends State<ConnectedAccountsChart> {
                                         quarterTurns: 3,
                                         child: Text(
                                           value.toInt().toString(),
-                                          style: const TextStyle(
-                                            fontSize: 10,
+                                          style: TextStyle(
+                                            fontSize: responsive.xSmallFontSize,
                                             color: Color(0xff64748B),
                                             fontFamily: 'Golos',
                                           ),
@@ -400,8 +400,8 @@ class _ConnectedAccountsChartState extends State<ConnectedAccountsChart> {
                                               _shortLabel(
                                                   displayAccounts[index]
                                                       .displayName),
-                                              style: const TextStyle(
-                                                fontSize: 10,
+                                              style: TextStyle(
+                                                fontSize: responsive.xSmallFontSize,
                                                 color: Color(0xff64748B),
                                                 fontFamily: 'Golos',
                                               ),
@@ -436,8 +436,8 @@ class _ConnectedAccountsChartState extends State<ConnectedAccountsChart> {
               ),
               child: Text(
                 'Всего: ${_data!.totals.totalAccounts} / Активных: ${_data!.totals.activeAccounts}',
-                style: const TextStyle(
-                  fontSize: 12,
+                style: TextStyle(
+                  fontSize: responsive.smallFontSize,
                   fontWeight: FontWeight.w600,
                   color: Color(0xff64748B),
                   fontFamily: 'Golos',

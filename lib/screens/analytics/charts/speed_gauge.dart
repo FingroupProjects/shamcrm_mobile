@@ -94,21 +94,22 @@ class _SpeedGaugeState extends State<SpeedGauge>
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(_title,
+              Text(
+                _title,
                 style: TextStyle(
-                  fontSize: 18,
+                  fontSize: ResponsiveHelper(context).titleFontSize,
                   fontWeight: FontWeight.w700,
                   color: Color(0xff0F172A),
                   fontFamily: 'Golos',
                 ),
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: 12),
               ListTile(
                 contentPadding: EdgeInsets.zero,
-                title: const Text(
+                title: Text(
                   'Среднее время',
                   style: TextStyle(
-                    fontSize: 14,
+                    fontSize: ResponsiveHelper(context).bodyFontSize,
                     fontWeight: FontWeight.w600,
                     color: Color(0xff0F172A),
                     fontFamily: 'Golos',
@@ -116,8 +117,8 @@ class _SpeedGaugeState extends State<SpeedGauge>
                 ),
                 trailing: Text(
                   _speedLabel,
-                  style: const TextStyle(
-                    fontSize: 14,
+                  style: TextStyle(
+                    fontSize: ResponsiveHelper(context).bodyFontSize,
                     fontWeight: FontWeight.w600,
                     color: Color(0xffEC4899),
                     fontFamily: 'Golos',
@@ -195,7 +196,7 @@ class _SpeedGaugeState extends State<SpeedGauge>
                     size: 18,
                   ),
                 ),
-                const SizedBox(width: 12),
+                SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     _title,
@@ -209,7 +210,8 @@ class _SpeedGaugeState extends State<SpeedGauge>
                 ),
                 IconButton(
                   onPressed: _showDetails,
-                  icon: const Icon(Icons.crop_free, color: Color(0xff64748B), size: 22),
+                  icon: Icon(Icons.crop_free,
+                      color: Color(0xff64748B), size: 22),
                   style: IconButton.styleFrom(
                     backgroundColor: Color(0xffF1F5F9),
                     minimumSize: Size(44, 44),
@@ -234,12 +236,12 @@ class _SpeedGaugeState extends State<SpeedGauge>
                           children: [
                             const Icon(Icons.error_outline,
                                 size: 48, color: Color(0xffEF4444)),
-                            const SizedBox(height: 12),
+                            SizedBox(height: 12),
                             Text(
                               _error!,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 color: Color(0xff64748B),
-                                fontSize: 14,
+                                fontSize: responsive.bodyFontSize,
                                 fontFamily: 'Golos',
                               ),
                               textAlign: TextAlign.center,
@@ -247,7 +249,7 @@ class _SpeedGaugeState extends State<SpeedGauge>
                             const SizedBox(height: 12),
                             TextButton(
                               onPressed: _loadData,
-                              child: const Text('Повторить'),
+                              child: Text('Повторить'),
                             ),
                           ],
                         ),
@@ -267,8 +269,8 @@ class _SpeedGaugeState extends State<SpeedGauge>
                                 return AnimatedBuilder(
                                   animation: _needleAnimation,
                                   builder: (context, child) {
-                                    final animatedSpeed =
-                                        displaySpeedHours * _needleAnimation.value;
+                                    final animatedSpeed = displaySpeedHours *
+                                        _needleAnimation.value;
                                     return Stack(
                                       children: [
                                         CustomPaint(
@@ -276,6 +278,8 @@ class _SpeedGaugeState extends State<SpeedGauge>
                                           painter: SpeedGaugePainter(
                                             speedHours: animatedSpeed,
                                             maxHours: maxHours,
+                                            labelFontSize:
+                                                responsive.smallFontSize,
                                           ),
                                         ),
                                         Positioned(
@@ -285,8 +289,9 @@ class _SpeedGaugeState extends State<SpeedGauge>
                                           child: Center(
                                             child: Text(
                                               displaySpeedLabel,
-                                              style: const TextStyle(
-                                                fontSize: 28,
+                                              style: TextStyle(
+                                                fontSize:
+                                                    responsive.largeFontSize,
                                                 fontWeight: FontWeight.w700,
                                                 color: Color(0xff22C55E),
                                                 fontFamily: 'Golos',
@@ -313,8 +318,10 @@ class _SpeedGaugeState extends State<SpeedGauge>
 class SpeedGaugePainter extends CustomPainter {
   final double speedHours;
   final double maxHours;
+  final double labelFontSize;
 
-  SpeedGaugePainter({required this.speedHours, this.maxHours = 10});
+  SpeedGaugePainter(
+      {required this.speedHours, this.maxHours = 10, this.labelFontSize = 12});
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -399,8 +406,8 @@ class SpeedGaugePainter extends CustomPainter {
       );
     }
 
-    final labelStyle = const TextStyle(
-      fontSize: 12,
+    final labelStyle = TextStyle(
+      fontSize: labelFontSize,
       fontWeight: FontWeight.w600,
       color: Color(0xff94A3B8),
       fontFamily: 'Golos',

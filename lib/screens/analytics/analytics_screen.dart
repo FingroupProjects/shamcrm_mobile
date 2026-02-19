@@ -87,11 +87,32 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     super.initState();
     _lastFilterTrigger = widget.filterTrigger;
     _selectedPeriodKey = _defaultPeriodKey;
-    ApiService.setAnalyticsFilters({
-      'period': _defaultPeriodKey,
-    });
+    _initializeDefaultFilters();
     _loadStats();
     _loadDashboardSettings();
+  }
+
+  Future<void> _initializeDefaultFilters() async {
+    final apiService = ApiService();
+    final organizationId = await apiService.getSelectedOrganization() ?? '1';
+    final salesFunnelId = await apiService.getSelectedSalesFunnel();
+
+    if (salesFunnelId != null && salesFunnelId.isNotEmpty && mounted) {
+      setState(() {
+        _selectedFunnelIds = [salesFunnelId];
+      });
+    }
+
+    final payload = <String, dynamic>{
+      'organization_id': organizationId,
+      'period': _defaultPeriodKey,
+      if (salesFunnelId != null && salesFunnelId.isNotEmpty)
+        'sales_funnel_id': salesFunnelId,
+      if (salesFunnelId != null && salesFunnelId.isNotEmpty)
+        'salesFunnels': [salesFunnelId],
+    };
+
+    ApiService.setAnalyticsFilters(payload);
   }
 
   @override
@@ -307,34 +328,36 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       Widget? chartWidget;
       switch (canonicalKey) {
         case 'conversion':
-          chartWidget =
-              ConversionChart(key: ValueKey('conversion_$_chartsVersion'), title: title);
+          chartWidget = ConversionChart(
+              key: ValueKey('conversion_$_chartsVersion'), title: title);
           break;
         case 'lead_sources':
-          chartWidget =
-              SourcesChart(key: ValueKey('sources_$_chartsVersion'), title: title);
+          chartWidget = SourcesChart(
+              key: ValueKey('sources_$_chartsVersion'), title: title);
           break;
         case 'manager_deals':
-          chartWidget =
-              ManagersChart(key: ValueKey('managers_$_chartsVersion'), title: title);
+          chartWidget = ManagersChart(
+              key: ValueKey('managers_$_chartsVersion'), title: title);
           break;
         case 'speed_chart':
           chartWidget =
               SpeedGauge(key: ValueKey('speed_$_chartsVersion'), title: title);
           break;
         case 'achieving_goals':
-          chartWidget = GoalsChart(key: ValueKey('goals_$_chartsVersion'), title: title);
+          chartWidget =
+              GoalsChart(key: ValueKey('goals_$_chartsVersion'), title: title);
           break;
         case 'achieving_tasks':
-          chartWidget = KpiChart(key: ValueKey('kpi_$_chartsVersion'), title: title);
+          chartWidget =
+              KpiChart(key: ValueKey('kpi_$_chartsVersion'), title: title);
           break;
         case 'online_store_orders':
-          chartWidget =
-              OrdersChart(key: ValueKey('orders_$_chartsVersion'), title: title);
+          chartWidget = OrdersChart(
+              key: ValueKey('orders_$_chartsVersion'), title: title);
           break;
         case 'top_selling_products':
-          chartWidget =
-              ProductsChart(key: ValueKey('products_$_chartsVersion'), title: title);
+          chartWidget = ProductsChart(
+              key: ValueKey('products_$_chartsVersion'), title: title);
           break;
         case 'telephony_and_events':
           chartWidget = TelephonyEventsChart(
@@ -367,8 +390,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
           );
           break;
         case 'advertising_effectiveness':
-          chartWidget =
-              AdvertisingRoiChart(key: ValueKey('roi_$_chartsVersion'), title: title);
+          chartWidget = AdvertisingRoiChart(
+              key: ValueKey('roi_$_chartsVersion'), title: title);
           break;
         case 'conversion_by_statuses':
           chartWidget = LeadConversionStatusesChart(
@@ -522,38 +545,45 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                           children: _hasLoadedStatsOnce
                               ? [
                                   AnalyticsStatCard(
-                                    title: localizations?.translate('stat_total_leads') ??
+                                    title: localizations
+                                            ?.translate('stat_total_leads') ??
                                         'Всего лидов',
                                     value: _totalLeads,
-                                    change: '${_leadsChange.toStringAsFixed(2)}%',
+                                    change:
+                                        '${_leadsChange.toStringAsFixed(2)}%',
                                     isPositive: _leadsChange >= 0,
                                     icon: Icons.people_outline,
                                     iconColor: const Color(0xff6366F1),
                                   ),
                                   AnalyticsStatCard(
-                                    title: localizations?.translate('stat_closed_deals') ??
+                                    title: localizations
+                                            ?.translate('stat_closed_deals') ??
                                         'Закрытых сделок',
                                     value: _closedDeals,
-                                    change: '${_dealsChange.toStringAsFixed(2)}%',
+                                    change:
+                                        '${_dealsChange.toStringAsFixed(2)}%',
                                     isPositive: _dealsChange >= 0,
                                     icon: Icons.handshake_outlined,
                                     iconColor: const Color(0xff10B981),
                                   ),
                                   AnalyticsStatCard(
-                                    title: localizations?.translate('stat_total_revenue') ??
+                                    title: localizations
+                                            ?.translate('stat_total_revenue') ??
                                         'Общая выручка',
                                     value: _totalRevenue,
-                                    change: '${_revenueChange.toStringAsFixed(2)}%',
+                                    change:
+                                        '${_revenueChange.toStringAsFixed(2)}%',
                                     isPositive: _revenueChange >= 0,
                                     icon: Icons.attach_money,
                                     iconColor: const Color(0xffF59E0B),
                                   ),
                                   AnalyticsStatCard(
-                                    title:
-                                        localizations?.translate('stat_conversion') ??
-                                            'Конверсия',
+                                    title: localizations
+                                            ?.translate('stat_conversion') ??
+                                        'Конверсия',
                                     value: _conversionRate,
-                                    change: '${_conversionChange.toStringAsFixed(2)}%',
+                                    change:
+                                        '${_conversionChange.toStringAsFixed(2)}%',
                                     isPositive: _conversionChange >= 0,
                                     icon: Icons.trending_up,
                                     iconColor: const Color(0xffEC4899),

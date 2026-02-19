@@ -102,7 +102,7 @@ class _TaskStatsByProjectChartState extends State<TaskStatsByProjectChart> {
                     child: Text(
                       _title,
                       style: TextStyle(
-                        fontSize: 18,
+                        fontSize: ResponsiveHelper(context).titleFontSize,
                         fontWeight: FontWeight.w700,
                         color: Color(0xff0F172A),
                         fontFamily: 'Golos',
@@ -118,7 +118,7 @@ class _TaskStatsByProjectChartState extends State<TaskStatsByProjectChart> {
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: 12),
               Flexible(
                 child: ListView.separated(
                   shrinkWrap: true,
@@ -130,8 +130,8 @@ class _TaskStatsByProjectChartState extends State<TaskStatsByProjectChart> {
                       contentPadding: EdgeInsets.zero,
                       title: Text(
                         item.projectName,
-                        style: const TextStyle(
-                          fontSize: 14,
+                        style: TextStyle(
+                          fontSize: ResponsiveHelper(context).bodyFontSize,
                           fontWeight: FontWeight.w600,
                           color: Color(0xff0F172A),
                           fontFamily: 'Golos',
@@ -139,8 +139,8 @@ class _TaskStatsByProjectChartState extends State<TaskStatsByProjectChart> {
                       ),
                       trailing: Text(
                         item.totalTasks.toString(),
-                        style: const TextStyle(
-                          fontSize: 12,
+                        style: TextStyle(
+                          fontSize: ResponsiveHelper(context).smallFontSize,
                           fontWeight: FontWeight.w600,
                           color: Color(0xffEF4444),
                           fontFamily: 'Golos',
@@ -231,7 +231,7 @@ class _TaskStatsByProjectChartState extends State<TaskStatsByProjectChart> {
                     size: 20,
                   ),
                 ),
-                const SizedBox(width: 12),
+                SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     _title,
@@ -245,7 +245,7 @@ class _TaskStatsByProjectChartState extends State<TaskStatsByProjectChart> {
                 ),
                 IconButton(
                   onPressed: _showDetails,
-                  icon: const Icon(Icons.crop_free, color: Color(0xff64748B), size: 22),
+                  icon: Icon(Icons.crop_free, color: Color(0xff64748B), size: 22),
                   style: IconButton.styleFrom(
                     backgroundColor: Color(0xffF1F5F9),
                     minimumSize: Size(44, 44),
@@ -303,8 +303,8 @@ class _TaskStatsByProjectChartState extends State<TaskStatsByProjectChart> {
                                           quarterTurns: 3,
                                           child: Text(
                                             value.toInt().toString(),
-                                            style: const TextStyle(
-                                              fontSize: 10,
+                                            style: TextStyle(
+                                              fontSize: responsive.xSmallFontSize,
                                               color: Color(0xff64748B),
                                               fontFamily: 'Golos',
                                             ),
@@ -331,8 +331,8 @@ class _TaskStatsByProjectChartState extends State<TaskStatsByProjectChart> {
                                             child: Text(
                                               displayProjects[index]
                                                   .projectName,
-                                              style: const TextStyle(
-                                                fontSize: 9,
+                                              style: TextStyle(
+                                                fontSize: responsive.xSmallFontSize,
                                                 color: Color(0xff64748B),
                                                 fontFamily: 'Golos',
                                               ),

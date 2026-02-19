@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
-/// Helper class for responsive design calculations
+/// Helper class for responsive design calculations.
+/// Uses percentage of screen width for smooth font scaling across all devices.
 class ResponsiveHelper {
   final BuildContext context;
 
@@ -29,11 +30,30 @@ class ResponsiveHelper {
   double get borderRadius => isTablet ? 20.0 : (isSmallPhone ? 12.0 : 16.0);
   double get smallBorderRadius => isTablet ? 12.0 : (isSmallPhone ? 8.0 : 10.0);
 
-  // Adaptive font sizes
-  double get titleFontSize => isTablet ? 22.0 : (isSmallPhone ? 16.0 : 18.0);
-  double get bodyFontSize => isTablet ? 16.0 : (isSmallPhone ? 13.0 : 14.0);
-  double get smallFontSize => isTablet ? 14.0 : (isSmallPhone ? 11.0 : 12.0);
-  double get largeFontSize => isTablet ? 28.0 : (isSmallPhone ? 20.0 : 24.0);
+  // ─── Adaptive font sizes (percentage of screen width with clamp) ───
+  // heroFontSize:     ~34-38 on large → ~26-28 on small (for big numbers)
+  double get heroFontSize => (screenWidth * 0.084).clamp(26.0, 40.0);
+
+  // largeFontSize:    ~20-24 on large → ~18 on small
+  double get largeFontSize => (screenWidth * 0.05).clamp(18.0, 28.0);
+
+  // titleFontSize:    ~18 on large → ~15 on small
+  double get titleFontSize => (screenWidth * 0.042).clamp(14.0, 22.0);
+
+  // subtitleFontSize: ~16 on large → ~14 on small
+  double get subtitleFontSize => (screenWidth * 0.038).clamp(13.0, 18.0);
+
+  // bodyFontSize:     ~14 on large → ~12 on small
+  double get bodyFontSize => (screenWidth * 0.033).clamp(11.0, 16.0);
+
+  // captionFontSize:  ~13 on large → ~11 on small
+  double get captionFontSize => (screenWidth * 0.031).clamp(10.0, 15.0);
+
+  // smallFontSize:    ~12 on large → ~10 on small
+  double get smallFontSize => (screenWidth * 0.028).clamp(9.0, 14.0);
+
+  // xSmallFontSize:   ~10-11 on large → ~9 on small
+  double get xSmallFontSize => (screenWidth * 0.025).clamp(8.0, 13.0);
 
   // Chart specific heights
   double get chartHeight => isTablet ? 350.0 : (isSmallPhone ? 250.0 : 300.0);

@@ -95,15 +95,16 @@ class _GoalsChartState extends State<GoalsChart> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(_title,
+              Text(
+                _title,
                 style: TextStyle(
-                  fontSize: 18,
+                  fontSize: ResponsiveHelper(context).titleFontSize,
                   fontWeight: FontWeight.w700,
                   color: Color(0xff0F172A),
                   fontFamily: 'Golos',
                 ),
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: 12),
               Flexible(
                 child: ListView.separated(
                   shrinkWrap: true,
@@ -116,8 +117,8 @@ class _GoalsChartState extends State<GoalsChart> {
                       dense: true,
                       title: Text(
                         goal.name,
-                        style: const TextStyle(
-                          fontSize: 14,
+                        style: TextStyle(
+                          fontSize: ResponsiveHelper(context).bodyFontSize,
                           fontWeight: FontWeight.w600,
                           color: Color(0xff0F172A),
                           fontFamily: 'Golos',
@@ -127,7 +128,7 @@ class _GoalsChartState extends State<GoalsChart> {
                       trailing: Text(
                         '${goal.finishedTasksPercent.toStringAsFixed(1)}%',
                         style: TextStyle(
-                          fontSize: 14,
+                          fontSize: ResponsiveHelper(context).bodyFontSize,
                           fontWeight: FontWeight.w600,
                           color: _colorForPercent(goal.finishedTasksPercent),
                           fontFamily: 'Golos',
@@ -163,8 +164,8 @@ class _GoalsChartState extends State<GoalsChart> {
   @override
   Widget build(BuildContext context) {
     final responsive = ResponsiveHelper(context);
-    final isEmpty = _goals.isEmpty ||
-        _goals.every((g) => g.finishedTasksPercent == 0);
+    final isEmpty =
+        _goals.isEmpty || _goals.every((g) => g.finishedTasksPercent == 0);
     final displayGoals = isEmpty ? _previewGoals : _goals;
 
     return Container(
@@ -210,7 +211,7 @@ class _GoalsChartState extends State<GoalsChart> {
                     size: 20,
                   ),
                 ),
-                const SizedBox(width: 12),
+                SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     _title,
@@ -224,7 +225,8 @@ class _GoalsChartState extends State<GoalsChart> {
                 ),
                 IconButton(
                   onPressed: _showDetails,
-                  icon: const Icon(Icons.crop_free, color: Color(0xff64748B), size: 22),
+                  icon:
+                      Icon(Icons.crop_free, color: Color(0xff64748B), size: 22),
                   style: IconButton.styleFrom(
                     backgroundColor: Color(0xffF1F5F9),
                     minimumSize: Size(44, 44),
@@ -249,12 +251,12 @@ class _GoalsChartState extends State<GoalsChart> {
                           children: [
                             const Icon(Icons.error_outline,
                                 size: 48, color: Color(0xffEF4444)),
-                            const SizedBox(height: 12),
+                            SizedBox(height: 12),
                             Text(
                               _error!,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 color: Color(0xff64748B),
-                                fontSize: 14,
+                                fontSize: responsive.bodyFontSize,
                                 fontFamily: 'Golos',
                               ),
                               textAlign: TextAlign.center,
@@ -262,7 +264,7 @@ class _GoalsChartState extends State<GoalsChart> {
                             const SizedBox(height: 12),
                             TextButton(
                               onPressed: _loadData,
-                              child: const Text('Повторить'),
+                              child: Text('Повторить'),
                             ),
                           ],
                         ),
@@ -304,19 +306,19 @@ class _GoalsChartState extends State<GoalsChart> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         'Всего сотрудников',
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: responsive.smallFontSize,
                           color: Color(0xff64748B),
                           fontFamily: 'Golos',
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      SizedBox(height: 4),
                       Text(
                         '${_goals.length}',
-                        style: const TextStyle(
-                          fontSize: 20,
+                        style: TextStyle(
+                          fontSize: responsive.largeFontSize,
                           fontWeight: FontWeight.w700,
                           color: Color(0xff0F172A),
                           fontFamily: 'Golos',
@@ -327,19 +329,19 @@ class _GoalsChartState extends State<GoalsChart> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      const Text(
+                      Text(
                         'Средний процент',
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: responsive.smallFontSize,
                           color: Color(0xff64748B),
                           fontFamily: 'Golos',
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      SizedBox(height: 4),
                       Text(
                         '${_averageKpi.toStringAsFixed(0)}%',
-                        style: const TextStyle(
-                          fontSize: 20,
+                        style: TextStyle(
+                          fontSize: responsive.largeFontSize,
                           fontWeight: FontWeight.w700,
                           color: Color(0xff0F172A),
                           fontFamily: 'Golos',
@@ -370,8 +372,8 @@ class _GoalsChartState extends State<GoalsChart> {
                   goal.name,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 14,
+                  style: TextStyle(
+                    fontSize: ResponsiveHelper(context).bodyFontSize,
                     fontWeight: FontWeight.w600,
                     color: Color(0xff0F172A),
                     fontFamily: 'Golos',
@@ -382,7 +384,7 @@ class _GoalsChartState extends State<GoalsChart> {
               Text(
                 '$percentage%',
                 style: TextStyle(
-                  fontSize: 14,
+                  fontSize: ResponsiveHelper(context).bodyFontSize,
                   fontWeight: FontWeight.w700,
                   color: color,
                   fontFamily: 'Golos',

@@ -64,11 +64,11 @@ class _LeadChannelsChartState extends State<LeadChannelsChart> {
             children: [
               Row(
                 children: [
-                  const Expanded(
+                  Expanded(
                     child: Text(
                       'Каналы лидов',
                       style: TextStyle(
-                        fontSize: 18,
+                        fontSize: ResponsiveHelper(context).titleFontSize,
                         fontWeight: FontWeight.w700,
                         color: Color(0xff0F172A),
                         fontFamily: 'Golos',
@@ -106,8 +106,8 @@ class _LeadChannelsChartState extends State<LeadChannelsChart> {
                       ),
                       title: Text(
                         channel.name,
-                        style: const TextStyle(
-                          fontSize: 14,
+                        style: TextStyle(
+                          fontSize: ResponsiveHelper(context).bodyFontSize,
                           fontWeight: FontWeight.w600,
                           color: Color(0xff0F172A),
                           fontFamily: 'Golos',
@@ -115,8 +115,8 @@ class _LeadChannelsChartState extends State<LeadChannelsChart> {
                       ),
                       trailing: Text(
                         '${channel.count} (${percent.toStringAsFixed(1)}%)',
-                        style: const TextStyle(
-                          fontSize: 14,
+                        style: TextStyle(
+                          fontSize: ResponsiveHelper(context).bodyFontSize,
                           fontWeight: FontWeight.w600,
                           color: Color(0xff64748B),
                           fontFamily: 'Golos',
@@ -155,8 +155,8 @@ class _LeadChannelsChartState extends State<LeadChannelsChart> {
           color: const Color(0xffE2E8F0),
           title: 'Нет данных',
           radius: 60,
-          titleStyle: const TextStyle(
-            fontSize: 12,
+          titleStyle: TextStyle(
+            fontSize: ResponsiveHelper(context).smallFontSize,
             fontWeight: FontWeight.w600,
             color: Color(0xff64748B),
             fontFamily: 'Golos',
@@ -173,8 +173,8 @@ class _LeadChannelsChartState extends State<LeadChannelsChart> {
         color: _colorForIndex(index),
         title: '${percent.toStringAsFixed(1)}%',
         radius: 60,
-        titleStyle: const TextStyle(
-          fontSize: 11,
+        titleStyle: TextStyle(
+          fontSize: ResponsiveHelper(context).xSmallFontSize,
           fontWeight: FontWeight.w600,
           color: Colors.white,
           fontFamily: 'Golos',
@@ -230,7 +230,7 @@ class _LeadChannelsChartState extends State<LeadChannelsChart> {
                     size: 20,
                   ),
                 ),
-                const SizedBox(width: 12),
+                SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     'Каналы лидов',
@@ -244,7 +244,7 @@ class _LeadChannelsChartState extends State<LeadChannelsChart> {
                 ),
                 IconButton(
                   onPressed: _showDetails,
-                  icon: const Icon(Icons.crop_free, color: Color(0xff64748B), size: 22),
+                  icon: Icon(Icons.crop_free, color: Color(0xff64748B), size: 22),
                   style: IconButton.styleFrom(
                     backgroundColor: Color(0xffF1F5F9),
                     minimumSize: Size(44, 44),

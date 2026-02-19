@@ -67,11 +67,11 @@ class _LeadStatusesChartState extends State<LeadStatusesChart> {
             children: [
               Row(
                 children: [
-                  const Expanded(
+                  Expanded(
                     child: Text(
                       'Лиды по статусам',
                       style: TextStyle(
-                        fontSize: 18,
+                        fontSize: ResponsiveHelper(context).titleFontSize,
                         fontWeight: FontWeight.w700,
                         color: Color(0xff0F172A),
                         fontFamily: 'Golos',
@@ -112,8 +112,8 @@ class _LeadStatusesChartState extends State<LeadStatusesChart> {
                       ),
                       title: Text(
                         item.status,
-                        style: const TextStyle(
-                          fontSize: 14,
+                        style: TextStyle(
+                          fontSize: ResponsiveHelper(context).bodyFontSize,
                           fontWeight: FontWeight.w600,
                           color: Color(0xff0F172A),
                           fontFamily: 'Golos',
@@ -121,8 +121,8 @@ class _LeadStatusesChartState extends State<LeadStatusesChart> {
                       ),
                       trailing: Text(
                         '${item.total} (${percent.toStringAsFixed(1)}%)',
-                        style: const TextStyle(
-                          fontSize: 14,
+                        style: TextStyle(
+                          fontSize: ResponsiveHelper(context).bodyFontSize,
                           fontWeight: FontWeight.w600,
                           color: Color(0xff64748B),
                           fontFamily: 'Golos',
@@ -147,8 +147,8 @@ class _LeadStatusesChartState extends State<LeadStatusesChart> {
           color: const Color(0xffE2E8F0),
           title: 'Нет данных',
           radius: 60,
-          titleStyle: const TextStyle(
-            fontSize: 12,
+          titleStyle: TextStyle(
+            fontSize: ResponsiveHelper(context).smallFontSize,
             fontWeight: FontWeight.w600,
             color: Color(0xff64748B),
             fontFamily: 'Golos',
@@ -165,8 +165,8 @@ class _LeadStatusesChartState extends State<LeadStatusesChart> {
         color: colorInt != null ? Color(colorInt) : const Color(0xff6366F1),
         title: '${percent.toStringAsFixed(1)}%',
         radius: 60,
-        titleStyle: const TextStyle(
-          fontSize: 11,
+        titleStyle: TextStyle(
+          fontSize: ResponsiveHelper(context).xSmallFontSize,
           fontWeight: FontWeight.w600,
           color: Colors.white,
           fontFamily: 'Golos',
@@ -233,7 +233,7 @@ class _LeadStatusesChartState extends State<LeadStatusesChart> {
                     size: 20,
                   ),
                 ),
-                const SizedBox(width: 12),
+                SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     'Лиды по статусам',
@@ -247,7 +247,7 @@ class _LeadStatusesChartState extends State<LeadStatusesChart> {
                 ),
                 IconButton(
                   onPressed: _showDetails,
-                  icon: const Icon(Icons.crop_free, color: Color(0xff64748B), size: 22),
+                  icon: Icon(Icons.crop_free, color: Color(0xff64748B), size: 22),
                   style: IconButton.styleFrom(
                     backgroundColor: Color(0xffF1F5F9),
                     minimumSize: Size(44, 44),

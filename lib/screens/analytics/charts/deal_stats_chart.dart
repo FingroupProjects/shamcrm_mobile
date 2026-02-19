@@ -78,11 +78,11 @@ class _DealStatsChartState extends State<DealStatsChart> {
             children: [
               Row(
                 children: [
-                  const Expanded(
+                  Expanded(
                     child: Text(
                       'Сделки по месяцам',
                       style: TextStyle(
-                        fontSize: 18,
+                        fontSize: ResponsiveHelper(context).titleFontSize,
                         fontWeight: FontWeight.w700,
                         color: Color(0xff0F172A),
                         fontFamily: 'Golos',
@@ -98,7 +98,7 @@ class _DealStatsChartState extends State<DealStatsChart> {
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: 12),
               Flexible(
                 child: ListView.separated(
                   shrinkWrap: true,
@@ -113,8 +113,8 @@ class _DealStatsChartState extends State<DealStatsChart> {
                       contentPadding: EdgeInsets.zero,
                       title: Text(
                         month,
-                        style: const TextStyle(
-                          fontSize: 14,
+                        style: TextStyle(
+                          fontSize: ResponsiveHelper(context).bodyFontSize,
                           fontWeight: FontWeight.w600,
                           color: Color(0xff0F172A),
                           fontFamily: 'Golos',
@@ -122,16 +122,16 @@ class _DealStatsChartState extends State<DealStatsChart> {
                       ),
                       subtitle: Text(
                         'Всего: ${item.totalSum.toStringAsFixed(0)}',
-                        style: const TextStyle(
-                          fontSize: 12,
+                        style: TextStyle(
+                          fontSize: ResponsiveHelper(context).smallFontSize,
                           color: Color(0xff64748B),
                           fontFamily: 'Golos',
                         ),
                       ),
                       trailing: Text(
                         'Успешные: ${item.successfulSum.toStringAsFixed(0)}',
-                        style: const TextStyle(
-                          fontSize: 12,
+                        style: TextStyle(
+                          fontSize: ResponsiveHelper(context).smallFontSize,
                           fontWeight: FontWeight.w600,
                           color: Color(0xff10B981),
                           fontFamily: 'Golos',
@@ -228,7 +228,7 @@ class _DealStatsChartState extends State<DealStatsChart> {
                     size: 20,
                   ),
                 ),
-                const SizedBox(width: 12),
+                SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     'Сделки по месяцам',
@@ -242,7 +242,8 @@ class _DealStatsChartState extends State<DealStatsChart> {
                 ),
                 IconButton(
                   onPressed: _showDetails,
-                  icon: const Icon(Icons.crop_free, color: Color(0xff64748B), size: 22),
+                  icon:
+                      Icon(Icons.crop_free, color: Color(0xff64748B), size: 22),
                   style: IconButton.styleFrom(
                     backgroundColor: Color(0xffF1F5F9),
                     minimumSize: Size(44, 44),
@@ -293,8 +294,8 @@ class _DealStatsChartState extends State<DealStatsChart> {
                                   getTitlesWidget: (value, meta) {
                                     return Text(
                                       value.toInt().toString(),
-                                      style: const TextStyle(
-                                        fontSize: 10,
+                                      style: TextStyle(
+                                        fontSize: responsive.xSmallFontSize,
                                         color: Color(0xff64748B),
                                         fontFamily: 'Golos',
                                       ),
@@ -307,15 +308,16 @@ class _DealStatsChartState extends State<DealStatsChart> {
                                   showTitles: true,
                                   getTitlesWidget: (value, meta) {
                                     final index = value.toInt();
-                                    if (index < 0 || index >= _monthNames.length) {
+                                    if (index < 0 ||
+                                        index >= _monthNames.length) {
                                       return const SizedBox.shrink();
                                     }
                                     return Padding(
                                       padding: const EdgeInsets.only(top: 6),
                                       child: Text(
                                         _monthNames[index],
-                                        style: const TextStyle(
-                                          fontSize: 10,
+                                        style: TextStyle(
+                                          fontSize: responsive.xSmallFontSize,
                                           color: Color(0xff64748B),
                                           fontFamily: 'Golos',
                                         ),
@@ -334,11 +336,13 @@ class _DealStatsChartState extends State<DealStatsChart> {
                             barTouchData: BarTouchData(
                               enabled: true,
                               touchTooltipData: BarTouchTooltipData(
-                                getTooltipItem: (group, groupIndex, rod, rodIndex) {
-                                  final label = rodIndex == 0 ? 'Всего' : 'Успешные';
+                                getTooltipItem:
+                                    (group, groupIndex, rod, rodIndex) {
+                                  final label =
+                                      rodIndex == 0 ? 'Всего' : 'Успешные';
                                   return BarTooltipItem(
                                     '$label: ${rod.toY.toStringAsFixed(0)}',
-                                    const TextStyle(
+                                    TextStyle(
                                       color: Colors.white,
                                       fontWeight: FontWeight.w600,
                                       fontFamily: 'Golos',
@@ -390,11 +394,11 @@ class _LegendDot extends StatelessWidget {
           height: 8,
           decoration: BoxDecoration(color: color, shape: BoxShape.circle),
         ),
-        const SizedBox(width: 6),
+        SizedBox(width: 6),
         Text(
           label,
-          style: const TextStyle(
-            fontSize: 12,
+          style: TextStyle(
+            fontSize: ResponsiveHelper(context).smallFontSize,
             color: Color(0xff64748B),
             fontFamily: 'Golos',
           ),

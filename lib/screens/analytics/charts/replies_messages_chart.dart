@@ -99,7 +99,7 @@ class _RepliesMessagesChartState extends State<RepliesMessagesChart> {
                     child: Text(
                       _title,
                       style: TextStyle(
-                        fontSize: 18,
+                        fontSize: ResponsiveHelper(context).titleFontSize,
                         fontWeight: FontWeight.w700,
                         color: Color(0xff0F172A),
                         fontFamily: 'Golos',
@@ -115,7 +115,7 @@ class _RepliesMessagesChartState extends State<RepliesMessagesChart> {
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: 12),
               Flexible(
                 child: ListView.separated(
                   shrinkWrap: true,
@@ -127,8 +127,8 @@ class _RepliesMessagesChartState extends State<RepliesMessagesChart> {
                       contentPadding: EdgeInsets.zero,
                       title: Text(
                         item.channelName,
-                        style: const TextStyle(
-                          fontSize: 14,
+                        style: TextStyle(
+                          fontSize: ResponsiveHelper(context).bodyFontSize,
                           fontWeight: FontWeight.w600,
                           color: Color(0xff0F172A),
                           fontFamily: 'Golos',
@@ -136,16 +136,16 @@ class _RepliesMessagesChartState extends State<RepliesMessagesChart> {
                       ),
                       subtitle: Text(
                         'Получено: ${item.receivedMessages}, Отвечено: ${item.sentMessages}',
-                        style: const TextStyle(
-                          fontSize: 12,
+                        style: TextStyle(
+                          fontSize: ResponsiveHelper(context).smallFontSize,
                           color: Color(0xff64748B),
                           fontFamily: 'Golos',
                         ),
                       ),
                       trailing: Text(
                         'Без ответа: ${item.unansweredChats}',
-                        style: const TextStyle(
-                          fontSize: 12,
+                        style: TextStyle(
+                          fontSize: ResponsiveHelper(context).smallFontSize,
                           fontWeight: FontWeight.w600,
                           color: Color(0xffEF4444),
                           fontFamily: 'Golos',
@@ -231,13 +231,16 @@ class _RepliesMessagesChartState extends State<RepliesMessagesChart> {
     final displayItems = isEmpty ? _previewChannels : items;
     final maxValue = displayItems.isEmpty
         ? 1
-        : displayItems.map((e) {
-            final received = _showReceived ? e.receivedMessages : 0;
-            final answered = _showAnswered ? e.sentMessages : 0;
-            final unanswered = _showUnanswered ? e.unansweredChats : 0;
-            return [received, answered, unanswered]
-                .reduce((a, b) => a > b ? a : b);
-          }).reduce((a, b) => a > b ? a : b).toDouble();
+        : displayItems
+            .map((e) {
+              final received = _showReceived ? e.receivedMessages : 0;
+              final answered = _showAnswered ? e.sentMessages : 0;
+              final unanswered = _showUnanswered ? e.unansweredChats : 0;
+              return [received, answered, unanswered]
+                  .reduce((a, b) => a > b ? a : b);
+            })
+            .reduce((a, b) => a > b ? a : b)
+            .toDouble();
 
     return Container(
       decoration: BoxDecoration(
@@ -281,7 +284,7 @@ class _RepliesMessagesChartState extends State<RepliesMessagesChart> {
                     size: 20,
                   ),
                 ),
-                const SizedBox(width: 12),
+                SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     _title,
@@ -295,7 +298,8 @@ class _RepliesMessagesChartState extends State<RepliesMessagesChart> {
                 ),
                 IconButton(
                   onPressed: _showDetails,
-                  icon: const Icon(Icons.crop_free, color: Color(0xff64748B), size: 22),
+                  icon:
+                      Icon(Icons.crop_free, color: Color(0xff64748B), size: 22),
                   style: IconButton.styleFrom(
                     backgroundColor: Color(0xffF1F5F9),
                     minimumSize: Size(44, 44),
@@ -361,10 +365,10 @@ class _RepliesMessagesChartState extends State<RepliesMessagesChart> {
 
                                     return BarTooltipItem(
                                       '${item.channelName}\n$label: $value',
-                                      const TextStyle(
+                                      TextStyle(
                                         color: Color(0xff0F172A),
                                         fontWeight: FontWeight.w700,
-                                        fontSize: 12,
+                                        fontSize: responsive.smallFontSize,
                                         fontFamily: 'Golos',
                                       ),
                                     );
@@ -388,8 +392,8 @@ class _RepliesMessagesChartState extends State<RepliesMessagesChart> {
                                     getTitlesWidget: (value, meta) {
                                       return Text(
                                         value.toInt().toString(),
-                                        style: const TextStyle(
-                                          fontSize: 10,
+                                        style: TextStyle(
+                                          fontSize: responsive.xSmallFontSize,
                                           color: Color(0xff64748B),
                                           fontFamily: 'Golos',
                                         ),
@@ -414,12 +418,14 @@ class _RepliesMessagesChartState extends State<RepliesMessagesChart> {
                                       return RotatedBox(
                                         quarterTurns: 3,
                                         child: Padding(
-                                          padding: const EdgeInsets.only(top: 6),
+                                          padding:
+                                              const EdgeInsets.only(top: 6),
                                           child: Text(
-                                            _shortLabel(
-                                                displayItems[index].channelName),
-                                            style: const TextStyle(
-                                              fontSize: 10,
+                                            _shortLabel(displayItems[index]
+                                                .channelName),
+                                            style: TextStyle(
+                                              fontSize:
+                                                  responsive.xSmallFontSize,
                                               color: Color(0xff64748B),
                                               fontFamily: 'Golos',
                                             ),
@@ -510,11 +516,11 @@ class _LegendToggleDot extends StatelessWidget {
             height: 8,
             decoration: BoxDecoration(color: dotColor, shape: BoxShape.circle),
           ),
-          const SizedBox(width: 6),
+          SizedBox(width: 6),
           Text(
             label,
             style: TextStyle(
-              fontSize: 12,
+              fontSize: ResponsiveHelper(context).smallFontSize,
               color: textColor,
               fontFamily: 'Golos',
             ),

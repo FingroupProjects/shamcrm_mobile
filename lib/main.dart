@@ -168,7 +168,7 @@ void main() async {
     String? token;
     String? pin;
     bool isDomainChecked = false;
-  
+
     if (sessionValidation.isValid) {
       token = await apiService.getToken();
       pin = await authService.getPin();
@@ -180,7 +180,7 @@ void main() async {
     } else {
       await _clearAllApplicationData(apiService, authService);
     }
-    
+
     await AppTrackingTransparency.requestTrackingAuthorization();
     await _initializeFirebaseMessaging(apiService);
 
