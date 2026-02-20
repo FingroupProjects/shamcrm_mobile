@@ -53,7 +53,7 @@ class _LeadChannelsChartState extends State<LeadChannelsChart> {
       isScrollControlled: true,
       backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
       ),
       builder: (context) {
         return Padding(
@@ -80,11 +80,15 @@ class _LeadChannelsChartState extends State<LeadChannelsChart> {
                       Navigator.of(context).pop();
                       _loadData();
                     },
-                    icon: const Icon(Icons.refresh, color: Color(0xff64748B)),
+                    icon: Icon(Icons.refresh, color: Color(0xff64748B)),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: Icon(Icons.close, color: Color(0xff64748B)),
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: ResponsiveHelper(context).smallSpacing),
               Flexible(
                 child: ListView.separated(
                   shrinkWrap: true,
@@ -154,7 +158,7 @@ class _LeadChannelsChartState extends State<LeadChannelsChart> {
           value: 1,
           color: const Color(0xffE2E8F0),
           title: 'Нет данных',
-          radius: 60,
+          radius: 40,
           titleStyle: TextStyle(
             fontSize: ResponsiveHelper(context).smallFontSize,
             fontWeight: FontWeight.w600,
@@ -172,7 +176,7 @@ class _LeadChannelsChartState extends State<LeadChannelsChart> {
         value: channel.count.toDouble(),
         color: _colorForIndex(index),
         title: '${percent.toStringAsFixed(1)}%',
-        radius: 60,
+        radius: 40,
         titleStyle: TextStyle(
           fontSize: ResponsiveHelper(context).xSmallFontSize,
           fontWeight: FontWeight.w600,
@@ -186,7 +190,8 @@ class _LeadChannelsChartState extends State<LeadChannelsChart> {
   @override
   Widget build(BuildContext context) {
     final responsive = ResponsiveHelper(context);
-    final total = _channels.fold<int>(0, (sum, item) => sum + item.count).toDouble();
+    final total =
+        _channels.fold<int>(0, (sum, item) => sum + item.count).toDouble();
 
     return Container(
       decoration: BoxDecoration(
@@ -209,8 +214,8 @@ class _LeadChannelsChartState extends State<LeadChannelsChart> {
             child: Row(
               children: [
                 Container(
-                  width: 36,
-                  height: 36,
+                  width: ResponsiveHelper(context).iconSize,
+                  height: ResponsiveHelper(context).iconSize,
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
                       colors: [Color(0xff0EA5E9), Color(0xff6366F1)],
@@ -224,13 +229,13 @@ class _LeadChannelsChartState extends State<LeadChannelsChart> {
                       ),
                     ],
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.hub,
                     color: Colors.white,
-                    size: 20,
+                    size: ResponsiveHelper(context).smallIconSize,
                   ),
                 ),
-                SizedBox(width: 12),
+                SizedBox(width: ResponsiveHelper(context).smallSpacing),
                 Expanded(
                   child: Text(
                     'Каналы лидов',
@@ -244,13 +249,15 @@ class _LeadChannelsChartState extends State<LeadChannelsChart> {
                 ),
                 IconButton(
                   onPressed: _showDetails,
-                  icon: Icon(Icons.crop_free, color: Color(0xff64748B), size: 22),
+                  icon: Icon(Icons.crop_free,
+                      color: Color(0xff64748B),
+                      size: ResponsiveHelper(context).smallIconSize),
                   style: IconButton.styleFrom(
                     backgroundColor: Color(0xffF1F5F9),
-                    minimumSize: Size(44, 44),
+                    minimumSize: Size(36, 36),
                     padding: EdgeInsets.zero,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.all(Radius.circular(16)),
+                      borderRadius: BorderRadius.all(Radius.circular(12)),
                     ),
                   ),
                 ),
@@ -276,8 +283,8 @@ class _LeadChannelsChartState extends State<LeadChannelsChart> {
                         child: PieChart(
                           PieChartData(
                             sections: _buildSections(total),
-                            centerSpaceRadius: 30,
-                            sectionsSpace: 2,
+                            centerSpaceRadius: 45,
+                            sectionsSpace: 3,
                           ),
                         ),
                       ),

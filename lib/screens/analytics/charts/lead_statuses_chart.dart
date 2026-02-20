@@ -56,7 +56,7 @@ class _LeadStatusesChartState extends State<LeadStatusesChart> {
       isScrollControlled: true,
       backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
       ),
       builder: (context) {
         return Padding(
@@ -83,11 +83,15 @@ class _LeadStatusesChartState extends State<LeadStatusesChart> {
                       Navigator.of(context).pop();
                       _loadData();
                     },
-                    icon: const Icon(Icons.refresh, color: Color(0xff64748B)),
+                    icon: Icon(Icons.refresh, color: Color(0xff64748B)),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: Icon(Icons.close, color: Color(0xff64748B)),
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: ResponsiveHelper(context).smallSpacing),
               Flexible(
                 child: ListView.separated(
                   shrinkWrap: true,
@@ -95,8 +99,7 @@ class _LeadStatusesChartState extends State<LeadStatusesChart> {
                   separatorBuilder: (_, __) => const Divider(height: 1),
                   itemBuilder: (context, index) {
                     final item = _items[index];
-                    final percent =
-                        total == 0 ? 0 : (item.total / total * 100);
+                    final percent = total == 0 ? 0 : (item.total / total * 100);
                     final colorInt = _colorFromHex(item.color);
                     return ListTile(
                       contentPadding: EdgeInsets.zero,
@@ -146,7 +149,7 @@ class _LeadStatusesChartState extends State<LeadStatusesChart> {
           value: 1,
           color: const Color(0xffE2E8F0),
           title: 'Нет данных',
-          radius: 60,
+          radius: 40,
           titleStyle: TextStyle(
             fontSize: ResponsiveHelper(context).smallFontSize,
             fontWeight: FontWeight.w600,
@@ -164,7 +167,7 @@ class _LeadStatusesChartState extends State<LeadStatusesChart> {
         value: item.total.toDouble(),
         color: colorInt != null ? Color(colorInt) : const Color(0xff6366F1),
         title: '${percent.toStringAsFixed(1)}%',
-        radius: 60,
+        radius: 40,
         titleStyle: TextStyle(
           fontSize: ResponsiveHelper(context).xSmallFontSize,
           fontWeight: FontWeight.w600,
@@ -189,7 +192,8 @@ class _LeadStatusesChartState extends State<LeadStatusesChart> {
   @override
   Widget build(BuildContext context) {
     final responsive = ResponsiveHelper(context);
-    final total = _items.fold<int>(0, (sum, item) => sum + item.total).toDouble();
+    final total =
+        _items.fold<int>(0, (sum, item) => sum + item.total).toDouble();
 
     return Container(
       decoration: BoxDecoration(
@@ -212,8 +216,8 @@ class _LeadStatusesChartState extends State<LeadStatusesChart> {
             child: Row(
               children: [
                 Container(
-                  width: 36,
-                  height: 36,
+                  width: ResponsiveHelper(context).iconSize,
+                  height: ResponsiveHelper(context).iconSize,
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
                       colors: [Color(0xff4AE6B3), Color(0xff22C55E)],
@@ -227,13 +231,13 @@ class _LeadStatusesChartState extends State<LeadStatusesChart> {
                       ),
                     ],
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.stacked_bar_chart,
                     color: Colors.white,
-                    size: 20,
+                    size: ResponsiveHelper(context).smallIconSize,
                   ),
                 ),
-                SizedBox(width: 12),
+                SizedBox(width: ResponsiveHelper(context).smallSpacing),
                 Expanded(
                   child: Text(
                     'Лиды по статусам',
@@ -247,13 +251,15 @@ class _LeadStatusesChartState extends State<LeadStatusesChart> {
                 ),
                 IconButton(
                   onPressed: _showDetails,
-                  icon: Icon(Icons.crop_free, color: Color(0xff64748B), size: 22),
+                  icon: Icon(Icons.crop_free,
+                      color: Color(0xff64748B),
+                      size: ResponsiveHelper(context).smallIconSize),
                   style: IconButton.styleFrom(
                     backgroundColor: Color(0xffF1F5F9),
-                    minimumSize: Size(44, 44),
+                    minimumSize: Size(36, 36),
                     padding: EdgeInsets.zero,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.all(Radius.circular(16)),
+                      borderRadius: BorderRadius.all(Radius.circular(12)),
                     ),
                   ),
                 ),
@@ -279,8 +285,8 @@ class _LeadStatusesChartState extends State<LeadStatusesChart> {
                         child: PieChart(
                           PieChartData(
                             sections: _buildSections(total),
-                            centerSpaceRadius: 30,
-                            sectionsSpace: 2,
+                            centerSpaceRadius: 45,
+                            sectionsSpace: 3,
                           ),
                         ),
                       ),

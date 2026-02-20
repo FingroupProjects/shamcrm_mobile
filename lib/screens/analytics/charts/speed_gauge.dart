@@ -85,7 +85,7 @@ class _SpeedGaugeState extends State<SpeedGauge>
       isScrollControlled: true,
       backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
       ),
       builder: (context) {
         return Padding(
@@ -94,16 +94,26 @@ class _SpeedGaugeState extends State<SpeedGauge>
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                _title,
-                style: TextStyle(
-                  fontSize: ResponsiveHelper(context).titleFontSize,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xff0F172A),
-                  fontFamily: 'Golos',
-                ),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      _title,
+                      style: TextStyle(
+                        fontSize: ResponsiveHelper(context).titleFontSize,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xff0F172A),
+                        fontFamily: 'Golos',
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: Icon(Icons.close, color: Color(0xff64748B)),
+                  ),
+                ],
               ),
-              SizedBox(height: 12),
+              SizedBox(height: ResponsiveHelper(context).smallSpacing),
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 title: Text(
@@ -190,13 +200,13 @@ class _SpeedGaugeState extends State<SpeedGauge>
                       ),
                     ],
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.speed_rounded,
                     color: Color(0xff0F172A),
                     size: 18,
                   ),
                 ),
-                SizedBox(width: 12),
+                SizedBox(width: ResponsiveHelper(context).smallSpacing),
                 Expanded(
                   child: Text(
                     _title,
@@ -211,13 +221,14 @@ class _SpeedGaugeState extends State<SpeedGauge>
                 IconButton(
                   onPressed: _showDetails,
                   icon: Icon(Icons.crop_free,
-                      color: Color(0xff64748B), size: 22),
+                      color: Color(0xff64748B),
+                      size: ResponsiveHelper(context).smallIconSize),
                   style: IconButton.styleFrom(
                     backgroundColor: Color(0xffF1F5F9),
-                    minimumSize: Size(44, 44),
+                    minimumSize: Size(36, 36),
                     padding: EdgeInsets.zero,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.all(Radius.circular(16)),
+                      borderRadius: BorderRadius.all(Radius.circular(12)),
                     ),
                   ),
                 ),
@@ -234,9 +245,10 @@ class _SpeedGaugeState extends State<SpeedGauge>
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const Icon(Icons.error_outline,
+                            Icon(Icons.error_outline,
                                 size: 48, color: Color(0xffEF4444)),
-                            SizedBox(height: 12),
+                            SizedBox(
+                                height: ResponsiveHelper(context).smallSpacing),
                             Text(
                               _error!,
                               style: TextStyle(
@@ -246,7 +258,8 @@ class _SpeedGaugeState extends State<SpeedGauge>
                               ),
                               textAlign: TextAlign.center,
                             ),
-                            const SizedBox(height: 12),
+                            SizedBox(
+                                height: ResponsiveHelper(context).smallSpacing),
                             TextButton(
                               onPressed: _loadData,
                               child: Text('Повторить'),

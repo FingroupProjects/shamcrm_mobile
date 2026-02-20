@@ -25,6 +25,9 @@ class _SourcesChartState extends State<SourcesChart> {
   String _bestSource = '';
   int _totalSources = 0;
 
+  // Track hidden sources by name
+  final Set<String> _hiddenSources = {};
+
   String get _title => widget.title;
 
   static final List<LeadSourceItem> _previewSources = [
@@ -55,8 +58,9 @@ class _SourcesChartState extends State<SourcesChart> {
       setState(() {
         _channels = response.activeSources;
         _bestSource = response.bestSource;
-        _totalSources =
-            response.totalSources > 0 ? response.totalSources : _channels.length;
+        _totalSources = response.totalSources > 0
+            ? response.totalSources
+            : _channels.length;
         _isLoading = false;
       });
     } catch (e) {
@@ -94,7 +98,7 @@ class _SourcesChartState extends State<SourcesChart> {
       isScrollControlled: true,
       backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
       ),
       builder: (context) {
         return Padding(
@@ -103,15 +107,26 @@ class _SourcesChartState extends State<SourcesChart> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(_title,
-                style: TextStyle(
-                  fontSize: ResponsiveHelper(context).titleFontSize,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xff0F172A),
-                  fontFamily: 'Golos',
-                ),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      _title,
+                      style: TextStyle(
+                        fontSize: ResponsiveHelper(context).titleFontSize,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xff0F172A),
+                        fontFamily: 'Golos',
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: Icon(Icons.close, color: Color(0xff64748B)),
+                  ),
+                ],
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: ResponsiveHelper(context).smallSpacing),
               Flexible(
                 child: ListView.separated(
                   shrinkWrap: true,
@@ -192,7 +207,7 @@ class _SourcesChartState extends State<SourcesChart> {
     final rad = midAngleDeg * math.pi / 180;
 
     final center = Offset(size.width / 2, size.height / 2);
-    final outerRadius = size.shortestSide * 0.34;
+    final outerRadius = size.shortestSide * 0.28;
     final anchor = Offset(
       center.dx + math.cos(rad) * outerRadius,
       center.dy + math.sin(rad) * outerRadius,
@@ -205,9 +220,8 @@ class _SourcesChartState extends State<SourcesChart> {
     final bubbleTop = anchor.dy >= center.dy
         ? outerPadding
         : (size.height - bubbleHeight - outerPadding);
-    final bubbleLeft = isRight
-        ? (size.width - bubbleWidth - outerPadding)
-        : outerPadding;
+    final bubbleLeft =
+        isRight ? (size.width - bubbleWidth - outerPadding) : outerPadding;
     final bubbleCenterY = bubbleTop + (bubbleHeight / 2);
 
     final radialOut = Offset(
@@ -323,8 +337,8 @@ class _SourcesChartState extends State<SourcesChart> {
             child: Row(
               children: [
                 Container(
-                  width: 36,
-                  height: 36,
+                  width: ResponsiveHelper(context).iconSize,
+                  height: ResponsiveHelper(context).iconSize,
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
                       colors: [Color(0xff10B981), Color(0xff059669)],
@@ -338,13 +352,13 @@ class _SourcesChartState extends State<SourcesChart> {
                       ),
                     ],
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.pie_chart_outline,
                     color: Colors.white,
-                    size: 20,
+                    size: ResponsiveHelper(context).smallIconSize,
                   ),
                 ),
-                SizedBox(width: 12),
+                SizedBox(width: ResponsiveHelper(context).smallSpacing),
                 Expanded(
                   child: Text(
                     _title,
@@ -358,19 +372,47 @@ class _SourcesChartState extends State<SourcesChart> {
                 ),
                 IconButton(
                   onPressed: _showDetails,
-                  icon: Icon(Icons.crop_free, color: Color(0xff64748B), size: 22),
+                  icon: Icon(Icons.crop_free,
+                      color: Color(0xff64748B),
+                      size: ResponsiveHelper(context).smallIconSize),
                   style: IconButton.styleFrom(
                     backgroundColor: Color(0xffF1F5F9),
-                    minimumSize: Size(44, 44),
+                    minimumSize: Size(36, 36),
                     padding: EdgeInsets.zero,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.all(Radius.circular(16)),
+                      borderRadius: BorderRadius.all(Radius.circular(12)),
                     ),
                   ),
                 ),
               ],
             ),
           ),
+          // Toggleable legend
+          if (!_isLoading && _error == null)
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: responsive.cardPadding),
+              child: Wrap(
+                spacing: responsive.spacing,
+                runSpacing: 6,
+                children: displayChannels.map((ch) {
+                  final isActive = !_hiddenSources.contains(ch.name);
+                  return _buildSourceToggle(
+                    color: _colorForSource(ch.name),
+                    label: ch.name,
+                    isActive: isActive,
+                    onTap: () => setState(() {
+                      if (_hiddenSources.contains(ch.name)) {
+                        _hiddenSources.remove(ch.name);
+                      } else {
+                        _hiddenSources.add(ch.name);
+                      }
+                      _touchedIndex = -1;
+                    }),
+                  );
+                }).toList(),
+              ),
+            ),
+          SizedBox(height: responsive.smallSpacing),
           // Chart
           SizedBox(
             height: responsive.chartHeight,
@@ -381,9 +423,10 @@ class _SourcesChartState extends State<SourcesChart> {
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const Icon(Icons.error_outline,
+                            Icon(Icons.error_outline,
                                 size: 48, color: Color(0xffEF4444)),
-                            SizedBox(height: 12),
+                            SizedBox(
+                                height: ResponsiveHelper(context).smallSpacing),
                             Text(
                               _error!,
                               style: TextStyle(
@@ -393,7 +436,8 @@ class _SourcesChartState extends State<SourcesChart> {
                               ),
                               textAlign: TextAlign.center,
                             ),
-                            const SizedBox(height: 12),
+                            SizedBox(
+                                height: ResponsiveHelper(context).smallSpacing),
                             TextButton(
                               onPressed: _loadData,
                               child: Text('Повторить'),
@@ -417,16 +461,18 @@ class _SourcesChartState extends State<SourcesChart> {
                                   children: [
                                     PieChart(
                                       PieChartData(
-                                        sectionsSpace: 2,
+                                        sectionsSpace: 3,
                                         centerSpaceRadius: 60,
                                         startDegreeOffset: -90,
                                         pieTouchData: PieTouchData(
-                                          touchCallback:
-                                              (FlTouchEvent event, pieTouchResponse) {
+                                          touchCallback: (FlTouchEvent event,
+                                              pieTouchResponse) {
                                             setState(() {
-                                              if (!event.isInterestedForInteractions ||
+                                              if (!event
+                                                      .isInterestedForInteractions ||
                                                   pieTouchResponse == null ||
-                                                  pieTouchResponse.touchedSection ==
+                                                  pieTouchResponse
+                                                          .touchedSection ==
                                                       null) {
                                                 _touchedIndex = -1;
                                                 return;
@@ -437,23 +483,39 @@ class _SourcesChartState extends State<SourcesChart> {
                                             });
                                           },
                                         ),
-                                        sections: List.generate(displayChannels.length,
-                                            (index) {
-                                          final isTouched = index == _touchedIndex;
-                                          final channel = displayChannels[index];
-                                          final color = _colorForSource(channel.name);
+                                        sections: List.generate(
+                                            displayChannels
+                                                .where((ch) => !_hiddenSources
+                                                    .contains(ch.name))
+                                                .length, (index) {
+                                          final visibleChannels =
+                                              displayChannels
+                                                  .where((ch) => !_hiddenSources
+                                                      .contains(ch.name))
+                                                  .toList();
+                                          final isTouched =
+                                              index == _touchedIndex;
+                                          final channel =
+                                              visibleChannels[index];
+                                          final color =
+                                              _colorForSource(channel.name);
 
                                           return PieChartSectionData(
                                             value: channel.count.toDouble(),
                                             title: '',
                                             color: color,
-                                            radius: isTouched ? 65 : 60,
+                                            radius: isTouched ? 45 : 40,
                                           );
                                         }),
                                       ),
                                     ),
                                     IgnorePointer(
-                                      child: _buildPieCallout(size, displayChannels),
+                                      child: _buildPieCallout(
+                                          size,
+                                          displayChannels
+                                              .where((ch) => !_hiddenSources
+                                                  .contains(ch.name))
+                                              .toList()),
                                     ),
                                   ],
                                 );
@@ -490,7 +552,9 @@ class _SourcesChartState extends State<SourcesChart> {
                       Text(
                         _bestSource.isNotEmpty
                             ? _bestSource
-                            : (_channels.isNotEmpty ? _channels.first.name : '-'),
+                            : (_channels.isNotEmpty
+                                ? _channels.first.name
+                                : '-'),
                         style: TextStyle(
                           fontSize: responsive.largeFontSize,
                           fontWeight: FontWeight.w700,
@@ -527,6 +591,44 @@ class _SourcesChartState extends State<SourcesChart> {
               ),
             ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildSourceToggle({
+    required Color color,
+    required String label,
+    required bool isActive,
+    required VoidCallback onTap,
+  }) {
+    final responsive = ResponsiveHelper(context);
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedOpacity(
+        duration: const Duration(milliseconds: 200),
+        opacity: isActive ? 1.0 : 0.4,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 12,
+              height: 12,
+              decoration: BoxDecoration(
+                color: color,
+                shape: BoxShape.circle,
+              ),
+            ),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: responsive.smallFontSize,
+                color: Color(0xff64748B),
+                fontFamily: 'Golos',
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

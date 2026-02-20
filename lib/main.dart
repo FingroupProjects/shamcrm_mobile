@@ -176,6 +176,7 @@ void main() async {
 
       if (isDomainChecked) {
         await apiService.initialize();
+        await apiService.ensureSelectedSalesFunnelInitialized();
       }
     } else {
       await _clearAllApplicationData(apiService, authService);

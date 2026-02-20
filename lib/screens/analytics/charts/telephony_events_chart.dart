@@ -171,7 +171,11 @@ class _TelephonyEventsChartState extends State<TelephonyEventsChart> {
                       Navigator.of(context).pop();
                       _loadData();
                     },
-                    icon: const Icon(Icons.refresh, color: _labelColor),
+                    icon: Icon(Icons.refresh, color: _labelColor),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: Icon(Icons.close, color: _labelColor),
                   ),
                 ],
               ),
@@ -390,7 +394,7 @@ class _TelephonyEventsChartState extends State<TelephonyEventsChart> {
         final headerIconSize = isVeryCompact ? 30.0 : (isCompact ? 34.0 : 38.0);
         final headerPadding = isVeryCompact ? 10.0 : (isCompact ? 12.0 : 14.0);
         final chartHeight = isVeryCompact ? 220.0 : (isCompact ? 245.0 : 270.0);
-        final numberFontSize = isVeryCompact ? 24.0 : (isCompact ? 34.0 : 38.0);
+        final numberFontSize = isVeryCompact ? 18.0 : (isCompact ? 22.0 : 26.0);
         final titleSize = isVeryCompact ? 16.0 : (isCompact ? 17.0 : 18.0);
         final leftReserved = isVeryCompact ? 28.0 : 32.0;
         final bottomReserved = isVeryCompact ? 28.0 : 32.0;
@@ -457,7 +461,7 @@ class _TelephonyEventsChartState extends State<TelephonyEventsChart> {
                       children: [
                         IconButton(
                           onPressed: _showDetails,
-                          icon: const Icon(
+                          icon: Icon(
                             Icons.crop_free,
                             color: Color(0xff64748B),
                             size: 22,
@@ -840,12 +844,14 @@ class _TelephonyEventsChartState extends State<TelephonyEventsChart> {
                             'Всего звонков',
                             style: TextStyle(
                               color: _labelColor,
-                              fontSize: isVeryCompact ? 13 : 14,
+                              fontSize: isVeryCompact
+                                  ? 10.0
+                                  : (isCompact ? 11.0 : 12.0),
                               fontWeight: FontWeight.w500,
                               fontFamily: 'Golos',
                             ),
                           ),
-                          const SizedBox(height: 8),
+                          const SizedBox(height: 4),
                           Text(
                             '$totalCalls',
                             style: TextStyle(
@@ -867,12 +873,14 @@ class _TelephonyEventsChartState extends State<TelephonyEventsChart> {
                             'Пропущенные',
                             style: TextStyle(
                               color: _labelColor,
-                              fontSize: isVeryCompact ? 13 : 14,
+                              fontSize: isVeryCompact
+                                  ? 10.0
+                                  : (isCompact ? 11.0 : 12.0),
                               fontWeight: FontWeight.w500,
                               fontFamily: 'Golos',
                             ),
                           ),
-                          const SizedBox(height: 8),
+                          const SizedBox(height: 4),
                           Text(
                             '$totalMissed',
                             style: TextStyle(

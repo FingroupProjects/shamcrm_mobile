@@ -124,6 +124,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
         isLoading = true;
       });
 
+      // КРИТИЧНО: при первом входе в Dashboard гарантируем сохранённую воронку.
+      await _apiService.ensureSelectedSalesFunnelInitialized();
+
       SharedPreferences prefs = await SharedPreferences.getInstance();
       bool isFirstTime = prefs.getBool('isFirstTime') ?? true;
 
@@ -666,7 +669,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           showFilterIconDeal: false,
           showMyTaskIcon: true,
           showCallCenter: true,
-          showNotification: false,
+          showNotification: true,
           showEvent: false,
           showSeparateMyTasks: false,
           showMenuIcon: true,

@@ -24,6 +24,11 @@ class _KpiChartState extends State<KpiChart> {
   double _completionRate = 0.0;
   int _totalTasks = 0;
 
+  // Toggle states for pie slices
+  bool _showCompleted = true;
+  bool _showInProgress = true;
+  bool _showOverdue = true;
+
   String get _title => widget.title;
 
   static const List<int> _previewTaskData = [35, 48, 129];
@@ -65,7 +70,7 @@ class _KpiChartState extends State<KpiChart> {
       isScrollControlled: true,
       backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
       ),
       builder: (context) {
         return Padding(
@@ -74,15 +79,26 @@ class _KpiChartState extends State<KpiChart> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(_title,
-                style: TextStyle(
-                  fontSize: ResponsiveHelper(context).titleFontSize,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xff0F172A),
-                  fontFamily: 'Golos',
-                ),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      _title,
+                      style: TextStyle(
+                        fontSize: ResponsiveHelper(context).titleFontSize,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xff0F172A),
+                        fontFamily: 'Golos',
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: Icon(Icons.close, color: Color(0xff64748B)),
+                  ),
+                ],
               ),
-              SizedBox(height: 12),
+              SizedBox(height: ResponsiveHelper(context).smallSpacing),
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 title: Text(
@@ -177,9 +193,7 @@ class _KpiChartState extends State<KpiChart> {
 
   int get _total => _totalTasks > 0
       ? _totalTasks
-      : (_taskData.isEmpty
-          ? 0
-          : _taskData.reduce((a, b) => a + b));
+      : (_taskData.isEmpty ? 0 : _taskData.reduce((a, b) => a + b));
   int get _completed =>
       _taskData.isNotEmpty && _taskData.length > 2 ? _taskData[2] : 0;
   int get _inProgress =>
@@ -220,7 +234,7 @@ class _KpiChartState extends State<KpiChart> {
     final rad = midAngleDeg * math.pi / 180;
 
     final center = Offset(size.width / 2, size.height / 2);
-    final outerRadius = size.shortestSide * 0.32;
+    final outerRadius = size.shortestSide * 0.28;
     final anchor = Offset(
       center.dx + math.cos(rad) * outerRadius,
       center.dy + math.sin(rad) * outerRadius,
@@ -233,9 +247,8 @@ class _KpiChartState extends State<KpiChart> {
     final bubbleTop = anchor.dy >= center.dy
         ? outerPadding
         : (size.height - bubbleHeight - outerPadding);
-    final bubbleLeft = isRight
-        ? (size.width - bubbleWidth - outerPadding)
-        : outerPadding;
+    final bubbleLeft =
+        isRight ? (size.width - bubbleWidth - outerPadding) : outerPadding;
     final bubbleCenterY = bubbleTop + (bubbleHeight / 2);
 
     final radialOut = Offset(
@@ -335,25 +348,33 @@ class _KpiChartState extends State<KpiChart> {
         displayTaskData.isNotEmpty && displayTaskData.length > 1
             ? displayTaskData[1]
             : 0;
-    final displayOverdue =
-        displayTaskData.isNotEmpty ? displayTaskData[0] : 0;
-    final slices = <_KpiSlice>[
-      _KpiSlice(
-        label: 'Выполнено',
-        value: displayCompleted.toDouble(),
-        color: const Color(0xff10B981),
-      ),
-      _KpiSlice(
-        label: 'В работе',
-        value: displayInProgress.toDouble(),
-        color: const Color(0xffF59E0B),
-      ),
-      _KpiSlice(
-        label: 'Просрочено',
-        value: displayOverdue.toDouble(),
-        color: const Color(0xffEF4444),
-      ),
+    final displayOverdue = displayTaskData.isNotEmpty ? displayTaskData[0] : 0;
+    final allSlices = <_KpiSlice>[
+      if (_showCompleted)
+        _KpiSlice(
+          label: 'Выполнено',
+          value: displayCompleted.toDouble(),
+          color: const Color(0xff10B981),
+        ),
+      if (_showInProgress)
+        _KpiSlice(
+          label: 'В работе',
+          value: displayInProgress.toDouble(),
+          color: const Color(0xffF59E0B),
+        ),
+      if (_showOverdue)
+        _KpiSlice(
+          label: 'Просрочено',
+          value: displayOverdue.toDouble(),
+          color: const Color(0xffEF4444),
+        ),
     ];
+    final slices = allSlices.where((s) => s.value > 0).toList();
+    if (slices.isEmpty && !isEmpty) {
+      // All toggled off — show placeholder
+      slices
+          .add(_KpiSlice(label: '', value: 1, color: const Color(0xffE2E8F0)));
+    }
 
     return Container(
       decoration: BoxDecoration(
@@ -377,8 +398,8 @@ class _KpiChartState extends State<KpiChart> {
             child: Row(
               children: [
                 Container(
-                  width: 36,
-                  height: 36,
+                  width: ResponsiveHelper(context).iconSize,
+                  height: ResponsiveHelper(context).iconSize,
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
                       colors: [Color(0xff6366F1), Color(0xff4F46E5)],
@@ -392,13 +413,13 @@ class _KpiChartState extends State<KpiChart> {
                       ),
                     ],
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.task_alt,
                     color: Colors.white,
-                    size: 20,
+                    size: ResponsiveHelper(context).smallIconSize,
                   ),
                 ),
-                SizedBox(width: 12),
+                SizedBox(width: ResponsiveHelper(context).smallSpacing),
                 Expanded(
                   child: Text(
                     _title,
@@ -412,19 +433,60 @@ class _KpiChartState extends State<KpiChart> {
                 ),
                 IconButton(
                   onPressed: _showDetails,
-                  icon: Icon(Icons.crop_free, color: Color(0xff64748B), size: 22),
+                  icon: Icon(Icons.crop_free,
+                      color: Color(0xff64748B),
+                      size: ResponsiveHelper(context).smallIconSize),
                   style: IconButton.styleFrom(
                     backgroundColor: Color(0xffF1F5F9),
-                    minimumSize: Size(44, 44),
+                    minimumSize: Size(36, 36),
                     padding: EdgeInsets.zero,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.all(Radius.circular(16)),
+                      borderRadius: BorderRadius.all(Radius.circular(12)),
                     ),
                   ),
                 ),
               ],
             ),
           ),
+          // Toggleable legend
+          if (!_isLoading && _error == null)
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: responsive.cardPadding),
+              child: Wrap(
+                spacing: responsive.spacing,
+                runSpacing: 6,
+                children: [
+                  _buildSliceToggle(
+                    color: const Color(0xff10B981),
+                    label: 'Выполнено',
+                    isActive: _showCompleted,
+                    onTap: () => setState(() {
+                      _showCompleted = !_showCompleted;
+                      _touchedIndex = -1;
+                    }),
+                  ),
+                  _buildSliceToggle(
+                    color: const Color(0xffF59E0B),
+                    label: 'В работе',
+                    isActive: _showInProgress,
+                    onTap: () => setState(() {
+                      _showInProgress = !_showInProgress;
+                      _touchedIndex = -1;
+                    }),
+                  ),
+                  _buildSliceToggle(
+                    color: const Color(0xffEF4444),
+                    label: 'Просрочено',
+                    isActive: _showOverdue,
+                    onTap: () => setState(() {
+                      _showOverdue = !_showOverdue;
+                      _touchedIndex = -1;
+                    }),
+                  ),
+                ],
+              ),
+            ),
+          SizedBox(height: responsive.smallSpacing),
           // Chart
           SizedBox(
             height: responsive.smallChartHeight,
@@ -435,9 +497,10 @@ class _KpiChartState extends State<KpiChart> {
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const Icon(Icons.error_outline,
+                            Icon(Icons.error_outline,
                                 size: 48, color: Color(0xffEF4444)),
-                            SizedBox(height: 12),
+                            SizedBox(
+                                height: ResponsiveHelper(context).smallSpacing),
                             Text(
                               _error!,
                               style: TextStyle(
@@ -447,7 +510,8 @@ class _KpiChartState extends State<KpiChart> {
                               ),
                               textAlign: TextAlign.center,
                             ),
-                            const SizedBox(height: 12),
+                            SizedBox(
+                                height: ResponsiveHelper(context).smallSpacing),
                             TextButton(
                               onPressed: _loadData,
                               child: Text('Повторить'),
@@ -472,16 +536,18 @@ class _KpiChartState extends State<KpiChart> {
                                   children: [
                                     PieChart(
                                       PieChartData(
-                                        sectionsSpace: 2,
+                                        sectionsSpace: 3,
                                         centerSpaceRadius: 50,
                                         startDegreeOffset: -90,
                                         pieTouchData: PieTouchData(
-                                          touchCallback:
-                                              (FlTouchEvent event, pieTouchResponse) {
+                                          touchCallback: (FlTouchEvent event,
+                                              pieTouchResponse) {
                                             setState(() {
-                                              if (!event.isInterestedForInteractions ||
+                                              if (!event
+                                                      .isInterestedForInteractions ||
                                                   pieTouchResponse == null ||
-                                                  pieTouchResponse.touchedSection ==
+                                                  pieTouchResponse
+                                                          .touchedSection ==
                                                       null) {
                                                 _touchedIndex = -1;
                                                 return;
@@ -492,14 +558,16 @@ class _KpiChartState extends State<KpiChart> {
                                             });
                                           },
                                         ),
-                                        sections: List.generate(slices.length, (index) {
-                                          final isTouched = index == _touchedIndex;
+                                        sections: List.generate(slices.length,
+                                            (index) {
+                                          final isTouched =
+                                              index == _touchedIndex;
                                           final slice = slices[index];
                                           return PieChartSectionData(
                                             value: slice.value,
                                             title: '',
                                             color: slice.color,
-                                            radius: isTouched ? 55 : 50,
+                                            radius: isTouched ? 45 : 40,
                                           );
                                         }),
                                       ),
@@ -577,6 +645,44 @@ class _KpiChartState extends State<KpiChart> {
               ),
             ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildSliceToggle({
+    required Color color,
+    required String label,
+    required bool isActive,
+    required VoidCallback onTap,
+  }) {
+    final responsive = ResponsiveHelper(context);
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedOpacity(
+        duration: const Duration(milliseconds: 200),
+        opacity: isActive ? 1.0 : 0.4,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 12,
+              height: 12,
+              decoration: BoxDecoration(
+                color: color,
+                shape: BoxShape.circle,
+              ),
+            ),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: responsive.smallFontSize,
+                color: Color(0xff64748B),
+                fontFamily: 'Golos',
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

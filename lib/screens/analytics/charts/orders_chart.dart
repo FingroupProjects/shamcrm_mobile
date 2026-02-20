@@ -39,12 +39,18 @@ class _OrdersChartState extends State<OrdersChart> {
   ];
 
   static final List<OrdersChartPoint> _previewPoints = [
-    OrdersChartPoint(month: 1, totalOrders: 120, successfulOrders: 92, canceledOrders: 28),
-    OrdersChartPoint(month: 2, totalOrders: 135, successfulOrders: 104, canceledOrders: 31),
-    OrdersChartPoint(month: 3, totalOrders: 148, successfulOrders: 121, canceledOrders: 27),
-    OrdersChartPoint(month: 4, totalOrders: 162, successfulOrders: 129, canceledOrders: 33),
-    OrdersChartPoint(month: 5, totalOrders: 175, successfulOrders: 143, canceledOrders: 32),
-    OrdersChartPoint(month: 6, totalOrders: 190, successfulOrders: 156, canceledOrders: 34),
+    OrdersChartPoint(
+        month: 1, totalOrders: 120, successfulOrders: 92, canceledOrders: 28),
+    OrdersChartPoint(
+        month: 2, totalOrders: 135, successfulOrders: 104, canceledOrders: 31),
+    OrdersChartPoint(
+        month: 3, totalOrders: 148, successfulOrders: 121, canceledOrders: 27),
+    OrdersChartPoint(
+        month: 4, totalOrders: 162, successfulOrders: 129, canceledOrders: 33),
+    OrdersChartPoint(
+        month: 5, totalOrders: 175, successfulOrders: 143, canceledOrders: 32),
+    OrdersChartPoint(
+        month: 6, totalOrders: 190, successfulOrders: 156, canceledOrders: 34),
   ];
 
   @override
@@ -82,7 +88,7 @@ class _OrdersChartState extends State<OrdersChart> {
       isScrollControlled: true,
       backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
       ),
       builder: (context) {
         return Padding(
@@ -91,15 +97,26 @@ class _OrdersChartState extends State<OrdersChart> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(_title,
-                style: TextStyle(
-                  fontSize: ResponsiveHelper(context).titleFontSize,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xff0F172A),
-                  fontFamily: 'Golos',
-                ),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      _title,
+                      style: TextStyle(
+                        fontSize: ResponsiveHelper(context).titleFontSize,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xff0F172A),
+                        fontFamily: 'Golos',
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: Icon(Icons.close, color: Color(0xff64748B)),
+                  ),
+                ],
               ),
-              SizedBox(height: 12),
+              SizedBox(height: ResponsiveHelper(context).smallSpacing),
               Flexible(
                 child: ListView.separated(
                   shrinkWrap: true,
@@ -107,10 +124,10 @@ class _OrdersChartState extends State<OrdersChart> {
                   separatorBuilder: (_, __) => const Divider(height: 1),
                   itemBuilder: (context, index) {
                     final point = _data!.chartData[index];
-                    final month = point.month >= 0 &&
-                            point.month < _monthNames.length
-                        ? _monthNames[point.month]
-                        : point.month.toString();
+                    final month =
+                        point.month >= 0 && point.month < _monthNames.length
+                            ? _monthNames[point.month]
+                            : point.month.toString();
                     return ListTile(
                       contentPadding: EdgeInsets.zero,
                       title: Text(
@@ -192,8 +209,8 @@ class _OrdersChartState extends State<OrdersChart> {
             child: Row(
               children: [
                 Container(
-                  width: 36,
-                  height: 36,
+                  width: ResponsiveHelper(context).iconSize,
+                  height: ResponsiveHelper(context).iconSize,
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
                       colors: [Color(0xff14B8A6), Color(0xff0D9488)],
@@ -207,13 +224,13 @@ class _OrdersChartState extends State<OrdersChart> {
                       ),
                     ],
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.shopping_cart_outlined,
                     color: Colors.white,
-                    size: 20,
+                    size: ResponsiveHelper(context).smallIconSize,
                   ),
                 ),
-                SizedBox(width: 12),
+                SizedBox(width: ResponsiveHelper(context).smallSpacing),
                 Expanded(
                   child: Text(
                     _title,
@@ -230,13 +247,15 @@ class _OrdersChartState extends State<OrdersChart> {
                 const SizedBox(width: 8),
                 IconButton(
                   onPressed: _showDetails,
-                  icon: Icon(Icons.crop_free, color: Color(0xff64748B), size: 22),
+                  icon: Icon(Icons.crop_free,
+                      color: Color(0xff64748B),
+                      size: ResponsiveHelper(context).smallIconSize),
                   style: IconButton.styleFrom(
                     backgroundColor: Color(0xffF1F5F9),
-                    minimumSize: Size(44, 44),
+                    minimumSize: Size(36, 36),
                     padding: EdgeInsets.zero,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.all(Radius.circular(16)),
+                      borderRadius: BorderRadius.all(Radius.circular(12)),
                     ),
                   ),
                 ),
@@ -253,9 +272,10 @@ class _OrdersChartState extends State<OrdersChart> {
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const Icon(Icons.error_outline,
+                            Icon(Icons.error_outline,
                                 size: 48, color: Color(0xffEF4444)),
-                            SizedBox(height: 12),
+                            SizedBox(
+                                height: ResponsiveHelper(context).smallSpacing),
                             Text(
                               _error!,
                               style: TextStyle(
@@ -265,7 +285,8 @@ class _OrdersChartState extends State<OrdersChart> {
                               ),
                               textAlign: TextAlign.center,
                             ),
-                            const SizedBox(height: 12),
+                            SizedBox(
+                                height: ResponsiveHelper(context).smallSpacing),
                             TextButton(
                               onPressed: _loadData,
                               child: const Text('Повторить'),
@@ -315,7 +336,8 @@ class _OrdersChartState extends State<OrdersChart> {
                                               label,
                                               style: TextStyle(
                                                 color: Color(0xff64748B),
-                                                fontSize: responsive.smallFontSize,
+                                                fontSize:
+                                                    responsive.smallFontSize,
                                                 fontFamily: 'Golos',
                                               ),
                                             ),
@@ -362,10 +384,8 @@ class _OrdersChartState extends State<OrdersChart> {
                                   },
                                 ),
                                 borderData: FlBorderData(show: false),
-                                barGroups: displayPoints
-                                    .asMap()
-                                    .entries
-                                    .map((entry) {
+                                barGroups:
+                                    displayPoints.asMap().entries.map((entry) {
                                   final p = entry.value;
                                   return _makeGroupData(
                                     entry.key,

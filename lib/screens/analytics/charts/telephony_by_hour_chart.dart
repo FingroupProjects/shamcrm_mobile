@@ -207,7 +207,11 @@ class _TelephonyByHourChartState extends State<TelephonyByHourChart> {
                       Navigator.of(context).pop();
                       _loadData();
                     },
-                    icon: const Icon(Icons.refresh, color: Color(0xff64748B)),
+                    icon: Icon(Icons.refresh, color: Color(0xff64748B)),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: Icon(Icons.close, color: Color(0xff64748B)),
                   ),
                 ],
               ),
@@ -375,7 +379,7 @@ class _TelephonyByHourChartState extends State<TelephonyByHourChart> {
                           ),
                         ],
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.schedule,
                         color: Colors.white,
                         size: 20,
@@ -398,7 +402,7 @@ class _TelephonyByHourChartState extends State<TelephonyByHourChart> {
                     const SizedBox(width: 8),
                     IconButton(
                       onPressed: _showDetails,
-                      icon: const Icon(Icons.crop_free,
+                      icon: Icon(Icons.crop_free,
                           color: Color(0xff64748B), size: 22),
                       style: IconButton.styleFrom(
                         backgroundColor: Color(0xffF1F5F9),
@@ -430,7 +434,7 @@ class _TelephonyByHourChartState extends State<TelephonyByHourChart> {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(
+                          Icon(
                             Icons.calendar_month_outlined,
                             size: 16,
                             color: Color(0xff64748B),

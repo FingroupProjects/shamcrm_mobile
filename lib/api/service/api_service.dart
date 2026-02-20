@@ -6564,9 +6564,8 @@ class ApiService {
       }
 
       final dynamic jsonData = json.decode(response.body);
-      final dynamic result = jsonData is Map<String, dynamic>
-          ? jsonData['result']
-          : null;
+      final dynamic result =
+          jsonData is Map<String, dynamic> ? jsonData['result'] : null;
 
       if (result is! List) {
         return [];
@@ -6829,9 +6828,13 @@ class ApiService {
 
   /// Подключенные аккаунты
   /// Endpoint: /api/v2/dashboard/connected-accounts-chart
-  Future<ConnectedAccountsResponse> getConnectedAccountsChartV2() async {
-    final path =
+  Future<ConnectedAccountsResponse> getConnectedAccountsChartV2(
+      {int? channel}) async {
+    var path =
         await _appendQueryParams('/v2/dashboard/connected-accounts-chart');
+    if (channel != null) {
+      path += '&channel=$channel';
+    }
 
     if (kDebugMode) {
       debugPrint(
@@ -6912,9 +6915,13 @@ class ApiService {
 
   /// Таргетированная реклама (Meta Ads)
   /// Endpoint: /api/v2/dashboard/targeted-advertising-chart
-  Future<TargetedAdsResponse> getTargetedAdvertisingChartV2() async {
-    final path =
+  Future<TargetedAdsResponse> getTargetedAdvertisingChartV2(
+      {int? projectId}) async {
+    var path =
         await _appendQueryParams('/v2/dashboard/targeted-advertising-chart');
+    if (projectId != null) {
+      path += '&project_id=$projectId';
+    }
 
     if (kDebugMode) {
       debugPrint(
@@ -8576,6 +8583,41 @@ class ApiService {
 
     debugPrint('✅ ApiService: Retrieved selected funnel ID: $funnelId');
     return funnelId;
+  }
+
+  /// Гарантирует, что selected_sales_funnel сохранён до первых запросов Dashboard.
+  /// Порядок: SharedPreferences -> кэш воронок -> API /sales-funnel.
+  Future<String?> ensureSelectedSalesFunnelInitialized() async {
+    final existing = await getSelectedSalesFunnel();
+    if (existing != null && existing.isNotEmpty && existing != 'null') {
+      return existing;
+    }
+
+    try {
+      final cachedFunnels = await getCachedSalesFunnels();
+      if (cachedFunnels.isNotEmpty) {
+        final funnelId = cachedFunnels.first.id.toString();
+        await saveSelectedSalesFunnel(funnelId);
+        return funnelId;
+      }
+    } catch (e) {
+      debugPrint(
+          'ApiService: ensureSelectedSalesFunnelInitialized cache error: $e');
+    }
+
+    try {
+      final serverFunnels = await getSalesFunnels();
+      if (serverFunnels.isNotEmpty) {
+        final funnelId = serverFunnels.first.id.toString();
+        await saveSelectedSalesFunnel(funnelId);
+        return funnelId;
+      }
+    } catch (e) {
+      debugPrint(
+          'ApiService: ensureSelectedSalesFunnelInitialized API error: $e');
+    }
+
+    return null;
   }
 
 // Существующий метод для сохранения выбранной воронки

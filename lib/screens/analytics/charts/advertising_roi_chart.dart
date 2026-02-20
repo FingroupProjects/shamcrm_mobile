@@ -177,7 +177,11 @@ class _AdvertisingRoiChartState extends State<AdvertisingRoiChart> {
                       Navigator.of(ctx).pop();
                       _loadData();
                     },
-                    icon: const Icon(Icons.refresh, color: Color(0xff64748B)),
+                    icon: Icon(Icons.refresh, color: Color(0xff64748B)),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.of(ctx).pop(),
+                    icon: Icon(Icons.close, color: Color(0xff64748B)),
                   ),
                 ],
               ),

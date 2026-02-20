@@ -66,8 +66,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     'top_selling_products': 'ТОП продаваемых товаров',
     'telephony_and_events': 'Телефония и события',
     'replies_to_messages': 'Ответы на сообщения',
-      'task_statistics_by_project': 'Статистика задач по проектам',
-      'project_statistics': 'Статистика по проектам',
+    'task_statistics_by_project': 'Статистика задач по проектам',
+    'project_statistics': 'Статистика по проектам',
     'targeted_advertising': 'Таргетированная реклама (Meta Ads)',
     'connected_accounts': 'Подключённые аккаунты (по каналам)',
     'advertising_effectiveness': 'Эффективность рекламы (ROI)',
@@ -689,7 +689,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                                               (states) {
                                                 if (states.contains(
                                                     WidgetState.selected)) {
-                                                  return const Color(0xff4F40EC);
+                                                  return const Color(
+                                                      0xff4F40EC);
                                                 }
                                                 return const Color(0xff8E8E93);
                                               },
@@ -840,8 +841,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
             physics: const AlwaysScrollableScrollPhysics(),
             padding: EdgeInsets.all(horizontalPadding),
             cacheExtent: viewportHeight * 1.2,
-            itemCount:
-                (showStatsSection ? 1 : 0) + chartWidgets.length,
+            itemCount: (showStatsSection ? 1 : 0) + chartWidgets.length,
             itemBuilder: (context, index) {
               if (showStatsSection && index == 0) {
                 return Column(
@@ -852,7 +852,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                         final cardWidth = (constraints.maxWidth -
                                 (cardSpacing * (gridCrossAxisCount - 1))) /
                             gridCrossAxisCount;
-                        final cardHeight = cardWidth * 1.15;
+                        final cardHeight = cardWidth * 0.85;
 
                         return GridView.count(
                           shrinkWrap: true,

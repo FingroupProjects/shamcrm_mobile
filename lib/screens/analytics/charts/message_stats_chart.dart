@@ -53,7 +53,7 @@ class _MessageStatsChartState extends State<MessageStatsChart> {
       isScrollControlled: true,
       backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
       ),
       builder: (context) {
         return Padding(
@@ -80,11 +80,15 @@ class _MessageStatsChartState extends State<MessageStatsChart> {
                       Navigator.of(context).pop();
                       _loadData();
                     },
-                    icon: const Icon(Icons.refresh, color: Color(0xff64748B)),
+                    icon: Icon(Icons.refresh, color: Color(0xff64748B)),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: Icon(Icons.close, color: Color(0xff64748B)),
                   ),
                 ],
               ),
-              SizedBox(height: 12),
+              SizedBox(height: ResponsiveHelper(context).smallSpacing),
               Flexible(
                 child: ListView.separated(
                   shrinkWrap: true,
@@ -184,8 +188,8 @@ class _MessageStatsChartState extends State<MessageStatsChart> {
             child: Row(
               children: [
                 Container(
-                  width: 36,
-                  height: 36,
+                  width: ResponsiveHelper(context).iconSize,
+                  height: ResponsiveHelper(context).iconSize,
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
                       colors: [Color(0xff14B8A6), Color(0xff0D9488)],
@@ -199,13 +203,13 @@ class _MessageStatsChartState extends State<MessageStatsChart> {
                       ),
                     ],
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.message_outlined,
                     color: Colors.white,
-                    size: 20,
+                    size: ResponsiveHelper(context).smallIconSize,
                   ),
                 ),
-                SizedBox(width: 12),
+                SizedBox(width: ResponsiveHelper(context).smallSpacing),
                 Expanded(
                   child: Text(
                     'Статистика сообщений',
@@ -219,14 +223,15 @@ class _MessageStatsChartState extends State<MessageStatsChart> {
                 ),
                 IconButton(
                   onPressed: _showDetails,
-                  icon:
-                      Icon(Icons.crop_free, color: Color(0xff64748B), size: 22),
+                  icon: Icon(Icons.crop_free,
+                      color: Color(0xff64748B),
+                      size: ResponsiveHelper(context).smallIconSize),
                   style: IconButton.styleFrom(
                     backgroundColor: Color(0xffF1F5F9),
-                    minimumSize: Size(44, 44),
+                    minimumSize: Size(36, 36),
                     padding: EdgeInsets.zero,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.all(Radius.circular(16)),
+                      borderRadius: BorderRadius.all(Radius.circular(12)),
                     ),
                   ),
                 ),
@@ -322,9 +327,9 @@ class _MessageStatsChartState extends State<MessageStatsChart> {
               responsive.cardPadding,
             ),
             child: Row(
-              children: const [
+              children: [
                 _LegendDot(color: Color(0xff6366F1), label: 'Получено'),
-                SizedBox(width: 12),
+                SizedBox(width: ResponsiveHelper(context).smallSpacing),
                 _LegendDot(color: Color(0xff10B981), label: 'Отправлено'),
               ],
             ),

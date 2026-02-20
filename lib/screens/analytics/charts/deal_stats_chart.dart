@@ -67,7 +67,7 @@ class _DealStatsChartState extends State<DealStatsChart> {
       isScrollControlled: true,
       backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
       ),
       builder: (context) {
         return Padding(
@@ -94,11 +94,11 @@ class _DealStatsChartState extends State<DealStatsChart> {
                       Navigator.of(context).pop();
                       _loadData();
                     },
-                    icon: const Icon(Icons.refresh, color: Color(0xff64748B)),
+                    icon: Icon(Icons.refresh, color: Color(0xff64748B)),
                   ),
                 ],
               ),
-              SizedBox(height: 12),
+              SizedBox(height: ResponsiveHelper(context).smallSpacing),
               Flexible(
                 child: ListView.separated(
                   shrinkWrap: true,
@@ -207,8 +207,8 @@ class _DealStatsChartState extends State<DealStatsChart> {
             child: Row(
               children: [
                 Container(
-                  width: 36,
-                  height: 36,
+                  width: ResponsiveHelper(context).iconSize,
+                  height: ResponsiveHelper(context).iconSize,
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
                       colors: [Color(0xffF59E0B), Color(0xffD97706)],
@@ -222,13 +222,13 @@ class _DealStatsChartState extends State<DealStatsChart> {
                       ),
                     ],
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.receipt_long,
                     color: Colors.white,
-                    size: 20,
+                    size: ResponsiveHelper(context).smallIconSize,
                   ),
                 ),
-                SizedBox(width: 12),
+                SizedBox(width: ResponsiveHelper(context).smallSpacing),
                 Expanded(
                   child: Text(
                     'Сделки по месяцам',
@@ -243,13 +243,13 @@ class _DealStatsChartState extends State<DealStatsChart> {
                 IconButton(
                   onPressed: _showDetails,
                   icon:
-                      Icon(Icons.crop_free, color: Color(0xff64748B), size: 22),
+                      Icon(Icons.crop_free, color: Color(0xff64748B), size: ResponsiveHelper(context).smallIconSize),
                   style: IconButton.styleFrom(
                     backgroundColor: Color(0xffF1F5F9),
-                    minimumSize: Size(44, 44),
+                    minimumSize: Size(36, 36),
                     padding: EdgeInsets.zero,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.all(Radius.circular(16)),
+                      borderRadius: BorderRadius.all(Radius.circular(12)),
                     ),
                   ),
                 ),
@@ -363,9 +363,9 @@ class _DealStatsChartState extends State<DealStatsChart> {
               responsive.cardPadding,
             ),
             child: Row(
-              children: const [
+              children: [
                 _LegendDot(color: Color(0xff6366F1), label: 'Всего'),
-                SizedBox(width: 12),
+                SizedBox(width: ResponsiveHelper(context).smallSpacing),
                 _LegendDot(color: Color(0xff10B981), label: 'Успешные'),
               ],
             ),
