@@ -1,6 +1,9 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:convert';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
 import '../../api/service/http_log_model.dart';
 import 'theme_controller.dart';
 
@@ -18,6 +21,8 @@ class HttpRequestDetailScreen extends StatefulWidget {
 
 class _HttpRequestDetailScreenState extends State<HttpRequestDetailScreen>
     with SingleTickerProviderStateMixin {
+  static const MethodChannel _nativeChannel =
+      MethodChannel('com.softtech.crm_task_manager/widget');
   late TabController _tabController;
   final ThemeController _themeController = ThemeController();
   int _currentTab = 0;
@@ -124,6 +129,41 @@ class _HttpRequestDetailScreenState extends State<HttpRequestDetailScreen>
           onPressed: () => Navigator.pop(context),
         ),
       ),
+      actions: [
+        Container(
+          margin: const EdgeInsets.fromLTRB(0, 8, 12, 8),
+          decoration: BoxDecoration(
+            color: isDark
+                ? DarkThemeColors.surface.withOpacity(0.5)
+                : LightThemeColors.surface,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: isDark
+                  ? Colors.white.withOpacity(0.1)
+                  : LightThemeColors.border,
+              width: 1.5,
+            ),
+            boxShadow: isDark
+                ? []
+                : [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+          ),
+          child: IconButton(
+            icon: Icon(
+              Icons.share_rounded,
+              color: textColor,
+              size: 20,
+            ),
+            onPressed: _shareLogAsFile,
+            tooltip: 'Share',
+          ),
+        ),
+      ],
       flexibleSpace: FlexibleSpaceBar(
         background: Container(
           decoration: BoxDecoration(
@@ -317,8 +357,7 @@ class _HttpRequestDetailScreenState extends State<HttpRequestDetailScreen>
             color: const Color(0xFF3B82F6),
           ),
           const SizedBox(height: 24),
-          _buildSectionHeader(
-              isDark, 'Query Params', Icons.tune_rounded),
+          _buildSectionHeader(isDark, 'Query Params', Icons.tune_rounded),
           const SizedBox(height: 12),
           _buildModernHeadersCard(isDark, queryParams),
           const SizedBox(height: 24),
@@ -817,6 +856,124 @@ class _HttpRequestDetailScreenState extends State<HttpRequestDetailScreen>
 
   String _formatFullTime(DateTime time) {
     return '${time.day.toString().padLeft(2, '0')}/${time.month.toString().padLeft(2, '0')}/${time.year} ${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}:${time.second.toString().padLeft(2, '0')}';
+  }
+
+  Future<void> _shareLogAsFile() async {
+    String? filePath;
+    try {
+      final log = widget.log;
+      final payload = _resolvePayload(log);
+      final fileContent = _buildExportJsonString(
+        endpointUrl: log.url,
+        payloadBody: payload,
+        responseBody: log.responseBody,
+      );
+
+      final tempDir = await getTemporaryDirectory();
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      filePath = '${tempDir.path}/http_log_$timestamp.json';
+      final file = File(filePath);
+      await file.writeAsString(fileContent, flush: true);
+      final exists = await file.exists();
+      final size = exists ? await file.length() : 0;
+
+      debugPrint('[HTTP Inspector] Share export start');
+      debugPrint('[HTTP Inspector] File path: $filePath');
+      debugPrint('[HTTP Inspector] File exists: $exists');
+      debugPrint('[HTTP Inspector] File size: $size bytes');
+
+      await Share.shareXFiles(
+        [XFile(file.path)],
+        text: 'HTTP Request Export',
+        subject: 'HTTP Request Export',
+      );
+
+      debugPrint('[HTTP Inspector] Share export success');
+    } on MissingPluginException catch (e, st) {
+      debugPrint('[HTTP Inspector] Share plugin missing: $e');
+      debugPrint('[HTTP Inspector] StackTrace: $st');
+
+      var nativeShareStarted = false;
+      if (filePath != null) {
+        try {
+          final nativeResult = await _nativeChannel.invokeMethod<bool>(
+            'shareExportFile',
+            {
+              'path': filePath,
+              'title': 'Share HTTP Request Export',
+              'text': 'HTTP Request Export',
+              'mimeType': 'application/json',
+            },
+          );
+          nativeShareStarted = nativeResult == true;
+          debugPrint(
+            '[HTTP Inspector] Native share fallback result: $nativeResult',
+          );
+        } catch (nativeError, nativeStack) {
+          debugPrint(
+            '[HTTP Inspector] Native share fallback failed: $nativeError',
+          );
+          debugPrint(
+            '[HTTP Inspector] Native share fallback stack: $nativeStack',
+          );
+        }
+      }
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            filePath == null
+                ? 'Share plugin not available on this build'
+                : nativeShareStarted
+                    ? 'Share started via native Android'
+                    : 'Failed to start native share',
+          ),
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.all(16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      );
+    } catch (e, st) {
+      debugPrint('[HTTP Inspector] Share export failed: $e');
+      debugPrint('[HTTP Inspector] StackTrace: $st');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to share file: $e'),
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.all(16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      );
+    }
+  }
+
+  String _buildExportJsonString({
+    required String endpointUrl,
+    required String? payloadBody,
+    required String? responseBody,
+  }) {
+    final exportData = <String, dynamic>{
+      'Endpoint URL': endpointUrl,
+      'Body Json Payload': _decodeJsonOrKeepString(payloadBody),
+      'Body Json Response': _decodeJsonOrKeepString(responseBody),
+    };
+
+    return const JsonEncoder.withIndent('  ').convert(exportData);
+  }
+
+  dynamic _decodeJsonOrKeepString(String? raw) {
+    if (raw == null || raw.trim().isEmpty) return null;
+    try {
+      return json.decode(raw);
+    } catch (_) {
+      return raw;
+    }
   }
 
   void _copyToClipboard(String text) {

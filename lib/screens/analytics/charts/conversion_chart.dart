@@ -15,6 +15,8 @@ class ConversionChart extends StatefulWidget {
 }
 
 class _ConversionChartState extends State<ConversionChart> {
+  static const List<double> _fixedConversionTicks = [100, 80, 50, 20, 10, 0];
+
   bool _isLoading = true;
   String? _error;
   List<double> _conversionData = [];
@@ -97,11 +99,6 @@ class _ConversionChartState extends State<ConversionChart> {
   double get _averagePercentage {
     if (_conversionData.isEmpty) return 0.0;
     return _conversionData.reduce((a, b) => a + b) / _conversionData.length;
-  }
-
-  double get _maxPercentage {
-    if (_conversionData.isEmpty) return 0.0;
-    return _conversionData.reduce((a, b) => a > b ? a : b);
   }
 
   int get _bestMonthIndex {
@@ -197,10 +194,6 @@ class _ConversionChartState extends State<ConversionChart> {
     final isEmpty =
         _conversionData.isEmpty || _conversionData.every((v) => v == 0);
     final chartData = isEmpty ? _previewData : _conversionData;
-    final maxPercentage = chartData.isEmpty
-        ? 0.0
-        : chartData.reduce((a, b) => a > b ? a : b);
-
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -310,7 +303,8 @@ class _ConversionChartState extends State<ConversionChart> {
                             child: BarChart(
                               BarChartData(
                                 alignment: BarChartAlignment.spaceAround,
-                                maxY: maxPercentage + 5,
+                                minY: 0,
+                                maxY: 100,
                                 barTouchData: BarTouchData(
                                   enabled: true,
                                   touchTooltipData: BarTouchTooltipData(
@@ -365,12 +359,23 @@ class _ConversionChartState extends State<ConversionChart> {
                                     sideTitles: SideTitles(
                                       showTitles: true,
                                       reservedSize: 40,
+                                      interval: 10,
                                       getTitlesWidget: (value, meta) {
+                                        final bool isTick = _fixedConversionTicks
+                                            .any((tick) =>
+                                                (tick - value).abs() < 0.001);
+                                        if (!isTick) {
+                                          return const SizedBox.shrink();
+                                        }
+                                        final label = value == 0
+                                            ? '%'
+                                            : '${value.toInt()}';
                                         return Text(
-                                          '${value.toInt()}%',
+                                          label,
                                           style: TextStyle(
                                             color: Color(0xff64748B),
-                                            fontSize: responsive.smallFontSize,
+                                            fontSize:
+                                                responsive.smallFontSize,
                                             fontFamily: 'Golos',
                                           ),
                                         );
@@ -387,8 +392,17 @@ class _ConversionChartState extends State<ConversionChart> {
                                 gridData: FlGridData(
                                   show: true,
                                   drawVerticalLine: false,
-                                  horizontalInterval: 5,
+                                  horizontalInterval: 10,
                                   getDrawingHorizontalLine: (value) {
+                                    final bool isTick = _fixedConversionTicks
+                                        .any((tick) =>
+                                            (tick - value).abs() < 0.001);
+                                    if (!isTick) {
+                                      return const FlLine(
+                                        color: Colors.transparent,
+                                        strokeWidth: 0,
+                                      );
+                                    }
                                     return const FlLine(
                                       color: Color(0xffE2E8F0),
                                       strokeWidth: 1,

@@ -14,10 +14,13 @@ import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import androidx.activity.enableEdgeToEdge
+import androidx.core.content.FileProvider
 import io.flutter.embedding.android.FlutterFragmentActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.EventChannel
 import io.flutter.plugin.common.MethodChannel
+import io.flutter.plugins.GeneratedPluginRegistrant
+import java.io.File
 
 class MainActivity : FlutterFragmentActivity() {
     
@@ -115,6 +118,7 @@ class MainActivity : FlutterFragmentActivity() {
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+        GeneratedPluginRegistrant.registerWith(flutterEngine)
         
         Log.d("MainActivity", "=== configureFlutterEngine ===")
         
@@ -133,6 +137,19 @@ class MainActivity : FlutterFragmentActivity() {
                     val pending = getPendingNavigation()
                     clearPendingNavigation()
                     result.success(pending)
+                }
+                "shareExportFile" -> {
+                    val path = call.argument<String>("path")
+                    val title = call.argument<String>("title")
+                    val text = call.argument<String>("text")
+                    val mimeType =
+                        call.argument<String>("mimeType") ?: "application/json"
+
+                    if (path.isNullOrEmpty()) {
+                        result.error("INVALID_PATH", "Path is empty", null)
+                    } else {
+                        shareExportFile(path, title, text, mimeType, result)
+                    }
                 }
                 else -> {
                     result.notImplemented()
@@ -304,6 +321,42 @@ class MainActivity : FlutterFragmentActivity() {
             }
         } catch (e: Exception) {
             Log.e("MainActivity", "Error updating widget: ${e.message}", e)
+        }
+    }
+
+    private fun shareExportFile(
+        path: String,
+        title: String?,
+        text: String?,
+        mimeType: String,
+        result: MethodChannel.Result
+    ) {
+        try {
+            val file = File(path)
+            if (!file.exists()) {
+                result.error("FILE_NOT_FOUND", "File does not exist: $path", null)
+                return
+            }
+
+            val authority = "${BuildConfig.APPLICATION_ID}.fileprovider"
+            val uri = FileProvider.getUriForFile(this, authority, file)
+
+            val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                type = mimeType
+                putExtra(Intent.EXTRA_STREAM, uri)
+                if (!text.isNullOrEmpty()) {
+                    putExtra(Intent.EXTRA_TEXT, text)
+                }
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+
+            val chooser = Intent.createChooser(shareIntent, title ?: "Share")
+            chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            startActivity(chooser)
+            result.success(true)
+        } catch (e: Exception) {
+            Log.e("MainActivity", "shareExportFile error: ${e.message}", e)
+            result.error("SHARE_ERROR", e.message, null)
         }
     }
 }

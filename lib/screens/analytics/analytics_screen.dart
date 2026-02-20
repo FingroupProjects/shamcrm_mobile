@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
@@ -22,16 +24,21 @@ import 'package:crm_task_manager/screens/analytics/charts/telephony_by_hour_char
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/screens/analytics/models/dashboard_setting_item.dart';
 import 'package:crm_task_manager/custom_widget/shimmer_wave.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class AnalyticsScreen extends StatefulWidget {
   const AnalyticsScreen({
     Key? key,
     this.showAppBar = true,
     this.filterTrigger = 0,
+    this.chartSettingsTrigger = 0,
+    this.showStatistics = true,
   }) : super(key: key);
 
   final bool showAppBar;
   final int filterTrigger;
+  final int chartSettingsTrigger;
+  final bool showStatistics;
 
   @override
   _AnalyticsScreenState createState() => _AnalyticsScreenState();
@@ -40,6 +47,14 @@ class AnalyticsScreen extends StatefulWidget {
 class _AnalyticsScreenState extends State<AnalyticsScreen> {
   static const String _defaultPeriodKey = 'current_year';
   static const String _allPeriodKey = 'all';
+  static const Set<String> _defaultHiddenChartKeys = {
+    'replies_to_messages',
+    'task_statistics_by_project',
+    'targeted_advertising',
+    'connected_accounts',
+    'advertising_effectiveness',
+    'calls_by_hour',
+  };
   static const Map<String, String> _fallbackChartTitles = {
     'conversion': 'Конверсия лидов',
     'lead_sources': 'Источник лидов',
@@ -51,7 +66,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     'top_selling_products': 'ТОП продаваемых товаров',
     'telephony_and_events': 'Телефония и события',
     'replies_to_messages': 'Ответы на сообщения',
-    'task_statistics_by_project': 'Статистика задач по проектам',
+      'task_statistics_by_project': 'Статистика задач по проектам',
+      'project_statistics': 'Статистика по проектам',
     'targeted_advertising': 'Таргетированная реклама (Meta Ads)',
     'connected_accounts': 'Подключённые аккаунты (по каналам)',
     'advertising_effectiveness': 'Эффективность рекламы (ROI)',
@@ -81,15 +97,20 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   double _revenueChange = 0.0;
   double _conversionChange = 0.0;
   int _lastFilterTrigger = 0;
+  int _lastChartSettingsTrigger = 0;
+  bool _isLoadingLocalChartPrefs = true;
+  Map<String, bool> _chartVisibility = {};
 
   @override
   void initState() {
     super.initState();
     _lastFilterTrigger = widget.filterTrigger;
+    _lastChartSettingsTrigger = widget.chartSettingsTrigger;
     _selectedPeriodKey = _defaultPeriodKey;
     _initializeDefaultFilters();
     _loadStats();
     _loadDashboardSettings();
+    _loadChartVisibilityPrefs();
   }
 
   Future<void> _initializeDefaultFilters() async {
@@ -126,6 +147,104 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         }
       });
     }
+    if (!widget.showAppBar &&
+        widget.chartSettingsTrigger != _lastChartSettingsTrigger) {
+      _lastChartSettingsTrigger = widget.chartSettingsTrigger;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _showChartSettingsSheet();
+        }
+      });
+    }
+  }
+
+  Future<String> _chartVisibilityPrefsKey() async {
+    final prefs = await SharedPreferences.getInstance();
+    final userId = prefs.getString('userID') ?? '0';
+    final organizationId = prefs.getString('selectedOrganization') ?? '0';
+    return 'crm_dashboard_chart_visibility_v1_${userId}_$organizationId';
+  }
+
+  Future<void> _loadChartVisibilityPrefs() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final key = await _chartVisibilityPrefsKey();
+      final raw = prefs.getString(key);
+      if (raw == null || raw.trim().isEmpty) {
+        if (!mounted) return;
+        setState(() {
+          _chartVisibility = {};
+          _isLoadingLocalChartPrefs = false;
+        });
+        return;
+      }
+
+      final decoded = jsonDecode(raw);
+      if (decoded is! Map) {
+        if (!mounted) return;
+        setState(() {
+          _chartVisibility = {};
+          _isLoadingLocalChartPrefs = false;
+        });
+        return;
+      }
+
+      final map = <String, bool>{};
+      decoded.forEach((k, v) {
+        if (k is String && v is bool) {
+          map[k] = v;
+        }
+      });
+
+      if (!mounted) return;
+      setState(() {
+        _chartVisibility = map;
+        _isLoadingLocalChartPrefs = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _chartVisibility = {};
+        _isLoadingLocalChartPrefs = false;
+      });
+    }
+  }
+
+  Future<void> _saveChartVisibilityPrefs(Map<String, bool> value) async {
+    final prefs = await SharedPreferences.getInstance();
+    final key = await _chartVisibilityPrefsKey();
+    await prefs.setString(key, jsonEncode(value));
+  }
+
+  bool _isChartEnabled(String canonicalKey) {
+    final saved = _chartVisibility[canonicalKey];
+    if (saved != null) return saved;
+    return !_defaultHiddenChartKeys.contains(canonicalKey);
+  }
+
+  List<_ChartVisibilitySettingEntry> _buildChartSettingsEntries() {
+    final entries = <_ChartVisibilitySettingEntry>[];
+    final added = <String>{};
+
+    for (final item in _orderedChartSettings) {
+      final rawKey = item.nameEn.trim();
+      if (rawKey.isEmpty) continue;
+      final canonicalKey = _chartCanonicalKey(rawKey);
+      if (canonicalKey == null || added.contains(canonicalKey)) {
+        continue;
+      }
+      added.add(canonicalKey);
+      entries.add(
+        _ChartVisibilitySettingEntry(
+          key: canonicalKey,
+          title: item.name.trim().isNotEmpty
+              ? item.name.trim()
+              : (_fallbackChartTitles[canonicalKey] ?? canonicalKey),
+        ),
+      );
+    }
+
+    return entries;
   }
 
   Future<void> _loadDashboardSettings() async {
@@ -250,6 +369,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       'message_replies': 'replies_to_messages',
       'task_statistics_by_project': 'task_statistics_by_project',
       'task_stats_by_project': 'task_statistics_by_project',
+      'project_statistics': 'task_statistics_by_project',
       'targeted_advertising': 'targeted_advertising',
       'connected_accounts': 'connected_accounts',
       'advertising_effectiveness': 'advertising_effectiveness',
@@ -272,7 +392,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   }
 
   List<Widget> _buildChartWidgets() {
-    if (_isLoadingChartSettings) {
+    if (_isLoadingChartSettings || _isLoadingLocalChartPrefs) {
       return const [
         Padding(
           padding: EdgeInsets.symmetric(vertical: 24),
@@ -294,7 +414,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                 style: const TextStyle(
                   color: Color(0xff64748B),
                   fontSize: 14,
-                  fontFamily: 'Golos',
+                  fontFamily: 'Gilroy',
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -320,6 +440,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       if (canonicalKey == null || addedCanonicalKeys.contains(canonicalKey)) {
         continue;
       }
+      if (!_isChartEnabled(canonicalKey)) continue;
 
       final title = item.name.trim().isNotEmpty
           ? item.name
@@ -418,11 +539,11 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       Padding(
         padding: EdgeInsets.symmetric(vertical: 16),
         child: Text(
-          'Нет доступных графиков',
+          'Нет включенных графиков',
           style: TextStyle(
             color: Color(0xff64748B),
             fontSize: 14,
-            fontFamily: 'Golos',
+            fontFamily: 'Gilroy',
           ),
         ),
       ),
@@ -446,6 +567,201 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
           onApply: _applyAnalyticsFilters,
         ),
       ),
+    );
+  }
+
+  void _showChartSettingsSheet() {
+    final entries = _buildChartSettingsEntries();
+    final tempVisibility = <String, bool>{
+      for (final entry in entries) entry.key: _isChartEnabled(entry.key),
+    };
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
+      ),
+      builder: (sheetContext) {
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+            final maxHeight = MediaQuery.of(context).size.height * 0.82;
+
+            return SafeArea(
+              top: false,
+              child: Container(
+                constraints: BoxConstraints(maxHeight: maxHeight),
+                padding: EdgeInsets.fromLTRB(16, 14, 16, 16 + bottomInset),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 44,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: const Color(0xffCBD5E1),
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    const Text(
+                      'Настройки CRM',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xff1E2E52),
+                        fontFamily: 'Gilroy',
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    const Text(
+                      'Включите или выключите отображение графиков',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Color(0xff64748B),
+                        fontFamily: 'Gilroy',
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    Expanded(
+                      child: entries.isEmpty
+                          ? const Center(
+                              child: Text(
+                                'Нет доступных графиков',
+                                style: TextStyle(
+                                  color: Color(0xff64748B),
+                                  fontSize: 14,
+                                  fontFamily: 'Gilroy',
+                                ),
+                              ),
+                            )
+                          : ListView.separated(
+                              itemCount: entries.length,
+                              separatorBuilder: (_, __) =>
+                                  const SizedBox(height: 10),
+                              itemBuilder: (context, index) {
+                                final entry = entries[index];
+                                final enabled =
+                                    tempVisibility[entry.key] ?? false;
+                                return InkWell(
+                                  borderRadius: BorderRadius.circular(14),
+                                  onTap: () {
+                                    setSheetState(() {
+                                      tempVisibility[entry.key] = !enabled;
+                                    });
+                                  },
+                                  child: Ink(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 10, vertical: 12),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xffF8FAFC),
+                                      borderRadius: BorderRadius.circular(14),
+                                      border: Border.all(
+                                        color: const Color(0xffE2E8F0),
+                                      ),
+                                    ),
+                                    child: Row(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.center,
+                                      children: [
+                                        Transform.scale(
+                                          scale: 1.05,
+                                          child: Switch(
+                                            value: enabled,
+                                            onChanged: (value) {
+                                              setSheetState(() {
+                                                tempVisibility[entry.key] =
+                                                    value;
+                                              });
+                                            },
+                                            activeThumbColor: Colors.white,
+                                            inactiveThumbColor: Colors.white,
+                                            activeTrackColor:
+                                                const Color(0xff4F40EC),
+                                            inactiveTrackColor:
+                                                const Color(0xffD9D9D9),
+                                            trackOutlineColor:
+                                                WidgetStateProperty.resolveWith(
+                                              (states) {
+                                                if (states.contains(
+                                                    WidgetState.selected)) {
+                                                  return const Color(0xff4F40EC);
+                                                }
+                                                return const Color(0xff8E8E93);
+                                              },
+                                            ),
+                                            materialTapTargetSize:
+                                                MaterialTapTargetSize
+                                                    .shrinkWrap,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 10),
+                                        Expanded(
+                                          child: Text(
+                                            entry.title,
+                                            style: const TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.w600,
+                                              color: Color(0xff1E2E52),
+                                              fontFamily: 'Gilroy',
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                    ),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: () async {
+                          final saveMap = <String, bool>{
+                            for (final entry in entries)
+                              entry.key: tempVisibility[entry.key] ?? false,
+                          };
+                          await _saveChartVisibilityPrefs(saveMap);
+                          if (!mounted) return;
+                          setState(() {
+                            _chartVisibility = saveMap;
+                            _chartsVersion++;
+                          });
+                          if (Navigator.of(sheetContext).canPop()) {
+                            Navigator.of(sheetContext).pop();
+                          }
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xff1E2E52),
+                          foregroundColor: Colors.white,
+                          minimumSize: const Size.fromHeight(46),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: const Text(
+                          'Сохранить',
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                            fontFamily: 'Gilroy',
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 
@@ -518,13 +834,16 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
           final chartWidgets = _buildChartWidgets();
           final viewportHeight = MediaQuery.of(context).size.height;
 
+          final showStatsSection = widget.showStatistics;
+
           return ListView.builder(
             physics: const AlwaysScrollableScrollPhysics(),
             padding: EdgeInsets.all(horizontalPadding),
             cacheExtent: viewportHeight * 1.2,
-            itemCount: 1 + chartWidgets.length,
+            itemCount:
+                (showStatsSection ? 1 : 0) + chartWidgets.length,
             itemBuilder: (context, index) {
-              if (index == 0) {
+              if (showStatsSection && index == 0) {
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -604,10 +923,11 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
               }
 
               final chartIndex = index - 1;
-              final isLast = chartIndex == chartWidgets.length - 1;
+              final resolvedChartIndex = showStatsSection ? chartIndex : index;
+              final isLast = resolvedChartIndex == chartWidgets.length - 1;
               return Padding(
                 padding: EdgeInsets.only(bottom: isLast ? 0 : chartSpacing),
-                child: chartWidgets[chartIndex],
+                child: chartWidgets[resolvedChartIndex],
               );
             },
           );
@@ -645,7 +965,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
             fontSize: isSmallPhone ? 18 : 20,
             fontWeight: FontWeight.w700,
             color: const Color(0xff1E2E52),
-            fontFamily: 'Golos',
+            fontFamily: 'Gilroy',
           ),
         ),
         actions: [
@@ -663,7 +983,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                 style: TextStyle(
                   fontSize: isSmallPhone ? 12 : 14,
                   fontWeight: FontWeight.w600,
-                  fontFamily: 'Golos',
+                  fontFamily: 'Gilroy',
                 ),
               ),
               style: ElevatedButton.styleFrom(
@@ -713,4 +1033,14 @@ class _KeepAliveChartState extends State<_KeepAliveChart>
     super.build(context);
     return widget.child;
   }
+}
+
+class _ChartVisibilitySettingEntry {
+  final String key;
+  final String title;
+
+  const _ChartVisibilitySettingEntry({
+    required this.key,
+    required this.title,
+  });
 }
