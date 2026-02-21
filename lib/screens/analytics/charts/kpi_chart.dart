@@ -599,7 +599,7 @@ class _KpiChartState extends State<KpiChart> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Всего задач',
+                        'Общий KPI',
                         style: TextStyle(
                           fontSize: responsive.smallFontSize,
                           color: Color(0xff64748B),
@@ -608,11 +608,11 @@ class _KpiChartState extends State<KpiChart> {
                       ),
                       SizedBox(height: 4),
                       Text(
-                        '$_total',
+                        '${_completionRate.toStringAsFixed(_completionRate % 1 == 0 ? 0 : 1)}%',
                         style: TextStyle(
                           fontSize: responsive.largeFontSize,
                           fontWeight: FontWeight.w700,
-                          color: Color(0xff0F172A),
+                          color: Color(0xff10B981),
                           fontFamily: 'Golos',
                         ),
                       ),
@@ -622,7 +622,7 @@ class _KpiChartState extends State<KpiChart> {
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       Text(
-                        'Выполнено',
+                        'Завершено задач',
                         style: TextStyle(
                           fontSize: responsive.smallFontSize,
                           color: Color(0xff64748B),
@@ -631,7 +631,7 @@ class _KpiChartState extends State<KpiChart> {
                       ),
                       SizedBox(height: 4),
                       Text(
-                        '${_completionRate.toStringAsFixed(1)}%',
+                        '$_completed/$_total',
                         style: TextStyle(
                           fontSize: responsive.largeFontSize,
                           fontWeight: FontWeight.w700,

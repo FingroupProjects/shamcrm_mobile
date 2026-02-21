@@ -19,6 +19,8 @@ class _SpeedGaugeState extends State<SpeedGauge>
   bool _isLoading = true;
   String? _error;
   double _speedHours = 0.0;
+  double? _serverMaxScale;
+  String _scaleUnit = 'hours';
   String _speedLabel = '0 ч';
   late final AnimationController _needleController;
   late Animation<double> _needleAnimation;
@@ -54,12 +56,16 @@ class _SpeedGaugeState extends State<SpeedGauge>
     try {
       final apiService = ApiService();
       final response = await apiService.getLeadProcessSpeedV2();
-      final speedHours = response.leadsFormat == 'days'
-          ? response.averageProcessingSpeed * 24
-          : response.averageProcessingSpeed;
+      final normalizedSpeed = _normalizeSpeedToScale(
+        value: response.averageProcessingSpeed,
+        from: response.leadsFormat,
+        to: response.speedTimeFormat,
+      );
 
       setState(() {
-        _speedHours = speedHours;
+        _speedHours = normalizedSpeed;
+        _serverMaxScale = response.badTo;
+        _scaleUnit = response.speedTimeFormat;
         _speedLabel = response.displayText;
         _isLoading = false;
       });
@@ -143,17 +149,47 @@ class _SpeedGaugeState extends State<SpeedGauge>
   }
 
   double _computeMaxHours(double hours) {
+    if (_serverMaxScale != null && _serverMaxScale! > 0) {
+      return _serverMaxScale!;
+    }
     if (hours <= 0) return 10;
     if (hours <= 10) return 10;
     final rounded = (hours / 10).ceil() * 10;
     return rounded < 10 ? 10 : rounded.toDouble();
   }
 
-  String _formatHoursLabel(double hours) {
-    if (hours <= 0) {
-      return '0 часов';
+  String _formatHoursLabel(double value) {
+    if (value <= 0) {
+      return '0 ${_unitLabel()}';
     }
-    return '${hours.toStringAsFixed(2)} часов';
+    return '${value.toStringAsFixed(2)} ${_unitLabel()}';
+  }
+
+  String _unitLabel() {
+    switch (_scaleUnit) {
+      case 'minutes':
+        return 'минут';
+      case 'days':
+        return 'дня';
+      case 'hours':
+      default:
+        return 'часа';
+    }
+  }
+
+  double _normalizeSpeedToScale({
+    required double value,
+    required String from,
+    required String to,
+  }) {
+    if (from == to) return value;
+    if (from == 'days' && to == 'hours') return value * 24;
+    if (from == 'hours' && to == 'days') return value / 24;
+    if (from == 'minutes' && to == 'hours') return value / 60;
+    if (from == 'hours' && to == 'minutes') return value * 60;
+    if (from == 'days' && to == 'minutes') return value * 24 * 60;
+    if (from == 'minutes' && to == 'days') return value / (24 * 60);
+    return value;
   }
 
   @override
@@ -291,6 +327,7 @@ class _SpeedGaugeState extends State<SpeedGauge>
                                           painter: SpeedGaugePainter(
                                             speedHours: animatedSpeed,
                                             maxHours: maxHours,
+                                            scaleUnit: _scaleUnit,
                                             labelFontSize:
                                                 responsive.smallFontSize,
                                           ),
@@ -332,9 +369,13 @@ class SpeedGaugePainter extends CustomPainter {
   final double speedHours;
   final double maxHours;
   final double labelFontSize;
+  final String scaleUnit;
 
   SpeedGaugePainter(
-      {required this.speedHours, this.maxHours = 10, this.labelFontSize = 12});
+      {required this.speedHours,
+      this.maxHours = 10,
+      this.labelFontSize = 12,
+      this.scaleUnit = 'hours'});
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -430,7 +471,8 @@ class SpeedGaugePainter extends CustomPainter {
     for (int i = 0; i <= divisions; i++) {
       final value = step * i;
       final angle = startAngle + totalSweep * (i / divisions);
-      final label = i == 0 ? '0' : '${value.toStringAsFixed(0)}ч';
+      final label =
+          i == 0 ? '0' : '${value.toStringAsFixed(0)}${_unitSuffix()}';
       final textPainter = TextPainter(
         text: TextSpan(text: label, style: labelStyle),
         textDirection: TextDirection.ltr,
@@ -473,6 +515,20 @@ class SpeedGaugePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(SpeedGaugePainter oldDelegate) {
-    return oldDelegate.speedHours != speedHours;
+    return oldDelegate.speedHours != speedHours ||
+        oldDelegate.maxHours != maxHours ||
+        oldDelegate.scaleUnit != scaleUnit;
+  }
+
+  String _unitSuffix() {
+    switch (scaleUnit) {
+      case 'minutes':
+        return ' мин';
+      case 'days':
+        return ' д';
+      case 'hours':
+      default:
+        return ' ч';
+    }
   }
 }

@@ -53,6 +53,27 @@ class _OrdersChartState extends State<OrdersChart> {
         month: 6, totalOrders: 190, successfulOrders: 156, canceledOrders: 34),
   ];
 
+  List<OrdersChartPoint> _normalizePointsToYear(List<OrdersChartPoint> source) {
+    final byMonth = <int, OrdersChartPoint>{};
+    for (final point in source) {
+      if (point.month >= 1 && point.month <= 12) {
+        byMonth[point.month] = point;
+      }
+    }
+
+    return List.generate(12, (index) {
+      final month = index + 1;
+      final point = byMonth[month];
+      if (point != null) return point;
+      return OrdersChartPoint(
+        month: month,
+        totalOrders: 0,
+        successfulOrders: 0,
+        canceledOrders: 0,
+      );
+    });
+  }
+
   @override
   void initState() {
     super.initState();
@@ -180,7 +201,8 @@ class _OrdersChartState extends State<OrdersChart> {
     final responsive = ResponsiveHelper(context);
     final points = _data?.chartData ?? [];
     final isEmpty = points.isEmpty || (_data?.totalOrders ?? 0) == 0;
-    final displayPoints = isEmpty ? _previewPoints : points;
+    final displayPoints =
+        _normalizePointsToYear(isEmpty ? _previewPoints : points);
     final maxOrders = displayPoints.isEmpty
         ? 0.0
         : displayPoints
@@ -301,99 +323,114 @@ class _OrdersChartState extends State<OrdersChart> {
                           child: Padding(
                             padding: const EdgeInsets.only(
                                 right: 20, left: 10, bottom: 20),
-                            child: BarChart(
-                              BarChartData(
-                                alignment: BarChartAlignment.spaceAround,
-                                maxY: maxOrders <= 0 ? 1 : maxOrders + 2,
-                                barTouchData: BarTouchData(
-                                  enabled: true,
-                                  touchTooltipData: BarTouchTooltipData(
-                                    getTooltipColor: (group) => Colors.white,
-                                    tooltipBorder: const BorderSide(
-                                        color: Color(0xffE2E8F0)),
-                                    tooltipRoundedRadius: 8,
-                                  ),
-                                ),
-                                titlesData: FlTitlesData(
-                                  show: true,
-                                  bottomTitles: AxisTitles(
-                                    sideTitles: SideTitles(
-                                      showTitles: true,
-                                      getTitlesWidget: (value, meta) {
-                                        final index = value.toInt();
-                                        if (index >= 0 &&
-                                            index < displayPoints.length) {
-                                          final month =
-                                              displayPoints[index].month;
-                                          final label = month >= 0 &&
-                                                  month < _monthNames.length
-                                              ? _monthNames[month]
-                                              : month.toString();
-                                          return Padding(
-                                            padding:
-                                                const EdgeInsets.only(top: 8),
-                                            child: Text(
-                                              label,
+                            child: LayoutBuilder(
+                              builder: (context, chartConstraints) {
+                                final groupCount = displayPoints.length;
+                                final groupWidth = groupCount > 0
+                                    ? chartConstraints.maxWidth / groupCount
+                                    : chartConstraints.maxWidth;
+                                final rodWidth =
+                                    (groupWidth * 0.22).clamp(4.0, 10.0);
+                                final barsSpace =
+                                    (groupWidth * 0.10).clamp(2.0, 4.0);
+
+                                return BarChart(
+                                  BarChartData(
+                                    alignment: BarChartAlignment.spaceAround,
+                                    maxY: maxOrders <= 0 ? 1 : maxOrders + 2,
+                                    barTouchData: BarTouchData(
+                                      enabled: true,
+                                      touchTooltipData: BarTouchTooltipData(
+                                        getTooltipColor: (group) => Colors.white,
+                                        tooltipBorder: const BorderSide(
+                                            color: Color(0xffE2E8F0)),
+                                        tooltipRoundedRadius: 8,
+                                      ),
+                                    ),
+                                    titlesData: FlTitlesData(
+                                      show: true,
+                                      bottomTitles: AxisTitles(
+                                        sideTitles: SideTitles(
+                                          showTitles: true,
+                                          getTitlesWidget: (value, meta) {
+                                            final index = value.toInt();
+                                            if (index >= 0 &&
+                                                index < displayPoints.length) {
+                                              final month =
+                                                  displayPoints[index].month;
+                                              final label = month >= 0 &&
+                                                      month < _monthNames.length
+                                                  ? _monthNames[month]
+                                                  : month.toString();
+                                              return Padding(
+                                                padding:
+                                                    const EdgeInsets.only(top: 8),
+                                                child: Text(
+                                                  label,
+                                                  style: TextStyle(
+                                                    color: Color(0xff64748B),
+                                                    fontSize:
+                                                        responsive.smallFontSize,
+                                                    fontFamily: 'Golos',
+                                                  ),
+                                                ),
+                                              );
+                                            }
+                                            return Text('');
+                                          },
+                                        ),
+                                      ),
+                                      leftTitles: AxisTitles(
+                                        sideTitles: SideTitles(
+                                          showTitles: true,
+                                          reservedSize: 40,
+                                          getTitlesWidget: (value, meta) {
+                                            return Text(
+                                              value.toInt().toString(),
                                               style: TextStyle(
                                                 color: Color(0xff64748B),
-                                                fontSize:
-                                                    responsive.smallFontSize,
+                                                fontSize: responsive.smallFontSize,
                                                 fontFamily: 'Golos',
                                               ),
-                                            ),
-                                          );
-                                        }
-                                        return Text('');
-                                      },
+                                            );
+                                          },
+                                        ),
+                                      ),
+                                      topTitles: const AxisTitles(
+                                        sideTitles: SideTitles(showTitles: false),
+                                      ),
+                                      rightTitles: const AxisTitles(
+                                        sideTitles: SideTitles(showTitles: false),
+                                      ),
                                     ),
-                                  ),
-                                  leftTitles: AxisTitles(
-                                    sideTitles: SideTitles(
-                                      showTitles: true,
-                                      reservedSize: 40,
-                                      getTitlesWidget: (value, meta) {
-                                        return Text(
-                                          value.toInt().toString(),
-                                          style: TextStyle(
-                                            color: Color(0xff64748B),
-                                            fontSize: responsive.smallFontSize,
-                                            fontFamily: 'Golos',
-                                          ),
+                                    gridData: FlGridData(
+                                      show: true,
+                                      drawVerticalLine: false,
+                                      horizontalInterval: maxOrders <= 0
+                                          ? 1
+                                          : (maxOrders / 5).ceilToDouble(),
+                                      getDrawingHorizontalLine: (value) {
+                                        return const FlLine(
+                                          color: Color(0xffE2E8F0),
+                                          strokeWidth: 1,
                                         );
                                       },
                                     ),
+                                    borderData: FlBorderData(show: false),
+                                    barGroups:
+                                        displayPoints.asMap().entries.map((entry) {
+                                      final p = entry.value;
+                                      return _makeGroupData(
+                                        entry.key,
+                                        p.totalOrders.toDouble(),
+                                        p.successfulOrders.toDouble(),
+                                        rodWidth: rodWidth.toDouble(),
+                                        barsSpace: barsSpace.toDouble(),
+                                      );
+                                    }).toList(),
                                   ),
-                                  topTitles: const AxisTitles(
-                                    sideTitles: SideTitles(showTitles: false),
-                                  ),
-                                  rightTitles: const AxisTitles(
-                                    sideTitles: SideTitles(showTitles: false),
-                                  ),
-                                ),
-                                gridData: FlGridData(
-                                  show: true,
-                                  drawVerticalLine: false,
-                                  horizontalInterval: maxOrders <= 0
-                                      ? 1
-                                      : (maxOrders / 5).ceilToDouble(),
-                                  getDrawingHorizontalLine: (value) {
-                                    return const FlLine(
-                                      color: Color(0xffE2E8F0),
-                                      strokeWidth: 1,
-                                    );
-                                  },
-                                ),
-                                borderData: FlBorderData(show: false),
-                                barGroups:
-                                    displayPoints.asMap().entries.map((entry) {
-                                  final p = entry.value;
-                                  return _makeGroupData(
-                                    entry.key,
-                                    p.totalOrders.toDouble(),
-                                    p.successfulOrders.toDouble(),
-                                  );
-                                }).toList(),
-                              ),
+                                );
+                              },
                             ),
                           ),
                         ),
@@ -408,79 +445,60 @@ class _OrdersChartState extends State<OrdersChart> {
                   top: BorderSide(color: Color(0xffE2E8F0)),
                 ),
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final successRate = _data?.successRate ?? 0;
+                  final successText =
+                      '${_data?.successfulOrders ?? 0} (${successRate.toStringAsFixed(successRate % 1 == 0 ? 0 : 1)}%)';
+
+                  return Row(
                     children: [
-                      Text(
-                        'Всего заказов',
-                        style: TextStyle(
-                          fontSize: responsive.smallFontSize,
-                          color: Color(0xff64748B),
-                          fontFamily: 'Golos',
+                      Expanded(
+                        child: _buildFooterStat(
+                          label: 'Всего заказов',
+                          value: '${_data?.totalOrders ?? 0}',
+                          valueColor: const Color(0xff0F172A),
+                          alignment: CrossAxisAlignment.start,
+                          responsive: responsive,
+                          isCompact: true,
                         ),
                       ),
-                      SizedBox(height: 4),
-                      Text(
-                        '${_data?.totalOrders ?? 0}',
-                        style: TextStyle(
-                          fontSize: responsive.largeFontSize,
-                          fontWeight: FontWeight.w700,
-                          color: Color(0xff0F172A),
-                          fontFamily: 'Golos',
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: _buildFooterStat(
+                          label: 'Успешных',
+                          value: successText,
+                          valueColor: const Color(0xff10B981),
+                          alignment: CrossAxisAlignment.center,
+                          responsive: responsive,
+                          isCompact: true,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: _buildFooterStat(
+                          label: 'Средний чек',
+                          value: _data?.averageCheck.toStringAsFixed(1) ?? '0',
+                          valueColor: const Color(0xff0F172A),
+                          alignment: CrossAxisAlignment.center,
+                          responsive: responsive,
+                          isCompact: true,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: _buildFooterStat(
+                          label: 'Выручка',
+                          value: _data?.revenue.toStringAsFixed(0) ?? '0',
+                          valueColor: const Color(0xff0F172A),
+                          alignment: CrossAxisAlignment.end,
+                          responsive: responsive,
+                          isCompact: true,
                         ),
                       ),
                     ],
-                  ),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Text(
-                        'Успешных',
-                        style: TextStyle(
-                          fontSize: responsive.smallFontSize,
-                          color: Color(0xff64748B),
-                          fontFamily: 'Golos',
-                        ),
-                      ),
-                      SizedBox(height: 4),
-                      Text(
-                        '${_data?.successfulOrders ?? 0}',
-                        style: TextStyle(
-                          fontSize: responsive.largeFontSize,
-                          fontWeight: FontWeight.w700,
-                          color: Color(0xff10B981),
-                          fontFamily: 'Golos',
-                        ),
-                      ),
-                    ],
-                  ),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text(
-                        'Средний чек',
-                        style: TextStyle(
-                          fontSize: responsive.smallFontSize,
-                          color: Color(0xff64748B),
-                          fontFamily: 'Golos',
-                        ),
-                      ),
-                      SizedBox(height: 4),
-                      Text(
-                        '${_data?.averageCheck.toStringAsFixed(1) ?? '0'}',
-                        style: TextStyle(
-                          fontSize: responsive.largeFontSize,
-                          fontWeight: FontWeight.w700,
-                          color: Color(0xff0F172A),
-                          fontFamily: 'Golos',
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
+                  );
+                },
               ),
             ),
         ],
@@ -488,9 +506,64 @@ class _OrdersChartState extends State<OrdersChart> {
     );
   }
 
-  BarChartGroupData _makeGroupData(int x, double total, double success) {
+  Widget _buildFooterStat({
+    required String label,
+    required String value,
+    required Color valueColor,
+    required CrossAxisAlignment alignment,
+    required ResponsiveHelper responsive,
+    bool isCompact = false,
+  }) {
+    return Column(
+      crossAxisAlignment: alignment,
+      children: [
+        Text(
+          label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            fontSize: isCompact
+                ? (responsive.smallFontSize - 1).clamp(9, 14).toDouble()
+                : responsive.smallFontSize,
+            color: const Color(0xff64748B),
+            fontFamily: 'Golos',
+          ),
+        ),
+        const SizedBox(height: 4),
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: alignment == CrossAxisAlignment.end
+              ? Alignment.centerRight
+              : alignment == CrossAxisAlignment.center
+                  ? Alignment.center
+                  : Alignment.centerLeft,
+          child: Text(
+            value,
+            maxLines: 1,
+            style: TextStyle(
+              fontSize: isCompact
+                  ? (responsive.largeFontSize - 2).clamp(11, 22).toDouble()
+                  : responsive.largeFontSize,
+              fontWeight: FontWeight.w700,
+              color: valueColor,
+              fontFamily: 'Golos',
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  BarChartGroupData _makeGroupData(
+    int x,
+    double total,
+    double success, {
+    required double rodWidth,
+    required double barsSpace,
+  }) {
     return BarChartGroupData(
       x: x,
+      barsSpace: barsSpace,
       barRods: [
         BarChartRodData(
           toY: total,
@@ -499,7 +572,7 @@ class _OrdersChartState extends State<OrdersChart> {
             begin: Alignment.bottomCenter,
             end: Alignment.topCenter,
           ),
-          width: 16,
+          width: rodWidth,
           borderRadius: const BorderRadius.only(
             topLeft: Radius.circular(4),
             topRight: Radius.circular(4),
@@ -512,7 +585,7 @@ class _OrdersChartState extends State<OrdersChart> {
             begin: Alignment.bottomCenter,
             end: Alignment.topCenter,
           ),
-          width: 16,
+          width: rodWidth,
           borderRadius: const BorderRadius.only(
             topLeft: Radius.circular(4),
             topRight: Radius.circular(4),

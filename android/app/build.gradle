@@ -24,7 +24,7 @@ if (flutterVersionName == null) {
 
 android {
     namespace "com.softtech.crm_task_manager"
-    compileSdk 35
+    compileSdk 36
     ndkVersion "26.1.10909125"
 
     compileOptions {
@@ -44,7 +44,7 @@ android {
     defaultConfig {
         applicationId "com.softtech.crm_task_manager"
         minSdkVersion flutter.minSdkVersion
-        targetSdkVersion 35
+        targetSdkVersion 36
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
         ndk {

@@ -20,6 +20,7 @@ class _GoalsChartState extends State<GoalsChart> {
   String? _error;
   List<UserPerformance> _goals = [];
   int _averageKpi = 0;
+  int _requiresAttentionCount = 0;
 
   String get _title => widget.title;
 
@@ -69,6 +70,7 @@ class _GoalsChartState extends State<GoalsChart> {
       setState(() {
         _goals = response.users;
         _averageKpi = response.averageKpi;
+        _requiresAttentionCount = response.requiresAttentionCount;
         _isLoading = false;
       });
     } catch (e) {
@@ -320,30 +322,7 @@ class _GoalsChartState extends State<GoalsChart> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Всего сотрудников',
-                        style: TextStyle(
-                          fontSize: responsive.smallFontSize,
-                          color: Color(0xff64748B),
-                          fontFamily: 'Golos',
-                        ),
-                      ),
-                      SizedBox(height: 4),
-                      Text(
-                        '${_goals.length}',
-                        style: TextStyle(
-                          fontSize: responsive.largeFontSize,
-                          fontWeight: FontWeight.w700,
-                          color: Color(0xff0F172A),
-                          fontFamily: 'Golos',
-                        ),
-                      ),
-                    ],
-                  ),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text(
-                        'Средний процент',
+                        'Средний KPI',
                         style: TextStyle(
                           fontSize: responsive.smallFontSize,
                           color: Color(0xff64748B),
@@ -356,7 +335,30 @@ class _GoalsChartState extends State<GoalsChart> {
                         style: TextStyle(
                           fontSize: responsive.largeFontSize,
                           fontWeight: FontWeight.w700,
-                          color: Color(0xff0F172A),
+                          color: Color(0xff10B981),
+                          fontFamily: 'Golos',
+                        ),
+                      ),
+                    ],
+                  ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(
+                        'Требуют внимания',
+                        style: TextStyle(
+                          fontSize: responsive.smallFontSize,
+                          color: Color(0xff64748B),
+                          fontFamily: 'Golos',
+                        ),
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        '${_requiresAttentionCount > 0 ? _requiresAttentionCount : _goals.where((g) => g.requiresAttention || g.isBad).length} человек(а)',
+                        style: TextStyle(
+                          fontSize: responsive.largeFontSize,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xffEF4444),
                           fontFamily: 'Golos',
                         ),
                       ),

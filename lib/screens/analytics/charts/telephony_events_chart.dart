@@ -398,6 +398,10 @@ class _TelephonyEventsChartState extends State<TelephonyEventsChart> {
         final titleSize = isVeryCompact ? 16.0 : (isCompact ? 17.0 : 18.0);
         final leftReserved = isVeryCompact ? 28.0 : 32.0;
         final bottomReserved = isVeryCompact ? 28.0 : 32.0;
+        final tooltipMaxWidth = math.max(
+          180.0,
+          (constraints.maxWidth - (headerPadding * 2)) * 0.55,
+        );
 
         return Container(
           decoration: BoxDecoration(
@@ -589,6 +593,9 @@ class _TelephonyEventsChartState extends State<TelephonyEventsChart> {
                                               horizontal: 16,
                                               vertical: 12,
                                             ),
+                                            maxContentWidth: tooltipMaxWidth,
+                                            fitInsideHorizontally: true,
+                                            fitInsideVertically: true,
                                             getTooltipItem:
                                                 (group, _, __, ___) {
                                               final index = group.x.toInt();
@@ -604,93 +611,125 @@ class _TelephonyEventsChartState extends State<TelephonyEventsChart> {
                                                       : 'Д${item.day}';
 
                                               final spans = <TextSpan>[];
+                                              final metricTextStyle = TextStyle(
+                                                fontWeight: FontWeight.w600,
+                                                fontSize:
+                                                    ResponsiveHelper(context)
+                                                        .captionFontSize,
+                                                fontFamily: 'Golos',
+                                              );
+                                              final metricContentWidth =
+                                                  math.max(
+                                                140.0,
+                                                tooltipMaxWidth - 32,
+                                              );
+
+                                              double measureTextWidth(
+                                                String text,
+                                                TextStyle style,
+                                              ) {
+                                                final painter = TextPainter(
+                                                  text: TextSpan(
+                                                    text: text,
+                                                    style: style,
+                                                  ),
+                                                  textDirection:
+                                                      TextDirection.ltr,
+                                                  maxLines: 1,
+                                                )..layout();
+                                                return painter.width;
+                                              }
+
+                                              TextSpan buildMetricSpan({
+                                                required String label,
+                                                required int value,
+                                                required Color color,
+                                                required bool withNewLine,
+                                              }) {
+                                                final valueText =
+                                                    value.toString();
+                                                final labelText = '● $label';
+                                                final spaceWidth =
+                                                    measureTextWidth(
+                                                  ' ',
+                                                  metricTextStyle,
+                                                );
+                                                final leftWidth =
+                                                    measureTextWidth(
+                                                  labelText,
+                                                  metricTextStyle,
+                                                );
+                                                final valueWidth =
+                                                    measureTextWidth(
+                                                  valueText,
+                                                  metricTextStyle,
+                                                );
+                                                final spaces = math.max(
+                                                  1,
+                                                  ((metricContentWidth -
+                                                              leftWidth -
+                                                              valueWidth) /
+                                                          math.max(
+                                                            1,
+                                                            spaceWidth,
+                                                          ))
+                                                      .floor(),
+                                                );
+                                                return TextSpan(
+                                                  text:
+                                                      '$labelText${' ' * spaces}$valueText${withNewLine ? '\n' : ''}',
+                                                  style: metricTextStyle
+                                                      .copyWith(color: color),
+                                                );
+                                              }
+
                                               if (_showIncoming) {
                                                 spans.add(
-                                                  TextSpan(
-                                                    text:
-                                                        '● Входящие                ${item.incoming}\n',
-                                                    style: TextStyle(
-                                                      color: _incomingColor,
-                                                      fontWeight:
-                                                          FontWeight.w600,
-                                                      fontSize:
-                                                          ResponsiveHelper(
-                                                                  context)
-                                                              .captionFontSize,
-                                                      fontFamily: 'Golos',
-                                                    ),
+                                                  buildMetricSpan(
+                                                    label: 'Входящие',
+                                                    value: item.incoming,
+                                                    color: _incomingColor,
+                                                    withNewLine: true,
                                                   ),
                                                 );
                                               }
                                               if (_showOutgoing) {
                                                 spans.add(
-                                                  TextSpan(
-                                                    text:
-                                                        '● Исходящие               ${item.outgoing}\n',
-                                                    style: TextStyle(
-                                                      color: _outgoingColor,
-                                                      fontWeight:
-                                                          FontWeight.w600,
-                                                      fontSize:
-                                                          ResponsiveHelper(
-                                                                  context)
-                                                              .captionFontSize,
-                                                      fontFamily: 'Golos',
-                                                    ),
+                                                  buildMetricSpan(
+                                                    label: 'Исходящие',
+                                                    value: item.outgoing,
+                                                    color: _outgoingColor,
+                                                    withNewLine: true,
                                                   ),
                                                 );
                                               }
                                               if (_showMissed) {
                                                 spans.add(
-                                                  TextSpan(
-                                                    text:
-                                                        '● Пропущенные             ${item.missed}\n',
-                                                    style: TextStyle(
-                                                      color: _missedColor,
-                                                      fontWeight:
-                                                          FontWeight.w600,
-                                                      fontSize:
-                                                          ResponsiveHelper(
-                                                                  context)
-                                                              .captionFontSize,
-                                                      fontFamily: 'Golos',
-                                                    ),
+                                                  buildMetricSpan(
+                                                    label: 'Пропущенные',
+                                                    value: item.missed,
+                                                    color: _missedColor,
+                                                    withNewLine: true,
                                                   ),
                                                 );
                                               }
                                               if (_showCreated) {
                                                 spans.add(
-                                                  TextSpan(
-                                                    text:
-                                                        '● События создано         ${item.noticesCreated}\n',
-                                                    style: TextStyle(
-                                                      color: _createdColor,
-                                                      fontWeight:
-                                                          FontWeight.w600,
-                                                      fontSize:
-                                                          ResponsiveHelper(
-                                                                  context)
-                                                              .captionFontSize,
-                                                      fontFamily: 'Golos',
-                                                    ),
+                                                  buildMetricSpan(
+                                                    label: 'События создано',
+                                                    value: item.noticesCreated,
+                                                    color: _createdColor,
+                                                    withNewLine: true,
                                                   ),
                                                 );
                                               }
                                               if (_showClosed) {
                                                 spans.add(
-                                                  TextSpan(
-                                                    text:
-                                                        '● События закрыто         ${item.noticesFinished}',
-                                                    style: TextStyle(
-                                                      color: _closedColor,
-                                                      fontWeight:
-                                                          FontWeight.w600,
-                                                      fontSize:
-                                                          ResponsiveHelper(
-                                                                  context)
-                                                              .captionFontSize,
-                                                      fontFamily: 'Golos',
-                                                    ),
+                                                  buildMetricSpan(
+                                                    label: 'События закрыто',
+                                                    value: item.noticesFinished,
+                                                    color: _closedColor,
+                                                    withNewLine: false,
                                                   ),
                                                 );
                                               }
@@ -705,6 +744,7 @@ class _TelephonyEventsChartState extends State<TelephonyEventsChart> {
                                                           .subtitleFontSize,
                                                   fontFamily: 'Golos',
                                                 ),
+                                                textAlign: TextAlign.left,
                                                 children: spans,
                                               );
                                             },
