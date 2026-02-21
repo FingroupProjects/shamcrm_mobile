@@ -173,80 +173,104 @@ class _AnalyticsFilterSheetState extends State<AnalyticsFilterSheet> {
             ),
           ),
           // Actions
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              border: Border(
-                top: BorderSide(color: const Color(0xffE2E8F0)),
-              ),
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () {
-                      setState(() {
-                        _periodKey = _allPeriodKey;
-                        _managerIds = [];
-                        _funnelIds = [];
-                        _sourceIds = [];
-                      });
-                    },
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      side: const BorderSide(color: Color(0xffE2E8F0)),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    child: Text(
-                      localizations?.translate('reset') ?? 'Сбросить',
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xff1E2E52),
-                        fontFamily: 'Golos',
-                      ),
-                    ),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final isSmall = constraints.maxWidth < 360;
+              final isCompact = constraints.maxWidth < 420;
+              final actionPadding = isSmall ? 14.0 : (isCompact ? 16.0 : 20.0);
+              final buttonHeight = isSmall ? 42.0 : (isCompact ? 44.0 : 46.0);
+              final buttonRadius = isSmall ? 10.0 : 12.0;
+              final buttonGap = isSmall ? 8.0 : 10.0;
+              final buttonFontSize = isSmall ? 15.0 : 16.0;
+              final resetWidth = (constraints.maxWidth * 0.30).clamp(110.0, 150.0);
+              final applyWidth = (constraints.maxWidth * 0.56).clamp(150.0, 230.0);
+              final safeBottom = MediaQuery.of(context).viewPadding.bottom;
+
+              return Container(
+                padding: EdgeInsets.fromLTRB(
+                  actionPadding,
+                  actionPadding,
+                  actionPadding,
+                  actionPadding + 8 + (safeBottom > 0 ? 4 : 0),
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  border: Border(
+                    top: BorderSide(color: const Color(0xffE2E8F0)),
                   ),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  flex: 2,
-                  child: ElevatedButton(
-                    onPressed: () async {
-                      await widget.onApply(
-                        _periodKey,
-                        _managerIds,
-                        _funnelIds,
-                        _sourceIds,
-                      );
-                      if (mounted) {
-                        Navigator.pop(context);
-                      }
-                    },
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      backgroundColor: const Color(0xff1E2E52),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    SizedBox(
+                      width: resetWidth.toDouble(),
+                      height: buttonHeight,
+                      child: OutlinedButton(
+                        onPressed: () {
+                          setState(() {
+                            _periodKey = _allPeriodKey;
+                            _managerIds = [];
+                            _funnelIds = [];
+                            _sourceIds = [];
+                          });
+                        },
+                        style: OutlinedButton.styleFrom(
+                          padding: EdgeInsets.zero,
+                          side: const BorderSide(color: Color(0xffE2E8F0)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(buttonRadius),
+                          ),
+                        ),
+                        child: Text(
+                          localizations?.translate('reset') ?? 'Сбросить',
+                          style: TextStyle(
+                            fontSize: buttonFontSize,
+                            fontWeight: FontWeight.w600,
+                            color: const Color(0xff1E2E52),
+                            fontFamily: 'Golos',
+                          ),
+                        ),
                       ),
-                      elevation: 0,
                     ),
-                    child: Text(
-                      localizations?.translate('apply') ?? 'Применить',
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white,
-                        fontFamily: 'Golos',
+                    SizedBox(width: buttonGap),
+                    SizedBox(
+                      width: applyWidth.toDouble(),
+                      height: buttonHeight,
+                      child: ElevatedButton(
+                        onPressed: () async {
+                          await widget.onApply(
+                            _periodKey,
+                            _managerIds,
+                            _funnelIds,
+                            _sourceIds,
+                          );
+                          if (mounted) {
+                            Navigator.pop(context);
+                          }
+                        },
+                        style: ElevatedButton.styleFrom(
+                          padding: EdgeInsets.zero,
+                          backgroundColor: const Color(0xff1E2E52),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(buttonRadius),
+                          ),
+                          elevation: 0,
+                        ),
+                        child: Text(
+                          localizations?.translate('apply') ?? 'Применить',
+                          style: TextStyle(
+                            fontSize: buttonFontSize,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                            fontFamily: 'Golos',
+                          ),
+                        ),
                       ),
                     ),
-                  ),
+                  ],
                 ),
-              ],
-            ),
+              );
+            },
           ),
         ],
       ),
@@ -306,7 +330,7 @@ class _AnalyticsFilterSheetState extends State<AnalyticsFilterSheet> {
           },
           headerBuilder: (context, selectedItem, enabled) {
             return Text(
-              selectedItem ?? hint,
+              selectedItem,
               style: const TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
