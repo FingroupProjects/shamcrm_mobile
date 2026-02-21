@@ -118,6 +118,7 @@ import 'package:crm_task_manager/models/page_2/monthly_call_stats.dart';
 import 'package:crm_task_manager/models/page_2/operator_model.dart';
 import 'package:crm_task_manager/models/page_2/order_card.dart';
 import 'package:crm_task_manager/models/page_2/order_history_model.dart';
+import 'package:crm_task_manager/models/page_2/order_internet_store_model.dart';
 import 'package:crm_task_manager/models/page_2/order_status_model.dart';
 import 'package:crm_task_manager/models/page_2/price_type_model.dart';
 import 'package:crm_task_manager/models/page_2/storage_model.dart';
@@ -6448,6 +6449,49 @@ class ApiService {
     }
   }
 
+  Future<List<OrderInternetStore>> getOrderInternetStores() async {
+    var path = '/integrations?type=mini_app_telegram_bot';
+    path = await _appendQueryParams(path);
+
+    if (kDebugMode) {
+      debugPrint('ApiService: getOrderInternetStores - Generated path: $path');
+    }
+
+    final response = await _getRequest(path);
+    if (response.statusCode != 200) {
+      throw Exception('Ошибка загрузки интернет магазинов');
+    }
+
+    final Map<String, dynamic> data = json.decode(response.body);
+    final result = data['result'];
+    final rawList = <dynamic>[];
+
+    if (result is List) {
+      rawList.addAll(result);
+    } else if (result is Map<String, dynamic>) {
+      if (result['data'] is List) {
+        rawList.addAll(result['data'] as List<dynamic>);
+      } else if (result['integrations'] is List) {
+        rawList.addAll(result['integrations'] as List<dynamic>);
+      }
+    }
+
+    if (kDebugMode) {
+      debugPrint(
+          'ApiService: getOrderInternetStores - parsed items count: ${rawList.length}');
+      if (rawList.isEmpty) {
+        debugPrint(
+            'ApiService: getOrderInternetStores - empty body: ${response.body}');
+      }
+    }
+
+    return rawList
+        .whereType<Map<String, dynamic>>()
+        .map(OrderInternetStore.fromJson)
+        .where((item) => item.name.trim().isNotEmpty)
+        .toList();
+  }
+
   /// Получение каналов привлечения лидов
   /// Endpoint: /api/dashboard/lead-channels
   Future<LeadChannelsResponse> getLeadChannels() async {
@@ -10206,14 +10250,32 @@ class ApiService {
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
-      if (data['result'] != null && data['result'] is List) {
-        return (data['result'] as List)
-            .map((item) => MiniAppSettings.fromJson(item))
-            .toList();
-      } else {
-        throw Exception(
-            'Invalid response format: result is missing or not a list');
+      final rawList = <dynamic>[];
+      final result = data['result'];
+
+      if (result is List) {
+        rawList.addAll(result);
+      } else if (result is Map<String, dynamic>) {
+        if (result['data'] is List) {
+          rawList.addAll(result['data'] as List<dynamic>);
+        } else if (result['items'] is List) {
+          rawList.addAll(result['items'] as List<dynamic>);
+        }
       }
+
+      if (kDebugMode) {
+        debugPrint(
+            'ApiService: getMiniAppSettings - parsed items count: ${rawList.length}');
+        if (rawList.isEmpty) {
+          debugPrint(
+              'ApiService: getMiniAppSettings - empty body: ${response.body}');
+        }
+      }
+
+      return rawList
+          .whereType<Map<String, dynamic>>()
+          .map((item) => MiniAppSettings.fromJson(item))
+          .toList();
     } else {
       throw Exception(
           'Failed to get mini-app settings: ${response.statusCode}');
@@ -11368,7 +11430,7 @@ class ApiService {
         'comment_to_courier': commentToCourier,
         'payment_type': 'cash',
         'manager_id': managerId,
-        'integration_id': null, //  otpravim null
+        'integration_id': integration,
         'sum': sum,
       };
 
@@ -11450,6 +11512,7 @@ class ApiService {
     int? branchId,
     String? commentToCourier,
     int? managerId, // Новое поле
+    int? integration,
     required double sum,
     List<Map<String, dynamic>>? customFields,
     List<Map<String, int>>? directoryValues,
@@ -11482,6 +11545,7 @@ class ApiService {
         'comment_to_courier': commentToCourier,
         'payment_type': 'cash',
         'manager_id': managerId?.toString(),
+        'integration_id': integration,
         'sum': sum,
       };
 

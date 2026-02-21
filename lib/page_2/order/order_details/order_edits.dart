@@ -23,10 +23,12 @@ import 'package:crm_task_manager/models/main_field_model.dart';
 import 'package:crm_task_manager/models/page_2/branch_model.dart';
 import 'package:crm_task_manager/models/page_2/delivery_address_model.dart';
 import 'package:crm_task_manager/models/page_2/order_card.dart';
+import 'package:crm_task_manager/models/page_2/order_internet_store_model.dart';
 import 'package:crm_task_manager/page_2/order/order_details/branch_dropdown_list.dart';
 import 'package:crm_task_manager/page_2/order/order_details/delivery_address_dropdown.dart';
 import 'package:crm_task_manager/page_2/order/order_details/delivery_method_dropdown.dart';
 import 'package:crm_task_manager/page_2/order/order_details/goods_selection_sheet_patch.dart';
+import 'package:crm_task_manager/page_2/order/order_details/order_field_config_utils.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/lead_list.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/add_custom_directory_dialog.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/custom_field_model.dart';
@@ -42,6 +44,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
+import 'package:animated_custom_dropdown/custom_dropdown.dart';
 
 class OrderEditScreen extends StatefulWidget {
   final Order order;
@@ -65,6 +68,7 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
   String? selectedDialCode;
   String? _fullPhoneNumber; // Полный номер телефона с кодом страны
   String? baseUrl;
+  int? _selectedIntegrationId;
   List<Branch> branches = [];
   final ApiService _apiService = ApiService();
 
@@ -72,6 +76,8 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
   final Map<int, TextEditingController> _quantityControllers = {};
   final TextEditingController _totalController = TextEditingController();
   bool _isTotalEdited = false;
+  bool _isLoadingInternetStores = false;
+  List<OrderInternetStore> _internetStores = [];
 
   // Кастомные поля
   List<CustomField> customFields = [];
@@ -110,6 +116,7 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
       name: widget.order.lead.name,
     );
     selectedManager = widget.order.manager?.id.toString();
+    _selectedIntegrationId = widget.order.integrationId;
     _selectedDeliveryAddress = widget.order.deliveryAddress != null
         ? DeliveryAddress(
             id: widget.order.deliveryAddressId ?? 0,
@@ -164,6 +171,7 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
       _initializeBaseUrl();
       _loadCurrencyId(); // Загружаем currencyId
       _loadFieldConfiguration();
+      _loadInternetStores();
       context.read<BranchBloc>().add(FetchBranches());
       context
           .read<DeliveryAddressBloc>()
@@ -414,6 +422,31 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
         );
   }
 
+  Future<void> _loadInternetStores() async {
+    if (!mounted) return;
+    setState(() {
+      _isLoadingInternetStores = true;
+    });
+
+    try {
+      final stores = await _apiService.getOrderInternetStores();
+      if (!mounted) return;
+      setState(() {
+        _internetStores = stores;
+        if (_selectedIntegrationId == null && stores.isNotEmpty) {
+          _selectedIntegrationId = stores.first.id;
+        }
+        _isLoadingInternetStores = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _internetStores = [];
+        _isLoadingInternetStores = false;
+      });
+    }
+  }
+
   Future<void> _saveFieldOrderToBackend() async {
     try {
       final List<Map<String, dynamic>> updates = [];
@@ -528,7 +561,8 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
     if (lower.contains('обязательно') ||
         lower.contains('required') ||
         message.contains('manager_id')) {
-      return AppLocalizations.of(context)!.translate('fill_all_required_fields');
+      return AppLocalizations.of(context)!
+          .translate('fill_all_required_fields');
     }
 
     final normalized = message.replaceAll(RegExp(r'\bException:\s*'), '');
@@ -537,6 +571,11 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
 
   bool _isItemsField(String fieldName) {
     return <String>{'goods', 'order_goods', 'items', 'sum'}.contains(fieldName);
+  }
+
+  List<FieldConfiguration> _getNormalizedFieldConfigurations(
+      Iterable<FieldConfiguration> fields) {
+    return deduplicateOrderFieldConfigurations(fields);
   }
 
   Widget _buildLeadField() {
@@ -670,6 +709,8 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
             });
           },
         );
+      case 'integration_id':
+        return _buildIntegrationStoreField();
       case 'goods':
       case 'order_goods':
       case 'items':
@@ -708,6 +749,100 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
       default:
         return const SizedBox.shrink();
     }
+  }
+
+  Widget _buildIntegrationStoreField() {
+    OrderInternetStore? selectedStore;
+    for (final store in _internetStores) {
+      if (store.id == _selectedIntegrationId) {
+        selectedStore = store;
+        break;
+      }
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          AppLocalizations.of(context)!.translate('internet_store_label'),
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            fontFamily: 'Gilroy',
+            color: Color(0xff1E2E52),
+          ),
+        ),
+        const SizedBox(height: 4),
+        CustomDropdown<OrderInternetStore>.search(
+          closeDropDownOnClearFilterSearch: true,
+          items: _internetStores,
+          searchHintText: AppLocalizations.of(context)!.translate('search'),
+          overlayHeight: 400,
+          enabled: !_isLoadingInternetStores,
+          decoration: CustomDropdownDecoration(
+            closedFillColor: const Color(0xffF4F7FD),
+            expandedFillColor: Colors.white,
+            closedBorder: Border.all(
+              color: const Color(0xffF4F7FD),
+              width: 1.5,
+            ),
+            closedBorderRadius: BorderRadius.circular(12),
+            expandedBorder: Border.all(
+              color: const Color(0xffF4F7FD),
+              width: 1.5,
+            ),
+            expandedBorderRadius: BorderRadius.circular(12),
+          ),
+          listItemBuilder: (context, item, isSelected, onItemSelect) {
+            return Text(
+              item.name,
+              style: const TextStyle(
+                color: Color(0xff1E2E52),
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                fontFamily: 'Gilroy',
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            );
+          },
+          headerBuilder: (context, selectedItem, enabled) {
+            return Text(
+              selectedItem.name.isNotEmpty
+                  ? selectedItem.name
+                  : 'Выберите интернет магазин',
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                fontFamily: 'Gilroy',
+                color: Color(0xff1E2E52),
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            );
+          },
+          hintBuilder: (context, hint, enabled) => const Text(
+            'Выберите интернет магазин',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              fontFamily: 'Gilroy',
+              color: Color(0xff1E2E52),
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          excludeSelected: false,
+          initialItem: selectedStore,
+          onChanged: (value) {
+            if (value == null) return;
+            setState(() {
+              _selectedIntegrationId = value.id;
+            });
+          },
+        ),
+      ],
+    );
   }
 
   Widget? _buildFieldWidget(FieldConfiguration config) {
@@ -773,10 +908,10 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
   }
 
   List<Widget> _buildConfiguredFieldWidgets() {
-    final sorted = fieldConfigurations
-        .where((config) => config.isActive || _isAlwaysVisible(config))
-        .toList()
-      ..sort((a, b) => a.position.compareTo(b.position));
+    final sorted = _getNormalizedFieldConfigurations(
+      fieldConfigurations
+          .where((config) => config.isActive || _isAlwaysVisible(config)),
+    );
 
     final widgets = <Widget>[];
     bool itemsRendered = false;
@@ -1091,8 +1226,8 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
                     SizedBox(width: 8),
                     Expanded(
                       child: CustomButton(
-                        buttonText:
-                            AppLocalizations.of(context)!.translate('dont_save'),
+                        buttonText: AppLocalizations.of(context)!
+                            .translate('dont_save'),
                         onPressed: () => Navigator.of(context).pop(true),
                         buttonColor: Colors.red,
                         textColor: Colors.white,
@@ -1163,8 +1298,7 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
   }
 
   Widget _buildSettingsMode() {
-    final sortedFields = [...fieldConfigurations]
-      ..sort((a, b) => a.position.compareTo(b.position));
+    final sortedFields = _getNormalizedFieldConfigurations(fieldConfigurations);
 
     return Column(
       children: [
@@ -1347,7 +1481,8 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
                                 });
                               },
                               child: Padding(
-                                padding: const EdgeInsets.symmetric(vertical: 4),
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 4),
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
@@ -1427,7 +1562,8 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
                                 });
                               },
                               child: Padding(
-                                padding: const EdgeInsets.symmetric(vertical: 4),
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 4),
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
@@ -1737,7 +1873,8 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
           listener: (context, configState) {
             if (configState is FieldConfigurationLoaded) {
               setState(() {
-                fieldConfigurations = configState.fields;
+                fieldConfigurations =
+                    _getNormalizedFieldConfigurations(configState.fields);
                 isConfigurationLoaded = true;
               });
             } else if (configState is FieldConfigurationError) {
@@ -1840,74 +1977,6 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
                             children: [
                               const SizedBox(height: 8),
                               ..._buildConfiguredFieldWidgets(),
-                              if (customFields.where((field) {
-                                return !fieldConfigurations.any((config) =>
-                                    (config.isCustomField &&
-                                        config.fieldName == field.fieldName) ||
-                                    (config.isDirectory &&
-                                        config.directoryId ==
-                                            field.directoryId));
-                              }).isNotEmpty)
-                                const SizedBox(height: 16),
-                              ...(() {
-                                final customFieldsList =
-                                    customFields.where((field) {
-                                  return !fieldConfigurations.any((config) =>
-                                      (config.isCustomField &&
-                                          config.fieldName ==
-                                              field.fieldName) ||
-                                      (config.isDirectory &&
-                                          config.directoryId ==
-                                              field.directoryId));
-                                }).toList();
-
-                                if (customFieldsList.isEmpty) {
-                                  return <Widget>[];
-                                }
-
-                                final customFieldWidgets =
-                                    customFieldsList.map((field) {
-                                  return field.isDirectoryField &&
-                                          field.directoryId != null
-                                      ? MainFieldDropdownWidget(
-                                          directoryId: field.directoryId!,
-                                          directoryName: field.fieldName,
-                                          selectedField: null,
-                                          onSelectField:
-                                              (MainField selectedField) {
-                                            setState(() {
-                                              final idx =
-                                                  customFields.indexOf(field);
-                                              customFields[idx] = field.copyWith(
-                                                entryId: selectedField.id,
-                                                controller:
-                                                    TextEditingController(
-                                                        text:
-                                                            selectedField.value),
-                                              );
-                                            });
-                                          },
-                                          controller: field.controller,
-                                          onSelectEntryId: (int entryId) {
-                                            setState(() {
-                                              final idx =
-                                                  customFields.indexOf(field);
-                                              customFields[idx] = field.copyWith(
-                                                entryId: entryId,
-                                              );
-                                            });
-                                          })
-                                      : CustomFieldWidget(
-                                          fieldName: field.fieldName,
-                                          valueController: field.controller,
-                                          type: field.type,
-                                          isDirectory: false,
-                                        );
-                                }).toList();
-
-                                return _withVerticalSpacing(customFieldWidgets,
-                                    spacing: 8);
-                              })(),
                               const SizedBox(height: 16),
                             ],
                           ),
@@ -1926,12 +1995,10 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
   }
 
   AppBar _buildAppBar() {
-    
     return AppBar(
       backgroundColor: Colors.white,
       forceMaterialTransparency: true,
       elevation: 0,
-      
       leading: IconButton(
         icon: const Icon(Icons.arrow_back_ios,
             color: Color(0xff1E2E52), size: 24),
@@ -1973,8 +2040,7 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
               });
             } else {
               setState(() {
-                originalFieldConfigurations =
-                    fieldConfigurations.map((config) {
+                originalFieldConfigurations = fieldConfigurations.map((config) {
                   return FieldConfiguration(
                     id: config.id,
                     tableName: config.tableName,
@@ -2501,6 +2567,7 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
                         managerId: selectedManager != null
                             ? int.parse(selectedManager!)
                             : null,
+                        integrationId: _selectedIntegrationId,
                         statusId: widget
                             .order.orderStatus.id, // Передаем текущий statusId
                         sum: currentTotal,

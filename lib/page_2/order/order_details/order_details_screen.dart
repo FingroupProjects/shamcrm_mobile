@@ -8,6 +8,7 @@ import 'package:crm_task_manager/main.dart';
 import 'package:crm_task_manager/models/field_configuration.dart';
 import 'package:crm_task_manager/models/page_2/order_card.dart';
 import 'package:crm_task_manager/page_2/order/order_details/order_edits.dart';
+import 'package:crm_task_manager/page_2/order/order_details/order_field_config_utils.dart';
 import 'package:crm_task_manager/page_2/order/order_details/order_good_screen.dart';
 import 'package:crm_task_manager/page_2/order/order_details/order_history_widget.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details_screen.dart';
@@ -162,7 +163,9 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
   Future<void> _makePhoneCall(String phoneNumber) async {
     if (phoneNumber.isEmpty || phoneNumber.trim() == '') {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(AppLocalizations.of(context)!.translate('phone_number_empty'))),
+        SnackBar(
+            content: Text(
+                AppLocalizations.of(context)!.translate('phone_number_empty'))),
       );
       return;
     }
@@ -172,7 +175,9 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
     );
     if (!await launchUrl(launchUri)) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(AppLocalizations.of(context)!.translate('call_failed'))),
+        SnackBar(
+            content:
+                Text(AppLocalizations.of(context)!.translate('call_failed'))),
       );
     }
   }
@@ -413,21 +418,30 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
         'value': fieldValue,
       });
     }
+
+    final hasCreatedAtField =
+        _fieldConfiguration.any((fc) => fc.fieldName == 'created_at');
+    if (!hasCreatedAtField && order.createdAt != null) {
+      details.add({
+        'label': _withColon(
+            AppLocalizations.of(context)!.translate('creation_date_label')),
+        'value': DateFormat('dd.MM.yyyy').format(order.createdAt!),
+      });
+    }
   }
 
   Future<void> _loadFieldConfiguration() async {
     try {
-      final response =
-          await _apiService.getFieldPositions(tableName: 'orders');
+      final response = await _apiService.getFieldPositions(tableName: 'orders');
       if (!mounted) return;
 
-      final activeFields = response.result
-          .where((field) => field.isActive)
-          .toList()
-        ..sort((a, b) => a.position.compareTo(b.position));
+      final activeFields =
+          response.result.where((field) => field.isActive).toList();
+      final normalizedFields =
+          deduplicateOrderFieldConfigurations(activeFields);
 
       setState(() {
-        _fieldConfiguration = activeFields;
+        _fieldConfiguration = normalizedFields;
         _isConfigurationLoaded = true;
       });
 
@@ -449,7 +463,8 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
       builder: (BuildContext context) {
         return Dialog(
           backgroundColor: Colors.white,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -607,9 +622,12 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                 ),
               );
               if (result != null) {
-                context.read<OrderBloc>().add(FetchOrderDetails(widget.orderId));
+                context
+                    .read<OrderBloc>()
+                    .add(FetchOrderDetails(widget.orderId));
                 // Сохраняем результат редактирования для последующей передачи
-                if (result is Map<String, dynamic> && result['success'] == true) {
+                if (result is Map<String, dynamic> &&
+                    result['success'] == true) {
                   setState(() {
                     _editResult = result;
                   });
@@ -639,10 +657,14 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
   }
 
   Widget _buildDetailItem(String label, String value) {
-    final String clientLabel = AppLocalizations.of(context)!.translate('client');
-    final String phoneLabel = AppLocalizations.of(context)!.translate('client_phone');
-    final String addressLabel = AppLocalizations.of(context)!.translate('order_address');
-    final String commentLabel = AppLocalizations.of(context)!.translate('comment_client');
+    final String clientLabel =
+        AppLocalizations.of(context)!.translate('client');
+    final String phoneLabel =
+        AppLocalizations.of(context)!.translate('client_phone');
+    final String addressLabel =
+        AppLocalizations.of(context)!.translate('order_address');
+    final String commentLabel =
+        AppLocalizations.of(context)!.translate('comment_client');
 
     if (label == clientLabel && value.isNotEmpty) {
       return GestureDetector(
@@ -660,7 +682,9 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
             );
           } else {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(AppLocalizations.of(context)!.translate('lead_not_found'))),
+              SnackBar(
+                  content: Text(AppLocalizations.of(context)!
+                      .translate('lead_not_found'))),
             );
           }
         },
@@ -737,9 +761,9 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                   fontWeight: FontWeight.w500,
                   color: const Color(0xff1E2E52),
                   decoration: value.isNotEmpty &&
-                      value !=
-                          AppLocalizations.of(context)!
-                              .translate('no_comment')
+                          value !=
+                              AppLocalizations.of(context)!
+                                  .translate('no_comment')
                       ? TextDecoration.underline
                       : null,
                 ),

@@ -55,6 +55,7 @@ class FetchOrders extends OrderEvent {
     this.paymentMethod,
   });
 }
+
 class FetchMoreOrders extends OrderEvent {
   final int? statusId;
   final int page;
@@ -87,6 +88,7 @@ class CreateOrder extends OrderEvent {
   final int? branchId;
   final String? commentToCourier;
   final int? managerId; // Новое поле
+  final int? integrationId;
   final double sum;
   final List<Map<String, dynamic>>? customFields;
   final List<Map<String, int>>? directoryValues;
@@ -103,11 +105,13 @@ class CreateOrder extends OrderEvent {
     this.branchId,
     this.commentToCourier,
     this.managerId, // Добавляем в конструктор
+    this.integrationId,
     required this.sum,
     this.customFields,
     this.directoryValues,
   });
 }
+
 class UpdateOrder extends OrderEvent {
   final int orderId;
   final String phone;
@@ -120,6 +124,7 @@ class UpdateOrder extends OrderEvent {
   final int? branchId;
   final String? commentToCourier;
   final int? managerId; // Новое поле
+  final int? integrationId;
   final int? statusId; // Добавлено для обновления списка
   final double sum;
   final List<Map<String, dynamic>>? customFields;
@@ -137,12 +142,14 @@ class UpdateOrder extends OrderEvent {
     this.branchId,
     this.commentToCourier,
     this.managerId,
+    this.integrationId,
     this.statusId,
     required this.sum,
     this.customFields,
     this.directoryValues,
   });
 }
+
 class DeleteOrder extends OrderEvent {
   final int orderId;
   final int? organizationId;
