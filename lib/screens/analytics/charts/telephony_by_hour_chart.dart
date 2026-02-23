@@ -482,6 +482,79 @@ class _TelephonyByHourChartState extends State<TelephonyByHourChart> {
                                 displayItems,
                                 barWidth: barWidth,
                               ),
+                              barTouchData: BarTouchData(
+                                enabled: true,
+                                touchTooltipData: BarTouchTooltipData(
+                                  getTooltipColor: (_) => Colors.white,
+                                  tooltipBorder: const BorderSide(
+                                    color: Color(0xffE2E8F0),
+                                  ),
+                                  tooltipRoundedRadius: 12,
+                                  tooltipPadding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 10,
+                                  ),
+                                  tooltipMargin: 8,
+                                  fitInsideHorizontally: true,
+                                  fitInsideVertically: true,
+                                  getTooltipItem:
+                                      (group, groupIndex, rod, rodIndex) {
+                                    final index = group.x.toInt();
+                                    if (index < 0 ||
+                                        index >= displayItems.length) {
+                                      return null;
+                                    }
+                                    final item = displayItems[index];
+                                    return BarTooltipItem(
+                                      '${item.hour}\n',
+                                      TextStyle(
+                                        color: const Color(0xff0F172A),
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: responsive.smallFontSize,
+                                        fontFamily: 'Golos',
+                                      ),
+                                      children: [
+                                        TextSpan(
+                                          text: '● Входящие: ${item.incoming}\n',
+                                          style: TextStyle(
+                                            color: const Color(0xff10B981),
+                                            fontWeight: FontWeight.w600,
+                                            fontSize: responsive.smallFontSize,
+                                            fontFamily: 'Golos',
+                                          ),
+                                        ),
+                                        TextSpan(
+                                          text: '● Исходящие: ${item.outgoing}\n',
+                                          style: TextStyle(
+                                            color: const Color(0xff22B3D6),
+                                            fontWeight: FontWeight.w600,
+                                            fontSize: responsive.smallFontSize,
+                                            fontFamily: 'Golos',
+                                          ),
+                                        ),
+                                        TextSpan(
+                                          text: '● Пропущенные: ${item.missed}\n',
+                                          style: TextStyle(
+                                            color: const Color(0xffEF4444),
+                                            fontWeight: FontWeight.w600,
+                                            fontSize: responsive.smallFontSize,
+                                            fontFamily: 'Golos',
+                                          ),
+                                        ),
+                                        TextSpan(
+                                          text: 'Всего: ${item.total}',
+                                          style: TextStyle(
+                                            color: const Color(0xff0F172A),
+                                            fontWeight: FontWeight.w700,
+                                            fontSize: responsive.smallFontSize,
+                                            fontFamily: 'Golos',
+                                          ),
+                                        ),
+                                      ],
+                                    );
+                                  },
+                                ),
+                              ),
                               gridData: FlGridData(
                                 show: true,
                                 drawVerticalLine: false,

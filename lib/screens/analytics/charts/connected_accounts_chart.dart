@@ -679,16 +679,61 @@ class _ConnectedAccountsChartState extends State<ConnectedAccountsChart> {
                                   fitInsideVertically: true,
                                   getTooltipItem:
                                       (group, groupIndex, rod, rodIndex) {
+                                    if (rodIndex != 0) return null;
                                     final item =
                                         displayAccounts[group.x.toInt()];
                                     return BarTooltipItem(
-                                      '${_shortLabel(item.displayName)}\n${rod.toY.toInt()}',
+                                      '${item.displayName}\n',
                                       TextStyle(
-                                        color: Color(0xff0F172A),
+                                        color: const Color(0xff0F172A),
                                         fontWeight: FontWeight.w700,
                                         fontSize: responsive.xSmallFontSize,
                                         fontFamily: 'Golos',
                                       ),
+                                      children: [
+                                        TextSpan(
+                                          text:
+                                              'Всего обращений: ${item.totalChats}\n',
+                                          style: TextStyle(
+                                            color: _kTotalChatsColor,
+                                            fontWeight: FontWeight.w600,
+                                            fontSize:
+                                                responsive.xSmallFontSize,
+                                            fontFamily: 'Golos',
+                                          ),
+                                        ),
+                                        TextSpan(
+                                          text: 'Отвечено: ${item.answered}\n',
+                                          style: TextStyle(
+                                            color: _kAnsweredColor,
+                                            fontWeight: FontWeight.w600,
+                                            fontSize:
+                                                responsive.xSmallFontSize,
+                                            fontFamily: 'Golos',
+                                          ),
+                                        ),
+                                        TextSpan(
+                                          text:
+                                              'Успешные лиды: ${item.successfulLeads}\n',
+                                          style: TextStyle(
+                                            color: _kSuccessfulColor,
+                                            fontWeight: FontWeight.w600,
+                                            fontSize:
+                                                responsive.xSmallFontSize,
+                                            fontFamily: 'Golos',
+                                          ),
+                                        ),
+                                        TextSpan(
+                                          text: 'Холодные: ${item.coldLeads}',
+                                          style: TextStyle(
+                                            color: const Color(0xff64748B),
+                                            fontWeight: FontWeight.w600,
+                                            fontSize:
+                                                responsive.xSmallFontSize,
+                                            fontFamily: 'Golos',
+                                          ),
+                                        ),
+                                      ],
                                     );
                                   },
                                 ),

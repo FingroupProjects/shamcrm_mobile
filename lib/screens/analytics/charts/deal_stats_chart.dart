@@ -338,15 +338,46 @@ class _DealStatsChartState extends State<DealStatsChart> {
                               touchTooltipData: BarTouchTooltipData(
                                 getTooltipItem:
                                     (group, groupIndex, rod, rodIndex) {
-                                  final label =
-                                      rodIndex == 0 ? 'Всего' : 'Успешные';
+                                  if (rodIndex != 0) return null;
+                                  final monthIndex = group.x.toInt();
+                                  if (monthIndex < 0 ||
+                                      monthIndex >= _monthly.length) {
+                                    return null;
+                                  }
+                                  final item = _monthly[monthIndex];
+                                  final month = monthIndex < _monthNames.length
+                                      ? _monthNames[monthIndex]
+                                      : 'Месяц ${monthIndex + 1}';
                                   return BarTooltipItem(
-                                    '$label: ${rod.toY.toStringAsFixed(0)}',
+                                    '$month\n',
                                     TextStyle(
-                                      color: Colors.white,
+                                      color: const Color(0xff0F172A),
                                       fontWeight: FontWeight.w600,
+                                      fontSize: responsive.smallFontSize,
                                       fontFamily: 'Golos',
                                     ),
+                                    children: [
+                                      TextSpan(
+                                        text:
+                                            'Всего: ${item.totalSum.toStringAsFixed(0)}\n',
+                                        style: TextStyle(
+                                          color: const Color(0xff6366F1),
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: responsive.smallFontSize,
+                                          fontFamily: 'Golos',
+                                        ),
+                                      ),
+                                      TextSpan(
+                                        text:
+                                            'Успешные: ${item.successfulSum.toStringAsFixed(0)}',
+                                        style: TextStyle(
+                                          color: const Color(0xff10B981),
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: responsive.smallFontSize,
+                                          fontFamily: 'Golos',
+                                        ),
+                                      ),
+                                    ],
                                   );
                                 },
                               ),

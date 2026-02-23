@@ -345,6 +345,69 @@ class _OrdersChartState extends State<OrdersChart> {
                                         tooltipBorder: const BorderSide(
                                             color: Color(0xffE2E8F0)),
                                         tooltipRoundedRadius: 8,
+                                        getTooltipItem:
+                                            (group, groupIndex, rod, rodIndex) {
+                                          if (rodIndex != 0) return null;
+                                          final index = group.x.toInt();
+                                          if (index < 0 ||
+                                              index >= displayPoints.length) {
+                                            return null;
+                                          }
+                                          final item = displayPoints[index];
+                                          final monthLabel =
+                                              item.month >= 0 &&
+                                                      item.month <
+                                                          _monthNames.length
+                                                  ? _monthNames[item.month]
+                                                  : item.month.toString();
+                                          return BarTooltipItem(
+                                            '$monthLabel\n',
+                                            TextStyle(
+                                              color: const Color(0xff0F172A),
+                                              fontWeight: FontWeight.w700,
+                                              fontSize: responsive.smallFontSize,
+                                              fontFamily: 'Golos',
+                                            ),
+                                            children: [
+                                              TextSpan(
+                                                text:
+                                                    'Всего заказов: ${item.totalOrders}\n',
+                                                style: TextStyle(
+                                                  color:
+                                                      const Color(0xff64748B),
+                                                  fontWeight: FontWeight.w600,
+                                                  fontSize: responsive
+                                                      .smallFontSize,
+                                                  fontFamily: 'Golos',
+                                                ),
+                                              ),
+                                              TextSpan(
+                                                text:
+                                                    'Успешные: ${item.successfulOrders}\n',
+                                                style: TextStyle(
+                                                  color:
+                                                      const Color(0xff14B8A6),
+                                                  fontWeight: FontWeight.w600,
+                                                  fontSize: responsive
+                                                      .smallFontSize,
+                                                  fontFamily: 'Golos',
+                                                ),
+                                              ),
+                                              TextSpan(
+                                                text:
+                                                    'Отменённые: ${item.canceledOrders}',
+                                                style: TextStyle(
+                                                  color:
+                                                      const Color(0xffEF4444),
+                                                  fontWeight: FontWeight.w600,
+                                                  fontSize: responsive
+                                                      .smallFontSize,
+                                                  fontFamily: 'Golos',
+                                                ),
+                                              ),
+                                            ],
+                                          );
+                                        },
                                       ),
                                     ),
                                     titlesData: FlTitlesData(

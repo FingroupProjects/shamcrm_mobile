@@ -7,11 +7,14 @@ import 'package:crm_task_manager/api/service/api_service.dart';
 class MessageReactionApiService {
   final ApiService _apiService = ApiService();
 
-  /// Добавить реакцию на сообщение
-  /// POST /api/message/{messageId}/reaction
-  Future<Map<String, dynamic>> addReaction({
+  /// Web-compatible endpoint:
+  /// POST /api/v2/chat/sendReaction/{chatId}
+  /// body: {message_id, reaction, remove}
+  Future<Map<String, dynamic>> sendReaction({
+    required int chatId,
     required int messageId,
-    required String emoji,
+    required String reaction,
+    required bool remove,
   }) async {
     try {
       final baseUrl = await _apiService.getDynamicBaseUrl();
@@ -25,22 +28,19 @@ class MessageReactionApiService {
       final organizationId = await _apiService.getSelectedOrganization();
       final salesFunnelId = await _apiService.getSelectedSalesFunnel();
 
-      String path = '$baseUrl/api/message/$messageId/reaction';
-
-      // Добавляем параметры
-      path += '?organization_id=${organizationId ?? ""}';
-      path += '&sales_funnel_id=${salesFunnelId ?? ""}';
-
+      final path =
+          '$baseUrl/v2/chat/sendReaction/$chatId?organization_id=${organizationId ?? ""}&sales_funnel_id=${salesFunnelId ?? ""}';
       final body = {
-        'emoji': emoji,
+        'message_id': messageId,
+        'reaction': reaction,
+        'remove': remove,
       };
 
       if (kDebugMode) {
-        debugPrint('MessageReactionApiService: addReaction - path: $path');
-        debugPrint('MessageReactionApiService: addReaction - body: $body');
+        debugPrint('MessageReactionApiService: sendReaction - path: $path');
+        debugPrint('MessageReactionApiService: sendReaction - body: $body');
       }
 
-      // Выполняем POST запрос
       final response = await http.post(
         Uri.parse(path),
         headers: {
@@ -54,78 +54,19 @@ class MessageReactionApiService {
       if (response.statusCode == 200 || response.statusCode == 201) {
         final data = json.decode(response.body);
         if (kDebugMode) {
-          debugPrint('MessageReactionApiService: Реакция успешно добавлена');
+          debugPrint('MessageReactionApiService: Реакция успешно отправлена');
         }
         return data;
-      } else {
-        if (kDebugMode) {
-          debugPrint(
-              'MessageReactionApiService: Ошибка ${response.statusCode}: ${response.body}');
-        }
-        throw Exception('Ошибка добавления реакции: ${response.statusCode}');
       }
+
+      if (kDebugMode) {
+        debugPrint(
+            'MessageReactionApiService: Ошибка ${response.statusCode}: ${response.body}');
+      }
+      throw Exception('Ошибка отправки реакции: ${response.statusCode}');
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('MessageReactionApiService: addReaction - Error: $e');
-      }
-      rethrow;
-    }
-  }
-
-  /// Удалить реакцию с сообщения
-  /// DELETE /api/message/{messageId}/reaction
-  Future<Map<String, dynamic>> removeReaction({
-    required int messageId,
-    required String emoji,
-  }) async {
-    try {
-      final baseUrl = await _apiService.getDynamicBaseUrl();
-      final token = await _apiService.getToken();
-
-      if (baseUrl.isEmpty || token == null || token.isEmpty) {
-        throw Exception('Не удалось получить baseUrl или token');
-      }
-
-      // Получаем параметры организации и воронки продаж
-      final organizationId = await _apiService.getSelectedOrganization();
-      final salesFunnelId = await _apiService.getSelectedSalesFunnel();
-
-      String path = '$baseUrl/api/message/$messageId/reaction';
-
-      // Добавляем параметры
-      path += '?organization_id=${organizationId ?? ""}';
-      path += '&sales_funnel_id=${salesFunnelId ?? ""}';
-      path += '&emoji=${Uri.encodeComponent(emoji)}';
-
-      if (kDebugMode) {
-        debugPrint('MessageReactionApiService: removeReaction - path: $path');
-      }
-
-      // Выполняем DELETE запрос
-      final response = await http.delete(
-        Uri.parse(path),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-      );
-
-      if (response.statusCode == 200 || response.statusCode == 204) {
-        if (kDebugMode) {
-          debugPrint('MessageReactionApiService: Реакция успешно удалена');
-        }
-        return {'result': 'Success'};
-      } else {
-        if (kDebugMode) {
-          debugPrint(
-              'MessageReactionApiService: Ошибка ${response.statusCode}: ${response.body}');
-        }
-        throw Exception('Ошибка удаления реакции: ${response.statusCode}');
-      }
-    } catch (e) {
-      if (kDebugMode) {
-        debugPrint('MessageReactionApiService: removeReaction - Error: $e');
+        debugPrint('MessageReactionApiService: sendReaction - Error: $e');
       }
       rethrow;
     }

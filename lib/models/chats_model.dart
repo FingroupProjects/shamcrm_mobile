@@ -70,7 +70,8 @@ class Chats {
     this.integration,
   });
 
-  factory Chats.fromJson(Map<String, dynamic> json, {String? supportChatName, String? supportChatImage}) {
+  factory Chats.fromJson(Map<String, dynamic> json,
+      {String? supportChatName, String? supportChatImage}) {
     List<ChatUser> users = [];
     if (json['chatUsers'] != null) {
       for (var userJson in json['chatUsers']) {
@@ -87,7 +88,8 @@ class Chats {
     }
 
     ChatUser? user;
-    if (json['user'] != null) user = ChatUser.fromJson({'participant': json['user']});
+    if (json['user'] != null)
+      user = ChatUser.fromJson({'participant': json['user']});
 
     String? customName;
     String? customImage;
@@ -110,21 +112,30 @@ class Chats {
       user: user,
       customName: customName,
       customImage: customImage,
-      createDate: json['lastMessage'] != null ? json['lastMessage']['created_at'] ?? '' : '',
+      createDate: json['lastMessage'] != null
+          ? json['lastMessage']['created_at'] ?? ''
+          : '',
       unreadCount: json['unread_count'] ?? 0,
       taskFrom: json['task'] != null ? json['task']['from'] ?? '' : '',
       taskTo: json['task'] != null ? json['task']['to'] ?? '' : '',
-      description: json['task'] != null ? json['task']['description'] ?? '' : '',
+      description:
+          json['task'] != null ? json['task']['description'] ?? '' : '',
       channel: json['channel'] != null ? json['channel']['name'] ?? '' : '',
-      lastMessage: json['lastMessage'] != null ? _getLastMessageText(json['lastMessage']) : '',
-      messageType: json['lastMessage'] != null ? json['lastMessage']['type'] ?? '' : '',
+      lastMessage: json['lastMessage'] != null
+          ? _getLastMessageText(json['lastMessage'])
+          : '',
+      messageType:
+          json['lastMessage'] != null ? json['lastMessage']['type'] ?? '' : '',
       canSendMessage: json['can_send_message'] ?? false,
       type: json['type'],
       chatUsers: users,
       group: group,
       task: task,
-      channelObj: json['channel'] != null ? Channel.fromJson(json['channel']) : null,
-      integration: json['integration'] != null ? Integration.fromJson(json['integration']) : null,
+      channelObj:
+          json['channel'] != null ? Channel.fromJson(json['channel']) : null,
+      integration: json['integration'] != null
+          ? Integration.fromJson(json['integration'])
+          : null,
     );
   }
 
@@ -138,23 +149,50 @@ class Chats {
   static String _getLastMessageText(Map<String, dynamic> lastMessage) {
     final isMyMessage = lastMessage['is_my_message'] ?? false;
     switch (lastMessage['type']) {
-      case 'text': return lastMessage['text'] ?? 'Текстовое сообщение';
-      case 'voice': return isMyMessage ? 'Отправлено голосовое сообщение' : 'Вам пришло голосовое сообщение';
-      case 'file': return 'Файл: неизвестное имя';
-      case 'image': return 'Изображение';
-      case 'video': return 'Вам пришло видео сообщение';
-      case 'location': return 'Вам пришло местоположение: ${lastMessage['location'] ?? 'неизвестно'}';
-      case 'sticker': return 'Вам пришел стикер';
-      default: return 'Новое сообщение';
+      case 'text':
+        return lastMessage['text'] ?? 'Текстовое сообщение';
+      case 'voice':
+        return isMyMessage
+            ? 'Отправлено голосовое сообщение'
+            : 'Вам пришло голосовое сообщение';
+      case 'file':
+        return 'Файл: неизвестное имя';
+      case 'image':
+        return 'Изображение';
+      case 'video':
+        return 'Вам пришло видео сообщение';
+      case 'location':
+        return 'Вам пришло местоположение: ${lastMessage['location'] ?? 'неизвестно'}';
+      case 'sticker':
+        return 'Вам пришел стикер';
+      default:
+        return 'Новое сообщение';
     }
   }
 
   Chats copyWith({
-    int? id, String? uniqueId, String? name, String? image, String? taskFrom,
-    String? taskTo, String? description, String? channel, String? lastMessage,
-    String? messageType, String? createDate, int? unreadCount, bool? canSendMessage,
-    String? type, List<ChatUser>? chatUsers, Group? group, Task? task, ChatUser? user,
-    String? customName, String? customImage, Channel? channelObj, Integration? integration,
+    int? id,
+    String? uniqueId,
+    String? name,
+    String? image,
+    String? taskFrom,
+    String? taskTo,
+    String? description,
+    String? channel,
+    String? lastMessage,
+    String? messageType,
+    String? createDate,
+    int? unreadCount,
+    bool? canSendMessage,
+    String? type,
+    List<ChatUser>? chatUsers,
+    Group? group,
+    Task? task,
+    ChatUser? user,
+    String? customName,
+    String? customImage,
+    Channel? channelObj,
+    Integration? integration,
   }) {
     return Chats(
       id: id ?? this.id,
@@ -191,7 +229,9 @@ class Chats {
     } else if (chatUsers.isNotEmpty) {
       int currentUserId = user?.id ?? 0;
       if (chatUsers.length > 1) {
-        avatar = (chatUsers[1].id == currentUserId) ? chatUsers[1].image : chatUsers[0].image;
+        avatar = (chatUsers[1].id == currentUserId)
+            ? chatUsers[1].image
+            : chatUsers[0].image;
       } else {
         avatar = chatUsers[0].image;
       }
@@ -237,17 +277,30 @@ class ChatUser {
   final String image;
   final String? lastSeen;
 
-  ChatUser({required this.id, required this.name, required this.login, required this.email, required this.phone, required this.image, this.lastSeen});
+  ChatUser(
+      {required this.id,
+      required this.name,
+      required this.login,
+      required this.email,
+      required this.phone,
+      required this.image,
+      this.lastSeen});
 
   factory ChatUser.fromJson(Map<String, dynamic> json) {
     return ChatUser(
       id: json['participant'] != null ? json['participant']['id'] ?? 0 : 0,
-      name: json['participant'] != null ? json['participant']['name'] ?? '' : '',
-      login: json['participant'] != null ? json['participant']['login'] ?? '' : '',
-      email: json['participant'] != null ? json['participant']['email'] ?? '' : '',
-      phone: json['participant'] != null ? json['participant']['phone'] ?? '' : '',
-      image: json['participant'] != null ? json['participant']['image'] ?? '' : '',
-      lastSeen: json['participant'] != null ? json['participant']['last_seen'] : null,
+      name:
+          json['participant'] != null ? json['participant']['name'] ?? '' : '',
+      login:
+          json['participant'] != null ? json['participant']['login'] ?? '' : '',
+      email:
+          json['participant'] != null ? json['participant']['email'] ?? '' : '',
+      phone:
+          json['participant'] != null ? json['participant']['phone'] ?? '' : '',
+      image:
+          json['participant'] != null ? json['participant']['image'] ?? '' : '',
+      lastSeen:
+          json['participant'] != null ? json['participant']['last_seen'] : null,
     );
   }
 }
@@ -261,7 +314,14 @@ class Group {
   final String updatedAt;
   final int organizationId;
 
-  Group({required this.id, required this.name, this.imgUrl, required this.authorId, required this.createdAt, required this.updatedAt, required this.organizationId});
+  Group(
+      {required this.id,
+      required this.name,
+      this.imgUrl,
+      required this.authorId,
+      required this.createdAt,
+      required this.updatedAt,
+      required this.organizationId});
 
   factory Group.fromJson(Map<String, dynamic> json) {
     return Group(
@@ -367,11 +427,14 @@ class Message {
   }
 
   factory Message.fromJson(Map<String, dynamic> json, {String? chatType}) {
-    String text = (json['type'] == 'file') ? (json['text'] ?? 'unknown_file') : (json['text'] ?? '');
-    
+    String text = (json['type'] == 'file')
+        ? (json['text'] ?? 'unknown_file')
+        : (json['text'] ?? '');
+
     ReadStatus? readStatus;
     try {
-      if (json['read_status'] != null) readStatus = ReadStatus.fromJson(json['read_status']);
+      if (json['read_status'] != null)
+        readStatus = ReadStatus.fromJson(json['read_status']);
     } catch (e) {
       readStatus = null;
     }
@@ -424,12 +487,46 @@ class Message {
       } catch (_) {}
     }
 
-    // ✅ РЕАКЦИИ ИЗ ВЕТКИ REACTION
+    // ✅ РЕАКЦИИ: поддержка как List, так и Map (emoji -> {count, users})
     List<MessageReaction> reactionsList = [];
-    if (json['reactions'] != null && json['reactions'] is List) {
-      for (var reactionJson in json['reactions']) {
-        reactionsList.add(MessageReaction.fromJson(reactionJson));
+    final rawReactions = json['reactions'];
+    if (rawReactions is List) {
+      for (var reactionJson in rawReactions) {
+        if (reactionJson is Map<String, dynamic>) {
+          reactionsList.add(MessageReaction.fromJson(reactionJson));
+        }
       }
+    } else if (rawReactions is Map) {
+      rawReactions.forEach((emojiKey, reactionData) {
+        if (reactionData is! Map) return;
+
+        final emoji = emojiKey.toString();
+        final countRaw = reactionData['count'];
+        final count = countRaw is int
+            ? countRaw
+            : int.tryParse(countRaw?.toString() ?? '') ?? 0;
+
+        final usersRaw = reactionData['users'];
+        final List<ReactionUser> users = [];
+        if (usersRaw is List) {
+          for (final user in usersRaw) {
+            if (user is Map) {
+              users.add(ReactionUser.fromJson(Map<String, dynamic>.from(user)));
+            } else if (user is String) {
+              users.add(ReactionUser(id: 0, name: user));
+            }
+          }
+        }
+
+        reactionsList.add(
+          MessageReaction(
+            emoji: emoji,
+            count: count,
+            users: users,
+            isMyReaction: reactionData['is_my_reaction'] == true,
+          ),
+        );
+      });
     }
 
     return Message(
@@ -471,7 +568,11 @@ class ForwardedMessage {
   final String type;
   final String? senderName;
 
-  ForwardedMessage({required this.id, required this.text, required this.type, this.senderName});
+  ForwardedMessage(
+      {required this.id,
+      required this.text,
+      required this.type,
+      this.senderName});
 
   factory ForwardedMessage.fromJson(Map<String, dynamic> json) {
     return ForwardedMessage(
@@ -520,10 +621,15 @@ class ReadStatus {
   factory ReadStatus.fromJson(Map<String, dynamic> json) {
     return ReadStatus(
       read: (json['read'] as List<dynamic>?)?.map((e) {
-            DateTime? readAt = e['read_at'] != null ? DateTime.tryParse(e['read_at']) : null;
+            DateTime? readAt =
+                e['read_at'] != null ? DateTime.tryParse(e['read_at']) : null;
             return User.fromJson(e['user'], readAt);
-          }).toList() ?? [],
-      unread: (json['unread'] as List<dynamic>?)?.map((e) => User.fromJson(e['user'], null)).toList() ?? [],
+          }).toList() ??
+          [],
+      unread: (json['unread'] as List<dynamic>?)
+              ?.map((e) => User.fromJson(e['user'], null))
+              .toList() ??
+          [],
     );
   }
 }
@@ -540,7 +646,17 @@ class User {
   final String fullName;
   final DateTime? readAt;
 
-  User({required this.id, required this.name, required this.lastname, this.login, this.email, this.phone, this.image, this.lastSeen, required this.fullName, this.readAt});
+  User(
+      {required this.id,
+      required this.name,
+      required this.lastname,
+      this.login,
+      this.email,
+      this.phone,
+      this.image,
+      this.lastSeen,
+      required this.fullName,
+      this.readAt});
 
   factory User.fromJson(Map json, [DateTime? readAt]) {
     return User(
@@ -551,9 +667,12 @@ class User {
       email: json['email'],
       phone: json['phone'],
       image: json['image'],
-      lastSeen: json['last_seen'] != null ? DateTime.parse(json['last_seen']) : DateTime.now(),
+      lastSeen: json['last_seen'] != null
+          ? DateTime.parse(json['last_seen'])
+          : DateTime.now(),
       fullName: json['full_name'] ?? 'Без имени',
-      readAt: json['read_at'] != null ? DateTime.tryParse(json['read_at']) : readAt,
+      readAt:
+          json['read_at'] != null ? DateTime.tryParse(json['read_at']) : readAt,
     );
   }
 }

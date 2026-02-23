@@ -1,17 +1,76 @@
 /// Данные эмодзи для реакций
 /// Организованы по категориям как в Telegram
 class EmojiData {
-  // Быстрые популярные реакции (8 штук)
-  static const List<String> quickReactions = [
-    '😂',
-    '👍',
-    '❤️',
-    '👎',
-    '🔥',
-    '😮',
-    '🙏',
-    '👏'
-  ];
+  // Централизованный справочник разрешенных реакций.
+  // ID используются для управления источниками (quick/context/full) без скринов.
+  static const Map<String, String> reactionCatalog = {
+    'thumbs_up': '👍',
+    'heart': '❤️',
+    'smile': '😊',
+    'handshake': '🤝',
+    'joy': '😂',
+    'surprised': '😮',
+    'cry': '😢',
+    'fire': '🔥',
+    'clap': '👏',
+    'party': '🎉',
+  };
+
+  // Источники реакций: настройка через ID из reactionCatalog.
+  static const Map<String, List<String>> reactionSourceIds = {
+    'quick_panel': [
+      'thumbs_up',
+      'heart',
+      'smile',
+      'handshake',
+      'joy',
+      'surprised',
+      'cry',
+      'fire',
+      'clap',
+      'party',
+    ],
+    'context_menu': [
+      'thumbs_up',
+      'heart',
+      'smile',
+      'handshake',
+      'joy',
+      'surprised',
+      'cry',
+      'fire',
+      'clap',
+      'party',
+    ],
+    'full_picker': [
+      'thumbs_up',
+      'heart',
+      'smile',
+      'handshake',
+      'joy',
+      'surprised',
+      'cry',
+      'fire',
+      'clap',
+      'party',
+    ],
+  };
+
+  static List<String> reactionsForSource(String source) {
+    final ids = reactionSourceIds[source] ?? const [];
+    return ids.map((id) => reactionCatalog[id]).whereType<String>().toList();
+  }
+
+  // Быстрые популярные реакции (используются в нескольких виджетах).
+  static final List<String> quickReactions = reactionsForSource('quick_panel');
+
+  static final Map<String, List<String>> reactionPickerCategories = {
+    'reactions': reactionsForSource('full_picker'),
+  };
+
+  static const Map<String, String> reactionPickerCategoryNames = {
+    'reactions': 'Реакции',
+  };
 
   // Все категории эмодзи
   static const Map<String, List<String>> categories = {
@@ -615,5 +674,11 @@ class EmojiData {
     if (query.isEmpty) return getAllEmojis();
     // Простой поиск по содержанию
     return getAllEmojis().where((emoji) => emoji.contains(query)).toList();
+  }
+
+  static List<String> searchReactionEmojis(String query) {
+    final all = reactionsForSource('full_picker');
+    if (query.isEmpty) return all;
+    return all.where((emoji) => emoji.contains(query)).toList();
   }
 }

@@ -33,23 +33,11 @@ class CompactReactionChip extends StatelessWidget {
           horizontal: horizontalPadding,
         ),
         decoration: BoxDecoration(
-          // Если мы отправитель (фиолетовый фон), делаем светлую подложку
+          // Единый стиль "как у серверной реакции" (без выделения контура)
           color: isSender
-              ? (reaction.isMyReaction
-                  ? Colors.white.withOpacity(0.4)
-                  : Colors.white.withOpacity(0.25))
-              : (reaction.isMyReaction
-                  ? const Color(0x1A2481CC)
-                  : const Color(0x14000000)),
+              ? Colors.white.withOpacity(0.25)
+              : const Color(0x14000000),
           borderRadius: BorderRadius.circular(borderRadius),
-          border: reaction.isMyReaction
-              ? Border.all(
-                  color: isSender
-                      ? Colors.white.withOpacity(0.8)
-                      : const Color(0xFF2481CC),
-                  width: 1.2,
-                )
-              : null,
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -67,11 +55,7 @@ class CompactReactionChip extends StatelessWidget {
               style: TextStyle(
                 fontSize: fontSize,
                 fontWeight: FontWeight.w600,
-                color: isSender
-                    ? Colors.white
-                    : (reaction.isMyReaction
-                        ? const Color(0xFF2481CC)
-                        : const Color(0xFF8E8E93)),
+                color: isSender ? Colors.white : const Color(0xFF8E8E93),
                 height: 1.0,
               ),
             ),

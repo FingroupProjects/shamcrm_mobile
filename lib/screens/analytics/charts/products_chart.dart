@@ -342,14 +342,68 @@ class _ProductsChartState extends State<ProductsChart> {
                                           (group, groupIndex, rod, rodIndex) {
                                         final item =
                                             displayItems[group.x.toInt()];
+                                        final revenueText =
+                                            item.revenueFormatted.isNotEmpty
+                                                ? item.revenueFormatted
+                                                : item.revenue
+                                                    .toStringAsFixed(0);
                                         return BarTooltipItem(
-                                          '${item.name}\n${rod.toY.toInt()} шт',
+                                          '${item.name}\n',
                                           TextStyle(
-                                            color: Color(0xff0F172A),
+                                            color: const Color(0xff0F172A),
                                             fontWeight: FontWeight.w700,
                                             fontSize: responsive.smallFontSize,
                                             fontFamily: 'Golos',
                                           ),
+                                          children: [
+                                            TextSpan(
+                                              text:
+                                                  'Продано: ${item.totalSold}\n',
+                                              style: TextStyle(
+                                                color:
+                                                    const Color(0xffF97316),
+                                                fontWeight: FontWeight.w600,
+                                                fontSize:
+                                                    responsive.smallFontSize,
+                                                fontFamily: 'Golos',
+                                              ),
+                                            ),
+                                            TextSpan(
+                                              text:
+                                                  'Успешные: ${item.successful}\n',
+                                              style: TextStyle(
+                                                color:
+                                                    const Color(0xff10B981),
+                                                fontWeight: FontWeight.w600,
+                                                fontSize:
+                                                    responsive.smallFontSize,
+                                                fontFamily: 'Golos',
+                                              ),
+                                            ),
+                                            TextSpan(
+                                              text:
+                                                  'Отменённые: ${item.cancelled}\n',
+                                              style: TextStyle(
+                                                color:
+                                                    const Color(0xffEF4444),
+                                                fontWeight: FontWeight.w600,
+                                                fontSize:
+                                                    responsive.smallFontSize,
+                                                fontFamily: 'Golos',
+                                              ),
+                                            ),
+                                            TextSpan(
+                                              text: 'Выручка: $revenueText',
+                                              style: TextStyle(
+                                                color:
+                                                    const Color(0xff64748B),
+                                                fontWeight: FontWeight.w600,
+                                                fontSize:
+                                                    responsive.smallFontSize,
+                                                fontFamily: 'Golos',
+                                              ),
+                                            ),
+                                          ],
                                         );
                                       },
                                     ),

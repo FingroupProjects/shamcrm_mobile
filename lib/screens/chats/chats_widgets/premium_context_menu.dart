@@ -208,6 +208,7 @@ class _PremiumMenuOverlayState extends State<_PremiumMenuOverlay>
   }
 
   Widget _buildReactionPanel() {
+    final contextReactions = EmojiData.reactionsForSource('context_menu');
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
       decoration: BoxDecoration(
@@ -224,7 +225,7 @@ class _PremiumMenuOverlayState extends State<_PremiumMenuOverlay>
           mainAxisSize: MainAxisSize.min,
           children: [
             const SizedBox(width: 6),
-            ...EmojiData.quickReactions.map((emoji) {
+            ...contextReactions.map((emoji) {
               return GestureDetector(
                 onTap: () => widget.onReactionSelected?.call(emoji),
                 child: Padding(
@@ -236,19 +237,6 @@ class _PremiumMenuOverlayState extends State<_PremiumMenuOverlay>
                 ),
               );
             }).toList(),
-            GestureDetector(
-              onTap: widget.onShowFullPicker,
-              child: Container(
-                margin: const EdgeInsets.symmetric(horizontal: 6),
-                width: 32,
-                height: 32,
-                decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.05),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.add, size: 20, color: Colors.black54),
-              ),
-            ),
             const SizedBox(width: 6),
           ],
         ),

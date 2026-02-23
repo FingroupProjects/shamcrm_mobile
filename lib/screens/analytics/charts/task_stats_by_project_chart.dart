@@ -288,6 +288,89 @@ class _TaskStatsByProjectChartState extends State<TaskStatsByProjectChart> {
                               BarChartData(
                                 maxY: chartMaxY,
                                 barGroups: _buildGroups(displayProjects),
+                                barTouchData: BarTouchData(
+                                  enabled: true,
+                                  touchTooltipData: BarTouchTooltipData(
+                                    getTooltipColor: (_) => Colors.white,
+                                    tooltipBorder: const BorderSide(
+                                      color: Color(0xffE2E8F0),
+                                    ),
+                                    tooltipRoundedRadius: 12,
+                                    tooltipPadding: const EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 10,
+                                    ),
+                                    tooltipMargin: 10,
+                                    fitInsideHorizontally: true,
+                                    fitInsideVertically: true,
+                                    getTooltipItem:
+                                        (group, groupIndex, rod, rodIndex) {
+                                      final index = group.x.toInt();
+                                      if (index < 0 ||
+                                          index >= displayProjects.length) {
+                                        return null;
+                                      }
+                                      final item = displayProjects[index];
+                                      final statusPreview = item.statuses
+                                          .where((s) => s.count > 0)
+                                          .take(3)
+                                          .toList();
+
+                                      final spans = <TextSpan>[
+                                        TextSpan(
+                                          text:
+                                              'Всего задач: ${item.totalTasks}',
+                                          style: TextStyle(
+                                            color: const Color(0xffEF4444),
+                                            fontWeight: FontWeight.w700,
+                                            fontSize:
+                                                responsive.smallFontSize,
+                                            fontFamily: 'Golos',
+                                          ),
+                                        ),
+                                      ];
+
+                                      if (statusPreview.isNotEmpty) {
+                                        spans.add(
+                                          TextSpan(
+                                            text: '\n',
+                                            style: TextStyle(
+                                              fontSize:
+                                                  responsive.smallFontSize,
+                                            ),
+                                          ),
+                                        );
+                                        for (final status in statusPreview) {
+                                          spans.add(
+                                            TextSpan(
+                                              text:
+                                                  '• ${status.statusName}: ${status.count}\n',
+                                              style: TextStyle(
+                                                color:
+                                                    const Color(0xff64748B),
+                                                fontWeight: FontWeight.w600,
+                                                fontSize:
+                                                    responsive.smallFontSize,
+                                                fontFamily: 'Golos',
+                                              ),
+                                            ),
+                                          );
+                                        }
+                                      }
+
+                                      return BarTooltipItem(
+                                        '${item.projectName}\n',
+                                        TextStyle(
+                                          color: const Color(0xff0F172A),
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: responsive.smallFontSize,
+                                          fontFamily: 'Golos',
+                                        ),
+                                        children: spans,
+                                      );
+                                    },
+                                  ),
+                                ),
                                 gridData: FlGridData(
                                   show: true,
                                   drawVerticalLine: false,

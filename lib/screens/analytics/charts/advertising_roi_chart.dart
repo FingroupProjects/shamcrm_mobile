@@ -532,27 +532,59 @@ class _AdvertisingRoiChartState extends State<AdvertisingRoiChart> {
                                           fitInsideVertically: true,
                                           getTooltipItem: (group, groupIndex,
                                               rod, rodIndex) {
+                                            if (rodIndex != 0) return null;
                                             final item = displayCampaigns[
                                                 group.x.toInt()];
-                                            final label = switch (rodIndex) {
-                                              0 => _showLeads
-                                                  ? 'Лидов'
-                                                  : (_showClients
-                                                      ? 'Клиентов'
-                                                      : 'Холодные'),
-                                              1 => (_showLeads && _showClients)
-                                                  ? 'Клиентов'
-                                                  : 'Холодные',
-                                              _ => 'Холодные',
-                                            };
                                             return BarTooltipItem(
-                                              '${_shortLabel(item.integrationName, 16)}\n$label: ${rod.toY.toInt()}',
+                                              '${item.integrationName}\n',
                                               TextStyle(
                                                 fontSize: axisLabelSize,
                                                 fontWeight: FontWeight.w700,
                                                 color: const Color(0xff0F172A),
                                                 fontFamily: 'Golos',
                                               ),
+                                              children: [
+                                                TextSpan(
+                                                  text:
+                                                      'Лидов: ${item.totalLeads}\n',
+                                                  style: TextStyle(
+                                                    fontSize: axisLabelSize,
+                                                    fontWeight: FontWeight.w600,
+                                                    color: _leadsColor,
+                                                    fontFamily: 'Golos',
+                                                  ),
+                                                ),
+                                                TextSpan(
+                                                  text:
+                                                      'Клиентов: ${item.clients}\n',
+                                                  style: TextStyle(
+                                                    fontSize: axisLabelSize,
+                                                    fontWeight: FontWeight.w600,
+                                                    color: _clientsColor,
+                                                    fontFamily: 'Golos',
+                                                  ),
+                                                ),
+                                                TextSpan(
+                                                  text:
+                                                      'Холодные: ${item.cold}\n',
+                                                  style: TextStyle(
+                                                    fontSize: axisLabelSize,
+                                                    fontWeight: FontWeight.w600,
+                                                    color: _coldColor,
+                                                    fontFamily: 'Golos',
+                                                  ),
+                                                ),
+                                                TextSpan(
+                                                  text:
+                                                      'ROI: ${item.roi.toStringAsFixed(1)}%',
+                                                  style: TextStyle(
+                                                    fontSize: axisLabelSize,
+                                                    fontWeight: FontWeight.w600,
+                                                    color: _roiLineColor,
+                                                    fontFamily: 'Golos',
+                                                  ),
+                                                ),
+                                              ],
                                             );
                                           },
                                         ),

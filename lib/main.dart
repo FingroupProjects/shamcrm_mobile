@@ -510,7 +510,7 @@ class _MyAppState extends State<MyApp> {
     _locale = widget.initialLocale;
     // ✅ УБРАНА ИНИЦИАЛИЗАЦИЯ - не нужна!
   }
-  //1
+//1
   Future<void> checkForNewVersion(BuildContext context) async {
     // TODO remove on building ipa or apk files
     return;

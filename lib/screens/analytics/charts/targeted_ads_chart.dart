@@ -693,16 +693,73 @@ class _TargetedAdsChartState extends State<TargetedAdsChart> {
                                   fitInsideVertically: true,
                                   getTooltipItem:
                                       (group, groupIndex, rod, rodIndex) {
+                                    if (rodIndex != 0) return null;
                                     final item =
                                         displayCampaigns[group.x.toInt()];
                                     return BarTooltipItem(
-                                      '${_shortLabel(item.campaignName)}\n${rod.toY.toInt()}',
+                                      '${item.campaignName}\n',
                                       TextStyle(
-                                        color: Color(0xff0F172A),
+                                        color: const Color(0xff0F172A),
                                         fontWeight: FontWeight.w700,
                                         fontSize: responsive.xSmallFontSize,
                                         fontFamily: 'Golos',
                                       ),
+                                      children: [
+                                        TextSpan(
+                                          text:
+                                              'Всего обращений: ${item.totalReaches}\n',
+                                          style: TextStyle(
+                                            color: _kReachesColor,
+                                            fontWeight: FontWeight.w600,
+                                            fontSize:
+                                                responsive.xSmallFontSize,
+                                            fontFamily: 'Golos',
+                                          ),
+                                        ),
+                                        TextSpan(
+                                          text:
+                                              'Успешные: ${item.successful}\n',
+                                          style: TextStyle(
+                                            color: _kSuccessfulColor,
+                                            fontWeight: FontWeight.w600,
+                                            fontSize:
+                                                responsive.xSmallFontSize,
+                                            fontFamily: 'Golos',
+                                          ),
+                                        ),
+                                        TextSpan(
+                                          text: 'Холодные: ${item.cold}\n',
+                                          style: TextStyle(
+                                            color: _kColdColor,
+                                            fontWeight: FontWeight.w600,
+                                            fontSize:
+                                                responsive.xSmallFontSize,
+                                            fontFamily: 'Golos',
+                                          ),
+                                        ),
+                                        TextSpan(
+                                          text:
+                                              'В работе: ${item.inProgress}\n',
+                                          style: TextStyle(
+                                            color: _kInProgressColor,
+                                            fontWeight: FontWeight.w600,
+                                            fontSize:
+                                                responsive.xSmallFontSize,
+                                            fontFamily: 'Golos',
+                                          ),
+                                        ),
+                                        TextSpan(
+                                          text:
+                                              'Стоимость лида: ${item.costPerLead.toStringAsFixed(2)}',
+                                          style: TextStyle(
+                                            color: const Color(0xff0F172A),
+                                            fontWeight: FontWeight.w600,
+                                            fontSize:
+                                                responsive.xSmallFontSize,
+                                            fontFamily: 'Golos',
+                                          ),
+                                        ),
+                                      ],
                                     );
                                   },
                                 ),

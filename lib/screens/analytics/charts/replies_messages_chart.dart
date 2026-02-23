@@ -356,26 +356,52 @@ class _RepliesMessagesChartState extends State<RepliesMessagesChart> {
                                   fitInsideVertically: true,
                                   getTooltipItem:
                                       (group, groupIndex, rod, rodIndex) {
+                                    if (rodIndex != 0) return null;
                                     final item = displayItems[group.x.toInt()];
-                                    final label = switch (rodIndex) {
-                                      0 => 'Получено',
-                                      1 => 'Отвечено',
-                                      _ => 'Без ответа',
-                                    };
-                                    final value = switch (rodIndex) {
-                                      0 => item.receivedMessages,
-                                      1 => item.sentMessages,
-                                      _ => item.unansweredChats,
-                                    };
 
                                     return BarTooltipItem(
-                                      '${item.channelName}\n$label: $value',
+                                      '${item.channelName}\n',
                                       TextStyle(
-                                        color: Color(0xff0F172A),
+                                        color: const Color(0xff0F172A),
                                         fontWeight: FontWeight.w700,
                                         fontSize: responsive.smallFontSize,
                                         fontFamily: 'Golos',
                                       ),
+                                      children: [
+                                        TextSpan(
+                                          text:
+                                              'Получено: ${item.receivedMessages}\n',
+                                          style: TextStyle(
+                                            color: const Color(0xff6366F1),
+                                            fontWeight: FontWeight.w600,
+                                            fontSize:
+                                                responsive.smallFontSize,
+                                            fontFamily: 'Golos',
+                                          ),
+                                        ),
+                                        TextSpan(
+                                          text:
+                                              'Отвечено: ${item.sentMessages}\n',
+                                          style: TextStyle(
+                                            color: const Color(0xff10B981),
+                                            fontWeight: FontWeight.w600,
+                                            fontSize:
+                                                responsive.smallFontSize,
+                                            fontFamily: 'Golos',
+                                          ),
+                                        ),
+                                        TextSpan(
+                                          text:
+                                              'Без ответа: ${item.unansweredChats}',
+                                          style: TextStyle(
+                                            color: const Color(0xffEF4444),
+                                            fontWeight: FontWeight.w600,
+                                            fontSize:
+                                                responsive.smallFontSize,
+                                            fontFamily: 'Golos',
+                                          ),
+                                        ),
+                                      ],
                                     );
                                   },
                                 ),

@@ -136,7 +136,7 @@ class _KpiChartState extends State<KpiChart> {
                   style: TextStyle(
                     fontSize: ResponsiveHelper(context).bodyFontSize,
                     fontWeight: FontWeight.w600,
-                    color: Color(0xffF59E0B),
+                    color: Color(0xff6366F1),
                     fontFamily: 'Golos',
                   ),
                 ),
@@ -197,8 +197,9 @@ class _KpiChartState extends State<KpiChart> {
   int get _completed =>
       _taskData.isNotEmpty && _taskData.length > 2 ? _taskData[2] : 0;
   int get _inProgress =>
+      _taskData.isNotEmpty ? _taskData[0] : 0;
+  int get _overdue =>
       _taskData.isNotEmpty && _taskData.length > 1 ? _taskData[1] : 0;
-  int get _overdue => _taskData.isNotEmpty ? _taskData[0] : 0;
 
   double _calloutMaxWidth(double width) {
     final target = width * 0.44;
@@ -345,10 +346,11 @@ class _KpiChartState extends State<KpiChart> {
             ? displayTaskData[2]
             : 0;
     final displayInProgress =
+        displayTaskData.isNotEmpty ? displayTaskData[0] : 0;
+    final displayOverdue =
         displayTaskData.isNotEmpty && displayTaskData.length > 1
             ? displayTaskData[1]
             : 0;
-    final displayOverdue = displayTaskData.isNotEmpty ? displayTaskData[0] : 0;
     final allSlices = <_KpiSlice>[
       if (_showCompleted)
         _KpiSlice(
@@ -360,7 +362,7 @@ class _KpiChartState extends State<KpiChart> {
         _KpiSlice(
           label: 'В работе',
           value: displayInProgress.toDouble(),
-          color: const Color(0xffF59E0B),
+          color: const Color(0xff6366F1),
         ),
       if (_showOverdue)
         _KpiSlice(
@@ -466,7 +468,7 @@ class _KpiChartState extends State<KpiChart> {
                     }),
                   ),
                   _buildSliceToggle(
-                    color: const Color(0xffF59E0B),
+                    color: const Color(0xff6366F1),
                     label: 'В работе',
                     isActive: _showInProgress,
                     onTap: () => setState(() {

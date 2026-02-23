@@ -26,7 +26,7 @@ class _FullEmojiPickerSheetState extends State<FullEmojiPickerSheet>
   void initState() {
     super.initState();
     _tabController = TabController(
-      length: EmojiData.categories.length,
+      length: EmojiData.reactionPickerCategories.length,
       vsync: this,
     );
     _searchController.addListener(_onSearchChanged);
@@ -44,7 +44,7 @@ class _FullEmojiPickerSheetState extends State<FullEmojiPickerSheet>
       final query = _searchController.text;
       _isSearching = query.isNotEmpty;
       if (_isSearching) {
-        _searchResults = EmojiData.searchEmojis(query);
+        _searchResults = EmojiData.searchReactionEmojis(query);
       }
     });
   }
@@ -200,9 +200,10 @@ class _FullEmojiPickerSheetState extends State<FullEmojiPickerSheet>
             ),
             labelColor: Colors.blue,
             unselectedLabelColor: Colors.grey,
-            tabs: EmojiData.categories.keys.map((category) {
+            tabs: EmojiData.reactionPickerCategories.keys.map((category) {
               // Берем первый эмодзи категории как иконку
-              final iconEmoji = EmojiData.categories[category]!.first;
+              final iconEmoji =
+                  EmojiData.reactionPickerCategories[category]!.first;
               return Tab(
                 child: Text(
                   iconEmoji,
@@ -216,7 +217,7 @@ class _FullEmojiPickerSheetState extends State<FullEmojiPickerSheet>
         Expanded(
           child: TabBarView(
             controller: _tabController,
-            children: EmojiData.categories.values.map((emojis) {
+            children: EmojiData.reactionPickerCategories.values.map((emojis) {
               return GridView.builder(
                 padding: const EdgeInsets.all(16),
                 gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(

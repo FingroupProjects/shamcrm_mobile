@@ -513,20 +513,55 @@ class _ManagersChartState extends State<ManagersChart> {
                     tooltipBorder: const BorderSide(color: Color(0xffE2E8F0)),
                     tooltipRoundedRadius: 8,
                     getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                      if (rodIndex != 0) return null;
                       final m = managers[groupIndex];
-                      final label = rodIndex == 0
-                          ? 'Всего: ${m.totalDeals}'
-                          : 'Успешные: ${m.successfulDeals}';
                       return BarTooltipItem(
-                        label,
+                        '${m.managerName}\n',
                         TextStyle(
-                          color: rod.gradient?.colors.first ??
-                              rod.color ??
-                              Colors.white,
+                          color: const Color(0xff0F172A),
                           fontWeight: FontWeight.w600,
                           fontSize: responsive.smallFontSize,
                           fontFamily: 'Golos',
                         ),
+                        children: [
+                          TextSpan(
+                            text: 'Всего сделок: ${m.totalDeals}\n',
+                            style: TextStyle(
+                              color: const Color(0xff6366F1),
+                              fontWeight: FontWeight.w600,
+                              fontSize: responsive.smallFontSize,
+                              fontFamily: 'Golos',
+                            ),
+                          ),
+                          TextSpan(
+                            text: 'Успешные сделки: ${m.successfulDeals}\n',
+                            style: TextStyle(
+                              color: const Color(0xff10B981),
+                              fontWeight: FontWeight.w600,
+                              fontSize: responsive.smallFontSize,
+                              fontFamily: 'Golos',
+                            ),
+                          ),
+                          TextSpan(
+                            text: 'Сумма: ${_formatMoney(m.totalSum)}\n',
+                            style: TextStyle(
+                              color: const Color(0xffF59E0B),
+                              fontWeight: FontWeight.w600,
+                              fontSize: responsive.smallFontSize,
+                              fontFamily: 'Golos',
+                            ),
+                          ),
+                          TextSpan(
+                            text:
+                                'Успешная сумма: ${_formatMoney(m.successfulSum)}',
+                            style: TextStyle(
+                              color: const Color(0xffEC4899),
+                              fontWeight: FontWeight.w600,
+                              fontSize: responsive.smallFontSize,
+                              fontFamily: 'Golos',
+                            ),
+                          ),
+                        ],
                       );
                     },
                   ),

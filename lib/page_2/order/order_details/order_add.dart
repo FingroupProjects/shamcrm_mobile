@@ -1687,14 +1687,32 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
     );
 
     if (result != null && result is List<Map<String, dynamic>> && mounted) {
+      final addedItems = result
+          .map((item) => {
+                'id': item['id'],
+                'name': item['name'],
+                'price': item['price'],
+                'quantity': item['quantity'],
+                'imagePath': item['imagePath'],
+              })
+          .toList();
+      final addedTotal = addedItems.fold<double>(
+        0,
+        (sum, item) {
+          final itemPrice = (item['price'] as num?)?.toDouble() ?? 0;
+          final itemQuantity = (item['quantity'] as num?)?.toInt() ??
+              int.tryParse('${item['quantity']}') ??
+              1;
+          return sum + (itemPrice * itemQuantity);
+        },
+      );
       setState(() {
-        _items.addAll(result.map((item) => {
-              'id': item['id'],
-              'name': item['name'],
-              'price': item['price'],
-              'quantity': item['quantity'],
-              'imagePath': item['imagePath'],
-            }));
+        _items.addAll(addedItems);
+        if (_isTotalEdited && addedTotal != 0) {
+          final currentTotal = _getCurrentTotal();
+          final adjustedTotal = currentTotal + addedTotal;
+          _totalController.text = adjustedTotal.toStringAsFixed(0);
+        }
       });
     }
   }
@@ -1757,10 +1775,21 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
   void _updateQuantity(int index, int newQuantity) {
     if (!mounted || index < 0 || index >= _items.length) return;
 
+    final item = _items[index];
+    final oldQuantity = (item['quantity'] as num?)?.toInt() ??
+        int.tryParse('${item['quantity']}') ??
+        1;
+    final itemPrice = (item['price'] as num?)?.toDouble() ?? 0;
     final normalizedQuantity = newQuantity < 1 ? 1 : newQuantity;
+    final deltaQuantity = normalizedQuantity - oldQuantity;
 
     setState(() {
       _items[index]['quantity'] = normalizedQuantity;
+      if (_isTotalEdited && deltaQuantity != 0) {
+        final currentTotal = _getCurrentTotal();
+        final adjustedTotal = currentTotal + (deltaQuantity * itemPrice);
+        _totalController.text = adjustedTotal.toStringAsFixed(0);
+      }
     });
 
     _syncQuantityController(index);
@@ -1769,11 +1798,24 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
   void _removeItem(int index) {
     if (!mounted || index < 0 || index >= _items.length) return;
 
+    final removedItem = _items[index];
+    final removedPrice = (removedItem['price'] as num?)?.toDouble() ?? 0;
+    final removedQuantity = (removedItem['quantity'] as num?)?.toInt() ??
+        int.tryParse('${removedItem['quantity']}') ??
+        1;
+    final removedTotal = removedPrice * removedQuantity;
     final key = identityHashCode(_items[index]);
     final controller = _quantityControllers.remove(key);
     controller?.dispose();
 
-    setState(() => _items.removeAt(index));
+    setState(() {
+      _items.removeAt(index);
+      if (_isTotalEdited) {
+        final currentTotal = _getCurrentTotal();
+        final adjustedTotal = currentTotal - removedTotal;
+        _totalController.text = adjustedTotal.toStringAsFixed(0);
+      }
+    });
     FocusScope.of(context).unfocus();
   }
 
