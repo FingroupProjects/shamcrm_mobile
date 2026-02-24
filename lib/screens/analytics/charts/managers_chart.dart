@@ -500,6 +500,7 @@ class _ManagersChartState extends State<ManagersChart> {
             (_showTotalSum || _showSuccessSum) ? 50.0 : 0.0;
 
         return Stack(
+          clipBehavior: Clip.none,
           children: [
             // Bar chart layer
             BarChart(
@@ -623,17 +624,7 @@ class _ManagersChartState extends State<ManagersChart> {
                     sideTitles: SideTitles(showTitles: false),
                   ),
                   rightTitles: AxisTitles(
-                    axisNameWidget: (_showTotalSum || _showSuccessSum)
-                        ? Text(
-                            'Сумма',
-                            style: TextStyle(
-                              fontSize: responsive.xSmallFontSize,
-                              color: Color(0xff94A3B8),
-                              fontFamily: 'Golos',
-                            ),
-                          )
-                        : null,
-                    axisNameSize: (_showTotalSum || _showSuccessSum) ? 16 : 0,
+                    axisNameSize: 0,
                     sideTitles: SideTitles(
                       showTitles: _showTotalSum || _showSuccessSum,
                       reservedSize: barRightReserved,
@@ -677,6 +668,19 @@ class _ManagersChartState extends State<ManagersChart> {
                 ),
               ),
             ),
+            if (_showTotalSum || _showSuccessSum)
+              Positioned(
+                top: -22,
+                right: 8,
+                child: Text(
+                  'Сумма',
+                  style: TextStyle(
+                    fontSize: responsive.xSmallFontSize,
+                    color: Color(0xff94A3B8),
+                    fontFamily: 'Golos',
+                  ),
+                ),
+              ),
             // Line chart overlay — mapped to bar Y scale
             if (_showTotalSum || _showSuccessSum)
               IgnorePointer(

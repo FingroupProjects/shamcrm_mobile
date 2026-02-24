@@ -760,6 +760,16 @@ class _TelephonyEventsChartState extends State<TelephonyEventsChart> {
                                                 SideTitles(showTitles: false),
                                           ),
                                           leftTitles: AxisTitles(
+                                            axisNameWidget: Text(
+                                              'Количество',
+                                              style: TextStyle(
+                                                fontSize:
+                                                    isVeryCompact ? 10 : 11,
+                                                color: Color(0xff94A3B8),
+                                                fontFamily: 'Golos',
+                                              ),
+                                            ),
+                                            axisNameSize: 16,
                                             sideTitles: SideTitles(
                                               showTitles: true,
                                               interval: leftInterval.toDouble(),

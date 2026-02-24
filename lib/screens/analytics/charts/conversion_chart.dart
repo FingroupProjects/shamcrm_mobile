@@ -101,6 +101,12 @@ class _ConversionChartState extends State<ConversionChart> {
     return _conversionData.reduce((a, b) => a + b) / _conversionData.length;
   }
 
+  String get _averagePercentageFormatted {
+    final value = _averagePercentage;
+    final decimals = value.abs() >= 10 ? 1 : 2;
+    return value.toStringAsFixed(decimals);
+  }
+
   int get _bestMonthIndex {
     if (_conversionData.isEmpty) return 0;
     double maxValue = _conversionData[0];
@@ -462,7 +468,7 @@ class _ConversionChartState extends State<ConversionChart> {
                       ),
                       SizedBox(height: 4),
                       Text(
-                        '${_averagePercentage.toStringAsFixed(1)}%',
+                        '$_averagePercentageFormatted%',
                         style: TextStyle(
                           fontSize: responsive.largeFontSize,
                           fontWeight: FontWeight.w700,

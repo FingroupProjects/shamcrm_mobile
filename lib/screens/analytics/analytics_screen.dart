@@ -588,6 +588,10 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
           builder: (context, setSheetState) {
             final bottomInset = MediaQuery.of(context).viewInsets.bottom;
             final maxHeight = MediaQuery.of(context).size.height * 0.82;
+            final allSelected =
+                entries.isNotEmpty &&
+                entries.every((entry) => tempVisibility[entry.key] ?? false);
+            final selectAllLabel = allSelected ? 'Отменить все' : 'Выбрать все';
 
             return SafeArea(
               top: false,
@@ -639,19 +643,16 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                                 ),
                               ),
                             )
-                          : ListView.separated(
-                              itemCount: entries.length,
-                              separatorBuilder: (_, __) =>
-                                  const SizedBox(height: 10),
-                              itemBuilder: (context, index) {
-                                final entry = entries[index];
-                                final enabled =
-                                    tempVisibility[entry.key] ?? false;
-                                return InkWell(
+                          : Column(
+                              children: [
+                                InkWell(
                                   borderRadius: BorderRadius.circular(14),
                                   onTap: () {
                                     setSheetState(() {
-                                      tempVisibility[entry.key] = !enabled;
+                                      for (final entry in entries) {
+                                        tempVisibility[entry.key] =
+                                            !allSelected;
+                                      }
                                     });
                                   },
                                   child: Ink(
@@ -671,11 +672,13 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                                         Transform.scale(
                                           scale: 1.05,
                                           child: Switch(
-                                            value: enabled,
+                                            value: allSelected,
                                             onChanged: (value) {
                                               setSheetState(() {
-                                                tempVisibility[entry.key] =
-                                                    value;
+                                                for (final entry in entries) {
+                                                  tempVisibility[entry.key] =
+                                                      value;
+                                                }
                                               });
                                             },
                                             activeThumbColor: Colors.white,
@@ -703,7 +706,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                                         const SizedBox(width: 10),
                                         Expanded(
                                           child: Text(
-                                            entry.title,
+                                            selectAllLabel,
                                             style: const TextStyle(
                                               fontSize: 16,
                                               fontWeight: FontWeight.w600,
@@ -715,10 +718,107 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                                       ],
                                     ),
                                   ),
-                                );
-                              },
+                                ),
+                                const Padding(
+                                  padding: EdgeInsets.fromLTRB(6, 8, 6, 8),
+                                  child: Divider(
+                                    height: 1,
+                                    thickness: 1,
+                                    color: Color(0xffE2E8F0),
+                                  ),
+                                ),
+                                Expanded(
+                                  child: ListView.separated(
+                                    itemCount: entries.length,
+                                    separatorBuilder: (_, __) =>
+                                        const SizedBox(height: 10),
+                                    itemBuilder: (context, index) {
+                                      final entry = entries[index];
+                                      final enabled =
+                                          tempVisibility[entry.key] ?? false;
+                                      return InkWell(
+                                        borderRadius: BorderRadius.circular(14),
+                                        onTap: () {
+                                          setSheetState(() {
+                                            tempVisibility[entry.key] =
+                                                !enabled;
+                                          });
+                                        },
+                                        child: Ink(
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: 10, vertical: 12),
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xffF8FAFC),
+                                            borderRadius:
+                                                BorderRadius.circular(14),
+                                            border: Border.all(
+                                              color: const Color(0xffE2E8F0),
+                                            ),
+                                          ),
+                                          child: Row(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.center,
+                                            children: [
+                                              Transform.scale(
+                                                scale: 1.05,
+                                                child: Switch(
+                                                  value: enabled,
+                                                  onChanged: (value) {
+                                                    setSheetState(() {
+                                                      tempVisibility[entry
+                                                          .key] = value;
+                                                    });
+                                                  },
+                                                  activeThumbColor:
+                                                      Colors.white,
+                                                  inactiveThumbColor:
+                                                      Colors.white,
+                                                  activeTrackColor:
+                                                      const Color(0xff4F40EC),
+                                                  inactiveTrackColor:
+                                                      const Color(0xffD9D9D9),
+                                                  trackOutlineColor:
+                                                      WidgetStateProperty
+                                                          .resolveWith(
+                                                    (states) {
+                                                      if (states.contains(
+                                                          WidgetState
+                                                              .selected)) {
+                                                        return const Color(
+                                                            0xff4F40EC);
+                                                      }
+                                                      return const Color(
+                                                          0xff8E8E93);
+                                                    },
+                                                  ),
+                                                  materialTapTargetSize:
+                                                      MaterialTapTargetSize
+                                                          .shrinkWrap,
+                                                ),
+                                              ),
+                                              const SizedBox(width: 10),
+                                              Expanded(
+                                                child: Text(
+                                                  entry.title,
+                                                  style: const TextStyle(
+                                                    fontSize: 16,
+                                                    fontWeight: FontWeight.w600,
+                                                    color: Color(0xff1E2E52),
+                                                    fontFamily: 'Gilroy',
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ),
+                              ],
                             ),
                     ),
+                    const Divider(height: 1, color: Color(0xffE2E8F0)),
                     const SizedBox(height: 12),
                     SizedBox(
                       width: double.infinity,

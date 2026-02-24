@@ -269,6 +269,15 @@ class _MessageStatsChartState extends State<MessageStatsChart> {
                             borderData: FlBorderData(show: false),
                             titlesData: FlTitlesData(
                               leftTitles: AxisTitles(
+                                axisNameWidget: Text(
+                                  'Количество',
+                                  style: TextStyle(
+                                    fontSize: responsive.xSmallFontSize,
+                                    color: Color(0xff94A3B8),
+                                    fontFamily: 'Golos',
+                                  ),
+                                ),
+                                axisNameSize: 16,
                                 sideTitles: SideTitles(
                                   showTitles: true,
                                   reservedSize: 40,

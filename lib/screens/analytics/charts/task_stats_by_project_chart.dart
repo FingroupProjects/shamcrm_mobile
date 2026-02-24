@@ -17,6 +17,16 @@ class TaskStatsByProjectChart extends StatefulWidget {
 }
 
 class _TaskStatsByProjectChartState extends State<TaskStatsByProjectChart> {
+  static const Color _primaryTextColor = Color(0xff334155);
+  static const List<Color> _brightStatusPalette = [
+    Color(0xff3B82F6),
+    Color(0xff8B5CF6),
+    Color(0xff06B6D4),
+    Color(0xffF59E0B),
+    Color(0xffEC4899),
+    Color(0xff14B8A6),
+  ];
+
   bool _isLoading = true;
   String? _error;
   List<ProjectTaskStats> _projects = [];
@@ -104,7 +114,7 @@ class _TaskStatsByProjectChartState extends State<TaskStatsByProjectChart> {
                       style: TextStyle(
                         fontSize: ResponsiveHelper(context).titleFontSize,
                         fontWeight: FontWeight.w700,
-                        color: Color(0xff0F172A),
+                        color: _primaryTextColor,
                         fontFamily: 'Golos',
                       ),
                     ),
@@ -137,7 +147,7 @@ class _TaskStatsByProjectChartState extends State<TaskStatsByProjectChart> {
                         style: TextStyle(
                           fontSize: ResponsiveHelper(context).bodyFontSize,
                           fontWeight: FontWeight.w600,
-                          color: Color(0xff0F172A),
+                          color: _primaryTextColor,
                           fontFamily: 'Golos',
                         ),
                       ),
@@ -164,18 +174,97 @@ class _TaskStatsByProjectChartState extends State<TaskStatsByProjectChart> {
   List<BarChartGroupData> _buildGroups(List<ProjectTaskStats> items) {
     return List.generate(items.length, (index) {
       final item = items[index];
+      final stackItems = <BarChartRodStackItem>[];
+      double fromY = 0;
+
+      if (item.statuses.isNotEmpty) {
+        for (final status in item.statuses) {
+          if (status.count <= 0) continue;
+          final toY = fromY + status.count.toDouble();
+          stackItems.add(
+            BarChartRodStackItem(
+              fromY,
+              toY,
+              _resolveStatusColor(status),
+            ),
+          );
+          fromY = toY;
+        }
+      }
+
+      final totalFromStatuses =
+          item.statuses.fold<int>(0, (sum, s) => sum + s.count);
+      final barTotal = totalFromStatuses > 0
+          ? totalFromStatuses.toDouble()
+          : item.totalTasks.toDouble();
+
       return BarChartGroupData(
         x: index,
         barRods: [
           BarChartRodData(
-            toY: item.totalTasks.toDouble(),
-            color: const Color(0xffEF4444),
+            toY: barTotal <= 0 ? 0.001 : barTotal,
+            color: stackItems.isEmpty ? const Color(0xffEF4444) : null,
             width: 12,
             borderRadius: BorderRadius.circular(6),
+            rodStackItems: stackItems,
           ),
         ],
       );
     });
+  }
+
+  Color _resolveStatusColor(ProjectTaskStatus status) {
+    final name = status.statusName.toLowerCase();
+
+    // Business mapping first: these statuses must stay semantically colored.
+    if (name.contains('готов') ||
+        name.contains('успеш') ||
+        name.contains('success')) {
+      return const Color(0xff10B981);
+    }
+    if (name.contains('просроч') ||
+        name.contains('отклон') ||
+        name.contains('failed') ||
+        name.contains('cancel') ||
+        name.contains('error')) {
+      return const Color(0xffEF4444);
+    }
+    if (name.contains('процес') ||
+        name.contains('в работе') ||
+        name.contains('progress')) {
+      return const Color(0xff8B5CF6);
+    }
+    if (name.contains('ожида') ||
+        name.contains('проверк') ||
+        name.contains('pending') ||
+        name.contains('review')) {
+      return const Color(0xff6366F1);
+    }
+
+    final parsed = _tryParseHexColor(status.color);
+    if (parsed != null) return _normalizeStatusColor(parsed, status.statusName);
+    return _fallbackBrightColor(status.statusName);
+  }
+
+  Color? _tryParseHexColor(String raw) {
+    final hex = raw.trim().replaceFirst('#', '');
+    if (hex.length != 6 && hex.length != 8) return null;
+    final value = int.tryParse(hex, radix: 16);
+    if (value == null) return null;
+    return hex.length == 6 ? Color((0xFF << 24) | value) : Color(value);
+  }
+
+  Color _normalizeStatusColor(Color source, String statusName) {
+    // Avoid too dark status colors from backend (e.g. near-black).
+    if (source.computeLuminance() < 0.22) {
+      return _fallbackBrightColor(statusName);
+    }
+    return source;
+  }
+
+  Color _fallbackBrightColor(String seed) {
+    final hash = seed.runes.fold<int>(0, (acc, ch) => (acc * 31 + ch) & 0x7fffffff);
+    return _brightStatusPalette[hash % _brightStatusPalette.length];
   }
 
   @override
@@ -200,7 +289,7 @@ class _TaskStatsByProjectChartState extends State<TaskStatsByProjectChart> {
         border: Border.all(color: const Color(0xffE2E8F0)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
+            color: const Color(0xff334155).withValues(alpha: 0.12),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -242,7 +331,7 @@ class _TaskStatsByProjectChartState extends State<TaskStatsByProjectChart> {
                     style: TextStyle(
                       fontSize: responsive.titleFontSize,
                       fontWeight: FontWeight.w600,
-                      color: const Color(0xff0F172A),
+                      color: _primaryTextColor,
                       fontFamily: 'Golos',
                     ),
                   ),
@@ -313,7 +402,6 @@ class _TaskStatsByProjectChartState extends State<TaskStatsByProjectChart> {
                                       final item = displayProjects[index];
                                       final statusPreview = item.statuses
                                           .where((s) => s.count > 0)
-                                          .take(3)
                                           .toList();
 
                                       final spans = <TextSpan>[
@@ -347,7 +435,7 @@ class _TaskStatsByProjectChartState extends State<TaskStatsByProjectChart> {
                                                   '• ${status.statusName}: ${status.count}\n',
                                               style: TextStyle(
                                                 color:
-                                                    const Color(0xff64748B),
+                                                    _resolveStatusColor(status),
                                                 fontWeight: FontWeight.w600,
                                                 fontSize:
                                                     responsive.smallFontSize,
@@ -361,7 +449,7 @@ class _TaskStatsByProjectChartState extends State<TaskStatsByProjectChart> {
                                       return BarTooltipItem(
                                         '${item.projectName}\n',
                                         TextStyle(
-                                          color: const Color(0xff0F172A),
+                                          color: _primaryTextColor,
                                           fontWeight: FontWeight.w700,
                                           fontSize: responsive.smallFontSize,
                                           fontFamily: 'Golos',
@@ -382,6 +470,15 @@ class _TaskStatsByProjectChartState extends State<TaskStatsByProjectChart> {
                                 borderData: FlBorderData(show: false),
                                 titlesData: FlTitlesData(
                                   leftTitles: AxisTitles(
+                                    axisNameWidget: Text(
+                                      'Количество',
+                                      style: TextStyle(
+                                        fontSize: responsive.xSmallFontSize,
+                                        color: Color(0xff94A3B8),
+                                        fontFamily: 'Golos',
+                                      ),
+                                    ),
+                                    axisNameSize: 16,
                                     sideTitles: SideTitles(
                                       showTitles: true,
                                       reservedSize: 36,

@@ -783,52 +783,48 @@ class _AdvertisingRoiChartState extends State<AdvertisingRoiChart> {
 
               // ── Summary stats ──
               if (_data != null)
-                Padding(
+                Container(
                   padding: EdgeInsets.fromLTRB(
                     headerPad,
-                    0,
+                    isCompact ? 10 : 12,
                     headerPad,
                     headerPad,
                   ),
-                  child: Container(
-                    padding: EdgeInsets.all(isCompact ? 10 : 14),
-                    decoration: BoxDecoration(
-                      color: const Color(0xffF8FAFC),
-                      borderRadius: BorderRadius.circular(isCompact ? 10 : 12),
-                      border:
-                          Border.all(color: const Color(0xffE2E8F0), width: 1),
+                  decoration: const BoxDecoration(
+                    border: Border(
+                      top: BorderSide(color: Color(0xffE2E8F0)),
                     ),
-                    child: Row(
-                      children: [
-                        _StatCell(
-                          label: 'Потрачено',
-                          value: _data!.summary.totalSpent.toStringAsFixed(0),
-                          labelSize: statLabelSize,
-                          valueSize: statValueSize,
-                        ),
-                        _StatCell(
-                          label: 'Лидов',
-                          value: _data!.summary.totalLeads.toString(),
-                          labelSize: statLabelSize,
-                          valueSize: statValueSize,
-                        ),
-                        _StatCell(
-                          label: 'CPL',
-                          value: _data!.summary.cpl.toStringAsFixed(0),
-                          labelSize: statLabelSize,
-                          valueSize: statValueSize,
-                        ),
-                        _StatCell(
-                          label: 'ROI',
-                          value: '+ ${_data!.summary.roi.toStringAsFixed(0)} %',
-                          labelSize: statLabelSize,
-                          valueSize: statValueSize,
-                          valueColor: _data!.summary.roi >= 0
-                              ? const Color(0xff10B981)
-                              : const Color(0xffEF4444),
-                        ),
-                      ],
-                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      _StatCell(
+                        label: 'Потрачено',
+                        value: _data!.summary.totalSpent.toStringAsFixed(0),
+                        labelSize: statLabelSize,
+                        valueSize: statValueSize,
+                      ),
+                      _StatCell(
+                        label: 'Лидов',
+                        value: _data!.summary.totalLeads.toString(),
+                        labelSize: statLabelSize,
+                        valueSize: statValueSize,
+                      ),
+                      _StatCell(
+                        label: 'CPL',
+                        value: _data!.summary.cpl.toStringAsFixed(0),
+                        labelSize: statLabelSize,
+                        valueSize: statValueSize,
+                      ),
+                      _StatCell(
+                        label: 'ROI',
+                        value: '+ ${_data!.summary.roi.toStringAsFixed(0)} %',
+                        labelSize: statLabelSize,
+                        valueSize: statValueSize,
+                        valueColor: _data!.summary.roi >= 0
+                            ? const Color(0xff10B981)
+                            : const Color(0xffEF4444),
+                      ),
+                    ],
                   ),
                 ),
             ],
