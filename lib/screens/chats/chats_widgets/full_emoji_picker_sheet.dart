@@ -5,10 +5,12 @@ import 'package:crm_task_manager/data/emoji_data.dart';
 /// Открывается как bottom sheet
 class FullEmojiPickerSheet extends StatefulWidget {
   final Function(String emoji) onEmojiSelected;
+  final String? channelKey;
 
   const FullEmojiPickerSheet({
     Key? key,
     required this.onEmojiSelected,
+    this.channelKey,
   }) : super(key: key);
 
   @override
@@ -44,7 +46,10 @@ class _FullEmojiPickerSheetState extends State<FullEmojiPickerSheet>
       final query = _searchController.text;
       _isSearching = query.isNotEmpty;
       if (_isSearching) {
-        _searchResults = EmojiData.searchReactionEmojis(query);
+        _searchResults = EmojiData.searchReactionEmojis(
+          query,
+          channelKey: widget.channelKey,
+        );
       }
     });
   }
@@ -94,6 +99,10 @@ class _FullEmojiPickerSheetState extends State<FullEmojiPickerSheet>
   }
 
   Widget _buildQuickReactions() {
+    final quickReactions = EmojiData.reactionsForSource(
+      'quick_panel',
+      channelKey: widget.channelKey,
+    );
     return Container(
       height: 60,
       padding: const EdgeInsets.symmetric(vertical: 8),
@@ -102,7 +111,7 @@ class _FullEmojiPickerSheetState extends State<FullEmojiPickerSheet>
         padding: const EdgeInsets.symmetric(horizontal: 16),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.start,
-          children: EmojiData.quickReactions.map((emoji) {
+          children: quickReactions.map((emoji) {
             return GestureDetector(
               onTap: () => _handleEmojiTap(emoji),
               child: Container(
@@ -182,6 +191,11 @@ class _FullEmojiPickerSheetState extends State<FullEmojiPickerSheet>
   }
 
   Widget _buildCategoriesWithTabs() {
+    final fullReactions = EmojiData.reactionsForSource(
+      'full_picker',
+      channelKey: widget.channelKey,
+    );
+
     return Column(
       children: [
         // Категории как иконки
@@ -200,24 +214,21 @@ class _FullEmojiPickerSheetState extends State<FullEmojiPickerSheet>
             ),
             labelColor: Colors.blue,
             unselectedLabelColor: Colors.grey,
-            tabs: EmojiData.reactionPickerCategories.keys.map((category) {
-              // Берем первый эмодзи категории как иконку
-              final iconEmoji =
-                  EmojiData.reactionPickerCategories[category]!.first;
-              return Tab(
+            tabs: [
+              Tab(
                 child: Text(
-                  iconEmoji,
+                  fullReactions.isNotEmpty ? fullReactions.first : '🙂',
                   style: const TextStyle(fontSize: 24),
                 ),
-              );
-            }).toList(),
+              ),
+            ],
           ),
         ),
         // Grid с эмодзи
         Expanded(
           child: TabBarView(
             controller: _tabController,
-            children: EmojiData.reactionPickerCategories.values.map((emojis) {
+            children: [fullReactions].map((emojis) {
               return GridView.builder(
                 padding: const EdgeInsets.all(16),
                 gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -261,6 +272,7 @@ class _FullEmojiPickerSheetState extends State<FullEmojiPickerSheet>
 Future<void> showFullEmojiPicker({
   required BuildContext context,
   required Function(String emoji) onEmojiSelected,
+  String? channelKey,
 }) {
   return showModalBottomSheet(
     context: context,
@@ -269,6 +281,7 @@ Future<void> showFullEmojiPicker({
     builder: (context) {
       return FullEmojiPickerSheet(
         onEmojiSelected: onEmojiSelected,
+        channelKey: channelKey,
       );
     },
   );

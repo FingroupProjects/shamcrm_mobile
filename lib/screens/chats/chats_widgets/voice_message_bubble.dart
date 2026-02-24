@@ -122,25 +122,27 @@ class _VoiceMessageWidgetState extends State<VoiceMessageWidget>
                   : ChatSmsStyles.messageBubbleSenderColor,
             ),
           ),
-          SizedBox(height: 4),
+          if (widget.reactions.isNotEmpty)
+            Transform.translate(
+              offset: const Offset(0, -4),
+              child: Padding(
+                padding: EdgeInsets.only(
+                  left: widget.message.isMyMessage ? 0 : 6,
+                  right: widget.message.isMyMessage ? 6 : 0,
+                  bottom: 2,
+                ),
+                child: ReactionCapsule(
+                  reactions: widget.reactions,
+                  isSender: widget.message.isMyMessage,
+                  onReactionTap: widget.onReactionTap,
+                ),
+              ),
+            ),
+          SizedBox(height: 2),
           Row(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              if (widget.reactions.isNotEmpty) ...[
-                Wrap(
-                  spacing: 3,
-                  runSpacing: 3,
-                  children: widget.reactions.map((reaction) {
-                    return CompactReactionChip(
-                      reaction: reaction,
-                      isSender: widget.message.isMyMessage,
-                      onTap: () => widget.onReactionTap?.call(reaction.emoji),
-                    );
-                  }).toList(),
-                ),
-                const SizedBox(width: 8),
-              ],
               Text(
                 time(widget.message.createMessateTime),
                 style: const TextStyle(

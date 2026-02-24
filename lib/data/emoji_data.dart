@@ -16,7 +16,7 @@ class EmojiData {
     'party': '🎉',
   };
 
-  // Источники реакций: настройка через ID из reactionCatalog.
+  // Источники реакций по умолчанию: настройка через ID из reactionCatalog.
   static const Map<String, List<String>> reactionSourceIds = {
     'quick_panel': [
       'thumbs_up',
@@ -56,8 +56,58 @@ class EmojiData {
     ],
   };
 
-  static List<String> reactionsForSource(String source) {
-    final ids = reactionSourceIds[source] ?? const [];
+  // Наборы реакций по каналам.
+  // ВАЖНО: каждый канал задан отдельно (без startsWith), чтобы легко менять точечно.
+  static const List<String> _telegramReactionIds = [
+    'heart', // ❤️
+    'handshake', // 🤝
+    'thumbs_up', // 👍
+  ];
+
+  static const List<String> _defaultReactionIds = [
+    'heart', // ❤️
+    'thumbs_up', // 👍
+    'joy', // 😂
+    'surprised', // 😮
+    'cry', // 😢
+    'fire', // 🔥
+    'clap', // 👏
+    'party', // 🎉
+  ];
+
+  // Все каналы описаны отдельно, чтобы в будущем менять любой конкретный источник отдельно.
+  static const Map<String, List<String>> channelReactionIds = {
+    'telegram_account': _telegramReactionIds,
+    'telegram_bot': _telegramReactionIds,
+    'mini_app': _defaultReactionIds,
+    'whatsapp': _defaultReactionIds,
+    'instagram': _defaultReactionIds,
+    'instagram_comment': _defaultReactionIds,
+    'facebook': _defaultReactionIds,
+    'messenger': _defaultReactionIds,
+    'phone': _defaultReactionIds,
+    'email': _defaultReactionIds,
+    'site': _defaultReactionIds,
+    'telegram': _telegramReactionIds,
+    'website': _defaultReactionIds,
+    'unknown': _defaultReactionIds,
+  };
+
+  static List<String> _reactionIdsForChannel(String? channelKey) {
+    final normalized = (channelKey ?? '').toLowerCase().trim();
+    if (normalized.isEmpty) {
+      return _defaultReactionIds;
+    }
+    return channelReactionIds[normalized] ?? _defaultReactionIds;
+  }
+
+  static List<String> reactionsForSource(
+    String source, {
+    String? channelKey,
+  }) {
+    final ids = channelKey == null
+        ? (reactionSourceIds[source] ?? const [])
+        : _reactionIdsForChannel(channelKey);
     return ids.map((id) => reactionCatalog[id]).whereType<String>().toList();
   }
 
@@ -676,8 +726,11 @@ class EmojiData {
     return getAllEmojis().where((emoji) => emoji.contains(query)).toList();
   }
 
-  static List<String> searchReactionEmojis(String query) {
-    final all = reactionsForSource('full_picker');
+  static List<String> searchReactionEmojis(
+    String query, {
+    String? channelKey,
+  }) {
+    final all = reactionsForSource('full_picker', channelKey: channelKey);
     if (query.isEmpty) return all;
     return all.where((emoji) => emoji.contains(query)).toList();
   }

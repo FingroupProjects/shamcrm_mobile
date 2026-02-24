@@ -12,6 +12,7 @@ class PremiumContextMenu {
     required List<ContextMenuItem> items,
     Function(String emoji)? onReactionSelected,
     VoidCallback? onShowFullPicker,
+    String? channelKey,
     bool showReactions = true,
     required VoidCallback onDismiss,
   }) {
@@ -38,6 +39,7 @@ class PremiumContextMenu {
                 entry.remove();
               }
             : null,
+        channelKey: channelKey,
         showReactions: showReactions,
         onDismiss: () {
           onDismiss();
@@ -71,6 +73,7 @@ class _PremiumMenuOverlay extends StatefulWidget {
   final List<ContextMenuItem> items;
   final Function(String emoji)? onReactionSelected;
   final VoidCallback? onShowFullPicker;
+  final String? channelKey;
   final bool showReactions;
   final VoidCallback onDismiss;
 
@@ -82,6 +85,7 @@ class _PremiumMenuOverlay extends StatefulWidget {
     required this.items,
     this.onReactionSelected,
     this.onShowFullPicker,
+    this.channelKey,
     this.showReactions = true,
     required this.onDismiss,
   }) : super(key: key);
@@ -208,7 +212,10 @@ class _PremiumMenuOverlayState extends State<_PremiumMenuOverlay>
   }
 
   Widget _buildReactionPanel() {
-    final contextReactions = EmojiData.reactionsForSource('context_menu');
+    final contextReactions = EmojiData.reactionsForSource(
+      'context_menu',
+      channelKey: widget.channelKey,
+    );
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
       decoration: BoxDecoration(

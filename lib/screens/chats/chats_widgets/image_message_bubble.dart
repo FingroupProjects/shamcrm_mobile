@@ -18,6 +18,7 @@ class ImageMessageBubble extends StatefulWidget {
   final bool isRead;
   final bool isLeadChat;
   final bool? isGroupChat;
+  final bool isMenuOpen;
   final List<MessageReaction> reactions;
   final Function(String)? onReactionTap;
 
@@ -34,6 +35,7 @@ class ImageMessageBubble extends StatefulWidget {
     required Message message,
     this.isLeadChat = false,
     this.isGroupChat,
+    this.isMenuOpen = false,
     this.reactions = const [],
     this.onReactionTap,
   }) : super(key: key);
@@ -124,6 +126,7 @@ class _ImageMessageBubbleState extends State<ImageMessageBubble> {
             GestureDetector(
               onTap: fullUrl != null
                   ? () {
+                      if (widget.isMenuOpen) return;
                       Navigator.push(
                         context,
                         MaterialPageRoute(
@@ -172,7 +175,8 @@ class _ImageMessageBubbleState extends State<ImageMessageBubble> {
                                 );
                               },
                               errorBuilder: (context, error, stackTrace) {
-                                debugPrint('Error loading image: $error, StackTrace: $stackTrace');
+                                debugPrint(
+                                    'Error loading image: $error, StackTrace: $stackTrace');
                                 _lastFailedUrl = fullUrl;
                                 return _ImageErrorPlaceholder(
                                   width: 200,
@@ -195,25 +199,26 @@ class _ImageMessageBubbleState extends State<ImageMessageBubble> {
                             ),
                     ),
                   ),
+                  if (widget.reactions.isNotEmpty)
+                    Transform.translate(
+                      offset: const Offset(0, -6),
+                      child: Padding(
+                        padding: EdgeInsets.only(
+                          left: widget.isSender ? 0 : 6,
+                          right: widget.isSender ? 6 : 0,
+                          bottom: 2,
+                        ),
+                        child: ReactionCapsule(
+                          reactions: widget.reactions,
+                          isSender: widget.isSender,
+                          onReactionTap: widget.onReactionTap,
+                        ),
+                      ),
+                    ),
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      if (widget.reactions.isNotEmpty) ...[
-                        Wrap(
-                          spacing: 3,
-                          runSpacing: 3,
-                          children: widget.reactions.map((reaction) {
-                            return CompactReactionChip(
-                              reaction: reaction,
-                              isSender: widget.isSender,
-                              onTap: () =>
-                                  widget.onReactionTap?.call(reaction.emoji),
-                            );
-                          }).toList(),
-                        ),
-                        const SizedBox(width: 8),
-                      ],
                       Padding(
                         padding: EdgeInsets.only(
                           right: widget.isSender ? 0 : 10,

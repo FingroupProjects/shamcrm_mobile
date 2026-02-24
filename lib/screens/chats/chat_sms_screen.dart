@@ -118,6 +118,12 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
   final Set<int> _expandedPostIds = {};
   final MessageReactionApiService _reactionApi = MessageReactionApiService();
 
+  bool get _canUseReactionsInCurrentChat {
+    final isLeadWith24hRestriction =
+        widget.endPointInTab == 'lead' && !widget.canSendMessage;
+    return !isLeadWith24hRestriction;
+  }
+
   bool get _isInstagramCommentChannel {
     final name = channelName ?? '';
     return name.contains('instagram_comment');
@@ -168,6 +174,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
   // Локальные реакции для мгновенного UI-обновления после тапа.
   final Map<int, List<MessageReaction>> _localReactions = {};
   final Map<String, DateTime> _recentReactionEventFingerprints = {};
+  final Map<String, DateTime> _recentReactionSemanticFingerprints = {};
 
   Message _messageWithLocalReactions(Message message) {
     final localReactions = _localReactions[message.id];
@@ -324,6 +331,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
   }
 
   Future<void> _toggleMessageReaction(Message message, String emoji) async {
+    if (!_canUseReactionsInCurrentChat) return;
     if (message.id <= 0) return;
 
     final effectiveMessage = _messageWithLocalReactions(message);
@@ -434,6 +442,28 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
     return false;
   }
 
+  bool _shouldSkipDuplicateReactionSemantically(Map<String, dynamic> payload) {
+    final now = DateTime.now();
+    _recentReactionSemanticFingerprints.removeWhere(
+      (_, ts) => now.difference(ts).inSeconds > 4,
+    );
+
+    final messageId = _parseMessageIdFromReactionEvent(payload);
+    final emoji = _parseReactionEmojiFromPayload(payload);
+    final removed = _parseReactionRemovedFromPayload(payload);
+    if (messageId == null || emoji == null || emoji.isEmpty) {
+      return false;
+    }
+
+    final semanticKey = '$messageId|$emoji|$removed';
+    if (_recentReactionSemanticFingerprints.containsKey(semanticKey)) {
+      return true;
+    }
+
+    _recentReactionSemanticFingerprints[semanticKey] = now;
+    return false;
+  }
+
   Future<void> _processReactionSocketEvent({
     required String eventName,
     required String channel,
@@ -467,7 +497,14 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
             .getMessages(widget.chatId, chatType: widget.endPointInTab);
         return;
       }
-      _handleMessageReactedEvent(Map<String, dynamic>.from(decoded));
+      final normalizedPayload =
+          _coerceReactionPayload(Map<String, dynamic>.from(decoded));
+      if (_shouldSkipDuplicateReactionSemantically(normalizedPayload)) {
+        debugPrint(
+            '⏭️ [SOCKET] $logPrefix duplicate semantic reaction skipped');
+        return;
+      }
+      _handleMessageReactedEvent(normalizedPayload);
     } catch (e) {
       debugPrint('❌ [SOCKET] $logPrefix $eventName parse error: $e');
       _logSocketEventToInspector(
@@ -572,6 +609,11 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
 
   List<MessageReaction> _parseReactionsFromReactionEvent(
       Map<String, dynamic> payload) {
+    final topSummary = _parseReactionsFromDynamic(payload['reactions_summary']);
+    if (topSummary.isNotEmpty || payload['reactions_summary'] is Map) {
+      return topSummary;
+    }
+
     final direct = _parseReactionsFromDynamic(payload['reactions']);
     if (direct.isNotEmpty) return direct;
 
@@ -2293,12 +2335,21 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
                               _isMenuOpen = isOpen;
                             });
                           },
+                          isMenuOpen: _isMenuOpen,
                           focusNode: _focusNode,
                           isRead: message.isRead,
                           isFirstMessage: isFirstMessage,
                           referralBody: referralBody,
                           isGroupChat: _isGroupChat,
-                          onReactionToggle: _toggleMessageReaction,
+                          chatChannelName: channelName,
+                          companionName: _cachedCompanionName ??
+                              (widget.chatItem.name.isNotEmpty
+                                  ? widget.chatItem.name
+                                  : null),
+                          canSendMessageInChat: widget.canSendMessage,
+                          onReactionToggle: _canUseReactionsInCurrentChat
+                              ? _toggleMessageReaction
+                              : null,
                         ),
                       );
                       return Column(
@@ -3728,11 +3779,15 @@ class MessageItemWidget extends StatelessWidget {
   final void Function(int)? onReplyTap;
   final int? highlightedMessageId;
   final void Function(bool)? onMenuStateChanged;
+  final bool isMenuOpen;
   final FocusNode focusNode;
   final bool isRead;
   final bool isFirstMessage;
   final String? referralBody;
   final bool? isGroupChat;
+  final String? chatChannelName;
+  final String? companionName;
+  final bool canSendMessageInChat;
   final void Function(Message message, String emoji)? onReactionToggle;
 
   MessageItemWidget({
@@ -3749,13 +3804,48 @@ class MessageItemWidget extends StatelessWidget {
     this.onReplyTap,
     this.highlightedMessageId,
     this.onMenuStateChanged,
+    this.isMenuOpen = false,
     required this.focusNode,
     required this.isRead,
     required this.isFirstMessage,
     this.referralBody,
     this.isGroupChat,
+    this.chatChannelName,
+    this.companionName,
+    required this.canSendMessageInChat,
     this.onReactionToggle,
   });
+
+  String get _normalizedChannelName {
+    return (chatChannelName ?? '')
+        .toLowerCase()
+        .replaceAll('channel-', '')
+        .trim();
+  }
+
+  bool get _isLead24hRestricted {
+    return endPointInTab == 'lead' && !canSendMessageInChat;
+  }
+
+  bool get _isInstagramDirectSource {
+    return _normalizedChannelName == 'instagram';
+  }
+
+  bool get _isTelegramSourceForEdit {
+    return _normalizedChannelName == 'telegram_bot' ||
+        _normalizedChannelName == 'telegram_account';
+  }
+
+  bool get _canReplyToMessage {
+    if (_isLead24hRestricted) return false;
+    if (_isInstagramDirectSource) return false;
+    return true;
+  }
+
+  bool get _canEditOwnTextMessages {
+    if (_isLead24hRestricted) return false;
+    return _isTelegramSourceForEdit;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -3768,7 +3858,7 @@ class MessageItemWidget extends StatelessWidget {
           onInstagramReplyTap?.call(null);
           return false;
         }
-        if (endPointInTab == 'task' || endPointInTab == 'corporate') {
+        if (_canReplyToMessage) {
           focusNode.requestFocus();
           context.read<MessagingCubit>().setReplyMessage(message);
           return false;
@@ -3790,12 +3880,24 @@ class MessageItemWidget extends StatelessWidget {
 
   Widget _buildMessageContent(BuildContext context) {
     String? replyMessageText;
+    String? replyPreviewAuthorName;
+    bool isTargetReferralReplyPreview = false;
     if (isFirstMessage && referralBody != null && referralBody!.isNotEmpty) {
       replyMessageText = referralBody;
+      isTargetReferralReplyPreview = true;
+      final fallbackCompanionName =
+          (companionName != null && companionName!.trim().isNotEmpty)
+              ? companionName!.trim()
+              : message.senderName;
+      replyPreviewAuthorName = fallbackCompanionName;
     } else if (message.forwardedMessage != null) {
       replyMessageText = message.forwardedMessage!.type == 'voice'
           ? "Голосовое сообщение"
           : message.forwardedMessage!.text;
+      final forwardedAuthor = message.forwardedMessage!.senderName?.trim();
+      if (forwardedAuthor != null && forwardedAuthor.isNotEmpty) {
+        replyPreviewAuthorName = forwardedAuthor;
+      }
     }
 
     final bool isLeadChat = endPointInTab == 'lead';
@@ -3809,6 +3911,8 @@ class MessageItemWidget extends StatelessWidget {
           isSender: message.isMyMessage,
           senderName: message.senderName.toString(),
           replyMessage: replyMessageText,
+          replyAuthorName: replyPreviewAuthorName,
+          isTargetReferralReplyPreview: isTargetReferralReplyPreview,
           replyMessageId: message.forwardedMessage?.id,
           onReplyTap: (id) => onReplyTap?.call(id),
           isHighlighted: highlightedMessageId == message.id,
@@ -3834,6 +3938,7 @@ class MessageItemWidget extends StatelessWidget {
           isRead: message.isRead,
           isLeadChat: isLeadChat,
           isGroupChat: isGroupChat,
+          isMenuOpen: isMenuOpen,
           reactions: message.reactions,
           onReactionTap: (emoji) => onReactionToggle?.call(message, emoji),
         );
@@ -3982,7 +4087,7 @@ class MessageItemWidget extends StatelessWidget {
     final List<ContextMenuItem> menuItems = [];
 
     // 1. Ответить
-    if (endPointInTab != 'lead') {
+    if (_canReplyToMessage) {
       menuItems.add(
         ContextMenuItem(
           icon: 'assets/icons/chats/menu_icons/reply.svg',
@@ -4020,7 +4125,9 @@ class MessageItemWidget extends StatelessWidget {
     );
 
     // 4. Редактировать (только свои тексты)
-    if (message.isMyMessage && message.type == 'text') {
+    if (message.isMyMessage &&
+        message.type == 'text' &&
+        _canEditOwnTextMessages) {
       menuItems.add(
         ContextMenuItem(
           icon: 'assets/icons/chats/menu_icons/edit.svg',
@@ -4051,8 +4158,12 @@ class MessageItemWidget extends StatelessWidget {
       context: context,
       messagePosition: position,
       messageSize: messageBox.size,
-      messageWidget: _buildMessageContent(context),
+      // В preview-слое блокируем интерактив, чтобы tap по фото не открывал viewer.
+      messageWidget: IgnorePointer(
+        child: _buildMessageContent(context),
+      ),
       items: menuItems,
+      channelKey: chatChannelName,
       onReactionSelected: message.id > 0 && onReactionToggle != null
           ? (emoji) => onReactionToggle!.call(message, emoji)
           : null,

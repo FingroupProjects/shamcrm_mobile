@@ -7,6 +7,7 @@ class ReactionPickerPanel extends StatefulWidget {
   final Function(String emoji) onEmojiSelected;
   final Offset position;
   final bool isAbove;
+  final String? channelKey;
   final VoidCallback? onShowFullPicker; // Callback для открытия полной панели
 
   const ReactionPickerPanel({
@@ -14,6 +15,7 @@ class ReactionPickerPanel extends StatefulWidget {
     required this.onEmojiSelected,
     required this.position,
     this.isAbove = false,
+    this.channelKey,
     this.onShowFullPicker,
   }) : super(key: key);
 
@@ -65,7 +67,10 @@ class _ReactionPickerPanelState extends State<ReactionPickerPanel>
 
   @override
   Widget build(BuildContext context) {
-    final panelReactions = EmojiData.reactionsForSource('quick_panel');
+    final panelReactions = EmojiData.reactionsForSource(
+      'quick_panel',
+      channelKey: widget.channelKey,
+    );
     // Получаем ширину экрана для точного центрирования
     final screenWidth = MediaQuery.of(context).size.width;
 
@@ -164,7 +169,10 @@ class _ReactionPickerPanelState extends State<ReactionPickerPanel>
         tween: Tween(begin: 0.0, end: 1.0),
         duration: Duration(
           milliseconds: 200 +
-              EmojiData.reactionsForSource('quick_panel').indexOf(emoji) * 50,
+              EmojiData.reactionsForSource('quick_panel',
+                          channelKey: widget.channelKey)
+                      .indexOf(emoji) *
+                  50,
         ),
         curve: Curves.elasticOut,
         builder: (context, value, child) {
@@ -249,6 +257,7 @@ Future<void> showReactionPicker({
   required BuildContext context,
   required Offset position,
   required Function(String emoji) onEmojiSelected,
+  String? channelKey,
   VoidCallback? onShowFullPicker,
   bool isAbove = false,
 }) {
@@ -261,6 +270,7 @@ Future<void> showReactionPicker({
         position: position,
         onEmojiSelected: onEmojiSelected,
         isAbove: isAbove,
+        channelKey: channelKey,
         onShowFullPicker: onShowFullPicker,
       );
     },
