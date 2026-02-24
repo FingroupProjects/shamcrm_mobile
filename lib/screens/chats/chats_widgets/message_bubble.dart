@@ -226,7 +226,7 @@ final int maxPreviewLines = isTargetReferralReplyPreview ? 40 : 2;
     final authorLabel = (replyAuthorName ?? '').trim().isNotEmpty
         ? replyAuthorName!.trim()
         : AppLocalizations.of(context)!.translate('unknown_channel');
-
+  
     return GestureDetector(
       onTap: isTapEnabled ? () => onReplyTap!(replyMessageId!) : null,
       child: Container(

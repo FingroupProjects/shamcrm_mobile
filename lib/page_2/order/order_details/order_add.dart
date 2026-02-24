@@ -75,6 +75,8 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
   String? _deliveryMethod;
   Branch? _selectedBranch;
   DeliveryAddress? _selectedDeliveryAddress;
+  String? _pendingManualAddressSelection;
+  int _deliveryAddressRefreshTrigger = 0;
   List<Branch> branches = [];
   String? selectedDialCode;
   String? baseUrl;
@@ -82,6 +84,9 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
   int? _selectedIntegrationId;
   bool isManagerInvalid = false;
   final ApiService _apiService = ApiService();
+  late final OrderBloc _orderBloc;
+  late final BranchBloc _branchBloc;
+  late final DeliveryAddressBloc _deliveryAddressBloc;
 
   bool isManagerManuallySelected = false;
   int? currencyId; // Поле для хранения currency_id
@@ -108,6 +113,9 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
   @override
   void initState() {
     super.initState();
+    _orderBloc = OrderBloc(context.read<ApiService>());
+    _branchBloc = BranchBloc(context.read<ApiService>());
+    _deliveryAddressBloc = DeliveryAddressBloc(context.read<ApiService>());
     if (widget.leadId != null) {
       selectedLead = widget.leadId.toString();
     }
@@ -174,7 +182,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
       _loadCurrencyId(); // Загружаем currencyId
       _loadFieldConfiguration();
       _loadInternetStores();
-      context.read<BranchBloc>().add(FetchBranches());
+      _branchBloc.add(FetchBranches());
 
       // Убедимся что selectedDialCode установлен сразу после инициализации
       if (phoneToSet.isNotEmpty && selectedDialCode != null) {
@@ -195,6 +203,9 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
     _phoneController.dispose();
     _deliveryAddressController.dispose();
     _commentController.dispose();
+    _orderBloc.close();
+    _branchBloc.close();
+    _deliveryAddressBloc.close();
     super.dispose();
   }
 
@@ -417,6 +428,9 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                   }
                 }
               }
+
+              _selectedDeliveryAddress = null;
+              _pendingManualAddressSelection = null;
             });
           },
         ),
@@ -438,9 +452,12 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
           leadId: int.parse(selectedLead ?? '0'),
           organizationId: widget.organizationId ?? 1,
           selectedAddress: _selectedDeliveryAddress,
+          preferredAddressText: _pendingManualAddressSelection,
+          refreshTrigger: _deliveryAddressRefreshTrigger,
           onSelectAddress: (DeliveryAddress address) {
             setState(() {
               _selectedDeliveryAddress = address;
+              _pendingManualAddressSelection = null;
             });
           },
         ),
@@ -1868,15 +1885,31 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                 return;
               }
 
+              final leadId = int.tryParse(selectedLead ?? '') ?? 0;
+              if (leadId <= 0) {
+                showCustomSnackBar(
+                  context: context,
+                  message:
+                      AppLocalizations.of(context)!.translate('select_lead'),
+                  isSuccess: false,
+                );
+                return;
+              }
+
               Navigator.of(dialogContext).pop();
 
+              final manualAddress = addressController.text.trim();
+              setState(() {
+                _pendingManualAddressSelection = manualAddress;
+              });
+
               // Вызываем bloc событие для добавления адреса
-              context.read<OrderBloc>().add(
-                    AddMiniAppAddress(
-                      address: addressController.text.trim(),
-                      leadId: int.parse(selectedLead ?? '0'),
-                    ),
-                  );
+              _orderBloc.add(
+                AddMiniAppAddress(
+                  address: manualAddress,
+                  leadId: leadId,
+                ),
+              );
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xff4759FF),
@@ -1904,13 +1937,9 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
   Widget build(BuildContext context) {
     return MultiBlocProvider(
       providers: [
-        BlocProvider(
-            create: (context) => OrderBloc(context.read<ApiService>())),
-        BlocProvider(
-            create: (context) => BranchBloc(context.read<ApiService>())),
-        BlocProvider(
-            create: (context) =>
-                DeliveryAddressBloc(context.read<ApiService>())),
+        BlocProvider<OrderBloc>.value(value: _orderBloc),
+        BlocProvider<BranchBloc>.value(value: _branchBloc),
+        BlocProvider<DeliveryAddressBloc>.value(value: _deliveryAddressBloc),
       ],
       child: Scaffold(
         backgroundColor: Colors.white,
@@ -1989,17 +2018,24 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                     isSuccess: false,
                   );
                 } else if (state is OrderCreateAddressSuccess) {
+                  setState(() {
+                    _selectedDeliveryAddress = null;
+                    _deliveryAddressRefreshTrigger++;
+                  });
                   showCustomSnackBar(
                     context: context,
                     message: state.message,
                     isSuccess: true,
                   );
-                  context.read<DeliveryAddressBloc>().add(
-                        FetchDeliveryAddresses(
-                          leadId: int.parse(selectedLead ?? '0'),
-                        ),
-                      );
+                  _deliveryAddressBloc.add(
+                    FetchDeliveryAddresses(
+                      leadId: int.parse(selectedLead ?? '0'),
+                    ),
+                  );
                 } else if (state is OrderCreateAddressError) {
+                  setState(() {
+                    _pendingManualAddressSelection = null;
+                  });
                   showCustomSnackBar(
                     context: context,
                     message: state.message,
@@ -2570,6 +2606,18 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                     _deliveryMethod ==
                         AppLocalizations.of(context)!.translate('delivery') &&
                     _selectedDeliveryAddress == null) {
+                  showCustomSnackBar(
+                    context: context,
+                    message: AppLocalizations.of(context)!
+                        .translate('please_select_delivery_address'),
+                    isSuccess: false,
+                  );
+                  return;
+                }
+                if (deliveryAddressRequired &&
+                    _deliveryMethod ==
+                        AppLocalizations.of(context)!.translate('delivery') &&
+                    ((_selectedDeliveryAddress?.id ?? 0) <= 0)) {
                   showCustomSnackBar(
                     context: context,
                     message: AppLocalizations.of(context)!

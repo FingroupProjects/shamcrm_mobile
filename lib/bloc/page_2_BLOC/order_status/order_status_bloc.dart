@@ -818,7 +818,24 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
       );
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        emit(OrderCreateAddressSuccess());
+        int? createdAddressId;
+        String? createdAddress;
+        try {
+          final decoded = jsonDecode(response.body);
+          final success =
+              decoded is Map<String, dynamic> ? decoded['success'] : null;
+          if (success is Map<String, dynamic>) {
+            createdAddressId = success['id'] as int?;
+            createdAddress = success['address']?.toString();
+          }
+        } catch (_) {}
+        emit(OrderCreateAddressSuccess(
+          addressId: createdAddressId,
+          address: createdAddress ?? event.address,
+        ));
+      } else {
+        emit(OrderCreateAddressError(
+            'Ошибка создания адреса доставки: ${response.statusCode}'));
       }
     } catch (e) {
       emit(OrderCreateAddressError('Ошибка создания адреса доставки: $e'));

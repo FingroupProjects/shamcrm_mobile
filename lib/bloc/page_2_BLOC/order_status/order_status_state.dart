@@ -56,8 +56,14 @@ class OrderCreateAddressLoading extends OrderState {}
 
 class OrderCreateAddressSuccess extends OrderState {
   final String message;
+  final int? addressId;
+  final String? address;
 
-  OrderCreateAddressSuccess({this.message = 'Адрес доставки успешно создан'});
+  OrderCreateAddressSuccess({
+    this.message = 'Адрес доставки успешно создан',
+    this.addressId,
+    this.address,
+  });
 }
 
 class OrderCreateAddressError extends OrderState {

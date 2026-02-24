@@ -254,29 +254,41 @@ class ApiService {
         (key, value) => MapEntry(key, List<String>.from(value)),
       );
 
+      bool hasParamKey(String key) {
+        return params.containsKey(key) || params.containsKey('$key[]');
+      }
+
       void addValue(String key, dynamic value) {
         if (value == null) {
           if (key == 'channel') {
-            params.putIfAbsent(key, () => []).add('');
+            if (!hasParamKey(key)) {
+              params.putIfAbsent(key, () => []).add('');
+            }
           }
           return;
         }
         if (value is String && value.isEmpty) return;
 
         if (value is Iterable) {
+          final arrayKey = '$key[]';
+          if (params.containsKey(arrayKey) || params.containsKey(key)) {
+            return;
+          }
           for (final item in value) {
             if (item == null) continue;
             final stringValue = item.toString();
             if (stringValue.isEmpty) continue;
             // Use bracket notation for arrays: managers[] instead of managers[0]
-            params.putIfAbsent('$key[]', () => []).add(stringValue);
+            params.putIfAbsent(arrayKey, () => []).add(stringValue);
           }
           return;
         }
 
         final stringValue = value.toString();
         if (stringValue.isEmpty) return;
-        params.putIfAbsent(key, () => []).add(stringValue);
+        if (!hasParamKey(key)) {
+          params.putIfAbsent(key, () => []).add(stringValue);
+        }
       }
 
       filters.forEach(addValue);
@@ -11648,16 +11660,30 @@ class ApiService {
   }) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/mini-app/delivery-address');
+    final organizationId = await getSelectedOrganization();
+    final salesFunnelId = await getSelectedSalesFunnel();
     if (kDebugMode) {
       debugPrint('ApiService: createDeliveryAddress - Generated path: $path');
     }
 
+    final body = <String, dynamic>{
+      'address': address,
+      'lead_id': leadId,
+    };
+    if (organizationId != null &&
+        organizationId.isNotEmpty &&
+        organizationId != 'null') {
+      body['organization_id'] = organizationId;
+    }
+    if (salesFunnelId != null &&
+        salesFunnelId.isNotEmpty &&
+        salesFunnelId != 'null') {
+      body['sales_funnel_id'] = salesFunnelId;
+    }
+
     final response = await _postRequest(
       path,
-      {
-        'address': address,
-        'lead_id': leadId,
-      },
+      body,
     );
 
     if (kDebugMode) {

@@ -65,12 +65,17 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
   String? _deliveryMethod;
   Branch? _selectedBranch;
   DeliveryAddress? _selectedDeliveryAddress;
+  String? _pendingManualAddressSelection;
+  int _deliveryAddressRefreshTrigger = 0;
   String? selectedDialCode;
   String? _fullPhoneNumber; // Полный номер телефона с кодом страны
   String? baseUrl;
   int? _selectedIntegrationId;
   List<Branch> branches = [];
   final ApiService _apiService = ApiService();
+  late final OrderBloc _orderBloc;
+  late final BranchBloc _branchBloc;
+  late final DeliveryAddressBloc _deliveryAddressBloc;
 
   int? currencyId; // Поле для хранения currency_id
   final Map<int, TextEditingController> _quantityControllers = {};
@@ -95,6 +100,9 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
   @override
   void initState() {
     super.initState();
+    _orderBloc = OrderBloc(context.read<ApiService>());
+    _branchBloc = BranchBloc(context.read<ApiService>());
+    _deliveryAddressBloc = DeliveryAddressBloc(context.read<ApiService>());
     _phoneController = TextEditingController();
     _commentController =
         TextEditingController(text: widget.order.commentToCourier);
@@ -172,9 +180,8 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
       _loadCurrencyId(); // Загружаем currencyId
       _loadFieldConfiguration();
       _loadInternetStores();
-      context.read<BranchBloc>().add(FetchBranches());
-      context
-          .read<DeliveryAddressBloc>()
+      _branchBloc.add(FetchBranches());
+      _deliveryAddressBloc
           .add(FetchDeliveryAddresses(leadId: widget.order.lead.id));
       context.read<GetAllManagerBloc>().add(GetAllManagerEv());
     });
@@ -306,6 +313,9 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
     }
     _quantityControllers.clear();
     _totalController.dispose();
+    _orderBloc.close();
+    _branchBloc.close();
+    _deliveryAddressBloc.close();
     super.dispose();
   }
 
@@ -632,10 +642,11 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
               }
 
               _selectedDeliveryAddress = null;
+              _pendingManualAddressSelection = null;
             });
-            context.read<DeliveryAddressBloc>().add(
-                  FetchDeliveryAddresses(leadId: lead.id),
-                );
+            _deliveryAddressBloc.add(
+              FetchDeliveryAddresses(leadId: lead.id),
+            );
           },
         ),
         const SizedBox(height: 8),
@@ -656,9 +667,12 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
           leadId: _selectedLead?.id ?? 0,
           organizationId: widget.order.organizationId ?? 1,
           selectedAddress: _selectedDeliveryAddress,
+          preferredAddressText: _pendingManualAddressSelection,
+          refreshTrigger: _deliveryAddressRefreshTrigger,
           onSelectAddress: (DeliveryAddress address) {
             setState(() {
               _selectedDeliveryAddress = address;
+              _pendingManualAddressSelection = null;
             });
           },
         ),
@@ -1862,15 +1876,31 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
                 return;
               }
 
+              final leadId = _selectedLead?.id ?? 0;
+              if (leadId <= 0) {
+                showCustomSnackBar(
+                  context: context,
+                  message:
+                      AppLocalizations.of(context)!.translate('select_lead'),
+                  isSuccess: false,
+                );
+                return;
+              }
+
               Navigator.of(dialogContext).pop();
 
+              final manualAddress = addressController.text.trim();
+              setState(() {
+                _pendingManualAddressSelection = manualAddress;
+              });
+
               // Вызываем bloc событие для добавления адреса
-              context.read<OrderBloc>().add(
-                    AddMiniAppAddress(
-                      address: addressController.text.trim(),
-                      leadId: _selectedLead?.id ?? 0,
-                    ),
-                  );
+              _orderBloc.add(
+                AddMiniAppAddress(
+                  address: manualAddress,
+                  leadId: leadId,
+                ),
+              );
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xff4759FF),
@@ -1900,13 +1930,9 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
 
     return MultiBlocProvider(
       providers: [
-        BlocProvider(
-            create: (context) => OrderBloc(context.read<ApiService>())),
-        BlocProvider(
-            create: (context) => BranchBloc(context.read<ApiService>())),
-        BlocProvider(
-            create: (context) =>
-                DeliveryAddressBloc(context.read<ApiService>())),
+        BlocProvider<OrderBloc>.value(value: _orderBloc),
+        BlocProvider<BranchBloc>.value(value: _branchBloc),
+        BlocProvider<DeliveryAddressBloc>.value(value: _deliveryAddressBloc),
       ],
       child: Scaffold(
         backgroundColor: Colors.white,
@@ -1984,17 +2010,24 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
                     isSuccess: false,
                   );
                 } else if (state is OrderCreateAddressSuccess) {
+                  setState(() {
+                    _selectedDeliveryAddress = null;
+                    _deliveryAddressRefreshTrigger++;
+                  });
                   showCustomSnackBar(
                     context: context,
                     message: state.message,
                     isSuccess: true,
                   );
-                  context.read<DeliveryAddressBloc>().add(
-                        FetchDeliveryAddresses(
-                          leadId: _selectedLead?.id ?? 0,
-                        ),
-                      );
+                  _deliveryAddressBloc.add(
+                    FetchDeliveryAddresses(
+                      leadId: _selectedLead?.id ?? 0,
+                    ),
+                  );
                 } else if (state is OrderCreateAddressError) {
+                  setState(() {
+                    _pendingManualAddressSelection = null;
+                  });
                   showCustomSnackBar(
                     context: context,
                     message: state.message,
@@ -2536,6 +2569,18 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
                           AppLocalizations.of(context)!.translate('delivery') &&
                       deliveryAddressRequired &&
                       _selectedDeliveryAddress == null) {
+                    showCustomSnackBar(
+                      context: context,
+                      message: AppLocalizations.of(context)!
+                          .translate('please_select_delivery_address'),
+                      isSuccess: false,
+                    );
+                    return;
+                  }
+                  if (_deliveryMethod ==
+                          AppLocalizations.of(context)!.translate('delivery') &&
+                      deliveryAddressRequired &&
+                      ((_selectedDeliveryAddress?.id ?? 0) <= 0)) {
                     showCustomSnackBar(
                       context: context,
                       message: AppLocalizations.of(context)!
