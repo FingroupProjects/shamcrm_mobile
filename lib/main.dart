@@ -480,7 +480,7 @@ class MyApp extends StatefulWidget {
   final Locale initialLocale;
   final RemoteMessage? initialMessage;
   final bool sessionValid;
-
+  
   const MyApp({
     required this.apiService,
     required this.authService,

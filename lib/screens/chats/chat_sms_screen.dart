@@ -2581,10 +2581,13 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
       }
     }
     final channelName = 'presence-v2.chat.$chatIdentifier';
+    final legacyReactionChannelName = 'presence-chat.$chatIdentifier';
 
     debugPrint(
         '=================-=== 📱 Chat identifier for socket: $chatIdentifier (uniqueId: ${widget.chatUniqueId}, chatId: ${widget.chatId})');
     debugPrint('=================-=== 📢 Channel name: $channelName');
+    debugPrint(
+        '=================-=== 📢 Legacy reaction channel: $legacyReactionChannelName');
 
     final myPresenceChannel = socketClient.presenceChannel(
       channelName,
@@ -2603,11 +2606,31 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
       ),
     );
 
+    final legacyReactionPresenceChannel = socketClient.presenceChannel(
+      legacyReactionChannelName,
+      authorizationDelegate:
+          EndpointAuthorizableChannelTokenAuthorizationDelegate
+              .forPresenceChannel(
+        authorizationEndpoint: Uri.parse(authUrl),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'X-Tenant': '$enteredDomain-back',
+        },
+        onAuthFailed: (exception, trace) {
+          debugPrint(
+              '=================-=== ❌ Auth failed for $legacyReactionChannelName: $exception');
+        },
+      ),
+    );
+
     socketClient.onConnectionEstablished.listen((_) {
       debugPrint(
           '=================-=== ✅ Socket connected successfully for chatIdentifier: $chatIdentifier');
       myPresenceChannel.subscribeIfNotUnsubscribed();
       debugPrint('=================-=== ✅ Subscribed to channel: $channelName');
+      legacyReactionPresenceChannel.subscribeIfNotUnsubscribed();
+      debugPrint(
+          '=================-=== ✅ Subscribed to channel: $legacyReactionChannelName');
     });
 
     myPresenceChannel.bind('pusher:subscription_succeeded').listen((event) {
@@ -2620,6 +2643,22 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
     myPresenceChannel.bind('pusher:subscription_error').listen((event) {
       debugPrint(
           '=================-=== ❌❌❌ CHAT_SMS: Subscription error for $channelName: ${event.data}');
+    });
+
+    legacyReactionPresenceChannel
+        .bind('pusher:subscription_succeeded')
+        .listen((event) {
+      debugPrint(
+          '=================-=== ✅✅✅ CHAT_SMS: Successfully subscribed to $legacyReactionChannelName');
+      debugPrint(
+          '=================-=== ✅✅✅ CHAT_SMS: Legacy subscription data: ${event.data}');
+    });
+
+    legacyReactionPresenceChannel
+        .bind('pusher:subscription_error')
+        .listen((event) {
+      debugPrint(
+          '=================-=== ❌❌❌ CHAT_SMS: Subscription error for $legacyReactionChannelName: ${event.data}');
     });
 
     myPresenceChannel.bind('pusher:member_added').listen((event) {
@@ -2928,6 +2967,12 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
       channelName: channelName,
       reactionEventAliases: reactionEventAliases,
       logPrefix: '[CHAT PRESENCE]',
+    );
+    _bindReactionAliasesToChannel(
+      channel: legacyReactionPresenceChannel,
+      channelName: legacyReactionChannelName,
+      reactionEventAliases: reactionEventAliases,
+      logPrefix: '[CHAT LEGACY PRESENCE]',
     );
     debugPrint(
         '=================-=== ✅✅✅ CHAT_SMS: reaction listeners registered (${reactionEventAliases.length})');
