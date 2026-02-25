@@ -251,7 +251,7 @@ class _AdvertisingRoiChartState extends State<AdvertisingRoiChart> {
   double _roiMaxPercent(List<AdvertisingRoiCampaign> items) {
     if (items.isEmpty) return 1;
     final maxRoi = items
-        .map((e) => e.conversionRate.abs())
+        .map((e) => e.roi.abs())
         .fold<double>(0, (prev, curr) => math.max(prev, curr));
     return math.max(1, (maxRoi * 1.25).ceilToDouble());
   }
@@ -312,13 +312,13 @@ class _AdvertisingRoiChartState extends State<AdvertisingRoiChart> {
     if (!_showRoiLine || items.isEmpty) return [];
 
     final maxRoi = items
-        .map((e) => e.conversionRate.abs())
+        .map((e) => e.roi.abs())
         .fold<double>(0, (prev, curr) => math.max(prev, curr));
     final roiScale = maxRoi > 0 ? barMaxY / (maxRoi * 1.25) : 1.0;
 
     final spots = <FlSpot>[];
     for (int i = 0; i < items.length; i++) {
-      spots.add(FlSpot(i.toDouble(), items[i].conversionRate * roiScale));
+      spots.add(FlSpot(i.toDouble(), items[i].roi * roiScale));
     }
 
     return [

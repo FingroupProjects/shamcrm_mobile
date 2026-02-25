@@ -341,7 +341,8 @@ class _OrdersChartState extends State<OrdersChart> {
                                     barTouchData: BarTouchData(
                                       enabled: true,
                                       touchTooltipData: BarTouchTooltipData(
-                                        getTooltipColor: (group) => Colors.white,
+                                        getTooltipColor: (group) =>
+                                            Colors.white,
                                         tooltipBorder: const BorderSide(
                                             color: Color(0xffE2E8F0)),
                                         tooltipRoundedRadius: 8,
@@ -354,18 +355,18 @@ class _OrdersChartState extends State<OrdersChart> {
                                             return null;
                                           }
                                           final item = displayPoints[index];
-                                          final monthLabel =
-                                              item.month >= 0 &&
-                                                      item.month <
-                                                          _monthNames.length
-                                                  ? _monthNames[item.month]
-                                                  : item.month.toString();
+                                          final monthLabel = item.month >= 0 &&
+                                                  item.month <
+                                                      _monthNames.length
+                                              ? _monthNames[item.month]
+                                              : item.month.toString();
                                           return BarTooltipItem(
                                             '$monthLabel\n',
                                             TextStyle(
                                               color: const Color(0xff0F172A),
                                               fontWeight: FontWeight.w700,
-                                              fontSize: responsive.smallFontSize,
+                                              fontSize:
+                                                  responsive.smallFontSize,
                                               fontFamily: 'Golos',
                                             ),
                                             children: [
@@ -376,8 +377,8 @@ class _OrdersChartState extends State<OrdersChart> {
                                                   color:
                                                       const Color(0xff64748B),
                                                   fontWeight: FontWeight.w600,
-                                                  fontSize: responsive
-                                                      .smallFontSize,
+                                                  fontSize:
+                                                      responsive.smallFontSize,
                                                   fontFamily: 'Golos',
                                                 ),
                                               ),
@@ -388,8 +389,8 @@ class _OrdersChartState extends State<OrdersChart> {
                                                   color:
                                                       const Color(0xff14B8A6),
                                                   fontWeight: FontWeight.w600,
-                                                  fontSize: responsive
-                                                      .smallFontSize,
+                                                  fontSize:
+                                                      responsive.smallFontSize,
                                                   fontFamily: 'Golos',
                                                 ),
                                               ),
@@ -400,8 +401,8 @@ class _OrdersChartState extends State<OrdersChart> {
                                                   color:
                                                       const Color(0xffEF4444),
                                                   fontWeight: FontWeight.w600,
-                                                  fontSize: responsive
-                                                      .smallFontSize,
+                                                  fontSize:
+                                                      responsive.smallFontSize,
                                                   fontFamily: 'Golos',
                                                 ),
                                               ),
@@ -415,6 +416,7 @@ class _OrdersChartState extends State<OrdersChart> {
                                       bottomTitles: AxisTitles(
                                         sideTitles: SideTitles(
                                           showTitles: true,
+                                          reservedSize: 36,
                                           getTitlesWidget: (value, meta) {
                                             final index = value.toInt();
                                             if (index >= 0 &&
@@ -425,16 +427,22 @@ class _OrdersChartState extends State<OrdersChart> {
                                                       month < _monthNames.length
                                                   ? _monthNames[month]
                                                   : month.toString();
-                                              return Padding(
-                                                padding:
-                                                    const EdgeInsets.only(top: 8),
-                                                child: Text(
-                                                  label,
-                                                  style: TextStyle(
-                                                    color: Color(0xff64748B),
-                                                    fontSize:
-                                                        responsive.smallFontSize,
-                                                    fontFamily: 'Golos',
+                                              return RotatedBox(
+                                                quarterTurns: 3,
+                                                child: Padding(
+                                                  padding:
+                                                      const EdgeInsets.only(
+                                                    top: 8,
+                                                  ),
+                                                  child: Text(
+                                                    label,
+                                                    style: TextStyle(
+                                                      color: const Color(
+                                                          0xff64748B),
+                                                      fontSize: responsive
+                                                          .smallFontSize,
+                                                      fontFamily: 'Golos',
+                                                    ),
                                                   ),
                                                 ),
                                               );
@@ -461,7 +469,8 @@ class _OrdersChartState extends State<OrdersChart> {
                                               value.toInt().toString(),
                                               style: TextStyle(
                                                 color: Color(0xff64748B),
-                                                fontSize: responsive.smallFontSize,
+                                                fontSize:
+                                                    responsive.smallFontSize,
                                                 fontFamily: 'Golos',
                                               ),
                                             );
@@ -469,10 +478,12 @@ class _OrdersChartState extends State<OrdersChart> {
                                         ),
                                       ),
                                       topTitles: const AxisTitles(
-                                        sideTitles: SideTitles(showTitles: false),
+                                        sideTitles:
+                                            SideTitles(showTitles: false),
                                       ),
                                       rightTitles: const AxisTitles(
-                                        sideTitles: SideTitles(showTitles: false),
+                                        sideTitles:
+                                            SideTitles(showTitles: false),
                                       ),
                                     ),
                                     gridData: FlGridData(
@@ -489,8 +500,10 @@ class _OrdersChartState extends State<OrdersChart> {
                                       },
                                     ),
                                     borderData: FlBorderData(show: false),
-                                    barGroups:
-                                        displayPoints.asMap().entries.map((entry) {
+                                    barGroups: displayPoints
+                                        .asMap()
+                                        .entries
+                                        .map((entry) {
                                       final p = entry.value;
                                       return _makeGroupData(
                                         entry.key,

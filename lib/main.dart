@@ -154,7 +154,6 @@ final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
 
 void main() async {
   try {
-    WidgetsFlutterBinding.ensureInitialized();
     WidgetService.initialize();
     await NativeInternetMonitor().initialize();
 

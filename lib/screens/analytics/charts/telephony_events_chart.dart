@@ -547,286 +547,8 @@ class _TelephonyEventsChartState extends State<TelephonyEventsChart> {
                               child: Padding(
                                 padding: const EdgeInsets.only(right: 10),
                                 child: Stack(
+                                  fit: StackFit.expand,
                                   children: [
-                                    BarChart(
-                                      BarChartData(
-                                        maxY: maxY,
-                                        minY: 0,
-                                        alignment:
-                                            BarChartAlignment.spaceAround,
-                                        barGroups: _buildGroups(displayItems),
-                                        gridData: FlGridData(
-                                          show: true,
-                                          drawVerticalLine: false,
-                                          horizontalInterval: math
-                                              .max(1, leftInterval)
-                                              .toDouble(),
-                                          getDrawingHorizontalLine: (_) =>
-                                              FlLine(
-                                            color: const Color(0xffD5DEE8),
-                                            strokeWidth: 1,
-                                          ),
-                                        ),
-                                        borderData: FlBorderData(
-                                          show: true,
-                                          border: const Border(
-                                            bottom: BorderSide(
-                                                color: Color(0xffD5DEE8),
-                                                width: 1),
-                                            left: BorderSide(
-                                                color: Colors.transparent),
-                                            right: BorderSide(
-                                                color: Colors.transparent),
-                                            top: BorderSide(
-                                                color: Colors.transparent),
-                                          ),
-                                        ),
-                                        barTouchData: BarTouchData(
-                                          enabled: true,
-                                          handleBuiltInTouches: true,
-                                          touchTooltipData: BarTouchTooltipData(
-                                            getTooltipColor: (_) =>
-                                                const Color(0xffF8FAFC),
-                                            tooltipRoundedRadius: 12,
-                                            tooltipPadding:
-                                                const EdgeInsets.symmetric(
-                                              horizontal: 16,
-                                              vertical: 12,
-                                            ),
-                                            maxContentWidth: tooltipMaxWidth,
-                                            fitInsideHorizontally: true,
-                                            fitInsideVertically: true,
-                                            getTooltipItem:
-                                                (group, _, __, ___) {
-                                              final index = group.x.toInt();
-                                              if (index < 0 ||
-                                                  index >=
-                                                      displayItems.length) {
-                                                return null;
-                                              }
-                                              final item = displayItems[index];
-                                              final day =
-                                                  index < _weekDays.length
-                                                      ? _weekDays[index]
-                                                      : 'Д${item.day}';
-
-                                              final spans = <TextSpan>[];
-                                              final metricTextStyle = TextStyle(
-                                                fontWeight: FontWeight.w600,
-                                                fontSize:
-                                                    ResponsiveHelper(context)
-                                                        .captionFontSize,
-                                                fontFamily: 'Golos',
-                                              );
-                                              final metricContentWidth =
-                                                  math.max(
-                                                140.0,
-                                                tooltipMaxWidth - 32,
-                                              );
-
-                                              double measureTextWidth(
-                                                String text,
-                                                TextStyle style,
-                                              ) {
-                                                final painter = TextPainter(
-                                                  text: TextSpan(
-                                                    text: text,
-                                                    style: style,
-                                                  ),
-                                                  textDirection:
-                                                      TextDirection.ltr,
-                                                  maxLines: 1,
-                                                )..layout();
-                                                return painter.width;
-                                              }
-
-                                              TextSpan buildMetricSpan({
-                                                required String label,
-                                                required int value,
-                                                required Color color,
-                                                required bool withNewLine,
-                                              }) {
-                                                final valueText =
-                                                    value.toString();
-                                                final labelText = '● $label';
-                                                final spaceWidth =
-                                                    measureTextWidth(
-                                                  ' ',
-                                                  metricTextStyle,
-                                                );
-                                                final leftWidth =
-                                                    measureTextWidth(
-                                                  labelText,
-                                                  metricTextStyle,
-                                                );
-                                                final valueWidth =
-                                                    measureTextWidth(
-                                                  valueText,
-                                                  metricTextStyle,
-                                                );
-                                                final spaces = math.max(
-                                                  1,
-                                                  ((metricContentWidth -
-                                                              leftWidth -
-                                                              valueWidth) /
-                                                          math.max(
-                                                            1,
-                                                            spaceWidth,
-                                                          ))
-                                                      .floor(),
-                                                );
-                                                return TextSpan(
-                                                  text:
-                                                      '$labelText${' ' * spaces}$valueText${withNewLine ? '\n' : ''}',
-                                                  style: metricTextStyle
-                                                      .copyWith(color: color),
-                                                );
-                                              }
-
-                                              if (_showIncoming) {
-                                                spans.add(
-                                                  buildMetricSpan(
-                                                    label: 'Входящие',
-                                                    value: item.incoming,
-                                                    color: _incomingColor,
-                                                    withNewLine: true,
-                                                  ),
-                                                );
-                                              }
-                                              if (_showOutgoing) {
-                                                spans.add(
-                                                  buildMetricSpan(
-                                                    label: 'Исходящие',
-                                                    value: item.outgoing,
-                                                    color: _outgoingColor,
-                                                    withNewLine: true,
-                                                  ),
-                                                );
-                                              }
-                                              if (_showMissed) {
-                                                spans.add(
-                                                  buildMetricSpan(
-                                                    label: 'Пропущенные',
-                                                    value: item.missed,
-                                                    color: _missedColor,
-                                                    withNewLine: true,
-                                                  ),
-                                                );
-                                              }
-                                              if (_showCreated) {
-                                                spans.add(
-                                                  buildMetricSpan(
-                                                    label: 'События создано',
-                                                    value: item.noticesCreated,
-                                                    color: _createdColor,
-                                                    withNewLine: true,
-                                                  ),
-                                                );
-                                              }
-                                              if (_showClosed) {
-                                                spans.add(
-                                                  buildMetricSpan(
-                                                    label: 'События закрыто',
-                                                    value: item.noticesFinished,
-                                                    color: _closedColor,
-                                                    withNewLine: false,
-                                                  ),
-                                                );
-                                              }
-
-                                              return BarTooltipItem(
-                                                '$day\n',
-                                                TextStyle(
-                                                  color: Color(0xff0F172A),
-                                                  fontWeight: FontWeight.w700,
-                                                  fontSize:
-                                                      ResponsiveHelper(context)
-                                                          .subtitleFontSize,
-                                                  fontFamily: 'Golos',
-                                                ),
-                                                textAlign: TextAlign.left,
-                                                children: spans,
-                                              );
-                                            },
-                                          ),
-                                        ),
-                                        titlesData: FlTitlesData(
-                                          topTitles: const AxisTitles(
-                                            sideTitles:
-                                                SideTitles(showTitles: false),
-                                          ),
-                                          rightTitles: const AxisTitles(
-                                            sideTitles:
-                                                SideTitles(showTitles: false),
-                                          ),
-                                          leftTitles: AxisTitles(
-                                            axisNameWidget: Text(
-                                              'Количество',
-                                              style: TextStyle(
-                                                fontSize:
-                                                    isVeryCompact ? 10 : 11,
-                                                color: Color(0xff94A3B8),
-                                                fontFamily: 'Golos',
-                                              ),
-                                            ),
-                                            axisNameSize: 16,
-                                            sideTitles: SideTitles(
-                                              showTitles: true,
-                                              interval: leftInterval.toDouble(),
-                                              reservedSize: leftReserved,
-                                              getTitlesWidget: (value, meta) {
-                                                return Text(
-                                                  value.toInt().toString(),
-                                                  style: TextStyle(
-                                                    fontSize:
-                                                        isVeryCompact ? 10 : 11,
-                                                    color: _labelColor,
-                                                    fontWeight: FontWeight.w600,
-                                                    fontFamily: 'Golos',
-                                                  ),
-                                                );
-                                              },
-                                            ),
-                                          ),
-                                          bottomTitles: AxisTitles(
-                                            sideTitles: SideTitles(
-                                              showTitles: true,
-                                              reservedSize: bottomReserved,
-                                              getTitlesWidget: (value, meta) {
-                                                final index = value.toInt();
-                                                if (index < 0 ||
-                                                    index >=
-                                                        displayItems.length) {
-                                                  return const SizedBox
-                                                      .shrink();
-                                                }
-                                                final text = index <
-                                                        _weekDays.length
-                                                    ? _weekDays[index]
-                                                    : 'Д${displayItems[index].day}';
-                                                return Padding(
-                                                  padding:
-                                                      const EdgeInsets.only(
-                                                          top: 6),
-                                                  child: Text(
-                                                    text,
-                                                    style: TextStyle(
-                                                      fontSize: isVeryCompact
-                                                          ? 12
-                                                          : 14,
-                                                      color: _labelColor,
-                                                      fontWeight:
-                                                          FontWeight.w600,
-                                                      fontFamily: 'Golos',
-                                                    ),
-                                                  ),
-                                                );
-                                              },
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
                                     if (_showCreated || _showClosed)
                                       Positioned.fill(
                                         child: Padding(
@@ -876,6 +598,295 @@ class _TelephonyEventsChartState extends State<TelephonyEventsChart> {
                                           ),
                                         ),
                                       ),
+                                    Positioned.fill(
+                                      child: BarChart(
+                                        BarChartData(
+                                          maxY: maxY,
+                                          minY: 0,
+                                          alignment:
+                                              BarChartAlignment.spaceAround,
+                                          barGroups: _buildGroups(displayItems),
+                                          gridData: FlGridData(
+                                            show: true,
+                                            drawVerticalLine: false,
+                                            horizontalInterval: math
+                                                .max(1, leftInterval)
+                                                .toDouble(),
+                                            getDrawingHorizontalLine: (_) =>
+                                                FlLine(
+                                              color: const Color(0xffD5DEE8),
+                                              strokeWidth: 1,
+                                            ),
+                                          ),
+                                          borderData: FlBorderData(
+                                            show: true,
+                                            border: const Border(
+                                              bottom: BorderSide(
+                                                  color: Color(0xffD5DEE8),
+                                                  width: 1),
+                                              left: BorderSide(
+                                                  color: Colors.transparent),
+                                              right: BorderSide(
+                                                  color: Colors.transparent),
+                                              top: BorderSide(
+                                                  color: Colors.transparent),
+                                            ),
+                                          ),
+                                          barTouchData: BarTouchData(
+                                            enabled: true,
+                                            handleBuiltInTouches: true,
+                                            touchTooltipData:
+                                                BarTouchTooltipData(
+                                              getTooltipColor: (_) =>
+                                                  const Color(0xffF8FAFC),
+                                              tooltipRoundedRadius: 12,
+                                              tooltipPadding:
+                                                  const EdgeInsets.symmetric(
+                                                horizontal: 16,
+                                                vertical: 12,
+                                              ),
+                                              maxContentWidth: tooltipMaxWidth,
+                                              fitInsideHorizontally: true,
+                                              fitInsideVertically: true,
+                                              getTooltipItem:
+                                                  (group, _, __, ___) {
+                                                final index = group.x.toInt();
+                                                if (index < 0 ||
+                                                    index >=
+                                                        displayItems.length) {
+                                                  return null;
+                                                }
+                                                final item =
+                                                    displayItems[index];
+                                                final day =
+                                                    index < _weekDays.length
+                                                        ? _weekDays[index]
+                                                        : 'Д${item.day}';
+
+                                                final spans = <TextSpan>[];
+                                                final metricTextStyle =
+                                                    TextStyle(
+                                                  fontWeight: FontWeight.w600,
+                                                  fontSize:
+                                                      ResponsiveHelper(context)
+                                                          .captionFontSize,
+                                                  fontFamily: 'Golos',
+                                                );
+                                                final metricContentWidth =
+                                                    math.max(
+                                                  140.0,
+                                                  tooltipMaxWidth - 32,
+                                                );
+
+                                                double measureTextWidth(
+                                                  String text,
+                                                  TextStyle style,
+                                                ) {
+                                                  final painter = TextPainter(
+                                                    text: TextSpan(
+                                                      text: text,
+                                                      style: style,
+                                                    ),
+                                                    textDirection:
+                                                        TextDirection.ltr,
+                                                    maxLines: 1,
+                                                  )..layout();
+                                                  return painter.width;
+                                                }
+
+                                                TextSpan buildMetricSpan({
+                                                  required String label,
+                                                  required int value,
+                                                  required Color color,
+                                                  required bool withNewLine,
+                                                }) {
+                                                  final valueText =
+                                                      value.toString();
+                                                  final labelText = '● $label';
+                                                  final spaceWidth =
+                                                      measureTextWidth(
+                                                    ' ',
+                                                    metricTextStyle,
+                                                  );
+                                                  final leftWidth =
+                                                      measureTextWidth(
+                                                    labelText,
+                                                    metricTextStyle,
+                                                  );
+                                                  final valueWidth =
+                                                      measureTextWidth(
+                                                    valueText,
+                                                    metricTextStyle,
+                                                  );
+                                                  final spaces = math.max(
+                                                    1,
+                                                    ((metricContentWidth -
+                                                                leftWidth -
+                                                                valueWidth) /
+                                                            math.max(
+                                                              1,
+                                                              spaceWidth,
+                                                            ))
+                                                        .floor(),
+                                                  );
+                                                  return TextSpan(
+                                                    text:
+                                                        '$labelText${' ' * spaces}$valueText${withNewLine ? '\n' : ''}',
+                                                    style: metricTextStyle
+                                                        .copyWith(color: color),
+                                                  );
+                                                }
+
+                                                if (_showIncoming) {
+                                                  spans.add(
+                                                    buildMetricSpan(
+                                                      label: 'Входящие',
+                                                      value: item.incoming,
+                                                      color: _incomingColor,
+                                                      withNewLine: true,
+                                                    ),
+                                                  );
+                                                }
+                                                if (_showOutgoing) {
+                                                  spans.add(
+                                                    buildMetricSpan(
+                                                      label: 'Исходящие',
+                                                      value: item.outgoing,
+                                                      color: _outgoingColor,
+                                                      withNewLine: true,
+                                                    ),
+                                                  );
+                                                }
+                                                if (_showMissed) {
+                                                  spans.add(
+                                                    buildMetricSpan(
+                                                      label: 'Пропущенные',
+                                                      value: item.missed,
+                                                      color: _missedColor,
+                                                      withNewLine: true,
+                                                    ),
+                                                  );
+                                                }
+                                                if (_showCreated) {
+                                                  spans.add(
+                                                    buildMetricSpan(
+                                                      label: 'События создано',
+                                                      value:
+                                                          item.noticesCreated,
+                                                      color: _createdColor,
+                                                      withNewLine: true,
+                                                    ),
+                                                  );
+                                                }
+                                                if (_showClosed) {
+                                                  spans.add(
+                                                    buildMetricSpan(
+                                                      label: 'События закрыто',
+                                                      value:
+                                                          item.noticesFinished,
+                                                      color: _closedColor,
+                                                      withNewLine: false,
+                                                    ),
+                                                  );
+                                                }
+
+                                                return BarTooltipItem(
+                                                  '$day\n',
+                                                  TextStyle(
+                                                    color: Color(0xff0F172A),
+                                                    fontWeight: FontWeight.w700,
+                                                    fontSize: ResponsiveHelper(
+                                                            context)
+                                                        .subtitleFontSize,
+                                                    fontFamily: 'Golos',
+                                                  ),
+                                                  textAlign: TextAlign.left,
+                                                  children: spans,
+                                                );
+                                              },
+                                            ),
+                                          ),
+                                          titlesData: FlTitlesData(
+                                            topTitles: const AxisTitles(
+                                              sideTitles:
+                                                  SideTitles(showTitles: false),
+                                            ),
+                                            rightTitles: const AxisTitles(
+                                              sideTitles:
+                                                  SideTitles(showTitles: false),
+                                            ),
+                                            leftTitles: AxisTitles(
+                                              axisNameWidget: Text(
+                                                'Количество',
+                                                style: TextStyle(
+                                                  fontSize:
+                                                      isVeryCompact ? 10 : 11,
+                                                  color: Color(0xff94A3B8),
+                                                  fontFamily: 'Golos',
+                                                ),
+                                              ),
+                                              axisNameSize: 16,
+                                              sideTitles: SideTitles(
+                                                showTitles: true,
+                                                interval:
+                                                    leftInterval.toDouble(),
+                                                reservedSize: leftReserved,
+                                                getTitlesWidget: (value, meta) {
+                                                  return Text(
+                                                    value.toInt().toString(),
+                                                    style: TextStyle(
+                                                      fontSize: isVeryCompact
+                                                          ? 10
+                                                          : 11,
+                                                      color: _labelColor,
+                                                      fontWeight:
+                                                          FontWeight.w600,
+                                                      fontFamily: 'Golos',
+                                                    ),
+                                                  );
+                                                },
+                                              ),
+                                            ),
+                                            bottomTitles: AxisTitles(
+                                              sideTitles: SideTitles(
+                                                showTitles: true,
+                                                reservedSize: bottomReserved,
+                                                getTitlesWidget: (value, meta) {
+                                                  final index = value.toInt();
+                                                  if (index < 0 ||
+                                                      index >=
+                                                          displayItems.length) {
+                                                    return const SizedBox
+                                                        .shrink();
+                                                  }
+                                                  final text = index <
+                                                          _weekDays.length
+                                                      ? _weekDays[index]
+                                                      : 'Д${displayItems[index].day}';
+                                                  return Padding(
+                                                    padding:
+                                                        const EdgeInsets.only(
+                                                            top: 6),
+                                                    child: Text(
+                                                      text,
+                                                      style: TextStyle(
+                                                        fontSize: isVeryCompact
+                                                            ? 12
+                                                            : 14,
+                                                        color: _labelColor,
+                                                        fontWeight:
+                                                            FontWeight.w600,
+                                                        fontFamily: 'Golos',
+                                                      ),
+                                                    ),
+                                                  );
+                                                },
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
                                   ],
                                 ),
                               ),

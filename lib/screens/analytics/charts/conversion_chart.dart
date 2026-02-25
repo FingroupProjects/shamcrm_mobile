@@ -15,7 +15,7 @@ class ConversionChart extends StatefulWidget {
 }
 
 class _ConversionChartState extends State<ConversionChart> {
-  static const List<double> _fixedConversionTicks = [100, 80, 50, 20, 10, 0];
+  static const List<double> _fixedConversionTicks = [100, 80, 60, 40, 20, 0];
 
   bool _isLoading = true;
   String? _error;
@@ -101,10 +101,20 @@ class _ConversionChartState extends State<ConversionChart> {
     return _conversionData.reduce((a, b) => a + b) / _conversionData.length;
   }
 
+  double _roundUpTo2Decimals(double value) {
+    const factor = 100.0;
+    if (value >= 0) {
+      return (value * factor).ceil() / factor;
+    }
+    return (value * factor).floor() / factor;
+  }
+
+  String _formatPercent(double value) {
+    return _roundUpTo2Decimals(value).toStringAsFixed(2);
+  }
+
   String get _averagePercentageFormatted {
-    final value = _averagePercentage;
-    final decimals = value.abs() >= 10 ? 1 : 2;
-    return value.toStringAsFixed(decimals);
+    return _formatPercent(_averagePercentage);
   }
 
   int get _bestMonthIndex {
@@ -186,7 +196,7 @@ class _ConversionChartState extends State<ConversionChart> {
                         ),
                       ),
                       trailing: Text(
-                        '${_conversionData[index].toStringAsFixed(1)}%',
+                        '${_formatPercent(_conversionData[index])}%',
                         style: TextStyle(
                           fontSize: ResponsiveHelper(context).bodyFontSize,
                           fontWeight: FontWeight.w600,
@@ -336,7 +346,7 @@ class _ConversionChartState extends State<ConversionChart> {
                                     getTooltipItem:
                                         (group, groupIndex, rod, rodIndex) {
                                       return BarTooltipItem(
-                                        '${rod.toY.toStringAsFixed(1)}%',
+                                        '${_formatPercent(rod.toY)}%',
                                         TextStyle(
                                           color: Color(0xff0F172A),
                                           fontWeight: FontWeight.bold,
@@ -381,7 +391,7 @@ class _ConversionChartState extends State<ConversionChart> {
                                     sideTitles: SideTitles(
                                       showTitles: true,
                                       reservedSize: 40,
-                                      interval: 10,
+                                      interval: 20,
                                       getTitlesWidget: (value, meta) {
                                         final bool isTick =
                                             _fixedConversionTicks.any((tick) =>
@@ -389,9 +399,7 @@ class _ConversionChartState extends State<ConversionChart> {
                                         if (!isTick) {
                                           return const SizedBox.shrink();
                                         }
-                                        final label = value == 0
-                                            ? '%'
-                                            : '${value.toInt()}';
+                                        final label = '${value.toInt()}%';
                                         return Text(
                                           label,
                                           style: TextStyle(
@@ -413,7 +421,7 @@ class _ConversionChartState extends State<ConversionChart> {
                                 gridData: FlGridData(
                                   show: true,
                                   drawVerticalLine: false,
-                                  horizontalInterval: 10,
+                                  horizontalInterval: 20,
                                   getDrawingHorizontalLine: (value) {
                                     final bool isTick =
                                         _fixedConversionTicks.any((tick) =>
