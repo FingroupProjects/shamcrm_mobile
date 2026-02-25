@@ -646,11 +646,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         setState(() {
           _widgetOptionsGroup1 = [NoAccessScreen()];
           _widgetOptionsGroup2 = [];
-          _navBarTitleKeysGroup1 = [''];
+          _navBarTitleKeysGroup1 = [];
           _navBarTitleKeysGroup2 = [];
-          _activeIconsGroup1 = [''];
+          _activeIconsGroup1 = [];
           _activeIconsGroup2 = [];
-          _inactiveIconsGroup1 = [''];
+          _inactiveIconsGroup1 = [];
           _inactiveIconsGroup2 = [];
           _isInitialized = true;
           _selectedIndexGroup1 = 0;
@@ -701,6 +701,14 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         return savedPermissions.contains(permission);
       }
       return permissionsBloc.hasPermission(permission);
+    }
+
+    bool hasAnyPermissionWithPrefix(String prefix) {
+      final allPermissions =
+          isNetworkError && savedPermissions.isNotEmpty
+              ? savedPermissions
+              : permissionsBloc.getAllPermissions();
+      return allPermissions.any((permission) => permission.startsWith(prefix));
     }
 
     List<Widget> widgetsGroup1 = [];
@@ -769,7 +777,12 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       hasWarehouseAccess = true;
     }
 
-    bool hasOrderAccess = hasPermission('order.read');
+    // Показываем раздел заказов, если есть любой order.* доступ
+    bool hasOrderAccess = hasAnyPermissionWithPrefix('order.');
+    // Онлайн-магазин показываем, если есть доступ хотя бы к одному из его разделов
+    bool hasOnlineStoreAccess = hasPermission('category.read') ||
+        hasPermission('product.read') ||
+        hasOrderAccess;
 
     if (hasWarehouseAccess) {
       widgetsGroup1.add(WarehouseAccountingScreen());
@@ -786,7 +799,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         inactiveIconsGroup2.add('assets/icons/MyNavBar/order_OFF.png');
       }
     } else {
-      if (hasOrderAccess) {
+      if (hasOnlineStoreAccess) {
         widgetsGroup2.add(OnlineStoreScreen());
         titleKeysGroup2.add('appbar_online_store');
         navBarTitleKeysGroup2.add('appbar_online_store');
@@ -800,16 +813,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     if (widgetsGroup1.isEmpty && widgetsGroup2.isEmpty && !isNetworkError) {
       widgetsGroup1.add(NoAccessScreen());
       titleKeysGroup1.add('');
-      navBarTitleKeysGroup1.add('');
-      activeIconsGroup1.add('');
-      inactiveIconsGroup1.add('');
-    } else if (widgetsGroup1.isEmpty) {
-      // Если группа 1 пустая, но есть группа 2
-      widgetsGroup1.add(EmptyScreen());
-      titleKeysGroup1.add('');
-      navBarTitleKeysGroup1.add('');
-      activeIconsGroup1.add('');
-      inactiveIconsGroup1.add('');
     }
 
     if (mounted) {
@@ -824,12 +827,24 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         _inactiveIconsGroup2 = inactiveIconsGroup2;
         _isInitialized = true;
 
-        // ✅ Если выбранный индекс больше чем количество экранов, сбрасываем
-        if (_selectedIndexGroup1 >= widgetsGroup1.length) {
-          _selectedIndexGroup1 = 0;
-        }
+        // ✅ Корректно поддерживаем сценарий, когда доступны только экраны group2.
+        if (widgetsGroup1.isEmpty && widgetsGroup2.isNotEmpty) {
+          _selectedIndexGroup1 = -1;
+          if (_selectedIndexGroup2 < 0 ||
+              _selectedIndexGroup2 >= widgetsGroup2.length) {
+            _selectedIndexGroup2 = 0;
+          }
+        } else if (widgetsGroup1.isNotEmpty) {
+          // ✅ Если выбранный индекс больше чем количество экранов, сбрасываем
+          if (_selectedIndexGroup1 < 0 ||
+              _selectedIndexGroup1 >= widgetsGroup1.length) {
+            _selectedIndexGroup1 = 0;
+          }
 
-        if (_selectedIndexGroup2 != -1 && widgetsGroup2.isEmpty) {
+          if (_selectedIndexGroup2 != -1 && widgetsGroup2.isEmpty) {
+            _selectedIndexGroup2 = -1;
+          }
+        } else {
           _selectedIndexGroup1 = 0;
           _selectedIndexGroup2 = -1;
         }
@@ -850,14 +865,19 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     if (args != null && !_isPushHandled && _isInitialized) {
       setState(() {
         if (args['group'] == 1) {
-          _selectedIndexGroup1 = args['screenIndex'] ?? 0;
-          _selectedIndexGroup2 = -1;
+          if (_widgetOptionsGroup1.isNotEmpty) {
+            _selectedIndexGroup1 = args['screenIndex'] ?? 0;
+            _selectedIndexGroup2 = -1;
+          } else if (_widgetOptionsGroup2.isNotEmpty) {
+            _selectedIndexGroup2 = 0;
+            _selectedIndexGroup1 = -1;
+          }
         } else if (args['group'] == 2) {
           if (_widgetOptionsGroup2.isNotEmpty) {
             _selectedIndexGroup2 = args['screenIndex'] ?? 0;
             _selectedIndexGroup1 = -1;
           } else {
-            _selectedIndexGroup1 = 0;
+            _selectedIndexGroup1 = _widgetOptionsGroup1.isNotEmpty ? 0 : -1;
             _selectedIndexGroup2 = -1;
           }
         }
@@ -898,6 +918,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             currentWidget = _widgetOptionsGroup2[_selectedIndexGroup2];
           } else if (_widgetOptionsGroup1.isNotEmpty) {
             currentWidget = _widgetOptionsGroup1[0];
+          } else if (_widgetOptionsGroup2.isNotEmpty) {
+            currentWidget = _widgetOptionsGroup2[0];
           } else {
             currentWidget = EmptyScreen();
           }
