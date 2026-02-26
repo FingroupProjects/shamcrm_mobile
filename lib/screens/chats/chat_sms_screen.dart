@@ -121,7 +121,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
   bool get _canUseReactionsInCurrentChat {
     final isLeadWith24hRestriction =
         widget.endPointInTab == 'lead' && !widget.canSendMessage;
-    return !isLeadWith24hRestriction;
+    return !isLeadWith24hRestriction && !_isInstagramCommentChannel;
   }
 
   bool get _isInstagramCommentChannel {
@@ -883,7 +883,14 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
     bool? isMyMessageFromServer,
     String? debugContext = '', // для удобства понимания, откуда пришёл вызов
   }) async {
-    // ✅ ПРИОРИТЕТ 1: Если есть ID отправителя и наш ID, это окончательный ответ
+    // ✅ ПРИОРИТЕТ 1: Для lead-чата определяем сторону строго по sender.type
+    if (isLeadChat && messageSenderType != null) {
+      final normalizedType = messageSenderType.toLowerCase();
+      if (normalizedType == 'lead') return false;
+      if (normalizedType == 'user') return true;
+    }
+
+    // ✅ ПРИОРИТЕТ 2: Если есть ID отправителя и наш ID, это окончательный ответ
     if (messageSenderId != null &&
         messageSenderId.isNotEmpty &&
         myUserId.isNotEmpty) {
@@ -899,18 +906,10 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
       return false;
     }
 
-    // ✅ ПРИОРИТЕТ 2: Если ID нет, используем логику имен и типов (как запасной вариант)
-
     // ✅ ПРИОРИТЕТ 3: Флаг от сервера
     if (isMyMessageFromServer != null) {
       debugPrint('ℹ️ [DETERMINE] Using server flag: $isMyMessageFromServer');
       return isMyMessageFromServer;
-    }
-
-    // ✅ ПРИОРИТЕТ 4: Логика для лид-чатов
-    if (isLeadChat && messageSenderType != null) {
-      if (messageSenderType.toLowerCase() == 'lead') return false;
-      if (messageSenderType.toLowerCase() == 'user') return true;
     }
 
     debugPrint('🏁 [DETERMINE] Fallback → FALSE');
@@ -3831,6 +3830,10 @@ class MessageItemWidget extends StatelessWidget {
     return _normalizedChannelName == 'instagram';
   }
 
+  bool get _shouldShowMessageReactions {
+    return !isInstagramCommentChannel;
+  }
+
   bool get _isTelegramSourceForEdit {
     return _normalizedChannelName == 'telegram_bot' ||
         _normalizedChannelName == 'telegram_account';
@@ -3921,8 +3924,10 @@ class MessageItemWidget extends StatelessWidget {
           isNote: message.isNote,
           isLeadChat: isLeadChat,
           isGroupChat: isGroupChat,
-          reactions: message.reactions,
-          onReactionTap: (emoji) => onReactionToggle?.call(message, emoji),
+          reactions: _shouldShowMessageReactions ? message.reactions : const [],
+          onReactionTap: _shouldShowMessageReactions
+              ? (emoji) => onReactionToggle?.call(message, emoji)
+              : null,
         );
         break;
       case 'image':
@@ -3939,8 +3944,10 @@ class MessageItemWidget extends StatelessWidget {
           isLeadChat: isLeadChat,
           isGroupChat: isGroupChat,
           isMenuOpen: isMenuOpen,
-          reactions: message.reactions,
-          onReactionTap: (emoji) => onReactionToggle?.call(message, emoji),
+          reactions: _shouldShowMessageReactions ? message.reactions : const [],
+          onReactionTap: _shouldShowMessageReactions
+              ? (emoji) => onReactionToggle?.call(message, emoji)
+              : null,
         );
         break;
       case 'file':
@@ -3964,8 +3971,10 @@ class MessageItemWidget extends StatelessWidget {
           },
           senderName: message.senderName,
           isRead: message.isRead,
-          reactions: message.reactions,
-          onReactionTap: (emoji) => onReactionToggle?.call(message, emoji),
+          reactions: _shouldShowMessageReactions ? message.reactions : const [],
+          onReactionTap: _shouldShowMessageReactions
+              ? (emoji) => onReactionToggle?.call(message, emoji)
+              : null,
         );
         break;
       case 'voice':
@@ -3974,8 +3983,10 @@ class MessageItemWidget extends StatelessWidget {
           baseUrl: baseUrl,
           isLeadChat: isLeadChat,
           isGroupChat: isGroupChat,
-          reactions: message.reactions,
-          onReactionTap: (emoji) => onReactionToggle?.call(message, emoji),
+          reactions: _shouldShowMessageReactions ? message.reactions : const [],
+          onReactionTap: _shouldShowMessageReactions
+              ? (emoji) => onReactionToggle?.call(message, emoji)
+              : null,
         );
         break;
       default:
@@ -4086,8 +4097,27 @@ class MessageItemWidget extends StatelessWidget {
 
     final List<ContextMenuItem> menuItems = [];
 
-    // 1. Ответить
-    if (_canReplyToMessage) {
+    // 1. Ответить / Instagram comment reply actions
+    if (isInstagramCommentChannel) {
+      menuItems.add(
+        ContextMenuItem(
+          icon: 'assets/icons/chats/menu_icons/reply.svg',
+          text: 'Ответить как комментарий',
+          onTap: () {
+            onInstagramReplyTap?.call('comment');
+          },
+        ),
+      );
+      menuItems.add(
+        ContextMenuItem(
+          icon: 'assets/icons/chats/menu_icons/reply.svg',
+          text: 'Ответить в директ',
+          onTap: () {
+            onInstagramReplyTap?.call('direct');
+          },
+        ),
+      );
+    } else if (_canReplyToMessage) {
       menuItems.add(
         ContextMenuItem(
           icon: 'assets/icons/chats/menu_icons/reply.svg',
@@ -4164,10 +4194,14 @@ class MessageItemWidget extends StatelessWidget {
       ),
       items: menuItems,
       channelKey: chatChannelName,
-      onReactionSelected: message.id > 0 && onReactionToggle != null
+      onReactionSelected: _shouldShowMessageReactions &&
+              message.id > 0 &&
+              onReactionToggle != null
           ? (emoji) => onReactionToggle!.call(message, emoji)
           : null,
-      showReactions: message.id > 0 && onReactionToggle != null,
+      showReactions: _shouldShowMessageReactions &&
+          message.id > 0 &&
+          onReactionToggle != null,
       onDismiss: () {
         onMenuStateChanged?.call(false);
       },

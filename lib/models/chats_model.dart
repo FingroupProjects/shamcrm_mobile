@@ -439,17 +439,26 @@ class Message {
       readStatus = null;
     }
 
-    // ✅ ЛОГИКА ИЗ ВЕТКИ 1 (Приоритет по ID пользователя)
+    // ✅ ЛОГИКА ОПРЕДЕЛЕНИЯ СТОРОНЫ СООБЩЕНИЯ
     bool isMyMessage = false;
+    final effectiveChatType = chatType ?? json['chat']?['type']?.toString();
+    final senderType = json['sender']?['type']?.toString().toLowerCase();
     final senderId = json['sender']?['id']?.toString();
     final myUserId = userID.value;
 
-    if (senderId != null && senderId.isNotEmpty && myUserId.isNotEmpty) {
+    // Для lead-чата определяем строго по sender.type
+    if (effectiveChatType == 'lead' && senderType != null) {
+      if (senderType == 'lead') {
+        isMyMessage = false;
+      } else if (senderType == 'user') {
+        isMyMessage = true;
+      } else {
+        isMyMessage = json['is_my_message'] ?? false;
+      }
+    } else if (senderId != null && senderId.isNotEmpty && myUserId.isNotEmpty) {
       isMyMessage = (senderId == myUserId);
     } else {
       if (json['sender'] != null && json['sender']['type'] != null) {
-        final senderType = json['sender']['type'].toString();
-        final effectiveChatType = chatType ?? json['chat']?['type']?.toString();
         if (senderType == 'lead') {
           isMyMessage = false;
         } else if (senderType == 'user' && effectiveChatType == 'lead') {

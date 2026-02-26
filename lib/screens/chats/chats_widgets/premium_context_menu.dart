@@ -129,8 +129,9 @@ class _PremiumMenuOverlayState extends State<_PremiumMenuOverlay>
     final screenHeight = MediaQuery.of(context).size.height;
 
     // Константы для расчёта
-    const double maxMenuWidth = 260.0;
     const double horizontalPadding = 16.0;
+    final double maxMenuWidth =
+        (screenWidth - (horizontalPadding * 2)).clamp(220.0, 280.0);
     final double reactionPanelHeight = widget.showReactions ? 54.0 : 0.0;
 
     // Рассчитываем вертикальное положение
@@ -253,7 +254,7 @@ class _PremiumMenuOverlayState extends State<_PremiumMenuOverlay>
 
   Widget _buildMenuCard() {
     return Container(
-      width: 250,
+      width: double.infinity,
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.9),
         borderRadius: BorderRadius.circular(16),
@@ -290,6 +291,7 @@ class _PremiumMenuOverlayState extends State<_PremiumMenuOverlay>
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 12),
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             if (item.icon.contains('.svg'))
               SvgPicture.asset(
@@ -305,12 +307,15 @@ class _PremiumMenuOverlayState extends State<_PremiumMenuOverlay>
                 color: item.isDestructive ? Colors.red : Colors.black87,
               ),
             const SizedBox(width: 15),
-            Text(
-              item.text,
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                color: item.isDestructive ? Colors.red : Colors.black87,
+            Expanded(
+              child: Text(
+                item.text,
+                softWrap: true,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: item.isDestructive ? Colors.red : Colors.black87,
+                ),
               ),
             ),
           ],

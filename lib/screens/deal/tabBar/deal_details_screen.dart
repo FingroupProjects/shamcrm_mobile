@@ -857,13 +857,17 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
               height: 24,
             ),
             onPressed: () {
-              showDialog(
+              showDialog<bool>(
                 context: context,
                 builder: (context) => DeleteDealDialog(
                   dealId: currentDeal!.id,
                   leadId: currentDeal!.lead!.id,
                 ),
-              );
+              ).then((deleted) {
+                if (deleted == true && mounted) {
+                  Navigator.pop(context, true);
+                }
+              });
             },
           ),
       ],

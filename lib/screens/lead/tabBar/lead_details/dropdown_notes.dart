@@ -15,7 +15,8 @@ import 'package:intl/intl.dart';
 class NotesWidget extends StatefulWidget {
   final int leadId;
   final int? managerId; // Добавляем managerId
-  NotesWidget({Key? key, required this.leadId, this.managerId})
+  final bool autoFetch;
+  NotesWidget({Key? key, required this.leadId, this.managerId, this.autoFetch = true})
       : super(key: key);
 
   @override
@@ -47,7 +48,9 @@ class _NotesWidgetState extends State<NotesWidget> {
     _scrollController = ScrollController();
     _scrollController.addListener(_onScroll);
     _checkPermissions();
-    context.read<NotesBloc>().add(FetchNotes(widget.leadId));
+    if (widget.autoFetch) {
+      context.read<NotesBloc>().add(FetchNotes(widget.leadId));
+    }
   }
 
   @override

@@ -922,7 +922,10 @@ class ApiService {
     }
   }
 
-  Future<http.Response> _analyticsRequest(String path) async {
+  Future<http.Response> _analyticsRequest(
+    String path, {
+    bool bypassCache = false,
+  }) async {
     if (kDebugMode) {
       debugPrint('🔵 _analyticsRequest called with path: $path');
       debugPrint('   Current _analyticsFilters: $_analyticsFilters');
@@ -932,7 +935,7 @@ class ApiService {
       debugPrint('🔵 _analyticsRequest filtered path: $filteredPath');
     }
     final cachedBody = _analyticsResponseCache[filteredPath];
-    if (cachedBody != null) {
+    if (!bypassCache && cachedBody != null) {
       if (kDebugMode) {
         debugPrint('🟢 _analyticsRequest cache HIT: $filteredPath');
       }
@@ -941,6 +944,10 @@ class ApiService {
         200,
         headers: const {'x-analytics-cache': 'HIT'},
       );
+    }
+
+    if (bypassCache && kDebugMode) {
+      debugPrint('🟠 _analyticsRequest cache BYPASS: $filteredPath');
     }
 
     final response = await _getRequest(filteredPath);
@@ -1958,6 +1965,7 @@ class ApiService {
     List<Map<String, dynamic>>? directoryValues,
     Map<String, List<String>>? customFieldFilters,
     int? salesFunnelId, // Новый параметр
+    bool bypassAnalyticsCache = false,
   }) async {
     // Формируем базовый путь
     String path = '/lead?page=$page&per_page=$perPage';
@@ -2130,7 +2138,10 @@ class ApiService {
     if (kDebugMode) {
       debugPrint('ApiService: getLeads - Final path: $path');
     }
-    final response = await _analyticsRequest(path);
+    final response = await _analyticsRequest(
+      path,
+      bypassCache: bypassAnalyticsCache,
+    );
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
       if (data['result']['data'] != null) {
@@ -2164,6 +2175,7 @@ class ApiService {
     bool? hasOrders,
     int? daysWithoutActivity,
     List<Map<String, dynamic>>? directoryValues,
+    bool bypassAnalyticsCache = false,
   }) async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
     final organizationId = await getSelectedOrganization();
@@ -2240,7 +2252,10 @@ class ApiService {
         debugPrint('📤 getLeadStatuses WITH FILTERS - Final path: $path');
       }
 
-      final response = await _analyticsRequest(path);
+      final response = await _analyticsRequest(
+        path,
+        bypassCache: bypassAnalyticsCache,
+      );
 
       if (response.statusCode != 200) {
         throw Exception('Ошибка ${response.statusCode}!');
@@ -2448,7 +2463,8 @@ class ApiService {
       //debugPrint('ApiService: getLeadNotes - Generated path: $path');
     }
 
-    final response = await _analyticsRequest(path);
+    // Для заметок лида нужен актуальный ответ, без analytics-cache.
+    final response = await _getRequest(path);
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
@@ -2600,7 +2616,8 @@ class ApiService {
       //debugPrint('ApiService: getLeadDeals - Generated path: $path');
     }
 
-    final response = await _analyticsRequest(path);
+    // Для списка сделок лида нужен актуальный ответ, без analytics-cache.
+    final response = await _getRequest(path);
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
@@ -3265,10 +3282,25 @@ class ApiService {
     final response = await _deleteRequest(path);
 
     if (response.statusCode == 200) {
-      return {'result': 'Success'};
-    } else {
-      throw Exception('Failed to delete lead!');
+      return {'success': true, 'result': 'Success'};
     }
+
+    String message = 'error_delete_lead';
+    try {
+      final decoded = json.decode(response.body);
+      if (decoded is Map<String, dynamic> &&
+          decoded['message'] is String &&
+          (decoded['message'] as String).trim().isNotEmpty) {
+        message = decoded['message'] as String;
+      }
+    } catch (_) {}
+
+    return {
+      'success': false,
+      'result': 'Error',
+      'message': message,
+      'status_code': response.statusCode,
+    };
   }
 
 // Метод для Получения Сделки в Окно Лида

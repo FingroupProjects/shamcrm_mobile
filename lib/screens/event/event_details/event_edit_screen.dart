@@ -1,6 +1,5 @@
 import 'dart:io';
 
-import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/event/event_bloc.dart';
 import 'package:crm_task_manager/bloc/event/event_event.dart';
 import 'package:crm_task_manager/bloc/event/event_state.dart';
@@ -17,7 +16,6 @@ import 'package:crm_task_manager/models/event_by_Id_model.dart';
 import 'package:crm_task_manager/screens/event/event_details/managers_event.dart';
 import 'package:crm_task_manager/screens/event/event_details/notice_subject_list.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
@@ -50,7 +48,6 @@ class _NoticeEditScreenState extends State<NoticeEditScreen> {
   List<String> fileSizes = [];
   List<NoticeFiles> existingFiles = []; // Для хранения файлов с сервера
   List<String> newFiles = []; // Новый список для хранения путей к новым файлам
-  final ApiService _apiService = ApiService(); // Экземпляр ApiService
 
 
   @override
@@ -279,11 +276,15 @@ class _NoticeEditScreenState extends State<NoticeEditScreen> {
     );
   }
 Future<void> _pickFile() async {
-  // Вычисляем текущий общий размер файлов
-  double totalSize = selectedFiles.fold<double>(
-    0.0,
-    (sum, file) => sum + File(file).lengthSync() / (1024 * 1024),
-  );
+  // Для лимита учитываем только новые локальные файлы
+  double totalSize = 0.0;
+  for (final filePath in newFiles) {
+    try {
+      totalSize += File(filePath).lengthSync() / (1024 * 1024);
+    } catch (_) {
+      // Игнорируем недоступные пути
+    }
+  }
 
   // Показываем диалог выбора типа файла
   final List<PickedFileInfo>? pickedFiles = await FilePickerDialog.show(
@@ -304,6 +305,7 @@ Future<void> _pickFile() async {
     setState(() {
       for (var file in pickedFiles) {
         selectedFiles.add(file.path);
+        newFiles.add(file.path);
         fileNames.add(file.name);
         fileSizes.add(file.sizeKB);
       }
@@ -394,10 +396,13 @@ Widget _buildFileSelection() {
                     top: -6,
                     child: GestureDetector(
                       onTap: () {
+                        final removedPath = selectedFiles[index];
                         setState(() {
                           selectedFiles.removeAt(index);
                           fileNames.removeAt(index);
                           fileSizes.removeAt(index);
+                          newFiles.remove(removedPath);
+                          existingFiles.removeWhere((file) => file.path == removedPath);
                         });
                       },
                       child: Container(

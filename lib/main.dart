@@ -154,6 +154,8 @@ final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
 
 void main() async {
   try {
+    WidgetsFlutterBinding.ensureInitialized();
+
     WidgetService.initialize();
     await NativeInternetMonitor().initialize();
 
@@ -217,6 +219,8 @@ void main() async {
       sessionValid: sessionValidation.isValid,
     ));
   } catch (e, stackTrace) {
+    debugPrint('main: startup error: $e');
+    debugPrint('main: startup stackTrace: $stackTrace');
     runApp(ErrorApp(error: e.toString()));
   }
 }
