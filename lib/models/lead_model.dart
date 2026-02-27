@@ -21,6 +21,7 @@ class Lead {
   final List<Map<String, dynamic>>? chats;
   final List<MainPageDeal>? mainPageDeals; // Новое поле
   final num? debt;
+  final LeadCurrency? currency;
 
   Lead({
     required this.id,
@@ -41,6 +42,7 @@ class Lead {
     this.chats,
     this.mainPageDeals,
     this.debt,
+    this.currency,
   });
 
   factory Lead.fromJson(Map<String, dynamic> json, int leadStatusId) {
@@ -84,6 +86,9 @@ class Lead {
               .toList()
           : null,
       debt: json['debt'] is num ? json['debt'] : null,
+      currency: json['currency'] != null
+          ? LeadCurrency.fromJson(json['currency'])
+          : null,
     );
   }
 
@@ -107,6 +112,51 @@ class Lead {
       'chats': chats,
       'main_page_deals': mainPageDeals?.map((deal) => deal.toJson()).toList(),
       'debt': debt,
+      'currency': currency?.toJson(),
+    };
+  }
+}
+
+class LeadCurrency {
+  final int? id;
+  final String? name;
+  final int? digitalCode;
+  final String? symbolCode;
+  final int? organizationId;
+  final String? createdAt;
+  final String? updatedAt;
+
+  LeadCurrency({
+    this.id,
+    this.name,
+    this.digitalCode,
+    this.symbolCode,
+    this.organizationId,
+    this.createdAt,
+    this.updatedAt,
+  });
+
+  factory LeadCurrency.fromJson(Map<String, dynamic> json) {
+    return LeadCurrency(
+      id: json['id'],
+      name: json['name']?.toString(),
+      digitalCode: json['digital_code'],
+      symbolCode: json['symbol_code']?.toString(),
+      organizationId: json['organization_id'],
+      createdAt: json['created_at']?.toString(),
+      updatedAt: json['updated_at']?.toString(),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'digital_code': digitalCode,
+      'symbol_code': symbolCode,
+      'organization_id': organizationId,
+      'created_at': createdAt,
+      'updated_at': updatedAt,
     };
   }
 }

@@ -154,6 +154,7 @@ class PermissionsBloc extends Bloc<PermissionsEvent, PermissionsState> {
       if (localizationResponse?.result != null) {
         final newLanguage = localizationResponse!.result!.language ?? 'ru';
         final newPhoneCode = localizationResponse.result!.countryPhoneCodes ?? '+992';
+        final newCurrency = localizationResponse.result!.currency;
         
         // Получаем текущие сохранённые значения
         final currentLanguage = await LocalizationService.getLanguage();
@@ -168,6 +169,7 @@ class PermissionsBloc extends Bloc<PermissionsEvent, PermissionsState> {
         await LocalizationService.applyLocalizationSettings(
           language: newLanguage,
           phoneCode: newPhoneCode,
+          currency: newCurrency,
         );
         
         if (kDebugMode) {
