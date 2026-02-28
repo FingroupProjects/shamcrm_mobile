@@ -56,7 +56,8 @@ class _ClientReturnDocumentDetailsScreenState
   // ✅ НОВОЕ: Флаг разрешения на проведение документа
   bool _hasApprovePermission = false;
 
-  final Map<int, String> _unitMap = { // Оставляем, но используем availableUnits ниже
+  final Map<int, String> _unitMap = {
+    // Оставляем, но используем availableUnits ниже
     23: 'шт',
   };
 
@@ -72,7 +73,8 @@ class _ClientReturnDocumentDetailsScreenState
   // ✅ НОВОЕ: Проверка разрешения на проведение документа
   Future<void> _checkApprovePermission() async {
     try {
-      final hasPermission = await _apiService.hasPermission('client_return_document.approve');
+      final hasPermission =
+          await _apiService.hasPermission('client_return_document.approve');
       if (mounted) {
         setState(() {
           _hasApprovePermission = hasPermission;
@@ -126,8 +128,8 @@ class _ClientReturnDocumentDetailsScreenState
       if (e is ApiException && e.statusCode == 409) {
         final localizations = AppLocalizations.of(context)!;
         showSimpleErrorDialog(
-          context, 
-          localizations.translate('error') ?? 'Ошибка', 
+          context,
+          localizations.translate('error') ?? 'Ошибка',
           e.message,
           errorDialogEnum: ErrorDialogEnum.clientReturnDelete,
         );
@@ -145,48 +147,81 @@ class _ClientReturnDocumentDetailsScreenState
 
     details = [
       {
-        'label': '${AppLocalizations.of(context)!.translate('document_number') ?? 'Номер документа'}:',
+        'label':
+            '${AppLocalizations.of(context)!.translate('document_number') ?? 'Номер документа'}:',
         'value': document.docNumber ?? '',
       },
       {
         'label': '${AppLocalizations.of(context)!.translate('date') ?? 'Дата'}',
-        'value': document.date != null ? DateFormat('dd.MM.yyyy HH:mm').format(document.date!) : '',
+        'value': document.date != null
+            ? DateFormat('dd.MM.yyyy HH:mm').format(document.date!)
+            : '',
       },
       {
-        'label': '${AppLocalizations.of(context)!.translate('storage') ?? 'Склад'}:',
+        'label':
+            '${AppLocalizations.of(context)!.translate('storage') ?? 'Склад'}:',
         'value': document.storage?.name ?? '',
       },
       {
-        'label': '${AppLocalizations.of(context)!.translate('client') ?? 'Клиент'}',
+        'label':
+            '${AppLocalizations.of(context)!.translate('client') ?? 'Клиент'}',
         'value': document.model?.name ?? '',
       },
       {
-        'label': '${AppLocalizations.of(context)!.translate('client_phone') ?? 'Телефон клиента'}',
+        'label':
+            '${AppLocalizations.of(context)!.translate('client_phone') ?? 'Телефон клиента'}',
         'value': document.model?.phone ?? '',
       },
       {
-        'label': '${AppLocalizations.of(context)!.translate('client_inn') ?? 'ИНН клиента'}:',
+        'label':
+            '${AppLocalizations.of(context)!.translate('client_inn') ?? 'ИНН клиента'}:',
         'value': document.model?.inn?.toString() ?? '',
       },
       {
-        'label': AppLocalizations.of(context)!.translate('comment') ?? 'Комментарий',
+        'label':
+            AppLocalizations.of(context)!.translate('comment') ?? 'Комментарий',
         'value': document.comment ?? '',
       },
+      if (document.exchangeRate?.value != null &&
+          document.exchangeRate!.value!.isNotEmpty)
+        {
+          'label':
+              '${AppLocalizations.of(context)!.translate('exchange_rate') ?? 'Курс валюты'}:',
+          'value': document.exchangeRate!.value!,
+        },
+      if (document.exchangeRate?.value != null &&
+          document.exchangeRate!.value!.isNotEmpty)
+        {
+          'label':
+              '${AppLocalizations.of(context)!.translate('total_by_currency') ?? 'Итого по валюте'}${(document.currency?.name ?? '').isNotEmpty ? ': ${document.currency!.name}' : ''}:',
+          'value': parseNumberToString(
+            (document.totalSum *
+                    (double.tryParse(document.exchangeRate!.value!
+                            .replaceAll(',', '.')) ??
+                        0))
+                .toStringAsFixed(2),
+          ),
+        },
       {
-        'label': '${AppLocalizations.of(context)!.translate('total_quantity') ?? 'Общее количество'}:',
+        'label':
+            '${AppLocalizations.of(context)!.translate('total_quantity') ?? 'Общее количество'}:',
         'value': document.totalQuantity.toString(),
       },
       {
-        'label': '${AppLocalizations.of(context)!.translate('total_sum') ?? 'Общая сумма'}:',
-        'value': '${parseNumberToString(document.totalSum.toStringAsFixed(2))} ${document.currency?.symbolCode ?? ''}',
+        'label':
+            '${AppLocalizations.of(context)!.translate('total_sum') ?? 'Общая сумма'}:',
+        'value':
+            '${parseNumberToString(document.totalSum.toStringAsFixed(2))} ${document.currency?.symbolCode ?? ''}',
       },
       {
-        'label': '${AppLocalizations.of(context)!.translate('status') ?? 'Статус'}:',
+        'label':
+            '${AppLocalizations.of(context)!.translate('status') ?? 'Статус'}:',
         'value': _getLocalizedStatus(document),
       },
       if (document.deletedAt != null)
         {
-          'label': '${AppLocalizations.of(context)!.translate('deleted_at') ?? 'Дата удаления'}:',
+          'label':
+              '${AppLocalizations.of(context)!.translate('deleted_at') ?? 'Дата удаления'}:',
           'value': DateFormat('dd.MM.yyyy HH:mm').format(document.deletedAt!),
         },
     ];
@@ -196,7 +231,8 @@ class _ClientReturnDocumentDetailsScreenState
     final localizations = AppLocalizations.of(context)!;
 
     if (document.deletedAt != null) {
-      return localizations.translate('deleted') ?? 'Удален'; // ИЗМЕНЕНО: Унифицировано
+      return localizations.translate('deleted') ??
+          'Удален'; // ИЗМЕНЕНО: Унифицировано
     }
 
     if (document.approved == 1) {
@@ -253,14 +289,16 @@ class _ClientReturnDocumentDetailsScreenState
         _documentUpdated = true;
       });
       _updateStatusOnly();
-      context.read<ClientReturnBloc>().add(const FetchClientReturns(forceRefresh: true));
+      context
+          .read<ClientReturnBloc>()
+          .add(const FetchClientReturns(forceRefresh: true));
       _showSnackBar('Документ проведен', true);
     } catch (e) {
       if (e is ApiException && e.statusCode == 409) {
         final localizations = AppLocalizations.of(context)!;
         showSimpleErrorDialog(
-          context, 
-          localizations.translate('error') ?? 'Ошибка', 
+          context,
+          localizations.translate('error') ?? 'Ошибка',
           e.message,
           errorDialogEnum: ErrorDialogEnum.clientReturnApprove,
         );
@@ -291,14 +329,16 @@ class _ClientReturnDocumentDetailsScreenState
         _documentUpdated = true;
       });
       _updateStatusOnly();
-      context.read<ClientReturnBloc>().add(const FetchClientReturns(forceRefresh: true));
+      context
+          .read<ClientReturnBloc>()
+          .add(const FetchClientReturns(forceRefresh: true));
       _showSnackBar('Проведение документа отменено', true);
     } catch (e) {
       if (e is ApiException && e.statusCode == 409) {
         final localizations = AppLocalizations.of(context)!;
         showSimpleErrorDialog(
-          context, 
-          localizations.translate('error') ?? 'Ошибка', 
+          context,
+          localizations.translate('error') ?? 'Ошибка',
           e.message,
           errorDialogEnum: ErrorDialogEnum.clientReturnUnapprove,
         );
@@ -331,7 +371,9 @@ class _ClientReturnDocumentDetailsScreenState
       });
 
       _showSnackBar('Документ восстановлен', true);
-      context.read<ClientReturnBloc>().add(const FetchClientReturns(forceRefresh: true));
+      context
+          .read<ClientReturnBloc>()
+          .add(const FetchClientReturns(forceRefresh: true));
     } catch (e) {
       if (e is ApiException && e.statusCode == 409) {
         final localizations = AppLocalizations.of(context)!;
@@ -379,7 +421,8 @@ class _ClientReturnDocumentDetailsScreenState
     if (currentDocument!.deletedAt != null) {
       if (!widget.hasUpdatePermission) return const SizedBox.shrink();
       return StyledActionButton(
-        text: AppLocalizations.of(context)!.translate('restore_document') ?? 'Восстановить',
+        text: AppLocalizations.of(context)!.translate('restore_document') ??
+            'Восстановить',
         icon: Icons.restore,
         color: const Color(0xFF2196F3),
         onPressed: _restoreDocument,
@@ -398,7 +441,8 @@ class _ClientReturnDocumentDetailsScreenState
 
     if (currentDocument!.approved == 0) {
       return StyledActionButton(
-        text: AppLocalizations.of(context)!.translate('approve_document') ?? 'Провести',
+        text: AppLocalizations.of(context)!.translate('approve_document') ??
+            'Провести',
         icon: Icons.check_circle_outline,
         color: const Color(0xFF4CAF50),
         onPressed: _approveDocument,
@@ -406,7 +450,8 @@ class _ClientReturnDocumentDetailsScreenState
     }
 
     return StyledActionButton(
-      text: AppLocalizations.of(context)!.translate('unapprove_document') ?? 'Отменить проведение',
+      text: AppLocalizations.of(context)!.translate('unapprove_document') ??
+          'Отменить проведение',
       icon: Icons.cancel_outlined,
       color: const Color(0xFFFFA500),
       onPressed: _unApproveDocument,
@@ -456,7 +501,8 @@ class _ClientReturnDocumentDetailsScreenState
               Padding(
                 padding: const EdgeInsets.all(16),
                 child: StyledActionButton(
-                  text: AppLocalizations.of(context)!.translate('close') ?? 'Закрыть',
+                  text: AppLocalizations.of(context)!.translate('close') ??
+                      'Закрыть',
                   icon: Icons.close,
                   color: const Color(0xff1E2E52),
                   onPressed: () => Navigator.pop(context),
@@ -490,7 +536,8 @@ class _ClientReturnDocumentDetailsScreenState
             : currentDocument == null
                 ? Center(
                     child: Text(
-                      AppLocalizations.of(context)!.translate('document_data_unavailable') ??
+                      AppLocalizations.of(context)!
+                              .translate('document_data_unavailable') ??
                           'Данные документа недоступны',
                       style: const TextStyle(
                         fontSize: 18,
@@ -501,7 +548,8 @@ class _ClientReturnDocumentDetailsScreenState
                     ),
                   )
                 : Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16.0, vertical: 8.0),
                     child: ListView(
                       children: [
                         Padding(
@@ -524,8 +572,8 @@ class _ClientReturnDocumentDetailsScreenState
 
   AppBar _buildAppBar(BuildContext context) {
     // ИЗМЕНЕНО: showActions с правами
-    final showActions = currentDocument?.deletedAt == null && 
-                        (widget.hasUpdatePermission || widget.hasDeletePermission);
+    final showActions = currentDocument?.deletedAt == null &&
+        (widget.hasUpdatePermission || widget.hasDeletePermission);
 
     return AppBar(
       backgroundColor: Colors.white,
@@ -579,7 +627,8 @@ class _ClientReturnDocumentDetailsScreenState
                         final result = await Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => EditClientReturnDocumentScreen(
+                            builder: (context) =>
+                                EditClientReturnDocumentScreen(
                               document: currentDocument!,
                             ),
                           ),
@@ -609,7 +658,8 @@ class _ClientReturnDocumentDetailsScreenState
                           builder: (BuildContext context) {
                             return BlocProvider.value(
                               value: BlocProvider.of<ClientReturnBloc>(context),
-                              child: ClientReturnDeleteDocumentDialog(documentId: widget.documentId),
+                              child: ClientReturnDeleteDocumentDialog(
+                                  documentId: widget.documentId),
                             );
                           },
                         );
@@ -641,7 +691,8 @@ class _ClientReturnDocumentDetailsScreenState
 
   Widget _buildDetailItem(String label, String value) {
     // Обработка клиента с навигацией на экран лида
-    if (label == AppLocalizations.of(context)!.translate('client') && value.isNotEmpty) {
+    if (label == AppLocalizations.of(context)!.translate('client') &&
+        value.isNotEmpty) {
       return GestureDetector(
         onTap: () {
           if (currentDocument?.model?.id != null) {
@@ -704,7 +755,8 @@ class _ClientReturnDocumentDetailsScreenState
                   fontFamily: 'Gilroy',
                   fontWeight: FontWeight.w500,
                   color: const Color(0xff1E2E52),
-                  decoration: value.isNotEmpty ? TextDecoration.underline : null,
+                  decoration:
+                      value.isNotEmpty ? TextDecoration.underline : null,
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -728,7 +780,8 @@ class _ClientReturnDocumentDetailsScreenState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildTitleRow(AppLocalizations.of(context)!.translate('goods') ?? 'Товары'),
+        _buildTitleRow(
+            AppLocalizations.of(context)!.translate('goods') ?? 'Товары'),
         const SizedBox(height: 8),
         if (goods.isEmpty)
           Padding(
@@ -739,7 +792,8 @@ class _ClientReturnDocumentDetailsScreenState
                 child: Padding(
                   padding: const EdgeInsets.all(16),
                   child: Text(
-                    AppLocalizations.of(context)!.translate('empty') ?? 'Нет товаров',
+                    AppLocalizations.of(context)!.translate('empty') ??
+                        'Нет товаров',
                     style: const TextStyle(
                       fontSize: 16,
                       fontFamily: 'Gilroy',
@@ -767,7 +821,8 @@ class _ClientReturnDocumentDetailsScreenState
 
   Widget _buildGoodsItem(DocumentGood good) {
     final selectedUnit = good.selectedUnit;
-    final amount = 1; // USE 1 for amount; DO NOT USE good.selectedUnit.amount ?? 1;
+    final amount =
+        1; // USE 1 for amount; DO NOT USE good.selectedUnit.amount ?? 1;
     final unitShortName = selectedUnit.shortName ?? selectedUnit.name ?? '';
 
     debugPrint("selectedUnit: $selectedUnit");
@@ -781,7 +836,8 @@ class _ClientReturnDocumentDetailsScreenState
         child: Container(
           decoration: TaskCardStyles.taskCardDecoration,
           child: Padding(
-            padding: const EdgeInsets.only(left: 16, right: 16, top: 12, bottom: 12),
+            padding:
+                const EdgeInsets.only(left: 16, right: 16, top: 12, bottom: 12),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -807,7 +863,9 @@ class _ClientReturnDocumentDetailsScreenState
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    AppLocalizations.of(context)!.translate('unit') ?? 'Ед.',
+                                    AppLocalizations.of(context)!
+                                            .translate('unit') ??
+                                        'Ед.',
                                     style: const TextStyle(
                                       fontSize: 10,
                                       fontFamily: 'Gilroy',
@@ -834,7 +892,9 @@ class _ClientReturnDocumentDetailsScreenState
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  AppLocalizations.of(context)!.translate('quantity') ?? 'Кол-во',
+                                  AppLocalizations.of(context)!
+                                          .translate('quantity') ??
+                                      'Кол-во',
                                   style: const TextStyle(
                                     fontSize: 10,
                                     fontFamily: 'Gilroy',
@@ -861,7 +921,9 @@ class _ClientReturnDocumentDetailsScreenState
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  AppLocalizations.of(context)!.translate('price') ?? 'Цена',
+                                  AppLocalizations.of(context)!
+                                          .translate('price') ??
+                                      'Цена',
                                   style: const TextStyle(
                                     fontSize: 10,
                                     fontFamily: 'Gilroy',
@@ -871,7 +933,11 @@ class _ClientReturnDocumentDetailsScreenState
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
-                                  parseNumberToString((amount * (double.tryParse(good.price ?? '0.00') ?? 0.00)).toStringAsFixed(2)),
+                                  parseNumberToString((amount *
+                                          (double.tryParse(
+                                                  good.price ?? '0.00') ??
+                                              0.00))
+                                      .toStringAsFixed(2)),
                                   style: const TextStyle(
                                     fontSize: 12,
                                     fontFamily: 'Gilroy',
@@ -887,7 +953,8 @@ class _ClientReturnDocumentDetailsScreenState
                       ),
                       const SizedBox(height: 8),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 6),
                         decoration: BoxDecoration(
                           color: const Color(0xFFF4F7FD),
                           borderRadius: BorderRadius.circular(6),
@@ -896,7 +963,9 @@ class _ClientReturnDocumentDetailsScreenState
                           mainAxisAlignment: MainAxisAlignment.start,
                           children: [
                             Text(
-                              AppLocalizations.of(context)!.translate('total') ?? 'Итого',
+                              AppLocalizations.of(context)!
+                                      .translate('total') ??
+                                  'Итого',
                               style: const TextStyle(
                                 fontSize: 12,
                                 fontFamily: 'Gilroy',
@@ -928,9 +997,11 @@ class _ClientReturnDocumentDetailsScreenState
     );
   }
 
-
   Widget _buildImageWidget(DocumentGood good) {
-    if (baseUrl == null || good.good == null || good.good!.files == null || good.good!.files!.isEmpty) {
+    if (baseUrl == null ||
+        good.good == null ||
+        good.good!.files == null ||
+        good.good!.files!.isEmpty) {
       return _buildPlaceholderImage();
     }
 
@@ -961,7 +1032,8 @@ class _ClientReturnDocumentDetailsScreenState
         borderRadius: BorderRadius.circular(8),
       ),
       child: const Center(
-        child: Icon(Icons.image_not_supported, size: 40, color: Color(0xff99A4BA)),
+        child:
+            Icon(Icons.image_not_supported, size: 40, color: Color(0xff99A4BA)),
       ),
     );
   }

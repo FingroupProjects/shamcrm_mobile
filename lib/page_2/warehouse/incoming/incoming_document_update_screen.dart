@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/incoming_bloc.dart';
+import 'package:crm_task_manager/api/service/localization_service.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/incoming_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/incoming_state.dart';
 import 'package:crm_task_manager/custom_widget/compact_textfield.dart';
@@ -9,6 +10,7 @@ import 'package:crm_task_manager/custom_widget/price_input_formatter.dart';
 import 'package:crm_task_manager/custom_widget/quantity_input_formatter.dart';
 import 'package:crm_task_manager/models/page_2/goods_model.dart';
 import 'package:crm_task_manager/models/page_2/incoming_document_model.dart';
+import 'package:crm_task_manager/models/page_2/supplier_model.dart';
 import 'package:crm_task_manager/page_2/warehouse/incoming/variant_selection_bottom_sheet.dart';
 import 'package:crm_task_manager/page_2/warehouse/incoming/storage_widget.dart';
 import 'package:crm_task_manager/page_2/warehouse/incoming/supplier_widget.dart';
@@ -40,6 +42,7 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _dateController = TextEditingController();
   final TextEditingController _commentController = TextEditingController();
+  final TextEditingController _exchangeRateController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   String? _selectedStorage;
   String? _selectedSupplier;
@@ -63,12 +66,17 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
   final Map<int, bool> _collapsedItems = {};
 
   late TabController _tabController;
+  int? _organizationCurrencyId;
+  int? _selectedSupplierCurrencyId;
+  String? _selectedSupplierCurrencyName;
+  String? _exchangeRateErrorText;
 
   @override
   void initState() {
     super.initState();
     _initializeFormData();
     _tabController = TabController(length: 2, vsync: this);
+    _loadOrganizationCurrency();
 
     // ✅ Add tab listener to validate required fields before switching to Products tab
     _tabController.addListener(() {
@@ -93,14 +101,49 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
     });
   }
 
+  Future<void> _loadOrganizationCurrency() async {
+    final currencyId = await LocalizationService.getCurrencyId();
+    if (!mounted) return;
+    setState(() {
+      _organizationCurrencyId = currencyId;
+    });
+  }
+
+  bool get _isExchangeRateRequired {
+    if (_organizationCurrencyId == null ||
+        _selectedSupplierCurrencyId == null) {
+      return false;
+    }
+    return _organizationCurrencyId != _selectedSupplierCurrencyId;
+  }
+
+  double? get _exchangeRateValue =>
+      double.tryParse(_exchangeRateController.text.replaceAll(',', '.'));
+
+  double get _totalByCurrency {
+    final rate = _exchangeRateValue ?? 0;
+    return _totalAmount * rate;
+  }
+
+  String _totalByCurrencyLabel(AppLocalizations localizations) {
+    final base =
+        localizations.translate('total_by_currency') ?? 'Итого по валюте';
+    final currencyName = _selectedSupplierCurrencyName;
+    if (currencyName == null || currencyName.isEmpty) return base;
+    return '$base: $currencyName';
+  }
+
   void _initializeFormData() {
     _dateController.text = widget.document.date != null
         ? DateFormat('dd/MM/yyyy HH:mm').format(widget.document.date!)
         : DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now());
 
     _commentController.text = widget.document.comment ?? '';
+    _exchangeRateController.text = widget.document.exchangeRate?.value ?? '';
     _selectedStorage = widget.document.storage?.id.toString();
     _selectedSupplier = widget.document.model?.id.toString();
+    _selectedSupplierCurrencyId = widget.document.model?.currencyId;
+    _selectedSupplierCurrencyName = widget.document.currency?.name;
 
     // Преобразуем существующие товары
     if (widget.document.documentGoods != null) {
@@ -456,6 +499,32 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
       return;
     }
 
+    if (_isExchangeRateRequired) {
+      final rate = _exchangeRateValue;
+      if (rate == null || rate <= 0) {
+        setState(() {
+          _exchangeRateErrorText = AppLocalizations.of(context)!
+                  .translate('field_required_project') ??
+              'Заполните курс валюты';
+        });
+        if (_tabController.index != 0) {
+          _tabController.animateTo(0);
+        }
+        _showSnackBar(
+          AppLocalizations.of(context)!.translate('fill_valid_exchange_rate') ??
+              'Заполните корректный курс валюты',
+          false,
+        );
+        return;
+      }
+    }
+
+    if (_exchangeRateErrorText != null) {
+      setState(() {
+        _exchangeRateErrorText = null;
+      });
+    }
+
     // Валидация всех товаров
     bool hasErrors = false;
     setState(() {
@@ -524,6 +593,7 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
         }).toList(),
         organizationId: widget.document.organizationId ?? 1,
         salesFunnelId: 1,
+        exchangeRate: _isExchangeRateRequired ? _exchangeRateValue : null,
       ));
     } catch (e) {
       setState(() => _isLoading = false);
@@ -648,15 +718,38 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
           const SizedBox(height: 16),
           SupplierWidget(
             selectedSupplier: _selectedSupplier,
-            onChanged: (value) => setState(() => _selectedSupplier = value),
+            onChanged: (value) => setState(() {
+              _selectedSupplier = value;
+              _exchangeRateErrorText = null;
+              if (!_isExchangeRateRequired) {
+                _exchangeRateController.clear();
+              }
+            }),
+            onChangedSupplier: (Supplier? supplier) => setState(() {
+              _selectedSupplierCurrencyId =
+                  supplier?.currency?.id ?? supplier?.currencyId;
+              _selectedSupplierCurrencyName = supplier?.currency?.name;
+              _exchangeRateErrorText = null;
+              if (!_isExchangeRateRequired) {
+                _exchangeRateController.clear();
+              }
+            }),
           ),
           const SizedBox(height: 16),
           StorageWidget(
             selectedStorage: _selectedStorage,
             onChanged: (value) => setState(() => _selectedStorage = value),
           ),
+          if (_isExchangeRateRequired) ...[
+            const SizedBox(height: 16),
+            _buildExchangeRateField(localizations),
+          ],
           const SizedBox(height: 16),
           _buildCommentField(localizations),
+          if (_isExchangeRateRequired) ...[
+            const SizedBox(height: 16),
+            _buildTotalByCurrencyField(localizations),
+          ],
           const SizedBox(height: 24),
           _buildActionButtons(localizations),
           const SizedBox(height: 16),
@@ -849,6 +942,61 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
           localizations.translate('enter_comment') ?? 'Введите примечание',
       maxLines: 3,
       keyboardType: TextInputType.multiline,
+    );
+  }
+
+  Widget _buildExchangeRateField(AppLocalizations localizations) {
+    return CustomTextField(
+      controller: _exchangeRateController,
+      label: localizations.translate('exchange_rate') ?? 'Курс валюты',
+      hintText: localizations.translate('enter_value') ?? 'Введите курс',
+      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+      inputFormatters: [
+        PriceInputFormatter(),
+      ],
+      errorText: _exchangeRateErrorText,
+      onChanged: (_) {
+        if (_exchangeRateErrorText != null) {
+          setState(() => _exchangeRateErrorText = null);
+        } else {
+          setState(() {});
+        }
+      },
+    );
+  }
+
+  Widget _buildTotalByCurrencyField(AppLocalizations localizations) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          _totalByCurrencyLabel(localizations),
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            fontFamily: 'Gilroy',
+            color: Color(0xff1E2E52),
+          ),
+        ),
+        const SizedBox(height: 4),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+          decoration: BoxDecoration(
+            color: const Color(0xffF4F7FD),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Text(
+            parseNumberToString(_totalByCurrency.toStringAsFixed(2)),
+            style: const TextStyle(
+              fontFamily: 'Gilroy',
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+              color: Color(0xff1E2E52),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -1186,6 +1334,7 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
   void dispose() {
     _dateController.dispose();
     _commentController.dispose();
+    _exchangeRateController.dispose();
     _scrollController.dispose();
     _tabController.dispose();
 

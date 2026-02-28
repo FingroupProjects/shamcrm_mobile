@@ -27,7 +27,8 @@ class DeleteClientReturnDocument extends ClientReturnEvent {
   final AppLocalizations localizations;
   final bool shouldReload;
 
-  const DeleteClientReturnDocument(this.documentId, this.localizations, {this.shouldReload = true});
+  const DeleteClientReturnDocument(this.documentId, this.localizations,
+      {this.shouldReload = true});
 
   @override
   List<Object> get props => [documentId, localizations, shouldReload];
@@ -42,6 +43,7 @@ class CreateClientReturnDocument extends ClientReturnEvent {
   final int organizationId;
   final int salesFunnelId;
   final bool approve;
+  final double? exchangeRate;
 
   const CreateClientReturnDocument({
     required this.date,
@@ -52,6 +54,7 @@ class CreateClientReturnDocument extends ClientReturnEvent {
     required this.organizationId,
     required this.salesFunnelId,
     this.approve = false,
+    this.exchangeRate,
   });
 
   @override
@@ -64,6 +67,7 @@ class CreateClientReturnDocument extends ClientReturnEvent {
         organizationId,
         salesFunnelId,
         approve,
+        exchangeRate ?? -1,
       ];
 }
 
@@ -76,6 +80,7 @@ class UpdateClientReturnDocument extends ClientReturnEvent {
   final List<Map<String, dynamic>> documentGoods;
   final int organizationId;
   final int salesFunnelId;
+  final double? exchangeRate;
 
   const UpdateClientReturnDocument({
     required this.documentId,
@@ -86,6 +91,7 @@ class UpdateClientReturnDocument extends ClientReturnEvent {
     required this.documentGoods,
     required this.organizationId,
     required this.salesFunnelId,
+    this.exchangeRate,
   });
 
   @override
@@ -97,7 +103,8 @@ class UpdateClientReturnDocument extends ClientReturnEvent {
         counterpartyId,
         documentGoods,
         organizationId,
-        salesFunnelId
+        salesFunnelId,
+        exchangeRate ?? -1,
       ];
 }
 

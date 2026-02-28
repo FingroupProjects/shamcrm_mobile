@@ -25,21 +25,21 @@ class _HttpRequestDetailScreenState extends State<HttpRequestDetailScreen>
       MethodChannel('com.softtech.crm_task_manager/widget');
   late TabController _tabController;
   final ThemeController _themeController = ThemeController();
-  int _currentTab = 0;
+  final TextEditingController _contentSearchController =
+      TextEditingController();
+  String _contentSearchQuery = '';
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 4, vsync: this);
-    _tabController.addListener(() {
-      setState(() => _currentTab = _tabController.index);
-    });
     _themeController.addListener(() => setState(() {}));
   }
 
   @override
   void dispose() {
     _tabController.dispose();
+    _contentSearchController.dispose();
     super.dispose();
   }
 
@@ -72,6 +72,7 @@ class _HttpRequestDetailScreenState extends State<HttpRequestDetailScreen>
         slivers: [
           _buildAppBar(isDark, surfaceColor, textColor),
           _buildTabBar(isDark),
+          _buildContentSearch(isDark),
           SliverFillRemaining(
             child: TabBarView(
               controller: _tabController,
@@ -84,6 +85,61 @@ class _HttpRequestDetailScreenState extends State<HttpRequestDetailScreen>
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildContentSearch(bool isDark) {
+    final textColor =
+        isDark ? DarkThemeColors.onSurface : LightThemeColors.onSurface;
+    final textSecondary = isDark
+        ? DarkThemeColors.onSurfaceVariant
+        : LightThemeColors.onSurfaceVariant;
+    return SliverToBoxAdapter(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 6),
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(14),
+            color: isDark
+                ? DarkThemeColors.surface.withOpacity(0.6)
+                : LightThemeColors.surface,
+            border: Border.all(
+              color:
+                  isDark ? Colors.white.withOpacity(0.1) : LightThemeColors.border,
+            ),
+          ),
+          child: TextField(
+            controller: _contentSearchController,
+            style: TextStyle(color: textColor),
+            decoration: InputDecoration(
+              hintText: 'Поиск в Request/Response...',
+              hintStyle: TextStyle(color: textSecondary.withOpacity(0.7)),
+              prefixIcon: Icon(
+                Icons.search_rounded,
+                color: textSecondary,
+              ),
+              suffixIcon: _contentSearchQuery.isEmpty
+                  ? null
+                  : IconButton(
+                      onPressed: () {
+                        _contentSearchController.clear();
+                        setState(() => _contentSearchQuery = '');
+                      },
+                      icon: Icon(
+                        Icons.close_rounded,
+                        color: textSecondary,
+                      ),
+                    ),
+              border: InputBorder.none,
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+            ),
+            onChanged: (value) {
+              setState(() => _contentSearchQuery = value.trim());
+            },
+          ),
+        ),
       ),
     );
   }
@@ -359,11 +415,19 @@ class _HttpRequestDetailScreenState extends State<HttpRequestDetailScreen>
           const SizedBox(height: 24),
           _buildSectionHeader(isDark, 'Query Params', Icons.tune_rounded),
           const SizedBox(height: 12),
-          _buildModernHeadersCard(isDark, queryParams),
+          _buildModernHeadersCard(
+            isDark,
+            queryParams,
+            searchQuery: _contentSearchQuery,
+          ),
           const SizedBox(height: 24),
           _buildSectionHeader(isDark, 'Headers', Icons.label_outline_rounded),
           const SizedBox(height: 12),
-          _buildModernHeadersCard(isDark, log.requestHeaders),
+          _buildModernHeadersCard(
+            isDark,
+            log.requestHeaders,
+            searchQuery: _contentSearchQuery,
+          ),
         ],
       ),
     );
@@ -380,7 +444,12 @@ class _HttpRequestDetailScreenState extends State<HttpRequestDetailScreen>
           _buildSectionHeader(
               isDark, 'Request Payload', Icons.description_outlined),
           const SizedBox(height: 12),
-          _buildModernBodyCard(isDark, payloadToShow, 'request'),
+          _buildModernBodyCard(
+            isDark,
+            payloadToShow,
+            'request',
+            searchQuery: _contentSearchQuery,
+          ),
         ],
       ),
     );
@@ -395,11 +464,20 @@ class _HttpRequestDetailScreenState extends State<HttpRequestDetailScreen>
         children: [
           _buildSectionHeader(isDark, 'Headers', Icons.label_outline_rounded),
           const SizedBox(height: 12),
-          _buildModernHeadersCard(isDark, log.responseHeaders),
+          _buildModernHeadersCard(
+            isDark,
+            log.responseHeaders,
+            searchQuery: _contentSearchQuery,
+          ),
           const SizedBox(height: 24),
           _buildSectionHeader(isDark, 'Body', Icons.description_outlined),
           const SizedBox(height: 12),
-          _buildModernBodyCard(isDark, log.responseBody, 'response'),
+          _buildModernBodyCard(
+            isDark,
+            log.responseBody,
+            'response',
+            searchQuery: _contentSearchQuery,
+          ),
         ],
       ),
     );
@@ -538,9 +616,26 @@ class _HttpRequestDetailScreenState extends State<HttpRequestDetailScreen>
     );
   }
 
-  Widget _buildModernHeadersCard(bool isDark, Map<String, String>? headers) {
+  Widget _buildModernHeadersCard(
+    bool isDark,
+    Map<String, String>? headers, {
+    String searchQuery = '',
+  }) {
     if (headers == null || headers.isEmpty) {
       return _buildEmptyCard(isDark, 'No headers available');
+    }
+
+    final query = searchQuery.toLowerCase();
+    final filteredEntries = query.isEmpty
+        ? headers.entries.toList()
+        : headers.entries
+            .where((entry) =>
+                entry.key.toLowerCase().contains(query) ||
+                entry.value.toLowerCase().contains(query))
+            .toList();
+
+    if (filteredEntries.isEmpty) {
+      return _buildEmptyCard(isDark, 'No matches in headers');
     }
 
     final textSecondary = isDark
@@ -587,7 +682,7 @@ class _HttpRequestDetailScreenState extends State<HttpRequestDetailScreen>
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
-                  '${headers.length} headers',
+                  '${filteredEntries.length} headers',
                   style: const TextStyle(
                     fontSize: 12,
                     color: Color(0xFF6366F1),
@@ -603,7 +698,7 @@ class _HttpRequestDetailScreenState extends State<HttpRequestDetailScreen>
                   color: textSecondary,
                 ),
                 onPressed: () => _copyToClipboard(
-                  headers.entries.map((e) => '${e.key}: ${e.value}').join('\n'),
+                  filteredEntries.map((e) => '${e.key}: ${e.value}').join('\n'),
                 ),
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(),
@@ -611,7 +706,7 @@ class _HttpRequestDetailScreenState extends State<HttpRequestDetailScreen>
             ],
           ),
           const SizedBox(height: 16),
-          ...headers.entries.map((entry) {
+          ...filteredEntries.map((entry) {
             return Container(
               margin: const EdgeInsets.only(bottom: 12),
               padding: const EdgeInsets.all(12),
@@ -663,7 +758,12 @@ class _HttpRequestDetailScreenState extends State<HttpRequestDetailScreen>
     );
   }
 
-  Widget _buildModernBodyCard(bool isDark, String? body, String type) {
+  Widget _buildModernBodyCard(
+    bool isDark,
+    String? body,
+    String type, {
+    String searchQuery = '',
+  }) {
     if (body == null || body.isEmpty) {
       return _buildEmptyCard(isDark, 'No body content');
     }
@@ -676,6 +776,13 @@ class _HttpRequestDetailScreenState extends State<HttpRequestDetailScreen>
       isJson = true;
     } catch (e) {
       // Not JSON
+    }
+
+    final query = searchQuery.toLowerCase();
+    final hasQuery = query.isNotEmpty;
+    final hasMatch = !hasQuery || formattedBody.toLowerCase().contains(query);
+    if (!hasMatch) {
+      return _buildEmptyCard(isDark, 'No matches in ${type.toUpperCase()} body');
     }
 
     final textSecondary = isDark
@@ -767,20 +874,72 @@ class _HttpRequestDetailScreenState extends State<HttpRequestDetailScreen>
                 width: 1,
               ),
             ),
-            child: SelectableText(
-              formattedBody,
-              style: TextStyle(
-                fontSize: 13,
-                color:
-                    isDark ? const Color(0xFF10B981) : const Color(0xFF059669),
-                fontFamily: 'monospace',
-                height: 1.6,
+            child: SelectableText.rich(
+              _buildHighlightedTextSpan(
+                formattedBody,
+                _contentSearchQuery,
+                TextStyle(
+                  fontSize: 13,
+                  color: isDark
+                      ? const Color(0xFF10B981)
+                      : const Color(0xFF059669),
+                  fontFamily: 'monospace',
+                  height: 1.6,
+                ),
+                isDark,
               ),
             ),
           ),
         ],
       ),
     );
+  }
+
+  TextSpan _buildHighlightedTextSpan(
+    String source,
+    String query,
+    TextStyle baseStyle,
+    bool isDark,
+  ) {
+    if (query.isEmpty) {
+      return TextSpan(text: source, style: baseStyle);
+    }
+
+    final lowerSource = source.toLowerCase();
+    final lowerQuery = query.toLowerCase();
+    final children = <TextSpan>[];
+    var start = 0;
+
+    while (true) {
+      final index = lowerSource.indexOf(lowerQuery, start);
+      if (index < 0) {
+        if (start < source.length) {
+          children.add(TextSpan(text: source.substring(start), style: baseStyle));
+        }
+        break;
+      }
+
+      if (index > start) {
+        children.add(
+          TextSpan(text: source.substring(start, index), style: baseStyle),
+        );
+      }
+
+      children.add(
+        TextSpan(
+          text: source.substring(index, index + query.length),
+          style: baseStyle.copyWith(
+            color: isDark ? Colors.black : const Color(0xFF111827),
+            backgroundColor: const Color(0xFFFACC15),
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      );
+
+      start = index + query.length;
+    }
+
+    return TextSpan(children: children, style: baseStyle);
   }
 
   Widget _buildEmptyCard(bool isDark, String message) {

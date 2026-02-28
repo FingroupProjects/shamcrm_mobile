@@ -16,15 +16,12 @@ class FetchIncoming extends IncomingEvent {
   final int? status;
   final String? search;
 
-  const FetchIncoming({
-    this.forceRefresh = false,
-    this.filters,
-    this.status,
-    this.search
-  });
+  const FetchIncoming(
+      {this.forceRefresh = false, this.filters, this.status, this.search});
 
   @override
-  List<Object> get props => [forceRefresh, filters ?? {}, status ?? 0, search ?? ''];
+  List<Object> get props =>
+      [forceRefresh, filters ?? {}, status ?? 0, search ?? ''];
 }
 
 class CreateIncoming extends IncomingEvent {
@@ -36,6 +33,7 @@ class CreateIncoming extends IncomingEvent {
   final int organizationId;
   final int salesFunnelId;
   final bool approve; // Новый параметр
+  final double? exchangeRate;
 
   CreateIncoming({
     required this.date,
@@ -46,19 +44,21 @@ class CreateIncoming extends IncomingEvent {
     required this.organizationId,
     required this.salesFunnelId,
     this.approve = false, // По умолчанию false
+    this.exchangeRate,
   });
 
   @override
   List<Object> get props => [
-    date,
-    storageId,
-    comment,
-    counterpartyId,
-    documentGoods,
-    organizationId,
-    salesFunnelId,
-    approve, // Добавляем в props
-  ];
+        date,
+        storageId,
+        comment,
+        counterpartyId,
+        documentGoods,
+        organizationId,
+        salesFunnelId,
+        approve, // Добавляем в props
+        exchangeRate ?? -1,
+      ];
 }
 
 class UpdateIncoming extends IncomingEvent {
@@ -70,6 +70,7 @@ class UpdateIncoming extends IncomingEvent {
   final List<Map<String, dynamic>> documentGoods;
   final int organizationId;
   final int salesFunnelId;
+  final double? exchangeRate;
 
   const UpdateIncoming({
     required this.documentId,
@@ -80,6 +81,7 @@ class UpdateIncoming extends IncomingEvent {
     required this.documentGoods,
     required this.organizationId,
     required this.salesFunnelId,
+    this.exchangeRate,
   });
 
   @override
@@ -92,14 +94,17 @@ class UpdateIncoming extends IncomingEvent {
         documentGoods,
         organizationId,
         salesFunnelId,
+        exchangeRate ?? -1,
       ];
 }
+
 class DeleteIncoming extends IncomingEvent {
   final int documentId;
   final AppLocalizations localizations;
   final bool shouldReload;
 
-  const DeleteIncoming(this.documentId, this.localizations, {this.shouldReload = true});
+  const DeleteIncoming(this.documentId, this.localizations,
+      {this.shouldReload = true});
 
   @override
   List<Object> get props => [documentId, localizations];
@@ -116,29 +121,24 @@ class RestoreIncoming extends IncomingEvent {
 }
 
 class MassApproveIncomingDocuments extends IncomingEvent {
-
   @override
   List<Object> get props => [];
 }
 
 class MassDisapproveIncomingDocuments extends IncomingEvent {
-
   @override
   List<Object> get props => [];
 }
 
 class MassDeleteIncomingDocuments extends IncomingEvent {
-
   @override
   List<Object> get props => [];
 }
 
 class MassRestoreIncomingDocuments extends IncomingEvent {
-
   @override
   List<Object> get props => [];
 }
-
 
 class SelectDocument extends IncomingEvent {
   final IncomingDocument document;

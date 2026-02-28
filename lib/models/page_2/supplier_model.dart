@@ -6,6 +6,8 @@ class Supplier {
   final String? note;
   final String createdAt;
   final String updatedAt;
+  final int? currencyId;
+  final SupplierCurrency? currency;
 
   Supplier({
     required this.id,
@@ -15,6 +17,8 @@ class Supplier {
     this.note,
     required this.createdAt,
     required this.updatedAt,
+    this.currencyId,
+    this.currency,
   });
 
   factory Supplier.fromJson(Map<String, dynamic> json) {
@@ -28,6 +32,10 @@ class Supplier {
       note: json['note'],
       createdAt: json['created_at'],
       updatedAt: json['updated_at'],
+      currencyId: json['currency_id'],
+      currency: json['currency'] != null
+          ? SupplierCurrency.fromJson(json['currency'])
+          : null,
     );
   }
 
@@ -40,6 +48,8 @@ class Supplier {
       'note': note,
       'created_at': createdAt,
       'updated_at': updatedAt,
+      'currency_id': currencyId,
+      'currency': currency?.toJson(),
     };
   }
 
@@ -56,4 +66,48 @@ class Supplier {
 
   @override
   int get hashCode => id.hashCode;
+}
+
+class SupplierCurrency {
+  final int? id;
+  final String? name;
+  final int? digitalCode;
+  final String? symbolCode;
+  final int? organizationId;
+  final String? createdAt;
+  final String? updatedAt;
+
+  SupplierCurrency({
+    this.id,
+    this.name,
+    this.digitalCode,
+    this.symbolCode,
+    this.organizationId,
+    this.createdAt,
+    this.updatedAt,
+  });
+
+  factory SupplierCurrency.fromJson(Map<String, dynamic> json) {
+    return SupplierCurrency(
+      id: json['id'],
+      name: json['name']?.toString(),
+      digitalCode: json['digital_code'],
+      symbolCode: json['symbol_code']?.toString(),
+      organizationId: json['organization_id'],
+      createdAt: json['created_at']?.toString(),
+      updatedAt: json['updated_at']?.toString(),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'digital_code': digitalCode,
+      'symbol_code': symbolCode,
+      'organization_id': organizationId,
+      'created_at': createdAt,
+      'updated_at': updatedAt,
+    };
+  }
 }

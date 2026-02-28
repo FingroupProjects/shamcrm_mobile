@@ -12863,6 +12863,7 @@ class ApiService {
     required int organizationId,
     required int salesFunnelId,
     bool approve = false, // Новый параметр
+    double? exchangeRate,
   }) async {
     try {
       final token = await getToken();
@@ -12880,6 +12881,7 @@ class ApiService {
         'organization_id': organizationId,
         'sales_funnel_id': salesFunnelId,
         'approve': approve, // Добавляем новый параметр
+        if (exchangeRate != null) 'exchange_rate': exchangeRate,
       });
 
       final response = await http.post(
@@ -12913,6 +12915,7 @@ class ApiService {
     required List<Map<String, dynamic>> documentGoods,
     required int organizationId,
     required int salesFunnelId,
+    double? exchangeRate,
   }) async {
     final token = await getToken();
     if (token == null) throw 'Токен не найден';
@@ -12927,6 +12930,7 @@ class ApiService {
       'document_goods': documentGoods,
       'organization_id': organizationId,
       'sales_funnel_id': salesFunnelId,
+      if (exchangeRate != null) 'exchange_rate': exchangeRate,
     });
 
     try {
@@ -13193,6 +13197,7 @@ class ApiService {
     required int organizationId,
     required int salesFunnelId,
     required bool approve,
+    double? exchangeRate,
   }) async {
     try {
       final token = await getToken();
@@ -13208,6 +13213,7 @@ class ApiService {
         'organization_id': organizationId,
         'sales_funnel_id': salesFunnelId,
         'approve': approve,
+        if (exchangeRate != null) 'exchange_rate': exchangeRate,
       });
 
       if (response.statusCode == 200 || response.statusCode == 201) {
@@ -13283,6 +13289,7 @@ class ApiService {
     required List<Map<String, dynamic>> documentGoods,
     required int organizationId,
     required int salesFunnelId,
+    double? exchangeRate,
   }) async {
     try {
       final token = await getToken();
@@ -13299,6 +13306,7 @@ class ApiService {
         'document_goods': documentGoods,
         'organization_id': organizationId,
         'sales_funnel_id': salesFunnelId,
+        if (exchangeRate != null) 'exchange_rate': exchangeRate,
       });
 
       final response = await http.put(
@@ -14513,6 +14521,7 @@ class ApiService {
     required int organizationId,
     required int salesFunnelId,
     required bool approve,
+    double? exchangeRate,
   }) async {
     try {
       final token = await getToken();
@@ -14529,6 +14538,7 @@ class ApiService {
         'organization_id': organizationId,
         'sales_funnel_id': salesFunnelId,
         'approve': approve,
+        if (exchangeRate != null) 'exchange_rate': exchangeRate,
       });
 
       final response = await http.post(
@@ -14563,6 +14573,7 @@ class ApiService {
     required List<Map<String, dynamic>> documentGoods,
     required int organizationId,
     required int salesFunnelId,
+    double? exchangeRate,
   }) async {
     try {
       final token = await getToken();
@@ -14579,6 +14590,7 @@ class ApiService {
         'document_goods': documentGoods,
         'organization_id': organizationId,
         'sales_funnel_id': salesFunnelId,
+        if (exchangeRate != null) 'exchange_rate': exchangeRate,
       });
 
       final response = await http.put(
@@ -14791,6 +14803,7 @@ class ApiService {
     int? cashRegisterId,
     int? supplierId,
     required bool approve,
+    double? exchangeRate,
   }) async {
     final path = await _appendQueryParams('/checking-account');
 
@@ -14807,6 +14820,7 @@ class ApiService {
         'cash_register_id': cashRegisterId,
         'supplier_id': supplierId,
         'approved': approve,
+        if (exchangeRate != null) 'exchange_rate': exchangeRate,
       });
       if (response.statusCode == 200 || response.statusCode == 201) {
         return;
@@ -14964,6 +14978,7 @@ class ApiService {
     int? senderCashRegisterId,
     int? cashRegisterId,
     int? supplierId,
+    double? exchangeRate,
   }) async {
     final path = await _appendQueryParams('/checking-account/$documentId');
 
@@ -14979,6 +14994,7 @@ class ApiService {
         'comment': comment,
         'cash_register_id': cashRegisterId,
         'supplier_id': supplierId,
+        if (exchangeRate != null) 'exchange_rate': exchangeRate,
       });
       if (response.statusCode == 200 || response.statusCode == 201) {
         final rawData = json.decode(response.body);
@@ -15149,6 +15165,7 @@ class ApiService {
     int? cashRegisterId,
     int? supplierId,
     required bool approve,
+    double? exchangeRate,
   }) async {
     final path = await _appendQueryParams('/checking-account');
 
@@ -15165,6 +15182,7 @@ class ApiService {
         'cash_register_id': cashRegisterId,
         'supplier_id': supplierId,
         'approved': approve,
+        if (exchangeRate != null) 'exchange_rate': exchangeRate,
       });
       if (response.statusCode == 200 || response.statusCode == 201) {
         return;
@@ -15312,6 +15330,7 @@ class ApiService {
     int? senderCashRegisterId,
     int? cashRegisterId,
     int? supplierId,
+    double? exchangeRate,
   }) async {
     final path = await _appendQueryParams('/checking-account/$documentId');
 
@@ -15327,6 +15346,7 @@ class ApiService {
         'comment': comment,
         'cash_register_id': cashRegisterId,
         'supplier_id': supplierId,
+        if (exchangeRate != null) 'exchange_rate': exchangeRate,
       });
       if (response.statusCode == 200 || response.statusCode == 201) {
         final rawData = json.decode(response.body);
@@ -15570,6 +15590,7 @@ class ApiService {
     required int organizationId,
     required int salesFunnelId,
     required bool approve,
+    double? exchangeRate,
   }) async {
     try {
       final token = await getToken();
@@ -15586,6 +15607,7 @@ class ApiService {
         'organization_id': organizationId,
         'sales_funnel_id': salesFunnelId,
         'approve': approve,
+        if (exchangeRate != null) 'exchange_rate': exchangeRate,
       });
 
       if (response.statusCode == 200 || response.statusCode == 201) {
@@ -15664,6 +15686,7 @@ class ApiService {
     required List<Map<String, dynamic>> documentGoods,
     required int organizationId,
     required int salesFunnelId,
+    double? exchangeRate,
   }) async {
     try {
       final token = await getToken();
@@ -15681,6 +15704,7 @@ class ApiService {
         'document_goods': documentGoods,
         'organization_id': organizationId,
         'sales_funnel_id': salesFunnelId,
+        if (exchangeRate != null) 'exchange_rate': exchangeRate,
       });
 
       final response = await http.put(

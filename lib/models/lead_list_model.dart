@@ -6,6 +6,7 @@ class LeadData {
   final int? managerId;
   final num? debt; // ← Добавляем поле долга
   final String? phone; // ← Добавляем поле телефон
+  final int? currencyId;
   final LeadListCurrency? currency;
 
   LeadData({
@@ -14,6 +15,7 @@ class LeadData {
     this.managerId,
     this.debt, // ← Добавляем в конструктор
     this.phone, // ← Добавляем в конструктор
+    this.currencyId,
     this.currency,
   });
 
@@ -23,6 +25,7 @@ class LeadData {
         managerId: json['manager'] != null ? json['manager']['id'] : null,
         debt: json['debt'], // ← Парсим долг из JSON
         phone: json['phone']?.toString(), // ← Парсим телефон из JSON
+        currencyId: json['currency_id'],
         currency: json['currency'] != null
             ? LeadListCurrency.fromJson(json['currency'])
             : null,
@@ -34,6 +37,7 @@ class LeadData {
         "managerId": managerId,
         "debt": debt, // ← Добавляем в toJson
         "phone": phone, // ← Добавляем в toJson
+        "currency_id": currencyId,
         "currency": currency?.toJson(),
       };
 

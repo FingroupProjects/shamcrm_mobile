@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../api/service/http_log_model.dart';
@@ -18,18 +20,59 @@ class _HttpInspectorScreenState extends State<HttpInspectorScreen> {
   final HttpLogger _logger = HttpLogger();
   final TextEditingController _searchController = TextEditingController();
   final ThemeController _themeController = ThemeController();
+  late final StreamSubscription<List<HttpLogModel>> _logsSubscription;
   String _searchQuery = '';
+  bool _isPaused = false;
+  bool _autoRefreshEnabled = true;
+  List<HttpLogModel> _visibleLogs = const [];
+  List<HttpLogModel>? _pendingLogs;
+  int _pendingCount = 0;
 
   @override
   void initState() {
     super.initState();
+    _visibleLogs = _logger.logs;
     _themeController.addListener(() => setState(() {}));
+    _logsSubscription = _logger.logsStream.listen(_handleLogsUpdate);
   }
 
   @override
   void dispose() {
+    _logsSubscription.cancel();
     _searchController.dispose();
     super.dispose();
+  }
+
+  bool get _isLiveMode => _autoRefreshEnabled && !_isPaused;
+
+  void _handleLogsUpdate(List<HttpLogModel> logs) {
+    if (!mounted) return;
+
+    if (_isLiveMode) {
+      setState(() {
+        _visibleLogs = logs;
+        _pendingLogs = null;
+        _pendingCount = 0;
+      });
+      return;
+    }
+
+    final visibleIds = _visibleLogs.map((log) => log.id).toSet();
+    final pendingCount =
+        logs.where((log) => !visibleIds.contains(log.id)).length;
+
+    setState(() {
+      _pendingLogs = logs;
+      _pendingCount = pendingCount;
+    });
+  }
+
+  void _applyPendingLogs() {
+    setState(() {
+      _visibleLogs = _pendingLogs ?? _logger.logs;
+      _pendingLogs = null;
+      _pendingCount = 0;
+    });
   }
 
   Color _getStatusColor(HttpLogModel log) {
@@ -62,6 +105,7 @@ class _HttpInspectorScreenState extends State<HttpInspectorScreen> {
       body: CustomScrollView(
         slivers: [
           _buildAppBar(isDark, surfaceColor, textColor, textSecondary),
+          _buildControls(isDark, surfaceColor, textColor, textSecondary),
           _buildSearchField(isDark, surfaceColor, textColor, textSecondary),
           _buildRequestsList(isDark, surfaceColor, textColor, textSecondary),
         ],
@@ -220,10 +264,122 @@ class _HttpInspectorScreenState extends State<HttpInspectorScreen> {
     );
   }
 
+  Widget _buildControls(
+      bool isDark, Color surfaceColor, Color textColor, Color textSecondary) {
+    return SliverToBoxAdapter(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+        child: Wrap(
+          spacing: 10,
+          runSpacing: 10,
+          children: [
+            _buildControlChip(
+              isDark: isDark,
+              textColor: textColor,
+              textSecondary: textSecondary,
+              label: _isPaused ? 'Пауза: вкл' : 'Пауза: выкл',
+              icon: _isPaused ? Icons.pause_circle : Icons.play_circle,
+              active: _isPaused,
+              onTap: () {
+                setState(() => _isPaused = !_isPaused);
+                if (_isLiveMode) {
+                  _applyPendingLogs();
+                }
+              },
+            ),
+            _buildControlChip(
+              isDark: isDark,
+              textColor: textColor,
+              textSecondary: textSecondary,
+              label: _autoRefreshEnabled
+                  ? 'Автообновление: вкл'
+                  : 'Автообновление: выкл',
+              icon: _autoRefreshEnabled ? Icons.sync : Icons.sync_disabled,
+              active: _autoRefreshEnabled,
+              onTap: () {
+                setState(() => _autoRefreshEnabled = !_autoRefreshEnabled);
+                if (_isLiveMode) {
+                  _applyPendingLogs();
+                }
+              },
+            ),
+            if (_pendingCount > 0)
+              _buildControlChip(
+                isDark: isDark,
+                textColor: textColor,
+                textSecondary: textSecondary,
+                label: 'Обновить ($_pendingCount)',
+                icon: Icons.refresh_rounded,
+                active: true,
+                onTap: _applyPendingLogs,
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildControlChip({
+    required bool isDark,
+    required Color textColor,
+    required Color textSecondary,
+    required String label,
+    required IconData icon,
+    required bool active,
+    required VoidCallback onTap,
+  }) {
+    final activeColor = const Color(0xFF6366F1);
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          decoration: BoxDecoration(
+            color: active
+                ? activeColor.withOpacity(isDark ? 0.2 : 0.12)
+                : (isDark
+                    ? DarkThemeColors.surface.withOpacity(0.6)
+                    : LightThemeColors.surface),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: active
+                  ? activeColor.withOpacity(0.6)
+                  : (isDark
+                      ? Colors.white.withOpacity(0.1)
+                      : LightThemeColors.border),
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                icon,
+                size: 16,
+                color: active ? activeColor : textSecondary,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: TextStyle(
+                  color: active ? textColor : textSecondary,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildSearchField(bool isDark, Color surfaceColor, Color textColor, Color textSecondary) {
     return SliverToBoxAdapter(
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
         child: Container(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
@@ -291,46 +447,45 @@ class _HttpInspectorScreenState extends State<HttpInspectorScreen> {
   }
 
   Widget _buildRequestsList(bool isDark, Color surfaceColor, Color textColor, Color textSecondary) {
-    return StreamBuilder<List<HttpLogModel>>(
-      stream: _logger.logsStream,
-      initialData: _logger.logs,
-      builder: (context, snapshot) {
-        final logs = _searchQuery.isEmpty
-            ? (snapshot.data ?? [])
-            : _logger.filterLogs(_searchQuery);
+    final logs = _searchQuery.isEmpty
+        ? _visibleLogs
+        : _visibleLogs.where((log) {
+            final query = _searchQuery.toLowerCase();
+            return log.url.toLowerCase().contains(query) ||
+                log.method.toLowerCase().contains(query);
+          }).toList();
 
-        if (logs.isEmpty) {
-          return SliverFillRemaining(
-            child: _buildEmptyState(isDark, textColor, textSecondary),
-          );
-        }
+    if (logs.isEmpty) {
+      return SliverFillRemaining(
+        child: _buildEmptyState(isDark, textColor, textSecondary),
+      );
+    }
 
-        return SliverPadding(
-          padding: const EdgeInsets.fromLTRB(20, 0, 20, 100),
-          sliver: SliverList(
-            delegate: SliverChildBuilderDelegate(
-              (context, index) {
-                return TweenAnimationBuilder(
-                  duration: Duration(milliseconds: 300 + (index * 50)),
-                  tween: Tween<double>(begin: 0, end: 1),
-                  curve: Curves.easeOutCubic,
-                  builder: (context, double value, child) {
-                    return Transform.translate(
-                      offset: Offset(0, 20 * (1 - value)),
-                      child: Opacity(
-                        opacity: value,
-                        child: child,
-                      ),
-                    );
-                  },
-                  child: _buildModernLogCard(logs[index], isDark, surfaceColor, textColor, textSecondary),
+    return SliverPadding(
+      padding: const EdgeInsets.fromLTRB(20, 0, 20, 100),
+      sliver: SliverList(
+        delegate: SliverChildBuilderDelegate(
+          (context, index) {
+            return TweenAnimationBuilder(
+              duration: Duration(milliseconds: 300 + (index * 50)),
+              tween: Tween<double>(begin: 0, end: 1),
+              curve: Curves.easeOutCubic,
+              builder: (context, double value, child) {
+                return Transform.translate(
+                  offset: Offset(0, 20 * (1 - value)),
+                  child: Opacity(
+                    opacity: value,
+                    child: child,
+                  ),
                 );
               },
-              childCount: logs.length,
-            ),
-          ),
-        );
-      },
+              child: _buildModernLogCard(
+                  logs[index], isDark, surfaceColor, textColor, textSecondary),
+            );
+          },
+          childCount: logs.length,
+        ),
+      ),
     );
   }
 
@@ -758,6 +913,11 @@ class _HttpInspectorScreenState extends State<HttpInspectorScreen> {
           ElevatedButton(
             onPressed: () {
               _logger.clearLogs();
+              setState(() {
+                _visibleLogs = const [];
+                _pendingLogs = null;
+                _pendingCount = 0;
+              });
               Navigator.pop(context);
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
