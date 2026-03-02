@@ -13938,6 +13938,7 @@ class ApiService {
       'phone': supplier.phone,
       "note": supplier.note,
       "inn": supplier.inn,
+      'currency_id': supplier.currencyId,
       'organization_id': organizationId,
       'sales_funnel_id': salesFunnelId,
     };
@@ -13969,6 +13970,7 @@ class ApiService {
       'phone': supplier.phone,
       if (supplier.note != null) 'note': supplier.note,
       if (supplier.inn != null) 'inn': supplier.inn,
+      'currency_id': supplier.currencyId,
       'organization_id': organizationId,
       'sales_funnel_id': salesFunnelId,
     };
@@ -14058,6 +14060,34 @@ class ApiService {
     } else {
       throw Exception('Ошибка загрузки поставщиков');
     }
+  }
+
+  Future<List<SupplierCurrency>> getCurrencies() async {
+    final organizationId = await getSelectedOrganization();
+    String path = '/currency';
+    if (organizationId != null && organizationId.isNotEmpty) {
+      path += '?organization_id=$organizationId';
+    }
+    final response = await _getRequest(path);
+
+    if (response.statusCode != 200) {
+      throw Exception('Ошибка загрузки валют: ${response.body}');
+    }
+
+    final data = json.decode(response.body);
+    dynamic result = data['result'];
+    if (result is Map<String, dynamic>) {
+      result = result['data'] ?? result['result'] ?? result['currencies'];
+    }
+
+    if (result is List) {
+      return result
+          .whereType<Map<String, dynamic>>()
+          .map(SupplierCurrency.fromJson)
+          .toList();
+    }
+
+    return [];
   }
 
   //updateSupplier

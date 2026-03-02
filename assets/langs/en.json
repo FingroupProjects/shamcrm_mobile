@@ -1639,6 +1639,8 @@
   "no_income_articles": "No income articles",
   "select_income_article": "Select income article",
   "select_supplier": "Select supplier",
+  "currency_label": "Currency",
+  "select_currency": "Select currency",
   "error_loading_measure_units": "Error loading measurement units",
   "suppliers": "Suppliers",
   "measure_units": "Measurement units",

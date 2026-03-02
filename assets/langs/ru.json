@@ -1654,6 +1654,8 @@
   "no_income_articles": "Нет статей дохода",
   "select_income_article": "Выберите статью дохода",
   "select_supplier": "Выберите поставщика",
+  "currency_label": "Валюта",
+  "select_currency": "Выберите валюту",
   "error_loading_measure_units": "Ошибка загрузки единиц измерения",
   "measure_units": "Единицы измерения",
   "expense_articles_management": "Управление статьями расхода",

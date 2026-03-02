@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/supplier_bloc/supplier_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/supplier_bloc/supplier_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/supplier_bloc/supplier_state.dart';
@@ -7,6 +8,7 @@ import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/country_data_list.dart';
 import 'package:crm_task_manager/models/page_2/supplier_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -23,9 +25,127 @@ class _AddSupplierScreenState extends State<AddSupplierScreen> {
   final TextEditingController phoneController = TextEditingController();
   final TextEditingController innController = TextEditingController();
   final TextEditingController noteController = TextEditingController();
+  final ApiService _apiService = ApiService();
 
   String selectedDialCode = '';
   Country? currentCountry;
+  List<SupplierCurrency> _currencies = [];
+  bool _isCurrenciesLoading = false;
+  SupplierCurrency? _selectedCurrency;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCurrencies();
+  }
+
+  Future<void> _loadCurrencies() async {
+    setState(() => _isCurrenciesLoading = true);
+    try {
+      final currencies = await _apiService.getCurrencies();
+      if (!mounted) return;
+      setState(() {
+        _currencies = currencies;
+      });
+    } catch (_) {
+      // keep optional field silent if endpoint is unavailable
+    } finally {
+      if (mounted) {
+        setState(() => _isCurrenciesLoading = false);
+      }
+    }
+  }
+
+  Widget _buildCurrencyField() {
+    final localizations = AppLocalizations.of(context)!;
+    SupplierCurrency? initialCurrency;
+    if (_selectedCurrency?.id != null) {
+      for (final currency in _currencies) {
+        if (currency.id == _selectedCurrency!.id) {
+          initialCurrency = currency;
+          break;
+        }
+      }
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          localizations.translate('currency_label') ?? 'Валюта',
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            fontFamily: 'Gilroy',
+            color: Color(0xff1E2E52),
+          ),
+        ),
+        const SizedBox(height: 4),
+        CustomDropdown<SupplierCurrency>.search(
+          items: _currencies,
+          enabled: true,
+          searchHintText: localizations.translate('search') ?? 'Поиск',
+          overlayHeight: 300,
+          closeDropDownOnClearFilterSearch: true,
+          decoration: CustomDropdownDecoration(
+            closedFillColor: const Color(0xffF4F7FD),
+            expandedFillColor: Colors.white,
+            closedBorder: Border.all(color: const Color(0xffF4F7FD), width: 1),
+            closedBorderRadius: BorderRadius.circular(12),
+            expandedBorder:
+                Border.all(color: const Color(0xffF4F7FD), width: 1),
+            expandedBorderRadius: BorderRadius.circular(12),
+          ),
+          listItemBuilder: (context, item, isSelected, onItemSelect) => Text(
+            item.name ?? '-',
+            style: const TextStyle(
+              color: Color(0xff1E2E52),
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              fontFamily: 'Gilroy',
+            ),
+          ),
+          headerBuilder: (context, selectedItem, enabled) => Text(
+            selectedItem?.name ??
+                (localizations.translate('select_currency') ??
+                    'Выберите валюту'),
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              fontFamily: 'Gilroy',
+              color: Color(0xff1E2E52),
+            ),
+          ),
+          hintBuilder: (context, hint, enabled) => Text(
+            localizations.translate('select_currency') ?? 'Выберите валюту',
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              fontFamily: 'Gilroy',
+              color: Color(0xff1E2E52),
+            ),
+            overflow: TextOverflow.ellipsis,
+          ),
+          noResultFoundBuilder: (context, text) => Center(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Text(
+                localizations.translate('no_results') ?? 'Нет результатов',
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontFamily: 'Gilroy',
+                  color: Color(0xff1E2E52),
+                ),
+              ),
+            ),
+          ),
+          initialItem: initialCurrency,
+          onChanged: (value) {
+            setState(() => _selectedCurrency = value);
+          },
+        ),
+      ],
+    );
+  }
 
   String? _validatePhone(String? value) {
     if (value == null || value.isEmpty) {
@@ -46,8 +166,9 @@ class _AddSupplierScreenState extends State<AddSupplierScreen> {
     int? expectedLength = phoneNumberLengths[dialCode];
 
     if (expectedLength != null && value.length != expectedLength) {
-      final message = AppLocalizations.of(context)!.translate('invalid_phone_length') ??
-          'Номер телефона должен содержать $expectedLength цифр';
+      final message =
+          AppLocalizations.of(context)!.translate('invalid_phone_length') ??
+              'Номер телефона должен содержать $expectedLength цифр';
       return message.replaceAll('{expectedLength}', expectedLength.toString());
     }
 
@@ -122,7 +243,7 @@ class _AddSupplierScreenState extends State<AddSupplierScreen> {
               SnackBar(
                 content: Text(
                   AppLocalizations.of(context)!
-                      .translate('supplier_created_successfully') ??
+                          .translate('supplier_created_successfully') ??
                       'Поставщик успешно создан',
                   style: const TextStyle(
                     fontFamily: 'Gilroy',
@@ -139,7 +260,7 @@ class _AddSupplierScreenState extends State<AddSupplierScreen> {
                 backgroundColor: Colors.green,
                 elevation: 3,
                 padding:
-                const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                    const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                 duration: const Duration(seconds: 3),
               ),
             );
@@ -163,13 +284,15 @@ class _AddSupplierScreenState extends State<AddSupplierScreen> {
                         CustomTextField(
                           controller: nameController,
                           hintText: AppLocalizations.of(context)!
-                              .translate('enter_supplier_name') ??
+                                  .translate('enter_supplier_name') ??
                               'Введите название поставщика',
-                          label: AppLocalizations.of(context)!.translate('supplier') ?? 'Поставщик',
+                          label: AppLocalizations.of(context)!
+                                  .translate('supplier') ??
+                              'Поставщик',
                           validator: (value) {
                             if (value == null || value.isEmpty) {
                               return AppLocalizations.of(context)!
-                                  .translate('field_required') ??
+                                      .translate('field_required') ??
                                   'Поле обязательно';
                             }
                             return null;
@@ -185,7 +308,7 @@ class _AddSupplierScreenState extends State<AddSupplierScreen> {
                                 if (number.startsWith(code)) {
                                   try {
                                     currentCountry = countries.firstWhere(
-                                          (country) => country.dialCode == code,
+                                      (country) => country.dialCode == code,
                                     );
                                   } catch (e) {
                                     currentCountry = null;
@@ -196,7 +319,7 @@ class _AddSupplierScreenState extends State<AddSupplierScreen> {
                             });
                           },
                           label: AppLocalizations.of(context)!
-                              .translate('phone') ??
+                                  .translate('phone') ??
                               'Телефон',
                           validator: _validatePhone,
                         ),
@@ -204,22 +327,24 @@ class _AddSupplierScreenState extends State<AddSupplierScreen> {
                         CustomTextField(
                           controller: innController,
                           hintText: AppLocalizations.of(context)!
-                              .translate('enter_inn') ??
+                                  .translate('enter_inn') ??
                               'Введите ИНН',
                           label:
-                          AppLocalizations.of(context)!.translate('inn') ??
-                              'ИНН',
+                              AppLocalizations.of(context)!.translate('inn') ??
+                                  'ИНН',
                           keyboardType: TextInputType.number,
                         ),
+                        const SizedBox(height: 16),
+                        _buildCurrencyField(),
                         const SizedBox(height: 16),
                         CustomTextField(
                           controller: noteController,
                           hintText: AppLocalizations.of(context)!
-                              .translate('enter_note') ??
+                                  .translate('enter_note') ??
                               'Введите примечание',
                           label:
-                          AppLocalizations.of(context)!.translate('note') ??
-                              'Примечание',
+                              AppLocalizations.of(context)!.translate('note') ??
+                                  'Примечание',
                         ),
                       ],
                     ),
@@ -227,15 +352,14 @@ class _AddSupplierScreenState extends State<AddSupplierScreen> {
                 ),
               ),
               Container(
-                padding:
-                const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(16),
                 child: Row(
                   children: [
                     Expanded(
                       child: CustomButton(
                         buttonText:
-                        AppLocalizations.of(context)!.translate('close') ??
-                            'Отмена',
+                            AppLocalizations.of(context)!.translate('close') ??
+                                'Отмена',
                         buttonColor: const Color(0xffF4F7FD),
                         textColor: Colors.black,
                         onPressed: () {
@@ -256,7 +380,7 @@ class _AddSupplierScreenState extends State<AddSupplierScreen> {
                           } else {
                             return CustomButton(
                               buttonText: AppLocalizations.of(context)!
-                                  .translate('save') ??
+                                      .translate('save') ??
                                   'Сохранить',
                               buttonColor: const Color(0xff4759FF),
                               textColor: Colors.white,
@@ -274,6 +398,7 @@ class _AddSupplierScreenState extends State<AddSupplierScreen> {
                                     note: noteController.text.isNotEmpty
                                         ? noteController.text
                                         : null,
+                                    currencyId: _selectedCurrency?.id,
                                     createdAt: DateTime.now().toIso8601String(),
                                     updatedAt: DateTime.now().toIso8601String(),
                                   );
