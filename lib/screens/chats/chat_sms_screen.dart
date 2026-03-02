@@ -39,13 +39,16 @@ import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/api/service/api_service_chats.dart';
+import 'package:crm_task_manager/api/service/http_log_model.dart';
+import 'package:crm_task_manager/api/service/http_logger.dart';
+import 'package:crm_task_manager/api/service/message_reaction_api_service.dart';
 import 'package:crm_task_manager/custom_widget/custom_chat_styles.dart';
+import 'package:crm_task_manager/models/message_reaction_model.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/chats_items.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/file_message_bubble.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/message_bubble.dart';
 import 'package:crm_task_manager/models/chats_model.dart';
 import 'package:crm_task_manager/utils/global_value.dart';
-// реакции временно отключены
 import 'package:crm_task_manager/screens/chats/chats_widgets/premium_haptic_wrapper.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/premium_context_menu.dart';
 import 'package:table_calendar/table_calendar.dart';
@@ -113,6 +116,13 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
   String _myDisplayName = '';
   String? _instagramResponseType; // direct | comment
   final Set<int> _expandedPostIds = {};
+  final MessageReactionApiService _reactionApi = MessageReactionApiService();
+
+  bool get _canUseReactionsInCurrentChat {
+    final isLeadWith24hRestriction =
+        widget.endPointInTab == 'lead' && !widget.canSendMessage;
+    return !isLeadWith24hRestriction && !_isInstagramCommentChannel;
+  }
 
   bool get _isInstagramCommentChannel {
     final name = channelName ?? '';
@@ -161,9 +171,632 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
     }
   }
 
-  // Локальное хранилище реакций (message.id -> список реакций)
-  // реакции временно отключены
-  // final Map<int, List<MessageReaction>> _localReactions = {};
+  // Локальные реакции для мгновенного UI-обновления после тапа.
+  final Map<int, List<MessageReaction>> _localReactions = {};
+  final Map<String, DateTime> _recentReactionEventFingerprints = {};
+  final Map<String, DateTime> _recentReactionSemanticFingerprints = {};
+
+  Message _messageWithLocalReactions(Message message) {
+    final localReactions = _localReactions[message.id];
+    if (localReactions == null) {
+      return message;
+    }
+    return message.copyWith(reactions: localReactions);
+  }
+
+  List<MessageReaction> _applyReactionOptimistically({
+    required List<MessageReaction> current,
+    required String emoji,
+    required bool shouldAdd,
+    String? currentMyEmoji,
+  }) {
+    final updated = List<MessageReaction>.from(current);
+
+    if (shouldAdd) {
+      // Гарантируем правило: у текущего пользователя только 1 реакция на сообщение.
+      for (int i = updated.length - 1; i >= 0; i--) {
+        final reaction = updated[i];
+        final isCurrentMyReaction =
+            currentMyEmoji != null && reaction.emoji == currentMyEmoji;
+        if (!isCurrentMyReaction || reaction.emoji == emoji) continue;
+
+        final nextCount = reaction.count - 1;
+        if (nextCount <= 0) {
+          updated.removeAt(i);
+        } else {
+          updated[i] = reaction.copyWith(
+            count: nextCount,
+            isMyReaction: false,
+          );
+        }
+      }
+    }
+
+    final index = updated.indexWhere((reaction) => reaction.emoji == emoji);
+
+    if (shouldAdd) {
+      if (index == -1) {
+        updated.add(
+          MessageReaction(
+            emoji: emoji,
+            count: 1,
+            users: const [],
+            isMyReaction: true,
+          ),
+        );
+      } else {
+        final reaction = updated[index];
+        updated[index] = reaction.copyWith(
+          count: reaction.count + (reaction.isMyReaction ? 0 : 1),
+          isMyReaction: true,
+        );
+      }
+      return updated;
+    }
+
+    if (index == -1) {
+      return updated;
+    }
+
+    final reaction = updated[index];
+    final isCurrentMyReaction =
+        currentMyEmoji != null && reaction.emoji == currentMyEmoji;
+    final nextCount = reaction.count - (isCurrentMyReaction ? 1 : 0);
+
+    if (nextCount <= 0) {
+      updated.removeAt(index);
+    } else {
+      updated[index] = reaction.copyWith(
+        count: nextCount,
+        isMyReaction: false,
+      );
+    }
+
+    return updated;
+  }
+
+  List<MessageReaction> _normalizeSingleMyReaction(
+    List<MessageReaction> reactions, {
+    String? preferredMyEmoji,
+  }) {
+    final normalized = List<MessageReaction>.from(reactions);
+
+    String? selectedMyEmoji = preferredMyEmoji;
+    if (selectedMyEmoji == null ||
+        !normalized.any((reaction) => reaction.emoji == selectedMyEmoji)) {
+      for (final reaction in normalized) {
+        if (reaction.isMyReaction) {
+          selectedMyEmoji = reaction.emoji;
+          break;
+        }
+      }
+    }
+
+    if (selectedMyEmoji == null) {
+      return normalized;
+    }
+
+    for (int i = normalized.length - 1; i >= 0; i--) {
+      final reaction = normalized[i];
+      if (!reaction.isMyReaction || reaction.emoji == selectedMyEmoji) continue;
+
+      final nextCount = reaction.count - 1;
+      if (nextCount <= 0) {
+        normalized.removeAt(i);
+      } else {
+        normalized[i] = reaction.copyWith(
+          count: nextCount,
+          isMyReaction: false,
+        );
+      }
+    }
+
+    return normalized;
+  }
+
+  bool _isMyReactionCandidate(
+    MessageReaction reaction, {
+    required String myName,
+  }) {
+    if (reaction.isMyReaction) return true;
+
+    final myId = userID.value.trim();
+    final normalizedMyName = myName.trim().toLowerCase();
+    final normalizedNotifierName = (userName.value ?? '').trim().toLowerCase();
+
+    for (final user in reaction.users) {
+      if (myId.isNotEmpty && user.id > 0 && user.id.toString() == myId) {
+        return true;
+      }
+
+      final reactionUserName = user.name.trim().toLowerCase();
+      if (reactionUserName.isEmpty) continue;
+
+      if (normalizedMyName.isNotEmpty &&
+          (reactionUserName == normalizedMyName ||
+              reactionUserName.contains(normalizedMyName) ||
+              normalizedMyName.contains(reactionUserName))) {
+        return true;
+      }
+
+      if (normalizedNotifierName.isNotEmpty &&
+          (reactionUserName == normalizedNotifierName ||
+              reactionUserName.contains(normalizedNotifierName) ||
+              normalizedNotifierName.contains(reactionUserName))) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  Future<void> _toggleMessageReaction(Message message, String emoji) async {
+    if (!_canUseReactionsInCurrentChat) return;
+    if (message.id <= 0) return;
+
+    final effectiveMessage = _messageWithLocalReactions(message);
+    final previousReactions = effectiveMessage.reactions;
+    final myName = await _getMyDisplayName();
+    MessageReaction? currentMyReaction;
+    for (final reaction in previousReactions) {
+      if (_isMyReactionCandidate(reaction, myName: myName)) {
+        currentMyReaction = reaction;
+        break;
+      }
+    }
+    final isMyReaction = previousReactions.any(
+      (reaction) =>
+          reaction.emoji == emoji &&
+          _isMyReactionCandidate(reaction, myName: myName),
+    );
+    final optimisticReactions = _normalizeSingleMyReaction(
+      _applyReactionOptimistically(
+        current: previousReactions,
+        emoji: emoji,
+        shouldAdd: !isMyReaction,
+        currentMyEmoji: currentMyReaction?.emoji,
+      ),
+      preferredMyEmoji: isMyReaction ? null : emoji,
+    );
+
+    setState(() {
+      _localReactions[message.id] = optimisticReactions;
+    });
+
+    try {
+      if (isMyReaction) {
+        await _reactionApi.sendReaction(
+          chatId: widget.chatId,
+          messageId: message.id,
+          reaction: emoji,
+          remove: true,
+        );
+      } else {
+        if (currentMyReaction != null && currentMyReaction.emoji != emoji) {
+          await _reactionApi.sendReaction(
+            chatId: widget.chatId,
+            messageId: message.id,
+            reaction: currentMyReaction.emoji,
+            remove: true,
+          );
+        }
+
+        await _reactionApi.sendReaction(
+          chatId: widget.chatId,
+          messageId: message.id,
+          reaction: emoji,
+          remove: false,
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _localReactions[message.id] = previousReactions;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Не удалось обновить реакцию'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  void _logSocketEventToInspector({
+    required String eventName,
+    required String channel,
+    required String payload,
+    String? error,
+  }) {
+    final id = '${DateTime.now().microsecondsSinceEpoch}_$eventName';
+    HttpLogger().addLog(
+      HttpLogModel(
+        id: id,
+        timestamp: DateTime.now(),
+        method: 'WS',
+        url: '/socket/$channel/$eventName',
+        requestHeaders: const {'Transport': 'WebSocket'},
+        requestBody: payload,
+        statusCode: error == null ? 200 : 500,
+        responseBody: error == null ? 'Socket event received' : null,
+        error: error,
+        duration: Duration.zero,
+      ),
+    );
+  }
+
+  bool _shouldSkipDuplicateReactionEvent({
+    required String eventName,
+    required String payload,
+  }) {
+    final now = DateTime.now();
+    _recentReactionEventFingerprints.removeWhere(
+      (_, ts) => now.difference(ts).inSeconds > 8,
+    );
+
+    final fingerprint = '$eventName|${payload.trim()}';
+    if (_recentReactionEventFingerprints.containsKey(fingerprint)) {
+      return true;
+    }
+    _recentReactionEventFingerprints[fingerprint] = now;
+    return false;
+  }
+
+  bool _shouldSkipDuplicateReactionSemantically(Map<String, dynamic> payload) {
+    final now = DateTime.now();
+    _recentReactionSemanticFingerprints.removeWhere(
+      (_, ts) => now.difference(ts).inSeconds > 4,
+    );
+
+    final messageId = _parseMessageIdFromReactionEvent(payload);
+    final emoji = _parseReactionEmojiFromPayload(payload);
+    final removed = _parseReactionRemovedFromPayload(payload);
+    if (messageId == null || emoji == null || emoji.isEmpty) {
+      return false;
+    }
+
+    final semanticKey = '$messageId|$emoji|$removed';
+    if (_recentReactionSemanticFingerprints.containsKey(semanticKey)) {
+      return true;
+    }
+
+    _recentReactionSemanticFingerprints[semanticKey] = now;
+    return false;
+  }
+
+  Future<void> _processReactionSocketEvent({
+    required String eventName,
+    required String channel,
+    required String payload,
+    required String logPrefix,
+  }) async {
+    if (_shouldSkipDuplicateReactionEvent(
+        eventName: eventName, payload: payload)) {
+      debugPrint('⏭️ [SOCKET] $logPrefix duplicate reaction event skipped');
+      return;
+    }
+
+    debugPrint('🔔 [SOCKET] $logPrefix $eventName RECEIVED');
+    _logSocketEventToInspector(
+      eventName: eventName,
+      channel: channel,
+      payload: payload,
+    );
+
+    try {
+      if (payload.trim().isEmpty) {
+        context
+            .read<MessagingCubit>()
+            .getMessages(widget.chatId, chatType: widget.endPointInTab);
+        return;
+      }
+      final decoded = json.decode(payload);
+      if (decoded is! Map) {
+        context
+            .read<MessagingCubit>()
+            .getMessages(widget.chatId, chatType: widget.endPointInTab);
+        return;
+      }
+      final normalizedPayload =
+          _coerceReactionPayload(Map<String, dynamic>.from(decoded));
+      if (_shouldSkipDuplicateReactionSemantically(normalizedPayload)) {
+        debugPrint(
+            '⏭️ [SOCKET] $logPrefix duplicate semantic reaction skipped');
+        return;
+      }
+      _handleMessageReactedEvent(normalizedPayload);
+    } catch (e) {
+      debugPrint('❌ [SOCKET] $logPrefix $eventName parse error: $e');
+      _logSocketEventToInspector(
+        eventName: '$eventName.error',
+        channel: channel,
+        payload: payload,
+        error: e.toString(),
+      );
+      context
+          .read<MessagingCubit>()
+          .getMessages(widget.chatId, chatType: widget.endPointInTab);
+    }
+  }
+
+  void _bindReactionAliasesToChannel({
+    required dynamic channel,
+    required String channelName,
+    required List<String> reactionEventAliases,
+    required String logPrefix,
+  }) {
+    for (final reactionEvent in reactionEventAliases) {
+      channel.bind(reactionEvent).listen((event) async {
+        await _processReactionSocketEvent(
+          eventName: reactionEvent,
+          channel: channelName,
+          payload: event.data,
+          logPrefix: logPrefix,
+        );
+      });
+    }
+  }
+
+  List<MessageReaction> _parseReactionsFromDynamic(dynamic source) {
+    if (source is List) {
+      return source
+          .whereType<Map>()
+          .map((item) =>
+              MessageReaction.fromJson(Map<String, dynamic>.from(item)))
+          .toList();
+    }
+
+    if (source is Map) {
+      final List<MessageReaction> parsed = [];
+      source.forEach((emojiKey, value) {
+        if (value is! Map) return;
+        final data = Map<String, dynamic>.from(value);
+
+        final countRaw = data['count'];
+        final count = countRaw is int
+            ? countRaw
+            : int.tryParse(countRaw?.toString() ?? '') ?? 0;
+
+        final usersRaw = data['users'];
+        final List<ReactionUser> users = [];
+        if (usersRaw is List) {
+          for (final user in usersRaw) {
+            if (user is Map) {
+              users.add(ReactionUser.fromJson(Map<String, dynamic>.from(user)));
+            } else if (user is String) {
+              users.add(ReactionUser(id: 0, name: user));
+            }
+          }
+        }
+
+        parsed.add(
+          MessageReaction(
+            emoji: emojiKey.toString(),
+            count: count,
+            users: users,
+            isMyReaction: data['is_my_reaction'] == true,
+          ),
+        );
+      });
+      return parsed;
+    }
+    return const [];
+  }
+
+  int? _parseMessageIdFromReactionEvent(Map<String, dynamic> payload) {
+    final dto = payload['dto'];
+    final dtoProperties = (dto is Map) ? dto['properties'] : null;
+    final candidates = [
+      payload['message_id'],
+      payload['id'],
+      (payload['message'] is Map) ? payload['message']['id'] : null,
+      (payload['data'] is Map) ? payload['data']['message_id'] : null,
+      (payload['data'] is Map && payload['data']['message'] is Map)
+          ? payload['data']['message']['id']
+          : null,
+      (dtoProperties is Map) ? dtoProperties['message_id'] : null,
+    ];
+
+    for (final value in candidates) {
+      if (value is int) return value;
+      if (value is String) {
+        final parsed = int.tryParse(value);
+        if (parsed != null) return parsed;
+      }
+    }
+    return null;
+  }
+
+  List<MessageReaction> _parseReactionsFromReactionEvent(
+      Map<String, dynamic> payload) {
+    final topSummary = _parseReactionsFromDynamic(payload['reactions_summary']);
+    if (topSummary.isNotEmpty || payload['reactions_summary'] is Map) {
+      return topSummary;
+    }
+
+    final direct = _parseReactionsFromDynamic(payload['reactions']);
+    if (direct.isNotEmpty) return direct;
+
+    final message = payload['message'];
+    if (message is Map) {
+      final nested = _parseReactionsFromDynamic(message['reactions']);
+      if (nested.isNotEmpty) return nested;
+    }
+
+    final data = payload['data'];
+    if (data is Map) {
+      final summary = _parseReactionsFromDynamic(data['reactions_summary']);
+      if (summary.isNotEmpty || data['reactions_summary'] is Map)
+        return summary;
+
+      final dataDirect = _parseReactionsFromDynamic(data['reactions']);
+      if (dataDirect.isNotEmpty) return dataDirect;
+      if (data['message'] is Map) {
+        final dataNested =
+            _parseReactionsFromDynamic(data['message']['reactions']);
+        if (dataNested.isNotEmpty) return dataNested;
+      }
+    }
+
+    return const [];
+  }
+
+  Map<String, dynamic> _coerceReactionPayload(Map<String, dynamic> payload) {
+    final data = payload['data'];
+    if (data is String && data.trim().isNotEmpty) {
+      try {
+        final decoded = json.decode(data);
+        if (decoded is Map) {
+          final merged = Map<String, dynamic>.from(payload);
+          merged['data'] = Map<String, dynamic>.from(decoded);
+          return merged;
+        }
+      } catch (_) {}
+    }
+    return payload;
+  }
+
+  String? _parseReactionEmojiFromPayload(Map<String, dynamic> payload) {
+    final dto = payload['dto'];
+    final dtoProperties = (dto is Map) ? dto['properties'] : null;
+    final candidates = [
+      payload['reaction'],
+      payload['emoji'],
+      (payload['data'] is Map) ? payload['data']['reaction'] : null,
+      (payload['data'] is Map) ? payload['data']['emoji'] : null,
+      (dtoProperties is Map) ? dtoProperties['reaction'] : null,
+      (dtoProperties is Map) ? dtoProperties['emoji'] : null,
+    ];
+
+    for (final value in candidates) {
+      final emoji = value?.toString().trim() ?? '';
+      if (emoji.isNotEmpty) return emoji;
+    }
+    return null;
+  }
+
+  bool _parseReactionRemovedFromPayload(Map<String, dynamic> payload) {
+    final dto = payload['dto'];
+    final dtoProperties = (dto is Map) ? dto['properties'] : null;
+    final candidates = [
+      payload['removed'],
+      payload['remove'],
+      (payload['data'] is Map) ? payload['data']['removed'] : null,
+      (payload['data'] is Map) ? payload['data']['remove'] : null,
+      (dtoProperties is Map) ? dtoProperties['removed'] : null,
+      (dtoProperties is Map) ? dtoProperties['remove'] : null,
+    ];
+
+    for (final value in candidates) {
+      if (value is bool) return value;
+      if (value is int) return value == 1;
+      if (value is String) {
+        final lower = value.toLowerCase();
+        if (lower == 'true' || lower == '1') return true;
+        if (lower == 'false' || lower == '0') return false;
+      }
+    }
+    return false;
+  }
+
+  Message? _findMessageByIdInState(int messageId) {
+    final state = context.read<MessagingCubit>().state;
+    List<Message>? source;
+
+    if (state is MessagesLoadedState) {
+      source = state.messages;
+    } else if (state is PinnedMessagesState) {
+      source = state.messages;
+    } else if (state is EditingMessageState) {
+      source = state.messages;
+    } else if (state is ReplyingToMessageState) {
+      source = state.messages;
+    }
+
+    if (source == null) return null;
+    for (final message in source) {
+      if (message.id == messageId) return message;
+    }
+    return null;
+  }
+
+  List<MessageReaction> _applySocketReactionDelta({
+    required List<MessageReaction> current,
+    required String emoji,
+    required bool removed,
+  }) {
+    final updated = List<MessageReaction>.from(current);
+    final index = updated.indexWhere((reaction) => reaction.emoji == emoji);
+
+    if (removed) {
+      if (index == -1) return updated;
+      final reaction = updated[index];
+      final nextCount = reaction.count - 1;
+      if (nextCount <= 0) {
+        updated.removeAt(index);
+      } else {
+        updated[index] = reaction.copyWith(count: nextCount);
+      }
+      return updated;
+    }
+
+    if (index == -1) {
+      updated.add(
+        MessageReaction(
+          emoji: emoji,
+          count: 1,
+          users: const [],
+          isMyReaction: false,
+        ),
+      );
+      return updated;
+    }
+
+    final reaction = updated[index];
+    updated[index] = reaction.copyWith(count: reaction.count + 1);
+    return updated;
+  }
+
+  void _handleMessageReactedEvent(Map<String, dynamic> payload) {
+    payload = _coerceReactionPayload(payload);
+    final messageId = _parseMessageIdFromReactionEvent(payload);
+    if (messageId == null) {
+      debugPrint('⚠️ [SOCKET] chat.messageReacted: messageId not found');
+      return;
+    }
+
+    List<MessageReaction> reactions =
+        _normalizeSingleMyReaction(_parseReactionsFromReactionEvent(payload));
+
+    if (reactions.isEmpty) {
+      final emoji = _parseReactionEmojiFromPayload(payload);
+      if (emoji != null) {
+        final removed = _parseReactionRemovedFromPayload(payload);
+        final currentMessage = _findMessageByIdInState(messageId);
+        final currentReactions = currentMessage == null
+            ? const <MessageReaction>[]
+            : _messageWithLocalReactions(currentMessage).reactions;
+        reactions = _applySocketReactionDelta(
+          current: currentReactions,
+          emoji: emoji,
+          removed: removed,
+        );
+      }
+    }
+
+    debugPrint(
+        '✅ [SOCKET] chat.messageReacted APPLY: messageId=$messageId, reactions=${reactions.length}');
+    context.read<MessagingCubit>().updateMessageReactionsFromSocket(
+          messageId: messageId,
+          reactions: reactions,
+        );
+
+    if (_localReactions.containsKey(messageId)) {
+      setState(() {
+        _localReactions.remove(messageId);
+      });
+    }
+  }
 
   void _onSearchChanged(String query) {
     setState(() {
@@ -250,7 +883,14 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
     bool? isMyMessageFromServer,
     String? debugContext = '', // для удобства понимания, откуда пришёл вызов
   }) async {
-    // ✅ ПРИОРИТЕТ 1: Если есть ID отправителя и наш ID, это окончательный ответ
+    // ✅ ПРИОРИТЕТ 1: Для lead-чата определяем сторону строго по sender.type
+    if (isLeadChat && messageSenderType != null) {
+      final normalizedType = messageSenderType.toLowerCase();
+      if (normalizedType == 'lead') return false;
+      if (normalizedType == 'user') return true;
+    }
+
+    // ✅ ПРИОРИТЕТ 2: Если есть ID отправителя и наш ID, это окончательный ответ
     if (messageSenderId != null &&
         messageSenderId.isNotEmpty &&
         myUserId.isNotEmpty) {
@@ -266,18 +906,10 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
       return false;
     }
 
-    // ✅ ПРИОРИТЕТ 2: Если ID нет, используем логику имен и типов (как запасной вариант)
-
     // ✅ ПРИОРИТЕТ 3: Флаг от сервера
     if (isMyMessageFromServer != null) {
       debugPrint('ℹ️ [DETERMINE] Using server flag: $isMyMessageFromServer');
       return isMyMessageFromServer;
-    }
-
-    // ✅ ПРИОРИТЕТ 4: Логика для лид-чатов
-    if (isLeadChat && messageSenderType != null) {
-      if (messageSenderType.toLowerCase() == 'lead') return false;
-      if (messageSenderType.toLowerCase() == 'user') return true;
     }
 
     debugPrint('🏁 [DETERMINE] Fallback → FALSE');
@@ -1661,13 +2293,15 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
                           ),
                         );
                       }
+                      final effectiveMessage =
+                          _messageWithLocalReactions(message);
+
                       widgets.add(
                         MessageItemWidget(
-                          message: message,
+                          message: effectiveMessage,
                           chatId: widget.chatId,
                           endPointInTab: widget.endPointInTab,
-                          isInstagramCommentChannel:
-                              _isInstagramCommentChannel,
+                          isInstagramCommentChannel: _isInstagramCommentChannel,
                           onInstagramReplyTap: (type) {
                             if (type == null) {
                               _showInstagramResponseTypePicker(message);
@@ -1677,7 +2311,9 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
                               _instagramResponseType = type;
                             });
                             _focusNode.requestFocus();
-                            context.read<MessagingCubit>().setReplyMessage(message);
+                            context
+                                .read<MessagingCubit>()
+                                .setReplyMessage(message);
                           },
                           isPostExpanded: _expandedPostIds.contains(message.id),
                           onTogglePost: () {
@@ -1698,11 +2334,21 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
                               _isMenuOpen = isOpen;
                             });
                           },
+                          isMenuOpen: _isMenuOpen,
                           focusNode: _focusNode,
                           isRead: message.isRead,
                           isFirstMessage: isFirstMessage,
                           referralBody: referralBody,
                           isGroupChat: _isGroupChat,
+                          chatChannelName: channelName,
+                          companionName: _cachedCompanionName ??
+                              (widget.chatItem.name.isNotEmpty
+                                  ? widget.chatItem.name
+                                  : null),
+                          canSendMessageInChat: widget.canSendMessage,
+                          onReactionToggle: _canUseReactionsInCurrentChat
+                              ? _toggleMessageReaction
+                              : null,
                         ),
                       );
                       return Column(
@@ -1985,10 +2631,13 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
       }
     }
     final channelName = 'presence-v2.chat.$chatIdentifier';
+    final legacyReactionChannelName = 'presence-chat.$chatIdentifier';
 
     debugPrint(
         '=================-=== 📱 Chat identifier for socket: $chatIdentifier (uniqueId: ${widget.chatUniqueId}, chatId: ${widget.chatId})');
     debugPrint('=================-=== 📢 Channel name: $channelName');
+    debugPrint(
+        '=================-=== 📢 Legacy reaction channel: $legacyReactionChannelName');
 
     final myPresenceChannel = socketClient.presenceChannel(
       channelName,
@@ -2007,11 +2656,31 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
       ),
     );
 
+    final legacyReactionPresenceChannel = socketClient.presenceChannel(
+      legacyReactionChannelName,
+      authorizationDelegate:
+          EndpointAuthorizableChannelTokenAuthorizationDelegate
+              .forPresenceChannel(
+        authorizationEndpoint: Uri.parse(authUrl),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'X-Tenant': '$enteredDomain-back',
+        },
+        onAuthFailed: (exception, trace) {
+          debugPrint(
+              '=================-=== ❌ Auth failed for $legacyReactionChannelName: $exception');
+        },
+      ),
+    );
+
     socketClient.onConnectionEstablished.listen((_) {
       debugPrint(
           '=================-=== ✅ Socket connected successfully for chatIdentifier: $chatIdentifier');
       myPresenceChannel.subscribeIfNotUnsubscribed();
       debugPrint('=================-=== ✅ Subscribed to channel: $channelName');
+      legacyReactionPresenceChannel.subscribeIfNotUnsubscribed();
+      debugPrint(
+          '=================-=== ✅ Subscribed to channel: $legacyReactionChannelName');
     });
 
     myPresenceChannel.bind('pusher:subscription_succeeded').listen((event) {
@@ -2024,6 +2693,22 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
     myPresenceChannel.bind('pusher:subscription_error').listen((event) {
       debugPrint(
           '=================-=== ❌❌❌ CHAT_SMS: Subscription error for $channelName: ${event.data}');
+    });
+
+    legacyReactionPresenceChannel
+        .bind('pusher:subscription_succeeded')
+        .listen((event) {
+      debugPrint(
+          '=================-=== ✅✅✅ CHAT_SMS: Successfully subscribed to $legacyReactionChannelName');
+      debugPrint(
+          '=================-=== ✅✅✅ CHAT_SMS: Legacy subscription data: ${event.data}');
+    });
+
+    legacyReactionPresenceChannel
+        .bind('pusher:subscription_error')
+        .listen((event) {
+      debugPrint(
+          '=================-=== ❌❌❌ CHAT_SMS: Subscription error for $legacyReactionChannelName: ${event.data}');
     });
 
     myPresenceChannel.bind('pusher:member_added').listen((event) {
@@ -2042,6 +2727,11 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
     myPresenceChannel.bind('chat.updated').listen((event) async {
       debugPrint(
           '=================-=== 🔔 CHAT_SMS (ChatUpdated): ===== RECEIVED EVENT =====');
+      _logSocketEventToInspector(
+        eventName: 'chat.updated',
+        channel: channelName,
+        payload: event.data,
+      );
 
       try {
         final rawData = json.decode(event.data);
@@ -2132,6 +2822,12 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
         }
       } catch (e, stackTrace) {
         debugPrint('=================-=== ❌ CHAT_SMS (ChatUpdated): ERROR: $e');
+        _logSocketEventToInspector(
+          eventName: 'chat.updated.error',
+          channel: channelName,
+          payload: event.data,
+          error: e.toString(),
+        );
       }
     });
     debugPrint(
@@ -2145,6 +2841,11 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
       debugPrint('\n\n');
       debugPrint(
           '======================================================================');
+      _logSocketEventToInspector(
+        eventName: 'chat.message',
+        channel: channelName,
+        payload: event.data,
+      );
       debugPrint('🚀 [SOCKET] chat.message RECEIVED!');
       debugPrint(
           '======================================================================');
@@ -2284,15 +2985,121 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
       } catch (e, stackTrace) {
         debugPrint('❌ [SOCKET] FATAL ERROR in chat.message listener: $e');
         debugPrint('$stackTrace');
+        _logSocketEventToInspector(
+          eventName: 'chat.message.error',
+          channel: channelName,
+          payload: event.data,
+          error: e.toString(),
+        );
         debugPrint(
             '======================================================================');
       }
     });
     debugPrint(
         '=================-=== ✅✅✅ CHAT_SMS: chat.message listener registered');
+
+    const reactionEventAliases = [
+      'chat.messageReacted',
+      '.chat.messageReacted',
+      'chat.message_reacted',
+      '.chat.message_reacted',
+      'chat.messageReaction',
+      'chat.reactionUpdated',
+      'chat.reaction.updated',
+      'message.reacted',
+      'MessageReacted',
+      '.MessageReacted',
+      'App\\Events\\MessageReacted',
+      '.App\\Events\\MessageReacted',
+    ];
+    _bindReactionAliasesToChannel(
+      channel: myPresenceChannel,
+      channelName: channelName,
+      reactionEventAliases: reactionEventAliases,
+      logPrefix: '[CHAT PRESENCE]',
+    );
+    _bindReactionAliasesToChannel(
+      channel: legacyReactionPresenceChannel,
+      channelName: legacyReactionChannelName,
+      reactionEventAliases: reactionEventAliases,
+      logPrefix: '[CHAT LEGACY PRESENCE]',
+    );
+    debugPrint(
+        '=================-=== ✅✅✅ CHAT_SMS: reaction listeners registered (${reactionEventAliases.length})');
+
+    final chatReactionPrivateChannelNames = <String>{
+      'private-v2.chat.$chatIdentifier',
+      'private-chat.$chatIdentifier',
+      'private-v2.chat.${widget.chatId}',
+      'private-chat.${widget.chatId}',
+    };
+    final chatReactionPublicChannelNames = <String>{
+      'v2.chat.$chatIdentifier',
+      'chat.$chatIdentifier',
+      'v2.chat.${widget.chatId}',
+      'chat.${widget.chatId}',
+    };
+
+    for (final privateName in chatReactionPrivateChannelNames) {
+      final privateChannel = socketClient.privateChannel(
+        privateName,
+        authorizationDelegate:
+            EndpointAuthorizableChannelTokenAuthorizationDelegate
+                .forPrivateChannel(
+          authorizationEndpoint: Uri.parse(authUrl),
+          headers: {
+            'Authorization': 'Bearer $token',
+            'X-Tenant': '$enteredDomain-back',
+          },
+          onAuthFailed: (exception, trace) {
+            debugPrint(
+                '=================-=== ❌ Auth failed for $privateName: $exception');
+          },
+        ),
+      );
+
+      socketClient.onConnectionEstablished.listen((_) {
+        debugPrint(
+            '=================-=== ✅ Subscribing to private reaction channel: $privateName');
+        privateChannel.subscribeIfNotUnsubscribed();
+      });
+
+      _bindReactionAliasesToChannel(
+        channel: privateChannel,
+        channelName: privateName,
+        reactionEventAliases: reactionEventAliases,
+        logPrefix: '[CHAT PRIVATE]',
+      );
+    }
+
+    for (final publicName in chatReactionPublicChannelNames) {
+      final publicChannel = socketClient.publicChannel(publicName);
+
+      socketClient.onConnectionEstablished.listen((_) {
+        debugPrint(
+            '=================-=== ✅ Subscribing to public reaction channel: $publicName');
+        publicChannel.subscribeIfNotUnsubscribed();
+      });
+
+      _bindReactionAliasesToChannel(
+        channel: publicChannel,
+        channelName: publicName,
+        reactionEventAliases: reactionEventAliases,
+        logPrefix: '[CHAT PUBLIC]',
+      );
+    }
     debugPrint(
         '=================-=== 🎯🎯🎯 CHAT_SMS: Setting up USER channel subscription...');
     final userId = prefs.getString('unique_id') ?? '';
+    final rawUserId = prefs.getString('userID') ?? '';
+    final fallbackUserChannelIds = <String>{};
+    if (rawUserId.isNotEmpty) {
+      fallbackUserChannelIds.add(rawUserId);
+      fallbackUserChannelIds.add('$enteredDomain-back-$rawUserId');
+    }
+    if (userId.isNotEmpty) {
+      fallbackUserChannelIds.remove(userId);
+    }
     if (userId.isNotEmpty) {
       final userChannelName = 'presence-user.$userId';
       debugPrint(
@@ -2328,6 +3135,11 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
 // ✅ ИСПРАВЛЕННЫЙ СЛУШАТЕЛЬ chat.updated (в файле chat_sms_screen.dart)
       userPresenceChannel.bind('chat.updated').listen((event) async {
         debugPrint('🔔🔔🔔 CHAT_SMS (USER CHANNEL): Received chat.updated!');
+        _logSocketEventToInspector(
+          eventName: 'chat.updated',
+          channel: userChannelName,
+          payload: event.data,
+        );
 
         try {
           final chatData = json.decode(event.data);
@@ -2418,7 +3230,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
                     state.messages.any((msg) => msg.id == messageId);
               }
 
-            if (!alreadyExists) {
+              if (!alreadyExists) {
                 bool? isMyMessageFromServer;
                 final isMyMsgValue = lastMessage['is_my_message'];
                 if (isMyMsgValue is bool) {
@@ -2501,10 +3313,164 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
           }
         } catch (e, stack) {
           debugPrint('❌ Ошибка парсинга chat.updated: $e');
+          _logSocketEventToInspector(
+            eventName: 'chat.updated.error',
+            channel: userChannelName,
+            payload: event.data,
+            error: e.toString(),
+          );
         }
       });
+      _bindReactionAliasesToChannel(
+        channel: userPresenceChannel,
+        channelName: userChannelName,
+        reactionEventAliases: reactionEventAliases,
+        logPrefix: '[USER PRESENCE]',
+      );
       debugPrint(
           '=================-=== ✅✅✅ CHAT_SMS: User channel listener registered');
+
+      final userReactionPrivateChannelNames = <String>{
+        'private-user.$userId',
+        if (rawUserId.isNotEmpty) 'private-user.$rawUserId',
+        if (rawUserId.isNotEmpty) 'private-user.$enteredDomain-back-$rawUserId',
+      };
+      final userReactionPublicChannelNames = <String>{
+        'user.$userId',
+        if (rawUserId.isNotEmpty) 'user.$rawUserId',
+        if (rawUserId.isNotEmpty) 'user.$enteredDomain-back-$rawUserId',
+      };
+
+      for (final privateName in userReactionPrivateChannelNames) {
+        final userPrivateChannel = socketClient.privateChannel(
+          privateName,
+          authorizationDelegate:
+              EndpointAuthorizableChannelTokenAuthorizationDelegate
+                  .forPrivateChannel(
+            authorizationEndpoint: Uri.parse(authUrl),
+            headers: {
+              'Authorization': 'Bearer $token',
+              'X-Tenant': '$enteredDomain-back',
+            },
+            onAuthFailed: (exception, trace) {
+              debugPrint(
+                  '=================-=== ❌ Auth failed for $privateName: $exception');
+            },
+          ),
+        );
+
+        socketClient.onConnectionEstablished.listen((_) {
+          debugPrint(
+              '=================-=== ✅ Subscribing to user private channel: $privateName');
+          userPrivateChannel.subscribeIfNotUnsubscribed();
+        });
+
+        _bindReactionAliasesToChannel(
+          channel: userPrivateChannel,
+          channelName: privateName,
+          reactionEventAliases: reactionEventAliases,
+          logPrefix: '[USER PRIVATE]',
+        );
+      }
+
+      for (final publicName in userReactionPublicChannelNames) {
+        final userPublicChannel = socketClient.publicChannel(publicName);
+
+        socketClient.onConnectionEstablished.listen((_) {
+          debugPrint(
+              '=================-=== ✅ Subscribing to user public channel: $publicName');
+          userPublicChannel.subscribeIfNotUnsubscribed();
+        });
+
+        _bindReactionAliasesToChannel(
+          channel: userPublicChannel,
+          channelName: publicName,
+          reactionEventAliases: reactionEventAliases,
+          logPrefix: '[USER PUBLIC]',
+        );
+      }
+    }
+
+    // Дополнительно подписываемся на fallback user channels
+    // (например presence-user.fingroupcrm-back-1), чтобы не терять reaction-события.
+    for (final fallbackId in fallbackUserChannelIds) {
+      final fallbackChannelName = 'presence-user.$fallbackId';
+      debugPrint(
+          '=================-=== 🎯 CHAT_SMS: Fallback user channel: $fallbackChannelName');
+
+      final fallbackPresenceChannel = socketClient.presenceChannel(
+        fallbackChannelName,
+        authorizationDelegate:
+            EndpointAuthorizableChannelTokenAuthorizationDelegate
+                .forPresenceChannel(
+          authorizationEndpoint: Uri.parse(authUrl),
+          headers: {
+            'Authorization': 'Bearer $token',
+            'X-Tenant': '$enteredDomain-back',
+          },
+          onAuthFailed: (exception, trace) {
+            debugPrint(
+                '=================-=== ❌ Auth failed for $fallbackChannelName: $exception');
+          },
+        ),
+      );
+
+      socketClient.onConnectionEstablished.listen((_) {
+        debugPrint(
+            '=================-=== ✅ Subscribing to fallback user channel: $fallbackChannelName');
+        fallbackPresenceChannel.subscribeIfNotUnsubscribed();
+      });
+
+      _bindReactionAliasesToChannel(
+        channel: fallbackPresenceChannel,
+        channelName: fallbackChannelName,
+        reactionEventAliases: reactionEventAliases,
+        logPrefix: '[FALLBACK USER PRESENCE]',
+      );
+
+      final fallbackPrivateName = 'private-user.$fallbackId';
+      final fallbackPrivateChannel = socketClient.privateChannel(
+        fallbackPrivateName,
+        authorizationDelegate:
+            EndpointAuthorizableChannelTokenAuthorizationDelegate
+                .forPrivateChannel(
+          authorizationEndpoint: Uri.parse(authUrl),
+          headers: {
+            'Authorization': 'Bearer $token',
+            'X-Tenant': '$enteredDomain-back',
+          },
+          onAuthFailed: (exception, trace) {
+            debugPrint(
+                '=================-=== ❌ Auth failed for $fallbackPrivateName: $exception');
+          },
+        ),
+      );
+      socketClient.onConnectionEstablished.listen((_) {
+        debugPrint(
+            '=================-=== ✅ Subscribing to fallback private user channel: $fallbackPrivateName');
+        fallbackPrivateChannel.subscribeIfNotUnsubscribed();
+      });
+      _bindReactionAliasesToChannel(
+        channel: fallbackPrivateChannel,
+        channelName: fallbackPrivateName,
+        reactionEventAliases: reactionEventAliases,
+        logPrefix: '[FALLBACK USER PRIVATE]',
+      );
+
+      final fallbackPublicName = 'user.$fallbackId';
+      final fallbackPublicChannel =
+          socketClient.publicChannel(fallbackPublicName);
+      socketClient.onConnectionEstablished.listen((_) {
+        debugPrint(
+            '=================-=== ✅ Subscribing to fallback public user channel: $fallbackPublicName');
+        fallbackPublicChannel.subscribeIfNotUnsubscribed();
+      });
+      _bindReactionAliasesToChannel(
+        channel: fallbackPublicChannel,
+        channelName: fallbackPublicName,
+        reactionEventAliases: reactionEventAliases,
+        logPrefix: '[FALLBACK USER PUBLIC]',
+      );
     }
 
     try {
@@ -2812,12 +3778,16 @@ class MessageItemWidget extends StatelessWidget {
   final void Function(int)? onReplyTap;
   final int? highlightedMessageId;
   final void Function(bool)? onMenuStateChanged;
+  final bool isMenuOpen;
   final FocusNode focusNode;
   final bool isRead;
   final bool isFirstMessage;
   final String? referralBody;
   final bool? isGroupChat;
-  // реакции временно отключены
+  final String? chatChannelName;
+  final String? companionName;
+  final bool canSendMessageInChat;
+  final void Function(Message message, String emoji)? onReactionToggle;
 
   MessageItemWidget({
     super.key,
@@ -2833,13 +3803,52 @@ class MessageItemWidget extends StatelessWidget {
     this.onReplyTap,
     this.highlightedMessageId,
     this.onMenuStateChanged,
+    this.isMenuOpen = false,
     required this.focusNode,
     required this.isRead,
     required this.isFirstMessage,
     this.referralBody,
     this.isGroupChat,
-    // реакции временно отключены
+    this.chatChannelName,
+    this.companionName,
+    required this.canSendMessageInChat,
+    this.onReactionToggle,
   });
+
+  String get _normalizedChannelName {
+    return (chatChannelName ?? '')
+        .toLowerCase()
+        .replaceAll('channel-', '')
+        .trim();
+  }
+
+  bool get _isLead24hRestricted {
+    return endPointInTab == 'lead' && !canSendMessageInChat;
+  }
+
+  bool get _isInstagramDirectSource {
+    return _normalizedChannelName == 'instagram';
+  }
+
+  bool get _shouldShowMessageReactions {
+    return !isInstagramCommentChannel;
+  }
+
+  bool get _isTelegramSourceForEdit {
+    return _normalizedChannelName == 'telegram_bot' ||
+        _normalizedChannelName == 'telegram_account';
+  }
+
+  bool get _canReplyToMessage {
+    if (_isLead24hRestricted) return false;
+    if (_isInstagramDirectSource) return false;
+    return true;
+  }
+
+  bool get _canEditOwnTextMessages {
+    if (_isLead24hRestricted) return false;
+    return _isTelegramSourceForEdit;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -2852,7 +3861,7 @@ class MessageItemWidget extends StatelessWidget {
           onInstagramReplyTap?.call(null);
           return false;
         }
-        if (endPointInTab == 'task' || endPointInTab == 'corporate') {
+        if (_canReplyToMessage) {
           focusNode.requestFocus();
           context.read<MessagingCubit>().setReplyMessage(message);
           return false;
@@ -2863,7 +3872,6 @@ class MessageItemWidget extends StatelessWidget {
         onLongPress: () {
           _showMessageContextMenu(context, message, focusNode);
         },
-        // реакции временно отключены
         child: Container(
           width: double.infinity,
           padding: const EdgeInsets.all(2),
@@ -2875,12 +3883,24 @@ class MessageItemWidget extends StatelessWidget {
 
   Widget _buildMessageContent(BuildContext context) {
     String? replyMessageText;
+    String? replyPreviewAuthorName;
+    bool isTargetReferralReplyPreview = false;
     if (isFirstMessage && referralBody != null && referralBody!.isNotEmpty) {
       replyMessageText = referralBody;
+      isTargetReferralReplyPreview = true;
+      final fallbackCompanionName =
+          (companionName != null && companionName!.trim().isNotEmpty)
+              ? companionName!.trim()
+              : message.senderName;
+      replyPreviewAuthorName = fallbackCompanionName;
     } else if (message.forwardedMessage != null) {
       replyMessageText = message.forwardedMessage!.type == 'voice'
           ? "Голосовое сообщение"
           : message.forwardedMessage!.text;
+      final forwardedAuthor = message.forwardedMessage!.senderName?.trim();
+      if (forwardedAuthor != null && forwardedAuthor.isNotEmpty) {
+        replyPreviewAuthorName = forwardedAuthor;
+      }
     }
 
     final bool isLeadChat = endPointInTab == 'lead';
@@ -2894,6 +3914,8 @@ class MessageItemWidget extends StatelessWidget {
           isSender: message.isMyMessage,
           senderName: message.senderName.toString(),
           replyMessage: replyMessageText,
+          replyAuthorName: replyPreviewAuthorName,
+          isTargetReferralReplyPreview: isTargetReferralReplyPreview,
           replyMessageId: message.forwardedMessage?.id,
           onReplyTap: (id) => onReplyTap?.call(id),
           isHighlighted: highlightedMessageId == message.id,
@@ -2902,7 +3924,10 @@ class MessageItemWidget extends StatelessWidget {
           isNote: message.isNote,
           isLeadChat: isLeadChat,
           isGroupChat: isGroupChat,
-          // реакции временно отключены
+          reactions: _shouldShowMessageReactions ? message.reactions : const [],
+          onReactionTap: _shouldShowMessageReactions
+              ? (emoji) => onReactionToggle?.call(message, emoji)
+              : null,
         );
         break;
       case 'image':
@@ -2918,7 +3943,11 @@ class MessageItemWidget extends StatelessWidget {
           isRead: message.isRead,
           isLeadChat: isLeadChat,
           isGroupChat: isGroupChat,
-          // реакции временно отключены
+          isMenuOpen: isMenuOpen,
+          reactions: _shouldShowMessageReactions ? message.reactions : const [],
+          onReactionTap: _shouldShowMessageReactions
+              ? (emoji) => onReactionToggle?.call(message, emoji)
+              : null,
         );
         break;
       case 'file':
@@ -2942,7 +3971,10 @@ class MessageItemWidget extends StatelessWidget {
           },
           senderName: message.senderName,
           isRead: message.isRead,
-          // реакции временно отключены
+          reactions: _shouldShowMessageReactions ? message.reactions : const [],
+          onReactionTap: _shouldShowMessageReactions
+              ? (emoji) => onReactionToggle?.call(message, emoji)
+              : null,
         );
         break;
       case 'voice':
@@ -2951,7 +3983,10 @@ class MessageItemWidget extends StatelessWidget {
           baseUrl: baseUrl,
           isLeadChat: isLeadChat,
           isGroupChat: isGroupChat,
-          // реакции временно отключены
+          reactions: _shouldShowMessageReactions ? message.reactions : const [],
+          onReactionTap: _shouldShowMessageReactions
+              ? (emoji) => onReactionToggle?.call(message, emoji)
+              : null,
         );
         break;
       default:
@@ -3060,11 +4095,29 @@ class MessageItemWidget extends StatelessWidget {
 
     onMenuStateChanged?.call(true);
 
-
     final List<ContextMenuItem> menuItems = [];
 
-    // 1. Ответить
-    if (endPointInTab != 'lead') {
+    // 1. Ответить / Instagram comment reply actions
+    if (isInstagramCommentChannel) {
+      menuItems.add(
+        ContextMenuItem(
+          icon: 'assets/icons/chats/menu_icons/reply.svg',
+          text: 'Ответить как комментарий',
+          onTap: () {
+            onInstagramReplyTap?.call('comment');
+          },
+        ),
+      );
+      menuItems.add(
+        ContextMenuItem(
+          icon: 'assets/icons/chats/menu_icons/reply.svg',
+          text: 'Ответить в директ',
+          onTap: () {
+            onInstagramReplyTap?.call('direct');
+          },
+        ),
+      );
+    } else if (_canReplyToMessage) {
       menuItems.add(
         ContextMenuItem(
           icon: 'assets/icons/chats/menu_icons/reply.svg',
@@ -3102,7 +4155,9 @@ class MessageItemWidget extends StatelessWidget {
     );
 
     // 4. Редактировать (только свои тексты)
-    if (message.isMyMessage && message.type == 'text') {
+    if (message.isMyMessage &&
+        message.type == 'text' &&
+        _canEditOwnTextMessages) {
       menuItems.add(
         ContextMenuItem(
           icon: 'assets/icons/chats/menu_icons/edit.svg',
@@ -3133,9 +4188,20 @@ class MessageItemWidget extends StatelessWidget {
       context: context,
       messagePosition: position,
       messageSize: messageBox.size,
-      messageWidget: _buildMessageContent(context),
+      // В preview-слое блокируем интерактив, чтобы tap по фото не открывал viewer.
+      messageWidget: IgnorePointer(
+        child: _buildMessageContent(context),
+      ),
       items: menuItems,
-      showReactions: false,
+      channelKey: chatChannelName,
+      onReactionSelected: _shouldShowMessageReactions &&
+              message.id > 0 &&
+              onReactionToggle != null
+          ? (emoji) => onReactionToggle!.call(message, emoji)
+          : null,
+      showReactions: _shouldShowMessageReactions &&
+          message.id > 0 &&
+          onReactionToggle != null,
       onDismiss: () {
         onMenuStateChanged?.call(false);
       },

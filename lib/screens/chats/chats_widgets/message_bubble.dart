@@ -38,6 +38,8 @@ class MessageBubble extends StatelessWidget {
   final bool isSender;
   final String senderName;
   final String? replyMessage;
+  final String? replyAuthorName;
+  final bool isTargetReferralReplyPreview;
   final int? replyMessageId;
   final void Function(int)? onReplyTap;
   final bool isHighlighted;
@@ -57,6 +59,8 @@ class MessageBubble extends StatelessWidget {
     required this.isSender,
     required this.senderName,
     this.replyMessage,
+    this.replyAuthorName,
+    this.isTargetReferralReplyPreview = false,
     this.replyMessageId,
     this.onReplyTap,
     this.isHighlighted = false,
@@ -107,36 +111,6 @@ class MessageBubble extends StatelessWidget {
                         isSender ? Colors.grey.shade600 : AppColors.primaryBlue,
                   ),
                 ),
-              if (replyMessage != null && replyMessage!.isNotEmpty)
-                GestureDetector(
-                  onTap: () {
-                    if (replyMessageId != null) {
-                      onReplyTap?.call(replyMessageId!);
-                    }
-                  },
-                  child: Container(
-                    constraints: BoxConstraints(
-                      maxWidth: MediaQuery.of(context).size.width * 0.7,
-                    ),
-                    padding: const EdgeInsets.all(8),
-                    margin: const EdgeInsets.only(bottom: 5),
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade300,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      _stripHtmlTags(replyMessage!),
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontFamily: 'Gilroy',
-                        fontStyle: FontStyle.italic,
-                        color: Colors.black87,
-                      ),
-                      maxLines: 2222,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ),
               Container(
                 padding: const EdgeInsets.all(12),
                 margin: const EdgeInsets.symmetric(vertical: 5),
@@ -160,6 +134,10 @@ class MessageBubble extends StatelessWidget {
                       ? CrossAxisAlignment.end
                       : CrossAxisAlignment.start,
                   children: [
+                    if (replyMessage != null && replyMessage!.isNotEmpty) ...[
+                      _buildReplyPreview(context),
+                      const SizedBox(height: 8),
+                    ],
                     // Текст сообщения
                     _buildMessageWithHtml(context, message),
 
@@ -227,6 +205,88 @@ class MessageBubble extends StatelessWidget {
                       ],
                     ),
                   ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildReplyPreview(BuildContext context) {
+    final replyText = _stripHtmlTags(replyMessage ?? '').trim();
+    final isTapEnabled = replyMessageId != null && onReplyTap != null;
+    final Color accentColor = isSender ? Colors.white : AppColors.primaryBlue;
+    final Color panelBackground =
+        isSender ? const Color(0x26FFFFFF) : const Color(0xFFF1F5FF);
+    final Color titleColor = isSender ? Colors.white : AppColors.primaryBlue;
+    final Color bodyColor = isSender ? Colors.white70 : Colors.black87;
+final int maxPreviewLines = isTargetReferralReplyPreview ? 40 : 2;
+    final authorLabel = (replyAuthorName ?? '').trim().isNotEmpty
+        ? replyAuthorName!.trim()
+        : AppLocalizations.of(context)!.translate('unknown_channel');
+  
+    return GestureDetector(
+      onTap: isTapEnabled ? () => onReplyTap!(replyMessageId!) : null,
+      child: Container(
+        constraints: BoxConstraints(
+          maxWidth: MediaQuery.of(context).size.width * 0.68,
+        ),
+        decoration: BoxDecoration(
+          color: panelBackground,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: isSender ? const Color(0x33FFFFFF) : const Color(0x22000000),
+            width: 0.8,
+          ),
+        ),
+        child: IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Container(
+                width: 3,
+                decoration: BoxDecoration(
+                  color: accentColor,
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(10),
+                    bottomLeft: Radius.circular(10),
+                  ),
+                ),
+              ),
+              Expanded(
+                child: Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        authorLabel,
+                        style: TextStyle(
+                          fontSize: 11,
+                          height: 1.1,
+                          fontWeight: FontWeight.w700,
+                          fontFamily: 'Gilroy',
+                          color: titleColor,
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        replyText,
+                        maxLines: maxPreviewLines,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 12,
+                          height: 1.2,
+                          fontFamily: 'Gilroy',
+                          color: bodyColor,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ],

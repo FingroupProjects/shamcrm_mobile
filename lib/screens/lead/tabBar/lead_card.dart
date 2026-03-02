@@ -1,9 +1,12 @@
 import 'package:crm_task_manager/custom_widget/custom_card_tasks_tabBar.dart';
+import 'package:crm_task_manager/bloc/lead/lead_bloc.dart';
+import 'package:crm_task_manager/bloc/lead/lead_event.dart';
 import 'package:crm_task_manager/models/lead_model.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_dropdown_bottom_dialog.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
 class LeadCard extends StatefulWidget {
@@ -174,8 +177,8 @@ Color _hexToColor(String hexColor) {
     Color borderColor = getBorderColor(widget.lead.source?.name);
 
     return GestureDetector(
-      onTap: () {
-        Navigator.push(
+      onTap: () async {
+        await Navigator.push(
           context,
           MaterialPageRoute(
             builder: (context) => LeadDetailsScreen(
@@ -186,6 +189,15 @@ Color _hexToColor(String hexColor) {
             ),
           ),
         );
+
+        if (mounted) {
+          context.read<LeadBloc>().add(
+                FetchLeads(
+                  widget.statusId,
+                  ignoreCache: true,
+                ),
+              );
+        }
       },
       child: AnimatedBuilder(
         animation: _animationController,

@@ -33,23 +33,13 @@ class CompactReactionChip extends StatelessWidget {
           horizontal: horizontalPadding,
         ),
         decoration: BoxDecoration(
-          // Если мы отправитель (фиолетовый фон), делаем светлую подложку
-          color: isSender
-              ? (reaction.isMyReaction
-                  ? Colors.white.withOpacity(0.4)
-                  : Colors.white.withOpacity(0.25))
-              : (reaction.isMyReaction
-                  ? const Color(0x1A2481CC)
-                  : const Color(0x14000000)),
+          // Единый стиль "как у серверной реакции" (без выделения контура)
+          color: const Color(0x334A66F3),
+          border: Border.all(
+            color: const Color(0x665073F5),
+            width: 0.8,
+          ),
           borderRadius: BorderRadius.circular(borderRadius),
-          border: reaction.isMyReaction
-              ? Border.all(
-                  color: isSender
-                      ? Colors.white.withOpacity(0.8)
-                      : const Color(0xFF2481CC),
-                  width: 1.2,
-                )
-              : null,
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -67,16 +57,49 @@ class CompactReactionChip extends StatelessWidget {
               style: TextStyle(
                 fontSize: fontSize,
                 fontWeight: FontWeight.w600,
-                color: isSender
-                    ? Colors.white
-                    : (reaction.isMyReaction
-                        ? const Color(0xFF2481CC)
-                        : const Color(0xFF8E8E93)),
+                color: Colors.white,
                 height: 1.0,
               ),
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Общая "капсула" реакций для image/file/voice сообщений.
+/// Используется, чтобы реакции выглядели как единый блок, а не разрозненные чипы.
+class ReactionCapsule extends StatelessWidget {
+  final List<MessageReaction> reactions;
+  final bool isSender;
+  final Function(String emoji)? onReactionTap;
+
+  const ReactionCapsule({
+    Key? key,
+    required this.reactions,
+    required this.isSender,
+    this.onReactionTap,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    if (reactions.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
+      child: Wrap(
+        spacing: 4,
+        runSpacing: 4,
+        children: reactions.map((reaction) {
+          return CompactReactionChip(
+            reaction: reaction,
+            isSender: isSender,
+            onTap: () => onReactionTap?.call(reaction.emoji),
+          );
+        }).toList(),
       ),
     );
   }

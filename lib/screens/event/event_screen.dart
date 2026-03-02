@@ -418,79 +418,113 @@ int _tutorialStep = 0; // Добавляем шаг туториала
 
       return Row(
         children: [
-          Expanded(
-            child: Text(
-              title,
-              style: const TextStyle(
-                fontSize: 20,
-                fontFamily: 'Gilroy',
-                fontWeight: FontWeight.w600,
-                color: Color(0xff1E2E52),
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-
-          // Стрелочка переключения воронок — только если есть несколько воронок
           if (state is SalesFunnelLoaded && state.funnels.length > 1)
-            Padding(
-              padding: const EdgeInsets.only(left: 8.0),
-              child: PopupMenuButton<SalesFunnel>(
-                icon: const Icon(Icons.arrow_drop_down, color: Color(0xff1E2E52)),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                color: Colors.white,
-                elevation: 8,
-                offset: const Offset(0, 40),
-                onSelected: (SalesFunnel funnel) async {
-                  try {
-                    // Сохраняем выбор пользователя
-                    await _apiService.saveSelectedEventSalesFunnel(funnel.id.toString());
+            Expanded(
+              child: InkWell(
+                onTap: () async {
+                  final RenderBox button =
+                      context.findRenderObject() as RenderBox;
+                  final RenderBox overlay = Navigator.of(context)
+                      .overlay!
+                      .context
+                      .findRenderObject() as RenderBox;
+                  final RelativeRect position = RelativeRect.fromRect(
+                    Rect.fromPoints(
+                      button.localToGlobal(Offset.zero, ancestor: overlay),
+                      button.localToGlobal(
+                          button.size.bottomRight(Offset.zero),
+                          ancestor: overlay),
+                    ),
+                    Offset.zero & overlay.size,
+                  );
 
-                    // Очищаем старое состояние
-                    _resetFilters();
+                  final selected = await showMenu<SalesFunnel>(
+                    context: context,
+                    position: position,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                    color: Colors.white,
+                    elevation: 8,
+                    items: state.funnels
+                        .map((f) => PopupMenuItem<SalesFunnel>(
+                              value: f,
+                              child: Text(f.name,
+                                  style: const TextStyle(fontFamily: 'Gilroy')),
+                            ))
+                        .toList(),
+                  );
 
-                    setState(() {
-                      _selectedFunnel = funnel;
-                      _isSearching = false;
-                      _searchController.clear();
-                      _lastSearchQuery = '';
-                    });
+                  if (selected != null) {
+                    try {
+                      await _apiService
+                          .saveSelectedEventSalesFunnel(selected.id.toString());
 
-                    // Обновляем глобальный выбор воронки
-                    context.read<SalesFunnelBloc>().add(SelectSalesFunnel(funnel));
+                      _resetFilters();
 
-                    // Перезагружаем события для новой воронки
-                    _loadEvents();
-                  } catch (e) {
-                    if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Ошибка при смене воронки'),
-                          backgroundColor: Colors.red,
-                        ),
-                      );
+                      setState(() {
+                        _selectedFunnel = selected;
+                        _isSearching = false;
+                        _searchController.clear();
+                        _lastSearchQuery = '';
+                      });
+
+                      context
+                          .read<SalesFunnelBloc>()
+                          .add(SelectSalesFunnel(selected));
+
+                      _loadEvents();
+                    } catch (e) {
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Ошибка при смене воронки'),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                      }
                     }
                   }
                 },
-                itemBuilder: (_) => state.funnels
-                    .map((f) => PopupMenuItem<SalesFunnel>(
-                          value: f,
-                          child: Text(
-                            f.name,
-                            style: const TextStyle(
-                              fontFamily: 'Gilroy',
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
-                              color: Color(0xff1E2E52),
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                borderRadius: BorderRadius.circular(8),
+                child: Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 4.0, vertical: 4.0),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.expand_more,
+                          color: Color(0xff1E2E52), size: 24),
+                      const SizedBox(width: 4),
+                      Flexible(
+                        child: Text(
+                          title,
+                          style: const TextStyle(
+                            fontSize: 20,
+                            fontFamily: 'Gilroy',
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xff1E2E52),
                           ),
-                        ))
-                    .toList(),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            )
+          else
+            Expanded(
+              child: Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontFamily: 'Gilroy',
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xff1E2E52),
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
         ],

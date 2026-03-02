@@ -42,6 +42,8 @@ class _LeadColumnState extends State<LeadColumn> {
   bool _isTutorialInProgress = false;
   int _tutorialStep = 0;
   bool _isInitialized = false;
+  bool _hasRetriedAfterError = false;
+  String? _lastShownErrorMessage;
 
   @override
   void initState() {
@@ -119,6 +121,8 @@ class _LeadColumnState extends State<LeadColumn> {
             }
 
             if (state is LeadDataLoaded) {
+              _hasRetriedAfterError = false;
+              _lastShownErrorMessage = null;
               final leads = state.leads.where((l) => l.statusId == widget.statusId).toList();
               debugPrint('LeadColumn: Filtered ${leads.length} leads for status ${widget.statusId}');
 
@@ -181,26 +185,73 @@ class _LeadColumnState extends State<LeadColumn> {
             }
 
             if (state is LeadError) {
+              final bool shouldRetryNow = !_hasRetriedAfterError;
+
               WidgetsBinding.instance.addPostFrameCallback((_) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      AppLocalizations.of(context)!.translate(state.message),
-                      style: const TextStyle(fontFamily: 'Gilroy', fontSize: 16, fontWeight: FontWeight.w500, color: Colors.white),
+                if (!mounted) return;
+
+                if (_lastShownErrorMessage != state.message) {
+                  _lastShownErrorMessage = state.message;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        AppLocalizations.of(context)!.translate(state.message),
+                        style: const TextStyle(fontFamily: 'Gilroy', fontSize: 16, fontWeight: FontWeight.w500, color: Colors.white),
+                      ),
+                      backgroundColor: Colors.red,
+                      behavior: SnackBarBehavior.floating,
+                      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      duration: const Duration(seconds: 3),
                     ),
-                    backgroundColor: Colors.red,
-                    behavior: SnackBarBehavior.floating,
-                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    duration: const Duration(seconds: 3),
-                  ),
-                );
+                  );
+                }
+
+                if (shouldRetryNow) {
+                  _hasRetriedAfterError = true;
+                  context.read<LeadBloc>().add(
+                        FetchLeads(widget.statusId, ignoreCache: true),
+                      );
+                }
               });
+
+              if (!shouldRetryNow) {
+                return ListView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  children: [
+                    SizedBox(height: MediaQuery.of(context).size.height * 0.35),
+                    Center(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 24),
+                        child: Text(
+                          state.message,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            fontFamily: 'Gilroy',
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                            color: Color(0xff99A4BA),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              }
+
+              return const Center(
+                child: PlayStoreImageLoading(
+                  size: 80.0,
+                  duration: Duration(milliseconds: 1000),
+                ),
+              );
             }
 
-            return ListView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              children: const [SizedBox()],
+            return const Center(
+              child: PlayStoreImageLoading(
+                size: 80.0,
+                duration: Duration(milliseconds: 1000),
+              ),
             );
           },
         ),

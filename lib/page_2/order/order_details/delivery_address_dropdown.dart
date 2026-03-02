@@ -11,6 +11,8 @@ class DeliveryAddressDropdown extends StatefulWidget {
   final int leadId;
   final int organizationId;
   final DeliveryAddress? selectedAddress;
+  final String? preferredAddressText;
+  final int refreshTrigger;
   final Function(DeliveryAddress) onSelectAddress;
 
   const DeliveryAddressDropdown({
@@ -18,11 +20,14 @@ class DeliveryAddressDropdown extends StatefulWidget {
     required this.leadId,
     required this.organizationId,
     this.selectedAddress,
+    this.preferredAddressText,
+    this.refreshTrigger = 0,
     required this.onSelectAddress,
   });
 
   @override
-  State<DeliveryAddressDropdown> createState() => _DeliveryAddressDropdownState();
+  State<DeliveryAddressDropdown> createState() =>
+      _DeliveryAddressDropdownState();
 }
 
 class _DeliveryAddressDropdownState extends State<DeliveryAddressDropdown> {
@@ -39,15 +44,17 @@ class _DeliveryAddressDropdownState extends State<DeliveryAddressDropdown> {
   void didUpdateWidget(DeliveryAddressDropdown oldWidget) {
     super.didUpdateWidget(oldWidget);
     // Fetch addresses when leadId changes
-    if (oldWidget.leadId != widget.leadId) {
+    if (oldWidget.leadId != widget.leadId ||
+        oldWidget.refreshTrigger != widget.refreshTrigger) {
+      _autoSelectedAddressId = null;
       _fetchAddresses();
     }
   }
 
   void _fetchAddresses() {
     context.read<DeliveryAddressBloc>().add(
-      FetchDeliveryAddresses(leadId: widget.leadId),
-    );
+          FetchDeliveryAddresses(leadId: widget.leadId),
+        );
   }
 
   @override
@@ -83,7 +90,8 @@ class _DeliveryAddressDropdownState extends State<DeliveryAddressDropdown> {
                   height: 16,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
+                    valueColor:
+                        AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
                   ),
                 ),
               ),
@@ -95,12 +103,47 @@ class _DeliveryAddressDropdownState extends State<DeliveryAddressDropdown> {
           if (widget.selectedAddress != null) {
             try {
               initialAddress = addresses.firstWhere(
-                    (address) => address.id == widget.selectedAddress!.id,
+                (address) => address.id == widget.selectedAddress!.id,
               );
             } catch (e) {
-              // If selectedAddress is not found, set initialAddress to null
-              initialAddress = null;
+              // Keep optimistic/manual value visible even if it is not in list yet.
+              initialAddress = widget.selectedAddress;
             }
+          }
+
+          final preferredAddressText =
+              widget.preferredAddressText?.trim().toLowerCase();
+          if (preferredAddressText != null && preferredAddressText.isNotEmpty) {
+            final preferredMatches = addresses
+                .where((address) =>
+                    address.address.trim().toLowerCase() ==
+                        preferredAddressText ||
+                    address.address
+                        .trim()
+                        .toLowerCase()
+                        .contains(preferredAddressText) ||
+                    preferredAddressText.contains(
+                      address.address.trim().toLowerCase(),
+                    ))
+                .toList();
+            if (preferredMatches.isNotEmpty) {
+              final preferredAddress = preferredMatches.last;
+              initialAddress = preferredAddress;
+              if (_autoSelectedAddressId != preferredAddress.id) {
+                _autoSelectedAddressId = preferredAddress.id;
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (!mounted) return;
+                  widget.onSelectAddress(preferredAddress);
+                });
+              }
+            }
+          }
+
+          if (initialAddress != null &&
+              !addresses.any(
+                (address) => address.id == initialAddress!.id,
+              )) {
+            addresses = [...addresses, initialAddress];
           }
 
           if (addresses.length == 1 &&
@@ -154,7 +197,7 @@ class _DeliveryAddressDropdownState extends State<DeliveryAddressDropdown> {
             ),
             const SizedBox(height: 4),
             CustomDropdown<DeliveryAddress>.search(
-              key: ValueKey(widget.leadId), // Force rebuild when leadId changes
+              key: ValueKey('${widget.leadId}_${widget.refreshTrigger}'),
               closeDropDownOnClearFilterSearch: true,
               items: addresses,
               searchHintText: AppLocalizations.of(context)!.translate('search'),
@@ -187,8 +230,7 @@ class _DeliveryAddressDropdownState extends State<DeliveryAddressDropdown> {
               },
               headerBuilder: (context, selectedItem, enabled) {
                 return Text(
-                  selectedItem?.address ??
-                      AppLocalizations.of(context)!.translate('select_delivery_address'),
+                  selectedItem.address,
                   style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
@@ -198,7 +240,8 @@ class _DeliveryAddressDropdownState extends State<DeliveryAddressDropdown> {
                 );
               },
               hintBuilder: (context, hint, enabled) => Text(
-                AppLocalizations.of(context)!.translate('select_delivery_address'),
+                AppLocalizations.of(context)!
+                    .translate('select_delivery_address'),
                 style: const TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w500,

@@ -6,6 +6,8 @@ class LeadData {
   final int? managerId;
   final num? debt; // ← Добавляем поле долга
   final String? phone; // ← Добавляем поле телефон
+  final int? currencyId;
+  final LeadListCurrency? currency;
 
   LeadData({
     required this.id,
@@ -13,6 +15,8 @@ class LeadData {
     this.managerId,
     this.debt, // ← Добавляем в конструктор
     this.phone, // ← Добавляем в конструктор
+    this.currencyId,
+    this.currency,
   });
 
   factory LeadData.fromJson(Map<String, dynamic> json) => LeadData(
@@ -21,6 +25,10 @@ class LeadData {
         managerId: json['manager'] != null ? json['manager']['id'] : null,
         debt: json['debt'], // ← Парсим долг из JSON
         phone: json['phone']?.toString(), // ← Парсим телефон из JSON
+        currencyId: json['currency_id'],
+        currency: json['currency'] != null
+            ? LeadListCurrency.fromJson(json['currency'])
+            : null,
       );
 
   Map<String, dynamic> toJson() => {
@@ -29,6 +37,8 @@ class LeadData {
         "managerId": managerId,
         "debt": debt, // ← Добавляем в toJson
         "phone": phone, // ← Добавляем в toJson
+        "currency_id": currencyId,
+        "currency": currency?.toJson(),
       };
 
   @override
@@ -43,6 +53,50 @@ class LeadData {
 
   @override
   int get hashCode => id.hashCode ^ name.hashCode;
+}
+
+class LeadListCurrency {
+  final int? id;
+  final String? name;
+  final int? digitalCode;
+  final String? symbolCode;
+  final int? organizationId;
+  final String? createdAt;
+  final String? updatedAt;
+
+  LeadListCurrency({
+    this.id,
+    this.name,
+    this.digitalCode,
+    this.symbolCode,
+    this.organizationId,
+    this.createdAt,
+    this.updatedAt,
+  });
+
+  factory LeadListCurrency.fromJson(Map<String, dynamic> json) {
+    return LeadListCurrency(
+      id: json['id'],
+      name: json['name']?.toString(),
+      digitalCode: json['digital_code'],
+      symbolCode: json['symbol_code']?.toString(),
+      organizationId: json['organization_id'],
+      createdAt: json['created_at']?.toString(),
+      updatedAt: json['updated_at']?.toString(),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'digital_code': digitalCode,
+      'symbol_code': symbolCode,
+      'organization_id': organizationId,
+      'created_at': createdAt,
+      'updated_at': updatedAt,
+    };
+  }
 }
 
 class Pagination {

@@ -12,6 +12,7 @@ class PremiumContextMenu {
     required List<ContextMenuItem> items,
     Function(String emoji)? onReactionSelected,
     VoidCallback? onShowFullPicker,
+    String? channelKey,
     bool showReactions = true,
     required VoidCallback onDismiss,
   }) {
@@ -38,6 +39,7 @@ class PremiumContextMenu {
                 entry.remove();
               }
             : null,
+        channelKey: channelKey,
         showReactions: showReactions,
         onDismiss: () {
           onDismiss();
@@ -71,6 +73,7 @@ class _PremiumMenuOverlay extends StatefulWidget {
   final List<ContextMenuItem> items;
   final Function(String emoji)? onReactionSelected;
   final VoidCallback? onShowFullPicker;
+  final String? channelKey;
   final bool showReactions;
   final VoidCallback onDismiss;
 
@@ -82,6 +85,7 @@ class _PremiumMenuOverlay extends StatefulWidget {
     required this.items,
     this.onReactionSelected,
     this.onShowFullPicker,
+    this.channelKey,
     this.showReactions = true,
     required this.onDismiss,
   }) : super(key: key);
@@ -125,8 +129,9 @@ class _PremiumMenuOverlayState extends State<_PremiumMenuOverlay>
     final screenHeight = MediaQuery.of(context).size.height;
 
     // Константы для расчёта
-    const double maxMenuWidth = 260.0;
     const double horizontalPadding = 16.0;
+    final double maxMenuWidth =
+        (screenWidth - (horizontalPadding * 2)).clamp(220.0, 280.0);
     final double reactionPanelHeight = widget.showReactions ? 54.0 : 0.0;
 
     // Рассчитываем вертикальное положение
@@ -208,6 +213,10 @@ class _PremiumMenuOverlayState extends State<_PremiumMenuOverlay>
   }
 
   Widget _buildReactionPanel() {
+    final contextReactions = EmojiData.reactionsForSource(
+      'context_menu',
+      channelKey: widget.channelKey,
+    );
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
       decoration: BoxDecoration(
@@ -224,7 +233,7 @@ class _PremiumMenuOverlayState extends State<_PremiumMenuOverlay>
           mainAxisSize: MainAxisSize.min,
           children: [
             const SizedBox(width: 6),
-            ...EmojiData.quickReactions.map((emoji) {
+            ...contextReactions.map((emoji) {
               return GestureDetector(
                 onTap: () => widget.onReactionSelected?.call(emoji),
                 child: Padding(
@@ -236,19 +245,6 @@ class _PremiumMenuOverlayState extends State<_PremiumMenuOverlay>
                 ),
               );
             }).toList(),
-            GestureDetector(
-              onTap: widget.onShowFullPicker,
-              child: Container(
-                margin: const EdgeInsets.symmetric(horizontal: 6),
-                width: 32,
-                height: 32,
-                decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.05),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.add, size: 20, color: Colors.black54),
-              ),
-            ),
             const SizedBox(width: 6),
           ],
         ),
@@ -258,7 +254,7 @@ class _PremiumMenuOverlayState extends State<_PremiumMenuOverlay>
 
   Widget _buildMenuCard() {
     return Container(
-      width: 250,
+      width: double.infinity,
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.9),
         borderRadius: BorderRadius.circular(16),
@@ -295,6 +291,7 @@ class _PremiumMenuOverlayState extends State<_PremiumMenuOverlay>
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 12),
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             if (item.icon.contains('.svg'))
               SvgPicture.asset(
@@ -310,12 +307,15 @@ class _PremiumMenuOverlayState extends State<_PremiumMenuOverlay>
                 color: item.isDestructive ? Colors.red : Colors.black87,
               ),
             const SizedBox(width: 15),
-            Text(
-              item.text,
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                color: item.isDestructive ? Colors.red : Colors.black87,
+            Expanded(
+              child: Text(
+                item.text,
+                softWrap: true,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: item.isDestructive ? Colors.red : Colors.black87,
+                ),
               ),
             ),
           ],

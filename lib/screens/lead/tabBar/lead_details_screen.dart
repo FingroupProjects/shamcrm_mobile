@@ -10,8 +10,15 @@ import 'package:crm_task_manager/bloc/lead_by_id/leadById_event.dart';
 import 'package:crm_task_manager/bloc/lead_by_id/leadById_state.dart';
 import 'package:crm_task_manager/bloc/organization/organization_bloc.dart';
 import 'package:crm_task_manager/bloc/organization/organization_event.dart';
+import 'package:crm_task_manager/bloc/notes/notes_bloc.dart';
+import 'package:crm_task_manager/bloc/notes/notes_event.dart';
+import 'package:crm_task_manager/bloc/notes/notes_state.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_by_lead/order_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_by_lead/order_event.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/order_by_lead/order_state.dart';
+import 'package:crm_task_manager/bloc/lead_deal/lead_deal_bloc.dart';
+import 'package:crm_task_manager/bloc/lead_deal/lead_deal_event.dart';
+import 'package:crm_task_manager/bloc/lead_deal/lead_deal_state.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/custom_widget/file_utils.dart';
 import 'package:crm_task_manager/models/field_configuration.dart';
@@ -195,6 +202,11 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
   // Field configuration
   List<FieldConfiguration> _fieldConfiguration = [];
   bool _isConfigurationLoaded = false;
+  bool _showCombinedLoader = true;
+  bool _leadDataReady = false;
+  bool _notesDataReady = false;
+  bool _dealsDataReady = false;
+  bool _ordersDataReady = false;
 
   @override
   void initState() {
@@ -202,21 +214,48 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
     _scrollController = ScrollController();
 
     _checkPermissions().then((_) {
+      final leadId = int.parse(widget.leadId);
       context.read<OrganizationBloc>().add(FetchOrganizations());
       _loadSelectedOrganization();
-      context
-          .read<LeadByIdBloc>()
-          .add(FetchLeadByIdEvent(leadId: int.parse(widget.leadId)));
-      if (_canReadOrders) {
-        context
-            .read<OrderByLeadBloc>()
-            .add(FetchOrdersByLead(leadId: int.parse(widget.leadId)));
+      context.read<LeadByIdBloc>().add(FetchLeadByIdEvent(leadId: leadId));
+
+      if (_canReadNotes) {
+        context.read<NotesBloc>().add(FetchNotes(leadId));
+      } else {
+        _notesDataReady = true;
       }
+
+      if (_canReadDeal) {
+        context.read<LeadDealsBloc>().add(FetchLeadDeals(leadId));
+      } else {
+        _dealsDataReady = true;
+      }
+
+      if (_canReadOrders) {
+        context.read<OrderByLeadBloc>().add(FetchOrdersByLead(leadId: leadId));
+      } else {
+        _ordersDataReady = true;
+      }
+
+      _tryHideCombinedLoader();
       _loadContactsToCache();
     });
     _fetchTutorialProgress();
     _listenToPrefsChanges();
     _loadFieldConfiguration();
+  }
+
+  void _tryHideCombinedLoader() {
+    if (!_showCombinedLoader) return;
+    if (_leadDataReady &&
+        _notesDataReady &&
+        _dealsDataReady &&
+        _ordersDataReady &&
+        mounted) {
+      setState(() {
+        _showCombinedLoader = false;
+      });
+    }
   }
 
   Future<void> _loadContactsToCache() async {
@@ -875,118 +914,142 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
         });
       });
     }
-    return MultiBlocProvider(
-      providers: [
-        BlocProvider<OrderByLeadBloc>(
-          create: (context) => OrderByLeadBloc(context.read<ApiService>()),
-        ),
-      ],
-      child: Scaffold(
-        appBar: _buildAppBar(
-            context,
-            AppLocalizations.of(context)!.translate('view_lead') +
-                widget.leadId),
-        backgroundColor: Colors.white,
-        body: BlocListener<LeadByIdBloc, LeadByIdState>(
-          listener: (context, state) {
-            if (state is LeadByIdError) {
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                showCustomSnackBar(
-                  context: context,
-                  message:
-                      AppLocalizations.of(context)!.translate(state.message),
-                  isSuccess: false,
-                );
-              });
-            }
-          },
-          child: BlocBuilder<LeadByIdBloc, LeadByIdState>(
-            builder: (context, state) {
-              if (state is LeadByIdLoading) {
-                return Center(
-                    child: CircularProgressIndicator(color: Color(0xff1E2E52)));
-              } else if (state is LeadByIdLoaded) {
-                LeadById lead = state.lead;
-                _updateDetails(lead);
-                // print('LeadDetailsScreen: Lead chats: ${lead.chats}');
-                return Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  child: ListView(
-                    controller: _scrollController,
-                    children: [
-                      _buildDetailsList(),
-                      const SizedBox(height: 8),
-                      LeadNavigateToChat(
-                        key: keyLeadNavigateChat,
-                        leadId: int.parse(widget.leadId),
-                        leadName: widget.leadName,
-                        chats: state.lead.chats
-                            .map((chat) => {
-                                  'id': chat.id,
-                                  'integration': chat.integration != null
-                                      ? {
-                                          'id': chat.integration!.id,
-                                          'name': chat.integration!.name,
-                                          'username':
-                                              chat.integration!.username,
-                                        }
-                                      : null,
-                                })
-                            .toList(),
-                      ),
-                      const SizedBox(height: 8),
-                      if (selectedOrganization != null)
-                        LeadToC(
-                          leadId: int.parse(widget.leadId),
-                          selectedOrganization: selectedOrganization!,
-                        ),
-                      const SizedBox(height: 8),
-                      ActionHistoryWidget(leadId: int.parse(widget.leadId)),
-                      const SizedBox(height: 8),
-                      if (_canReadNotes)
-                        NotesWidget(
-                          leadId: int.parse(widget.leadId),
-                          key: keyLeadNotice,
-                          managerId: lead.manager?.id,
-                        ),
-                      if (_canReadDeal)
-                        DealsWidget(
-                          leadId: int.parse(widget.leadId),
-                          key: keyLeadDeal,
-                        ),
-                      if (_canReadOrders)
-                        OrdersWidget(
-                          leadId: int.parse(widget.leadId),
-                          clientPhone: lead
-                              .phone, // Передаем телефон клиента из загруженных данных
-                          // key: GlobalKey(), // Убираем ключ, если он не нужен, или создаем новый.
-                          // В оригинале было GlobalKey(), но лучше просто передать null, если он не обязателен,
-                          // или создать Key. Но чтобы не ломать логику, верну GlobalKey()
-                          key: GlobalKey(),
-                        ),
-                      ContactPersonWidget(
-                          leadId: int.parse(widget.leadId),
-                          key: keyLeadContactPerson),
-                    ],
-                  ),
-                );
-              } else if (state is LeadByIdError) {
-                return Center(
-                  child: Text(
-                    AppLocalizations.of(context)!.translate(state.message),
-                    style: TextStyle(
-                      fontFamily: 'Gilroy',
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.black,
-                    ),
-                  ),
-                );
+    return Scaffold(
+      appBar: _buildAppBar(
+          context, AppLocalizations.of(context)!.translate('view_lead') + widget.leadId),
+      backgroundColor: Colors.white,
+      body: MultiBlocListener(
+        listeners: [
+          BlocListener<LeadByIdBloc, LeadByIdState>(
+            listener: (context, state) {
+              if (state is LeadByIdLoaded || state is LeadByIdError) {
+                _leadDataReady = true;
+                _tryHideCombinedLoader();
               }
-              return Center(child: Text(''));
+              if (state is LeadByIdError) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  showCustomSnackBar(
+                    context: context,
+                    message: AppLocalizations.of(context)!.translate(state.message),
+                    isSuccess: false,
+                  );
+                });
+              }
             },
           ),
+          BlocListener<NotesBloc, NotesState>(
+            listener: (context, state) {
+              if (state is NotesLoaded || state is NotesError) {
+                _notesDataReady = true;
+                _tryHideCombinedLoader();
+              }
+            },
+          ),
+          BlocListener<LeadDealsBloc, LeadDealsState>(
+            listener: (context, state) {
+              if (state is LeadDealsLoaded || state is LeadDealsError) {
+                _dealsDataReady = true;
+                _tryHideCombinedLoader();
+              }
+            },
+          ),
+          BlocListener<OrderByLeadBloc, OrderByLeadState>(
+            listener: (context, state) {
+              if (state is OrderByLeadLoaded || state is OrderByLeadError) {
+                _ordersDataReady = true;
+                _tryHideCombinedLoader();
+              }
+            },
+          ),
+        ],
+        child: BlocBuilder<LeadByIdBloc, LeadByIdState>(
+          builder: (context, state) {
+            if (_showCombinedLoader || state is LeadByIdLoading) {
+              return Center(
+                child: CircularProgressIndicator(color: Color(0xff1E2E52)),
+              );
+            }
+
+            if (state is LeadByIdLoaded) {
+              LeadById lead = state.lead;
+              _updateDetails(lead);
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: ListView(
+                  controller: _scrollController,
+                  children: [
+                    _buildDetailsList(),
+                    const SizedBox(height: 8),
+                    LeadNavigateToChat(
+                      key: keyLeadNavigateChat,
+                      leadId: int.parse(widget.leadId),
+                      leadName: widget.leadName,
+                      chats: state.lead.chats
+                          .map((chat) => {
+                                'id': chat.id,
+                                'integration': chat.integration != null
+                                    ? {
+                                        'id': chat.integration!.id,
+                                        'name': chat.integration!.name,
+                                        'username': chat.integration!.username,
+                                      }
+                                    : null,
+                              })
+                          .toList(),
+                    ),
+                    const SizedBox(height: 8),
+                    if (selectedOrganization != null)
+                      LeadToC(
+                        leadId: int.parse(widget.leadId),
+                        selectedOrganization: selectedOrganization!,
+                      ),
+                    const SizedBox(height: 8),
+                    ActionHistoryWidget(leadId: int.parse(widget.leadId)),
+                    const SizedBox(height: 8),
+                    if (_canReadNotes)
+                      NotesWidget(
+                        leadId: int.parse(widget.leadId),
+                        key: keyLeadNotice,
+                        managerId: lead.manager?.id,
+                        autoFetch: false,
+                      ),
+                    if (_canReadDeal)
+                      DealsWidget(
+                        leadId: int.parse(widget.leadId),
+                        key: keyLeadDeal,
+                        autoFetch: false,
+                      ),
+                    if (_canReadOrders)
+                      OrdersWidget(
+                        leadId: int.parse(widget.leadId),
+                        clientPhone: lead.phone,
+                        autoFetch: false,
+                        key: GlobalKey(),
+                      ),
+                    ContactPersonWidget(
+                      leadId: int.parse(widget.leadId),
+                      key: keyLeadContactPerson,
+                    ),
+                  ],
+                ),
+              );
+            }
+
+            if (state is LeadByIdError) {
+              return Center(
+                child: Text(
+                  AppLocalizations.of(context)!.translate(state.message),
+                  style: TextStyle(
+                    fontFamily: 'Gilroy',
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.black,
+                  ),
+                ),
+              );
+            }
+            return Center(child: Text(''));
+          },
         ),
       ),
     );
@@ -1132,11 +1195,22 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                     height: 24,
                   ),
                   onPressed: () {
-                    showDialog(
+                    showDialog<bool>(
                       context: context,
                       builder: (context) =>
                           DeleteLeadDialog(leadId: currentLead!.id),
-                    );
+                    ).then((deleted) {
+                      if (!mounted) return;
+
+                      context.read<LeadBloc>().add(
+                            FetchLeads(widget.statusId, ignoreCache: true),
+                          );
+
+                      if (deleted == true) {
+                        context.read<LeadBloc>().add(FetchLeadStatuses(forceRefresh: true));
+                        Navigator.pop(context, true);
+                      }
+                    });
                   },
                 ),
             ],

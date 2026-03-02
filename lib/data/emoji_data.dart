@@ -1,17 +1,126 @@
 /// Данные эмодзи для реакций
 /// Организованы по категориям как в Telegram
 class EmojiData {
-  // Быстрые популярные реакции (8 штук)
-  static const List<String> quickReactions = [
-    '😂',
-    '👍',
-    '❤️',
-    '👎',
-    '🔥',
-    '😮',
-    '🙏',
-    '👏'
+  // Централизованный справочник разрешенных реакций.
+  // ID используются для управления источниками (quick/context/full) без скринов.
+  static const Map<String, String> reactionCatalog = {
+    'thumbs_up': '👍',
+    'heart': '❤️',
+    'smile': '😊',
+    'handshake': '🤝',
+    'joy': '😂',
+    'surprised': '😮',
+    'cry': '😢',
+    'fire': '🔥',
+    'clap': '👏',
+    'party': '🎉',
+  };
+
+  // Источники реакций по умолчанию: настройка через ID из reactionCatalog.
+  static const Map<String, List<String>> reactionSourceIds = {
+    'quick_panel': [
+      'thumbs_up',
+      'heart',
+      'smile',
+      'handshake',
+      'joy',
+      'surprised',
+      'cry',
+      'fire',
+      'clap',
+      'party',
+    ],
+    'context_menu': [
+      'thumbs_up',
+      'heart',
+      'smile',
+      'handshake',
+      'joy',
+      'surprised',
+      'cry',
+      'fire',
+      'clap',
+      'party',
+    ],
+    'full_picker': [
+      'thumbs_up',
+      'heart',
+      'smile',
+      'handshake',
+      'joy',
+      'surprised',
+      'cry',
+      'fire',
+      'clap',
+      'party',
+    ],
+  };
+
+  // Наборы реакций по каналам.
+  // ВАЖНО: каждый канал задан отдельно (без startsWith), чтобы легко менять точечно.
+  static const List<String> _telegramReactionIds = [
+    'heart', // ❤️
+    'handshake', // 🤝
+    'thumbs_up', // 👍
   ];
+
+  static const List<String> _defaultReactionIds = [
+    'heart', // ❤️
+    'thumbs_up', // 👍
+    'joy', // 😂
+    'surprised', // 😮
+    'cry', // 😢
+    'fire', // 🔥
+    'clap', // 👏
+    'party', // 🎉
+  ];
+
+  // Все каналы описаны отдельно, чтобы в будущем менять любой конкретный источник отдельно.
+  static const Map<String, List<String>> channelReactionIds = {
+    'telegram_account': _telegramReactionIds,
+    'telegram_bot': _telegramReactionIds,
+    'mini_app': _defaultReactionIds,
+    'whatsapp': _defaultReactionIds,
+    'instagram': _defaultReactionIds,
+    'instagram_comment': _defaultReactionIds,
+    'facebook': _defaultReactionIds,
+    'messenger': _defaultReactionIds,
+    'phone': _defaultReactionIds,
+    'email': _defaultReactionIds,
+    'site': _defaultReactionIds,
+    'telegram': _telegramReactionIds,
+    'website': _defaultReactionIds,
+    'unknown': _defaultReactionIds,
+  };
+
+  static List<String> _reactionIdsForChannel(String? channelKey) {
+    final normalized = (channelKey ?? '').toLowerCase().trim();
+    if (normalized.isEmpty) {
+      return _defaultReactionIds;
+    }
+    return channelReactionIds[normalized] ?? _defaultReactionIds;
+  }
+
+  static List<String> reactionsForSource(
+    String source, {
+    String? channelKey,
+  }) {
+    final ids = channelKey == null
+        ? (reactionSourceIds[source] ?? const [])
+        : _reactionIdsForChannel(channelKey);
+    return ids.map((id) => reactionCatalog[id]).whereType<String>().toList();
+  }
+
+  // Быстрые популярные реакции (используются в нескольких виджетах).
+  static final List<String> quickReactions = reactionsForSource('quick_panel');
+
+  static final Map<String, List<String>> reactionPickerCategories = {
+    'reactions': reactionsForSource('full_picker'),
+  };
+
+  static const Map<String, String> reactionPickerCategoryNames = {
+    'reactions': 'Реакции',
+  };
 
   // Все категории эмодзи
   static const Map<String, List<String>> categories = {
@@ -615,5 +724,14 @@ class EmojiData {
     if (query.isEmpty) return getAllEmojis();
     // Простой поиск по содержанию
     return getAllEmojis().where((emoji) => emoji.contains(query)).toList();
+  }
+
+  static List<String> searchReactionEmojis(
+    String query, {
+    String? channelKey,
+  }) {
+    final all = reactionsForSource('full_picker', channelKey: channelKey);
+    if (query.isEmpty) return all;
+    return all.where((emoji) => emoji.contains(query)).toList();
   }
 }

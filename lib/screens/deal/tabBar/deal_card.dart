@@ -1,10 +1,14 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/bloc/deal/deal_bloc.dart';
+import 'package:crm_task_manager/bloc/deal/deal_event.dart';
 import 'package:crm_task_manager/custom_widget/custom_card_tasks_tabBar.dart';
 import 'package:crm_task_manager/models/deal_model.dart';
+import 'package:crm_task_manager/screens/deal/deal_cache.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_details_screen.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_dropdown_bottom_dialog.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
 class DealCard extends StatefulWidget {
@@ -95,13 +99,13 @@ class _DealCardState extends State<DealCard> {
     }
 
     return GestureDetector(
-      onTap: () {
-        Navigator.push(
+      onTap: () async {
+        final shouldRefresh = await Navigator.push(
           context,
           MaterialPageRoute(
             builder: (context) => DealDetailsScreen(
               dealId: widget.deal.id.toString(),
-              dealName: widget.deal.name ?? AppLocalizations.of(context)!.translate('no_name'),
+              dealName: widget.deal.name,
               startDate: widget.deal.startDate,
               endDate: widget.deal.endDate,
               sum: widget.deal.sum,
@@ -114,6 +118,11 @@ class _DealCardState extends State<DealCard> {
             ),
           ),
         );
+
+        if (shouldRefresh == true && mounted) {
+          await DealCache.clearDealsForStatus(widget.statusId);
+          context.read<DealBloc>().add(FetchDeals(widget.statusId));
+        }
       },
       child: Container(
         padding: const EdgeInsets.all(16),

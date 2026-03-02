@@ -160,24 +160,26 @@ class FileMessageBubble extends StatelessWidget {
                 ),
               ),
             ),
+            if (reactions.isNotEmpty)
+              Transform.translate(
+                offset: const Offset(0, -4),
+                child: Padding(
+                  padding: EdgeInsets.only(
+                    left: isSender ? 0 : 6,
+                    right: isSender ? 6 : 0,
+                    bottom: 2,
+                  ),
+                  child: ReactionCapsule(
+                    reactions: reactions,
+                    isSender: isSender,
+                    onReactionTap: onReactionTap,
+                  ),
+                ),
+              ),
             Row(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                if (reactions.isNotEmpty) ...[
-                  Wrap(
-                    spacing: 3,
-                    runSpacing: 3,
-                    children: reactions.map((reaction) {
-                      return CompactReactionChip(
-                        reaction: reaction,
-                        isSender: isSender,
-                        onTap: () => onReactionTap?.call(reaction.emoji),
-                      );
-                    }).toList(),
-                  ),
-                  const SizedBox(width: 8),
-                ],
                 Text(
                   time,
                   style: const TextStyle(

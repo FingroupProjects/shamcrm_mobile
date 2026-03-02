@@ -1,4 +1,3 @@
-import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_by_lead/order_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_by_lead/order_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_by_lead/order_state.dart';
@@ -15,9 +14,10 @@ import 'package:intl/intl.dart';
 class OrdersWidget extends StatefulWidget {
   final int leadId;
   final String? clientPhone; // Телефон клиента для автозаполнения
+  final bool autoFetch;
   final GlobalKey? key;
 
-  OrdersWidget({required this.leadId, this.clientPhone, this.key});
+  OrdersWidget({required this.leadId, this.clientPhone, this.autoFetch = true, this.key});
 
   @override
   _OrdersWidgetState createState() => _OrdersWidgetState();
@@ -30,7 +30,9 @@ class _OrdersWidgetState extends State<OrdersWidget> {
   void initState() {
     super.initState();
     _scrollController = ScrollController();
-    context.read<OrderByLeadBloc>().add(FetchOrdersByLead(leadId: widget.leadId));
+    if (widget.autoFetch) {
+      context.read<OrderByLeadBloc>().add(FetchOrdersByLead(leadId: widget.leadId));
+    }
   }
 
   @override

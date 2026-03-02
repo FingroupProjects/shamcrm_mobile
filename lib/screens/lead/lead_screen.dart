@@ -1232,7 +1232,12 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
             );
           }
 
-          return const SizedBox();
+          return const Center(
+            child: PlayStoreImageLoading(
+              size: 80.0,
+              duration: Duration(milliseconds: 1000),
+            ),
+          );
         },
       ),
     );
@@ -1597,6 +1602,12 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
                           _daysWithoutActivity != null ||
                           _directoryValues.isNotEmpty;
 
+                      if (mounted) {
+                        setState(() {
+                          _shouldShowLoader = true;
+                        });
+                      }
+
                       context.read<LeadBloc>().add(FetchLeads(
                             currentStatusId,
                             salesFunnelId: _selectedFunnel?.id,
@@ -1840,6 +1851,11 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
 
                           // Загружаем только если нет данных для этого статуса
                           if (!hasLeadsForStatus) {
+                            if (mounted) {
+                              setState(() {
+                                _shouldShowLoader = true;
+                              });
+                            }
                             currentLeadBloc.add(FetchLeads(
                               newStatusId,
                               salesFunnelId: _selectedFunnel?.id,
@@ -1884,6 +1900,11 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
                           }
                         } else {
                           // Если нет состояния LeadDataLoaded, загружаем данные
+                          if (mounted) {
+                            setState(() {
+                              _shouldShowLoader = true;
+                            });
+                          }
                           currentLeadBloc.add(FetchLeads(
                             newStatusId,
                             salesFunnelId: _selectedFunnel?.id,

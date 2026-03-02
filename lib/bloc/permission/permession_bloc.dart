@@ -55,11 +55,18 @@ class PermissionsBloc extends Bloc<PermissionsEvent, PermissionsState> {
         final hasWarehouseAccess = permissions.contains('accounting_of_goods') || 
                                    permissions.contains('accounting_money');
         
-        // Orders - requires order.read AND warehouse access
-        final hasOrdersAccess = permissions.contains('order.read') && hasWarehouseAccess;
+        // Orders - visible when user has any order.* permission and warehouse access
+        final hasAnyOrderAccess =
+            permissions.any((permission) => permission.startsWith('order.'));
+        final hasOrdersAccess = hasAnyOrderAccess && hasWarehouseAccess;
         
-        // Online Store - requires order.read WITHOUT warehouse access
-        final hasOnlineStoreAccess = permissions.contains('order.read') && !hasWarehouseAccess;
+        // Online Store - visible when user has access to categories/products/orders without warehouse access
+        final hasOnlineStoreFeatureAccess =
+            permissions.contains('category.read') ||
+            permissions.contains('product.read') ||
+            hasAnyOrderAccess;
+        final hasOnlineStoreAccess =
+            hasOnlineStoreFeatureAccess && !hasWarehouseAccess;
         
         await WidgetService.syncWidgetVisibilityToAndroid({
           'dashboard': permissions.contains('section.dashboard'),
@@ -147,6 +154,7 @@ class PermissionsBloc extends Bloc<PermissionsEvent, PermissionsState> {
       if (localizationResponse?.result != null) {
         final newLanguage = localizationResponse!.result!.language ?? 'ru';
         final newPhoneCode = localizationResponse.result!.countryPhoneCodes ?? '+992';
+        final newCurrency = localizationResponse.result!.currency;
         
         // Получаем текущие сохранённые значения
         final currentLanguage = await LocalizationService.getLanguage();
@@ -161,6 +169,7 @@ class PermissionsBloc extends Bloc<PermissionsEvent, PermissionsState> {
         await LocalizationService.applyLocalizationSettings(
           language: newLanguage,
           phoneCode: newPhoneCode,
+          currency: newCurrency,
         );
         
         if (kDebugMode) {

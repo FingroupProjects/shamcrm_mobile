@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class WidgetService {
   static const platform = MethodChannel('com.softtech.crm_task_manager/widget');
+  static bool _isInitialized = false;
 
   // Callback для навигации (Android формат: group + screenIndex) - legacy
   static Function(int group, int screenIndex)? onNavigateFromWidget;
@@ -18,6 +19,12 @@ class WidgetService {
 
   // Инициализация слушателя
   static void initialize() {
+    if (_isInitialized) {
+      debugPrint('WidgetService: initialize() skipped, already initialized');
+      return;
+    }
+    _isInitialized = true;
+
     debugPrint('WidgetService: === initialize() called ===');
     platform.setMethodCallHandler(_handleMethodCall);
     debugPrint('WidgetService: MethodCallHandler set');

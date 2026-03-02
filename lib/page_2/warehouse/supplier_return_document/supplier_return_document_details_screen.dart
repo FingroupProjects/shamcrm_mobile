@@ -38,10 +38,12 @@ class SupplierReturnDocumentDetailsScreen extends StatefulWidget {
   });
 
   @override
-  _SupplierReturnDocumentDetailsScreenState createState() => _SupplierReturnDocumentDetailsScreenState();
+  _SupplierReturnDocumentDetailsScreenState createState() =>
+      _SupplierReturnDocumentDetailsScreenState();
 }
 
-class _SupplierReturnDocumentDetailsScreenState extends State<SupplierReturnDocumentDetailsScreen> {
+class _SupplierReturnDocumentDetailsScreenState
+    extends State<SupplierReturnDocumentDetailsScreen> {
   final ApiService _apiService = ApiService();
   IncomingDocument? currentDocument;
   List<Map<String, dynamic>> details = [];
@@ -70,7 +72,8 @@ class _SupplierReturnDocumentDetailsScreenState extends State<SupplierReturnDocu
   // ✅ НОВОЕ: Проверка разрешения на проведение документа
   Future<void> _checkApprovePermission() async {
     try {
-      final hasPermission = await _apiService.hasPermission('supplier_return_document.approve');
+      final hasPermission =
+          await _apiService.hasPermission('supplier_return_document.approve');
       if (mounted) {
         setState(() {
           _hasApprovePermission = hasPermission;
@@ -111,7 +114,8 @@ class _SupplierReturnDocumentDetailsScreenState extends State<SupplierReturnDocu
       _isLoading = true;
     });
     try {
-      final document = await _apiService.getSupplierReturnDocumentById(widget.documentId);
+      final document =
+          await _apiService.getSupplierReturnDocumentById(widget.documentId);
       setState(() {
         currentDocument = document;
         _updateDetails(document);
@@ -123,7 +127,8 @@ class _SupplierReturnDocumentDetailsScreenState extends State<SupplierReturnDocu
       });
       if (e is ApiException && e.statusCode == 409) {
         final localizations = AppLocalizations.of(context)!;
-        showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', e.message);
+        showSimpleErrorDialog(
+            context, localizations.translate('error') ?? 'Ошибка', e.message);
         return;
       }
       final localizations = AppLocalizations.of(context)!;
@@ -142,48 +147,81 @@ class _SupplierReturnDocumentDetailsScreenState extends State<SupplierReturnDocu
 
     details = [
       {
-        'label': '${AppLocalizations.of(context)!.translate('document_number') ?? 'Номер документа'}:',
+        'label':
+            '${AppLocalizations.of(context)!.translate('document_number') ?? 'Номер документа'}:',
         'value': document.docNumber ?? '',
       },
       {
         'label': '${AppLocalizations.of(context)!.translate('date') ?? 'Дата'}',
-        'value': document.date != null ? DateFormat('dd.MM.yyyy HH:mm').format(document.date!) : '',
+        'value': document.date != null
+            ? DateFormat('dd.MM.yyyy HH:mm').format(document.date!)
+            : '',
       },
       {
-        'label': '${AppLocalizations.of(context)!.translate('storage') ?? 'Склад'}:',
+        'label':
+            '${AppLocalizations.of(context)!.translate('storage') ?? 'Склад'}:',
         'value': document.storage?.name ?? '',
       },
       {
-        'label': '${AppLocalizations.of(context)!.translate('supplier') ?? 'Поставщик'}:',
+        'label':
+            '${AppLocalizations.of(context)!.translate('supplier') ?? 'Поставщик'}:',
         'value': document.model?.name ?? '',
       },
       {
-        'label': '${AppLocalizations.of(context)!.translate('supplier_phone') ?? 'Телефон поставщика'}:',
+        'label':
+            '${AppLocalizations.of(context)!.translate('supplier_phone') ?? 'Телефон поставщика'}:',
         'value': document.model?.phone ?? '',
       },
       {
-        'label': '${AppLocalizations.of(context)!.translate('supplier_inn') ?? 'ИНН поставщика'}:',
+        'label':
+            '${AppLocalizations.of(context)!.translate('supplier_inn') ?? 'ИНН поставщика'}:',
         'value': document.model?.inn?.toString() ?? '',
       },
       {
-        'label': '${AppLocalizations.of(context)!.translate('comment') ?? 'Комментарий'}',
+        'label':
+            '${AppLocalizations.of(context)!.translate('comment') ?? 'Комментарий'}',
         'value': document.comment ?? '',
       },
+      if (document.exchangeRate?.value != null &&
+          document.exchangeRate!.value!.isNotEmpty)
+        {
+          'label':
+              '${AppLocalizations.of(context)!.translate('exchange_rate') ?? 'Курс валюты'}:',
+          'value': document.exchangeRate!.value!,
+        },
+      if (document.exchangeRate?.value != null &&
+          document.exchangeRate!.value!.isNotEmpty)
+        {
+          'label':
+              '${AppLocalizations.of(context)!.translate('total_by_currency') ?? 'Итого по валюте'}${(document.currency?.name ?? '').isNotEmpty ? ': ${document.currency!.name}' : ''}:',
+          'value': parseNumberToString(
+            (document.totalSum *
+                    (double.tryParse(document.exchangeRate!.value!
+                            .replaceAll(',', '.')) ??
+                        0))
+                .toStringAsFixed(2),
+          ),
+        },
       {
-        'label': '${AppLocalizations.of(context)!.translate('total_quantity') ?? 'Общее количество'}:',
+        'label':
+            '${AppLocalizations.of(context)!.translate('total_quantity') ?? 'Общее количество'}:',
         'value': document.totalQuantity.toString(),
       },
       {
-        'label': '${AppLocalizations.of(context)!.translate('total_sum') ?? 'Общая сумма'}:',
-        'value': '${parseNumberToString(document.totalSum.toStringAsFixed(2))} ${document.currency?.symbolCode ?? ''}',
+        'label':
+            '${AppLocalizations.of(context)!.translate('total_sum') ?? 'Общая сумма'}:',
+        'value':
+            '${parseNumberToString(document.totalSum.toStringAsFixed(2))} ${document.currency?.symbolCode ?? ''}',
       },
       {
-        'label': '${AppLocalizations.of(context)!.translate('status') ?? 'Статус'}:',
+        'label':
+            '${AppLocalizations.of(context)!.translate('status') ?? 'Статус'}:',
         'value': _getLocalizedStatus(document),
       },
       if (document.deletedAt != null)
         {
-          'label': '${AppLocalizations.of(context)!.translate('deleted_at') ?? 'Дата удаления'}:',
+          'label':
+              '${AppLocalizations.of(context)!.translate('deleted_at') ?? 'Дата удаления'}:',
           'value': DateFormat('dd.MM.yyyy HH:mm').format(document.deletedAt!),
         },
     ];
@@ -191,11 +229,12 @@ class _SupplierReturnDocumentDetailsScreenState extends State<SupplierReturnDocu
 
   String _getLocalizedStatus(IncomingDocument document) {
     final localizations = AppLocalizations.of(context)!;
-    
+
     if (document.deletedAt != null) {
-      return localizations.translate('deleted') ?? 'Удален'; // ИЗМЕНЕНО: Унифицировано
+      return localizations.translate('deleted') ??
+          'Удален'; // ИЗМЕНЕНО: Унифицировано
     }
-    
+
     if (document.approved == 1) {
       return localizations.translate('approved') ?? 'Проведен';
     } else {
@@ -238,7 +277,8 @@ class _SupplierReturnDocumentDetailsScreenState extends State<SupplierReturnDocu
     if (!widget.hasUpdatePermission) {
       final localizations = AppLocalizations.of(context)!;
       _showSnackBar(
-        localizations.translate('no_permission_to_approve') ?? 'Нет прав на проведение документа',
+        localizations.translate('no_permission_to_approve') ??
+            'Нет прав на проведение документа',
         false,
       );
       return;
@@ -256,7 +296,8 @@ class _SupplierReturnDocumentDetailsScreenState extends State<SupplierReturnDocu
       _updateStatusOnly();
       final localizations = AppLocalizations.of(context)!;
       _showSnackBar(
-        localizations.translate('document_approved_successfully') ?? 'Документ проведен',
+        localizations.translate('document_approved_successfully') ??
+            'Документ проведен',
         true,
       );
     } catch (e) {
@@ -287,7 +328,8 @@ class _SupplierReturnDocumentDetailsScreenState extends State<SupplierReturnDocu
     if (!widget.hasUpdatePermission) {
       final localizations = AppLocalizations.of(context)!;
       _showSnackBar(
-        localizations.translate('no_permission_to_unapprove') ?? 'Нет прав на отмену проведения',
+        localizations.translate('no_permission_to_unapprove') ??
+            'Нет прав на отмену проведения',
         false,
       );
       return;
@@ -305,7 +347,8 @@ class _SupplierReturnDocumentDetailsScreenState extends State<SupplierReturnDocu
       _updateStatusOnly();
       final localizations = AppLocalizations.of(context)!;
       _showSnackBar(
-        localizations.translate('document_approval_canceled') ?? 'Проведение документа отменено',
+        localizations.translate('document_approval_canceled') ??
+            'Проведение документа отменено',
         true,
       );
     } catch (e) {
@@ -336,7 +379,8 @@ class _SupplierReturnDocumentDetailsScreenState extends State<SupplierReturnDocu
     if (!widget.hasUpdatePermission) {
       final localizations = AppLocalizations.of(context)!;
       _showSnackBar(
-        localizations.translate('no_permission_to_restore') ?? 'Нет прав на восстановление',
+        localizations.translate('no_permission_to_restore') ??
+            'Нет прав на восстановление',
         false,
       );
       return;
@@ -354,7 +398,8 @@ class _SupplierReturnDocumentDetailsScreenState extends State<SupplierReturnDocu
       _updateStatusOnly();
       final localizations = AppLocalizations.of(context)!;
       _showSnackBar(
-        localizations.translate('document_restored_successfully') ?? 'Документ восстановлен',
+        localizations.translate('document_restored_successfully') ??
+            'Документ восстановлен',
         true,
       );
     } catch (e) {
@@ -408,7 +453,8 @@ class _SupplierReturnDocumentDetailsScreenState extends State<SupplierReturnDocu
     if (currentDocument!.deletedAt != null) {
       if (!widget.hasUpdatePermission) return const SizedBox.shrink();
       return StyledActionButton(
-        text: AppLocalizations.of(context)!.translate('restore_document') ?? 'Восстановить',
+        text: AppLocalizations.of(context)!.translate('restore_document') ??
+            'Восстановить',
         icon: Icons.restore,
         color: const Color(0xFF2196F3),
         onPressed: _restoreDocument,
@@ -427,7 +473,8 @@ class _SupplierReturnDocumentDetailsScreenState extends State<SupplierReturnDocu
 
     if (currentDocument!.approved == 0) {
       return StyledActionButton(
-        text: AppLocalizations.of(context)!.translate('approve_document') ?? 'Провести',
+        text: AppLocalizations.of(context)!.translate('approve_document') ??
+            'Провести',
         icon: Icons.check_circle_outline,
         color: const Color(0xFF4CAF50),
         onPressed: _approveDocument,
@@ -435,7 +482,8 @@ class _SupplierReturnDocumentDetailsScreenState extends State<SupplierReturnDocu
     }
 
     return StyledActionButton(
-      text: AppLocalizations.of(context)!.translate('unapprove_document') ?? 'Отменить проведение',
+      text: AppLocalizations.of(context)!.translate('unapprove_document') ??
+          'Отменить проведение',
       icon: Icons.cancel_outlined,
       color: const Color(0xFFFFA500),
       onPressed: _unApproveDocument,
@@ -485,7 +533,8 @@ class _SupplierReturnDocumentDetailsScreenState extends State<SupplierReturnDocu
               Padding(
                 padding: const EdgeInsets.all(16),
                 child: StyledActionButton(
-                  text: AppLocalizations.of(context)!.translate('close') ?? 'Закрыть',
+                  text: AppLocalizations.of(context)!.translate('close') ??
+                      'Закрыть',
                   icon: Icons.close,
                   color: const Color(0xff1E2E52),
                   onPressed: () => Navigator.pop(context),
@@ -519,7 +568,9 @@ class _SupplierReturnDocumentDetailsScreenState extends State<SupplierReturnDocu
             : currentDocument == null
                 ? Center(
                     child: Text(
-                      AppLocalizations.of(context)!.translate('document_data_unavailable') ?? 'Данные документа недоступны',
+                      AppLocalizations.of(context)!
+                              .translate('document_data_unavailable') ??
+                          'Данные документа недоступны',
                       style: const TextStyle(
                         fontSize: 18,
                         fontFamily: 'Gilroy',
@@ -529,7 +580,8 @@ class _SupplierReturnDocumentDetailsScreenState extends State<SupplierReturnDocu
                     ),
                   )
                 : Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16.0, vertical: 8.0),
                     child: ListView(
                       children: [
                         Padding(
@@ -538,7 +590,8 @@ class _SupplierReturnDocumentDetailsScreenState extends State<SupplierReturnDocu
                         ),
                         _buildDetailsList(),
                         const SizedBox(height: 16),
-                        if (currentDocument!.documentGoods != null && currentDocument!.documentGoods!.isNotEmpty) ...[
+                        if (currentDocument!.documentGoods != null &&
+                            currentDocument!.documentGoods!.isNotEmpty) ...[
                           _buildGoodsList(currentDocument!.documentGoods!),
                           const SizedBox(height: 16),
                         ],
@@ -551,8 +604,8 @@ class _SupplierReturnDocumentDetailsScreenState extends State<SupplierReturnDocu
 
   AppBar _buildAppBar(BuildContext context) {
     // ИЗМЕНЕНО: showActions с правами
-    final showActions = currentDocument?.deletedAt == null && 
-                        (widget.hasUpdatePermission || widget.hasDeletePermission);
+    final showActions = currentDocument?.deletedAt == null &&
+        (widget.hasUpdatePermission || widget.hasDeletePermission);
 
     return AppBar(
       backgroundColor: Colors.white,
@@ -586,68 +639,73 @@ class _SupplierReturnDocumentDetailsScreenState extends State<SupplierReturnDocu
           ),
         ),
       ),
-      actions: showActions ? [
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // НОВОЕ: Edit только с update-правом
-            if (widget.hasUpdatePermission)
-              IconButton(
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(),
-                icon: Image.asset(
-                  'assets/icons/edit.png',
-                  width: 24,
-                  height: 24,
-                ),
-                onPressed: () async {
-                  if (_isLoading) return;
-                  final result = await Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => SupplierReturnDocumentEditScreen(
-                        document: currentDocument!,
+      actions: showActions
+          ? [
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // НОВОЕ: Edit только с update-правом
+                  if (widget.hasUpdatePermission)
+                    IconButton(
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                      icon: Image.asset(
+                        'assets/icons/edit.png',
+                        width: 24,
+                        height: 24,
                       ),
+                      onPressed: () async {
+                        if (_isLoading) return;
+                        final result = await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                SupplierReturnDocumentEditScreen(
+                              document: currentDocument!,
+                            ),
+                          ),
+                        );
+
+                        if (result == true) {
+                          _fetchDocumentDetails();
+                          if (widget.onDocumentUpdated != null) {
+                            widget.onDocumentUpdated!();
+                          }
+                        }
+                      },
                     ),
-                  );
-                  
-                  if (result == true) {
-                    _fetchDocumentDetails();
-                    if (widget.onDocumentUpdated != null) {
-                      widget.onDocumentUpdated!();
-                    }
-                  }
-                },
+                  // НОВОЕ: Delete только с delete-правом
+                  if (widget.hasDeletePermission)
+                    IconButton(
+                      padding: const EdgeInsets.only(right: 8),
+                      constraints: const BoxConstraints(),
+                      icon: Image.asset(
+                        'assets/icons/delete.png',
+                        width: 24,
+                        height: 24,
+                      ),
+                      onPressed: () {
+                        if (_isLoading) return;
+                        showDialog(
+                          context: context,
+                          builder: (BuildContext context) {
+                            return BlocProvider.value(
+                              value:
+                                  BlocProvider.of<SupplierReturnBloc>(context),
+                              child: SupplierReturnDeleteDocumentDialog(
+                                  documentId: widget.documentId),
+                            );
+                          },
+                        );
+                      },
+                    ),
+                ],
               ),
-            // НОВОЕ: Delete только с delete-правом
-            if (widget.hasDeletePermission)
-              IconButton(
-                padding: const EdgeInsets.only(right: 8),
-                constraints: const BoxConstraints(),
-                icon: Image.asset(
-                  'assets/icons/delete.png',
-                  width: 24,
-                  height: 24,
-                ),
-                onPressed: () {
-                  if (_isLoading) return;
-                  showDialog(
-                    context: context,
-                    builder: (BuildContext context) {
-                      return BlocProvider.value(
-                        value: BlocProvider.of<SupplierReturnBloc>(context),
-                        child: SupplierReturnDeleteDocumentDialog(documentId: widget.documentId),
-                      );
-                    },
-                  );
-                },
-              ),
-          ],
-        ),
-      ] : [],
+            ]
+          : [],
     );
   }
-  
+
   Widget _buildDetailsList() {
     return ListView.builder(
       shrinkWrap: true,
@@ -690,7 +748,8 @@ class _SupplierReturnDocumentDetailsScreenState extends State<SupplierReturnDocu
                   fontFamily: 'Gilroy',
                   fontWeight: FontWeight.w500,
                   color: const Color(0xff1E2E52),
-                  decoration: value.isNotEmpty ? TextDecoration.underline : null,
+                  decoration:
+                      value.isNotEmpty ? TextDecoration.underline : null,
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -714,7 +773,8 @@ class _SupplierReturnDocumentDetailsScreenState extends State<SupplierReturnDocu
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildTitleRow(AppLocalizations.of(context)!.translate('goods') ?? 'Товары'),
+        _buildTitleRow(
+            AppLocalizations.of(context)!.translate('goods') ?? 'Товары'),
         const SizedBox(height: 8),
         if (goods.isEmpty)
           Padding(
@@ -725,7 +785,8 @@ class _SupplierReturnDocumentDetailsScreenState extends State<SupplierReturnDocu
                 child: Padding(
                   padding: const EdgeInsets.all(16),
                   child: Text(
-                    AppLocalizations.of(context)!.translate('empty') ?? 'Нет товаров',
+                    AppLocalizations.of(context)!.translate('empty') ??
+                        'Нет товаров',
                     style: const TextStyle(
                       fontSize: 16,
                       fontFamily: 'Gilroy',
@@ -753,7 +814,8 @@ class _SupplierReturnDocumentDetailsScreenState extends State<SupplierReturnDocu
 
   Widget _buildGoodsItem(DocumentGood good) {
     final selectedUnit = good.selectedUnit;
-    final amount = 1.0; // USE 1 for amount DO NOT USE selectedUnit.amount ?? 1.0;
+    final amount =
+        1.0; // USE 1 for amount DO NOT USE selectedUnit.amount ?? 1.0;
     final unitShortName = selectedUnit.shortName ?? selectedUnit.name ?? '';
 
     debugPrint("selectedUnit: $selectedUnit");
@@ -767,7 +829,8 @@ class _SupplierReturnDocumentDetailsScreenState extends State<SupplierReturnDocu
         child: Container(
           decoration: TaskCardStyles.taskCardDecoration,
           child: Padding(
-            padding: const EdgeInsets.only(left: 16, right: 16, top: 12, bottom: 12),
+            padding:
+                const EdgeInsets.only(left: 16, right: 16, top: 12, bottom: 12),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -793,7 +856,9 @@ class _SupplierReturnDocumentDetailsScreenState extends State<SupplierReturnDocu
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    AppLocalizations.of(context)!.translate('unit') ?? 'Ед.',
+                                    AppLocalizations.of(context)!
+                                            .translate('unit') ??
+                                        'Ед.',
                                     style: const TextStyle(
                                       fontSize: 10,
                                       fontFamily: 'Gilroy',
@@ -820,7 +885,9 @@ class _SupplierReturnDocumentDetailsScreenState extends State<SupplierReturnDocu
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  AppLocalizations.of(context)!.translate('quantity') ?? 'Кол-во',
+                                  AppLocalizations.of(context)!
+                                          .translate('quantity') ??
+                                      'Кол-во',
                                   style: const TextStyle(
                                     fontSize: 10,
                                     fontFamily: 'Gilroy',
@@ -847,7 +914,9 @@ class _SupplierReturnDocumentDetailsScreenState extends State<SupplierReturnDocu
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  AppLocalizations.of(context)!.translate('price') ?? 'Цена',
+                                  AppLocalizations.of(context)!
+                                          .translate('price') ??
+                                      'Цена',
                                   style: const TextStyle(
                                     fontSize: 10,
                                     fontFamily: 'Gilroy',
@@ -857,7 +926,11 @@ class _SupplierReturnDocumentDetailsScreenState extends State<SupplierReturnDocu
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
-                                  parseNumberToString((amount * (double.tryParse(good.price ?? '0.00') ?? 0.00)).toStringAsFixed(2)),
+                                  parseNumberToString((amount *
+                                          (double.tryParse(
+                                                  good.price ?? '0.00') ??
+                                              0.00))
+                                      .toStringAsFixed(2)),
                                   style: const TextStyle(
                                     fontSize: 12,
                                     fontFamily: 'Gilroy',
@@ -873,7 +946,8 @@ class _SupplierReturnDocumentDetailsScreenState extends State<SupplierReturnDocu
                       ),
                       const SizedBox(height: 8),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 6),
                         decoration: BoxDecoration(
                           color: const Color(0xFFF4F7FD),
                           borderRadius: BorderRadius.circular(6),
@@ -882,7 +956,9 @@ class _SupplierReturnDocumentDetailsScreenState extends State<SupplierReturnDocu
                           mainAxisAlignment: MainAxisAlignment.start,
                           children: [
                             Text(
-                              AppLocalizations.of(context)!.translate('total') ?? 'Итого',
+                              AppLocalizations.of(context)!
+                                      .translate('total') ??
+                                  'Итого',
                               style: const TextStyle(
                                 fontSize: 12,
                                 fontFamily: 'Gilroy',
@@ -914,9 +990,11 @@ class _SupplierReturnDocumentDetailsScreenState extends State<SupplierReturnDocu
     );
   }
 
-
   Widget _buildImageWidget(DocumentGood good) {
-    if (baseUrl == null || good.good == null || good.good!.files == null || good.good!.files!.isEmpty) {
+    if (baseUrl == null ||
+        good.good == null ||
+        good.good!.files == null ||
+        good.good!.files!.isEmpty) {
       return _buildPlaceholderImage();
     }
 
@@ -947,7 +1025,8 @@ class _SupplierReturnDocumentDetailsScreenState extends State<SupplierReturnDocu
         borderRadius: BorderRadius.circular(8),
       ),
       child: const Center(
-        child: Icon(Icons.image_not_supported, size: 40, color: Color(0xff99A4BA)),
+        child:
+            Icon(Icons.image_not_supported, size: 40, color: Color(0xff99A4BA)),
       ),
     );
   }
@@ -957,7 +1036,8 @@ class _SupplierReturnDocumentDetailsScreenState extends State<SupplierReturnDocu
     if (goodId == null || goodId == 0) {
       final localizations = AppLocalizations.of(context)!;
       _showSnackBar(
-        localizations.translate('error_no_good_id') ?? 'Ошибка: Не удалось определить ID товара',
+        localizations.translate('error_no_good_id') ??
+            'Ошибка: Не удалось определить ID товара',
         false,
       );
       return;

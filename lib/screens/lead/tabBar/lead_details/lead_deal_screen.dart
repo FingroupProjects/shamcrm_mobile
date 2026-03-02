@@ -22,8 +22,9 @@ import 'package:intl/intl.dart';
 
 class DealsWidget extends StatefulWidget {
   final int leadId;
+  final bool autoFetch;
 
-  const DealsWidget({Key? key, required this.leadId}) : super(key: key);
+  const DealsWidget({Key? key, required this.leadId, this.autoFetch = true}) : super(key: key);
 
   @override
   _DealsWidgetState createState() => _DealsWidgetState();
@@ -55,13 +56,9 @@ class _DealsWidgetState extends State<DealsWidget> {
     _checkPermissions(); // Проверяем права пользователя
     _scrollController = ScrollController();
     _scrollController.addListener(_onScroll);
-    context.read<LeadDealsBloc>().add(FetchLeadDeals(widget.leadId));
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    context.read<LeadDealsBloc>().add(FetchLeadDeals(widget.leadId));
+    if (widget.autoFetch) {
+      context.read<LeadDealsBloc>().add(FetchLeadDeals(widget.leadId));
+    }
   }
 
   @override

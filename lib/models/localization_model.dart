@@ -30,6 +30,7 @@ class LocalizationData {
   final String? startTime;
   final String? endTime;
   final Country? country;
+  final LocalizationCurrency? currency;
   final int? organizationId;
   final List<int>? weekends;
   final List<String>? holidays;
@@ -41,6 +42,7 @@ class LocalizationData {
     this.startTime,
     this.endTime,
     this.country,
+    this.currency,
     this.organizationId,
     this.weekends,
     this.holidays,
@@ -55,6 +57,9 @@ class LocalizationData {
       endTime: json['end_time']?.toString(),
       country: json['country'] != null 
           ? Country.fromJson(json['country']) 
+          : null,
+      currency: json['currency'] != null
+          ? LocalizationCurrency.fromJson(json['currency'])
           : null,
       organizationId: json['organization_id'],
       weekends: json['weekends'] != null 
@@ -74,10 +79,55 @@ class LocalizationData {
       'start_time': startTime,
       'end_time': endTime,
       'country': country?.toJson(),
+      'currency': currency?.toJson(),
       'organization_id': organizationId,
       'weekends': weekends,
       'holidays': holidays,
       'timezone': timezone,
+    };
+  }
+}
+
+class LocalizationCurrency {
+  final int? id;
+  final String? name;
+  final int? digitalCode;
+  final String? symbolCode;
+  final int? organizationId;
+  final String? createdAt;
+  final String? updatedAt;
+
+  LocalizationCurrency({
+    this.id,
+    this.name,
+    this.digitalCode,
+    this.symbolCode,
+    this.organizationId,
+    this.createdAt,
+    this.updatedAt,
+  });
+
+  factory LocalizationCurrency.fromJson(Map<String, dynamic> json) {
+    return LocalizationCurrency(
+      id: json['id'],
+      name: json['name']?.toString(),
+      digitalCode: json['digital_code'],
+      symbolCode: json['symbol_code']?.toString(),
+      organizationId: json['organization_id'],
+      createdAt: json['created_at']?.toString(),
+      updatedAt: json['updated_at']?.toString(),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'digital_code': digitalCode,
+      'symbol_code': symbolCode,
+      'organization_id': organizationId,
+      'created_at': createdAt,
+      'updated_at': updatedAt,
     };
   }
 }

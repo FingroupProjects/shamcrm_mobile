@@ -33,6 +33,7 @@ class CreateSupplierReturn extends SupplierReturnEvent {
   final int organizationId;
   final int salesFunnelId;
   final bool approve;
+  final double? exchangeRate;
 
   CreateSupplierReturn({
     required this.date,
@@ -43,6 +44,7 @@ class CreateSupplierReturn extends SupplierReturnEvent {
     required this.organizationId,
     required this.salesFunnelId,
     this.approve = false,
+    this.exchangeRate,
   });
 
   @override
@@ -55,6 +57,7 @@ class CreateSupplierReturn extends SupplierReturnEvent {
         organizationId,
         salesFunnelId,
         approve,
+        exchangeRate ?? -1,
       ];
 }
 
@@ -67,6 +70,7 @@ class UpdateSupplierReturn extends SupplierReturnEvent {
   final List<Map<String, dynamic>> documentGoods;
   final int organizationId;
   final int salesFunnelId;
+  final double? exchangeRate;
 
   const UpdateSupplierReturn({
     required this.documentId,
@@ -77,6 +81,7 @@ class UpdateSupplierReturn extends SupplierReturnEvent {
     required this.documentGoods,
     required this.organizationId,
     required this.salesFunnelId,
+    this.exchangeRate,
   });
 
   @override
@@ -89,6 +94,7 @@ class UpdateSupplierReturn extends SupplierReturnEvent {
         documentGoods,
         organizationId,
         salesFunnelId,
+        exchangeRate ?? -1,
       ];
 }
 

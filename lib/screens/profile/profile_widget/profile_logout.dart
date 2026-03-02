@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/api/service/secure_storage_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -16,37 +17,28 @@ class LogoutButtonWidget extends StatelessWidget {
     return GestureDetector(
       onTap: () async {
         try {
-          ApiService apiService = ApiService();
-          
+          final apiService = ApiService();
+          final authService = AuthService();
+
           // Вызов API для выхода из аккаунта
           await apiService.logoutAccount();
-          
+
           // Полная очистка SharedPreferences
-          SharedPreferences prefs = await SharedPreferences.getInstance();
+          final prefs = await SharedPreferences.getInstance();
           await prefs.clear();
-          
-          // Вызов logout API
+
+          // Очистка локальных auth-данных и внутренних состояний API
+          await authService.clearAllAuthData();
           await apiService.logout();
-          
-          // Небольшая задержка для завершения всех операций
-          await Future.delayed(Duration(milliseconds: 500));
-          
-          // Закрытие приложения
-          if (Platform.isAndroid) {
-            // Для Android используем SystemNavigator
-            SystemNavigator.pop();
-          } else if (Platform.isIOS) {
-            // Для iOS используем exit(0)
-            exit(0);
-          }
+          await apiService.reset();
+
+          // Небольшая задержка для завершения асинхронных операций
+          await Future.delayed(const Duration(milliseconds: 300));
+
+          _terminateApplication();
         } catch (e) {
           debugPrint('Ошибка при выходе: $e');
-          // Даже при ошибке закрываем приложение
-          if (Platform.isAndroid) {
-            SystemNavigator.pop();
-          } else {
-            exit(0);
-          }
+          _terminateApplication();
         }
       },
       child: _buildProfileOption(
@@ -91,5 +83,15 @@ class LogoutButtonWidget extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  void _terminateApplication() {
+    if (Platform.isAndroid) {
+      // SystemNavigator иногда только сворачивает задачу, поэтому завершаем процесс.
+      exit(0);
+    } else {
+      // На iOS принудительное завершение не рекомендуется, оставляем системное закрытие.
+      SystemNavigator.pop();
+    }
   }
 }

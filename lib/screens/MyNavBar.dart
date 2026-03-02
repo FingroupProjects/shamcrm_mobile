@@ -46,35 +46,35 @@ class _MyNavBarState extends State<MyNavBar> {
 
   Future<void> _initializeOrder() async {
     final defaultItems = _getAllItems();
-    
+
     if (defaultItems.isEmpty) {
       //print('⏳ Списки навигации пока пустые, ждём...');
       return;
     }
-    
+
     final savedOrder = await _loadOrder();
     List<NavBarItemData> finalItems;
-    
+
     if (savedOrder != null && savedOrder.isNotEmpty) {
       //print('✅ Загружен сохранённый порядок: ${savedOrder.length} элементов');
       finalItems = [];
-      
+
       for (var savedItem in savedOrder) {
         try {
           final matchingItem = defaultItems.firstWhere(
-            (item) => item.groupIndex == savedItem['group'] && 
-                     item.itemIndex == savedItem['index'],
+            (item) =>
+                item.groupIndex == savedItem['group'] &&
+                item.itemIndex == savedItem['index'],
           );
           finalItems.add(matchingItem);
         } catch (e) {
           //print('⚠️ Элемент не найден: group=${savedItem['group']}, index=${savedItem['index']}');
         }
       }
-      
+
       for (var item in defaultItems) {
-        bool exists = finalItems.any((i) => 
-          i.groupIndex == item.groupIndex && i.itemIndex == item.itemIndex
-        );
+        bool exists = finalItems.any((i) =>
+            i.groupIndex == item.groupIndex && i.itemIndex == item.itemIndex);
         if (!exists) {
           finalItems.add(item);
           //print('➕ Добавлен новый элемент: group=${item.groupIndex}, index=${item.itemIndex}');
@@ -84,7 +84,7 @@ class _MyNavBarState extends State<MyNavBar> {
       //print('📋 Сохранённый порядок не найден, используем по умолчанию');
       finalItems = defaultItems;
     }
-    
+
     if (mounted) {
       setState(() {
         _orderedItems = finalItems;
@@ -97,7 +97,7 @@ class _MyNavBarState extends State<MyNavBar> {
     try {
       final prefs = await SharedPreferences.getInstance();
       final orderJson = prefs.getString('navbar_order_v2');
-      
+
       if (orderJson != null && orderJson.isNotEmpty) {
         //print('📦 JSON из SharedPreferences: $orderJson');
         final List<dynamic> decoded = json.decode(orderJson);
@@ -116,15 +116,17 @@ class _MyNavBarState extends State<MyNavBar> {
   Future<void> _saveOrder(List<NavBarItemData> items) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      
-      final orderList = items.map((item) => {
-        'group': item.groupIndex,
-        'index': item.itemIndex,
-      }).toList();
-      
+
+      final orderList = items
+          .map((item) => {
+                'group': item.groupIndex,
+                'index': item.itemIndex,
+              })
+          .toList();
+
       final orderJson = json.encode(orderList);
       final success = await prefs.setString('navbar_order_v2', orderJson);
-      
+
       if (success) {
         //print('💾 Порядок сохранён успешно: $orderJson');
         final verification = prefs.getString('navbar_order_v2');
@@ -139,7 +141,7 @@ class _MyNavBarState extends State<MyNavBar> {
 
   List<NavBarItemData> _getAllItems() {
     List<NavBarItemData> items = [];
-    
+
     for (int i = 0; i < widget.navBarTitlesGroup1.length; i++) {
       items.add(NavBarItemData(
         title: widget.navBarTitlesGroup1[i],
@@ -150,7 +152,7 @@ class _MyNavBarState extends State<MyNavBar> {
         isActive: widget.currentIndexGroup1 == i,
       ));
     }
-    
+
     for (int i = 0; i < widget.navBarTitlesGroup2.length; i++) {
       items.add(NavBarItemData(
         title: widget.navBarTitlesGroup2[i],
@@ -161,25 +163,26 @@ class _MyNavBarState extends State<MyNavBar> {
         isActive: widget.currentIndexGroup2 == i,
       ));
     }
-    
+
     return items;
   }
 
   @override
   void didUpdateWidget(MyNavBar oldWidget) {
     super.didUpdateWidget(oldWidget);
-    
-    final currentItemCount = widget.navBarTitlesGroup1.length + widget.navBarTitlesGroup2.length;
-    
+
+    final currentItemCount =
+        widget.navBarTitlesGroup1.length + widget.navBarTitlesGroup2.length;
+
     if (_orderedItems == null || _lastItemCount != currentItemCount) {
       //print('🔄 Количество элементов изменилось: $_lastItemCount -> $currentItemCount');
       _initializeOrder();
       return;
     }
-    
+
     if (_orderedItems != null && _orderedItems!.isNotEmpty) {
       List<NavBarItemData> updatedItems = [];
-      
+
       for (var orderedItem in _orderedItems!) {
         bool newIsActive = false;
         if (orderedItem.groupIndex == 1) {
@@ -187,7 +190,7 @@ class _MyNavBarState extends State<MyNavBar> {
         } else if (orderedItem.groupIndex == 2) {
           newIsActive = widget.currentIndexGroup2 == orderedItem.itemIndex;
         }
-        
+
         updatedItems.add(NavBarItemData(
           title: orderedItem.title,
           activeIcon: orderedItem.activeIcon,
@@ -197,33 +200,33 @@ class _MyNavBarState extends State<MyNavBar> {
           isActive: newIsActive,
         ));
       }
-      
+
       setState(() {
         _orderedItems = updatedItems;
       });
     }
-    
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _scrollToActiveItem();
     });
   }
 
   void _scrollToActiveItem() {
-    if (!_scrollController.hasClients || _orderedItems == null || _orderedItems!.isEmpty) return;
-    
+    if (!_scrollController.hasClients ||
+        _orderedItems == null ||
+        _orderedItems!.isEmpty) return;
+
     int activeIndex = _orderedItems!.indexWhere((item) => item.isActive);
-    
+
     if (activeIndex != -1) {
       double itemWidth = 120.0;
-      double targetOffset = (activeIndex * itemWidth) - 
-                           (MediaQuery.of(context).size.width / 2) + 
-                           (itemWidth / 2);
-      
-      targetOffset = targetOffset.clamp(
-        0.0, 
-        _scrollController.position.maxScrollExtent
-      );
-      
+      double targetOffset = (activeIndex * itemWidth) -
+          (MediaQuery.of(context).size.width / 2) +
+          (itemWidth / 2);
+
+      targetOffset =
+          targetOffset.clamp(0.0, _scrollController.position.maxScrollExtent);
+
       _scrollController.animateTo(
         targetOffset,
         duration: Duration(milliseconds: 300),
@@ -275,7 +278,7 @@ class _MyNavBarState extends State<MyNavBar> {
             }
             final item = _orderedItems!.removeAt(oldIndex);
             _orderedItems!.insert(newIndex, item);
-            
+
             //print('🔄 Элемент перемещён с позиции $oldIndex на $newIndex');
             _saveOrder(_orderedItems!);
             _isReordering = false;
@@ -300,7 +303,7 @@ class _MyNavBarState extends State<MyNavBar> {
             builder: (context, child) {
               final double scale = 1.0 + (animation.value * 0.1);
               final item = _orderedItems![index];
-              
+
               return Transform.scale(
                 scale: scale,
                 child: Opacity(
@@ -309,7 +312,8 @@ class _MyNavBarState extends State<MyNavBar> {
                     margin: EdgeInsets.symmetric(horizontal: 4),
                     padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     decoration: BoxDecoration(
-                      color: item.isActive ? Color(0xff1E2E52) : Color(0xffF4F7FD),
+                      color:
+                          item.isActive ? Color(0xff1E2E52) : Color(0xffF4F7FD),
                       border: Border.all(
                         color: Color(0xff1E2E52).withOpacity(0.5),
                         width: item.isActive ? 0 : 0.5,
@@ -329,20 +333,26 @@ class _MyNavBarState extends State<MyNavBar> {
                         Icon(
                           Icons.drag_indicator,
                           size: 18,
-                          color: item.isActive ? Color(0xffF4F7FD) : Color(0xff1E2E52).withOpacity(0.5),
+                          color: item.isActive
+                              ? Color(0xffF4F7FD)
+                              : Color(0xff1E2E52).withOpacity(0.5),
                         ),
                         SizedBox(width: 6),
                         Image.asset(
                           item.isActive ? item.activeIcon : item.inactiveIcon,
                           width: 22,
                           height: 22,
-                          color: item.isActive ? Color(0xffF4F7FD) : Color(0xff1E2E52),
+                          color: item.isActive
+                              ? Color(0xffF4F7FD)
+                              : Color(0xff1E2E52),
                         ),
                         SizedBox(width: 8),
                         Text(
                           item.title,
                           style: TextStyle(
-                            color: item.isActive ? Color(0xffF4F7FD) : Color(0xff1E2E52),
+                            color: item.isActive
+                                ? Color(0xffF4F7FD)
+                                : Color(0xff1E2E52),
                             fontFamily: 'Golos',
                             fontWeight: FontWeight.w500,
                             fontSize: 14,
@@ -375,8 +385,8 @@ class _MyNavBarState extends State<MyNavBar> {
     // ИСПРАВЛЕННАЯ ЛОГИКА ДЛЯ iOS
     if (Platform.isIOS) {
       return SafeArea(
-        top: false,    // Не трогаем верх
-        bottom: true,  // Добавляем отступ снизу для home indicator
+        top: false, // Не трогаем верх
+        bottom: true, // Добавляем отступ снизу для home indicator
         child: navBarContent,
       );
     }
@@ -417,7 +427,7 @@ class _NavBarItem extends StatelessWidget {
   final NavBarItemData data;
   final VoidCallback onTap;
   final bool isReordering;
-  
+
   static const double _iconSize = 22;
 
   const _NavBarItem({
@@ -460,7 +470,9 @@ class _NavBarItem extends StatelessWidget {
                 child: Icon(
                   Icons.drag_indicator,
                   size: 18,
-                  color: data.isActive ? Color(0xffF4F7FD) : Color(0xff1E2E52).withOpacity(0.5),
+                  color: data.isActive
+                      ? Color(0xffF4F7FD)
+                      : Color(0xff1E2E52).withOpacity(0.5),
                 ),
               ),
             Image.asset(

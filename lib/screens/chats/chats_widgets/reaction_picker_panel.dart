@@ -7,6 +7,7 @@ class ReactionPickerPanel extends StatefulWidget {
   final Function(String emoji) onEmojiSelected;
   final Offset position;
   final bool isAbove;
+  final String? channelKey;
   final VoidCallback? onShowFullPicker; // Callback для открытия полной панели
 
   const ReactionPickerPanel({
@@ -14,6 +15,7 @@ class ReactionPickerPanel extends StatefulWidget {
     required this.onEmojiSelected,
     required this.position,
     this.isAbove = false,
+    this.channelKey,
     this.onShowFullPicker,
   }) : super(key: key);
 
@@ -63,17 +65,12 @@ class _ReactionPickerPanelState extends State<ReactionPickerPanel>
     });
   }
 
-  void _handleMoreTap() {
-    _controller.reverse().then((_) {
-      if (mounted) {
-        Navigator.of(context).pop();
-        widget.onShowFullPicker?.call();
-      }
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
+    final panelReactions = EmojiData.reactionsForSource(
+      'quick_panel',
+      channelKey: widget.channelKey,
+    );
     // Получаем ширину экрана для точного центрирования
     final screenWidth = MediaQuery.of(context).size.width;
 
@@ -152,11 +149,9 @@ class _ReactionPickerPanelState extends State<ReactionPickerPanel>
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     // Популярные реакции из EmojiData
-                    ...EmojiData.quickReactions.map((emoji) {
+                    ...panelReactions.map((emoji) {
                       return _buildEmojiButton(emoji);
                     }).toList(),
-                    // Кнопка "+" для открытия полной панели
-                    _buildMoreButton(),
                   ],
                 ),
               ),
@@ -173,7 +168,11 @@ class _ReactionPickerPanelState extends State<ReactionPickerPanel>
       child: TweenAnimationBuilder<double>(
         tween: Tween(begin: 0.0, end: 1.0),
         duration: Duration(
-          milliseconds: 200 + EmojiData.quickReactions.indexOf(emoji) * 50,
+          milliseconds: 200 +
+              EmojiData.reactionsForSource('quick_panel',
+                          channelKey: widget.channelKey)
+                      .indexOf(emoji) *
+                  50,
         ),
         curve: Curves.elasticOut,
         builder: (context, value, child) {
@@ -194,47 +193,6 @@ class _ReactionPickerPanelState extends State<ReactionPickerPanel>
               emoji,
               style: const TextStyle(
                 fontSize: 24, // Уменьшено с 28
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  // Кнопка "+" для открытия полной панели
-  Widget _buildMoreButton() {
-    return GestureDetector(
-      onTap: _handleMoreTap,
-      child: TweenAnimationBuilder<double>(
-        tween: Tween(begin: 0.0, end: 1.0),
-        duration: const Duration(milliseconds: 600),
-        curve: Curves.elasticOut,
-        builder: (context, value, child) {
-          return Transform.scale(
-            scale: value,
-            child: child,
-          );
-        },
-        child: Container(
-          margin: const EdgeInsets.symmetric(horizontal: 2),
-          padding: const EdgeInsets.all(4),
-          decoration: BoxDecoration(
-            color: Colors.transparent,
-            borderRadius: BorderRadius.circular(15),
-          ),
-          child: HoverEffect(
-            child: Container(
-              width: 24,
-              height: 24,
-              decoration: BoxDecoration(
-                color: Colors.grey.shade200,
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.add,
-                size: 16,
-                color: Colors.black54,
               ),
             ),
           ),
@@ -299,6 +257,7 @@ Future<void> showReactionPicker({
   required BuildContext context,
   required Offset position,
   required Function(String emoji) onEmojiSelected,
+  String? channelKey,
   VoidCallback? onShowFullPicker,
   bool isAbove = false,
 }) {
@@ -311,6 +270,7 @@ Future<void> showReactionPicker({
         position: position,
         onEmojiSelected: onEmojiSelected,
         isAbove: isAbove,
+        channelKey: channelKey,
         onShowFullPicker: onShowFullPicker,
       );
     },

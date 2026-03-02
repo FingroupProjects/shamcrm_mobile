@@ -199,6 +199,7 @@ Future<void> _fetchLeads(FetchLeads event, Emitter<LeadState> emit) async {
         daysWithoutActivity: event.daysWithoutActivity,
         directoryValues: event.directoryValues,
         customFieldFilters: event.customFieldFilters,
+        bypassAnalyticsCache: event.ignoreCache,
         // salesFunnelId: currentFunnelId != null && currentFunnelId.isNotEmpty
         //     ? int.tryParse(currentFunnelId)
         //     : null, // ← КРИТИЧНО: Передаём валидный funnelId
@@ -304,7 +305,9 @@ Future<void> _fetchLeadStatuses(FetchLeadStatuses event, Emitter<LeadState> emit
       _currentDirectoryValues = null;
       
       // Загружаем статусы с сервера
-      response = await apiService.getLeadStatuses();
+      response = await apiService.getLeadStatuses(
+        bypassAnalyticsCache: true,
+      );
       
       // ПОЛНОСТЬЮ перезаписываем кэш новыми данными
       await LeadCache.clearEverything(); // Используем радикальную очистку
@@ -616,11 +619,12 @@ Future<void> _updateLead(UpdateLead event, Emitter<LeadState> emit) async {
 
     try {
       final response = await apiService.deleteLead(event.leadId);
-      if (response['result'] == 'Success') {
+      if (response['success'] == true || response['result'] == 'Success') {
         emit(LeadDeleted(
             event.localizations.translate('lead_deleted_successfully')));
       } else {
-        emit(LeadError(event.localizations.translate('error_delete_lead')));
+        emit(LeadError(response['message']?.toString() ??
+            event.localizations.translate('error_delete_lead')));
       }
     } catch (e) {
       emit(LeadError(event.localizations.translate('error_delete_lead')));
