@@ -33,6 +33,7 @@ import 'package:crm_task_manager/screens/empty_screen.dart';
 import 'package:crm_task_manager/screens/no_access_screen.dart';
 import 'package:crm_task_manager/screens/lead/lead_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/screens/sip/sip_screen.dart';
 import 'package:crm_task_manager/screens/task/task_screen.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -455,7 +456,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         break;
       } else if (screenIdentifier == 'analytics' && widget is DashboardScreen) {
         targetIndexGroup1 = i;
-        debugPrint('HomeScreen: Found dashboard (analytics mapped) at index $i');
+        debugPrint(
+            'HomeScreen: Found dashboard (analytics mapped) at index $i');
         break;
       } else if (screenIdentifier == 'warehouse' &&
           widget is WarehouseAccountingScreen) {
@@ -704,10 +706,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     }
 
     bool hasAnyPermissionWithPrefix(String prefix) {
-      final allPermissions =
-          isNetworkError && savedPermissions.isNotEmpty
-              ? savedPermissions
-              : permissionsBloc.getAllPermissions();
+      final allPermissions = isNetworkError && savedPermissions.isNotEmpty
+          ? savedPermissions
+          : permissionsBloc.getAllPermissions();
       return allPermissions.any((permission) => permission.startsWith(prefix));
     }
 
@@ -767,6 +768,19 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       navBarTitleKeysGroup1.add('appbar_chats');
       activeIconsGroup1.add('assets/icons/MyNavBar/chats_ON.png');
       inactiveIconsGroup1.add('assets/icons/MyNavBar/chats_OFF.png');
+    }
+
+    // SIP
+    // Fallback for current rollout: if backend does not send any sip.* permissions yet,
+    // keep the tab visible for integration/testing.
+    final bool showSipTab =
+        hasPermission('sip.read') || !hasAnyPermissionWithPrefix('sip.');
+    if (showSipTab) {
+      widgetsGroup1.add(const SipScreen());
+      titleKeysGroup1.add('appbar_sip');
+      navBarTitleKeysGroup1.add('appbar_sip');
+      activeIconsGroup1.add('assets/icons/MyNavBar/sip_ON.png');
+      inactiveIconsGroup1.add('assets/icons/MyNavBar/sip_OFF.png');
     }
 
     // ========== КЛЮЧЕВАЯ ЛОГИКА ==========
@@ -902,7 +916,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           if (_isInitialized && mounted) {
             // Вызываем асинхронно, чтобы не блокировать listener
             initializeScreensWithPermissions();
-          } 
+          }
         }
       },
       child: BlocBuilder<PermissionsBloc, PermissionsState>(
