@@ -1321,6 +1321,7 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
                     dealsCount: 0,
                     isSuccess: false,
                     isFailure: false,
+                    isUnassembled: false,
                     showOnMainPage: false,
                   ),
                 );
@@ -1471,6 +1472,7 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
                     'id': status.id,
                     'title': status.title,
                     'deals_count': status.dealsCount,
+                    'is_unassembled': status.isUnassembled,
                   })
               .toList());
 

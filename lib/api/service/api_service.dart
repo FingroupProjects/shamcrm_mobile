@@ -151,6 +151,7 @@ import 'package:crm_task_manager/models/notes_model.dart';
 import 'package:crm_task_manager/models/pagination_dto.dart';
 import 'package:crm_task_manager/models/project_model.dart';
 import 'package:crm_task_manager/models/region_model.dart';
+import 'package:crm_task_manager/models/reason_for_refusal_model.dart';
 import 'package:crm_task_manager/models/role_model.dart';
 import 'package:crm_task_manager/models/task_model.dart';
 import 'package:crm_task_manager/models/taskbyId_model.dart' hide ChatById;
@@ -1831,7 +1832,10 @@ class ApiService {
     }
 
     try {
-      final response = await _analyticsRequest(path);
+      final response = await _analyticsRequest(
+        path,
+        bypassCache: true,
+      );
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -1925,7 +1929,7 @@ class ApiService {
       final path = await _appendQueryParams('/lead/$leadId');
       //debugPrint('ApiService: getLeadById - Generated path: $path');
 
-      final response = await _analyticsRequest(path);
+      final response = await _analyticsRequest(path, bypassCache: true);
       if (response.statusCode == 200) {
         final Map<String, dynamic> decodedJson = json.decode(response.body);
         final Map<String, dynamic> jsonLead = decodedJson['result'];
@@ -1936,6 +1940,31 @@ class ApiService {
     } catch (e) {
       //debugPrint('ApiService: getLeadById - Error:');
       throw Exception('Ошибка загрузки лида ID!');
+    }
+  }
+
+  Future<Map<String, dynamic>> acceptLead(int leadId) async {
+    try {
+      final path = await _appendQueryParams('/lead/accept/$leadId');
+      final response = await _postRequest(path, {});
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return json.decode(response.body) as Map<String, dynamic>;
+      }
+
+      if (response.statusCode == 422) {
+        final data = json.decode(response.body);
+        final message = (data is Map<String, dynamic>
+                    ? data['message']
+                    : null)
+                ?.toString() ??
+            'Ошибка валидации при создании сделки';
+        throw Exception(message);
+      }
+
+      throw Exception('Ошибка создания сделки из лида');
+    } catch (e) {
+      rethrow;
     }
   }
 
@@ -2334,7 +2363,12 @@ class ApiService {
 
 // Метод для создания Cтатуса Лида
   Future<Map<String, dynamic>> createLeadStatus(
-      String title, String color, bool? isFailure, bool? isSuccess) async {
+    String title,
+    String color,
+    bool? isFailure,
+    bool? isSuccess,
+    bool isUnassembled,
+  ) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/lead-status');
     if (kDebugMode) {
@@ -2346,6 +2380,7 @@ class ApiService {
       'color': color,
       "is_success": isSuccess == true ? 1 : 0,
       "is_failure": isFailure == true ? 1 : 0,
+      "is_unassembled": isUnassembled,
     });
 
     if (response.statusCode == 200 || response.statusCode == 201) {
@@ -2356,26 +2391,39 @@ class ApiService {
   }
 
 //Обновление статуса карточки Лида в колонке
-  Future<void> updateLeadStatus(int leadId, int position, int statusId) async {
+  Future<void> updateLeadStatus(
+    int leadId,
+    int position,
+    int statusId, {
+    int? reasonForRefusalId,
+    String? reasonForRefusal,
+  }) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/lead/changeStatus/$leadId');
     if (kDebugMode) {
       //debugPrint('ApiService: updateLeadStatus - Generated path: $path');
     }
 
-    final response = await _postRequest(
-      path,
-      {
-        'position': position,
-        'status_id': statusId,
-      },
-    );
+    final payload = <String, dynamic>{
+      'position': position,
+      'status_id': statusId,
+      if (reasonForRefusalId != null)
+        'reason_for_refusal_id': reasonForRefusalId,
+      if (reasonForRefusal != null && reasonForRefusal.trim().isNotEmpty)
+        'reason_for_refusal': reasonForRefusal.trim(),
+    };
+
+    final response = await _postRequest(path, payload);
 
     if (response.statusCode == 200) {
       ////debugPrint('Статус задачи успешно обновлен');
     } else if (response.statusCode == 422) {
       final responseData = jsonDecode(response.body);
-      final errorMessage = responseData['message'];
+      final errorMessage = (responseData is Map<String, dynamic>
+                  ? responseData['message']
+                  : null)
+              ?.toString() ??
+          'Вы не можете переместить лид на этот статус';
 
       throw LeadStatusUpdateException(422, errorMessage);
     } else {
@@ -3087,6 +3135,25 @@ class ApiService {
     return dataRegion;
   }
 
+  Future<List<ReasonForRefusalData>> getReasonsForRefusal({
+    required String type,
+    int perPage = 100,
+  }) async {
+    final safeType = type.trim().isEmpty ? 'lead' : type.trim();
+    final basePath = '/reason-for-refusal?type=$safeType&per_page=$perPage';
+    final path = await _appendQueryParams(basePath);
+
+    final response = await _getRequest(path);
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body) as Map<String, dynamic>;
+      final parsed = ReasonForRefusalResponse.fromJson(data);
+      return parsed.data;
+    } else {
+      throw Exception('Ошибка при получении причин отказа!');
+    }
+  }
+
 //Метод для получения региона
   Future<List<SourceData>> getAllSource() async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
@@ -3245,7 +3312,12 @@ class ApiService {
 
 // Метод для изменения статуса лида в ApiService
   Future<Map<String, dynamic>> updateLeadStatusEdit(
-      int leadStatusId, String title, bool isSuccess, bool isFailure) async {
+    int leadStatusId,
+    String title,
+    bool isSuccess,
+    bool isFailure,
+    bool isUnassembled,
+  ) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/lead-status/$leadStatusId');
     if (kDebugMode) {
@@ -3256,6 +3328,7 @@ class ApiService {
       "title": title,
       "is_success": isSuccess ? 1 : 0,
       "is_failure": isFailure ? 1 : 0,
+      "is_unassembled": isUnassembled,
       "organization_id": await getSelectedOrganization(),
     };
 
@@ -4014,6 +4087,7 @@ class ApiService {
     bool showOnMainPage,
     bool isSuccess,
     bool isFailure,
+    bool isUnassembled,
     List<int>? userIds,
     List<int>? changeStatusUserIds, // ✅ НОВОЕ
   ) async {
@@ -4036,6 +4110,7 @@ class ApiService {
       'show_on_main_page': showOnMainPage ? 1 : 0,
       'is_success': isSuccess ? 1 : 0,
       'is_failure': isFailure ? 1 : 0,
+      'is_unassembled': isUnassembled,
       'organization_id': organizationId?.toString() ?? '',
       if (salesFunnelId != null) 'sales_funnel_id': salesFunnelId.toString(),
       if (userIds != null && userIds.isNotEmpty) 'users': userIds,
@@ -4114,6 +4189,8 @@ class ApiService {
     bool isMultiSelect = false, // новый параметр
     String? organizationId,
     String? salesFunnelId,
+    int? reasonForRefusalId,
+    String? reasonForRefusal,
   }) async {
     if (isMultiSelect) {
       // ============ МУЛЬТИВЫБОР (как было) ============
@@ -4138,9 +4215,15 @@ class ApiService {
           debugPrint('✅ Статусы успешно обновлены (multi-select)');
         }
       } else if (response.statusCode == 422) {
+        final responseData = jsonDecode(response.body);
+        final errorMessage = (responseData is Map<String, dynamic>
+                    ? responseData['message']
+                    : null)
+                ?.toString() ??
+            'Вы не можете переместить задачу на эти статусы';
         throw DealStatusUpdateException(
           422,
-          'Вы не можете переместить задачу на эти статусы',
+          errorMessage,
         );
       } else {
         throw Exception('Ошибка обновления статусов сделки!');
@@ -4186,6 +4269,10 @@ class ApiService {
           'position': 1,
           'organization_id': organizationId ?? '1',
           'sales_funnel_id': salesFunnelId ?? '1',
+          if (reasonForRefusalId != null)
+            'reason_for_refusal_id': reasonForRefusalId,
+          if (reasonForRefusal != null && reasonForRefusal.trim().isNotEmpty)
+            'reason_for_refusal': reasonForRefusal.trim(),
         },
       );
 
@@ -4194,9 +4281,15 @@ class ApiService {
           debugPrint('✅ Статус успешно обновлён (single-select)');
         }
       } else if (response.statusCode == 422) {
+        final responseData = jsonDecode(response.body);
+        final errorMessage = (responseData is Map<String, dynamic>
+                    ? responseData['message']
+                    : null)
+                ?.toString() ??
+            'Вы не можете переместить задачу на этот статус';
         throw DealStatusUpdateException(
           422,
-          'Вы не можете переместить задачу на этот статус',
+          errorMessage,
         );
       } else {
         throw Exception('Ошибка обновления статуса сделки!');
@@ -4546,6 +4639,7 @@ class ApiService {
     int day,
     bool isSuccess,
     bool isFailure,
+    bool isUnassembled,
     String notificationMessage,
     bool showOnMainPage,
     List<int>? userIds, // пользователи, которые могут ВИДЕТЬ сделки
@@ -4569,6 +4663,7 @@ class ApiService {
       "color": "#000",
       "is_success": isSuccess ? 1 : 0,
       "is_failure": isFailure ? 1 : 0,
+      "is_unassembled": isUnassembled,
       "notification_message": notificationMessage,
       "show_on_main_page": showOnMainPage ? 1 : 0,
       "organization_id": organizationId?.toString() ?? '',
@@ -4968,7 +5063,13 @@ class ApiService {
   }
 
 // Обновление статуса карточки Задачи в колонке
-  Future<void> updateTaskStatus(int taskId, int position, int statusId) async {
+  Future<void> updateTaskStatus(
+    int taskId,
+    int position,
+    int statusId, {
+    int? reasonForRefusalId,
+    String? reasonForRefusal,
+  }) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/task/changeStatus/$taskId');
     if (kDebugMode) {
@@ -4978,6 +5079,10 @@ class ApiService {
     final response = await _postRequest(path, {
       'position': 1,
       'status_id': statusId,
+      if (reasonForRefusalId != null)
+        'reason_for_refusal_id': reasonForRefusalId,
+      if (reasonForRefusal != null && reasonForRefusal.trim().isNotEmpty)
+        'reason_for_refusal': reasonForRefusal.trim(),
     });
 
     if (response.statusCode == 200) {
@@ -5077,6 +5182,7 @@ class ApiService {
     required bool needsPermission,
     List<int>? roleIds,
     bool? finalStep,
+    bool isUnassembled = false,
   }) async {
     try {
       // Формируем данные для запроса
@@ -5090,6 +5196,7 @@ class ApiService {
       if (finalStep != null) {
         data['final_step'] = finalStep;
       }
+      data['is_unassembled'] = isUnassembled;
 
       // Обрабатываем список ролей, если он существует
       if (roleIds != null && roleIds.isNotEmpty) {
@@ -5988,6 +6095,7 @@ class ApiService {
     required bool needsPermission,
     required bool finalStep,
     required bool checkingStep,
+    bool isUnassembled = false,
     required List<int> roleIds,
   }) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
@@ -6003,6 +6111,7 @@ class ApiService {
       "needs_permission": needsPermission ? 1 : 0,
       "final_step": finalStep ? 1 : 0,
       "checking_step": checkingStep ? 1 : 0,
+      "is_unassembled": isUnassembled,
       "roles": roles,
       "organization_id": await getSelectedOrganization(),
     };

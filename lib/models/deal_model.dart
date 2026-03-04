@@ -49,14 +49,14 @@ class Deal {
           ? ManagerData.fromJson(json['manager'] as Map<String, dynamic>)
           : null,
       lead: json['lead'] != null
-          ? Lead.fromJson(
-          json['lead'] as Map<String, dynamic>,
-          (json['lead'] as Map<String, dynamic>)['status_id'] ?? 0
-      )
+          ? Lead.fromJson(json['lead'] as Map<String, dynamic>,
+              (json['lead'] as Map<String, dynamic>)['status_id'] ?? 0)
           : null,
       dealCustomFields: (json['deal_custom_fields'] as List<dynamic>?)
-          ?.map((field) => DealCustomField.fromJson(field as Map<String, dynamic>))
-          .toList() ?? [],
+              ?.map((field) =>
+                  DealCustomField.fromJson(field as Map<String, dynamic>))
+              .toList() ??
+          [],
       outDated: json['out_dated'] ?? false,
       createdAt: json['created_at'],
     );
@@ -74,10 +74,10 @@ class Deal {
       'manager': manager?.toJson(),
       'lead': lead?.toJson(),
       'deal_status': dealStatus?.toJson(),
-      'deal_custom_fields': dealCustomFields.map((field) => field.toJson()).toList(),
+      'deal_custom_fields':
+          dealCustomFields.map((field) => field.toJson()).toList(),
       'out_dated': outDated,
       'created_at': createdAt,
-
     };
   }
 }
@@ -151,6 +151,7 @@ class DealStatusUser {
     };
   }
 }
+
 class DealStatus {
   final int id;
   final String title;
@@ -161,10 +162,13 @@ class DealStatus {
   final int? day;
   final bool isSuccess;
   final bool isFailure;
+  final bool isUnassembled;
   final String? notificationMessage;
   final bool showOnMainPage;
-  final List<DealStatusUser>? users; // пользователи, которые могут ВИДЕТЬ сделки
-  final List<DealStatusUser>? changeStatusUsers; // ✅ НОВОЕ: пользователи, которые могут ИЗМЕНЯТЬ статус
+  final List<DealStatusUser>?
+      users; // пользователи, которые могут ВИДЕТЬ сделки
+  final List<DealStatusUser>?
+      changeStatusUsers; // ✅ НОВОЕ: пользователи, которые могут ИЗМЕНЯТЬ статус
 
   DealStatus({
     required this.id,
@@ -176,6 +180,7 @@ class DealStatus {
     this.day,
     required this.isSuccess,
     required this.isFailure,
+    required this.isUnassembled,
     this.notificationMessage,
     required this.showOnMainPage,
     this.users,
@@ -188,16 +193,19 @@ class DealStatus {
     if (json['users'] != null && json['users'] is List) {
       usersList = (json['users'] as List)
           .where((item) => item != null)
-          .map((userJson) => DealStatusUser.fromJson(userJson as Map<String, dynamic>))
+          .map((userJson) =>
+              DealStatusUser.fromJson(userJson as Map<String, dynamic>))
           .toList();
     }
 
     // ✅ НОВОЕ: Parse change_status_users list (изменение статуса)
     List<DealStatusUser>? changeStatusUsersList;
-    if (json['change_status_users'] != null && json['change_status_users'] is List) {
+    if (json['change_status_users'] != null &&
+        json['change_status_users'] is List) {
       changeStatusUsersList = (json['change_status_users'] as List)
           .where((item) => item != null)
-          .map((userJson) => DealStatusUser.fromJson(userJson as Map<String, dynamic>))
+          .map((userJson) =>
+              DealStatusUser.fromJson(userJson as Map<String, dynamic>))
           .toList();
     }
 
@@ -211,8 +219,11 @@ class DealStatus {
       dealsCount: json['deals_count'] as int? ?? 0,
       isSuccess: json['is_success'] == 1 || json['is_success'] == true,
       isFailure: json['is_failure'] == 1 || json['is_failure'] == true,
+      isUnassembled:
+          json['is_unassembled'] == 1 || json['is_unassembled'] == true,
       notificationMessage: json['notification_message'] as String?,
-      showOnMainPage: json['show_on_main_page'] == 1 || json['show_on_main_page'] == true,
+      showOnMainPage:
+          json['show_on_main_page'] == 1 || json['show_on_main_page'] == true,
       users: usersList,
       changeStatusUsers: changeStatusUsersList, // ✅ НОВОЕ
     );
@@ -229,10 +240,12 @@ class DealStatus {
       'deals_count': dealsCount,
       'is_success': isSuccess,
       'is_failure': isFailure,
+      'is_unassembled': isUnassembled,
       'notification_message': notificationMessage,
       'show_on_main_page': showOnMainPage,
       'users': users?.map((user) => user.toJson()).toList(),
-      'change_status_users': changeStatusUsers?.map((user) => user.toJson()).toList(), // ✅ НОВОЕ
+      'change_status_users':
+          changeStatusUsers?.map((user) => user.toJson()).toList(), // ✅ НОВОЕ
     };
   }
 

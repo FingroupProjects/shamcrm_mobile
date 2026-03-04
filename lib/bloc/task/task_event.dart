@@ -59,7 +59,8 @@ class FetchTasks extends TaskEvent {
   final List<int>? projectIds;
   final List<String>? authors;
   final String? department;
-  final List<Map<String, dynamic>>? directoryValues; // Добавляем directoryValues
+  final List<Map<String, dynamic>>?
+      directoryValues; // Добавляем directoryValues
 
   FetchTasks(
     this.statusId, {
@@ -103,7 +104,8 @@ class FetchMoreTasks extends TaskEvent {
   final List<int>? projectIds;
   final List<String>? authors;
   final String? department;
-  final List<Map<String, dynamic>>? directoryValues; // Добавляем directoryValues
+  final List<Map<String, dynamic>>?
+      directoryValues; // Добавляем directoryValues
 
   FetchMoreTasks(
     this.statusId,
@@ -125,6 +127,7 @@ class FetchMoreTasks extends TaskEvent {
     this.directoryValues, // Добавляем в конструктор
   });
 }
+
 class CreateTask extends TaskEvent {
   final String name;
   final int statusId;
@@ -155,7 +158,8 @@ class CreateTask extends TaskEvent {
     this.directoryValues,
     required this.localizations,
   });
-} 
+}
+
 class UpdateTask extends TaskEvent {
   final int taskId;
   final String name;
@@ -167,7 +171,7 @@ class UpdateTask extends TaskEvent {
   final int? projectId;
   final List<int>? userId;
   final String? description;
-    final List<Map<String, dynamic>>? customFields; // Изменяем тип
+  final List<Map<String, dynamic>>? customFields; // Изменяем тип
 
   final List<String>? filePaths;
   final List<TaskFiles>? existingFiles;
@@ -238,6 +242,7 @@ class UpdateTaskStatusEdit extends TaskEvent {
   final bool needsPermission;
   final bool finalStep;
   final bool checkingStep;
+  final bool isUnassembled;
   final List<int> roleIds;
   final AppLocalizations localizations;
 
@@ -247,6 +252,7 @@ class UpdateTaskStatusEdit extends TaskEvent {
     required this.needsPermission,
     required this.finalStep,
     required this.checkingStep,
+    this.isUnassembled = false,
     required this.roleIds,
     required this.localizations,
   });

@@ -3,17 +3,19 @@ import 'package:crm_task_manager/custom_widget/custom_bottom_dropdown.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/models/deal_model.dart';
 import 'package:crm_task_manager/models/dealById_model.dart';
+import 'package:crm_task_manager/screens/common/reason_for_refusal_modal.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 Future<void> showDealStatusBottomSheet(
-    BuildContext context,
-    String defaultValue,
-    Function(String, List<int>) onSelect,
-    Deal deal,
-    ApiService apiService,
-    ) async {
+  BuildContext context,
+  String defaultValue,
+  Function(String, List<int>) onSelect,
+  Deal deal,
+  ApiService apiService,
+) async {
+  final rootContext = context;
   // Check permissions first
   final canEdit = await apiService.hasPermission('deal.update');
   final canDelete = await apiService.hasPermission('deal.delete');
@@ -21,7 +23,7 @@ Future<void> showDealStatusBottomSheet(
 
   if (!canEdit && !canDelete && !canRead) {
     if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
+      ScaffoldMessenger.of(rootContext).showSnackBar(
         SnackBar(
           content: Text(
             AppLocalizations.of(context)!.translate('no_permission'),
@@ -49,26 +51,33 @@ Future<void> showDealStatusBottomSheet(
 
   // ✅ НОВАЯ ЛОГИКА: Проверяем оба флага
   final prefs = await SharedPreferences.getInstance();
-  final bool managingVisibility = prefs.getBool('managing_deal_status_visibility') ?? false;
-  final bool changeMultiple = prefs.getBool('change_deal_to_multiple_statuses') ?? false;
-  
+  final bool managingVisibility =
+      prefs.getBool('managing_deal_status_visibility') ?? false;
+  final bool changeMultiple =
+      prefs.getBool('change_deal_to_multiple_statuses') ?? false;
+
   // Если хотя бы один флаг true, включаем мультивыбор
   final bool isMultiSelectEnabled = managingVisibility || changeMultiple;
-  
+
   final String? organizationId = prefs.getString('organization_id') ?? '1';
   final String? salesFunnelId = prefs.getString('sales_funnel_id') ?? '1';
 
   debugPrint('DropdownBottomSheet: organizationId = $organizationId');
   debugPrint('DropdownBottomSheet: salesFunnelId = $salesFunnelId');
-  debugPrint('DropdownBottomSheet: managing_deal_status_visibility = $managingVisibility');
-  debugPrint('DropdownBottomSheet: change_deal_to_multiple_statuses = $changeMultiple');
-  debugPrint('DropdownBottomSheet: isMultiSelectEnabled = $isMultiSelectEnabled');
-  debugPrint('DropdownBottomSheet: Режим работы = ${isMultiSelectEnabled ? "МУЛЬТИВЫБОР" : "ОДИНОЧНЫЙ"}');
-  
+  debugPrint(
+      'DropdownBottomSheet: managing_deal_status_visibility = $managingVisibility');
+  debugPrint(
+      'DropdownBottomSheet: change_deal_to_multiple_statuses = $changeMultiple');
+  debugPrint(
+      'DropdownBottomSheet: isMultiSelectEnabled = $isMultiSelectEnabled');
+  debugPrint(
+      'DropdownBottomSheet: Режим работы = ${isMultiSelectEnabled ? "МУЛЬТИВЫБОР" : "ОДИНОЧНЫЙ"}');
+
   String selectedValue = defaultValue;
   List<int> selectedStatusIds = [];
   bool isLoading = false;
   bool isInitializing = true;
+  List<DealStatus> loadedStatuses = [];
 
   // Initialize selected statuses from API
   try {
@@ -115,16 +124,23 @@ Future<void> showDealStatusBottomSheet(
                       future: apiService.getDealStatuses(includeAll: true),
                       builder: (context, snapshot) {
                         if (snapshot.hasError) {
-                          return Center(child: Text(AppLocalizations.of(context)!.translate('error_text')));
-                        } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                          return Center(child: Text(AppLocalizations.of(context)!.translate('loading')));
+                          return Center(
+                              child: Text(AppLocalizations.of(context)!
+                                  .translate('error_text')));
+                        } else if (!snapshot.hasData ||
+                            snapshot.data!.isEmpty) {
+                          return Center(
+                              child: Text(AppLocalizations.of(context)!
+                                  .translate('loading')));
                         }
 
                         List<DealStatus> statuses = snapshot.data!;
+                        loadedStatuses = statuses;
 
                         return ListView(
                           children: statuses.map((DealStatus status) {
-                            bool isSelected = selectedStatusIds.contains(status.id);
+                            bool isSelected =
+                                selectedStatusIds.contains(status.id);
 
                             return GestureDetector(
                               onTap: () {
@@ -160,110 +176,165 @@ Future<void> showDealStatusBottomSheet(
                   ),
                   isLoading
                       ? Center(
-                    child: CircularProgressIndicator(
-                      color: Color(0xff1E2E52),
-                    ),
-                  )
-                      : CustomButton(
-                    buttonText: AppLocalizations.of(context)!.translate('save'),
-                    buttonColor: Color(0xfff4F40EC),
-                    textColor: Colors.white,
-                    onPressed: selectedStatusIds.isEmpty ? null : () {
-                      setState(() {
-                        isLoading = true;
-                      });
-
-                      apiService.updateDealStatus(
-                        deal.id, 
-                        deal.statusId,  // from_status_id (текущий статус)
-                        selectedStatusIds,
-                        isMultiSelect: isMultiSelectEnabled,  // ← передаём флаг
-                      ).then((_) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              AppLocalizations.of(context)!.translate('status_changed_successfully'),
-                              style: TextStyle(
-                                fontFamily: 'Gilroy',
-                                fontSize: 16,
-                                fontWeight: FontWeight.w500,
-                                color: Colors.white,
-                              ),
-                            ),
-                            behavior: SnackBarBehavior.floating,
-                            margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            backgroundColor: Colors.green,
-                            elevation: 3,
-                            padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                            duration: Duration(seconds: 3),
+                          child: CircularProgressIndicator(
+                            color: Color(0xff1E2E52),
                           ),
-                        );
-                        setState(() {
-                          isLoading = false;
-                        });
+                        )
+                      : CustomButton(
+                          buttonText:
+                              AppLocalizations.of(context)!.translate('save'),
+                          buttonColor: Color(0xfff4F40EC),
+                          textColor: Colors.white,
+                          onPressed: selectedStatusIds.isEmpty
+                              ? null
+                              : () async {
+                                  final askReason =
+                                      prefs.getBool('ask_reason_for_refusal') ??
+                                          false;
+                                  ReasonForRefusalSubmitData? refusalData;
+                                  if (!isMultiSelectEnabled &&
+                                      selectedStatusIds.length == 1) {
+                                    final targetStatus = loadedStatuses
+                                        .cast<DealStatus?>()
+                                        .firstWhere(
+                                          (status) =>
+                                              status?.id ==
+                                              selectedStatusIds.first,
+                                          orElse: () => null,
+                                        );
+                                    if (askReason &&
+                                        targetStatus != null &&
+                                        targetStatus.isUnassembled) {
+                                      refusalData =
+                                          await showReasonForRefusalDialog(
+                                        context: context,
+                                        type: 'deal',
+                                      );
+                                      if (refusalData == null) {
+                                        return;
+                                      }
+                                    }
+                                  }
 
-                        debugPrint('✅ Deal status updated: $selectedStatusIds');
-                        Navigator.pop(context);
-                        onSelect(selectedValue, selectedStatusIds);
-                      }).catchError((error) {
-                        setState(() {
-                          isLoading = false;
-                        });
+                                  setState(() {
+                                    isLoading = true;
+                                  });
 
-                        if (error is DealStatusUpdateException && error.code == 422) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                AppLocalizations.of(context)!.translate('cannot_move_deal_to_status'),
-                                style: TextStyle(
-                                  fontFamily: 'Gilroy',
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w500,
-                                  color: Colors.white,
-                                ),
-                              ),
-                              behavior: SnackBarBehavior.floating,
-                              margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              backgroundColor: Colors.red,
-                              elevation: 3,
-                              padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                              duration: Duration(seconds: 3),
-                            ),
-                          );
-                          Navigator.pop(context);
-                        } else {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                AppLocalizations.of(context)!.translate('error_text'),
-                                style: TextStyle(
-                                  fontFamily: 'Gilroy',
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w500,
-                                  color: Colors.white,
-                                ),
-                              ),
-                              behavior: SnackBarBehavior.floating,
-                              margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              backgroundColor: Colors.red,
-                              elevation: 3,
-                              padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                              duration: Duration(seconds: 3),
-                            ),
-                          );
-                        }
-                      });
-                    },
-                  ),
+                                  apiService
+                                      .updateDealStatus(
+                                    deal.id,
+                                    deal.statusId, // from_status_id (текущий статус)
+                                    selectedStatusIds,
+                                    isMultiSelect:
+                                        isMultiSelectEnabled, // ← передаём флаг
+                                    organizationId: organizationId,
+                                    salesFunnelId: salesFunnelId,
+                                    reasonForRefusalId: refusalData?.reasonId,
+                                    reasonForRefusal: refusalData?.comment,
+                                  )
+                                      .then((_) {
+                                    ScaffoldMessenger.of(rootContext)
+                                        .showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          AppLocalizations.of(context)!
+                                              .translate(
+                                                  'status_changed_successfully'),
+                                          style: TextStyle(
+                                            fontFamily: 'Gilroy',
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.w500,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                        behavior: SnackBarBehavior.floating,
+                                        margin: EdgeInsets.symmetric(
+                                            horizontal: 16, vertical: 8),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(12),
+                                        ),
+                                        backgroundColor: Colors.green,
+                                        elevation: 3,
+                                        padding: EdgeInsets.symmetric(
+                                            vertical: 12, horizontal: 16),
+                                        duration: Duration(seconds: 3),
+                                      ),
+                                    );
+                                    setState(() {
+                                      isLoading = false;
+                                    });
+
+                                    debugPrint(
+                                        '✅ Deal status updated: $selectedStatusIds');
+                                    Navigator.pop(context);
+                                    onSelect(selectedValue, selectedStatusIds);
+                                  }).catchError((error) {
+                                    setState(() {
+                                      isLoading = false;
+                                    });
+
+                                    if (error is DealStatusUpdateException &&
+                                        error.code == 422) {
+                                      Navigator.pop(context);
+                                      ScaffoldMessenger.of(rootContext)
+                                          .showSnackBar(
+                                        SnackBar(
+                                          content: Text(
+                                            error.message,
+                                            style: TextStyle(
+                                              fontFamily: 'Gilroy',
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.w500,
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                          behavior: SnackBarBehavior.floating,
+                                          margin: EdgeInsets.symmetric(
+                                              horizontal: 16, vertical: 8),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(12),
+                                          ),
+                                          backgroundColor: Colors.red,
+                                          elevation: 3,
+                                          padding: EdgeInsets.symmetric(
+                                              vertical: 12, horizontal: 16),
+                                          duration: Duration(seconds: 3),
+                                        ),
+                                      );
+                                    } else {
+                                      ScaffoldMessenger.of(rootContext)
+                                          .showSnackBar(
+                                        SnackBar(
+                                          content: Text(
+                                            AppLocalizations.of(context)!
+                                                .translate('error_text'),
+                                            style: TextStyle(
+                                              fontFamily: 'Gilroy',
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.w500,
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                          behavior: SnackBarBehavior.floating,
+                                          margin: EdgeInsets.symmetric(
+                                              horizontal: 16, vertical: 8),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(12),
+                                          ),
+                                          backgroundColor: Colors.red,
+                                          elevation: 3,
+                                          padding: EdgeInsets.symmetric(
+                                              vertical: 12, horizontal: 16),
+                                          duration: Duration(seconds: 3),
+                                        ),
+                                      );
+                                    }
+                                  });
+                                },
+                        ),
                   SizedBox(height: 16),
                 ],
               ),

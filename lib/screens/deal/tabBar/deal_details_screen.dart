@@ -585,6 +585,21 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
       });
     }
 
+    final refusalReason = (deal.refusalReasonText ?? '').trim();
+    final refusalComment = (deal.reasonForRefusalComment ?? '').trim();
+    if (refusalReason.isNotEmpty || refusalComment.isNotEmpty) {
+      details.add({
+        'label': 'Причина отказа:',
+        'value': refusalReason.isNotEmpty ? refusalReason : refusalComment,
+      });
+      if (refusalReason.isNotEmpty && refusalComment.isNotEmpty) {
+        details.add({
+          'label': 'Комментарий отказа:',
+          'value': refusalComment,
+        });
+      }
+    }
+
     // Всегда добавляем файлы в конец списка, если они есть
     if (deal.files.isNotEmpty) {
       details.add({

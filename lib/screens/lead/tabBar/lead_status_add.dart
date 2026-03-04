@@ -19,6 +19,7 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
   String? _errorMessage;
   bool _isSuccess = false; // Галочка "Успешно" выключена по умолчанию
   bool _isFailure = false;
+  bool _isUnassembled = false;
 
   @override
   void dispose() {
@@ -172,6 +173,18 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
                             ),
                           ],
                         ),
+                        const SizedBox(height: 12),
+                        _buildCheckbox(
+                          'Неразобранные',
+                          _isUnassembled,
+                          (v) {
+                            if (v != null) {
+                              setState(() {
+                                _isUnassembled = v;
+                              });
+                            }
+                          },
+                        ),
                       ],
                     ),
                   ),
@@ -200,6 +213,7 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
                                   color: color,
                                   isSuccess: _isSuccess,
                                   isFailure: _isFailure,
+                                  isUnassembled: _isUnassembled,
                                   localizations: localizations,
                                 ),
                               );

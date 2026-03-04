@@ -41,20 +41,24 @@ class _TaskStatusRadioGroupWidgetState
   @override
   void initState() {
     super.initState();
-    debugPrint('🟦 TaskStatusRadioGroupWidget: initState() - Dispatching FetchTaskStatuses()');
+    debugPrint(
+        '🟦 TaskStatusRadioGroupWidget: initState() - Dispatching FetchTaskStatuses()');
     context.read<TaskBloc>().add(FetchTaskStatuses());
-    debugPrint('🟦 TaskStatusRadioGroupWidget: initState() - FetchTaskStatuses() dispatched');
+    debugPrint(
+        '🟦 TaskStatusRadioGroupWidget: initState() - FetchTaskStatuses() dispatched');
     _loadStatusesFromCache();
   }
 
   Future<void> _loadStatusesFromCache() async {
     if (_hasLoadedFromCache) return;
-    
+
     try {
-      debugPrint('🟦 TaskStatusRadioGroupWidget: Loading statuses from cache...');
+      debugPrint(
+          '🟦 TaskStatusRadioGroupWidget: Loading statuses from cache...');
       final cachedStatuses = await TaskCache.getTaskStatuses();
       if (cachedStatuses.isNotEmpty && statusList.isEmpty) {
-        debugPrint('🟦 TaskStatusRadioGroupWidget: Found ${cachedStatuses.length} cached statuses');
+        debugPrint(
+            '🟦 TaskStatusRadioGroupWidget: Found ${cachedStatuses.length} cached statuses');
         final List<TaskStatus> statuses = cachedStatuses.map((status) {
           final statusId = status['id'] as int;
           return TaskStatus(
@@ -64,6 +68,7 @@ class _TaskStatusRadioGroupWidgetState
             needsPermission: false,
             finalStep: false,
             checkingStep: false,
+            isUnassembled: false,
             roles: [],
             taskStatus: TaskStatusName(
               id: statusId,
@@ -71,13 +76,14 @@ class _TaskStatusRadioGroupWidgetState
             ),
           );
         }).toList();
-        
+
         if (mounted) {
           setState(() {
             statusList = statuses;
             _hasLoadedFromCache = true;
           });
-          debugPrint('🟦 TaskStatusRadioGroupWidget: ✅ Loaded ${statuses.length} statuses from cache');
+          debugPrint(
+              '🟦 TaskStatusRadioGroupWidget: ✅ Loaded ${statuses.length} statuses from cache');
         }
       }
     } catch (e) {
@@ -88,9 +94,10 @@ class _TaskStatusRadioGroupWidgetState
   @override
   Widget build(BuildContext context) {
     debugPrint('🟦🟦🟦 TaskStatusRadioGroupWidget: build() called 🟦🟦🟦');
-    debugPrint('🟦 TaskStatusRadioGroupWidget: selectedStatus = ${widget.selectedStatus}');
+    debugPrint(
+        '🟦 TaskStatusRadioGroupWidget: selectedStatus = ${widget.selectedStatus}');
     debugPrint('🟦 TaskStatusRadioGroupWidget: hasError = ${widget.hasError}');
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -98,37 +105,321 @@ class _TaskStatusRadioGroupWidgetState
           listener: (context, state) {
             // Когда состояние меняется на TaskDataLoaded, загружаем статусы из кэша
             if (state is TaskDataLoaded && statusList.isEmpty) {
-              debugPrint('🟦 TaskStatusRadioGroupWidget: State changed to TaskDataLoaded, loading from cache');
+              debugPrint(
+                  '🟦 TaskStatusRadioGroupWidget: State changed to TaskDataLoaded, loading from cache');
               _loadStatusesFromCache();
             }
           },
           child: BlocBuilder<TaskBloc, TaskState>(
             builder: (context, state) {
-              debugPrint('🟦 TaskStatusRadioGroupWidget: BlocBuilder - state type: ${state.runtimeType}');
-            
-            if (state is TaskError) {
-              debugPrint('🟦 TaskStatusRadioGroupWidget: ⚠️ TaskError state: ${state.message}');
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      AppLocalizations.of(context)!.translate(state.message),
-                      style: statusTextStyle.copyWith(color: Colors.white),
+              debugPrint(
+                  '🟦 TaskStatusRadioGroupWidget: BlocBuilder - state type: ${state.runtimeType}');
+
+              if (state is TaskError) {
+                debugPrint(
+                    '🟦 TaskStatusRadioGroupWidget: ⚠️ TaskError state: ${state.message}');
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        AppLocalizations.of(context)!.translate(state.message),
+                        style: statusTextStyle.copyWith(color: Colors.white),
+                      ),
+                      behavior: SnackBarBehavior.floating,
+                      margin: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 8),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      backgroundColor: Colors.red,
+                      elevation: 3,
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 12, horizontal: 16),
+                      duration: const Duration(seconds: 3),
                     ),
-                    behavior: SnackBarBehavior.floating,
-                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                  );
+                });
+                // Return error placeholder instead of empty widget
+                debugPrint(
+                    '🟦 TaskStatusRadioGroupWidget: Returning error placeholder');
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      AppLocalizations.of(context)!.translate('task_statuses'),
+                      style: statusTextStyle.copyWith(
+                        fontWeight: FontWeight.w400,
+                        fontSize: 14,
+                      ),
                     ),
-                    backgroundColor: Colors.red,
-                    elevation: 3,
-                    padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                    duration: const Duration(seconds: 3),
-                  ),
+                    const SizedBox(height: 8),
+                    Container(
+                      height: 50,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF4F7FD),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          width: 1.5,
+                          color: Colors.red,
+                        ),
+                      ),
+                      child: Center(
+                        child: Text(
+                          AppLocalizations.of(context)!
+                              .translate('error_loading_statuses'),
+                          style: statusTextStyle.copyWith(
+                            color: Colors.red,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 );
-              });
-              // Return error placeholder instead of empty widget
-              debugPrint('🟦 TaskStatusRadioGroupWidget: Returning error placeholder');
+              }
+
+              if (state is TaskLoaded) {
+                debugPrint('🟦 TaskStatusRadioGroupWidget: ✅ TaskLoaded state');
+                statusList = state.taskStatuses;
+                _hasLoadedFromCache =
+                    false; // Reset cache flag when we get fresh data
+                debugPrint(
+                    '🟦 TaskStatusRadioGroupWidget: statusList.length = ${statusList.length}');
+
+                if (statusList.length == 1 && selectedStatusData == null) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    widget.onSelectStatus(statusList[0]);
+                    setState(() {
+                      selectedStatusData = statusList[0];
+                    });
+                  });
+                } else if (widget.selectedStatus != null &&
+                    statusList.isNotEmpty) {
+                  try {
+                    selectedStatusData = statusList.firstWhere(
+                      (status) => status.id.toString() == widget.selectedStatus,
+                    );
+                  } catch (e) {
+                    selectedStatusData = null;
+                  }
+                }
+
+                debugPrint(
+                    '🟦 TaskStatusRadioGroupWidget: Building Column with ${statusList.length} statuses');
+
+                final columnWidget = Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      AppLocalizations.of(context)!.translate('task_statuses'),
+                      style: statusTextStyle.copyWith(
+                        fontWeight: FontWeight.w400,
+                        fontSize: 14,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF4F7FD),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          width: 1,
+                          color: const Color(0xFFF4F7FD),
+                        ),
+                      ),
+                      child: CustomDropdown<TaskStatus>.search(
+                        closeDropDownOnClearFilterSearch: true,
+                        items: statusList,
+                        searchHintText:
+                            AppLocalizations.of(context)!.translate('search'),
+                        overlayHeight: 400,
+                        decoration: CustomDropdownDecoration(
+                          closedFillColor: const Color(0xffF4F7FD),
+                          expandedFillColor: Colors.white,
+                          closedBorder: Border.all(
+                            color: widget
+                                    .hasError // ✅ НОВОЕ: красная граница при ошибке
+                                ? Colors.red
+                                : Colors.transparent,
+                            width: widget.hasError ? 1.5 : 1,
+                          ),
+                          closedBorderRadius: BorderRadius.circular(12),
+                          expandedBorder: Border.all(
+                            color: widget
+                                    .hasError // ✅ НОВОЕ: красная граница при ошибке
+                                ? Colors.red
+                                : const Color(0xFFE5E7EB),
+                            width: widget.hasError ? 1.5 : 1,
+                          ),
+                          expandedBorderRadius: BorderRadius.circular(12),
+                        ),
+                        listItemBuilder:
+                            (context, item, isSelected, onItemSelect) {
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 8,
+                            ),
+                            child: Text(
+                              item.taskStatus?.name ?? "",
+                              style: statusTextStyle,
+                            ),
+                          );
+                        },
+                        headerBuilder: (context, selectedItem, enabled) {
+                          return Text(
+                            selectedItem.taskStatus?.name ??
+                                AppLocalizations.of(context)!
+                                    .translate('select_status'),
+                            style: statusTextStyle.copyWith(
+                              color: const Color(0xff1E2E52),
+                            ),
+                          );
+                        },
+                        hintBuilder: (context, hint, enabled) => Text(
+                          AppLocalizations.of(context)!
+                              .translate('select_status'),
+                          style: statusTextStyle.copyWith(
+                            fontSize: 14,
+                            color: const Color(0xFF6B7280),
+                          ),
+                        ),
+                        excludeSelected: false,
+                        initialItem: selectedStatusData,
+                        onChanged: (value) {
+                          if (value != null) {
+                            widget.onSelectStatus(value);
+                            setState(() {
+                              selectedStatusData = value;
+                            });
+                            FocusScope.of(context).unfocus();
+                          }
+                        },
+                      ),
+                    ),
+                  ],
+                );
+
+                debugPrint(
+                    '🟦 TaskStatusRadioGroupWidget: ✅✅✅ Returning Column widget with ${columnWidget.children.length} children ✅✅✅');
+                return columnWidget;
+              }
+
+              debugPrint(
+                  '🟦 TaskStatusRadioGroupWidget: ⚠️ State is NOT TaskLoaded! State type: ${state.runtimeType}');
+
+              // Если у нас есть статусы из кэша, показываем их
+              if (statusList.isNotEmpty) {
+                debugPrint(
+                    '🟦 TaskStatusRadioGroupWidget: Using cached statuses (${statusList.length})');
+
+                // Обновляем selectedStatusData если нужно
+                if (widget.selectedStatus != null && statusList.isNotEmpty) {
+                  try {
+                    selectedStatusData = statusList.firstWhere(
+                      (status) => status.id.toString() == widget.selectedStatus,
+                    );
+                  } catch (e) {
+                    selectedStatusData = null;
+                  }
+                }
+
+                // Возвращаем виджет с кэшированными статусами
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      AppLocalizations.of(context)!.translate('task_statuses'),
+                      style: statusTextStyle.copyWith(
+                        fontWeight: FontWeight.w400,
+                        fontSize: 14,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF4F7FD),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          width: 1,
+                          color: const Color(0xFFF4F7FD),
+                        ),
+                      ),
+                      child: CustomDropdown<TaskStatus>.search(
+                        closeDropDownOnClearFilterSearch: true,
+                        items: statusList,
+                        searchHintText:
+                            AppLocalizations.of(context)!.translate('search'),
+                        overlayHeight: 400,
+                        decoration: CustomDropdownDecoration(
+                          closedFillColor: const Color(0xffF4F7FD),
+                          expandedFillColor: Colors.white,
+                          closedBorder: Border.all(
+                            color: widget.hasError
+                                ? Colors.red
+                                : Colors.transparent,
+                            width: widget.hasError ? 1.5 : 1,
+                          ),
+                          closedBorderRadius: BorderRadius.circular(12),
+                          expandedBorder: Border.all(
+                            color: widget.hasError
+                                ? Colors.red
+                                : const Color(0xFFE5E7EB),
+                            width: widget.hasError ? 1.5 : 1,
+                          ),
+                          expandedBorderRadius: BorderRadius.circular(12),
+                        ),
+                        listItemBuilder:
+                            (context, item, isSelected, onItemSelect) {
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 8,
+                            ),
+                            child: Text(
+                              item.taskStatus?.name ?? "",
+                              style: statusTextStyle,
+                            ),
+                          );
+                        },
+                        headerBuilder: (context, selectedItem, enabled) {
+                          return Text(
+                            selectedItem.taskStatus?.name ??
+                                AppLocalizations.of(context)!
+                                    .translate('select_status'),
+                            style: statusTextStyle.copyWith(
+                              color: const Color(0xff1E2E52),
+                            ),
+                          );
+                        },
+                        hintBuilder: (context, hint, enabled) => Text(
+                          AppLocalizations.of(context)!
+                              .translate('select_status'),
+                          style: statusTextStyle.copyWith(
+                            fontSize: 14,
+                            color: const Color(0xFF6B7280),
+                          ),
+                        ),
+                        excludeSelected: false,
+                        initialItem: selectedStatusData,
+                        onChanged: (value) {
+                          if (value != null) {
+                            widget.onSelectStatus(value);
+                            setState(() {
+                              selectedStatusData = value;
+                            });
+                            FocusScope.of(context).unfocus();
+                          }
+                        },
+                      ),
+                    ),
+                  ],
+                );
+              }
+
+              // Если статусов нет, показываем индикатор загрузки
+              debugPrint(
+                  '🟦 TaskStatusRadioGroupWidget: No cached statuses, showing loading indicator');
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -146,278 +437,20 @@ class _TaskStatusRadioGroupWidgetState
                       color: const Color(0xFFF4F7FD),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        width: 1.5,
-                        color: Colors.red,
+                        width: 1,
+                        color: const Color(0xFFF4F7FD),
                       ),
                     ),
                     child: Center(
-                      child: Text(
-                        AppLocalizations.of(context)!.translate('error_loading_statuses'),
-                        style: statusTextStyle.copyWith(
-                          color: Colors.red,
-                          fontSize: 12,
-                        ),
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor:
+                            AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
                       ),
                     ),
                   ),
                 ],
               );
-            }
-
-            if (state is TaskLoaded) {
-              debugPrint('🟦 TaskStatusRadioGroupWidget: ✅ TaskLoaded state');
-              statusList = state.taskStatuses;
-              _hasLoadedFromCache = false; // Reset cache flag when we get fresh data
-              debugPrint('🟦 TaskStatusRadioGroupWidget: statusList.length = ${statusList.length}');
-
-              if (statusList.length == 1 && selectedStatusData == null) {
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  widget.onSelectStatus(statusList[0]);
-                  setState(() {
-                    selectedStatusData = statusList[0];
-                  });
-                });
-              } else if (widget.selectedStatus != null && statusList.isNotEmpty) {
-                try {
-                  selectedStatusData = statusList.firstWhere(
-                    (status) => status.id.toString() == widget.selectedStatus,
-                  );
-                } catch (e) {
-                  selectedStatusData = null;
-                }
-              }
-
-              debugPrint('🟦 TaskStatusRadioGroupWidget: Building Column with ${statusList.length} statuses');
-              
-              final columnWidget = Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    AppLocalizations.of(context)!.translate('task_statuses'),
-                    style: statusTextStyle.copyWith(
-                      fontWeight: FontWeight.w400,
-                      fontSize: 14,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Container(
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF4F7FD),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        width: 1,
-                        color: const Color(0xFFF4F7FD),
-                      ),
-                    ),
-                    child: CustomDropdown<TaskStatus>.search(
-                      closeDropDownOnClearFilterSearch: true,
-                      items: statusList,
-                      searchHintText: AppLocalizations.of(context)!.translate('search'),
-                      overlayHeight: 400,
-                      decoration: CustomDropdownDecoration(
-                        closedFillColor: const Color(0xffF4F7FD),
-                        expandedFillColor: Colors.white,
-                        closedBorder: Border.all(
-                          color: widget.hasError // ✅ НОВОЕ: красная граница при ошибке
-                              ? Colors.red
-                              : Colors.transparent,
-                          width: widget.hasError ? 1.5 : 1,
-                        ),
-                        closedBorderRadius: BorderRadius.circular(12),
-                        expandedBorder: Border.all(
-                          color: widget.hasError // ✅ НОВОЕ: красная граница при ошибке
-                              ? Colors.red
-                              : const Color(0xFFE5E7EB),
-                          width: widget.hasError ? 1.5 : 1,
-                        ),
-                        expandedBorderRadius: BorderRadius.circular(12),
-                      ),
-                      listItemBuilder: (context, item, isSelected, onItemSelect) {
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 8,
-                          ),
-                          child: Text(
-                            item.taskStatus?.name ?? "",
-                            style: statusTextStyle,
-                          ),
-                        );
-                      },
-                      headerBuilder: (context, selectedItem, enabled) {
-                        return Text(
-                          selectedItem.taskStatus?.name ?? 
-                              AppLocalizations.of(context)!.translate('select_status'),
-                          style: statusTextStyle.copyWith(
-                            color: const Color(0xff1E2E52),
-                          ),
-                        );
-                      },
-                      hintBuilder: (context, hint, enabled) => Text(
-                        AppLocalizations.of(context)!.translate('select_status'),
-                        style: statusTextStyle.copyWith(
-                          fontSize: 14,
-                          color: const Color(0xFF6B7280),
-                        ),
-                      ),
-                      excludeSelected: false,
-                      initialItem: selectedStatusData,
-                      onChanged: (value) {
-                        if (value != null) {
-                          widget.onSelectStatus(value);
-                          setState(() {
-                            selectedStatusData = value;
-                          });
-                          FocusScope.of(context).unfocus();
-                        }
-                      },
-                    ),
-                  ),
-                ],
-              );
-              
-              debugPrint('🟦 TaskStatusRadioGroupWidget: ✅✅✅ Returning Column widget with ${columnWidget.children.length} children ✅✅✅');
-              return columnWidget;
-            }
-            
-            debugPrint('🟦 TaskStatusRadioGroupWidget: ⚠️ State is NOT TaskLoaded! State type: ${state.runtimeType}');
-            
-            // Если у нас есть статусы из кэша, показываем их
-            if (statusList.isNotEmpty) {
-              debugPrint('🟦 TaskStatusRadioGroupWidget: Using cached statuses (${statusList.length})');
-              
-              // Обновляем selectedStatusData если нужно
-              if (widget.selectedStatus != null && statusList.isNotEmpty) {
-                try {
-                  selectedStatusData = statusList.firstWhere(
-                    (status) => status.id.toString() == widget.selectedStatus,
-                  );
-                } catch (e) {
-                  selectedStatusData = null;
-                }
-              }
-              
-              // Возвращаем виджет с кэшированными статусами
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    AppLocalizations.of(context)!.translate('task_statuses'),
-                    style: statusTextStyle.copyWith(
-                      fontWeight: FontWeight.w400,
-                      fontSize: 14,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Container(
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF4F7FD),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        width: 1,
-                        color: const Color(0xFFF4F7FD),
-                      ),
-                    ),
-                    child: CustomDropdown<TaskStatus>.search(
-                      closeDropDownOnClearFilterSearch: true,
-                      items: statusList,
-                      searchHintText: AppLocalizations.of(context)!.translate('search'),
-                      overlayHeight: 400,
-                      decoration: CustomDropdownDecoration(
-                        closedFillColor: const Color(0xffF4F7FD),
-                        expandedFillColor: Colors.white,
-                        closedBorder: Border.all(
-                          color: widget.hasError
-                              ? Colors.red
-                              : Colors.transparent,
-                          width: widget.hasError ? 1.5 : 1,
-                        ),
-                        closedBorderRadius: BorderRadius.circular(12),
-                        expandedBorder: Border.all(
-                          color: widget.hasError
-                              ? Colors.red
-                              : const Color(0xFFE5E7EB),
-                          width: widget.hasError ? 1.5 : 1,
-                        ),
-                        expandedBorderRadius: BorderRadius.circular(12),
-                      ),
-                      listItemBuilder: (context, item, isSelected, onItemSelect) {
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 8,
-                          ),
-                          child: Text(
-                            item.taskStatus?.name ?? "",
-                            style: statusTextStyle,
-                          ),
-                        );
-                      },
-                      headerBuilder: (context, selectedItem, enabled) {
-                        return Text(
-                          selectedItem.taskStatus?.name ?? 
-                              AppLocalizations.of(context)!.translate('select_status'),
-                          style: statusTextStyle.copyWith(
-                            color: const Color(0xff1E2E52),
-                          ),
-                        );
-                      },
-                      hintBuilder: (context, hint, enabled) => Text(
-                        AppLocalizations.of(context)!.translate('select_status'),
-                        style: statusTextStyle.copyWith(
-                          fontSize: 14,
-                          color: const Color(0xFF6B7280),
-                        ),
-                      ),
-                      excludeSelected: false,
-                      initialItem: selectedStatusData,
-                      onChanged: (value) {
-                        if (value != null) {
-                          widget.onSelectStatus(value);
-                          setState(() {
-                            selectedStatusData = value;
-                          });
-                          FocusScope.of(context).unfocus();
-                        }
-                      },
-                    ),
-                  ),
-                ],
-              );
-            }
-            
-            // Если статусов нет, показываем индикатор загрузки
-            debugPrint('🟦 TaskStatusRadioGroupWidget: No cached statuses, showing loading indicator');
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  AppLocalizations.of(context)!.translate('task_statuses'),
-                  style: statusTextStyle.copyWith(
-                    fontWeight: FontWeight.w400,
-                    fontSize: 14,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Container(
-                  height: 50,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF4F7FD),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      width: 1,
-                      color: const Color(0xFFF4F7FD),
-                    ),
-                  ),
-                  child: Center(
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
-                    ),
-                  ),
-                ),
-              ],
-            );
             },
           ),
         ),

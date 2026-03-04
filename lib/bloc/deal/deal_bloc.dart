@@ -237,6 +237,7 @@ class DealBloc extends Bloc<DealEvent, DealState> {
                   'id': status.id,
                   'title': status.title,
                   'deals_count': status.dealsCount ?? 0,
+                  'is_unassembled': status.isUnassembled,
                 })
             .toList());
 
@@ -273,6 +274,7 @@ class DealBloc extends Bloc<DealEvent, DealState> {
                 dealsCount: count,
                 isSuccess: false,
                 isFailure: false,
+                isUnassembled: status['is_unassembled'] == true,
                 showOnMainPage: false,
               );
             }).toList();
@@ -309,6 +311,7 @@ class DealBloc extends Bloc<DealEvent, DealState> {
                   'id': status.id,
                   'title': status.title,
                   'deals_count': status.dealsCount ?? 0,
+                  'is_unassembled': status.isUnassembled,
                 })
             .toList());
 
@@ -393,6 +396,7 @@ class DealBloc extends Bloc<DealEvent, DealState> {
         event.showOnMainPage,
         event.isSuccess,
         event.isFailure,
+        event.isUnassembled,
         event.userIds,
         event.changeStatusUserIds, // ✅ НОВОЕ
       );
@@ -542,6 +546,7 @@ class DealBloc extends Bloc<DealEvent, DealState> {
         event.day,
         event.isSuccess,
         event.isFailure,
+        event.isUnassembled,
         event.notificationMessage,
         event.showOnMainPage,
         event.userIds,
@@ -599,6 +604,7 @@ class DealBloc extends Bloc<DealEvent, DealState> {
                 'id': status.id,
                 'title': status.title,
                 'deals_count': status.dealsCount ?? 0,
+                'is_unassembled': status.isUnassembled,
               })
           .toList());
 
