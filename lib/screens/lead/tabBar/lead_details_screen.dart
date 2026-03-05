@@ -1461,17 +1461,13 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
     );
     if (refusalData == null) return;
 
-    final targetStatusId = lead.leadStatus?.id ?? lead.statusId;
-
     setState(() {
       _isRejectingLead = true;
     });
 
     try {
-      await _apiService.updateLeadStatus(
+      await _apiService.declineLead(
         lead.id,
-        1,
-        targetStatusId,
         reasonForRefusalId: refusalData.reasonId,
         reasonForRefusal: refusalData.comment,
       );

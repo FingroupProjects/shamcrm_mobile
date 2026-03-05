@@ -1968,6 +1968,42 @@ class ApiService {
     }
   }
 
+  Future<Map<String, dynamic>> declineLead(
+    int leadId, {
+    int? reasonForRefusalId,
+    String? reasonForRefusal,
+  }) async {
+    try {
+      final path = await _appendQueryParams('/lead/decline/$leadId');
+      final payload = <String, dynamic>{
+        if (reasonForRefusalId != null)
+          'reason_for_refusal_id': reasonForRefusalId,
+        if (reasonForRefusal != null && reasonForRefusal.trim().isNotEmpty)
+          'reason_for_refusal': reasonForRefusal.trim(),
+      };
+
+      final response = await _postRequest(path, payload);
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return json.decode(response.body) as Map<String, dynamic>;
+      }
+
+      if (response.statusCode == 422) {
+        final data = json.decode(response.body);
+        final message = (data is Map<String, dynamic>
+                    ? data['message']
+                    : null)
+                ?.toString() ??
+            'Ошибка валидации при отказе лида';
+        throw LeadStatusUpdateException(422, message);
+      }
+
+      throw Exception('Ошибка отказа от лида');
+    } catch (e) {
+      rethrow;
+    }
+  }
+
 // Метод для получения списка Лидов с пагинацией
   Future<List<Lead>> getLeads(
     int? leadStatusId, {
@@ -2528,6 +2564,7 @@ class ApiService {
     required String title,
     required String body,
     required int leadId,
+    int? dealId,
     DateTime? date,
     required List<int> users,
     List<String>? filePaths, // Новое поле для файлов
@@ -2553,6 +2590,9 @@ class ApiService {
       request.fields['title'] = title;
       request.fields['body'] = body;
       request.fields['lead_id'] = leadId.toString();
+      if (dealId != null) {
+        request.fields['deal_id'] = dealId.toString();
+      }
       if (date != null) {
         request.fields['date'] = DateFormat('yyyy-MM-dd HH:mm').format(date);
       }
@@ -2591,6 +2631,61 @@ class ApiService {
       } else {
         return {'success': false, 'message': 'error_create_note'};
       }
+    } catch (e) {
+      return {'success': false, 'message': 'error_create_note'};
+    }
+  }
+
+  Future<Map<String, dynamic>> createDealNotice({
+    String? title,
+    required String body,
+    required int leadId,
+    required int dealId,
+    DateTime? date,
+    List<int>? users,
+  }) async {
+    try {
+      final token = await getToken();
+      final path = await _appendQueryParams('/notices');
+      final uri = Uri.parse('$baseUrl$path');
+
+      final request = http.MultipartRequest('POST', uri);
+      request.headers.addAll({
+        'Authorization': 'Bearer $token',
+        'Accept': 'application/json',
+        'Device': 'mobile',
+      });
+
+      if (title != null && title.trim().isNotEmpty) {
+        request.fields['title'] = title.trim();
+      }
+      request.fields['body'] = body;
+      request.fields['lead_id'] = leadId.toString();
+      request.fields['deal_id'] = dealId.toString();
+      if (date != null) {
+        request.fields['date'] = DateFormat('yyyy/MM/dd HH:mm').format(date);
+      }
+      if (users != null && users.isNotEmpty) {
+        for (int i = 0; i < users.length; i++) {
+          request.fields['users[$i]'] = users[i].toString();
+        }
+      }
+
+      final response = await _multipartPostRequest('', request);
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return {'success': true, 'message': 'note_created_successfully'};
+      }
+      if (response.statusCode == 422) {
+        final data = json.decode(response.body);
+        final message = (data is Map<String, dynamic>
+                    ? data['message']
+                    : null)
+                ?.toString() ??
+            'Ошибка валидации';
+        return {'success': false, 'message': message};
+      }
+      return {'success': false, 'message': 'error_create_note'};
     } catch (e) {
       return {'success': false, 'message': 'error_create_note'};
     }

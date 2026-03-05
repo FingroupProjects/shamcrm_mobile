@@ -15,6 +15,7 @@ import 'package:crm_task_manager/screens/deal/tabBar/deal_delete.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_details/dropdown_history.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_details/deal_task_screen.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_edit_screen.dart';
+import 'package:crm_task_manager/screens/lead/tabBar/lead_details/add_notes.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/utils/TutorialStyleWidget.dart';
@@ -63,6 +64,8 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
   bool _canEditDeal = false;
   bool _canDeleteDeal = false;
   bool _canReadTasks = false;
+  bool _createTaskInDealEnabled = false;
+  bool _isCreatingDealNotice = false;
 
   final ApiService _apiService = ApiService();
   final GlobalKey keyDealEdit = GlobalKey();
@@ -326,11 +329,13 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
     final canEdit = await _apiService.hasPermission('deal.update');
     final canDelete = await _apiService.hasPermission('deal.delete');
     final canReadTasks = await _apiService.hasPermission('task.read');
+    final prefs = await SharedPreferences.getInstance();
 
     setState(() {
       _canEditDeal = canEdit;
       _canDeleteDeal = canDelete;
       _canReadTasks = canReadTasks;
+      _createTaskInDealEnabled = prefs.getBool('create_task_in_deal') ?? false;
     });
   }
 
@@ -691,6 +696,10 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
                 child: ListView(
                   children: [
                     _buildDetailsList(),
+                    if (_createTaskInDealEnabled) ...[
+                      const SizedBox(height: 8),
+                      _buildDealNoticeCreateBlock(),
+                    ],
                     const SizedBox(height: 8),
                     ActionHistoryWidget(
                         dealId: int.parse(widget.dealId), key: keyDealHistory),
@@ -718,6 +727,386 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
         },
       ),
     );
+  }
+
+  Widget _buildDealNoticeCreateBlock() {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xffF8FAFF),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          const Text(
+            'Задача',
+            style: TextStyle(
+              fontSize: 16,
+              fontFamily: 'Gilroy',
+              fontWeight: FontWeight.w600,
+              color: Color(0xff1E2E52),
+            ),
+          ),
+          SizedBox(
+            height: 36,
+            child: ElevatedButton(
+              onPressed: _isCreatingDealNotice ? null : _showDealNoticeTypePicker,
+              style: ElevatedButton.styleFrom(
+                elevation: 0,
+                backgroundColor: const Color(0xff1E2E52),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: _isCreatingDealNotice
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Text(
+                      'Добавить',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontFamily: 'Gilroy',
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _showDealNoticeTypePicker() async {
+    final type = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                title: const Text(
+                  'Задача',
+                  style: TextStyle(
+                    fontFamily: 'Gilroy',
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xff1E2E52),
+                  ),
+                ),
+                onTap: () => Navigator.pop(context, 'task'),
+              ),
+              const Divider(height: 1),
+              ListTile(
+                title: const Text(
+                  'Комментарий',
+                  style: TextStyle(
+                    fontFamily: 'Gilroy',
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xff1E2E52),
+                  ),
+                ),
+                onTap: () => Navigator.pop(context, 'comment'),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+
+    if (!mounted || type == null) return;
+    if (type == 'task') {
+      _showCreateDealTaskDialog();
+    } else {
+      _showCreateDealCommentDialog();
+    }
+  }
+
+  Future<List<int>> _resolveNoticeUsers(DealById deal) async {
+    final users = <int>[];
+    if (deal.manager?.id != null) {
+      users.add(deal.manager!.id);
+    }
+    if (users.isNotEmpty) return users;
+
+    final prefs = await SharedPreferences.getInstance();
+    final userId = int.tryParse(prefs.getString('userID') ?? '');
+    if (userId != null) users.add(userId);
+    return users;
+  }
+
+  Future<void> _createDealNotice({
+    String? title,
+    required String body,
+  }) async {
+    final deal = currentDeal;
+    if (deal == null) return;
+    final leadId = deal.lead?.id;
+    if (leadId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Не найден lead_id для сделки'),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      _isCreatingDealNotice = true;
+    });
+
+    final users = await _resolveNoticeUsers(deal);
+    final result = await _apiService.createDealNotice(
+      title: title,
+      body: body,
+      leadId: leadId,
+      dealId: deal.id,
+      date: DateTime.now(),
+      users: users,
+    );
+
+    if (!mounted) return;
+    setState(() {
+      _isCreatingDealNotice = false;
+    });
+
+    final success = result['success'] == true;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          success ? 'Задача создана' : '${result['message'] ?? 'Ошибка'}',
+          style: const TextStyle(
+            fontFamily: 'Gilroy',
+            fontSize: 15,
+            fontWeight: FontWeight.w500,
+            color: Colors.white,
+          ),
+        ),
+        backgroundColor: success ? Colors.green : Colors.red,
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+    );
+  }
+
+  Future<void> _showCreateDealTaskDialog() async {
+    final deal = currentDeal;
+    final leadId = deal?.lead?.id;
+    if (deal == null || leadId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Не найден lead_id для сделки'),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+      );
+      return;
+    }
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      isScrollControlled: true,
+      builder: (BuildContext context) {
+        return Padding(
+          padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+          child: CreateNotesDialog(
+            leadId: leadId,
+            managerId: deal.manager?.id,
+            dealId: deal.id,
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _showCreateDealCommentDialog() async {
+    final bodyController = TextEditingController();
+    final submitted = await showModalBottomSheet<bool>(
+      context: context,
+      backgroundColor: Colors.white,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (context) {
+        return Padding(
+          padding:
+              EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+          child: StatefulBuilder(
+            builder: (context, setModalState) {
+              final textEmpty = bodyController.text.trim().isEmpty;
+              return SingleChildScrollView(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Center(
+                        child: Container(
+                          width: 48,
+                          height: 4,
+                          margin: const EdgeInsets.only(bottom: 10),
+                          decoration: BoxDecoration(
+                            color: const Color(0xffD7DCE9),
+                            borderRadius: BorderRadius.circular(99),
+                          ),
+                        ),
+                      ),
+                      const Text(
+                        'Добавить комментарий',
+                        style: TextStyle(
+                          fontFamily: 'Gilroy',
+                          fontSize: 20,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xff1E2E52),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      const Text(
+                        'Текст',
+                        style: TextStyle(
+                          fontFamily: 'Gilroy',
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          color: Color(0xff1E2E52),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      TextField(
+                        controller: bodyController,
+                        minLines: 4,
+                        maxLines: 7,
+                        onChanged: (_) => setModalState(() {}),
+                        style: const TextStyle(
+                          fontFamily: 'Gilroy',
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          color: Color(0xff1E2E52),
+                        ),
+                        decoration: InputDecoration(
+                          hintText: 'Введите текст',
+                          hintStyle: const TextStyle(
+                            fontFamily: 'Gilroy',
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                            color: Color(0xff99A4BA),
+                          ),
+                          filled: true,
+                          fillColor: const Color(0xffF4F7FD),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide.none,
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide.none,
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(
+                                color: Color(0xff1E2E52), width: 1),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: SizedBox(
+                              height: 46,
+                              child: ElevatedButton(
+                                onPressed: () => Navigator.pop(context, false),
+                                style: ElevatedButton.styleFrom(
+                                  elevation: 0,
+                                  backgroundColor: const Color(0xffE7EBF3),
+                                  foregroundColor: const Color(0xff4A5A74),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                                child: const Text(
+                                  'Отмена',
+                                  style: TextStyle(
+                                    fontFamily: 'Gilroy',
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: SizedBox(
+                              height: 46,
+                              child: ElevatedButton(
+                                onPressed: textEmpty
+                                    ? null
+                                    : () => Navigator.pop(context, true),
+                                style: ElevatedButton.styleFrom(
+                                  elevation: 0,
+                                  backgroundColor: const Color(0xff1E2E52),
+                                  disabledBackgroundColor:
+                                      const Color(0xff1E2E52)
+                                          .withValues(alpha: 0.45),
+                                  foregroundColor: Colors.white,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                                child: const Text(
+                                  'Сохранить',
+                                  style: TextStyle(
+                                    fontFamily: 'Gilroy',
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        );
+      },
+    );
+
+    final body = bodyController.text.trim();
+    bodyController.dispose();
+
+    if (submitted == true && body.isNotEmpty) {
+      await _createDealNotice(title: 'Комментарий', body: body);
+    }
   }
 
   AppBar _buildAppBar(BuildContext context, String title, DealById? deal) {

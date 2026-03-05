@@ -16,8 +16,9 @@ import 'package:file_picker/file_picker.dart'; // Для FilePicker
 class CreateNotesDialog extends StatefulWidget {
   final int leadId;
   final int? managerId;
+  final int? dealId;
 
-  CreateNotesDialog({required this.leadId, this.managerId});
+  CreateNotesDialog({required this.leadId, this.managerId, this.dealId});
 
   @override
   _CreateNotesDialogState createState() => _CreateNotesDialogState();
@@ -432,6 +433,7 @@ class _CreateNotesDialogState extends State<CreateNotesDialog> {
 
                         context.read<NotesBloc>().add(CreateNotes(
                           leadId: widget.leadId,
+                          dealId: widget.dealId,
                           title: selectedSubject!.trim(),
                           body: body,
                           date: date,
