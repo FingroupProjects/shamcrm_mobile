@@ -2560,6 +2560,23 @@ class ApiService {
     }
   }
 
+  Future<List<Notes>> getDealNotes(int dealId,
+      {int page = 1, int perPage = 20}) async {
+    final basePath = '/notices/get-by-deal/$dealId?page=$page&per_page=$perPage';
+    final path = await _appendQueryParams(basePath);
+
+    final response = await _getRequest(path);
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      return (data['result']['data'] as List)
+          .map((note) => Notes.fromJson(note))
+          .toList();
+    } else {
+      throw Exception('Ошибка загрузки заметок сделки');
+    }
+  }
+
   Future<Map<String, dynamic>> createNotes({
     required String title,
     required String body,

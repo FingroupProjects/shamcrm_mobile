@@ -212,6 +212,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
   bool _dealsDataReady = false;
   bool _ordersDataReady = false;
   bool _showAcceptDeclineButton = false;
+  bool _askReasonForRefusal = false;
   bool _isAcceptingLead = false;
   bool _isRejectingLead = false;
 
@@ -339,6 +340,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
     setState(() {
       _showAcceptDeclineButton =
           prefs.getBool('show_accept_decline_button') ?? false;
+      _askReasonForRefusal = prefs.getBool('ask_reason_for_refusal') ?? false;
     });
   }
 
@@ -1455,11 +1457,14 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
     final lead = currentLead;
     if (lead == null) return;
 
-    final refusalData = await showReasonForRefusalDialog(
-      context: context,
-      type: 'lead',
-    );
-    if (refusalData == null) return;
+    ReasonForRefusalSubmitData? refusalData;
+    if (_askReasonForRefusal) {
+      refusalData = await showReasonForRefusalDialog(
+        context: context,
+        type: 'lead',
+      );
+      if (refusalData == null) return;
+    }
 
     setState(() {
       _isRejectingLead = true;
@@ -1468,8 +1473,8 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
     try {
       await _apiService.declineLead(
         lead.id,
-        reasonForRefusalId: refusalData.reasonId,
-        reasonForRefusal: refusalData.comment,
+        reasonForRefusalId: refusalData?.reasonId,
+        reasonForRefusal: refusalData?.comment,
       );
 
       if (!mounted) return;

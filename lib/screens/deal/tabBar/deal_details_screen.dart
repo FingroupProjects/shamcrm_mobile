@@ -6,16 +6,19 @@ import 'package:crm_task_manager/bloc/deal/deal_event.dart';
 import 'package:crm_task_manager/bloc/deal_by_id/dealById_bloc.dart';
 import 'package:crm_task_manager/bloc/deal_by_id/dealById_event.dart';
 import 'package:crm_task_manager/bloc/deal_by_id/dealById_state.dart';
+import 'package:crm_task_manager/custom_widget/custom_card_tasks_tabBar.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/custom_widget/file_utils.dart';
 import 'package:crm_task_manager/main.dart';
 import 'package:crm_task_manager/models/dealById_model.dart';
 import 'package:crm_task_manager/models/field_configuration.dart';
+import 'package:crm_task_manager/models/notes_model.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_delete.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_details/dropdown_history.dart';
-import 'package:crm_task_manager/screens/deal/tabBar/deal_details/deal_task_screen.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_edit_screen.dart';
+import 'package:crm_task_manager/screens/event/event_details/event_details_screen.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/add_notes.dart';
+import 'package:crm_task_manager/screens/lead/tabBar/lead_details/lead_navigate_to_chat.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/utils/TutorialStyleWidget.dart';
@@ -63,9 +66,13 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
   DealById? currentDeal;
   bool _canEditDeal = false;
   bool _canDeleteDeal = false;
-  bool _canReadTasks = false;
   bool _createTaskInDealEnabled = false;
   bool _isCreatingDealNotice = false;
+  String _selectedDealNoticeType = 'task';
+  bool _isDealNoticesLoading = false;
+  List<Notes> _dealNotices = [];
+  final Map<int, TextEditingController> _finishControllers = {};
+  final Set<int> _finishingNoticeIds = {};
 
   final ApiService _apiService = ApiService();
   final GlobalKey keyDealEdit = GlobalKey();
@@ -92,6 +99,7 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
       context
           .read<DealByIdBloc>()
           .add(FetchDealByIdEvent(dealId: int.parse(widget.dealId)));
+      _fetchDealNotes();
     });
     _fetchTutorialProgress();
     _loadFieldConfiguration();
@@ -328,15 +336,45 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
   Future<void> _checkPermissions() async {
     final canEdit = await _apiService.hasPermission('deal.update');
     final canDelete = await _apiService.hasPermission('deal.delete');
-    final canReadTasks = await _apiService.hasPermission('task.read');
     final prefs = await SharedPreferences.getInstance();
 
     setState(() {
       _canEditDeal = canEdit;
       _canDeleteDeal = canDelete;
-      _canReadTasks = canReadTasks;
       _createTaskInDealEnabled = prefs.getBool('create_task_in_deal') ?? false;
     });
+  }
+
+  @override
+  void dispose() {
+    for (final controller in _finishControllers.values) {
+      controller.dispose();
+    }
+    super.dispose();
+  }
+
+  Future<void> _fetchDealNotes() async {
+    setState(() {
+      _isDealNoticesLoading = true;
+    });
+    try {
+      final notes = await _apiService.getDealNotes(int.parse(widget.dealId));
+      if (!mounted) return;
+      setState(() {
+        _dealNotices = notes;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _dealNotices = [];
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isDealNoticesLoading = false;
+        });
+      }
+    }
   }
 
   String formatDate(String? dateString) {
@@ -696,18 +734,35 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
                 child: ListView(
                   children: [
                     _buildDetailsList(),
-                    if (_createTaskInDealEnabled) ...[
+                    if ((currentDeal?.lead?.id ?? 0) > 0) ...[
                       const SizedBox(height: 8),
-                      _buildDealNoticeCreateBlock(),
+                      LeadNavigateToChat(
+                        leadId: currentDeal!.lead!.id,
+                        leadName: currentDeal!.lead!.name,
+                        chats: (currentDeal!.lead!.chats ?? [])
+                            .map((chat) => {
+                                  'id': chat['id'],
+                                  'integration': chat['integration'] != null
+                                      ? {
+                                          'id': chat['integration']['id'],
+                                          'name': chat['integration']['name'],
+                                          'username': chat['integration']
+                                              ['username'],
+                                        }
+                                      : null,
+                                })
+                            .toList(),
+                      ),
                     ],
                     const SizedBox(height: 8),
                     ActionHistoryWidget(
                         dealId: int.parse(widget.dealId), key: keyDealHistory),
-                    const SizedBox(height: 16),
-                    if (_canReadTasks)
-                      Container(
-                          key: keyDealTasks,
-                          child: TasksWidget(dealId: int.parse(widget.dealId))),
+                    if (_createTaskInDealEnabled) ...[
+                      const SizedBox(height: 8),
+                      _buildDealNoticeCreateBlock(),
+                      const SizedBox(height: 8),
+                      _buildDealNoticesList(),
+                    ],
                   ],
                 ),
               ),
@@ -730,57 +785,75 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
   }
 
   Widget _buildDealNoticeCreateBlock() {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: const Color(0xffF8FAFF),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          const Text(
-            'Задача',
-            style: TextStyle(
-              fontSize: 16,
-              fontFamily: 'Gilroy',
-              fontWeight: FontWeight.w600,
-              color: Color(0xff1E2E52),
-            ),
-          ),
-          SizedBox(
-            height: 36,
-            child: ElevatedButton(
-              onPressed: _isCreatingDealNotice ? null : _showDealNoticeTypePicker,
-              style: ElevatedButton.styleFrom(
-                elevation: 0,
-                backgroundColor: const Color(0xff1E2E52),
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
+    final headerTitle =
+        _selectedDealNoticeType == 'comment' ? 'Комментарии' : 'Задачи';
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        InkWell(
+          borderRadius: BorderRadius.circular(8),
+          onTap: _showDealNoticeTypePicker,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 2),
+            child: Row(
+              children: [
+                Text(
+                  headerTitle,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontFamily: 'Gilroy',
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xff1E2E52),
+                  ),
                 ),
-              ),
-              child: _isCreatingDealNotice
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.white,
-                      ),
-                    )
-                  : const Text(
-                      'Добавить',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontFamily: 'Gilroy',
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
+                const SizedBox(width: 4),
+                const Icon(
+                  Icons.keyboard_arrow_down_rounded,
+                  size: 20,
+                  color: Color(0xff1E2E52),
+                ),
+              ],
             ),
           ),
-        ],
-      ),
+        ),
+        TextButton(
+          onPressed: _isCreatingDealNotice
+              ? null
+              : () {
+                  if (_selectedDealNoticeType == 'task') {
+                    _showCreateDealTaskDialog();
+                  } else {
+                    _showCreateDealCommentDialog();
+                  }
+                },
+          style: TextButton.styleFrom(
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            backgroundColor: const Color(0xff1E2E52),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+          child: _isCreatingDealNotice
+              ? const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.white,
+                  ),
+                )
+              : const Text(
+                  'Добавить',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontFamily: 'Gilroy',
+                    fontWeight: FontWeight.w500,
+                    color: Colors.white,
+                  ),
+                ),
+        ),
+      ],
     );
   }
 
@@ -798,7 +871,7 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
             children: [
               ListTile(
                 title: const Text(
-                  'Задача',
+                  'Задачи',
                   style: TextStyle(
                     fontFamily: 'Gilroy',
                     fontSize: 16,
@@ -828,10 +901,270 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
     );
 
     if (!mounted || type == null) return;
-    if (type == 'task') {
-      _showCreateDealTaskDialog();
-    } else {
-      _showCreateDealCommentDialog();
+    setState(() {
+      _selectedDealNoticeType = type;
+    });
+  }
+
+  Widget _buildDealNoticesList() {
+    if (_isDealNoticesLoading) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.symmetric(vertical: 8),
+          child: CircularProgressIndicator(color: Color(0xff1E2E52)),
+        ),
+      );
+    }
+
+    final items = _dealNotices;
+
+    if (items.isEmpty) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 26),
+        decoration: TaskCardStyles.taskCardDecoration,
+        child: const Text(
+          'Пусто',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontFamily: 'Gilroy',
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            color: Color(0xff1E2E52),
+          ),
+        ),
+      );
+    }
+
+    return Column(
+      key: keyDealTasks,
+      children: items.map((note) => _buildDealNoteCard(note)).toList(),
+    );
+  }
+
+  Widget _buildDealNoteCard(Notes note) {
+    final formattedDate = note.date != null
+        ? DateFormat('dd.MM.yyyy HH:mm').format(DateTime.parse(note.date!))
+        : '';
+    final isComment = note.title.toLowerCase().contains('коммент');
+    final controller = _finishControllers.putIfAbsent(
+      note.id,
+      () => TextEditingController(),
+    );
+    final isFinishing = _finishingNoticeIds.contains(note.id);
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: GestureDetector(
+        onTap: () async {
+          await Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => EventDetailsScreen(
+                noticeId: note.id,
+                source: 'Deal',
+              ),
+            ),
+          );
+          _fetchDealNotes();
+        },
+        child: Container(
+          width: double.infinity,
+          decoration: TaskCardStyles.taskCardDecoration,
+          padding: const EdgeInsets.all(14),
+          child: Column(
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(
+                    isComment
+                        ? Icons.mode_comment_outlined
+                        : (note.isFinished
+                            ? Icons.check_circle_rounded
+                            : Icons.radio_button_unchecked_rounded),
+                    size: 22,
+                    color: isComment
+                        ? const Color(0xff1E2E52)
+                        : (note.isFinished
+                            ? const Color(0xff34C759)
+                            : const Color(0xff99A4BA)),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          note.title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontFamily: 'Gilroy',
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xff1E2E52),
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          note.body,
+                          maxLines: 3,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontFamily: 'Gilroy',
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            color: Color(0xff1E2E52),
+                          ),
+                        ),
+                        if (formattedDate.isNotEmpty) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            formattedDate,
+                            style: const TextStyle(
+                              fontFamily: 'Gilroy',
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                              color: Color(0xff99A4BA),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              if (!isComment && note.canFinish && !note.isFinished) ...[
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    Expanded(
+                      child: SizedBox(
+                        height: 38,
+                        child: TextField(
+                          controller: controller,
+                          onTap: () {},
+                          style: const TextStyle(
+                            fontFamily: 'Gilroy',
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            color: Color(0xff1E2E52),
+                          ),
+                          decoration: InputDecoration(
+                            hintText: 'Комментарий',
+                            hintStyle: const TextStyle(
+                              fontFamily: 'Gilroy',
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                              color: Color(0xff99A4BA),
+                            ),
+                            contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 10, vertical: 8),
+                            filled: true,
+                            fillColor: const Color(0xffF4F7FD),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10),
+                              borderSide: BorderSide.none,
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10),
+                              borderSide: BorderSide.none,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    SizedBox(
+                      height: 38,
+                      child: ElevatedButton(
+                        onPressed: isFinishing
+                            ? null
+                            : () => _finishDealNotice(
+                                  noteId: note.id,
+                                  conclusion: controller.text.trim(),
+                                ),
+                        style: ElevatedButton.styleFrom(
+                          elevation: 0,
+                          backgroundColor: const Color(0xff4F40EC),
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                        child: isFinishing
+                            ? const SizedBox(
+                                width: 14,
+                                height: 14,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : const Text(
+                                'Сделано',
+                                style: TextStyle(
+                                  fontFamily: 'Gilroy',
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _finishDealNotice({
+    required int noteId,
+    required String conclusion,
+  }) async {
+    if (conclusion.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Введите комментарий'),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      _finishingNoticeIds.add(noteId);
+    });
+    try {
+      await _apiService.finishNotice(noteId, conclusion);
+      _finishControllers[noteId]?.clear();
+      await _fetchDealNotes();
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Не удалось завершить задачу'),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _finishingNoticeIds.remove(noteId);
+        });
+      }
     }
   }
 
@@ -889,6 +1222,9 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
     });
 
     final success = result['success'] == true;
+    if (success) {
+      _fetchDealNotes();
+    }
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
@@ -1102,7 +1438,6 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
     );
 
     final body = bodyController.text.trim();
-    bodyController.dispose();
 
     if (submitted == true && body.isNotEmpty) {
       await _createDealNotice(title: 'Комментарий', body: body);
