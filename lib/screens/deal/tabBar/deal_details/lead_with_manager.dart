@@ -1,4 +1,5 @@
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
+import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/lead_list/lead_list_bloc.dart';
 import 'package:crm_task_manager/bloc/lead_list/lead_list_event.dart';
 import 'package:crm_task_manager/bloc/lead_list/lead_list_state.dart';
@@ -22,6 +23,8 @@ class LeadWithManager extends StatefulWidget {
 }
 
 class _LeadWithManagerState extends State<LeadWithManager> {
+  final ApiService _apiService = ApiService();
+  static const int _pageSize = 20;
   List<LeadData> leadsList = [];
   LeadData? selectedLeadData;
 
@@ -46,62 +49,79 @@ class _LeadWithManagerState extends State<LeadWithManager> {
     });
   }
 
-void _updateSelectedLeadData() {
-  //print('LeadWithManager: Updating selected lead, prop selectedLead: ${widget.selectedLead}');
-  if (widget.selectedLead != null && leadsList.isNotEmpty) {
-    try {
-      final newSelectedLead = leadsList.firstWhere(
-        (lead) => lead.id.toString() == widget.selectedLead,
-      );
-      if (selectedLeadData?.id != newSelectedLead.id) {
-        selectedLeadData = newSelectedLead;
-        //print('LeadWithManager: Found lead: ${newSelectedLead.id}, managerId: ${newSelectedLead.managerId}');
-        widget.onSelectLead(newSelectedLead);
-      } else {
-        //print('LeadWithManager: Lead ${newSelectedLead.id} already selected, skipping onSelectLead');
+  void _updateSelectedLeadData() {
+    //print('LeadWithManager: Updating selected lead, prop selectedLead: ${widget.selectedLead}');
+    if (widget.selectedLead != null && leadsList.isNotEmpty) {
+      try {
+        final newSelectedLead = leadsList.firstWhere(
+          (lead) => lead.id.toString() == widget.selectedLead,
+        );
+        if (selectedLeadData?.id != newSelectedLead.id) {
+          selectedLeadData = newSelectedLead;
+          //print('LeadWithManager: Found lead: ${newSelectedLead.id}, managerId: ${newSelectedLead.managerId}');
+          widget.onSelectLead(newSelectedLead);
+        } else {
+          //print('LeadWithManager: Lead ${newSelectedLead.id} already selected, skipping onSelectLead');
+        }
+      } catch (e) {
+        //print('LeadWithManager: Lead not found for ID ${widget.selectedLead}: $e');
+        selectedLeadData = null;
       }
-    } catch (e) {
-      //print('LeadWithManager: Lead not found for ID ${widget.selectedLead}: $e');
+    } else {
+      //print('LeadWithManager: No selected lead or empty leads list');
       selectedLeadData = null;
     }
-  } else {
-    //print('LeadWithManager: No selected lead or empty leads list');
-    selectedLeadData = null;
   }
-}
 
-@override
-Widget build(BuildContext context) {
-  //print('LeadWithManager: Building with selectedLeadData: ${selectedLeadData?.id}');
-  return Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Text(
-        AppLocalizations.of(context)!.translate('lead'),
-        style: const TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.w500,
-          fontFamily: 'Gilroy',
-          color: Color(0xff1E2E52),
+  Future<CustomDropdownPaginatedResponse<LeadData>> _searchLeads(
+    String query,
+    int page,
+  ) async {
+    final response = await _apiService.getLeadPage(page, search: query);
+    final items = response.result ?? <LeadData>[];
+    final pagination = response.pagination;
+
+    return CustomDropdownPaginatedResponse<LeadData>(
+      items: items,
+      hasMore: (pagination?.currentPage ?? page) <
+          (pagination?.totalPages ?? (items.length >= _pageSize ? page + 1 : page)),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    //print('LeadWithManager: Building with selectedLeadData: ${selectedLeadData?.id}');
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          AppLocalizations.of(context)!.translate('lead'),
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            fontFamily: 'Gilroy',
+            color: Color(0xff1E2E52),
+          ),
         ),
-      ),
-      const SizedBox(height: 4),
-      BlocBuilder<GetAllLeadBloc, GetAllLeadState>(
-        builder: (context, state) {
-          //print('LeadWithManager: BlocBuilder state: $state');
-          if (state is GetAllLeadSuccess) {
-            leadsList = state.dataLead.result ?? [];
-            //print('LeadWithManager: Updated leadsList with ${leadsList.length} leads');
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              _updateSelectedLeadData();
-            });
-          } else if (state is GetAllLeadLoading) {
-            //print('LeadWithManager: Leads are loading');
-          } else if (state is GetAllLeadError) {
-            //print('LeadWithManager: Error loading leads: ${state.message}');
-          }
+        const SizedBox(height: 4),
+        BlocBuilder<GetAllLeadBloc, GetAllLeadState>(
+          builder: (context, state) {
+            //print('LeadWithManager: BlocBuilder state: $state');
+            if (state is GetAllLeadSuccess) {
+              leadsList = state.dataLead.result ?? [];
+              //print('LeadWithManager: Updated leadsList with ${leadsList.length} leads');
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                _updateSelectedLeadData();
+              });
+            } else if (state is GetAllLeadLoading) {
+              //print('LeadWithManager: Leads are loading');
+            } else if (state is GetAllLeadError) {
+              //print('LeadWithManager: Error loading leads: ${state.message}');
+            }
 
-            return CustomDropdown<LeadData>.search(
+            return CustomDropdown<LeadData>.searchRequestPaginated(
+              paginatedRequest: _searchLeads,
+              futureRequestDelay: const Duration(milliseconds: 350),
               closeDropDownOnClearFilterSearch: true,
               items: leadsList,
               searchHintText: AppLocalizations.of(context)!.translate('search'),
@@ -110,14 +130,16 @@ Widget build(BuildContext context) {
               decoration: CustomDropdownDecoration(
                 closedFillColor: const Color(0xffF4F7FD),
                 expandedFillColor: Colors.white,
-                closedBorder: Border.all(color: const Color(0xffF4F7FD), width: 1),
+                closedBorder:
+                    Border.all(color: const Color(0xffF4F7FD), width: 1),
                 closedBorderRadius: BorderRadius.circular(12),
-                expandedBorder: Border.all(color: const Color(0xffF4F7FD), width: 1),
+                expandedBorder:
+                    Border.all(color: const Color(0xffF4F7FD), width: 1),
                 expandedBorderRadius: BorderRadius.circular(12),
               ),
               listItemBuilder: (context, item, isSelected, onItemSelect) {
                 return Text(
-                  item.name ?? '',
+                  item.name,
                   style: const TextStyle(
                     color: Color(0xff1E2E52),
                     fontSize: 14,
@@ -139,7 +161,7 @@ Widget build(BuildContext context) {
                   );
                 }
                 return Text(
-                  selectedItem?.name ?? AppLocalizations.of(context)!.translate('select_lead'),
+                  selectedItem.name,
                   style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
@@ -158,10 +180,13 @@ Widget build(BuildContext context) {
                 ),
               ),
               excludeSelected: false,
-              initialItem: leadsList.contains(selectedLeadData) ? selectedLeadData : null,
+              initialItem: leadsList.contains(selectedLeadData)
+                  ? selectedLeadData
+                  : null,
               validator: (value) {
                 if (value == null) {
-                  return AppLocalizations.of(context)!.translate('field_required_project');
+                  return AppLocalizations.of(context)!
+                      .translate('field_required_project');
                 }
                 return null;
               },

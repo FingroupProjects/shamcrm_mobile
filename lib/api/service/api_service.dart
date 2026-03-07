@@ -1954,9 +1954,7 @@ class ApiService {
 
       if (response.statusCode == 422) {
         final data = json.decode(response.body);
-        final message = (data is Map<String, dynamic>
-                    ? data['message']
-                    : null)
+        final message = (data is Map<String, dynamic> ? data['message'] : null)
                 ?.toString() ??
             'Ошибка валидации при создании сделки';
         throw Exception(message);
@@ -1990,9 +1988,7 @@ class ApiService {
 
       if (response.statusCode == 422) {
         final data = json.decode(response.body);
-        final message = (data is Map<String, dynamic>
-                    ? data['message']
-                    : null)
+        final message = (data is Map<String, dynamic> ? data['message'] : null)
                 ?.toString() ??
             'Ошибка валидации при отказе лида';
         throw LeadStatusUpdateException(422, message);
@@ -2562,7 +2558,8 @@ class ApiService {
 
   Future<List<Notes>> getDealNotes(int dealId,
       {int page = 1, int perPage = 20}) async {
-    final basePath = '/notices/get-by-deal/$dealId?page=$page&per_page=$perPage';
+    final basePath =
+        '/notices/get-by-deal/$dealId?page=$page&per_page=$perPage';
     final path = await _appendQueryParams(basePath);
 
     final response = await _getRequest(path);
@@ -2695,9 +2692,7 @@ class ApiService {
       }
       if (response.statusCode == 422) {
         final data = json.decode(response.body);
-        final message = (data is Map<String, dynamic>
-                    ? data['message']
-                    : null)
+        final message = (data is Map<String, dynamic> ? data['message'] : null)
                 ?.toString() ??
             'Ошибка валидации';
         return {'success': false, 'message': message};
@@ -3199,9 +3194,18 @@ class ApiService {
   }
 
 // Api Service
-  Future<DealNameDataResponse> getAllDealNames() async {
+  Future<DealNameDataResponse> getAllDealNames({
+    String? search,
+    int page = 1,
+    int perPage = 20,
+  }) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
-    final path = await _appendQueryParams('/service/by-sales-funnel-id');
+    String path = await _appendQueryParams(
+      '/service/by-sales-funnel-id?page=$page&per_page=$perPage',
+    );
+    if (search != null && search.trim().isNotEmpty) {
+      path += '&search=${Uri.encodeComponent(search.trim())}';
+    }
     if (kDebugMode) {
       //debugPrint('ApiService: getAllDealNames - Generated path: $path');
     }
@@ -3217,9 +3221,12 @@ class ApiService {
   }
 
 //Метод для получения региона
-  Future<RegionsDataResponse> getAllRegion() async {
+  Future<RegionsDataResponse> getAllRegion({String? search}) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
-    final path = await _appendQueryParams('/region');
+    String path = await _appendQueryParams('/region');
+    if (search != null && search.trim().isNotEmpty) {
+      path += '&search=${Uri.encodeComponent(search.trim())}';
+    }
     if (kDebugMode) {
       //debugPrint('ApiService: getAllRegion - Generated path: $path');
     }
@@ -3291,9 +3298,16 @@ class ApiService {
   }
 
 //Метод для получения Менеджера
-  Future<ManagersDataResponse> getAllManager() async {
+  Future<ManagersDataResponse> getAllManager({
+    String? search,
+    int page = 1,
+    int perPage = 20,
+  }) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
-    final path = await _appendQueryParams('/manager');
+    String path = await _appendQueryParams('/manager?page=$page&per_page=$perPage');
+    if (search != null && search.trim().isNotEmpty) {
+      path += '&search=${Uri.encodeComponent(search.trim())}';
+    }
     if (kDebugMode) {
       //debugPrint('ApiService: getAllManager - Generated path: $path');
     }
@@ -3351,8 +3365,11 @@ class ApiService {
   }
 
 // Метод для получения Лидов с Пагинацией
-  Future<LeadsDataResponse> getLeadPage(int page,
-      {bool showDebt = false}) async {
+  Future<LeadsDataResponse> getLeadPage(
+    int page, {
+    bool showDebt = false,
+    String? search,
+  }) async {
     try {
       // Формируем путь с параметром страницы
       String basePath = '/lead?page=$page';
@@ -3360,6 +3377,10 @@ class ApiService {
       // Добавляем параметр show_debt если нужно
       if (showDebt) {
         basePath += '&show_debt=1';
+      }
+
+      if (search != null && search.trim().isNotEmpty) {
+        basePath += '&search=${Uri.encodeComponent(search.trim())}';
       }
 
       // Добавляем остальные query параметры (язык, токен и т.д.)
@@ -3634,9 +3655,12 @@ class ApiService {
   }
 
 // Метод для получения Источников
-  Future<List<SourceLead>> getSourceLead() async {
+  Future<List<SourceLead>> getSourceLead({String? search}) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
-    final path = await _appendQueryParams('/source');
+    String path = await _appendQueryParams('/source');
+    if (search != null && search.trim().isNotEmpty) {
+      path += '&search=${Uri.encodeComponent(search.trim())}';
+    }
     if (kDebugMode) {
       //debugPrint('ApiService: getSourceLead - Generated path: $path');
     }
@@ -5934,9 +5958,16 @@ class ApiService {
   }
 
 // Метод для получения Проекта
-  Future<ProjectsDataResponse> getAllProject() async {
+  Future<ProjectsDataResponse> getAllProject({
+    String? search,
+    int page = 1,
+    int perPage = 20,
+  }) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
-    final path = await _appendQueryParams('/project');
+    String path = await _appendQueryParams('/project?page=$page&per_page=$perPage');
+    if (search != null && search.trim().isNotEmpty) {
+      path += '&search=${Uri.encodeComponent(search.trim())}';
+    }
     if (kDebugMode) {
       //debugPrint('ApiService: getAllProject - Generated path: $path');
     }
@@ -5963,10 +5994,16 @@ class ApiService {
   }
 
   // Метод для получения Проекта
-  Future<ProjectTaskDataResponse> getTaskProject(
-      {int page = 1, int perPage = 20}) async {
+  Future<ProjectTaskDataResponse> getTaskProject({
+    int page = 1,
+    int perPage = 20,
+    String? search,
+  }) async {
     // Формируем базовый путь с параметрами пагинации
     String path = '/task/get/projects?page=$page&per_page=$perPage';
+    if (search != null && search.trim().isNotEmpty) {
+      path += '&search=${Uri.encodeComponent(search.trim())}';
+    }
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     path = await _appendQueryParams(path);
     if (kDebugMode) {
@@ -8184,9 +8221,18 @@ class ApiService {
   }
 
 // get all users
-  Future<UsersDataResponse> getAllUser() async {
+  Future<UsersDataResponse> getAllUser({
+    String? search,
+    int page = 1,
+    int perPage = 20,
+  }) async {
     final token = await getToken();
-    final path = await _appendQueryParams('/department/get/users');
+    String path = await _appendQueryParams(
+      '/department/get/users?page=$page&per_page=$perPage',
+    );
+    if (search != null && search.trim().isNotEmpty) {
+      path += '&search=${Uri.encodeComponent(search.trim())}';
+    }
     if (kDebugMode) {
       //debugPrint('ApiService: getAllUser - Generated path: $path');
     }
@@ -10393,9 +10439,18 @@ class ApiService {
     }
   }
 
-  Future<SubjectDataResponse> getAllSubjects() async {
+  Future<SubjectDataResponse> getAllSubjects({
+    String? search,
+    int page = 1,
+    int perPage = 20,
+  }) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
-    final path = await _appendQueryParams('/noteSubject/by-sales-funnel-id');
+    String path = await _appendQueryParams(
+      '/noteSubject/by-sales-funnel-id?page=$page&per_page=$perPage',
+    );
+    if (search != null && search.trim().isNotEmpty) {
+      path += '&search=${Uri.encodeComponent(search.trim())}';
+    }
     if (kDebugMode) {
       //debugPrint('ApiService: getAllSubjects - Generated path: $path');
     }
@@ -12103,9 +12158,12 @@ class ApiService {
     }
   }
 
-  Future<List<Branch>> getBranches() async {
+  Future<List<Branch>> getBranches({String? search}) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
-    final path = await _appendQueryParams('/storage');
+    String path = await _appendQueryParams('/storage');
+    if (search != null && search.trim().isNotEmpty) {
+      path += '&search=${Uri.encodeComponent(search.trim())}';
+    }
     if (kDebugMode) {
       //debugPrint('ApiService: getBranches - Generated path: $path');
     }
@@ -14254,9 +14312,13 @@ class ApiService {
   }
 
   //getSupplier
-  Future<List<Supplier>> getSupplier({String? search}) async {
+  Future<List<Supplier>> getSupplier({
+    String? search,
+    int page = 1,
+    int perPage = 20,
+  }) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
-    String path = await _appendQueryParams('/suppliers');
+    String path = await _appendQueryParams('/suppliers?page=$page&per_page=$perPage');
 
     // Добавляем параметр поиска, если он передан
     if (search != null && search.isNotEmpty) {
@@ -14992,8 +15054,15 @@ class ApiService {
   }
 
   //Метод для получения suppliers
-  Future<SuppliersDataResponse> getAllSuppliers() async {
-    final path = await _appendQueryParams('/suppliers');
+  Future<SuppliersDataResponse> getAllSuppliers({
+    String? search,
+    int page = 1,
+    int perPage = 20,
+  }) async {
+    String path = await _appendQueryParams('/suppliers?page=$page&per_page=$perPage');
+    if (search != null && search.trim().isNotEmpty) {
+      path += '&search=${Uri.encodeComponent(search.trim())}';
+    }
 
     final response = await _getRequest(path);
 
