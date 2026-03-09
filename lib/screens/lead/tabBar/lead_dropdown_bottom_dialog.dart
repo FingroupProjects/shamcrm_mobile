@@ -109,7 +109,7 @@ void DropdownBottomSheet(
                             ReasonForRefusalSubmitData? refusalData;
                             if (askReason &&
                                 targetStatus != null &&
-                                targetStatus.isUnassembled) {
+                                targetStatus.isFailure) {
                               refusalData = await showReasonForRefusalDialog(
                                 context: context,
                                 type: 'lead',

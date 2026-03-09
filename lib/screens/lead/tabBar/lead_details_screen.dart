@@ -241,7 +241,9 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       }
 
       if (_canReadOrders) {
-        context.read<OrderByLeadBloc>().add(FetchOrdersByLead(leadId: leadId));
+        context.read<OrderByLeadBloc>().add(
+              FetchOrdersByLead(entityId: leadId),
+            );
       } else {
         _ordersDataReady = true;
       }
@@ -260,6 +262,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
         _notesDataReady &&
         _dealsDataReady &&
         _ordersDataReady &&
+        _isConfigurationLoaded &&
         mounted) {
       setState(() {
         _showCombinedLoader = false;
@@ -1061,7 +1064,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                       ),
                     if (_canReadOrders)
                       OrdersWidget(
-                        leadId: int.parse(widget.leadId),
+                        entityId: int.parse(widget.leadId),
                         clientPhone: lead.phone,
                         autoFetch: false,
                         key: GlobalKey(),
@@ -1868,6 +1871,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       if (currentLead != null) {
         _updateDetails(currentLead!);
       }
+      _tryHideCombinedLoader();
     } catch (e) {
       // В случае ошибки показываем поля в стандартном порядке
       if (mounted) {
@@ -1875,6 +1879,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
           _isConfigurationLoaded = true;
         });
       }
+      _tryHideCombinedLoader();
     }
   }
 

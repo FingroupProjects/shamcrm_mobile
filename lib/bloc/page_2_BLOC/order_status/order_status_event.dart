@@ -78,7 +78,8 @@ class FetchOrderDetails extends OrderEvent {
 
 class CreateOrder extends OrderEvent {
   final String phone;
-  final int leadId;
+  final int? leadId;
+  final int? dealId;
   final bool delivery;
   final String? deliveryAddress;
   final int? deliveryAddressId;
@@ -95,7 +96,8 @@ class CreateOrder extends OrderEvent {
 
   CreateOrder({
     required this.phone,
-    required this.leadId,
+    this.leadId,
+    this.dealId,
     required this.delivery,
     this.deliveryAddress,
     this.deliveryAddressId,
@@ -115,7 +117,8 @@ class CreateOrder extends OrderEvent {
 class UpdateOrder extends OrderEvent {
   final int orderId;
   final String phone;
-  final int leadId;
+  final int? leadId;
+  final int? dealId;
   final bool delivery;
   final String? deliveryAddress;
   final int? deliveryAddressId;
@@ -133,7 +136,8 @@ class UpdateOrder extends OrderEvent {
   UpdateOrder({
     required this.orderId,
     required this.phone,
-    required this.leadId,
+    this.leadId,
+    this.dealId,
     required this.delivery,
     this.deliveryAddress,
     this.deliveryAddressId,
@@ -210,10 +214,12 @@ class DeleteOrderStatus extends OrderEvent {
 
 class AddMiniAppAddress extends OrderEvent {
   final String address;
-  final int leadId;
+  final int? leadId;
+  final int? dealId;
 
   AddMiniAppAddress({
     required this.address,
-    required this.leadId,
+    this.leadId,
+    this.dealId,
   });
 }

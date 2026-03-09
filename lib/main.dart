@@ -156,9 +156,6 @@ void main() async {
   try {
     WidgetsFlutterBinding.ensureInitialized();
 
-    WidgetService.initialize();
-    await NativeInternetMonitor().initialize();
-
     await _initializeFirebase();
 
     final apiService = ApiService();
@@ -506,12 +503,25 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   Locale? _locale;
+  bool _platformServicesInitialized = false;
 
   @override
   void initState() {
     super.initState();
     _locale = widget.initialLocale;
-    // ✅ УБРАНА ИНИЦИАЛИЗАЦИЯ - не нужна!
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initializePlatformServices();
+    });
+  }
+
+  Future<void> _initializePlatformServices() async {
+    if (_platformServicesInitialized) {
+      return;
+    }
+    _platformServicesInitialized = true;
+
+    WidgetService.initialize();
+    await NativeInternetMonitor().initialize();
   }
 //1
   Future<void> checkForNewVersion(BuildContext context) async {

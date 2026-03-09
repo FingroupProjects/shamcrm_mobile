@@ -621,6 +621,12 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   Future<void> initializeScreensWithPermissions() async {
     if (!mounted) return;
 
+    final bool wasOnGroup2 =
+        _selectedIndexGroup2 != -1 &&
+        _selectedIndexGroup2 < _widgetOptionsGroup2.length;
+    final int previousGroup2Index = _selectedIndexGroup2;
+    final int previousGroup1Index = _selectedIndexGroup1;
+
     // Ждем загрузки разрешений из PermissionsBloc
     final permissionsBloc = context.read<PermissionsBloc>();
 
@@ -835,13 +841,21 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             _selectedIndexGroup2 = 0;
           }
         } else if (widgetsGroup1.isNotEmpty) {
-          // ✅ Если выбранный индекс больше чем количество экранов, сбрасываем
-          if (_selectedIndexGroup1 < 0 ||
-              _selectedIndexGroup1 >= widgetsGroup1.length) {
-            _selectedIndexGroup1 = 0;
+          if (wasOnGroup2 && widgetsGroup2.isNotEmpty) {
+            _selectedIndexGroup2 = previousGroup2Index < widgetsGroup2.length
+                ? previousGroup2Index
+                : 0;
+            _selectedIndexGroup1 = -1;
+          } else {
+            if (previousGroup1Index >= 0 &&
+                previousGroup1Index < widgetsGroup1.length) {
+              _selectedIndexGroup1 = previousGroup1Index;
+            } else {
+              _selectedIndexGroup1 = 0;
+            }
           }
 
-          if (_selectedIndexGroup2 != -1 && widgetsGroup2.isEmpty) {
+          if (!wasOnGroup2 && widgetsGroup2.isEmpty) {
             _selectedIndexGroup2 = -1;
           }
         } else {

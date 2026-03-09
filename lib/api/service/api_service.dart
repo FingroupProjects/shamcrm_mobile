@@ -10345,6 +10345,7 @@ class ApiService {
     String? title,
     required String body,
     required int leadId,
+    int? dealId,
     DateTime? date,
     required int sendNotification,
     required List<int> users,
@@ -10363,6 +10364,9 @@ class ApiService {
     if (title != null) request.fields['title'] = title;
     request.fields['body'] = body;
     request.fields['lead_id'] = leadId.toString();
+    if (dealId != null) {
+      request.fields['deal_id'] = dealId.toString();
+    }
     if (date != null)
       request.fields['date'] = DateFormat('yyyy-MM-dd HH:mm').format(date);
     request.fields['send_notification'] = sendNotification.toString();
@@ -11674,10 +11678,14 @@ class ApiService {
 
   Future<OrderResponse> getOrdersByLead({
     required int leadId,
+    String relationType = 'lead',
     int page = 1,
     int perPage = 20,
   }) async {
-    String url = '/lead/get-orders/$leadId?page=$page&per_page=$perPage';
+    final normalizedRelation = relationType == 'deal' ? 'deal' : 'lead';
+    final String url = normalizedRelation == 'deal'
+        ? '/order/order-by-deal/$leadId'
+        : '/lead/get-orders/$leadId?page=$page&per_page=$perPage';
 
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams(url);
@@ -11695,6 +11703,19 @@ class ApiService {
       if (response.statusCode == 200) {
         final rawData = json.decode(response.body);
         return OrderResponse.fromJson(rawData);
+      } else if (response.statusCode == 404 ||
+          response.statusCode == 204 ||
+          response.body.trim().isEmpty) {
+        return OrderResponse.fromJson({
+          'data': [],
+          'pagination': {
+            'total': 0,
+            'count': 0,
+            'per_page': perPage,
+            'current_page': page,
+            'total_pages': 1,
+          },
+        });
       } else {
         throw Exception('Ошибка сервера при загрузке заказов!');
       }
@@ -11708,7 +11729,8 @@ class ApiService {
 
   Future<Map<String, dynamic>> createOrder({
     required String phone,
-    required int leadId,
+    int? leadId,
+    int? dealId,
     required bool delivery,
     String? deliveryAddress,
     int? deliveryAddressId,
@@ -11736,7 +11758,6 @@ class ApiService {
       final uri = Uri.parse('$baseUrl$path');
       final body = {
         'phone': phone,
-        'lead_id': leadId,
         'deliveryType': delivery ? 'delivery' : 'pickup',
         'goods': goods
             .map((item) => {
@@ -11753,6 +11774,13 @@ class ApiService {
         'integration_id': integration,
         'sum': sum,
       };
+
+      if (leadId != null) {
+        body['lead_id'] = leadId;
+      }
+      if (dealId != null) {
+        body['deal_id'] = dealId;
+      }
 
       if (delivery) {
         body['delivery_address_id'] = deliveryAddressId;
@@ -11823,7 +11851,8 @@ class ApiService {
   Future<Map<String, dynamic>> updateOrder({
     required int orderId,
     required String phone,
-    required int leadId,
+    int? leadId,
+    int? dealId,
     required bool delivery,
     String? deliveryAddress,
     int? deliveryAddressId,
@@ -11850,7 +11879,6 @@ class ApiService {
       final uri = Uri.parse('$baseUrl$path');
       final body = {
         'phone': phone,
-        'lead_id': leadId,
         'deliveryType': delivery
             ? 'delivery'
             : 'pickup', // Исправлено: delivery=true -> "delivery"
@@ -11868,6 +11896,13 @@ class ApiService {
         'integration_id': integration,
         'sum': sum,
       };
+
+      if (leadId != null) {
+        body['lead_id'] = leadId;
+      }
+      if (dealId != null) {
+        body['deal_id'] = dealId;
+      }
 
       if (delivery) {
         body['delivery_address'] = deliveryAddress;
@@ -11935,15 +11970,21 @@ class ApiService {
   }
 
   Future<DeliveryAddressResponse> getDeliveryAddresses({
-    required int leadId,
+    int? leadId,
+    int? dealId,
   }) async {
     try {
       final token = await getToken();
       if (token == null) throw Exception('Токен не найден');
 
+      if (leadId == null && dealId == null) {
+        throw Exception('Не указан lead_id или deal_id');
+      }
+
       // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+      final relationQuery = dealId != null ? 'deal_id=$dealId' : 'lead_id=$leadId';
       final path =
-          await _appendQueryParams('/delivery-address?lead_id=$leadId');
+          await _appendQueryParams('/delivery-address?$relationQuery');
       if (kDebugMode) {
         //debugPrint('ApiService: getDeliveryAddresses - Generated path: $path');
       }
@@ -11964,7 +12005,8 @@ class ApiService {
 
   Future<http.Response> createDeliveryAddress({
     required String address,
-    required int leadId,
+    int? leadId,
+    int? dealId,
   }) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/mini-app/delivery-address');
@@ -11976,8 +12018,12 @@ class ApiService {
 
     final body = <String, dynamic>{
       'address': address,
-      'lead_id': leadId,
     };
+    if (dealId != null) {
+      body['deal_id'] = dealId;
+    } else {
+      body['lead_id'] = leadId;
+    }
     if (organizationId != null &&
         organizationId.isNotEmpty &&
         organizationId != 'null') {

@@ -1,11 +1,11 @@
-import 'package:animated_custom_dropdown_example/widgets/controller_validation_dropdown.dart';
-import 'package:animated_custom_dropdown_example/widgets/multi_select_controller_dropdown.dart';
-import 'package:animated_custom_dropdown_example/widgets/decorated_dropdown.dart';
-import 'package:animated_custom_dropdown_example/widgets/multi_select_dropdown.dart';
-import 'package:animated_custom_dropdown_example/widgets/search_dropdown.dart';
-import 'package:animated_custom_dropdown_example/widgets/search_request_dropdown.dart';
-import 'package:animated_custom_dropdown_example/widgets/simple_dropdown.dart';
-import 'package:animated_custom_dropdown_example/widgets/validation_dropdown.dart';
+import 'widgets/controller_validation_dropdown.dart';
+import 'widgets/multi_select_controller_dropdown.dart';
+import 'widgets/decorated_dropdown.dart';
+import 'widgets/multi_select_dropdown.dart';
+import 'widgets/search_dropdown.dart';
+import 'widgets/search_request_dropdown.dart';
+import 'widgets/simple_dropdown.dart';
+import 'widgets/validation_dropdown.dart';
 import 'package:flutter/material.dart';
 
 void main() {

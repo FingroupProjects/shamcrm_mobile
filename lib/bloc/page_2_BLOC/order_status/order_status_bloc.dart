@@ -399,7 +399,6 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
     try {
       final Map<String, dynamic> body = {
         'phone': event.phone,
-        'lead_id': event.leadId,
         'deliveryType': event.delivery ? 'delivery' : 'pickup',
         'goods': event.goods,
         'organization_id': event.organizationId.toString(),
@@ -416,6 +415,13 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
         body['delivery_address_id'] = null;
       }
 
+      if (event.leadId != null) {
+        body['lead_id'] = event.leadId;
+      }
+      if (event.dealId != null) {
+        body['deal_id'] = event.dealId;
+      }
+
       // Всегда отправляем branch_id, если он указан
       if (event.branchId != null) {
         body['branch_id'] = event.branchId.toString();
@@ -426,6 +432,7 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
       final result = await apiService.createOrder(
         phone: event.phone,
         leadId: event.leadId,
+        dealId: event.dealId,
         delivery: event.delivery,
         deliveryAddress: event.deliveryAddress,
         deliveryAddressId: event.deliveryAddressId,
@@ -466,7 +473,6 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
     try {
       final Map<String, dynamic> body = {
         'phone': event.phone,
-        'lead_id': event.leadId,
         'deliveryType': event.delivery ? 'delivery' : 'pickup',
         'goods': event.goods,
         'organization_id': event.organizationId.toString(),
@@ -483,6 +489,13 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
         body['delivery_address_id'] = null;
       }
 
+      if (event.leadId != null) {
+        body['lead_id'] = event.leadId;
+      }
+      if (event.dealId != null) {
+        body['deal_id'] = event.dealId;
+      }
+
       // Всегда отправляем branch_id, если он указан
       if (event.branchId != null) {
         body['branch_id'] = event.branchId.toString();
@@ -494,6 +507,7 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
         orderId: event.orderId,
         phone: event.phone,
         leadId: event.leadId,
+        dealId: event.dealId,
         delivery: event.delivery,
         deliveryAddress: event.deliveryAddress,
         deliveryAddressId: event.deliveryAddressId,
@@ -815,6 +829,7 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
       final response = await apiService.createDeliveryAddress(
         address: event.address,
         leadId: event.leadId,
+        dealId: event.dealId,
       );
 
       if (response.statusCode == 200 || response.statusCode == 201) {

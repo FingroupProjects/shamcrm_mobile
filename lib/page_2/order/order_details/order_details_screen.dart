@@ -11,6 +11,7 @@ import 'package:crm_task_manager/page_2/order/order_details/order_edits.dart';
 import 'package:crm_task_manager/page_2/order/order_details/order_field_config_utils.dart';
 import 'package:crm_task_manager/page_2/order/order_details/order_good_screen.dart';
 import 'package:crm_task_manager/page_2/order/order_details/order_history_widget.dart';
+import 'package:crm_task_manager/screens/deal/tabBar/deal_details_screen.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/foundation.dart';
@@ -300,6 +301,8 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
     switch (fc.fieldName) {
       case 'lead_id':
         return order.lead.name;
+      case 'deal_id':
+        return order.deal?.name ?? '';
       case 'manager_id':
         return order.manager?.name ?? 'become_manager';
       case 'author' || 'author_id':
@@ -347,10 +350,16 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
 
     if (!_isConfigurationLoaded) {
       details = [
-        {
-          'label': AppLocalizations.of(context)!.translate('client'),
-          'value': order.lead.name
-        },
+        if (order.lead.name.isNotEmpty)
+          {
+            'label': AppLocalizations.of(context)!.translate('client'),
+            'value': order.lead.name
+          },
+        if ((order.deal?.name ?? '').isNotEmpty)
+          {
+            'label': AppLocalizations.of(context)!.translate('deal_label'),
+            'value': order.deal!.name
+          },
         {
           'label': AppLocalizations.of(context)!.translate('manager_details'),
           'value': order.manager?.name ?? 'become_manager'
@@ -559,7 +568,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
   }
 
   Widget _buildBody(OrderState state) {
-    if (state is OrderLoading) {
+    if (state is OrderLoading || !_isConfigurationLoaded) {
       return const Center(child: CircularProgressIndicator());
     } else if (state is OrderLoaded && state.orderDetails != null) {
       return Padding(
@@ -659,6 +668,8 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
   Widget _buildDetailItem(String label, String value) {
     final String clientLabel =
         AppLocalizations.of(context)!.translate('client');
+    final String dealLabel =
+        AppLocalizations.of(context)!.translate('deal_label');
     final String phoneLabel =
         AppLocalizations.of(context)!.translate('client_phone');
     final String addressLabel =
@@ -669,11 +680,12 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
     if (label == clientLabel && value.isNotEmpty) {
       return GestureDetector(
         onTap: () {
-          if (widget.order.lead?.id != null) {
+          final currentOrder = _currentOrderDetails ?? widget.order;
+          if (currentOrder.lead.id != 0) {
             navigatorKey.currentState?.push(
               MaterialPageRoute(
                 builder: (context) => LeadDetailsScreen(
-                  leadId: widget.order.lead!.id.toString(),
+                  leadId: currentOrder.lead.id.toString(),
                   leadName: value,
                   leadStatus: "",
                   statusId: 0,
@@ -685,6 +697,48 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
               SnackBar(
                   content: Text(AppLocalizations.of(context)!
                       .translate('lead_not_found'))),
+            );
+          }
+        },
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildLabel(label),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                value,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontFamily: 'Gilroy',
+                  fontWeight: FontWeight.w500,
+                  color: Color(0xff1E2E52),
+                  decoration: TextDecoration.underline,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (label == dealLabel && value.isNotEmpty) {
+      return GestureDetector(
+        onTap: () {
+          final currentOrder = _currentOrderDetails ?? widget.order;
+          if (currentOrder.deal?.id != null) {
+            navigatorKey.currentState?.push(
+              MaterialPageRoute(
+                builder: (context) => DealDetailsScreen(
+                  dealId: currentOrder.deal!.id.toString(),
+                  dealName: currentOrder.deal!.name,
+                  sum: '',
+                  dealStatus: '',
+                  statusId: 0,
+                ),
+              ),
             );
           }
         },

@@ -12,12 +12,20 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
 class OrdersWidget extends StatefulWidget {
-  final int leadId;
+  final int entityId;
+  final String relationType;
+  final int? leadId;
   final String? clientPhone; // Телефон клиента для автозаполнения
   final bool autoFetch;
-  final GlobalKey? key;
 
-  OrdersWidget({required this.leadId, this.clientPhone, this.autoFetch = true, this.key});
+  OrdersWidget({
+    required this.entityId,
+    this.relationType = 'lead',
+    this.leadId,
+    this.clientPhone,
+    this.autoFetch = true,
+    super.key,
+  });
 
   @override
   _OrdersWidgetState createState() => _OrdersWidgetState();
@@ -31,7 +39,12 @@ class _OrdersWidgetState extends State<OrdersWidget> {
     super.initState();
     _scrollController = ScrollController();
     if (widget.autoFetch) {
-      context.read<OrderByLeadBloc>().add(FetchOrdersByLead(leadId: widget.leadId));
+      context.read<OrderByLeadBloc>().add(
+            FetchOrdersByLead(
+              entityId: widget.entityId,
+              relationType: widget.relationType,
+            ),
+          );
     }
   }
 
@@ -219,12 +232,20 @@ Widget _buildOrderItem(Order order) {
               context,
               MaterialPageRoute(
                 builder: (context) => OrderAddScreen(
-                  leadId: widget.leadId,
+                  leadId: widget.relationType == 'lead'
+                      ? widget.entityId
+                      : widget.leadId,
+                  dealId: widget.relationType == 'deal' ? widget.entityId : null,
                   clientPhone: widget.clientPhone, // Передаем телефон клиента
                 ),
               ),
             ).then((_) {
-              context.read<OrderByLeadBloc>().add(FetchOrdersByLead(leadId: widget.leadId));
+              context.read<OrderByLeadBloc>().add(
+                    FetchOrdersByLead(
+                      entityId: widget.entityId,
+                      relationType: widget.relationType,
+                    ),
+                  );
             });
           },
           style: TextButton.styleFrom(

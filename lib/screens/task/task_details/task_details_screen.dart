@@ -1572,6 +1572,13 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
               ),
             );
           } else if (state is TaskByIdLoaded) {
+            if (!_isConfigurationLoaded) {
+              return Scaffold(
+                body: Center(
+                  child: CircularProgressIndicator(color: Color(0xff1E2E52)),
+                ),
+              );
+            }
             if (state.task == null) {
               return Scaffold(
                 body: Center(
