@@ -20,6 +20,9 @@ class FetchDealStatusesWithFilters extends DealEvent {
   final DateTime? toDate;
   final int? daysWithoutActivity;
   final bool? hasTasks;
+  final bool? withoutNotices;
+  final bool? overdueNotices;
+  final List<int>? leadStatuses;
   final List<Map<String, dynamic>>? directoryValues;
   final List<String>? names;
   final int? salesFunnelId;
@@ -34,6 +37,9 @@ class FetchDealStatusesWithFilters extends DealEvent {
     this.toDate,
     this.daysWithoutActivity,
     this.hasTasks,
+    this.withoutNotices,
+    this.overdueNotices,
+    this.leadStatuses,
     this.directoryValues,
     this.names,
     this.salesFunnelId,
@@ -52,6 +58,9 @@ class FetchDeals extends DealEvent {
   final DateTime? toDate;
   final int? daysWithoutActivity;
   final bool? hasTasks;
+  final bool? withoutNotices;
+  final bool? overdueNotices;
+  final List<int>? leadStatuses;
   final int? salesFunnelId;
   final List<Map<String, dynamic>>?
       directoryValues; // Добавляем directory_values
@@ -69,6 +78,9 @@ class FetchDeals extends DealEvent {
     this.toDate,
     this.daysWithoutActivity,
     this.hasTasks,
+    this.withoutNotices,
+    this.overdueNotices,
+    this.leadStatuses,
     this.directoryValues,
     this.salesFunnelId,
     this.names,

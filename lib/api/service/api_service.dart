@@ -3304,7 +3304,8 @@ class ApiService {
     int perPage = 20,
   }) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
-    String path = await _appendQueryParams('/manager?page=$page&per_page=$perPage');
+    String path =
+        await _appendQueryParams('/manager?page=$page&per_page=$perPage');
     if (search != null && search.trim().isNotEmpty) {
       path += '&search=${Uri.encodeComponent(search.trim())}';
     }
@@ -3881,6 +3882,9 @@ class ApiService {
     DateTime? toDate,
     int? daysWithoutActivity,
     bool? hasTasks,
+    bool? withoutNotices,
+    bool? overdueNotices,
+    List<int>? leadStatuses,
     List<Map<String, dynamic>>? directoryValues,
     List<String>? names,
     int? salesFunnelId, // ← КРИТИЧНО: Явный параметр
@@ -3922,7 +3926,10 @@ class ApiService {
         (toDate != null) ||
         (daysWithoutActivity != null) ||
         (hasTasks == true) ||
+        (withoutNotices == true) ||
+        (overdueNotices == true) ||
         (statuses != null) ||
+        (leadStatuses != null && leadStatuses.isNotEmpty) ||
         (directoryValues != null && directoryValues.isNotEmpty) ||
         (names != null && names.isNotEmpty) ||
         (customFieldFilters != null &&
@@ -3964,8 +3971,22 @@ class ApiService {
       path += '&withTasks=1';
     }
 
+    if (withoutNotices == true) {
+      path += '&without_notices=1';
+    }
+
+    if (overdueNotices == true) {
+      path += '&overdue_notices=1';
+    }
+
     if (statuses != null) {
       path += '&deal_statuses=$statuses';
+    }
+
+    if (leadStatuses != null && leadStatuses.isNotEmpty) {
+      for (final leadStatusId in leadStatuses) {
+        path += '&lead_statuses[]=$leadStatusId';
+      }
     }
 
     if (fromDate != null && toDate != null) {
@@ -4895,6 +4916,8 @@ class ApiService {
     bool? urgent,
     DateTime? deadlinefromDate,
     DateTime? deadlinetoDate,
+    DateTime? completedFromDate,
+    DateTime? completedToDate,
     List<int>? projectIds,
     List<String>? authors,
     String? department,
@@ -4919,6 +4942,8 @@ class ApiService {
         urgent == true ||
         (deadlinefromDate != null) ||
         (deadlinetoDate != null) ||
+        (completedFromDate != null) ||
+        (completedToDate != null) ||
         (projectIds != null && projectIds.isNotEmpty) ||
         (authors != null && authors.isNotEmpty) ||
         (department != null && department.isNotEmpty) ||
@@ -4961,6 +4986,14 @@ class ApiService {
           DateFormat('yyyy-MM-dd').format(deadlinefromDate);
       final formattedToDate = DateFormat('yyyy-MM-dd').format(deadlinetoDate);
       path += '&deadline_from=$formattedFromDate&deadline_to=$formattedToDate';
+    }
+    if (completedFromDate != null && completedToDate != null) {
+      final formattedCompletedFrom =
+          DateFormat('yyyy-MM-dd').format(completedFromDate);
+      final formattedCompletedTo =
+          DateFormat('yyyy-MM-dd').format(completedToDate);
+      path +=
+          '&completed_from=$formattedCompletedFrom&completed_to=$formattedCompletedTo';
     }
     if (projectIds != null && projectIds.isNotEmpty) {
       for (int projectId in projectIds) {
@@ -5058,6 +5091,8 @@ class ApiService {
     bool? urgent,
     DateTime? deadlinefromDate,
     DateTime? deadlinetoDate,
+    DateTime? completedFromDate,
+    DateTime? completedToDate,
     List<int>? projectIds,
     List<String>? authors,
     String? department,
@@ -5100,6 +5135,14 @@ class ApiService {
             DateFormat('yyyy-MM-dd').format(deadlinetoDate);
         path +=
             '&deadline_from=$formattedDeadlineFrom&deadline_to=$formattedDeadlineTo';
+      }
+      if (completedFromDate != null && completedToDate != null) {
+        final formattedCompletedFrom =
+            DateFormat('yyyy-MM-dd').format(completedFromDate);
+        final formattedCompletedTo =
+            DateFormat('yyyy-MM-dd').format(completedToDate);
+        path +=
+            '&completed_from=$formattedCompletedFrom&completed_to=$formattedCompletedTo';
       }
       if (projectIds != null && projectIds.isNotEmpty) {
         for (int i = 0; i < projectIds.length; i++) {
@@ -5964,7 +6007,8 @@ class ApiService {
     int perPage = 20,
   }) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
-    String path = await _appendQueryParams('/project?page=$page&per_page=$perPage');
+    String path =
+        await _appendQueryParams('/project?page=$page&per_page=$perPage');
     if (search != null && search.trim().isNotEmpty) {
       path += '&search=${Uri.encodeComponent(search.trim())}';
     }
@@ -11982,9 +12026,9 @@ class ApiService {
       }
 
       // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
-      final relationQuery = dealId != null ? 'deal_id=$dealId' : 'lead_id=$leadId';
-      final path =
-          await _appendQueryParams('/delivery-address?$relationQuery');
+      final relationQuery =
+          dealId != null ? 'deal_id=$dealId' : 'lead_id=$leadId';
+      final path = await _appendQueryParams('/delivery-address?$relationQuery');
       if (kDebugMode) {
         //debugPrint('ApiService: getDeliveryAddresses - Generated path: $path');
       }
@@ -14364,7 +14408,8 @@ class ApiService {
     int perPage = 20,
   }) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
-    String path = await _appendQueryParams('/suppliers?page=$page&per_page=$perPage');
+    String path =
+        await _appendQueryParams('/suppliers?page=$page&per_page=$perPage');
 
     // Добавляем параметр поиска, если он передан
     if (search != null && search.isNotEmpty) {
@@ -15105,7 +15150,8 @@ class ApiService {
     int page = 1,
     int perPage = 20,
   }) async {
-    String path = await _appendQueryParams('/suppliers?page=$page&per_page=$perPage');
+    String path =
+        await _appendQueryParams('/suppliers?page=$page&per_page=$perPage');
     if (search != null && search.trim().isNotEmpty) {
       path += '&search=${Uri.encodeComponent(search.trim())}';
     }

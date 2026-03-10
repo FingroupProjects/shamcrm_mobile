@@ -26,6 +26,8 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
   List<String>? _currentAuthors;
   DateTime? _currentDeadlineFromDate;
   DateTime? _currentDeadlineToDate;
+  DateTime? _currentCompletedFromDate;
+  DateTime? _currentCompletedToDate;
   String? _currentDepartment;
   List<Map<String, dynamic>>?
       _currentDirectoryValues; // Добавляем для справочников
@@ -321,6 +323,8 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
       _currentAuthors = event.authors;
       _currentDeadlineFromDate = event.deadlinefromDate;
       _currentDeadlineToDate = event.deadlinetoDate;
+      _currentCompletedFromDate = event.completedFromDate;
+      _currentCompletedToDate = event.completedToDate;
       _currentDepartment = event.department;
       _currentDirectoryValues = event.directoryValues;
 
@@ -380,6 +384,8 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
             authors: event.authors,
             deadlinefromDate: event.deadlinefromDate,
             deadlinetoDate: event.deadlinetoDate,
+            completedFromDate: event.completedFromDate,
+            completedToDate: event.completedToDate,
             department: event.department,
             directoryValues: event.directoryValues,
           )
@@ -498,6 +504,10 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
             deadlinefromDate:
                 event.deadlinefromDate ?? _currentDeadlineFromDate,
             deadlinetoDate: event.deadlinetoDate ?? _currentDeadlineToDate,
+            completedFromDate:
+                event.completedFromDate ?? _currentCompletedFromDate,
+            completedToDate:
+                event.completedToDate ?? _currentCompletedToDate,
             department: event.department ?? _currentDepartment,
             directoryValues: event.directoryValues ?? _currentDirectoryValues,
           )
@@ -838,6 +848,8 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
         _currentAuthors = event.authors;
         _currentDeadlineFromDate = event.deadlinefromDate;
         _currentDeadlineToDate = event.deadlinetoDate;
+        _currentCompletedFromDate = event.completedFromDate;
+        _currentCompletedToDate = event.completedToDate;
         _currentDepartment = event.department;
         _currentDirectoryValues = event.directoryValues;
 
@@ -865,6 +877,8 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
               event.urgent,
               event.deadlinefromDate,
               event.deadlinetoDate,
+              event.completedFromDate,
+              event.completedToDate,
               event.projectIds,
               event.authors,
               event.department,
@@ -911,6 +925,8 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
     bool? urgent,
     DateTime? deadlinefromDate,
     DateTime? deadlinetoDate,
+    DateTime? completedFromDate,
+    DateTime? completedToDate,
     List<int>? projectIds,
     List<String>? authors,
     String? department,
@@ -945,6 +961,8 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
             urgent: urgent,
             deadlinefromDate: deadlinefromDate,
             deadlinetoDate: deadlinetoDate,
+            completedFromDate: completedFromDate,
+            completedToDate: completedToDate,
             projectIds: projectIds,
             authors: authors,
             department: department,
@@ -998,6 +1016,8 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
     _currentAuthors = null;
     _currentDeadlineFromDate = null;
     _currentDeadlineToDate = null;
+    _currentCompletedFromDate = null;
+    _currentCompletedToDate = null;
     _currentDepartment = null;
     _currentDirectoryValues = null;
 

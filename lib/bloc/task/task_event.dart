@@ -20,6 +20,8 @@ class FetchTaskStatusesWithFilters extends TaskEvent {
   final bool? urgent;
   final DateTime? deadlinefromDate;
   final DateTime? deadlinetoDate;
+  final DateTime? completedFromDate;
+  final DateTime? completedToDate;
   final List<int>? projectIds;
   final List<String>? authors;
   final String? department;
@@ -36,6 +38,8 @@ class FetchTaskStatusesWithFilters extends TaskEvent {
     this.urgent,
     this.deadlinefromDate,
     this.deadlinetoDate,
+    this.completedFromDate,
+    this.completedToDate,
     this.projectIds,
     this.authors,
     this.department,
@@ -56,6 +60,8 @@ class FetchTasks extends TaskEvent {
   final bool? urgent;
   final DateTime? deadlinefromDate;
   final DateTime? deadlinetoDate;
+  final DateTime? completedFromDate;
+  final DateTime? completedToDate;
   final List<int>? projectIds;
   final List<String>? authors;
   final String? department;
@@ -71,6 +77,8 @@ class FetchTasks extends TaskEvent {
     this.toDate,
     this.deadlinefromDate,
     this.deadlinetoDate,
+    this.completedFromDate,
+    this.completedToDate,
     this.overdue,
     this.hasFile,
     this.hasDeal,
@@ -101,6 +109,8 @@ class FetchMoreTasks extends TaskEvent {
   final bool? urgent;
   final DateTime? deadlinefromDate;
   final DateTime? deadlinetoDate;
+  final DateTime? completedFromDate;
+  final DateTime? completedToDate;
   final List<int>? projectIds;
   final List<String>? authors;
   final String? department;
@@ -117,6 +127,8 @@ class FetchMoreTasks extends TaskEvent {
     this.toDate,
     this.deadlinefromDate,
     this.deadlinetoDate,
+    this.completedFromDate,
+    this.completedToDate,
     this.overdue,
     this.hasFile,
     this.hasDeal,

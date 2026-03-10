@@ -679,6 +679,8 @@
   "select_author_list": "Muallifni tanlang",
   "author_list": "Muallif",
   "hasTask": "Vazifalar bilan",
+  "deals_without_next_stage": "Keyingi bosqichsiz bitimlar",
+  "deals_with_overdue_tasks": "Muddati o'tgan vazifali bitimlar",
   "daysWithoutActivity": "Faoliyatsiz kunlar soni",
   "hasSuccessfulDeal": "Muvaffaqiyatli bitim bilan",
   "hasPendingDeal": "Kutilayotgan bitim bilan",

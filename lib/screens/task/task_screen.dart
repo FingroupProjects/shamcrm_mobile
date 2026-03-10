@@ -77,6 +77,8 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
   DateTime? _toDate;
   DateTime? _deadlinefromDate;
   DateTime? _deadlinetoDate;
+  DateTime? _completedFromDate;
+  DateTime? _completedToDate;
   bool _isOverdue = false;
   bool _hasFile = false;
   bool _hasDeal = false;
@@ -89,6 +91,8 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
   DateTime? _intialToDate;
   DateTime? _intialDeadlineFromDate;
   DateTime? _intialDeadlineToDate;
+  DateTime? _initialCompletedFromDate;
+  DateTime? _initialCompletedToDate;
   List<Map<String, dynamic>> _initialDirectoryValues =
       []; // Добавляем initialDirectoryValues
   bool _initialOverdue = false;
@@ -171,6 +175,8 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
             urgent: _isUrgent,
             deadlinefromDate: _deadlinefromDate,
             deadlinetoDate: _deadlinetoDate,
+            completedFromDate: _completedFromDate,
+            completedToDate: _completedToDate,
             projectIds: projectIdsList,
             authors: _selectedAuthors,
             department: _selectedDepartment,
@@ -479,6 +485,8 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
           _toDate = null;
           _deadlinefromDate = null;
           _deadlinetoDate = null;
+          _completedFromDate = null;
+          _completedToDate = null;
           _isOverdue = false;
           _hasFile = false;
           _hasDeal = false;
@@ -495,6 +503,8 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
           _intialToDate = null;
           _intialDeadlineFromDate = null;
           _intialDeadlineToDate = null;
+          _initialCompletedFromDate = null;
+          _initialCompletedToDate = null;
           _initialOverdue = false;
           _initialHasFile = false;
           _initialHasDeal = false;
@@ -588,6 +598,8 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
         _toDate = filterData['toDate'];
         _deadlinefromDate = filterData['deadlinefromDate'];
         _deadlinetoDate = filterData['deadlinetoDate'];
+        _completedFromDate = filterData['completedFromDate'];
+        _completedToDate = filterData['completedToDate'];
         _isOverdue = filterData['overdue'] ?? false;
         _hasFile = filterData['hasFile'] ?? false;
         _hasDeal = filterData['hasDeal'] ?? false;
@@ -624,6 +636,8 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
         _intialToDate = filterData['toDate'];
         _intialDeadlineFromDate = filterData['deadlinefromDate'];
         _intialDeadlineToDate = filterData['deadlinetoDate'];
+        _initialCompletedFromDate = filterData['completedFromDate'];
+        _initialCompletedToDate = filterData['completedToDate'];
         _initialOverdue = filterData['overdue'] ?? false;
         _initialHasFile = filterData['hasFile'] ?? false;
         _initialHasDeal = filterData['hasDeal'] ?? false;
@@ -658,6 +672,8 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       urgent: _isUrgent,
       deadlinefromDate: _deadlinefromDate,
       deadlinetoDate: _deadlinetoDate,
+      completedFromDate: _completedFromDate,
+      completedToDate: _completedToDate,
       projectIds: projectIdsList,
       authors: _selectedAuthors.isNotEmpty ? _selectedAuthors : null,
       department: _selectedDepartment,
@@ -681,6 +697,8 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
         _isUrgent == true ||
         _deadlinefromDate != null ||
         _deadlinetoDate != null ||
+        _completedFromDate != null ||
+        _completedToDate != null ||
         _selectedProjects.isNotEmpty ||
         (_selectedProject != null && _selectedProject!.isNotEmpty) ||
         _selectedAuthors.isNotEmpty ||
@@ -768,6 +786,8 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       _isUrgent = false;
       _deadlinefromDate = null;
       _deadlinetoDate = null;
+      _completedFromDate = null;
+      _completedToDate = null;
       _selectedProject = null;
       _selectedAuthors = [];
       _selectedProjects = [];
@@ -782,6 +802,8 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       _initialUrgent = false;
       _intialDeadlineFromDate = null;
       _intialDeadlineToDate = null;
+      _initialCompletedFromDate = null;
+      _initialCompletedToDate = null;
       _initialSelectedAuthors = [];
       _initialSelectedProjects = [];
       _selectedDepartment = null;
@@ -870,6 +892,8 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
             initialToDate: _intialToDate,
             initialDeadlineFromDate: _intialDeadlineFromDate,
             initialDeadlineToDate: _intialDeadlineToDate,
+            initialCompletedFromDate: _initialCompletedFromDate,
+            initialCompletedToDate: _initialCompletedToDate,
             initialTaskIsOverdue: _initialOverdue,
             initialTaskHasFile: _initialHasFile,
             initialTaskHasDeal: _initialHasDeal,
@@ -904,7 +928,9 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
                       _fromDate == null &&
                       _toDate == null &&
                       _deadlinefromDate == null &&
-                      _deadlinetoDate == null) {
+                      _deadlinetoDate == null &&
+                      _completedFromDate == null &&
+                      _completedToDate == null) {
                     //print("IF SEARCH EMPTY AND NO FILTERS");
                     setState(() {
                       _showCustomTabBar = true;
@@ -929,6 +955,8 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
                       urgent: _initialUrgent,
                       deadlinefromDate: _fromDate,
                       deadlinetoDate: _toDate,
+                      completedFromDate: _completedFromDate,
+                      completedToDate: _completedToDate,
                       authors: _selectedAuthors,
                       department: _selectedDepartment,
                       directoryValues:
@@ -1015,6 +1043,8 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
           urgent: _isUrgent,
           deadlinefromDate: _deadlinefromDate,
           deadlinetoDate: _deadlinetoDate,
+          completedFromDate: _completedFromDate,
+          completedToDate: _completedToDate,
           projectIds: projectIdsList,
           authors: _selectedAuthors,
           department: _selectedDepartment,
@@ -1609,6 +1639,10 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
                                 hasActiveFilters ? _deadlinefromDate : null,
                             deadlinetoDate:
                                 hasActiveFilters ? _deadlinetoDate : null,
+                            completedFromDate:
+                                hasActiveFilters ? _completedFromDate : null,
+                            completedToDate:
+                                hasActiveFilters ? _completedToDate : null,
                             projectIds:
                                 hasActiveFilters ? projectIdsList : null,
                             authors:
@@ -1867,6 +1901,8 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
                               urgent: _isUrgent,
                               deadlinefromDate: _deadlinefromDate,
                               deadlinetoDate: _deadlinetoDate,
+                              completedFromDate: _completedFromDate,
+                              completedToDate: _completedToDate,
                               projectIds: projectIdsList,
                               authors: _selectedAuthors,
                               department: _selectedDepartment,

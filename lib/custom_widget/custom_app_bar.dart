@@ -122,7 +122,10 @@ class CustomAppBar extends StatefulWidget {
   final DateTime? initialManagerDealFromDate;
   final DateTime? initialManagerDealToDate;
   final bool? initialManagerDealHasTasks;
+  final bool? initialManagerDealWithoutNotices;
+  final bool? initialManagerDealOverdueNotices;
   final int? initialManagerDealDaysWithoutActivity;
+  final List<int>? initialLeadStatusesDeal;
   final List<Map<String, dynamic>>?
       initialDirectoryValuesDeal; // Добавляем начальные значения справочников
 
@@ -148,6 +151,8 @@ class CustomAppBar extends StatefulWidget {
   final bool? initialTaskIsUrgent;
   final DateTime? initialDeadlineFromDate;
   final DateTime? initialDeadlineToDate;
+  final DateTime? initialCompletedFromDate;
+  final DateTime? initialCompletedToDate;
   final List<String>? initialAuthors;
   final String? initialDepartment;
   final List<Map<String, dynamic>>?
@@ -240,7 +245,10 @@ class CustomAppBar extends StatefulWidget {
     this.initialManagerDealFromDate,
     this.initialManagerDealToDate,
     this.initialManagerDealHasTasks,
+    this.initialManagerDealWithoutNotices,
+    this.initialManagerDealOverdueNotices,
     this.initialManagerDealDaysWithoutActivity,
+    this.initialLeadStatusesDeal,
     this.initialManagersEvent,
     this.initialManagerEventStatuses,
     this.initialManagerEventFromDate,
@@ -295,6 +303,8 @@ class CustomAppBar extends StatefulWidget {
     this.initialTaskIsUrgent,
     this.initialDeadlineFromDate,
     this.initialDeadlineToDate,
+    this.initialCompletedFromDate,
+    this.initialCompletedToDate,
     this.initialAuthors,
     this.initialDepartment,
     this.initialProjects,
@@ -1822,6 +1832,9 @@ class _CustomAppBarState extends State<CustomAppBar>
           initialRegions: widget.initialRegionsDeal,
           initialLeads: widget.initialLeadsDeal,
           initialHasTasks: widget.initialManagerDealHasTasks,
+          initialWithoutNotices: widget.initialManagerDealWithoutNotices,
+          initialOverdueNotices: widget.initialManagerDealOverdueNotices,
+          initialLeadStatuses: widget.initialLeadStatusesDeal,
           initialStatuses: widget.initialManagerDealStatuses,
           initialFromDate: widget.initialManagerDealFromDate,
           initialToDate: widget.initialManagerDealToDate,
@@ -1858,6 +1871,8 @@ class _CustomAppBarState extends State<CustomAppBar>
           initialDepartment: widget.initialDepartment,
           initialDeadlineFromDate: widget.initialDeadlineFromDate,
           initialDeadlineToDate: widget.initialDeadlineToDate,
+          initialCompletedFromDate: widget.initialCompletedFromDate,
+          initialCompletedToDate: widget.initialCompletedToDate,
           initialDirectoryValues:
               _safeConvertToMapList(widget.initialDirectoryValuesTask),
           initialProjects: widget.initialProjects,

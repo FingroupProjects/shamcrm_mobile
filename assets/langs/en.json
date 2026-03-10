@@ -683,6 +683,8 @@
   "select_author_list": "Select author",
   "author_list": "Author",
   "hasTask": "With tasks",
+  "deals_without_next_stage": "Deals without next stage",
+  "deals_with_overdue_tasks": "Deals with overdue tasks",
   "daysWithoutActivity": "Number of days without activity",
   "hasSuccessfulDeal": "With a successful deal",
   "hasPendingDeal": "With a pending deal",
