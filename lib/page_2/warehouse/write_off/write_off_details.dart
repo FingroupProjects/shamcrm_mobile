@@ -137,8 +137,9 @@ class _WriteOffDocumentDetailsScreenState extends State<WriteOffDocumentDetailsS
 
     details = [
       {
-        'label': '${AppLocalizations.of(context)!.translate('document_number') ?? 'Номер документа'}:',
-        'value': document.docNumber ?? '',
+            'label':
+            '${AppLocalizations.of(context)!.translate('document_number') ?? 'Документ'}:',
+        'value': "№${document.docNumber ?? ''}",
       },
       {
         'label': '${AppLocalizations.of(context)!.translate('date') ?? 'Дата'}',

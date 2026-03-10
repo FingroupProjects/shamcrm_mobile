@@ -290,7 +290,7 @@ class _CreateNotesDialogState extends State<CreateNotesDialog> {
               duration: Duration(seconds: 3),
             ),
           );
-          Navigator.pop(context);
+          Navigator.pop(context, true);
         }
       },
       child: GestureDetector(

@@ -199,7 +199,7 @@ void main() async {
         systemNavigationBarColor: Colors.white,
       ),
     );
-
+    
     final String? savedLanguageCode = await LanguageManager.getLanguage();
     final Locale savedLocale = savedLanguageCode != null
         ? Locale(savedLanguageCode)

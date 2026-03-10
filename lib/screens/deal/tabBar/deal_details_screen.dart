@@ -1163,14 +1163,27 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
                             contentPadding: const EdgeInsets.symmetric(
                                 horizontal: 10, vertical: 8),
                             filled: true,
-                            fillColor: const Color(0xffF4F7FD),
+                            fillColor: Colors.white,
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(10),
-                              borderSide: BorderSide.none,
+                              borderSide: const BorderSide(
+                                color: Color(0xff1E3A8A),
+                                width: 2,
+                              ),
                             ),
                             enabledBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(10),
-                              borderSide: BorderSide.none,
+                              borderSide: const BorderSide(
+                                color: Color(0xff1E3A8A),
+                                width: 2,
+                              ),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10),
+                              borderSide: const BorderSide(
+                                color: Color(0xff1E3A8A),
+                                width: 2,
+                              ),
                             ),
                           ),
                         ),
@@ -1245,6 +1258,22 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
     });
     try {
       await _apiService.finishNotice(noteId, conclusion);
+      if (mounted) {
+        setState(() {
+          _dealNotices = _dealNotices.map((note) {
+            if (note.id != noteId) return note;
+            return Notes(
+              id: note.id,
+              title: note.title,
+              body: note.body,
+              date: note.date,
+              createDate: note.createDate,
+              isFinished: true,
+              canFinish: false,
+            );
+          }).toList();
+        });
+      }
       _finishControllers[noteId]?.clear();
       await _fetchDealNotes();
     } catch (_) {
@@ -1365,7 +1394,7 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
       return;
     }
 
-    showModalBottomSheet(
+    final created = await showModalBottomSheet<bool>(
       context: context,
       backgroundColor: Colors.white,
       isScrollControlled: true,
@@ -1380,6 +1409,9 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
         );
       },
     );
+    if (created == true && mounted) {
+      await _fetchDealNotes();
+    }
   }
 
   Future<void> _showCreateDealCommentDialog() async {

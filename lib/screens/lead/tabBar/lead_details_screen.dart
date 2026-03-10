@@ -1416,6 +1416,12 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
         throw Exception('Не удалось определить созданную сделку');
       }
 
+      showCustomSnackBar(
+        context: context,
+        message: 'Сделка успешно создана',
+        isSuccess: true,
+      );
+
       final dealStatusMap = result['deal_status'] is Map<String, dynamic>
           ? result['deal_status'] as Map<String, dynamic>
           : null;

@@ -10,6 +10,7 @@ import 'package:crm_task_manager/screens/profile/languages/app_localizations.dar
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class DealCard extends StatefulWidget {
   final Deal deal;
@@ -33,10 +34,13 @@ class DealCard extends StatefulWidget {
   _DealCardState createState() => _DealCardState();
 }
 
-class _DealCardState extends State<DealCard> {
+class _DealCardState extends State<DealCard> with SingleTickerProviderStateMixin {
   late String dropdownValue;
   late int statusId;
   bool _isBottomSheetOpen = false;
+  bool _createTaskInDealEnabled = false;
+  late AnimationController _animationController;
+  late Animation<double> _fadeAnimation;
 
   late final bool isSuccess = widget.deal.dealStatus!.isSuccess;
   late final bool isFailure = widget.deal.dealStatus!.isFailure;
@@ -47,6 +51,28 @@ class _DealCardState extends State<DealCard> {
     super.initState();
     dropdownValue = widget.title;
     statusId = widget.statusId;
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 800),
+      vsync: this,
+    )..repeat(reverse: true);
+    _fadeAnimation = Tween<double>(begin: 0.3, end: 1.0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
+    );
+    _loadCreateTaskInDealSetting();
+  }
+
+  Future<void> _loadCreateTaskInDealSetting() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
+    setState(() {
+      _createTaskInDealEnabled = prefs.getBool('create_task_in_deal') ?? false;
+    });
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
   }
 
   String formatDate(String? dateString) {
@@ -82,6 +108,7 @@ class _DealCardState extends State<DealCard> {
 
   @override
   Widget build(BuildContext context) {
+    final shouldBlink = _createTaskInDealEnabled && widget.deal.needsAttention;
     Color borderColor;
     if (widget.deal.dealStatus?.isSuccess == true &&
         widget.deal.dealStatus?.isFailure == false &&
@@ -124,16 +151,35 @@ class _DealCardState extends State<DealCard> {
           context.read<DealBloc>().add(FetchDeals(widget.statusId));
         }
       },
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          border: Border.all(color: borderColor, width: 2),
-          borderRadius: BorderRadius.circular(12),
-          color: Color(0xffF4F7FD),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+      child: AnimatedBuilder(
+        animation: _animationController,
+        builder: (context, child) {
+          return Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              border: Border.all(
+                color: shouldBlink
+                    ? Colors.red.withValues(alpha: _fadeAnimation.value)
+                    : borderColor,
+                width: 2,
+              ),
+              borderRadius: BorderRadius.circular(12),
+              color: const Color(0xffF4F7FD),
+              boxShadow: shouldBlink
+                  ? [
+                      BoxShadow(
+                        color: Colors.red.withValues(
+                          alpha: _fadeAnimation.value * 0.3,
+                        ),
+                        blurRadius: 6,
+                        spreadRadius: 1,
+                      ),
+                    ]
+                  : null,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
             RichText(
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
@@ -318,11 +364,13 @@ class _DealCardState extends State<DealCard> {
       ),
     ),
   ],
-),
+                ),
               ],
             ),
           ],
-        ),
+            ),
+          );
+        },
       ),
     );
   }

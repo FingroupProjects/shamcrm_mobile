@@ -15,6 +15,7 @@ class Deal {
   final DealStatus? dealStatus;
   final List<DealCustomField> dealCustomFields;
   final bool outDated;
+  final bool needsAttention;
   final String? createdAt;
 
   Deal({
@@ -30,6 +31,7 @@ class Deal {
     this.dealStatus,
     required this.dealCustomFields,
     required this.outDated,
+    required this.needsAttention,
     this.createdAt,
   });
 
@@ -58,6 +60,8 @@ class Deal {
               .toList() ??
           [],
       outDated: json['out_dated'] ?? false,
+      needsAttention: json['needsAttention'] == true ||
+          json['needs_attention'] == true,
       createdAt: json['created_at'],
     );
   }
@@ -77,6 +81,7 @@ class Deal {
       'deal_custom_fields':
           dealCustomFields.map((field) => field.toJson()).toList(),
       'out_dated': outDated,
+      'needsAttention': needsAttention,
       'created_at': createdAt,
     };
   }

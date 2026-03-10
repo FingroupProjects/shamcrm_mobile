@@ -31,6 +31,45 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
   bool _isInitialized = false;
   bool _initialLeadSet = false;
 
+  bool _hasPhone(LeadData lead) => (lead.phone ?? '').trim().isNotEmpty;
+
+  Widget _buildLeadInfo(
+    LeadData lead, {
+    double nameFontSize = 14,
+    double phoneFontSize = 12,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          lead.name,
+          style: TextStyle(
+            color: const Color(0xff1E2E52),
+            fontSize: nameFontSize,
+            fontWeight: FontWeight.w500,
+            fontFamily: 'Gilroy',
+            height: 1.2,
+          ),
+        ),
+        if (_hasPhone(lead))
+          Padding(
+            padding: const EdgeInsets.only(top: 3),
+            child: Text(
+              lead.phone!.trim(),
+              style: TextStyle(
+                color: const Color(0xff99A4BA),
+                fontSize: phoneFontSize,
+                fontWeight: FontWeight.w400,
+                fontFamily: 'Gilroy',
+                height: 1.2,
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
   @override
   void initState() {
     super.initState();
@@ -164,18 +203,12 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      item.name,
-                      style: const TextStyle(
-                        color: Color(0xff1E2E52),
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        fontFamily: 'Gilroy',
-                      ),
-                    ),
+                    _buildLeadInfo(item),
                     if (widget.showDebt && item.debt != null && item.debt != 0)
                       Padding(
-                        padding: const EdgeInsets.only(top: 2),
+                        padding: EdgeInsets.only(
+                          top: _hasPhone(item) ? 4 : 2,
+                        ),
                         child: Text(
                           'Долг: ${item.debt!.toStringAsFixed(2)}',
                           style: TextStyle(
@@ -207,14 +240,9 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      selectedItem.name,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        fontFamily: 'Gilroy',
-                        color: Color(0xff1E2E52),
-                      ),
+                    _buildLeadInfo(
+                      selectedItem,
+                      phoneFontSize: 11,
                     ),
                     if (widget.showDebt &&
                         selectedItem.debt != null &&

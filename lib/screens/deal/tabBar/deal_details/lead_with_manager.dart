@@ -28,6 +28,45 @@ class _LeadWithManagerState extends State<LeadWithManager> {
   List<LeadData> leadsList = [];
   LeadData? selectedLeadData;
 
+  bool _hasPhone(LeadData lead) => (lead.phone ?? '').trim().isNotEmpty;
+
+  Widget _buildLeadInfo(
+    LeadData lead, {
+    double nameFontSize = 14,
+    double phoneFontSize = 12,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          lead.name,
+          style: TextStyle(
+            color: const Color(0xff1E2E52),
+            fontSize: nameFontSize,
+            fontWeight: FontWeight.w500,
+            fontFamily: 'Gilroy',
+            height: 1.2,
+          ),
+        ),
+        if (_hasPhone(lead))
+          Padding(
+            padding: const EdgeInsets.only(top: 3),
+            child: Text(
+              lead.phone!.trim(),
+              style: TextStyle(
+                color: const Color(0xff99A4BA),
+                fontSize: phoneFontSize,
+                fontWeight: FontWeight.w400,
+                fontFamily: 'Gilroy',
+                height: 1.2,
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
   @override
   void initState() {
     super.initState();
@@ -138,15 +177,7 @@ class _LeadWithManagerState extends State<LeadWithManager> {
                 expandedBorderRadius: BorderRadius.circular(12),
               ),
               listItemBuilder: (context, item, isSelected, onItemSelect) {
-                return Text(
-                  item.name,
-                  style: const TextStyle(
-                    color: Color(0xff1E2E52),
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    fontFamily: 'Gilroy',
-                  ),
-                );
+                return _buildLeadInfo(item);
               },
               headerBuilder: (context, selectedItem, enabled) {
                 if (state is GetAllLeadLoading) {
@@ -160,14 +191,9 @@ class _LeadWithManagerState extends State<LeadWithManager> {
                     ),
                   );
                 }
-                return Text(
-                  selectedItem.name,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    fontFamily: 'Gilroy',
-                    color: Color(0xff1E2E52),
-                  ),
+                return _buildLeadInfo(
+                  selectedItem,
+                  phoneFontSize: 11,
                 );
               },
               hintBuilder: (context, hint, enabled) => Text(
