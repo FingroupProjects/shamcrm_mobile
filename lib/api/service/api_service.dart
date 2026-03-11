@@ -3984,8 +3984,8 @@ class ApiService {
     }
 
     if (leadStatuses != null && leadStatuses.isNotEmpty) {
-      for (final leadStatusId in leadStatuses) {
-        path += '&lead_statuses[]=$leadStatusId';
+      for (int i = 0; i < leadStatuses.length; i++) {
+        path += '&lead_statuses[$i]=${leadStatuses[i]}';
       }
     }
 
@@ -3994,7 +3994,7 @@ class ApiService {
           "${fromDate.day.toString().padLeft(2, '0')}.${fromDate.month.toString().padLeft(2, '0')}.${fromDate.year}";
       final formattedToDate =
           "${toDate.day.toString().padLeft(2, '0')}.${toDate.month.toString().padLeft(2, '0')}.${toDate.year}";
-      path += '&created_from=$formattedFromDate&created_to=$formattedToDate';
+      path += '&from=$formattedFromDate&to=$formattedToDate';
     }
 
     if (directoryValues != null && directoryValues.isNotEmpty) {

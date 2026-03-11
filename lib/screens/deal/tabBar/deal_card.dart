@@ -34,7 +34,8 @@ class DealCard extends StatefulWidget {
   _DealCardState createState() => _DealCardState();
 }
 
-class _DealCardState extends State<DealCard> with SingleTickerProviderStateMixin {
+class _DealCardState extends State<DealCard>
+    with SingleTickerProviderStateMixin {
   late String dropdownValue;
   late int statusId;
   bool _isBottomSheetOpen = false;
@@ -49,7 +50,9 @@ class _DealCardState extends State<DealCard> with SingleTickerProviderStateMixin
   @override
   void initState() {
     super.initState();
-    dropdownValue = widget.title;
+    dropdownValue = widget.deal.dealStatus?.title.isNotEmpty == true
+        ? widget.deal.dealStatus!.title
+        : widget.title;
     statusId = widget.statusId;
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 800),
@@ -59,6 +62,19 @@ class _DealCardState extends State<DealCard> with SingleTickerProviderStateMixin
       CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
     );
     _loadCreateTaskInDealSetting();
+  }
+
+  @override
+  void didUpdateWidget(covariant DealCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.deal.id != widget.deal.id ||
+        oldWidget.deal.dealStatus?.title != widget.deal.dealStatus?.title ||
+        oldWidget.statusId != widget.statusId) {
+      dropdownValue = widget.deal.dealStatus?.title.isNotEmpty == true
+          ? widget.deal.dealStatus!.title
+          : widget.title;
+      statusId = widget.statusId;
+    }
   }
 
   Future<void> _loadCreateTaskInDealSetting() async {
@@ -180,194 +196,203 @@ class _DealCardState extends State<DealCard> with SingleTickerProviderStateMixin
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-            RichText(
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              text: TextSpan(
-                text: widget.deal.name,
-                style: TaskCardStyles.titleStyle,
-                children: const <TextSpan>[
-                  TextSpan(
-                    text: '\n\u200B',
+                RichText(
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  text: TextSpan(
+                    text: widget.deal.name,
                     style: TaskCardStyles.titleStyle,
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 5),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Text(
-                    '${AppLocalizations.of(context)!.translate('lead_deal_card')}${widget.deal.lead?.name ?? ""}',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w500,
-                      color: Color(0xff99A4BA),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    maxLines: 1,
-                  ),
-                ),
-                Text(
-                  widget.deal.lead?.phone ?? "",
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontFamily: 'Gilroy',
-                    fontWeight: FontWeight.w500,
-                    color: Color(0xff99A4BA),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  maxLines: 1,
-                ),
-              ],
-            ),
-            const SizedBox(height: 5),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Flexible(
-                  child: Row(
-                    children: [
-                      Text(
-                        AppLocalizations.of(context)!.translate('column'),
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontFamily: 'Gilroy',
-                          fontWeight: FontWeight.w400,
-                          color: Color(0xff99A4BA),
-                        ),
-                      ),
-                      Flexible(
-                          child: GestureDetector(
-                          onTap: () {
-                            // 🛡️ Блокируем повторные нажатия
-                            if (_isBottomSheetOpen) {
-                              debugPrint('⚠️ BottomSheet уже открыт, игнорируем нажатие');
-                              return;
-                            }
-                            
-                            // Устанавливаем флаг
-                            _isBottomSheetOpen = true;
-                            
-                            showDealStatusBottomSheet(
-                              context,
-                              dropdownValue,
-                              (String newValue, List<int> newStatusIds) {
-                                final newStatusId = newStatusIds.isNotEmpty ? newStatusIds.first : statusId;
-                                setState(() {
-                                  dropdownValue = newValue;
-                                  statusId = newStatusId;
-                                });
-                                widget.onStatusId(newStatusId);
-                                widget.onStatusUpdated();
-                              },
-                              widget.deal,
-                              ApiService(),
-                            ).whenComplete(() {
-                              // 🔓 Сбрасываем флаг после закрытия
-                              _isBottomSheetOpen = false;
-                              debugPrint('✅ BottomSheet закрыт, флаг сброшен');
-                            });
-                          },
-                          child: Container(
-                            key: widget.dropdownKey,
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                            child: Container(
-                              decoration: _getStatusButtonDecoration(statusId == widget.statusId),
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Flexible(
-                                    child: Text(
-                                      dropdownValue,
-                                      style: const TextStyle(
-                                        fontSize: 16,
-                                        fontFamily: 'Gilroy',
-                                        fontWeight: FontWeight.w500,
-                                        color: Color(0xff1E2E52),
-                                      ),
-                                      overflow: TextOverflow.ellipsis,
-                                      maxLines: 1,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Image.asset(
-                                    'assets/icons/tabBar/dropdown.png',
-                                    width: 20,
-                                    height: 20,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
+                    children: const <TextSpan>[
+                      TextSpan(
+                        text: '\n\u200B',
+                        style: TaskCardStyles.titleStyle,
                       ),
                     ],
                   ),
                 ),
-              ],
-            ),
-            const SizedBox(height: 5),
-            Column(
-              children: [
                 const SizedBox(height: 5),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Row(
-                      children: [
-                        Image.asset(
-                          'assets/icons/tabBar/date.png',
-                          width: 17,
-                          height: 17,
-                        ),
-                        // const SizedBox(width: 4),
-                        Text(
-                          ' ${formatDate(
-                            widget.deal.createdAt ?? AppLocalizations.of(context)!.translate('unknow'),
-                          )}',
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontFamily: 'Gilroy',
-                            fontWeight: FontWeight.w500,
-                            color: Color(0xff99A4BA),
-                          ),
-                          maxLines: 1,
+                    Expanded(
+                      child: Text(
+                        '${AppLocalizations.of(context)!.translate('lead_deal_card')}${widget.deal.lead?.name ?? ""}',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontFamily: 'Gilroy',
+                          fontWeight: FontWeight.w500,
+                          color: Color(0xff99A4BA),
                           overflow: TextOverflow.ellipsis,
                         ),
+                        maxLines: 1,
+                      ),
+                    ),
+                    Text(
+                      widget.deal.lead?.phone ?? "",
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontFamily: 'Gilroy',
+                        fontWeight: FontWeight.w500,
+                        color: Color(0xff99A4BA),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      maxLines: 1,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 5),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Flexible(
+                      child: Row(
+                        children: [
+                          Text(
+                            AppLocalizations.of(context)!.translate('column'),
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontFamily: 'Gilroy',
+                              fontWeight: FontWeight.w400,
+                              color: Color(0xff99A4BA),
+                            ),
+                          ),
+                          Flexible(
+                            child: GestureDetector(
+                              onTap: () {
+                                // 🛡️ Блокируем повторные нажатия
+                                if (_isBottomSheetOpen) {
+                                  debugPrint(
+                                      '⚠️ BottomSheet уже открыт, игнорируем нажатие');
+                                  return;
+                                }
 
+                                // Устанавливаем флаг
+                                _isBottomSheetOpen = true;
+
+                                showDealStatusBottomSheet(
+                                  context,
+                                  dropdownValue,
+                                  (String newValue, List<int> newStatusIds) {
+                                    final newStatusId = newStatusIds.isNotEmpty
+                                        ? newStatusIds.first
+                                        : statusId;
+                                    setState(() {
+                                      dropdownValue = newValue;
+                                      statusId = newStatusId;
+                                    });
+                                    widget.onStatusId(newStatusId);
+                                    widget.onStatusUpdated();
+                                  },
+                                  widget.deal,
+                                  ApiService(),
+                                ).whenComplete(() {
+                                  // 🔓 Сбрасываем флаг после закрытия
+                                  _isBottomSheetOpen = false;
+                                  debugPrint(
+                                      '✅ BottomSheet закрыт, флаг сброшен');
+                                });
+                              },
+                              child: Container(
+                                key: widget.dropdownKey,
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 4),
+                                child: Container(
+                                  decoration: _getStatusButtonDecoration(
+                                      statusId == widget.statusId),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 8, vertical: 4),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Flexible(
+                                        child: Text(
+                                          dropdownValue,
+                                          style: const TextStyle(
+                                            fontSize: 16,
+                                            fontFamily: 'Gilroy',
+                                            fontWeight: FontWeight.w500,
+                                            color: Color(0xff1E2E52),
+                                          ),
+                                          overflow: TextOverflow.ellipsis,
+                                          maxLines: 1,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Image.asset(
+                                        'assets/icons/tabBar/dropdown.png',
+                                        width: 20,
+                                        height: 20,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 5),
+                Column(
+                  children: [
+                    const SizedBox(height: 5),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            Image.asset(
+                              'assets/icons/tabBar/date.png',
+                              width: 17,
+                              height: 17,
+                            ),
+                            // const SizedBox(width: 4),
+                            Text(
+                              ' ${formatDate(
+                                widget.deal.createdAt ??
+                                    AppLocalizations.of(context)!
+                                        .translate('unknow'),
+                              )}',
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontFamily: 'Gilroy',
+                                fontWeight: FontWeight.w500,
+                                color: Color(0xff99A4BA),
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                        const SizedBox(width: 12),
+                        Flexible(
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: Color(0xFFE9EDF5),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              '${widget.deal.manager?.name ?? "Система"}',
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontFamily: 'Gilroy',
+                                fontWeight: FontWeight.w500,
+                                color: Color(0xff99A4BA),
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ),
                       ],
                     ),
-                    const SizedBox(width: 12),
-                   Flexible(
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        decoration: BoxDecoration(
-          color: Color(0xFFE9EDF5),
-          borderRadius: BorderRadius.circular(4),
-        ),
-        child: Text(
-          '${widget.deal.manager?.name ?? "Система"}',
-          style: const TextStyle(
-            fontSize: 12,
-            fontFamily: 'Gilroy',
-            fontWeight: FontWeight.w500,
-            color: Color(0xff99A4BA),
-          ),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-      ),
-    ),
-  ],
+                  ],
                 ),
               ],
-            ),
-          ],
             ),
           );
         },

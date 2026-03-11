@@ -521,6 +521,27 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
     }
   }
 
+  Widget _buildLeadStatusFilterCard() {
+    return Card(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      color: Colors.white,
+      child: Padding(
+        padding: const EdgeInsets.all(8),
+        child: DealLeadStatusMultiSelectWidget(
+          selectedLeadStatuses: _selectedLeadStatuses
+              .map((status) => status.id.toString())
+              .toList(),
+          onSelectStatuses: (selectedStatuses) {
+            setState(() {
+              _selectedLeadStatuses =
+                  List<LeadStatusForFilter>.from(selectedStatuses);
+            });
+          },
+        ),
+      ),
+    );
+  }
+
   Widget _buildSwitchTile(String title, bool value, Function(bool) onChanged) {
     return SwitchListTile(
       title: Text(
@@ -578,6 +599,9 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final hasLeadStatusInConfig = _fieldConfigurations
+        .any((config) => config.fieldName == 'lead_status_id');
+
     return Scaffold(
       backgroundColor: Color(0xffF4F7FD),
       appBar: AppBar(
@@ -771,8 +795,15 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
                           padding: const EdgeInsets.only(bottom: 8),
                           child: widget,
                         );
-                      })
-                    else if (!_isConfigurationLoaded)
+                      }),
+                    if (_isConfigurationLoaded &&
+                        _fieldConfigurations.isNotEmpty &&
+                        !hasLeadStatusInConfig) ...[
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: _buildLeadStatusFilterCard(),
+                      ),
+                    ] else if (!_isConfigurationLoaded)
                       Center(
                         child: Padding(
                           padding: const EdgeInsets.all(16),
@@ -800,27 +831,7 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
                         ),
                       ),
                       const SizedBox(height: 8),
-                      Card(
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12)),
-                        color: Colors.white,
-                        child: Padding(
-                          padding: const EdgeInsets.all(8),
-                          child: DealLeadStatusMultiSelectWidget(
-                            selectedLeadStatuses: _selectedLeadStatuses
-                                .map((status) => status.id.toString())
-                                .toList(),
-                            onSelectStatuses: (selectedStatuses) {
-                              setState(() {
-                                _selectedLeadStatuses =
-                                    List<LeadStatusForFilter>.from(
-                                  selectedStatuses,
-                                );
-                              });
-                            },
-                          ),
-                        ),
-                      ),
+                      _buildLeadStatusFilterCard(),
                       const SizedBox(height: 8),
                       Card(
                         shape: RoundedRectangleBorder(
@@ -974,25 +985,28 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
                         shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12)),
                         color: Colors.white,
-                        child: Column(
-                          children: [
-                            _buildSwitchTile(
-                              AppLocalizations.of(context)!
-                                  .translate('deals_without_next_stage'),
-                              _withoutNotices,
-                              (value) => setState(() {
-                                _withoutNotices = value;
-                              }),
-                            ),
-                            _buildSwitchTile(
-                              AppLocalizations.of(context)!
-                                  .translate('deals_with_overdue_tasks'),
-                              _overdueNotices,
-                              (value) => setState(() {
-                                _overdueNotices = value;
-                              }),
-                            ),
-                          ],
+                        child: _buildSwitchTile(
+                          AppLocalizations.of(context)!
+                              .translate('deals_without_next_stage'),
+                          _withoutNotices,
+                          (value) => setState(() {
+                            _withoutNotices = value;
+                          }),
+                        ),
+                      ),
+                    if (_createTaskInDealEnabled) const SizedBox(height: 8),
+                    if (_createTaskInDealEnabled)
+                      Card(
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                        color: Colors.white,
+                        child: _buildSwitchTile(
+                          AppLocalizations.of(context)!
+                              .translate('deals_with_overdue_tasks'),
+                          _overdueNotices,
+                          (value) => setState(() {
+                            _overdueNotices = value;
+                          }),
                         ),
                       ),
                     if (_createTaskInDealEnabled) const SizedBox(height: 8),

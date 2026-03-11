@@ -13,6 +13,7 @@ class Deal {
   final ManagerData? manager;
   final Lead? lead;
   final DealStatus? dealStatus;
+  final List<DealStatus> dealStatuses;
   final List<DealCustomField> dealCustomFields;
   final bool outDated;
   final bool needsAttention;
@@ -29,6 +30,7 @@ class Deal {
     this.manager,
     this.lead,
     this.dealStatus,
+    required this.dealStatuses,
     required this.dealCustomFields,
     required this.outDated,
     required this.needsAttention,
@@ -36,6 +38,25 @@ class Deal {
   });
 
   factory Deal.fromJson(Map<String, dynamic> json, int dealStatusId) {
+    final parsedDealStatuses = (json['deal_statuses'] as List<dynamic>?)
+            ?.map(
+                (status) => DealStatus.fromJson(status as Map<String, dynamic>))
+            .toList() ??
+        [];
+    final primaryStatus = parsedDealStatuses.isNotEmpty
+        ? parsedDealStatuses.first
+        : (json['deal_status'] != null
+            ? DealStatus.fromJson(json['deal_status'] as Map<String, dynamic>)
+            : null);
+    final parsedStatusId = json['deal_status_id'] is int
+        ? json['deal_status_id'] as int
+        : int.tryParse(json['deal_status_id']?.toString() ?? '') ??
+            (json['status_id'] is int
+                ? json['status_id'] as int
+                : int.tryParse(json['status_id']?.toString() ?? '')) ??
+            primaryStatus?.id ??
+            dealStatusId;
+
     return Deal(
       id: json['id'] ?? 0,
       name: json['name'] ?? 'Без имени',
@@ -43,10 +64,9 @@ class Deal {
       endDate: json['end_date'],
       description: json['description'] ?? '',
       sum: json['sum'] ?? '0.00',
-      statusId: dealStatusId,
-      dealStatus: json['deal_status'] != null
-          ? DealStatus.fromJson(json['deal_status'] as Map<String, dynamic>)
-          : null,
+      statusId: parsedStatusId,
+      dealStatus: primaryStatus,
+      dealStatuses: parsedDealStatuses,
       manager: json['manager'] != null
           ? ManagerData.fromJson(json['manager'] as Map<String, dynamic>)
           : null,
@@ -60,8 +80,8 @@ class Deal {
               .toList() ??
           [],
       outDated: json['out_dated'] ?? false,
-      needsAttention: json['needsAttention'] == true ||
-          json['needs_attention'] == true,
+      needsAttention:
+          json['needsAttention'] == true || json['needs_attention'] == true,
       createdAt: json['created_at'],
     );
   }
@@ -78,6 +98,7 @@ class Deal {
       'manager': manager?.toJson(),
       'lead': lead?.toJson(),
       'deal_status': dealStatus?.toJson(),
+      'deal_statuses': dealStatuses.map((status) => status.toJson()).toList(),
       'deal_custom_fields':
           dealCustomFields.map((field) => field.toJson()).toList(),
       'out_dated': outDated,

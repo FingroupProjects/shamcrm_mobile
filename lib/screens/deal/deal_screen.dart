@@ -888,6 +888,45 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
     ));
   }
 
+  void _refreshDealsAfterStatusChange({int? currentStatusId}) {
+    final fallbackStatusId =
+        _tabTitles.isNotEmpty && _currentTabIndex < _tabTitles.length
+            ? _tabTitles[_currentTabIndex]['id'] as int
+            : null;
+    final targetStatusId = currentStatusId ?? fallbackStatusId;
+    if (targetStatusId == null) return;
+
+    _dealBloc.add(FetchDeals(
+      targetStatusId,
+      query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
+      managerIds: _selectedManagers.isNotEmpty
+          ? _selectedManagers.map((manager) => manager.id).toList()
+          : null,
+      regionsIds: _selectedRegions.isNotEmpty
+          ? _selectedRegions.map((region) => region.id).toList()
+          : null,
+      leadIds: _selectedLeads.isNotEmpty
+          ? _selectedLeads.map((lead) => lead.id).toList()
+          : null,
+      leadStatuses:
+          _selectedLeadStatusIds.isNotEmpty ? _selectedLeadStatusIds : null,
+      statusIds: _selectedStatuses ?? targetStatusId,
+      fromDate: _fromDate,
+      toDate: _toDate,
+      daysWithoutActivity: _daysWithoutActivity,
+      hasTasks: _hasTasks,
+      withoutNotices: _withoutNotices,
+      overdueNotices: _overdueNotices,
+      directoryValues:
+          _selectedDirectoryValues.isNotEmpty ? _selectedDirectoryValues : null,
+      names: _selectedDealNames.isNotEmpty
+          ? _selectedDealNames.map((dealName) => dealName.title).toList()
+          : null,
+      salesFunnelId: _selectedFunnel?.id,
+      customFieldFilters: _selectedDealCustomFieldFilters,
+    ));
+  }
+
   void _onSearch(String query) {
     _lastSearchQuery = query;
     if (_tabTitles.isEmpty || _currentTabIndex >= _tabTitles.length) return;
@@ -1139,7 +1178,9 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
               deal: deal,
               title: deal.dealStatus?.title ?? "",
               statusId: deal.statusId,
-              onStatusUpdated: () {},
+              onStatusUpdated: () {
+                _refreshDealsAfterStatusChange(currentStatusId: deal.statusId);
+              },
               onStatusId: (StatusDealId) {
                 final index = _tabTitles
                     .indexWhere((status) => status['id'] == StatusDealId);
@@ -1241,7 +1282,10 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
                       deal: deal,
                       title: deal.dealStatus?.title ?? "",
                       statusId: deal.statusId,
-                      onStatusUpdated: () {},
+                      onStatusUpdated: () {
+                        _refreshDealsAfterStatusChange(
+                            currentStatusId: deal.statusId);
+                      },
                       onStatusId: (StatusDealId) {
                         final index = _tabTitles.indexWhere(
                             (status) => status['id'] == StatusDealId);
