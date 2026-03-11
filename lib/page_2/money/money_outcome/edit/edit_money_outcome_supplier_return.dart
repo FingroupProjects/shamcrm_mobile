@@ -183,18 +183,6 @@ class _EditMoneyOutcomeSupplierReturnState
       return;
     }
 
-    if (_isExchangeRateRequired) {
-      final rate = _exchangeRateValue;
-      if (rate == null || rate <= 0) {
-        setState(() {
-          _exchangeRateErrorText = AppLocalizations.of(context)!
-                  .translate('fill_valid_exchange_rate') ??
-              'Заполните корректный курс валюты';
-        });
-        return;
-      }
-    }
-
     if (_exchangeRateErrorText != null) {
       setState(() {
         _exchangeRateErrorText = null;
@@ -256,7 +244,7 @@ class _EditMoneyOutcomeSupplierReturnState
         supplierId: _selectedSupplier!.id,
         comment: _commentController.text.trim(),
         cashRegisterId: selectedCashRegister?.id,
-        exchangeRate: _isExchangeRateRequired ? _exchangeRateValue : null,
+        exchangeRate: _exchangeRateValue,
       ));
     } else {
       if (mounted) {

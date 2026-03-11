@@ -96,19 +96,26 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
   List<FieldConfiguration> _fieldConfiguration = [];
   bool _isConfigurationLoaded = false;
 
+  Future<void> _refreshDealDetails() async {
+    if (!mounted) return;
+
+    context
+        .read<DealByIdBloc>()
+        .add(FetchDealByIdEvent(dealId: int.parse(widget.dealId)));
+
+    context.read<OrderByLeadBloc>().add(
+          FetchOrdersByLead(
+            entityId: int.parse(widget.dealId),
+            relationType: 'deal',
+          ),
+        );
+  }
+
   @override
   void initState() {
     super.initState();
     _checkPermissions().then((_) {
-      context
-          .read<DealByIdBloc>()
-          .add(FetchDealByIdEvent(dealId: int.parse(widget.dealId)));
-      context.read<OrderByLeadBloc>().add(
-            FetchOrdersByLead(
-              entityId: int.parse(widget.dealId),
-              relationType: 'deal',
-            ),
-          );
+      _refreshDealDetails();
       _fetchDealNotes();
     });
     _fetchTutorialProgress();
@@ -802,6 +809,7 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
                         leadId: currentDeal?.lead?.id,
                         clientPhone: currentDeal?.lead?.phone,
                         autoFetch: false,
+                        onOrdersChanged: _refreshDealDetails,
                         key: GlobalKey(),
                       ),
                     ],

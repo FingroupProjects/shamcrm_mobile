@@ -139,7 +139,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:new_version_plus/new_version_plus.dart';
-import 'package:provider/provider.dart';
+import 'package:provider/provider.dart'; 
 import 'package:shared_preferences/shared_preferences.dart';
 import 'bloc/cash_register_list/cash_register_list_bloc.dart';
 import 'bloc/page_2_BLOC/document/incoming/incoming_document_history/incoming_document_history_bloc.dart';
@@ -157,7 +157,7 @@ void main() async {
     WidgetsFlutterBinding.ensureInitialized();
 
     await _initializeFirebase();
-
+    
     final apiService = ApiService();
     final authService = AuthService();
 
@@ -199,7 +199,7 @@ void main() async {
         systemNavigationBarColor: Colors.white,
       ),
     );
-    
+
     final String? savedLanguageCode = await LanguageManager.getLanguage();
     final Locale savedLocale = savedLanguageCode != null
         ? Locale(savedLanguageCode)

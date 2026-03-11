@@ -17,6 +17,7 @@ class OrdersWidget extends StatefulWidget {
   final int? leadId;
   final String? clientPhone; // Телефон клиента для автозаполнения
   final bool autoFetch;
+  final Future<void> Function()? onOrdersChanged;
 
   OrdersWidget({
     required this.entityId,
@@ -24,6 +25,7 @@ class OrdersWidget extends StatefulWidget {
     this.leadId,
     this.clientPhone,
     this.autoFetch = true,
+    this.onOrdersChanged,
     super.key,
   });
 
@@ -34,17 +36,25 @@ class OrdersWidget extends StatefulWidget {
 class _OrdersWidgetState extends State<OrdersWidget> {
   late ScrollController _scrollController;
 
+  Future<void> _refreshOrders() async {
+    if (!mounted) return;
+
+    context.read<OrderByLeadBloc>().add(
+          FetchOrdersByLead(
+            entityId: widget.entityId,
+            relationType: widget.relationType,
+          ),
+        );
+
+    await widget.onOrdersChanged?.call();
+  }
+
   @override
   void initState() {
     super.initState();
     _scrollController = ScrollController();
     if (widget.autoFetch) {
-      context.read<OrderByLeadBloc>().add(
-            FetchOrdersByLead(
-              entityId: widget.entityId,
-              relationType: widget.relationType,
-            ),
-          );
+      _refreshOrders();
     }
   }
 
@@ -139,8 +149,8 @@ Widget _buildOrderItem(Order order) {
       : AppLocalizations.of(context)!.translate('');
 
   return GestureDetector(
-    onTap: () {
-      Navigator.push(
+    onTap: () async {
+      await Navigator.push(
         context,
         MaterialPageRoute(
           builder: (context) => OrderDetailsScreen(
@@ -150,6 +160,7 @@ Widget _buildOrderItem(Order order) {
           ),
         ),
       );
+      await _refreshOrders();
     },
     child: Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
@@ -227,8 +238,8 @@ Widget _buildOrderItem(Order order) {
           ),
         ),
         TextButton(
-          onPressed: () {
-            Navigator.push(
+          onPressed: () async {
+            final result = await Navigator.push(
               context,
               MaterialPageRoute(
                 builder: (context) => OrderAddScreen(
@@ -239,14 +250,16 @@ Widget _buildOrderItem(Order order) {
                   clientPhone: widget.clientPhone, // Передаем телефон клиента
                 ),
               ),
-            ).then((_) {
-              context.read<OrderByLeadBloc>().add(
-                    FetchOrdersByLead(
-                      entityId: widget.entityId,
-                      relationType: widget.relationType,
-                    ),
-                  );
-            });
+            );
+
+            if (!mounted) return;
+
+            if (result is Map<String, dynamic> && result['success'] == true) {
+              await _refreshOrders();
+              return;
+            }
+
+            await _refreshOrders();
           },
           style: TextButton.styleFrom(
             foregroundColor: Colors.white,

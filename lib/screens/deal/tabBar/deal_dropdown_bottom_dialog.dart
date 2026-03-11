@@ -49,23 +49,17 @@ Future<void> showDealStatusBottomSheet(
     return;
   }
 
-  // ✅ НОВАЯ ЛОГИКА: Проверяем оба флага
   final prefs = await SharedPreferences.getInstance();
-  final bool managingVisibility =
-      prefs.getBool('managing_deal_status_visibility') ?? false;
   final bool changeMultiple =
       prefs.getBool('change_deal_to_multiple_statuses') ?? false;
 
-  // Если хотя бы один флаг true, включаем мультивыбор
-  final bool isMultiSelectEnabled = managingVisibility || changeMultiple;
+  final bool isMultiSelectEnabled = changeMultiple;
 
   final String? organizationId = prefs.getString('organization_id') ?? '1';
   final String? salesFunnelId = prefs.getString('sales_funnel_id') ?? '1';
 
   debugPrint('DropdownBottomSheet: organizationId = $organizationId');
   debugPrint('DropdownBottomSheet: salesFunnelId = $salesFunnelId');
-  debugPrint(
-      'DropdownBottomSheet: managing_deal_status_visibility = $managingVisibility');
   debugPrint(
       'DropdownBottomSheet: change_deal_to_multiple_statuses = $changeMultiple');
   debugPrint(

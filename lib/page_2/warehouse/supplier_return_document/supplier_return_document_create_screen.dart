@@ -479,7 +479,7 @@ class _SupplierReturnDocumentCreateScreenState
       return;
     }
 
-    if (_isExchangeRateRequired) {
+    if (approve && _isExchangeRateRequired) {
       final rate = _exchangeRateValue;
       if (rate == null || rate <= 0) {
         setState(() {
@@ -575,7 +575,7 @@ class _SupplierReturnDocumentCreateScreenState
         organizationId: widget.organizationId ?? 1,
         salesFunnelId: 1,
         approve: approve, // Передаем параметр approve
-        exchangeRate: _isExchangeRateRequired ? _exchangeRateValue : null,
+        exchangeRate: _exchangeRateValue,
       ));
     } catch (e) {
       setState(() => _isLoading = false);
