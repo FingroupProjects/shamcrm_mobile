@@ -1139,6 +1139,8 @@
   "selected_subcategories": "Выбранные подкатегории",
   "pickup": "Самовывоз",
   "manual_input": "Ручной ввод",
+  "auth_signup_prompt": "Еще нет аккаунта?",
+  "auth_signup_cta": "Создать",
   "directory": "Справочник",
   "add_directory": "Добавить справочник",
   "select_directory": "Выбрать из справочника",
