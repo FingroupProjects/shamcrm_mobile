@@ -1545,6 +1545,11 @@
   "status_not_deleted": "не удален",
   "supplier_payment": "Оплата поставщику",
   "other_expenses": "Прочие расходы",
+  "salary_payment": "Оплата зарплаты",
+  "employee": "Сотрудник",
+  "select_employee": "Выберите сотрудника",
+  "remaining": "Остаток",
+  "comment_hint": "Комментарий...",
   "send_another_cash_register": "Отправка на другую кассу",
   "status_changed_successfully_approve": "Статус успешно изменён!",
   "save_and_approve": "Провести",
@@ -1976,5 +1981,13 @@
   "deal_single": "Сделка",
   "lead_status": "Статус лида",
   "additional_client_info": "Доп. информация клиента",
-  "all_periods": "Все периоды"
+  "all_periods": "Все периоды",
+  "tab_salary_debt": "Задолженность зарплаты",
+  "salary_debt": "Задолженность",
+  "salary_debt_report_hint": "Выберите сотрудника и раскройте карточку, чтобы посмотреть задолженность по месяцам.",
+  "no_salary_debts": "Нет задолженности по зарплате",
+  "salary_debt_empty_hint": "За выбранный год задолженность сотрудников не найдена",
+  "accrued": "Начислено",
+  "show_all_months": "Показать все месяцы",
+  "hide_months": "Скрыть месяцы"
 }

@@ -1498,6 +1498,11 @@
   "type": "Tur",
   "supplier_payment": "Ta'minotchi to'lovi",
   "other_expenses": "Boshqa chiqimlar",
+  "salary_payment": "Ish haqi to'lovi",
+  "employee": "Xodim",
+  "select_employee": "Xodimni tanlang",
+  "remaining": "Qoldiq",
+  "comment_hint": "Izoh...",
   "send_another_cash_register": "Boshqa kassaga yuborish",
   "status_changed_successfully_approve": "Status muvaffaqiyatli o'zgartirildi!",
   "appbar_warehouse": "Ombor",
@@ -1957,5 +1962,13 @@
   "later": "Keyinroq",
   "additional_client_info": "Qo'shimcha mijoz ma'lumotlari",
   "clientreturn": "Mijoz qaytishi",
-  "all_periods": "Barcha dönemler"
+  "all_periods": "Barcha dönemler",
+  "tab_salary_debt": "Ish haqi qarzdorligi",
+  "salary_debt": "Qarzdorligi",
+  "salary_debt_report_hint": "Xodimni tanlang va oylar bo'yicha qarzdorlikni ko'rish uchun kartani oching.",
+  "no_salary_debts": "Ish haqi qarzdorligi yo'q",
+  "salary_debt_empty_hint": "Tanlangan yil uchun xodimlar bo'yicha qarzdorlik topilmadi",
+  "accrued": "Hisoblandi",
+  "show_all_months": "Barcha oylarni ko'rsatish",
+  "hide_months": "Oylarni yashirish"
 }

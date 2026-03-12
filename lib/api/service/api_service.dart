@@ -105,6 +105,7 @@ import 'package:crm_task_manager/models/page_2/dashboard/dashboard_top.dart';
 import 'package:crm_task_manager/models/page_2/dashboard/debtors_model.dart';
 import 'package:crm_task_manager/models/page_2/dashboard/creditors_model.dart';
 import 'package:crm_task_manager/models/page_2/dashboard/illiquids_model.dart';
+import 'package:crm_task_manager/models/page_2/dashboard/salary_report_model.dart';
 import 'package:crm_task_manager/models/page_2/delivery_address_model.dart';
 import 'package:crm_task_manager/models/page_2/good_dashboard_warehouse_model.dart'
     as dgrmodel;
@@ -180,6 +181,7 @@ import '../../models/domain_check.dart';
 import '../../models/income_categories_data_response.dart';
 import '../../models/login_model.dart';
 import '../../models/money/money_income_document_model.dart';
+import '../../models/money/employee_remaining_model.dart';
 import '../../models/money/money_outcome_document_model.dart';
 import '../../models/outcome_categories_data_response.dart';
 import '../../models/page_2/dashboard/act_of_reconciliation_model.dart';
@@ -333,11 +335,36 @@ class ApiService {
 
 // Новый метод для получения message из body ответа
   String? _extractErrorMessageFromResponse(http.Response response) {
-    final body = jsonDecode(response.body) as Map<String, dynamic>;
-    final rawMessage = body['message'] ?? body['error'] ?? body['errors'];
-    final message = jsonDecode(jsonEncode(rawMessage));
-
-    return message;
+    try {
+      final body = jsonDecode(response.body);
+      if (body is Map<String, dynamic>) {
+        final rawMessage = body['message'] ?? body['error'] ?? body['errors'];
+        if (rawMessage == null) {
+          return null;
+        }
+        if (rawMessage is String) {
+          return rawMessage;
+        }
+        if (rawMessage is List) {
+          return rawMessage.map((item) => item.toString()).join('\n');
+        }
+        if (rawMessage is Map) {
+          final parts = <String>[];
+          rawMessage.forEach((key, value) {
+            if (value is List) {
+              parts.add(value.map((item) => item.toString()).join('\n'));
+            } else if (value != null) {
+              parts.add(value.toString());
+            }
+          });
+          return parts.where((item) => item.trim().isNotEmpty).join('\n');
+        }
+        return rawMessage.toString();
+      }
+      return body?.toString();
+    } catch (_) {
+      return response.body.isEmpty ? null : response.body;
+    }
   }
 
   // Также нужно обновить метод _initializeIfDomainExists
@@ -15576,6 +15603,8 @@ class ApiService {
     int? senderCashRegisterId,
     int? cashRegisterId,
     int? supplierId,
+    int? employeeId,
+    String? month,
     required bool approve,
     double? exchangeRate,
   }) async {
@@ -15593,6 +15622,8 @@ class ApiService {
         'comment': comment,
         'cash_register_id': cashRegisterId,
         'supplier_id': supplierId,
+        'employee_id': employeeId,
+        'month': month,
         'approved': approve,
         if (exchangeRate != null) 'exchange_rate': exchangeRate,
       });
@@ -15742,6 +15773,8 @@ class ApiService {
     int? senderCashRegisterId,
     int? cashRegisterId,
     int? supplierId,
+    int? employeeId,
+    String? month,
     double? exchangeRate,
   }) async {
     final path = await _appendQueryParams('/checking-account/$documentId');
@@ -15758,6 +15791,8 @@ class ApiService {
         'comment': comment,
         'cash_register_id': cashRegisterId,
         'supplier_id': supplierId,
+        'employee_id': employeeId,
+        'month': month,
         if (exchangeRate != null) 'exchange_rate': exchangeRate,
       });
       if (response.statusCode == 200 || response.statusCode == 201) {
@@ -15885,6 +15920,60 @@ class ApiService {
         final message = _extractErrorMessageFromResponse(response);
         throw ApiException(
           message ?? 'Ошибка при массовом восстановлении документов расхода!',
+          response.statusCode,
+        );
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<List<EmployeeRemainingModel>> getEmployeesByRemaining({
+    required String month,
+  }) async {
+    await ensureInitialized();
+
+    final path = await _appendQueryParams(
+      '/employee/get-by-remaining?search=&page=1&per_page=20&month=$month',
+    );
+
+    try {
+      final token = await getToken();
+      if (token == null) {
+        throw ApiException('Токен не найден', 401);
+      }
+      if (baseUrl == null || baseUrl!.isEmpty) {
+        throw ApiException('Base URL is not initialized', 500);
+      }
+
+      final uri = Uri.parse('$baseUrl$path');
+      debugPrint('ApiService: getEmployeesByRemaining -> $uri');
+      final response = await http.get(
+        uri,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'Device': 'web',
+        },
+      );
+      debugPrint(
+        'ApiService: getEmployeesByRemaining status=${response.statusCode}',
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final rawData = json.decode(response.body);
+        if (rawData is List) {
+          return rawData
+              .whereType<Map<String, dynamic>>()
+              .map(EmployeeRemainingModel.fromJson)
+              .toList();
+        }
+        return const [];
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(
+          message ?? 'Ошибка при получении списка сотрудников!',
           response.statusCode,
         );
       }
@@ -17427,6 +17516,67 @@ class ApiService {
         final message = _extractErrorMessageFromResponse(response);
         throw ApiException(
           message ?? 'Ошибка при получении списка кредиторов!',
+          response.statusCode,
+        );
+      }
+    } catch (e) {
+      throw e;
+    }
+  }
+
+  /// Получение отчета по задолженности зарплаты
+  Future<SalaryReportResponse> getSalaryReport({
+    int? page,
+    int? perPage,
+    Map<String, dynamic>? filters,
+    String? search,
+  }) async {
+    try {
+      final queryParams = <String, String>{};
+
+      queryParams['page'] = (page ?? 1).toString();
+      queryParams['per_page'] = (perPage ?? 20).toString();
+      queryParams['limit'] = (perPage ?? 20).toString();
+      queryParams['lead_id'] = '';
+      queryParams['supplier_id'] = '';
+      queryParams['date_from'] = '';
+      queryParams['date_to'] = '';
+      queryParams['sum_from'] = '';
+      queryParams['sum_to'] = '';
+      queryParams['category_id'] = '';
+      queryParams['days_without_movement'] = '';
+      queryParams['article_id'] = '';
+      queryParams['good_id'] = '';
+      queryParams['status_id'] = '';
+      queryParams['search'] = search?.trim() ?? '';
+      queryParams['period'] = '';
+      queryParams['year'] = filters?['year']?.toString() ?? '';
+      queryParams['storage_id'] = '';
+
+      var path = await _appendQueryParams('/fin/dashboard/salary-report');
+
+      final separator = path.contains('?') ? '&' : '?';
+      final encodedParams = queryParams.entries
+          .map((e) =>
+              '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}')
+          .join('&');
+      path += '$separator$encodedParams';
+
+      if (kDebugMode) {
+        debugPrint(
+          'ApiService: getSalaryReport - Generated path: $path, filter: $filters',
+        );
+      }
+
+      final response = await _getRequest(path);
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body) as Map<String, dynamic>;
+        return SalaryReportResponse.fromJson(data);
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(
+          message ?? 'Ошибка при получении отчета по задолженности зарплаты!',
           response.statusCode,
         );
       }

@@ -55,6 +55,40 @@ class MoneyOutcomeCard extends StatelessWidget {
     return document.approved == false ? Colors.orange : Colors.green;
   }
 
+  String _getDocumentTitle(AppLocalizations localizations) {
+    return '${localizations.translate('outcome') ?? 'Расход'} №${document.docNumber}';
+  }
+
+  String? _getSecondaryLine(AppLocalizations localizations) {
+    if (document.operationType ==
+        MoneyOutcomeOperationType.salary_payment.name) {
+      final employeeName = document.model?.name;
+      final month = document.month;
+      final monthLabel = month != null && month.isNotEmpty
+          ? DateFormat('MM/yyyy').format(DateTime.parse('$month-01'))
+          : null;
+
+      if (employeeName != null &&
+          employeeName.isNotEmpty &&
+          monthLabel != null) {
+        return '${localizations.translate('employee') ?? 'Сотрудник'}: $employeeName • ${localizations.translate('month') ?? 'Месяц'}: $monthLabel';
+      }
+      if (employeeName != null && employeeName.isNotEmpty) {
+        return '${localizations.translate('employee') ?? 'Сотрудник'}: $employeeName';
+      }
+      if (monthLabel != null) {
+        return '${localizations.translate('month') ?? 'Месяц'}: $monthLabel';
+      }
+      return null;
+    }
+
+    if (document.model?.name?.isNotEmpty ?? false) {
+      return '${localizations.translate('client') ?? 'Клиент'} ${document.model!.name}';
+    }
+
+    return null;
+  }
+
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
@@ -81,7 +115,7 @@ class MoneyOutcomeCard extends StatelessWidget {
                     children: [
                       Expanded(
                         child: Text(
-                          '${localizations.translate('outcome') ?? 'Доход'} №${document.docNumber}',
+                          _getDocumentTitle(localizations),
                           style: const TextStyle(
                             fontSize: 18,
                             fontFamily: 'Gilroy',
@@ -158,10 +192,10 @@ class MoneyOutcomeCard extends StatelessWidget {
                     ),
                   ],
 
-                  if (document.model?.name?.isNotEmpty ?? false) ...[
+                  if (_getSecondaryLine(localizations) != null) ...[
                     const SizedBox(height: 8),
                     Text(
-                      '${localizations.translate('client') ?? 'Клиент'} ${document.model!.name}',
+                      _getSecondaryLine(localizations)!,
                       style: const TextStyle(
                         fontSize: 14,
                         fontFamily: 'Gilroy',
