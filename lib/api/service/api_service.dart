@@ -17,6 +17,7 @@ import 'package:crm_task_manager/models/money/add_expense_model.dart';
 import 'package:crm_task_manager/models/money/income_model.dart';
 import 'package:crm_task_manager/models/money/add_income_model.dart';
 import 'package:crm_task_manager/models/chatById_model.dart';
+import 'package:crm_task_manager/models/chat_messages_page.dart';
 import 'package:crm_task_manager/models/chatGetId_model.dart';
 import 'package:crm_task_manager/models/chatTaskProfile_model.dart';
 import 'package:crm_task_manager/models/contact_person_model.dart';
@@ -7878,8 +7879,9 @@ class ApiService {
   }
 
 // Метод для получения сообщений по chatId
-  Future<List<Message>> getMessages(
+  Future<ChatMessagesPage> getMessagesPage(
     int chatId, {
+    int page = 1,
     String? search,
     String? chatType, // Тип чата: 'lead', 'corporate', 'task'
   }) async {
@@ -7904,7 +7906,7 @@ class ApiService {
         }
       }
 
-      String path = '/v2/chat/getMessages/$chatId';
+      String path = '/v3/chat/getMessages/$chatId?page=$page';
       path = await _appendQueryParams(path);
 
       if (search != null && search.isNotEmpty) {
@@ -7922,41 +7924,10 @@ class ApiService {
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        if (data['result'] != null) {
-          final List<dynamic> messagesList = data['result'] as List<dynamic>;
-
-          // 🔍 ДИАГНОСТИКА: Логируем первое сообщение для проверки структуры
-          if (messagesList.isNotEmpty) {
-            debugPrint('🔍 API ДИАГНОСТИКА - Структура первого сообщения:');
-            final firstMsg = messagesList[0];
-            debugPrint('   Полное сообщение: $firstMsg');
-            debugPrint('   ---');
-          }
-
-          return messagesList.map((msgData) {
-            try {
-              // Передаём chatType при парсинге сообщения
-              return Message.fromJson(msgData as Map<String, dynamic>,
-                  chatType: chatType);
-            } catch (e) {
-              debugPrint('Error parsing message: $e, data: $msgData');
-              // Возвращаем пустое сообщение с базовыми полями
-              return Message(
-                id: msgData['id'] ?? -1,
-                text:
-                    msgData['text']?.toString() ?? 'Ошибка загрузки сообщения',
-                type: msgData['type']?.toString() ?? 'text',
-                createMessateTime: msgData['created_at']?.toString() ??
-                    DateTime.now().toIso8601String(),
-                isMyMessage: false,
-                senderName: msgData['sender']?['name']?.toString() ??
-                    'Неизвестный отправитель',
-              );
-            }
-          }).toList();
-        } else {
-          throw Exception('Результат отсутствует в ответе');
-        }
+        return ChatMessagesPage.fromJson(
+          Map<String, dynamic>.from(data as Map),
+          chatType: chatType,
+        );
       } else {
         throw Exception('Ошибка ${response.statusCode}: ${response.body}');
       }
@@ -7964,6 +7935,20 @@ class ApiService {
       debugPrint('ApiService.getMessages error: $e');
       rethrow;
     }
+  }
+
+  Future<List<Message>> getMessages(
+    int chatId, {
+    String? search,
+    String? chatType,
+  }) async {
+    final page = await getMessagesPage(
+      chatId,
+      page: 1,
+      search: search,
+      chatType: chatType,
+    );
+    return page.data;
   }
 
   Future<void> closeChatSocket(int chatId) async {

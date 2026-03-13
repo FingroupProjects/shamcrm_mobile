@@ -78,8 +78,9 @@ class ChatSmsScreen extends StatefulWidget {
 }
 
 class _ChatSmsScreenState extends State<ChatSmsScreen> {
-  final ScrollController _scrollController = ScrollController();
   final ItemScrollController _scrollControllerMessage = ItemScrollController();
+  final ItemPositionsListener _itemPositionsListener =
+      ItemPositionsListener.create();
   final TextEditingController _messageController = TextEditingController();
   final AudioPlayer _audioPlayer = AudioPlayer();
   final FocusNode _focusNode = FocusNode();
@@ -88,16 +89,16 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
   late PusherChannelsClient socketClient;
   final ApiService apiService = ApiService();
   late String baseUrl;
-  String? _currentDate;
   bool _canCreateChat = false;
   bool _isRequestInProgress = false;
   int? _highlightedMessageId;
   bool _isMenuOpen = false;
   bool _isSearching = false;
   String? _searchQuery;
+  Timer? _searchDebounce;
   String? integrationUsername;
   String? channelName;
-  bool _hasMarkedMessagesAsRead = false;
+  int? _lastMarkedMessageId;
   bool _isRecordingInProgress = false;
   String? referralBody;
   ChatsBloc? _chatsBloc;
@@ -117,6 +118,8 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
   String? _instagramResponseType; // direct | comment
   final Set<int> _expandedPostIds = {};
   final MessageReactionApiService _reactionApi = MessageReactionApiService();
+  bool _isNearBottom = true;
+  bool _isLoadingOlderFromScroll = false;
 
   bool get _canUseReactionsInCurrentChat {
     final isLeadWith24hRestriction =
@@ -487,14 +490,14 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
       if (payload.trim().isEmpty) {
         context
             .read<MessagingCubit>()
-            .getMessages(widget.chatId, chatType: widget.endPointInTab);
+            .refreshLatestPage(widget.chatId, chatType: widget.endPointInTab);
         return;
       }
       final decoded = json.decode(payload);
       if (decoded is! Map) {
         context
             .read<MessagingCubit>()
-            .getMessages(widget.chatId, chatType: widget.endPointInTab);
+            .refreshLatestPage(widget.chatId, chatType: widget.endPointInTab);
         return;
       }
       final normalizedPayload =
@@ -515,7 +518,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
       );
       context
           .read<MessagingCubit>()
-          .getMessages(widget.chatId, chatType: widget.endPointInTab);
+          .refreshLatestPage(widget.chatId, chatType: widget.endPointInTab);
     }
   }
 
@@ -701,19 +704,8 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
 
   Message? _findMessageByIdInState(int messageId) {
     final state = context.read<MessagingCubit>().state;
-    List<Message>? source;
-
-    if (state is MessagesLoadedState) {
-      source = state.messages;
-    } else if (state is PinnedMessagesState) {
-      source = state.messages;
-    } else if (state is EditingMessageState) {
-      source = state.messages;
-    } else if (state is ReplyingToMessageState) {
-      source = state.messages;
-    }
-
-    if (source == null) return null;
+    if (state is! MessagesCollectionState) return null;
+    final source = state.messages;
     for (final message in source) {
       if (message.id == messageId) return message;
     }
@@ -802,8 +794,81 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
     setState(() {
       _searchQuery = query;
     });
-    context.read<MessagingCubit>().getMessages(widget.chatId,
-        search: query, chatType: widget.endPointInTab);
+
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(const Duration(milliseconds: 300), () {
+      if (!mounted) return;
+      context.read<MessagingCubit>().resetAndSearch(
+            widget.chatId,
+            search: query,
+            chatType: widget.endPointInTab,
+          );
+    });
+  }
+
+  void _handleVisiblePositionsChanged() {
+    if (!mounted) return;
+
+    final positions = _itemPositionsListener.itemPositions.value;
+    if (positions.isEmpty) return;
+
+    final isNearBottomNow = positions.any(
+      (position) => position.index <= 1 && position.itemTrailingEdge > 0,
+    );
+    _isNearBottom = isNearBottomNow;
+
+    final currentState = context.read<MessagingCubit>().state;
+    if (currentState is! MessagesCollectionState) {
+      return;
+    }
+
+    final maxVisibleIndex = positions
+        .map((position) => position.index)
+        .reduce((value, element) => value > element ? value : element);
+
+    if (maxVisibleIndex >= currentState.messages.length - 3) {
+      _loadOlderMessagesFromScroll();
+    }
+
+    if (_isNearBottom) {
+      _markMessagesAsRead();
+    }
+  }
+
+  Future<void> _loadOlderMessagesFromScroll() async {
+    final currentState = context.read<MessagingCubit>().state;
+    if (currentState is! MessagesCollectionState ||
+        _isLoadingOlderFromScroll ||
+        currentState.isLoadingInitial ||
+        currentState.isLoadingMore ||
+        currentState.isFromCache ||
+        currentState.hasReachedMax) {
+      return;
+    }
+
+    _isLoadingOlderFromScroll = true;
+    try {
+      await context.read<MessagingCubit>().loadOlderPage(
+            widget.chatId,
+            chatType: widget.endPointInTab,
+          );
+    } finally {
+      _isLoadingOlderFromScroll = false;
+    }
+  }
+
+  Future<void> _scrollToBottom({
+    bool force = false,
+  }) async {
+    if (!_scrollControllerMessage.isAttached) return;
+    if (!force && !_isNearBottom) return;
+
+    await _scrollControllerMessage.scrollTo(
+      index: 0,
+      alignment: 0,
+      duration: const Duration(milliseconds: 220),
+      curve: Curves.easeOut,
+    );
   }
 
   Future<void> _checkPermissions() async {
@@ -832,6 +897,8 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
     _chatsBloc = context.read<ChatsBloc>();
     _messagingCubit = context
         .read<MessagingCubit>(); // Сохраняем ссылку для использования в dispose
+    _itemPositionsListener.itemPositions
+        .addListener(_handleVisiblePositionsChanged);
 
     // ✅ КРИТИЧНО: Устанавливаем этот чат как активный
     // Это нужно, чтобы при обновлении через сокет не инкрементировать счетчик
@@ -858,7 +925,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
       await _initializeBaseUrl();
       context
           .read<MessagingCubit>()
-          .getMessages(widget.chatId, chatType: widget.endPointInTab);
+          .loadInitialPage(widget.chatId, chatType: widget.endPointInTab);
     } catch (e) {
       debugPrint('Retry failed: $e');
       if (mounted) {
@@ -1050,7 +1117,9 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
 
         // ✅ Скроллим вниз после небольшой задержки (чтобы UI успел отрисоваться)
         Future.delayed(const Duration(milliseconds: 100), () {
-          if (mounted) _scrollToBottom();
+          if (mounted) {
+            _scrollToBottom(force: true);
+          }
         });
       } else {
         debugPrint(
@@ -1143,24 +1212,23 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
       debugPrint('🌐 ChatSmsScreen: Fetching fresh messages from API...');
 
       final messagingCubit = context.read<MessagingCubit>();
-      await messagingCubit.getMessagesWithFallback(widget.chatId,
-          chatType: widget.endPointInTab);
+      await messagingCubit.loadInitialPage(
+        widget.chatId,
+        chatType: widget.endPointInTab,
+      );
 
       // ✅ Сохраняем в кэш после успешной загрузки
       final state = messagingCubit.state;
-      if (state is MessagesLoadedState && state.messages.isNotEmpty) {
+      if (state is MessagesCollectionState && state.messages.isNotEmpty) {
         await _cacheService.cacheMessages(widget.chatId, state.messages);
         debugPrint(
             '=================-=== ✅ ChatSmsScreen: Cached ${state.messages.length} fresh messages');
-      } else if (state is PinnedMessagesState && state.messages.isNotEmpty) {
-        await _cacheService.cacheMessages(widget.chatId, state.messages);
-        debugPrint(
-            '=================-=== ✅ ChatSmsScreen: Cached ${state.messages.length} fresh messages (with pins)');
       }
 
-      // ✅ Скроллим вниз после небольшой задержки
       Future.delayed(const Duration(milliseconds: 100), () {
-        if (mounted) _scrollToBottom();
+        if (mounted) {
+          _scrollToBottom();
+        }
       });
     } catch (e) {
       debugPrint(
@@ -1284,50 +1352,25 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
   }
 
   Future<void> _markMessagesAsRead() async {
-    if (_hasMarkedMessagesAsRead) {
-      if (kDebugMode) {
-        //print('ChatSmsScreen: _markMessagesAsRead уже вызван, пропускаем');
-      }
-      return;
-    }
-
     final state = context.read<MessagingCubit>().state;
-    if (kDebugMode) {
-      //print('ChatSmsScreen: Текущее состояние в _markMessagesAsRead: $state');
-    }
-    List<Message> messages = [];
-    if (state is MessagesLoadedState) {
-      messages = state.messages;
-    } else if (state is PinnedMessagesState) {
-      messages = state.messages;
-    }
+    if (state is! MessagesCollectionState || !_isNearBottom) return;
 
-    if (kDebugMode) {
-      //print('ChatSmsScreen: Количество сообщений: ${messages.length}');
-    }
+    List<Message> messages = [];
+    messages = state.messages;
 
     bool hasUnreadMessages = messages.any((msg) => !msg.isRead);
     if (messages.isNotEmpty && hasUnreadMessages) {
       final latestMessageId = messages.first.id;
-      if (kDebugMode) {
-        //print('ChatSmsScreen: Пометка сообщений как прочитанных, chatId: ${widget.chatId}, latestMessageId: $latestMessageId');
+      if (_lastMarkedMessageId == latestMessageId) {
+        return;
       }
       try {
         await widget.apiService.readMessages(widget.chatId, latestMessageId);
-        if (kDebugMode) {
-          //print('ChatSmsScreen: Сообщения успешно помечены как прочитанные');
-        }
-        _hasMarkedMessagesAsRead = true;
+        _lastMarkedMessageId = latestMessageId;
       } catch (e) {
-        if (kDebugMode) {
-          //print('ChatSmsScreen: Ошибка при пометке сообщений как прочитанных: $e');
-        }
+        debugPrint(
+            'ChatSmsScreen: Ошибка при пометке сообщений как прочитанными: $e');
       }
-    } else {
-      if (kDebugMode) {
-        //print('ChatSmsScreen: Нет непрочитанных сообщений или список пуст');
-      }
-      _hasMarkedMessagesAsRead = true;
     }
   }
 
@@ -1596,25 +1639,21 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
     return -1;
   }
 
-  void _scrollToMessageIndex(DateTime selectedDate) {
-    final state = context.read<MessagingCubit>().state;
-    if (state is MessagesLoadedState || state is PinnedMessagesState) {
-      final messages = state is MessagesLoadedState
-          ? state.messages
-          : (state as PinnedMessagesState).messages;
+  Future<void> _scrollToMessageIndex(DateTime selectedDate) async {
+    int messageIndex = -1;
 
-      final messageIndex = _findMessageIndexByDate(messages, selectedDate);
+    while (mounted) {
+      final state = context.read<MessagingCubit>().state;
+      if (state is! MessagesCollectionState) {
+        return;
+      }
 
+      messageIndex = _findMessageIndexByDate(state.messages, selectedDate);
       if (messageIndex != -1) {
-        debugPrint(
-            'Scrolling to index: $messageIndex for date: ${formatDate(selectedDate)}');
-        _scrollControllerMessage.scrollTo(
-          index: messageIndex,
-          alignment: 0.0,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeInOut,
-        );
-      } else {
+        break;
+      }
+
+      if (state.hasReachedMax) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
@@ -1629,8 +1668,23 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
             duration: const Duration(seconds: 3),
           ),
         );
+        return;
       }
+
+      await context.read<MessagingCubit>().loadOlderPage(
+            widget.chatId,
+            chatType: widget.endPointInTab,
+          );
     }
+
+    if (!_scrollControllerMessage.isAttached || messageIndex == -1) return;
+
+    await _scrollControllerMessage.scrollTo(
+      index: messageIndex,
+      alignment: 0.1,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+    );
   }
 
   bool isSameDay(DateTime date1, DateTime date2) {
@@ -1761,8 +1815,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
         if (kDebugMode) {
           //print('ChatSmsScreen: Слушатель MessagingCubit, текущее состояние: $state');
         }
-        if ((state is MessagesLoadedState || state is PinnedMessagesState) &&
-            !_hasMarkedMessagesAsRead) {
+        if (state is MessagesCollectionState) {
           _markMessagesAsRead();
         }
       },
@@ -1771,7 +1824,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
           if (state is DeleteMessageSuccess) {
             context
                 .read<MessagingCubit>()
-                .getMessages(widget.chatId, chatType: widget.endPointInTab);
+                .removeMessageLocally(state.messageId);
             if (widget.endPointInTab == 'task' ||
                 widget.endPointInTab == 'corporate') {
               final chatsBloc = context.read<ChatsBloc>();
@@ -1815,8 +1868,12 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
                       _searchQuery = null;
                     });
                     if (!_isSearching) {
-                      context.read<MessagingCubit>().getMessages(widget.chatId,
-                          chatType: widget.endPointInTab);
+                      _searchDebounce?.cancel();
+                      context.read<MessagingCubit>().resetAndSearch(
+                            widget.chatId,
+                            search: null,
+                            chatType: widget.endPointInTab,
+                          );
                     }
                   },
                 ),
@@ -2024,35 +2081,55 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
     );
   }
 
-  void _scrollToMessageReply(int messageId) {
-    final state = context.read<MessagingCubit>().state;
-    if (state is MessagesLoadedState || state is PinnedMessagesState) {
-      final messages = state is MessagesLoadedState
-          ? state.messages
-          : (state as PinnedMessagesState).messages;
+  Future<void> _scrollToMessageReply(int messageId) async {
+    int messageIndex = -1;
 
-      final messageIndex = messages.indexWhere((msg) => msg.id == messageId);
+    while (mounted) {
+      final state = context.read<MessagingCubit>().state;
+      if (state is! MessagesCollectionState) {
+        return;
+      }
 
+      messageIndex = state.messages.indexWhere((msg) => msg.id == messageId);
       if (messageIndex != -1) {
-        _scrollControllerMessage.scrollTo(
-          index: messageIndex,
-          duration: const Duration(milliseconds: 1),
-          curve: Curves.easeInOut,
+        break;
+      }
+
+      if (state.hasReachedMax) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Не удалось найти сообщение в загруженной истории'),
+            backgroundColor: Colors.red,
+          ),
         );
+        return;
+      }
 
+      await context.read<MessagingCubit>().loadOlderPage(
+            widget.chatId,
+            chatType: widget.endPointInTab,
+          );
+    }
+
+    if (!_scrollControllerMessage.isAttached || messageIndex == -1) return;
+
+    await _scrollControllerMessage.scrollTo(
+      index: messageIndex,
+      duration: const Duration(milliseconds: 180),
+      curve: Curves.easeInOut,
+    );
+
+    setState(() {
+      _highlightedMessageId = messageId;
+    });
+
+    Future.delayed(const Duration(seconds: 3), () {
+      if (mounted && _highlightedMessageId == messageId) {
         setState(() {
-          _highlightedMessageId = messageId;
-        });
-
-        Future.delayed(const Duration(seconds: 3), () {
-          if (mounted && _highlightedMessageId == messageId) {
-            setState(() {
-              _highlightedMessageId = null;
-            });
-          }
+          _highlightedMessageId = null;
         });
       }
-    }
+    });
   }
 
   Widget messageListUi() {
@@ -2200,25 +2277,10 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
         if (state is MessagesLoadingState) {
           return Center(child: CircularProgressIndicator.adaptive());
         }
-        if (state is MessagesLoadedState ||
-            state is ReplyingToMessageState ||
-            state is PinnedMessagesState ||
-            state is EditingMessageState) {
-          final messages = state is MessagesLoadedState
-              ? state.messages
-              : state is ReplyingToMessageState
-                  ? state.messages
-                  : state is PinnedMessagesState
-                      ? state.messages
-                      : (state as EditingMessageState).messages;
+        if (state is MessagesCollectionState) {
+          final messages = state.messages;
           debugPrint('messageListUi: Rendering ${messages.length} messages');
-          final pinnedMessages = state is PinnedMessagesState
-              ? state.pinnedMessages
-              : state is ReplyingToMessageState
-                  ? state.pinnedMessages
-                  : state is EditingMessageState
-                      ? state.pinnedMessages
-                      : [];
+          final pinnedMessages = state.pinnedMessages;
 
           if (messages.isEmpty) {
             return Center(
@@ -2249,9 +2311,23 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
                   ),
                   child: ScrollablePositionedList.builder(
                     itemScrollController: _scrollControllerMessage,
-                    itemCount: messages.length,
+                    itemPositionsListener: _itemPositionsListener,
+                    itemCount: messages.length + (state.isLoadingMore ? 1 : 0),
                     reverse: true,
                     itemBuilder: (context, index) {
+                      if (index >= messages.length) {
+                        return const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 12),
+                          child: Center(
+                            child: SizedBox(
+                              width: 22,
+                              height: 22,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                          ),
+                        );
+                      }
+
                       final message = messages[index];
                       final messageDate =
                           DateTime.parse(message.createMessateTime).toLocal();
@@ -2338,7 +2414,8 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
                           focusNode: _focusNode,
                           isRead: message.isRead,
                           isFirstMessage: isFirstMessage,
-                          referralBody: referralBody,
+                          referralBody:
+                              state.hasReachedMax ? referralBody : null,
                           isGroupChat: _isGroupChat,
                           chatChannelName: channelName,
                           companionName: _cachedCompanionName ??
@@ -2483,6 +2560,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
               );
 
               context.read<MessagingCubit>().addLocalMessage(tempMessage);
+              _scrollToBottom(force: true);
 
               await _playSound();
 
@@ -2748,78 +2826,8 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
               '=================-=== ⚠️ CHAT_SMS: Different chat, ignoring');
           return;
         }
-
-        if (mounted) {
-          debugPrint(
-              '=================-=== 🔔 CHAT_SMS: ✅ RELOADING messages...');
-          context
-              .read<MessagingCubit>()
-              .getMessages(widget.chatId, chatType: widget.endPointInTab);
-
-          Future.delayed(Duration(milliseconds: 300), () {
-            if (mounted) _scrollToBottom();
-          });
-
-          final lastMessage = chatData?['lastMessage'];
-
-          if (lastMessage != null) {
-            // ✅ КРИТИЧНО: Извлекаем is_my_message с проверкой на разные форматы
-            bool? isMyMessageFromServer;
-            if (lastMessage['is_my_message'] != null) {
-              final isMyMsgValue = lastMessage['is_my_message'];
-              if (isMyMsgValue is bool) {
-                isMyMessageFromServer = isMyMsgValue;
-              } else if (isMyMsgValue is int) {
-                isMyMessageFromServer = isMyMsgValue == 1;
-              } else if (isMyMsgValue is String) {
-                isMyMessageFromServer =
-                    isMyMsgValue.toLowerCase() == 'true' || isMyMsgValue == '1';
-              }
-              debugPrint(
-                  '=================-=== 🔍🔍🔍 ChatUpdated: is_my_message извлечено: $isMyMessageFromServer (тип: ${isMyMsgValue.runtimeType})');
-            } else {
-              debugPrint(
-                  '=================-=== ⚠️⚠️⚠️ ChatUpdated: is_my_message ОТСУТСТВУЕТ в lastMessage!');
-            }
-            debugPrint(
-                '=================-=== 🔔 CHAT_SMS: lastMessage.is_my_message=$isMyMessageFromServer ⭐⭐⭐');
-
-            final prefs = await SharedPreferences.getInstance();
-            final myUserId = prefs.getString('userID') ?? '';
-            final isLeadChat = widget.endPointInTab == 'lead';
-
-            String? senderId = lastMessage['sender']?['id']?.toString();
-            String? senderType = lastMessage['sender']?['type']?.toString();
-            String? senderName = lastMessage['sender']?['name']?.toString();
-
-            bool isMyMessage = await _determineIsMyMessage(
-              messageSenderId: senderId,
-              messageSenderType: senderType,
-              messageSenderName: senderName,
-              myUserId: myUserId,
-              isLeadChat: isLeadChat,
-              isMyMessageFromServer: isMyMessageFromServer,
-            );
-
-            debugPrint(
-                '=================-=== 🔔 CHAT_SMS: Determined isMyMessage=$isMyMessage');
-
-            if (!isMyMessage) {
-              try {
-                await _audioPlayer.setAsset('assets/audio/get.mp3');
-                await _audioPlayer.play();
-                debugPrint(
-                    '=================-=== 🔊 CHAT_SMS (ChatUpdated): Played sound');
-              } catch (e) {
-                debugPrint(
-                    '=================-=== ⚠️ CHAT_SMS: Sound error: $e');
-              }
-            }
-          }
-
-          debugPrint(
-              '=================-=== ✅ CHAT_SMS (ChatUpdated): Handled successfully');
-        }
+        debugPrint(
+            '=================-=== ℹ️ CHAT_SMS: chat.updated received for active chat, skipping history reload');
       } catch (e, stackTrace) {
         debugPrint('=================-=== ❌ CHAT_SMS (ChatUpdated): ERROR: $e');
         _logSocketEventToInspector(
@@ -2968,7 +2976,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
 
         if (mounted) {
           debugPrint('📡 [SOCKET] Dispatching message to MessagingCubit...');
-          context.read<MessagingCubit>().updateMessageFromSocket(msg);
+          context.read<MessagingCubit>().mergeIncomingMessage(msg);
         }
 
         if (!msg.isMyMessage) {
@@ -2978,7 +2986,12 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
               .catchError((e) => debugPrint('⚠️ Sound error: $e'));
         }
 
-        _scrollToBottom();
+        if (msg.isMyMessage || _isNearBottom) {
+          _scrollToBottom(force: true);
+          if (!msg.isMyMessage) {
+            _markMessagesAsRead();
+          }
+        }
         debugPrint('✅ [SOCKET] chat.message processing FINISHED');
         debugPrint(
             '======================================================================');
@@ -3219,13 +3232,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
             if (messageId != null) {
               bool alreadyExists = false;
               final state = context.read<MessagingCubit>().state;
-              if (state is MessagesLoadedState) {
-                alreadyExists =
-                    state.messages.any((msg) => msg.id == messageId);
-              } else if (state is PinnedMessagesState) {
-                alreadyExists =
-                    state.messages.any((msg) => msg.id == messageId);
-              } else if (state is EditingMessageState) {
+              if (state is MessagesCollectionState) {
                 alreadyExists =
                     state.messages.any((msg) => msg.id == messageId);
               }
@@ -3297,7 +3304,13 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
                 if (mounted) {
                   context
                       .read<MessagingCubit>()
-                      .updateMessageFromSocket(newMessage);
+                      .mergeIncomingMessage(newMessage);
+                  if (isMyMessage || _isNearBottom) {
+                    _scrollToBottom(force: true);
+                    if (!isMyMessage) {
+                      _markMessagesAsRead();
+                    }
+                  }
                 }
 
                 if (!isMyMessage) {
@@ -3486,16 +3499,6 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
         '=================-=== 🔌 ChatSmsScreen: setUpServices() COMPLETED');
   }
 
-  void _scrollToBottom() {
-    if (_scrollController.hasClients) {
-      _scrollController.animateTo(
-        _scrollController.position.pixels,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeOut,
-      );
-    }
-  }
-
   Future<void> _onSendInButton(
       String messageText, String? replyMessageId) async {
     if (messageText.trim().isNotEmpty) {
@@ -3511,6 +3514,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
         );
 
         context.read<MessagingCubit>().addLocalMessage(localMessage);
+        _scrollToBottom(force: true);
 
         await _playSound();
 
@@ -3632,6 +3636,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
     );
 
     context.read<MessagingCubit>().addLocalMessage(localMessage);
+    _scrollToBottom(force: true);
     await _playSound();
 
     await widget.apiService.sendChatFile(
@@ -3640,23 +3645,6 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
       responseType: _isInstagramCommentChannel ? _instagramResponseType : null,
     );
     context.read<ListenSenderFileCubit>().updateValue(false);
-  }
-
-  void _onScroll() {
-    if (_scrollController.hasClients) {
-      final position = _scrollController.position;
-      final viewportOffset = position.pixels;
-      final viewportExtent = position.viewportDimension;
-      for (final entry in _messagePositions.entries) {
-        if (viewportOffset < entry.value &&
-            entry.value < viewportOffset + viewportExtent) {
-          setState(() {
-            _currentDate = entry.key;
-          });
-          break;
-        }
-      }
-    }
   }
 
   @override
@@ -3692,8 +3680,9 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
     }
 
     // ✅ ШАГ 5: Освобождаем ресурсы контроллеров и фокус-ноды
-    _scrollController.removeListener(_onScroll);
-    _scrollController.dispose();
+    _searchDebounce?.cancel();
+    _itemPositionsListener.itemPositions
+        .removeListener(_handleVisiblePositionsChanged);
     _messageController.dispose();
     socketClient.dispose();
     _focusNode.dispose();
@@ -3726,9 +3715,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
       final state = _messagingCubit!.state;
       List<Message> messages = [];
 
-      if (state is MessagesLoadedState) {
-        messages = state.messages;
-      } else if (state is PinnedMessagesState) {
+      if (state is MessagesCollectionState) {
         messages = state.messages;
       }
 
@@ -3758,12 +3745,6 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
     }
   }
 }
-
-extension on Key? {
-  get currentContext => null;
-}
-
-final Map<String, double> _messagePositions = {};
 
 class MessageItemWidget extends StatelessWidget {
   final Message message;
