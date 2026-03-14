@@ -33,7 +33,6 @@ import 'package:crm_task_manager/bloc/task/task_event.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/models/organization_model.dart';
 import 'package:crm_task_manager/notification_cache.dart';
-import 'package:crm_task_manager/screens/auth/login_screen.dart';
 import 'package:crm_task_manager/screens/deal/deal_cache.dart';
 import 'package:crm_task_manager/screens/lead/lead_cache.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
@@ -41,11 +40,11 @@ import 'package:crm_task_manager/screens/profile/profile_widget/biometric.dart';
 import 'package:crm_task_manager/screens/profile/profile_widget/biometric_toggle.dart';
 import 'package:crm_task_manager/screens/profile/profile_widget/edit_profile_button.dart';
 import 'package:crm_task_manager/screens/profile/languages/languages.dart';
-import 'package:crm_task_manager/screens/profile/profile_widget/phone_call_widget.dart';
 import 'package:crm_task_manager/screens/profile/profile_widget/profile_button_1c.dart';
 import 'package:crm_task_manager/screens/profile/profile_widget/switch_button.dart';
+import 'package:crm_task_manager/screens/profile/profile_widget/theme_mode_button.dart';
 import 'package:crm_task_manager/screens/task/task_cache.dart';
-import 'package:crm_task_manager/utils/TutorialStyleWidget.dart';
+import 'package:crm_task_manager/theme/theme_context_extensions.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -65,7 +64,7 @@ class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
 
   @override
-  _ProfileScreenState createState() => _ProfileScreenState();
+  State<ProfileScreen> createState() => _ProfileScreenState();
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
@@ -386,7 +385,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
+    final colors = context.appColors;
+    final textTheme = Theme.of(context).textTheme;
     return Scaffold(
+      backgroundColor: colors.screenBackground,
       body: SafeArea(
         child: Stack(
           children: [
@@ -426,6 +428,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               ),
                               ProfileEdit(),
                               LanguageButtonWidget(),
+                              const ThemeModeButtonWidget(),
                               PinChangeWidget(),
                               LogoutButtonWidget(),
                               if (_hasPermissionToAddLeadAndSwitch)
@@ -440,11 +443,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 child: Text(
                                   '${AppLocalizations.of(context)!.translate('version_mobile')}: $_appVersion',
                                   textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    fontFamily: 'Gilroy',
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w500,
-                                    color: Color.fromARGB(255, 6, 44, 231),
+                                  style: textTheme.bodySmall?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                    color: colors.textBrand,
                                     decoration: TextDecoration.none,
                                   ),
                                 ),
@@ -477,7 +478,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               Icon(
                                 Icons.error_outline,
                                 size: 80,
-                                color: Colors.red.shade400,
+                                color: colors.error,
                               ),
                               const SizedBox(height: 20),
                               Padding(
@@ -486,11 +487,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 child: Text(
                                   state.message,
                                   textAlign: TextAlign.center,
-                                  style: const TextStyle(
-                                      fontFamily: 'Gilroy',
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.w500,
-                                      color: Colors.black87),
+                                  style: textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.w500,
+                                    color: colors.textPrimary,
+                                  ),
                                 ),
                               ),
                               const SizedBox(height: 30),

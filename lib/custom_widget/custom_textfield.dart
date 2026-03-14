@@ -1,4 +1,5 @@
 import 'dart:io' show Platform;
+import 'package:crm_task_manager/theme/theme_context_extensions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -17,7 +18,7 @@ class CustomTextField extends StatefulWidget {
   final Function(String)? onChanged;
   final String? errorText;
   final bool hasError;
-  final Color backgroundColor;
+  final Color? backgroundColor;
   final bool? enabled;
   final bool showEditButton;
   final VoidCallback? onEditPressed;
@@ -39,7 +40,7 @@ class CustomTextField extends StatefulWidget {
     this.errorText,
     this.enabled,
     this.hasError = false,
-    this.backgroundColor = const Color(0xffF4F7FD),
+    this.backgroundColor,
     this.showEditButton = false,
     this.onEditPressed,
     this.textAlign = TextAlign.start, // ← Добавили
@@ -100,13 +101,14 @@ class _CustomTextFieldState extends State<CustomTextField> {
 
   // ← Новый метод: виджет тулбара
   Widget _buildKeyboardToolbar() {
+    final colors = context.appColors;
     return Container(
       height: 44,
       decoration: BoxDecoration(
-        color: const Color(0xFFD1D5DB).withOpacity(0.95),
-        border: const Border(
+        color: colors.surfaceElevated.withValues(alpha: 0.98),
+        border: Border(
           top: BorderSide(
-            color: Color(0xFF9CA3AF),
+            color: colors.borderPrimary,
             width: 0.5,
           ),
         ),
@@ -120,12 +122,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
             },
             child: const Text(
               'Готово',
-              style: TextStyle(
-                fontFamily: 'Gilroy',
-                fontSize: 17,
-                fontWeight: FontWeight.w600,
-                color: Color(0xff4759FF),
-              ),
+              style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
             ),
           ),
           const SizedBox(width: 8),
@@ -146,6 +143,12 @@ class _CustomTextFieldState extends State<CustomTextField> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
+    final textTheme = Theme.of(context).textTheme;
+    final inputTheme = Theme.of(context).inputDecorationTheme;
+    final effectiveFillColor = widget.backgroundColor ??
+        inputTheme.fillColor ??
+        colors.inputBackground;
     final hasError = widget.errorText != null && widget.errorText!.isNotEmpty ||
         widget.hasError;
 
@@ -154,11 +157,8 @@ class _CustomTextFieldState extends State<CustomTextField> {
       children: [
         Text(
           widget.label,
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-            fontFamily: 'Gilroy',
-            color: const Color(0xff1E2E52),
+          style: textTheme.titleMedium?.copyWith(
+            color: colors.textPrimary,
           ),
         ),
         const SizedBox(height: 4),
@@ -174,52 +174,60 @@ class _CustomTextFieldState extends State<CustomTextField> {
           validator: widget.validator,
           onChanged: widget.onChanged,
           textAlign: widget.textAlign, // ← Используем новый параметр
+          style: textTheme.bodyMedium?.copyWith(color: colors.textPrimary),
           decoration: InputDecoration(
             hintText: widget.hintText,
-            hintStyle: const TextStyle(
-              fontFamily: 'Gilroy',
-              color: Color(0xff99A4BA),
-            ),
+            hintStyle:
+                textTheme.bodyMedium?.copyWith(color: colors.textTertiary),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide.none,
             ),
             filled: true,
-            fillColor: widget.backgroundColor,
+            fillColor: effectiveFillColor,
             contentPadding:
                 const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
             prefixIcon: widget.prefixIcon,
             suffixIcon: _buildSuffixIcon(),
             errorText: widget.errorText,
             errorMaxLines: 2,
-            errorStyle: const TextStyle(
-              fontSize: 14,
-              color: Colors.red,
-              fontWeight: FontWeight.w400,
+            errorStyle: textTheme.bodySmall?.copyWith(
+              color: colors.error,
+              fontWeight: FontWeight.w500,
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(
-                color: hasError ? Colors.red : Colors.transparent,
+                color: hasError ? colors.inputErrorBorder : colors.inputBorder,
               ),
             ),
             disabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(
-                color: hasError ? Colors.red : Colors.grey.shade300,
+                color:
+                    hasError ? colors.inputErrorBorder : colors.borderSecondary,
               ),
             ),
             errorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(
-                color: Colors.red,
+              borderSide: BorderSide(
+                color: colors.inputErrorBorder,
                 width: 1.5,
               ),
             ),
             focusedErrorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(
-                color: Colors.red,
+              borderSide: BorderSide(
+                color: colors.inputErrorBorder,
+                width: 1.5,
+              ),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(
+                color: hasError
+                    ? colors.inputErrorBorder
+                    : colors.inputFocusedBorder,
                 width: 1.5,
               ),
             ),
@@ -234,7 +242,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
       return IconButton(
         icon: Icon(
           Icons.edit,
-          color: Color(0xff4F40EC),
+          color: context.appColors.iconBrand,
           size: 20,
         ),
         onPressed: widget.onEditPressed,
@@ -248,7 +256,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
               : 'assets/icons/Profile/eye_close.png',
           width: 24,
           height: 24,
-          color: const Color(0xff99A4BA),
+          color: context.appColors.iconSecondary,
         ),
         onPressed: () {
           setState(() {

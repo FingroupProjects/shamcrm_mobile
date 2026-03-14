@@ -18,6 +18,8 @@ import 'package:crm_task_manager/screens/event/event_screen.dart';
 import 'package:crm_task_manager/screens/gps/background_location_service.dart';
 import 'package:crm_task_manager/screens/my-task/my_task_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/theme/theme_context_extensions.dart';
+import 'package:crm_task_manager/theme/theme_mode_selector_sheet.dart';
 import 'package:dart_pusher_channels/dart_pusher_channels.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
@@ -839,10 +841,16 @@ class _CustomAppBarState extends State<CustomAppBar>
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
+    final textTheme = Theme.of(context).textTheme;
+    final activeFilterColor = Theme.of(context).colorScheme.primary;
+    final effectiveIconColor =
+        _iconColor == Colors.blue ? activeFilterColor : colors.iconPrimary;
+
     return Container(
         width: double.infinity,
         height: kToolbarHeight,
-        color: Colors.white,
+        color: colors.surfacePrimary,
         padding: EdgeInsets.zero,
         child: Row(children: [
           // Аватар пользователя
@@ -863,11 +871,9 @@ class _CustomAppBarState extends State<CustomAppBar>
               child: widget.titleWidget ??
                   Text(
                     widget.title,
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xff1E2E52),
+                    style: textTheme.titleLarge?.copyWith(
+                      color: colors.textPrimary,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
             ),
@@ -885,8 +891,11 @@ class _CustomAppBarState extends State<CustomAppBar>
                     hintText: AppLocalizations.of(context)!
                         .translate('search_appbar'),
                     border: InputBorder.none,
+                    hintStyle: textTheme.bodyMedium
+                        ?.copyWith(color: colors.textTertiary),
                   ),
-                  style: TextStyle(fontSize: 16),
+                  style:
+                      textTheme.bodyMedium?.copyWith(color: colors.textPrimary),
                   autofocus: true,
                 ),
               ),
@@ -919,7 +928,7 @@ class _CustomAppBarState extends State<CustomAppBar>
                     'assets/icons/AppBar/filter.png',
                     width: 24,
                     height: 24,
-                    color: _iconColor, // Анимация цвета
+                    color: effectiveIconColor,
                   ),
                   onPressed: () {
                     setState(() {
@@ -1087,8 +1096,9 @@ class _CustomAppBarState extends State<CustomAppBar>
                     width: 24,
                     height: 24,
                     // ОБНОВЛЯЕМ: Цвет иконки зависит от активности фильтров
-                    color:
-                        widget.hasActiveChatFilters ? Colors.blue : _iconColor,
+                    color: widget.hasActiveChatFilters
+                        ? activeFilterColor
+                        : effectiveIconColor,
                   ),
                   onPressed: () {
                     setState(() {
@@ -1178,8 +1188,9 @@ class _CustomAppBarState extends State<CustomAppBar>
                     'assets/icons/AppBar/filter.png',
                     width: 24,
                     height: 24,
-                    color:
-                        widget.hasActiveChatFilters ? Colors.blue : _iconColor,
+                    color: widget.hasActiveChatFilters
+                        ? activeFilterColor
+                        : effectiveIconColor,
                   ),
                   onPressed: () {
                     setState(() {
@@ -1327,8 +1338,9 @@ class _CustomAppBarState extends State<CustomAppBar>
                   'assets/icons/AppBar/filter.png',
                   width: 24,
                   height: 24,
-                  color:
-                      widget.hasActiveEventFilters ? Colors.blue : _iconColor,
+                  color: widget.hasActiveEventFilters
+                      ? activeFilterColor
+                      : effectiveIconColor,
                 ),
                 onPressed: () {
                   Navigator.push(
@@ -1359,7 +1371,7 @@ class _CustomAppBarState extends State<CustomAppBar>
                   'assets/icons/AppBar/filter.png',
                   width: 24,
                   height: 24,
-                  color: _iconColor,
+                  color: effectiveIconColor,
                 ),
               ),
               onPressed: () {
@@ -1374,7 +1386,7 @@ class _CustomAppBarState extends State<CustomAppBar>
                   'assets/icons/AppBar/filter.png',
                   width: 24,
                   height: 24,
-                  color: _iconColor,
+                  color: effectiveIconColor,
                 ),
               ),
               onPressed: () {
@@ -1389,7 +1401,7 @@ class _CustomAppBarState extends State<CustomAppBar>
                   'assets/icons/AppBar/filter.png',
                   width: 24,
                   height: 24,
-                  color: _iconColor,
+                  color: effectiveIconColor,
                 ),
               ),
               onPressed: () {
@@ -1510,7 +1522,9 @@ class _CustomAppBarState extends State<CustomAppBar>
                       children: [
                         Icon(
                           Icons.more_vert,
-                          color: _areFiltersActive ? _iconColor : Colors.black,
+                          color: _areFiltersActive
+                              ? effectiveIconColor
+                              : colors.iconPrimary,
                         ),
                         if (_hasOverdueTasks)
                           Positioned(
@@ -1530,9 +1544,12 @@ class _CustomAppBarState extends State<CustomAppBar>
                           ),
                       ],
                     ),
-                    color: Colors.white,
+                    color: colors.surfaceElevated,
                     onSelected: (String value) {
                       switch (value) {
+                        case 'theme':
+                          showThemeModeSelectorSheet(context);
+                          break;
                         case 'filter_task':
                           navigateToTaskManagerFilterScreen(context);
                           break;
@@ -1592,14 +1609,30 @@ class _CustomAppBarState extends State<CustomAppBar>
                     },
                     itemBuilder: (BuildContext context) =>
                         <PopupMenuEntry<String>>[
+                          PopupMenuItem<String>(
+                            value: 'theme',
+                            child: Row(
+                              children: [
+                                Icon(Icons.palette_outlined,
+                                    color: colors.iconBrand),
+                                const SizedBox(width: 8),
+                                Text(
+                                  AppLocalizations.of(context)
+                                          ?.translate('theme_label') ??
+                                      'Тема',
+                                ),
+                              ],
+                            ),
+                          ),
                           if (widget.showDashboardChartSettingsMenuItem)
                             PopupMenuItem<String>(
                               value: 'dashboard_chart_settings',
                               child: Row(
                                 children: [
-                                  Icon(Icons.tune_rounded, color: _iconColor),
-                                  SizedBox(width: 8),
-                                  Text('Настройки CRM'),
+                                  Icon(Icons.tune_rounded,
+                                      color: effectiveIconColor),
+                                  const SizedBox(width: 8),
+                                  const Text('Настройки CRM'),
                                 ],
                               ),
                             ),
@@ -1613,10 +1646,10 @@ class _CustomAppBarState extends State<CustomAppBar>
                                     width: 24,
                                     height: 24,
                                     color: widget.hasActiveDashboardFilters
-                                        ? Colors.blue
-                                        : _iconColor,
+                                        ? activeFilterColor
+                                        : effectiveIconColor,
                                   ),
-                                  SizedBox(width: 8),
+                                  const SizedBox(width: 8),
                                   Text(AppLocalizations.of(context)!
                                       .translate('filtr')),
                                 ],
@@ -1628,16 +1661,17 @@ class _CustomAppBarState extends State<CustomAppBar>
                               child: Row(
                                 children: [
                                   _isFiltering
-                                      ? Icon(Icons.close, color: _iconColor)
+                                      ? Icon(Icons.close,
+                                          color: effectiveIconColor)
                                       : Image.asset(
                                           'assets/icons/AppBar/filter.png',
                                           width: 24,
                                           height: 24,
                                           color: widget.hasActiveLeadFilters
-                                              ? Colors.blue
-                                              : _iconColor,
+                                              ? activeFilterColor
+                                              : effectiveIconColor,
                                         ),
-                                  SizedBox(width: 8),
+                                  const SizedBox(width: 8),
                                   Text(AppLocalizations.of(context)!
                                       .translate('filtr')),
                                 ],
@@ -1649,14 +1683,15 @@ class _CustomAppBarState extends State<CustomAppBar>
                               child: Row(
                                 children: [
                                   _isFiltering
-                                      ? Icon(Icons.close, color: _iconColor)
+                                      ? Icon(Icons.close,
+                                          color: effectiveIconColor)
                                       : Image.asset(
                                           'assets/icons/AppBar/filter.png',
                                           width: 24,
                                           height: 24,
-                                          color: _iconColor,
+                                          color: effectiveIconColor,
                                         ),
-                                  SizedBox(width: 8),
+                                  const SizedBox(width: 8),
                                   Text(AppLocalizations.of(context)!
                                       .translate('filter')),
                                 ],
@@ -1667,8 +1702,8 @@ class _CustomAppBarState extends State<CustomAppBar>
                               value: 'events',
                               child: Row(
                                 children: [
-                                  Icon(Icons.event),
-                                  SizedBox(width: 8),
+                                  Icon(Icons.event, color: effectiveIconColor),
+                                  const SizedBox(width: 8),
                                   Text(AppLocalizations.of(context)!
                                       .translate('events')),
                                 ],
@@ -1680,16 +1715,17 @@ class _CustomAppBarState extends State<CustomAppBar>
                               child: Row(
                                 children: [
                                   _isTaskFiltering
-                                      ? Icon(Icons.close, color: _iconColor)
+                                      ? Icon(Icons.close,
+                                          color: effectiveIconColor)
                                       : Image.asset(
                                           'assets/icons/AppBar/filter.png',
                                           width: 24,
                                           height: 24,
                                           color: widget.hasActiveTaskFilters
-                                              ? Colors.blue
-                                              : _iconColor,
+                                              ? activeFilterColor
+                                              : effectiveIconColor,
                                         ),
-                                  SizedBox(width: 8),
+                                  const SizedBox(width: 8),
                                   Text(AppLocalizations.of(context)!
                                       .translate('filtr')),
                                 ],
@@ -1724,7 +1760,7 @@ class _CustomAppBarState extends State<CustomAppBar>
                                         ),
                                     ],
                                   ),
-                                  SizedBox(width: 8),
+                                  const SizedBox(width: 8),
                                   Text(AppLocalizations.of(context)!
                                       .translate('appbar_my_tasks')),
                                 ],
@@ -1740,7 +1776,7 @@ class _CustomAppBarState extends State<CustomAppBar>
                                     width: 24,
                                     height: 24,
                                   ),
-                                  SizedBox(width: 8),
+                                  const SizedBox(width: 8),
                                   Text(AppLocalizations.of(context)!
                                       .translate('calendar')),
                                 ],
@@ -1756,10 +1792,9 @@ class _CustomAppBarState extends State<CustomAppBar>
                                     'assets/icons/AppBar/call_center.png',
                                     width: 24,
                                     height: 24,
-                                    // Иконка колл-центра всегда черная, не реагирует на фильтры
-                                    color: Colors.black,
+                                    color: effectiveIconColor,
                                   ),
-                                  SizedBox(width: 8),
+                                  const SizedBox(width: 8),
                                   Text(AppLocalizations.of(context)!
                                       .translate('call_center')),
                                 ],

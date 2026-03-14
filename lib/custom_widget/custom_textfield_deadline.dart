@@ -1,4 +1,6 @@
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/theme/app_picker_theme.dart';
+import 'package:crm_task_manager/theme/theme_context_extensions.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -36,13 +38,15 @@ class CustomTextFieldDate extends StatelessWidget {
   Future<void> _selectDate(BuildContext context) async {
     DateTime initialDate = DateTime.now();
     TimeOfDay initialTime = TimeOfDay.now();
-    
+
     if (controller.text.isNotEmpty) {
       try {
         if (withTime) {
-          final parsedDateTime = DateFormat('dd/MM/yyyy HH:mm').parse(controller.text);
+          final parsedDateTime =
+              DateFormat('dd/MM/yyyy HH:mm').parse(controller.text);
           initialDate = parsedDateTime;
-          initialTime = TimeOfDay(hour: parsedDateTime.hour, minute: parsedDateTime.minute);
+          initialTime = TimeOfDay(
+              hour: parsedDateTime.hour, minute: parsedDateTime.minute);
         } else {
           initialDate = DateFormat('dd/MM/yyyy').parse(controller.text);
         }
@@ -50,7 +54,7 @@ class CustomTextFieldDate extends StatelessWidget {
         debugPrint('Ошибка парсинга даты: $e');
       }
     }
-    
+
     String formattedDate = DateFormat('dd/MM/yyyy').format(initialDate);
     final DateTime? pickedDate = await showDatePicker(
       context: context,
@@ -59,21 +63,15 @@ class CustomTextFieldDate extends StatelessWidget {
       cancelText: AppLocalizations.of(context)!.translate('back'),
       confirmText: AppLocalizations.of(context)!.translate('ok'),
       helpText: AppLocalizations.of(context)!.translate('select_date'),
-      errorFormatText: "${AppLocalizations.of(context)!.translate('error_example')}$formattedDate",
-      errorInvalidText: AppLocalizations.of(context)!.translate('invalid_format_date'),
+      errorFormatText:
+          "${AppLocalizations.of(context)!.translate('error_example')}$formattedDate",
+      errorInvalidText:
+          AppLocalizations.of(context)!.translate('invalid_format_date'),
       fieldLabelText: AppLocalizations.of(context)!.translate('enter_date'),
       firstDate: DateTime(1940),
       lastDate: DateTime(2101),
       builder: (BuildContext context, Widget? child) {
-        return Theme(
-          data: ThemeData.light().copyWith(
-            primaryColor: Colors.blue,
-            hintColor: Colors.blue,
-            colorScheme: ColorScheme.light(primary: Color(0xff1E2E52)),
-            dialogBackgroundColor: Colors.white,
-          ),
-          child: child ?? Container(),
-        );
+        return buildAppDatePickerTheme(context, child);
       },
     );
 
@@ -88,18 +86,7 @@ class CustomTextFieldDate extends StatelessWidget {
           minuteLabelText: AppLocalizations.of(context)!.translate('minute'),
           hourLabelText: AppLocalizations.of(context)!.translate('hour'),
           builder: (BuildContext context, Widget? child) {
-            return MediaQuery(
-              data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
-              child: Theme(
-                data: ThemeData.light().copyWith(
-                  primaryColor: Colors.blue,
-                  hintColor: Colors.blue,
-                  colorScheme: ColorScheme.light(primary: Color(0xff1E2E52)),
-                  dialogBackgroundColor: Colors.white,
-                ),
-                child: child ?? Container(),
-              ),
-            );
+            return buildAppTimePickerTheme(context, child);
           },
           initialEntryMode: TimePickerEntryMode.dial,
         );
@@ -113,7 +100,7 @@ class CustomTextFieldDate extends StatelessWidget {
             pickedTime.minute,
           );
           controller.text = DateFormat('dd/MM/yyyy HH:mm').format(dateTime);
-          
+
           if (onDateSelected != null) {
             onDateSelected!(controller.text);
           }
@@ -123,7 +110,7 @@ class CustomTextFieldDate extends StatelessWidget {
         }
       } else {
         controller.text = DateFormat('dd/MM/yyyy').format(pickedDate);
-        
+
         if (onDateSelected != null) {
           onDateSelected!(controller.text);
         }
@@ -136,17 +123,14 @@ class CustomTextFieldDate extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
+    final textTheme = Theme.of(context).textTheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           label,
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-            fontFamily: 'Gilroy',
-            color: Color(0xff1E2E52),
-          ),
+          style: textTheme.titleMedium?.copyWith(color: colors.textPrimary),
         ),
         const SizedBox(height: 8),
         GestureDetector(
@@ -159,7 +143,8 @@ class CustomTextFieldDate extends StatelessWidget {
               keyboardType: keyboardType,
               decoration: InputDecoration(
                 hintText: withTime ? '__/__/____ __:__' : '__/__/____',
-                hintStyle: const TextStyle(fontSize: 12),
+                hintStyle:
+                    textTheme.bodySmall?.copyWith(color: colors.textTertiary),
                 prefixIcon: Padding(
                   padding: const EdgeInsets.all(12),
                   child: SizedBox(
@@ -168,49 +153,51 @@ class CustomTextFieldDate extends StatelessWidget {
                     child: Image.asset(
                       'assets/icons/tabBar/date.png',
                       fit: BoxFit.contain,
+                      color: colors.iconSecondary,
                     ),
                   ),
                 ),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: hasError
-                      ? const BorderSide(color: Colors.red, width: 1.5)
-                      : const BorderSide(color: Colors.transparent),
+                      ? BorderSide(color: colors.inputErrorBorder, width: 1.5)
+                      : BorderSide(color: colors.inputBorder),
                 ),
-                errorStyle: const TextStyle(
-                  fontSize: 14,
-                  color: Colors.red,
-                  fontWeight: FontWeight.w400,
+                errorStyle: textTheme.bodySmall?.copyWith(
+                  color: colors.error,
+                  fontWeight: FontWeight.w500,
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: hasError
-                      ? const BorderSide(color: Colors.red, width: 1.5)
-                      : const BorderSide(color: Colors.transparent),
+                      ? BorderSide(color: colors.inputErrorBorder, width: 1.5)
+                      : BorderSide(color: colors.inputBorder),
                 ),
                 errorBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(
-                    color: Colors.red,
+                  borderSide: BorderSide(
+                    color: colors.inputErrorBorder,
                     width: 1.5,
                   ),
                 ),
                 focusedErrorBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(
-                    color: Colors.red,
+                  borderSide: BorderSide(
+                    color: colors.inputErrorBorder,
                     width: 1.5,
                   ),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: hasError
-                      ? const BorderSide(color: Colors.red, width: 1.5)
-                      : const BorderSide(color: Color(0xff4759FF), width: 1.5),
+                      ? BorderSide(color: colors.inputErrorBorder, width: 1.5)
+                      : BorderSide(
+                          color: colors.inputFocusedBorder, width: 1.5),
                 ),
                 filled: true,
-                fillColor: const Color(0xffF4F7FD),
-                contentPadding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+                fillColor: colors.inputBackground,
+                contentPadding:
+                    const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
               ),
             ),
           ),

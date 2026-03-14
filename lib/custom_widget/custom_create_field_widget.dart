@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/theme/app_picker_theme.dart';
+import 'package:crm_task_manager/theme/theme_context_extensions.dart';
 import 'package:intl/intl.dart';
 
 class CustomFieldWidget extends StatelessWidget {
@@ -9,8 +11,7 @@ class CustomFieldWidget extends StatelessWidget {
   final VoidCallback? onRemove;
   final bool isDirectory;
   final String? type;
-    final bool isCustomField; // Новый флаг
-
+  final bool isCustomField; // Новый флаг
 
   const CustomFieldWidget({
     Key? key,
@@ -19,22 +20,24 @@ class CustomFieldWidget extends StatelessWidget {
     this.onRemove,
     this.isDirectory = false,
     this.type,
-        this.isCustomField = false, // По умолчанию false
-
+    this.isCustomField = false, // По умолчанию false
   }) : super(key: key);
 
-  Future<void> _selectDate(BuildContext context, {bool withTime = false}) async {
+  Future<void> _selectDate(BuildContext context,
+      {bool withTime = false}) async {
     // Пытаемся получить дату из контроллера, если она уже выбрана
     DateTime initialDate = DateTime.now();
     TimeOfDay initialTime = TimeOfDay.now();
-    
+
     if (valueController.text.isNotEmpty) {
       try {
         if (withTime) {
           // Парсим дату и время в формате dd/MM/yyyy HH:mm
-          final parsedDateTime = DateFormat('dd/MM/yyyy HH:mm').parse(valueController.text);
+          final parsedDateTime =
+              DateFormat('dd/MM/yyyy HH:mm').parse(valueController.text);
           initialDate = parsedDateTime;
-          initialTime = TimeOfDay(hour: parsedDateTime.hour, minute: parsedDateTime.minute);
+          initialTime = TimeOfDay(
+              hour: parsedDateTime.hour, minute: parsedDateTime.minute);
         } else {
           // Парсим только дату в формате dd/MM/yyyy
           initialDate = DateFormat('dd/MM/yyyy').parse(valueController.text);
@@ -44,25 +47,14 @@ class CustomFieldWidget extends StatelessWidget {
         debugPrint('Ошибка парсинга даты: $e');
       }
     }
-    
+
     DateTime? pickedDate = await showDatePicker(
       context: context,
       initialDate: initialDate,
       firstDate: DateTime(1900),
       lastDate: DateTime(2100),
       builder: (context, child) {
-        return Theme(
-          data: ThemeData.light().copyWith(
-            colorScheme: ColorScheme.light(
-              primary: Color(0xff1E2E52),
-              onPrimary: Colors.white,
-              surface: Colors.white,
-              onSurface: Color(0xff1E2E52),
-            ),
-            dialogBackgroundColor: Colors.white,
-          ),
-          child: child!,
-        );
+        return buildAppDatePickerTheme(context, child);
       },
     );
 
@@ -72,15 +64,7 @@ class CustomFieldWidget extends StatelessWidget {
           context: context,
           initialTime: initialTime,
           builder: (context, child) {
-            return Theme(
-              data: ThemeData.light().copyWith(
-                colorScheme: ColorScheme.light(
-                  primary: Color(0xff1E2E52),
-                  onPrimary: Colors.white,
-                ),
-              ),
-              child: child!,
-            );
+            return buildAppTimePickerTheme(context, child);
           },
         );
         if (pickedTime != null) {
@@ -104,6 +88,8 @@ class CustomFieldWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
+    final textTheme = Theme.of(context).textTheme;
     TextInputType keyboardType;
     List<TextInputFormatter>? inputFormatters;
     bool readOnly = false;
@@ -129,7 +115,8 @@ class CustomFieldWidget extends StatelessWidget {
       default: // string
         keyboardType = TextInputType.text;
         inputFormatters = null;
-        hintText = AppLocalizations.of(context)!.translate('enter_textfield_text');
+        hintText =
+            AppLocalizations.of(context)!.translate('enter_textfield_text');
         break;
     }
 
@@ -141,11 +128,8 @@ class CustomFieldWidget extends StatelessWidget {
             children: [
               Text(
                 fieldName,
-                style: const TextStyle(
-                  fontWeight: FontWeight.w500,
-                  fontSize: 16,
-                  fontFamily: 'Gilroy',
-                  color: Color(0xff1E2E52),
+                style: textTheme.titleMedium?.copyWith(
+                  color: colors.textPrimary,
                 ),
               ),
               const SizedBox(height: 8),
@@ -160,16 +144,15 @@ class CustomFieldWidget extends StatelessWidget {
                       : null,
                   decoration: InputDecoration(
                     hintText: hintText, // Используем динамическую подсказку
-                    hintStyle: const TextStyle(
-                      fontFamily: 'Gilroy',
-                      color: Color(0xff99A4BA),
+                    hintStyle: textTheme.bodyMedium?.copyWith(
+                      color: colors.textTertiary,
                     ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide.none,
                     ),
                     filled: true,
-                    fillColor: const Color(0xffF4F7FD),
+                    fillColor: colors.inputBackground,
                     contentPadding: const EdgeInsets.symmetric(
                       vertical: 10,
                       horizontal: 12,
@@ -181,15 +164,13 @@ class CustomFieldWidget extends StatelessWidget {
                   padding:
                       const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
                   decoration: BoxDecoration(
-                    color: const Color(0xffF4F7FD),
+                    color: colors.inputBackground,
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
                     fieldName,
-                    style: const TextStyle(
-                      fontFamily: 'Gilroy',
-                      fontSize: 16,
-                      color: Color(0xff1E2E52),
+                    style: textTheme.bodyMedium?.copyWith(
+                      color: colors.textPrimary,
                     ),
                   ),
                 ),
@@ -197,13 +178,13 @@ class CustomFieldWidget extends StatelessWidget {
           ),
         ),
         if (onRemove != null)
-        IconButton(
-          icon: const Icon(
-            Icons.remove_circle,
-            color: Color.fromARGB(255, 236, 64, 16),
+          IconButton(
+            icon: Icon(
+              Icons.remove_circle,
+              color: colors.error,
+            ),
+            onPressed: onRemove,
           ),
-          onPressed: onRemove,
-        ),
       ],
     );
   }

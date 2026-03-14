@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:new_version_plus/new_version_plus.dart';
+import 'package:crm_task_manager/theme/theme_context_extensions.dart';
 
 class UpdateDialog {
   static Future<void> show({
@@ -9,7 +10,7 @@ class UpdateDialog {
     required String message,
     required String updateButton,
     String laterButton = 'Позже', // Новый параметр
-    VoidCallback? onLaterPressed,   // Опциональный колбэк
+    VoidCallback? onLaterPressed, // Опциональный колбэк
   }) async {
     if (!context.mounted) return;
 
@@ -17,6 +18,9 @@ class UpdateDialog {
       context: context,
       barrierDismissible: true, // ← Теперь можно закрыть тапом вне диалога
       builder: (BuildContext context) {
+        final colors = context.appColors;
+        final textTheme = Theme.of(context).textTheme;
+
         return PopScope(
           canPop: true, // ← Разрешаем кнопку "Назад"
           child: Dialog(
@@ -27,11 +31,11 @@ class UpdateDialog {
             backgroundColor: Colors.transparent,
             child: Container(
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: colors.dialogBackground,
                 borderRadius: BorderRadius.circular(24),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.08),
+                    color: colors.shadowColor.withValues(alpha: 0.3),
                     blurRadius: 40,
                     offset: const Offset(0, 20),
                   ),
@@ -46,27 +50,27 @@ class UpdateDialog {
                     width: 72,
                     height: 72,
                     decoration: BoxDecoration(
-                      gradient: const LinearGradient(
+                      gradient: LinearGradient(
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                         colors: [
-                          Color(0xFF2196F3),
-                          Color(0xFF1976D2),
+                          colors.buttonPrimaryBackground,
+                          Theme.of(context).colorScheme.secondary,
                         ],
                       ),
                       borderRadius: BorderRadius.circular(20),
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFF2196F3).withOpacity(0.3),
+                          color: colors.shadowColor.withValues(alpha: 0.35),
                           blurRadius: 20,
                           offset: const Offset(0, 8),
                         ),
                       ],
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.system_update_rounded,
                       size: 36,
-                      color: Colors.white,
+                      color: colors.buttonPrimaryForeground,
                     ),
                   ),
 
@@ -75,10 +79,9 @@ class UpdateDialog {
                   // Заголовок
                   Text(
                     title,
-                    style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF1A1A1A),
+                    style: textTheme.titleLarge?.copyWith(
+                      color: colors.textPrimary,
+                      fontWeight: FontWeight.w700,
                       letterSpacing: -0.3,
                     ),
                     textAlign: TextAlign.center,
@@ -89,9 +92,8 @@ class UpdateDialog {
                   // Описание
                   Text(
                     message,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: Color(0xFF666666),
+                    style: textTheme.bodyMedium?.copyWith(
+                      color: colors.textSecondary,
                       height: 1.5,
                       letterSpacing: 0.1,
                     ),
@@ -118,10 +120,8 @@ class UpdateDialog {
                           ),
                           child: Text(
                             laterButton,
-                            style: const TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w600,
-                              color: Color(0xFF666666),
+                            style: textTheme.labelLarge?.copyWith(
+                              color: colors.textSecondary,
                             ),
                           ),
                         ),
@@ -133,12 +133,13 @@ class UpdateDialog {
                       Expanded(
                         child: ElevatedButton(
                           onPressed: () {
-                            NewVersionPlus().launchAppStore(status.appStoreLink);
+                            NewVersionPlus()
+                                .launchAppStore(status.appStoreLink);
                             // Не закрываем диалог — пусть пользователь сам уйдёт в магазин
                           },
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF2196F3),
-                            foregroundColor: Colors.white,
+                            backgroundColor: colors.buttonPrimaryBackground,
+                            foregroundColor: colors.buttonPrimaryForeground,
                             padding: const EdgeInsets.symmetric(vertical: 16),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
@@ -147,9 +148,7 @@ class UpdateDialog {
                           ),
                           child: Text(
                             updateButton,
-                            style: const TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w600,
+                            style: textTheme.labelLarge?.copyWith(
                               letterSpacing: 0.2,
                             ),
                           ),

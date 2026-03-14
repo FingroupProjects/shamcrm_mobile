@@ -128,6 +128,11 @@ import 'package:crm_task_manager/screens/auth/auth_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/profile/languages/local_manager_lang.dart';
 import 'package:crm_task_manager/screens/profile/profile_screen.dart';
+import 'package:crm_task_manager/theme/app_theme_controller.dart';
+import 'package:crm_task_manager/theme/app_theme_data.dart';
+import 'package:crm_task_manager/theme/app_theme_mode.dart';
+import 'package:crm_task_manager/theme/app_theme_storage.dart';
+import 'package:crm_task_manager/theme/system_ui_theme_sync.dart';
 import 'package:crm_task_manager/update_dialog.dart';
 import 'package:crm_task_manager/widgets/native_internet_aware_wrapper_WITH_GAME.dart';
 import 'package:crm_task_manager/widgets/native_internet_monitor_simple.dart';
@@ -139,7 +144,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:new_version_plus/new_version_plus.dart';
-import 'package:provider/provider.dart'; 
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'bloc/cash_register_list/cash_register_list_bloc.dart';
 import 'bloc/page_2_BLOC/document/incoming/incoming_document_history/incoming_document_history_bloc.dart';
@@ -157,7 +162,7 @@ void main() async {
     WidgetsFlutterBinding.ensureInitialized();
 
     await _initializeFirebase();
-    
+
     final apiService = ApiService();
     final authService = AuthService();
 
@@ -166,7 +171,7 @@ void main() async {
     String? token;
     String? pin;
     bool isDomainChecked = false;
-
+    
     if (sessionValidation.isValid) {
       token = await apiService.getToken();
       pin = await authService.getPin();
@@ -192,18 +197,12 @@ void main() async {
       //print('main: Ошибка получения initial message: $e');
     }
 
-    SystemChrome.setSystemUIOverlayStyle(
-      const SystemUiOverlayStyle(
-        statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.dark,
-        systemNavigationBarColor: Colors.white,
-      ),
-    );
-
     final String? savedLanguageCode = await LanguageManager.getLanguage();
     final Locale savedLocale = savedLanguageCode != null
         ? Locale(savedLanguageCode)
         : const Locale('ru');
+    final appThemeStorage = await AppThemeStorage.create();
+    final initialThemeMode = appThemeStorage.loadMode();
 
     runApp(MyApp(
       apiService: apiService,
@@ -214,6 +213,8 @@ void main() async {
       initialLocale: savedLocale,
       initialMessage: initialMessage,
       sessionValid: sessionValidation.isValid,
+      themeStorage: appThemeStorage,
+      initialThemeMode: initialThemeMode,
     ));
   } catch (e, stackTrace) {
     debugPrint('main: startup error: $e');
@@ -424,34 +425,40 @@ class ErrorApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = AppThemeData.light();
     return MaterialApp(
+      theme: theme,
       home: Scaffold(
-        backgroundColor: Colors.white,
+        backgroundColor: theme.scaffoldBackgroundColor,
         body: Center(
           child: Padding(
             padding: const EdgeInsets.all(20.0),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.error_outline, size: 80, color: Colors.red),
-                SizedBox(height: 20),
+                Icon(
+                  Icons.error_outline,
+                  size: 80,
+                  color: theme.colorScheme.error,
+                ),
+                const SizedBox(height: 20),
                 Text(
                   'Ошибка запуска приложения',
                   style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
-                    color: Colors.black,
+                    color: theme.colorScheme.onSurface,
                   ),
                 ),
-                SizedBox(height: 16),
+                const SizedBox(height: 16),
                 Text(
                   'Пожалуйста, перезапустите приложение',
                   style: TextStyle(
                     fontSize: 16,
-                    color: Colors.grey[700],
+                    color: theme.textTheme.bodyMedium?.color,
                   ),
                 ),
-                SizedBox(height: 20),
+                const SizedBox(height: 20),
                 ElevatedButton(
                   onPressed: () {
                     SystemNavigator.pop();
@@ -480,7 +487,9 @@ class MyApp extends StatefulWidget {
   final Locale initialLocale;
   final RemoteMessage? initialMessage;
   final bool sessionValid;
-  
+  final AppThemeStorage themeStorage;
+  final AppThemeMode initialThemeMode;
+
   const MyApp({
     required this.apiService,
     required this.authService,
@@ -490,6 +499,8 @@ class MyApp extends StatefulWidget {
     required this.initialLocale,
     this.initialMessage,
     required this.sessionValid,
+    required this.themeStorage,
+    required this.initialThemeMode,
   });
 
   static void setLocale(BuildContext context, Locale newLocale) {
@@ -504,14 +515,23 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   Locale? _locale;
   bool _platformServicesInitialized = false;
+  late final AppThemeController _themeController;
 
   @override
   void initState() {
     super.initState();
     _locale = widget.initialLocale;
+    _themeController = AppThemeController(storage: widget.themeStorage);
+    _themeController.initialize(widget.initialThemeMode);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _initializePlatformServices();
     });
+  }
+
+  @override
+  void dispose() {
+    _themeController.dispose();
+    super.dispose();
   }
 
   Future<void> _initializePlatformServices() async {
@@ -523,6 +543,7 @@ class _MyAppState extends State<MyApp> {
     WidgetService.initialize();
     await NativeInternetMonitor().initialize();
   }
+
 //1
   Future<void> checkForNewVersion(BuildContext context) async {
     // TODO remove on building ipa or apk files
@@ -574,6 +595,9 @@ class _MyAppState extends State<MyApp> {
       providers: [
         Provider<ApiService>.value(value: widget.apiService),
         Provider<AuthService>.value(value: widget.authService),
+        Provider<AppThemeStorage>.value(value: widget.themeStorage),
+        ChangeNotifierProvider<AppThemeController>.value(
+            value: _themeController),
         BlocProvider(create: (context) => DomainBloc(widget.apiService)),
         BlocProvider(create: (context) => LoginBloc(widget.apiService)),
         BlocProvider(create: (context) => LeadBloc(widget.apiService)),
@@ -747,90 +771,95 @@ class _MyAppState extends State<MyApp> {
         BlocProvider(
             create: (context) => FieldConfigurationBloc(widget.apiService)),
       ],
-      child: MaterialApp(
-        // ✅ MaterialApp БЕЗ обертки
-        locale: _locale ?? const Locale('ru'),
-        color: Colors.white,
-        debugShowCheckedModeBanner: false,
-        title: 'shamCRM',
-        navigatorKey: navigatorKey,
-        scaffoldMessengerKey: scaffoldMessengerKey,
-        theme: ThemeData(
-          primarySwatch: Colors.blue,
-          scaffoldBackgroundColor: Colors.white,
-        ),
-        localizationsDelegates: [
-          AppLocalizations.delegate,
-          GlobalMaterialLocalizations.delegate,
-          GlobalWidgetsLocalizations.delegate,
-          GlobalCupertinoLocalizations.delegate,
-        ],
-        supportedLocales: [
-          const Locale('ru', ''),
-          const Locale('en', ''),
-          const Locale('uz', ''),
-        ],
-        localeResolutionCallback: (locale, supportedLocales) {
-          for (var supportedLocale in supportedLocales) {
-            if (supportedLocale.languageCode == locale?.languageCode) {
-              return supportedLocale;
-            }
-          }
-          return supportedLocales.first;
-        },
-        // ✅ ДОБАВЬТЕ/РАСКОММЕНТИРУЙТЕ builder
-        builder: (context, child) {
-          return Stack(
-            children: [
-              NativeInternetAwareWrapper(
-                // ← НОВОЕ ИМЯ
-                child: child ?? const SizedBox.shrink(),
-              ),
-              // HTTP Inspector FAB (только в DEBUG режиме)
-              if (kDebugMode) const HttpInspectorFab(),
+      child: Consumer<AppThemeController>(
+        builder: (context, themeController, _) {
+          return MaterialApp(
+            locale: _locale ?? const Locale('ru'),
+            color: themeController.effectiveBrightness == Brightness.dark
+                ? AppThemeData.dark().colorScheme.surface
+                : AppThemeData.light().colorScheme.surface,
+            debugShowCheckedModeBanner: false,
+            title: 'shamCRM',
+            navigatorKey: navigatorKey,
+            scaffoldMessengerKey: scaffoldMessengerKey,
+            theme: AppThemeData.light(),
+            darkTheme: AppThemeData.dark(),
+            themeMode: themeController.materialThemeMode,
+            themeAnimationDuration: const Duration(milliseconds: 150),
+            themeAnimationCurve: Curves.easeOutCubic,
+            localizationsDelegates: [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
             ],
-          );
-        },
-        home: Builder(
-          builder: (context) {
-            if (!widget.sessionValid) {
-              WidgetsBinding.instance.addPostFrameCallback((_) async {
-                if (mounted) {
-                  await checkForNewVersion(context);
+            supportedLocales: [
+              const Locale('ru', ''),
+              const Locale('en', ''),
+              const Locale('uz', ''),
+            ],
+            localeResolutionCallback: (locale, supportedLocales) {
+              for (var supportedLocale in supportedLocales) {
+                if (supportedLocale.languageCode == locale?.languageCode) {
+                  return supportedLocale;
                 }
-              });
-              return AuthScreen();
-            }
-
-            if (widget.token == null) {
-              WidgetsBinding.instance.addPostFrameCallback((_) async {
-                if (mounted) {
-                  await checkForNewVersion(context);
-                }
-              });
-              return AuthScreen();
-            } else if (widget.pin == null) {
-              WidgetsBinding.instance.addPostFrameCallback((_) async {
-                if (mounted) {
-                  await checkForNewVersion(context);
-                }
-              });
-              return PinSetupScreen();
-            } else {
-              return PinScreen(
-                initialMessage: widget.initialMessage,
+              }
+              return supportedLocales.first;
+            },
+            builder: (context, child) {
+              return SystemUiThemeSync(
+                child: Stack(
+                  children: [
+                    NativeInternetAwareWrapper(
+                      child: child ?? const SizedBox.shrink(),
+                    ),
+                    if (kDebugMode) const HttpInspectorFab(),
+                  ],
+                ),
               );
-            }
-          },
-        ),
-        routes: {
-          '/local_auth': (context) => AuthScreen(),
-          '/login': (context) => LoginScreen(),
-          '/home': (context) => HomeScreen(),
-          '/chats': (context) => ChatsScreen(),
-          '/pin_setup': (context) => PinSetupScreen(),
-          '/pin_screen': (context) => PinScreen(),
-          '/profile': (context) => ProfileScreen(),
+            },
+            home: Builder(
+              builder: (context) {
+                if (!widget.sessionValid) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) async {
+                    if (mounted) {
+                      await checkForNewVersion(context);
+                    }
+                  });
+                  return AuthScreen();
+                }
+
+                if (widget.token == null) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) async {
+                    if (mounted) {
+                      await checkForNewVersion(context);
+                    }
+                  });
+                  return AuthScreen();
+                } else if (widget.pin == null) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) async {
+                    if (mounted) {
+                      await checkForNewVersion(context);
+                    }
+                  });
+                  return PinSetupScreen();
+                } else {
+                  return PinScreen(
+                    initialMessage: widget.initialMessage,
+                  );
+                }
+              },
+            ),
+            routes: {
+              '/local_auth': (context) => AuthScreen(),
+              '/login': (context) => LoginScreen(),
+              '/home': (context) => HomeScreen(),
+              '/chats': (context) => ChatsScreen(),
+              '/pin_setup': (context) => PinSetupScreen(),
+              '/pin_screen': (context) => PinScreen(),
+              '/profile': (context) => ProfileScreen(),
+            },
+          );
         },
       ),
     );

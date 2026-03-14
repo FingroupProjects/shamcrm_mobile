@@ -1,4 +1,6 @@
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/theme/theme_context_extensions.dart';
+import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/bloc/organization/organization_bloc.dart';
@@ -7,22 +9,23 @@ import 'package:crm_task_manager/bloc/organization/organization_state.dart';
 class OrganizationWidget extends StatefulWidget {
   final String? selectedOrganization;
   final ValueChanged<String?> onChanged;
-  final Key? key;
 
-  OrganizationWidget({
-    this.key,
+  const OrganizationWidget({
+    super.key,
     required this.selectedOrganization,
     required this.onChanged,
-  }) : super(key: key);
+  });
 
   @override
-  _OrganizationWidgetState createState() => _OrganizationWidgetState();
+  State<OrganizationWidget> createState() => _OrganizationWidgetState();
 }
 
 class _OrganizationWidgetState extends State<OrganizationWidget> {
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
+    final colors = context.appColors;
+    final textTheme = Theme.of(context).textTheme;
     return BlocBuilder<OrganizationBloc, OrganizationState>(
       builder: (context, state) {
         List<DropdownMenuItem<String>> dropdownItems = [];
@@ -33,11 +36,9 @@ class _OrganizationWidgetState extends State<OrganizationWidget> {
               value: null,
               child: Text(
                 localizations.translate('loading'),
-                style: TextStyle(
-                  fontSize: 14,
+                style: textTheme.bodyMedium?.copyWith(
                   fontWeight: FontWeight.w500,
-                  fontFamily: 'Gilroy',
-                  color: Color(0xff1E2E52),
+                  color: colors.textPrimary,
                 ),
               ),
             ),
@@ -49,11 +50,9 @@ class _OrganizationWidgetState extends State<OrganizationWidget> {
                 value: null,
                 child: Text(
                   localizations.translate('no_organizations'),
-                  style: TextStyle(
-                    fontSize: 14,
+                  style: textTheme.bodyMedium?.copyWith(
                     fontWeight: FontWeight.w500,
-                    fontFamily: 'Gilroy',
-                    color: Color(0xff1E2E52),
+                    color: colors.textPrimary,
                   ),
                 ),
               ),
@@ -65,39 +64,22 @@ class _OrganizationWidgetState extends State<OrganizationWidget> {
                 value: organization.id.toString(),
                 child: Text(
                   organization.name,
-                  style: TextStyle(
-                    fontSize: 14,
+                  style: textTheme.bodyMedium?.copyWith(
                     fontWeight: FontWeight.w500,
-                    fontFamily: 'Gilroy',
-                    color: Color(0xff1E2E52),
+                    color: colors.textPrimary,
                   ),
                 ),
               );
             }).toList();
           }
         } else if (state is OrganizationError) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                '${state.message}',
-                style: TextStyle(
-                  fontFamily: 'Gilroy',
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.white,
-                ),
-              ),
-              behavior: SnackBarBehavior.floating,
-              margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              backgroundColor: Colors.red,
-              elevation: 3,
-              padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-              duration: Duration(seconds: 3),
-            ),
-          );
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            showCustomSnackBar(
+              context: context,
+              message: state.message,
+              isSuccess: false,
+            );
+          });
         }
 
         String? selectedOrganization = widget.selectedOrganization;
@@ -112,62 +94,63 @@ class _OrganizationWidgetState extends State<OrganizationWidget> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
-              padding: EdgeInsets.only(bottom: 0),
+              padding: const EdgeInsets.only(bottom: 0),
               child: Text(
                 localizations.translate('organizations'),
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  fontFamily: 'Gilroy',
-                  color: Color(0xff1E2E52),
+                style: textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: colors.textPrimary,
                 ),
               ),
             ),
-
             Container(
               margin: const EdgeInsets.symmetric(vertical: 8),
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: const Color(0xFFF4F7FD),
+                color: colors.surfaceSecondary,
                 borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: colors.borderPrimary),
               ),
               child: DropdownButtonFormField<String>(
                 value: selectedOrganization,
-                hint: Text( "",
-                  style: TextStyle(
-                    fontSize: 14,
+                hint: Text(
+                  '',
+                  style: textTheme.bodyMedium?.copyWith(
                     fontWeight: FontWeight.w500,
-                    fontFamily: 'Gilroy',
-                    color: Color(0xff1E2E52),
+                    color: colors.textPrimary,
                   ),
                 ),
                 items: dropdownItems,
                 onChanged: widget.onChanged,
+                isExpanded: true,
                 decoration: InputDecoration(
-                  labelStyle: TextStyle(color: Colors.grey),
+                  labelStyle: textTheme.bodySmall?.copyWith(
+                    color: colors.textSecondary,
+                  ),
                   border: OutlineInputBorder(
-                    borderSide: BorderSide(color: Color(0xFFF4F7FD)),
+                    borderSide: BorderSide(color: colors.surfaceSecondary),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   enabledBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: Color(0xFFF4F7FD)),
+                    borderSide: BorderSide(color: colors.surfaceSecondary),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   focusedBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: Color(0xFFF4F7FD)),
+                    borderSide: BorderSide(color: colors.surfaceSecondary),
                     borderRadius: BorderRadius.circular(8),
                   ),
+                  filled: true,
+                  fillColor: colors.surfaceSecondary,
                 ),
-                dropdownColor: Colors.white,
+                dropdownColor: colors.surfacePrimary,
                 icon: Transform.translate(
-                  offset: Offset(4, 0), // Смещение влево на 2 пикселя
+                  offset: const Offset(4, 0),
                   child: Transform.rotate(
-                    angle: 90 *
-                        (3.1415926535897932 / 180), // Поворот на 90 градусов
-                    child: Image.asset(
-                      'assets/icons/arrow-right.png',
-                      width: 16,
-                      height: 16,
+                    angle: 90 * (3.1415926535897932 / 180),
+                    child: Icon(
+                      Icons.chevron_right_rounded,
+                      size: 18,
+                      color: colors.iconSecondary,
                     ),
                   ),
                 ),

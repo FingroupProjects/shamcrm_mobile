@@ -10,6 +10,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
 
   cupertino_icons: ^1.0.8
   flutter_bloc: ^8.1.6
@@ -17,6 +19,7 @@ dependencies:
   equatable: ^2.0.5
   shared_preferences: ^2.3.5
   intl: ^0.20.2 
+  html: ^0.15.6
   open_file: ^3.5.9
   path_provider: ^2.1.5
   share_plus: ^10.1.4
@@ -69,6 +72,7 @@ dependencies:
   photo_view: ^0.15.0
   new_version_plus: ^0.1.1
   package_info_plus: ^8.1.1
+  provider: ^6.1.2
 
   flutter_html: ^3.0.0
   flutter_quill: ^11.4.2

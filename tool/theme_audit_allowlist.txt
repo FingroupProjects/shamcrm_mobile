@@ -1,0 +1,7 @@
+lib/theme/
+lib/generated/
+third_party/
+lib/utils/app_colors.dart
+lib/custom_widget/custom_app_bar.dart
+lib/screens/profile/profile_screen.dart
+test/

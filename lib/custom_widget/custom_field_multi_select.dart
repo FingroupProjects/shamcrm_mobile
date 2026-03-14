@@ -1,5 +1,7 @@
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/theme/app_dropdown_decoration.dart';
+import 'package:crm_task_manager/theme/theme_context_extensions.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
@@ -37,13 +39,6 @@ class _CustomFieldMultiSelectState extends State<CustomFieldMultiSelect> {
   List<String> _selectedValues = [];
   bool allSelected = false;
 
-  final TextStyle itemStyle = const TextStyle(
-    fontSize: 16,
-    fontWeight: FontWeight.w500,
-    fontFamily: 'Gilroy',
-    color: Color(0xff1E2E52),
-  );
-
   @override
   void initState() {
     super.initState();
@@ -54,7 +49,8 @@ class _CustomFieldMultiSelectState extends State<CustomFieldMultiSelect> {
   void didUpdateWidget(covariant CustomFieldMultiSelect oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (!listEquals(oldWidget.items, widget.items) ||
-        !listEquals(oldWidget.initialSelectedValues, widget.initialSelectedValues)) {
+        !listEquals(
+            oldWidget.initialSelectedValues, widget.initialSelectedValues)) {
       _syncSelected();
     }
   }
@@ -66,20 +62,31 @@ class _CustomFieldMultiSelectState extends State<CustomFieldMultiSelect> {
 
     setState(() {
       _selectedValues = filtered;
-      allSelected = widget.items.isNotEmpty && filtered.length == widget.items.length;
+      allSelected =
+          widget.items.isNotEmpty && filtered.length == widget.items.length;
     });
   }
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
+    final itemStyle = Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: colors.textPrimary,
+              fontWeight: FontWeight.w500,
+            ) ??
+        TextStyle(color: colors.textPrimary);
+
     return FormField<List<String>>(
       initialValue: _selectedValues,
       validator: widget.isRequired && _selectedValues.isEmpty
-          ? (_) => widget.validationMessage ?? AppLocalizations.of(context)!.translate('field_required')
+          ? (_) =>
+              widget.validationMessage ??
+              AppLocalizations.of(context)!.translate('field_required')
           : null,
       builder: (FormFieldState<List<String>> field) {
         final hasError = field.hasError;
-        final placeholder = widget.hintText ?? AppLocalizations.of(context)!.translate('select_value');
+        final placeholder = widget.hintText ??
+            AppLocalizations.of(context)!.translate('select_value');
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -93,27 +100,22 @@ class _CustomFieldMultiSelectState extends State<CustomFieldMultiSelect> {
             ],
             Container(
               decoration: BoxDecoration(
-                color: const Color(0xFFF4F7FD),
+                color: colors.inputBackground,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
                   width: 1,
-                  color: hasError ? Colors.red : const Color(0xFFE5E7EB),
+                  color:
+                      hasError ? colors.inputErrorBorder : colors.inputBorder,
                 ),
               ),
               child: CustomDropdown<String>.multiSelectSearch(
                 items: widget.items,
                 initialItems: _selectedValues,
-                searchHintText: widget.searchHintText ?? AppLocalizations.of(context)!.translate('search'),
+                searchHintText: widget.searchHintText ??
+                    AppLocalizations.of(context)!.translate('search'),
                 overlayHeight: widget.overlayHeight ?? 400,
                 enabled: !widget.isLoading,
-                decoration: CustomDropdownDecoration(
-                  closedFillColor: const Color(0xffF4F7FD),
-                  expandedFillColor: Colors.white,
-                  closedBorder: Border.all(color: Colors.transparent, width: 1),
-                  closedBorderRadius: BorderRadius.circular(12),
-                  expandedBorder: Border.all(color: const Color(0xFFE5E7EB), width: 1),
-                  expandedBorderRadius: BorderRadius.circular(12),
-                ),
+                decoration: buildAppDropdownDecoration(context),
                 listItemBuilder: (context, item, isSelected, onItemSelect) {
                   final isFirstOriginal = widget.items.indexOf(item) == 0;
 
@@ -122,38 +124,49 @@ class _CustomFieldMultiSelectState extends State<CustomFieldMultiSelect> {
                       children: [
                         // === Select All Tile (inline для доступа к field) ===
                         Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 8),
                           child: GestureDetector(
                             onTap: widget.items.isEmpty || widget.isLoading
                                 ? null
                                 : () {
-                              final newAll = !allSelected;
-                              final newSelected = newAll ? List<String>.from(widget.items) : <String>[];
-                              setState(() {
-                                allSelected = newAll;
-                                _selectedValues = newSelected;
-                              });
-                              widget.onChanged(newSelected);
-                              field.didChange(newSelected);
-                            },
+                                    final newAll = !allSelected;
+                                    final newSelected = newAll
+                                        ? List<String>.from(widget.items)
+                                        : <String>[];
+                                    setState(() {
+                                      allSelected = newAll;
+                                      _selectedValues = newSelected;
+                                    });
+                                    widget.onChanged(newSelected);
+                                    field.didChange(newSelected);
+                                  },
                             child: Row(
                               children: [
                                 Container(
                                   width: 18,
                                   height: 18,
                                   decoration: BoxDecoration(
-                                    border: Border.all(color: const Color(0xff1E2E52), width: 1),
+                                    border: Border.all(
+                                        color: colors.textPrimary, width: 1),
                                     borderRadius: BorderRadius.circular(4),
-                                    color: allSelected ? const Color(0xff1E2E52) : Colors.transparent,
+                                    color: allSelected
+                                        ? colors.selectionBackground
+                                        : Colors.transparent,
                                   ),
                                   child: allSelected
-                                      ? const Icon(Icons.check, color: Colors.white, size: 14)
+                                      ? Icon(
+                                          Icons.check,
+                                          color: colors.selectionForeground,
+                                          size: 14,
+                                        )
                                       : null,
                                 ),
                                 const SizedBox(width: 12),
                                 Expanded(
                                   child: Text(
-                                    AppLocalizations.of(context)!.translate('select_all'),
+                                    AppLocalizations.of(context)!
+                                        .translate('select_all'),
                                     style: itemStyle,
                                   ),
                                 ),
@@ -161,7 +174,7 @@ class _CustomFieldMultiSelectState extends State<CustomFieldMultiSelect> {
                             ),
                           ),
                         ),
-                        const Divider(height: 20, color: Color(0xFFE5E7EB)),
+                        Divider(height: 20, color: colors.dividerPrimary),
                         _buildListItem(item, isSelected, onItemSelect),
                       ],
                     );
@@ -171,18 +184,15 @@ class _CustomFieldMultiSelectState extends State<CustomFieldMultiSelect> {
                 },
                 headerListBuilder: (context, hint, enabled) {
                   if (widget.isLoading) {
-                    return const Center(
-                      child: SizedBox(
+                    return Center(
+                      child: const SizedBox(
                         width: 20,
                         height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
-                        ),
+                        child: CircularProgressIndicator(strokeWidth: 2),
                       ),
                     );
                   }
-                  
+
                   if (_selectedValues.isEmpty) {
                     return Text(
                       placeholder,
@@ -199,18 +209,15 @@ class _CustomFieldMultiSelectState extends State<CustomFieldMultiSelect> {
                 },
                 hintBuilder: (context, hint, enabled) {
                   if (widget.isLoading) {
-                    return const Center(
-                      child: SizedBox(
+                    return Center(
+                      child: const SizedBox(
                         width: 20,
                         height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
-                        ),
+                        child: CircularProgressIndicator(strokeWidth: 2),
                       ),
                     );
                   }
-                  
+
                   return Text(
                     placeholder,
                     style: itemStyle.copyWith(fontSize: 14),
@@ -219,7 +226,9 @@ class _CustomFieldMultiSelectState extends State<CustomFieldMultiSelect> {
                 onListChanged: (values) {
                   setState(() {
                     _selectedValues = List<String>.from(values);
-                    allSelected = _selectedValues.length == widget.items.length && widget.items.isNotEmpty;
+                    allSelected =
+                        _selectedValues.length == widget.items.length &&
+                            widget.items.isNotEmpty;
                   });
                   widget.onChanged(_selectedValues);
                   field.didChange(values);
@@ -231,11 +240,10 @@ class _CustomFieldMultiSelectState extends State<CustomFieldMultiSelect> {
                 padding: const EdgeInsets.only(top: 4),
                 child: Text(
                   field.errorText!,
-                  style: const TextStyle(
-                    color: Colors.red,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w400,
-                  ),
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: colors.error,
+                        fontWeight: FontWeight.w500,
+                      ),
                 ),
               ),
           ],
@@ -244,7 +252,15 @@ class _CustomFieldMultiSelectState extends State<CustomFieldMultiSelect> {
     );
   }
 
-  Widget _buildListItem(String item, bool isSelected, VoidCallback onItemSelect) {
+  Widget _buildListItem(
+      String item, bool isSelected, VoidCallback onItemSelect) {
+    final colors = context.appColors;
+    final itemStyle = Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: colors.textPrimary,
+              fontWeight: FontWeight.w500,
+            ) ??
+        TextStyle(color: colors.textPrimary);
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: GestureDetector(
@@ -255,12 +271,18 @@ class _CustomFieldMultiSelectState extends State<CustomFieldMultiSelect> {
               width: 18,
               height: 18,
               decoration: BoxDecoration(
-                border: Border.all(color: const Color(0xff1E2E52), width: 1),
+                border: Border.all(color: colors.textPrimary, width: 1),
                 borderRadius: BorderRadius.circular(4),
-                color: isSelected ? const Color(0xff1E2E52) : Colors.transparent,
+                color: isSelected
+                    ? colors.selectionBackground
+                    : Colors.transparent,
               ),
               child: isSelected
-                  ? const Icon(Icons.check, color: Colors.white, size: 14)
+                  ? Icon(
+                      Icons.check,
+                      color: colors.selectionForeground,
+                      size: 14,
+                    )
                   : null,
             ),
             const SizedBox(width: 12),
