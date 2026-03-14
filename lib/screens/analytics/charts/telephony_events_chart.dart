@@ -43,6 +43,7 @@ class _TelephonyEventsChartState extends State<TelephonyEventsChart> {
   bool _showMissed = true;
   bool _showCreated = true;
   bool _showClosed = true;
+  int? _touchedGroupIndex;
 
   String get _title => widget.title;
 
@@ -331,6 +332,86 @@ class _TelephonyEventsChartState extends State<TelephonyEventsChart> {
     return bars;
   }
 
+  Widget _buildLineOverlay({
+    required List<TelephonyEventDay> items,
+    required double leftReserved,
+    required double bottomReserved,
+    required double maxY,
+  }) {
+    return Positioned.fill(
+      child: Padding(
+        padding: EdgeInsets.only(
+          left: leftReserved,
+          bottom: bottomReserved,
+        ),
+        child: IgnorePointer(
+          child: LineChart(
+            LineChartData(
+              minX: 0,
+              maxX: (items.length - 1).toDouble(),
+              minY: 0,
+              maxY: maxY,
+              clipData: const FlClipData.all(),
+              lineBarsData: _buildLineBars(items),
+              gridData: const FlGridData(show: false),
+              borderData: FlBorderData(show: false),
+              titlesData: const FlTitlesData(
+                topTitles: AxisTitles(
+                  sideTitles: SideTitles(showTitles: false),
+                ),
+                rightTitles: AxisTitles(
+                  sideTitles: SideTitles(showTitles: false),
+                ),
+                leftTitles: AxisTitles(
+                  sideTitles: SideTitles(showTitles: false),
+                ),
+                bottomTitles: AxisTitles(
+                  sideTitles: SideTitles(showTitles: false),
+                ),
+              ),
+              lineTouchData: const LineTouchData(enabled: false),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTooltipRow({
+    required String label,
+    required int value,
+    required Color color,
+    required double fontSize,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 2),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              '● $label',
+              style: TextStyle(
+                color: color,
+                fontWeight: FontWeight.w600,
+                fontSize: fontSize,
+                fontFamily: 'Golos',
+              ),
+            ),
+          ),
+          Text(
+            value.toString(),
+            style: TextStyle(
+              color: color,
+              fontWeight: FontWeight.w700,
+              fontSize: fontSize,
+              fontFamily: 'Golos',
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   double _maxY(List<TelephonyEventDay> items) {
     if (items.isEmpty) return 6;
 
@@ -549,55 +630,6 @@ class _TelephonyEventsChartState extends State<TelephonyEventsChart> {
                                 child: Stack(
                                   fit: StackFit.expand,
                                   children: [
-                                    if (_showCreated || _showClosed)
-                                      Positioned.fill(
-                                        child: Padding(
-                                          padding: EdgeInsets.only(
-                                            left: leftReserved,
-                                            bottom: bottomReserved,
-                                          ),
-                                          child: IgnorePointer(
-                                            child: LineChart(
-                                              LineChartData(
-                                                minX: 0,
-                                                maxX: (displayItems.length - 1)
-                                                    .toDouble(),
-                                                minY: 0,
-                                                maxY: maxY,
-                                                clipData:
-                                                    const FlClipData.all(),
-                                                lineBarsData: _buildLineBars(
-                                                    displayItems),
-                                                gridData: const FlGridData(
-                                                    show: false),
-                                                borderData:
-                                                    FlBorderData(show: false),
-                                                titlesData: const FlTitlesData(
-                                                  topTitles: AxisTitles(
-                                                    sideTitles: SideTitles(
-                                                        showTitles: false),
-                                                  ),
-                                                  rightTitles: AxisTitles(
-                                                    sideTitles: SideTitles(
-                                                        showTitles: false),
-                                                  ),
-                                                  leftTitles: AxisTitles(
-                                                    sideTitles: SideTitles(
-                                                        showTitles: false),
-                                                  ),
-                                                  bottomTitles: AxisTitles(
-                                                    sideTitles: SideTitles(
-                                                        showTitles: false),
-                                                  ),
-                                                ),
-                                                lineTouchData:
-                                                    const LineTouchData(
-                                                        enabled: false),
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      ),
                                     Positioned.fill(
                                       child: BarChart(
                                         BarChartData(
@@ -634,7 +666,23 @@ class _TelephonyEventsChartState extends State<TelephonyEventsChart> {
                                           ),
                                           barTouchData: BarTouchData(
                                             enabled: true,
-                                            handleBuiltInTouches: true,
+                                            handleBuiltInTouches: false,
+                                            touchCallback: (FlTouchEvent event,
+                                                BarTouchResponse? response) {
+                                              final touchedIndex =
+                                                  event.isInterestedForInteractions &&
+                                                          response?.spot != null
+                                                      ? response!.spot!
+                                                          .touchedBarGroupIndex
+                                                      : null;
+                                              if (_touchedGroupIndex !=
+                                                  touchedIndex) {
+                                                setState(() {
+                                                  _touchedGroupIndex =
+                                                      touchedIndex;
+                                                });
+                                              }
+                                            },
                                             touchTooltipData:
                                                 BarTouchTooltipData(
                                               getTooltipColor: (_) =>
@@ -649,161 +697,7 @@ class _TelephonyEventsChartState extends State<TelephonyEventsChart> {
                                               fitInsideHorizontally: true,
                                               fitInsideVertically: true,
                                               getTooltipItem:
-                                                  (group, _, __, ___) {
-                                                final index = group.x.toInt();
-                                                if (index < 0 ||
-                                                    index >=
-                                                        displayItems.length) {
-                                                  return null;
-                                                }
-                                                final item =
-                                                    displayItems[index];
-                                                final day =
-                                                    index < _weekDays.length
-                                                        ? _weekDays[index]
-                                                        : 'Д${item.day}';
-
-                                                final spans = <TextSpan>[];
-                                                final metricTextStyle =
-                                                    TextStyle(
-                                                  fontWeight: FontWeight.w600,
-                                                  fontSize:
-                                                      ResponsiveHelper(context)
-                                                          .captionFontSize,
-                                                  fontFamily: 'Golos',
-                                                );
-                                                final metricContentWidth =
-                                                    math.max(
-                                                  140.0,
-                                                  tooltipMaxWidth - 32,
-                                                );
-
-                                                double measureTextWidth(
-                                                  String text,
-                                                  TextStyle style,
-                                                ) {
-                                                  final painter = TextPainter(
-                                                    text: TextSpan(
-                                                      text: text,
-                                                      style: style,
-                                                    ),
-                                                    textDirection:
-                                                        TextDirection.ltr,
-                                                    maxLines: 1,
-                                                  )..layout();
-                                                  return painter.width;
-                                                }
-
-                                                TextSpan buildMetricSpan({
-                                                  required String label,
-                                                  required int value,
-                                                  required Color color,
-                                                  required bool withNewLine,
-                                                }) {
-                                                  final valueText =
-                                                      value.toString();
-                                                  final labelText = '● $label';
-                                                  final spaceWidth =
-                                                      measureTextWidth(
-                                                    ' ',
-                                                    metricTextStyle,
-                                                  );
-                                                  final leftWidth =
-                                                      measureTextWidth(
-                                                    labelText,
-                                                    metricTextStyle,
-                                                  );
-                                                  final valueWidth =
-                                                      measureTextWidth(
-                                                    valueText,
-                                                    metricTextStyle,
-                                                  );
-                                                  final spaces = math.max(
-                                                    1,
-                                                    ((metricContentWidth -
-                                                                leftWidth -
-                                                                valueWidth) /
-                                                            math.max(
-                                                              1,
-                                                              spaceWidth,
-                                                            ))
-                                                        .floor(),
-                                                  );
-                                                  return TextSpan(
-                                                    text:
-                                                        '$labelText${' ' * spaces}$valueText${withNewLine ? '\n' : ''}',
-                                                    style: metricTextStyle
-                                                        .copyWith(color: color),
-                                                  );
-                                                }
-
-                                                if (_showIncoming) {
-                                                  spans.add(
-                                                    buildMetricSpan(
-                                                      label: 'Входящие',
-                                                      value: item.incoming,
-                                                      color: _incomingColor,
-                                                      withNewLine: true,
-                                                    ),
-                                                  );
-                                                }
-                                                if (_showOutgoing) {
-                                                  spans.add(
-                                                    buildMetricSpan(
-                                                      label: 'Исходящие',
-                                                      value: item.outgoing,
-                                                      color: _outgoingColor,
-                                                      withNewLine: true,
-                                                    ),
-                                                  );
-                                                }
-                                                if (_showMissed) {
-                                                  spans.add(
-                                                    buildMetricSpan(
-                                                      label: 'Пропущенные',
-                                                      value: item.missed,
-                                                      color: _missedColor,
-                                                      withNewLine: true,
-                                                    ),
-                                                  );
-                                                }
-                                                if (_showCreated) {
-                                                  spans.add(
-                                                    buildMetricSpan(
-                                                      label: 'События создано',
-                                                      value:
-                                                          item.noticesCreated,
-                                                      color: _createdColor,
-                                                      withNewLine: true,
-                                                    ),
-                                                  );
-                                                }
-                                                if (_showClosed) {
-                                                  spans.add(
-                                                    buildMetricSpan(
-                                                      label: 'События закрыто',
-                                                      value:
-                                                          item.noticesFinished,
-                                                      color: _closedColor,
-                                                      withNewLine: false,
-                                                    ),
-                                                  );
-                                                }
-
-                                                return BarTooltipItem(
-                                                  '$day\n',
-                                                  TextStyle(
-                                                    color: Color(0xff0F172A),
-                                                    fontWeight: FontWeight.w700,
-                                                    fontSize: ResponsiveHelper(
-                                                            context)
-                                                        .subtitleFontSize,
-                                                    fontFamily: 'Golos',
-                                                  ),
-                                                  textAlign: TextAlign.left,
-                                                  children: spans,
-                                                );
-                                              },
+                                                  (group, _, __, ___) => null,
                                             ),
                                           ),
                                           titlesData: FlTitlesData(
@@ -887,6 +781,119 @@ class _TelephonyEventsChartState extends State<TelephonyEventsChart> {
                                         ),
                                       ),
                                     ),
+                                    if (_showCreated || _showClosed)
+                                      _buildLineOverlay(
+                                        items: displayItems,
+                                        leftReserved: leftReserved,
+                                        bottomReserved: bottomReserved,
+                                        maxY: maxY,
+                                      ),
+                                    if (_touchedGroupIndex != null &&
+                                        _touchedGroupIndex! >= 0 &&
+                                        _touchedGroupIndex! <
+                                            displayItems.length)
+                                      Align(
+                                        alignment: Alignment.topCenter,
+                                        child: Container(
+                                          constraints: BoxConstraints(
+                                            maxWidth: tooltipMaxWidth,
+                                          ),
+                                          margin: const EdgeInsets.only(top: 8),
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 12,
+                                            vertical: 10,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xffF8FAFC),
+                                            borderRadius:
+                                                BorderRadius.circular(12),
+                                            border: Border.all(
+                                              color: const Color(0xffE2E8F0),
+                                            ),
+                                            boxShadow: [
+                                              BoxShadow(
+                                                color: const Color(0xff0F172A)
+                                                    .withValues(alpha: 0.08),
+                                                blurRadius: 10,
+                                                offset: const Offset(0, 4),
+                                              ),
+                                            ],
+                                          ),
+                                          child: Builder(
+                                            builder: (context) {
+                                              final item = displayItems[
+                                                  _touchedGroupIndex!];
+                                              final day = _touchedGroupIndex! <
+                                                      _weekDays.length
+                                                  ? _weekDays[
+                                                      _touchedGroupIndex!]
+                                                  : 'Д${item.day}';
+                                              final metricFont =
+                                                  ResponsiveHelper(context)
+                                                      .captionFontSize;
+                                              return Column(
+                                                mainAxisSize: MainAxisSize.min,
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(
+                                                    day,
+                                                    style: TextStyle(
+                                                      color: const Color(
+                                                        0xff0F172A,
+                                                      ),
+                                                      fontWeight:
+                                                          FontWeight.w700,
+                                                      fontSize:
+                                                          ResponsiveHelper(
+                                                        context,
+                                                      ).subtitleFontSize,
+                                                      fontFamily: 'Golos',
+                                                    ),
+                                                  ),
+                                                  if (_showIncoming)
+                                                    _buildTooltipRow(
+                                                      label: 'Входящие',
+                                                      value: item.incoming,
+                                                      color: _incomingColor,
+                                                      fontSize: metricFont,
+                                                    ),
+                                                  if (_showOutgoing)
+                                                    _buildTooltipRow(
+                                                      label: 'Исходящие',
+                                                      value: item.outgoing,
+                                                      color: _outgoingColor,
+                                                      fontSize: metricFont,
+                                                    ),
+                                                  if (_showMissed)
+                                                    _buildTooltipRow(
+                                                      label: 'Пропущенные',
+                                                      value: item.missed,
+                                                      color: _missedColor,
+                                                      fontSize: metricFont,
+                                                    ),
+                                                  if (_showCreated)
+                                                    _buildTooltipRow(
+                                                      label: 'События создано',
+                                                      value:
+                                                          item.noticesCreated,
+                                                      color: _createdColor,
+                                                      fontSize: metricFont,
+                                                    ),
+                                                  if (_showClosed)
+                                                    _buildTooltipRow(
+                                                      label: 'События закрыто',
+                                                      value:
+                                                          item.noticesFinished,
+                                                      color: _closedColor,
+                                                      fontSize: metricFont,
+                                                    ),
+                                                ],
+                                              );
+                                            },
+                                          ),
+                                        ),
+                                      ),
                                   ],
                                 ),
                               ),

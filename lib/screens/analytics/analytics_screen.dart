@@ -591,7 +591,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
             final allSelected =
                 entries.isNotEmpty &&
                 entries.every((entry) => tempVisibility[entry.key] ?? false);
-            final selectAllLabel = allSelected ? 'Отменить все' : 'Выбрать все';
+            final selectAllLabel = allSelected ? 'Отключить все' : 'Включить все';
 
             return SafeArea(
               top: false,
