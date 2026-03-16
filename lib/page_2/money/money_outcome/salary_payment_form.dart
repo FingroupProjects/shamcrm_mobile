@@ -51,6 +51,7 @@ class _SalaryPaymentFormState extends State<SalaryPaymentForm> {
   late bool _isApproved;
   String? _selectedMonthValue;
   String? _employeesError;
+  int _employeesRequestId = 0;
 
   bool get _isEdit => widget.document != null;
 
@@ -166,6 +167,11 @@ class _SalaryPaymentFormState extends State<SalaryPaymentForm> {
       if (!_isEdit) {
         _amountController.clear();
       }
+
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _loadEmployees(monthOverride: monthValue, forceRefresh: true);
+      });
     }
   }
 
@@ -379,7 +385,6 @@ class _SalaryPaymentFormState extends State<SalaryPaymentForm> {
     setState(() {
       _setMonth(monthValue);
     });
-    await _loadEmployees();
   }
 
   String _capitalizeMonth(String value) {
@@ -387,19 +392,34 @@ class _SalaryPaymentFormState extends State<SalaryPaymentForm> {
     return value[0].toUpperCase() + value.substring(1);
   }
 
-  Future<void> _loadEmployees() async {
-    final month = _selectedMonthValue;
+  Future<void> _loadEmployees({
+    String? monthOverride,
+    bool forceRefresh = false,
+  }) async {
+    final month = monthOverride ?? _selectedMonthValue;
     if (month == null || month.isEmpty) return;
 
+    if (!forceRefresh && _isEmployeesLoading && month == _selectedMonthValue) {
+      return;
+    }
+
+    final requestId = ++_employeesRequestId;
     debugPrint('SalaryPaymentForm: loading employees for month=$month');
     setState(() {
       _isEmployeesLoading = true;
       _employeesError = null;
+      if (forceRefresh) {
+        _employees = [];
+      }
     });
 
     try {
       final employees = await _apiService.getEmployeesByRemaining(month: month);
-      if (!mounted) return;
+      if (!mounted ||
+          requestId != _employeesRequestId ||
+          month != _selectedMonthValue) {
+        return;
+      }
 
       EmployeeRemainingModel? selectedEmployee = _selectedEmployee;
       if (selectedEmployee != null) {
@@ -417,13 +437,17 @@ class _SalaryPaymentFormState extends State<SalaryPaymentForm> {
         _selectedEmployee = selectedEmployee;
         _employeeController.value = selectedEmployee;
         _isEmployeesLoading = false;
-      }); 
+      });
       debugPrint(
         'SalaryPaymentForm: employees loaded count=${employees.length}',
       );
     } catch (e) {
       debugPrint('SalaryPaymentForm: employees load error=$e');
-      if (!mounted) return;
+      if (!mounted ||
+          requestId != _employeesRequestId ||
+          month != _selectedMonthValue) {
+        return;
+      }
       setState(() {
         _isEmployeesLoading = false;
         _employeesError = e.toString();

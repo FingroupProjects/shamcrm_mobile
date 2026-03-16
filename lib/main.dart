@@ -768,7 +768,7 @@ class _MyAppState extends State<MyApp> {
         supportedLocales: [
           const Locale('ru', ''),
           const Locale('en', ''),
-          const Locale('uz', ''),
+          const Locale('uz', ''), 
         ],
         localeResolutionCallback: (locale, supportedLocales) {
           for (var supportedLocale in supportedLocales) {

@@ -117,6 +117,7 @@ class CustomAppBar extends StatefulWidget {
 
   final List? initialManagersDeal;
   final List? initialRegionsDeal;
+  final List? initialSourcesDeal;
   final List? initialLeadsDeal;
   final int? initialManagerDealStatuses;
   final DateTime? initialManagerDealFromDate;
@@ -240,6 +241,7 @@ class CustomAppBar extends StatefulWidget {
     this.initialChatFilters,
     this.initialManagersDeal,
     this.initialRegionsDeal,
+    this.initialSourcesDeal,
     this.initialLeadsDeal,
     this.initialManagerDealStatuses,
     this.initialManagerDealFromDate,
@@ -1830,6 +1832,7 @@ class _CustomAppBarState extends State<CustomAppBar>
           onStatusAndDateRangeSelected: widget.onStatusAndDateRangeDealSelected,
           initialManagers: widget.initialManagersDeal,
           initialRegions: widget.initialRegionsDeal,
+          initialSources: widget.initialSourcesDeal,
           initialLeads: widget.initialLeadsDeal,
           initialHasTasks: widget.initialManagerDealHasTasks,
           initialWithoutNotices: widget.initialManagerDealWithoutNotices,

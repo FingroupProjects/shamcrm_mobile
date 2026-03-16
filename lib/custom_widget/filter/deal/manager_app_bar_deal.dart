@@ -7,6 +7,7 @@ import 'package:crm_task_manager/custom_widget/filter/deal/deal_status_list.dart
 import 'package:crm_task_manager/custom_widget/filter/deal/multi_lead_status_list.dart';
 import 'package:crm_task_manager/custom_widget/filter/deal/lead_manager_list.dart';
 import 'package:crm_task_manager/custom_widget/filter/lead/multi_manager_list.dart';
+import 'package:crm_task_manager/custom_widget/filter/lead/multi_source_list.dart';
 import 'package:crm_task_manager/custom_widget/filter/lead/multi_region_list.dart';
 import 'package:crm_task_manager/custom_widget/filter/lead/multi_directory_dropdown_widget.dart';
 import 'package:crm_task_manager/models/LeadStatusForFilter.dart';
@@ -18,6 +19,7 @@ import 'package:crm_task_manager/models/field_configuration.dart';
 import 'package:crm_task_manager/models/manager_model.dart';
 import 'package:crm_task_manager/models/region_model.dart';
 import 'package:crm_task_manager/models/main_field_model.dart';
+import 'package:crm_task_manager/models/source_list_model.dart';
 import 'package:crm_task_manager/screens/deal/deal_cache.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -33,6 +35,7 @@ class DealManagerFilterScreen extends StatefulWidget {
   final Function(int?, DateTime?, DateTime?)? onStatusAndDateRangeSelected;
   final List? initialManagers;
   final List? initialRegions;
+  final List? initialSources;
   final List? initialLeads;
   final int? initialStatuses;
   final DateTime? initialFromDate;
@@ -58,6 +61,7 @@ class DealManagerFilterScreen extends StatefulWidget {
     this.onStatusAndDateRangeSelected,
     this.initialManagers,
     this.initialRegions,
+    this.initialSources,
     this.initialLeads,
     this.initialStatuses,
     this.initialFromDate,
@@ -92,6 +96,7 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
 
   List _selectedManagers = [];
   List _selectedRegions = [];
+  List<SourceData> _selectedSources = [];
   List _selectedLeads = [];
   int? _selectedStatuses;
   DateTime? _fromDate;
@@ -135,6 +140,8 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
     });
     _selectedManagers = widget.initialManagers ?? [];
     _selectedRegions = widget.initialRegions ?? [];
+    _selectedSources =
+        List<SourceData>.from(widget.initialSources ?? const <SourceData>[]);
     _selectedLeads = widget.initialLeads ?? [];
     _selectedStatuses = widget.initialStatuses;
     _fromDate = widget.initialFromDate;
@@ -185,6 +192,13 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
           (jsonDecode(prefs.getString('deal_selected_names') ?? '[]') as List)
               .map((name) => DealNameData(id: 0, title: name))
               .toList();
+      final storedSources =
+          (jsonDecode(prefs.getString('deal_selected_sources') ?? '[]') as List)
+              .map((source) => SourceData.fromJson(source))
+              .toList();
+      if (_selectedSources.isEmpty) {
+        _selectedSources = storedSources;
+      }
       _selectedLeadStatuses =
           (jsonDecode(prefs.getString('deal_selected_lead_statuses') ?? '[]')
                   as List)
@@ -211,6 +225,8 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
         'deal_selected_names',
         jsonEncode(
             _selectedDealNames.map((dealName) => dealName.title).toList()));
+    await prefs.setString('deal_selected_sources',
+        jsonEncode(_selectedSources.map((source) => source.toJson()).toList()));
     await prefs.setString(
       'deal_selected_lead_statuses',
       jsonEncode(_selectedLeadStatuses.map((status) => status.id).toList()),
@@ -420,6 +436,9 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
             ),
           ),
         );
+      case 'source_id':
+      case 'source':
+        return _buildSourceFilterCard();
       case 'lead_status_id':
         return Card(
           shape:
@@ -542,6 +561,25 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
     );
   }
 
+  Widget _buildSourceFilterCard() {
+    return Card(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      color: Colors.white,
+      child: Padding(
+        padding: const EdgeInsets.all(8),
+        child: SourcesMultiSelectWidget(
+          selectedSources:
+              _selectedSources.map((source) => source.id.toString()).toList(),
+          onSelectSources: (List<SourceData> selectedSourcesData) {
+            setState(() {
+              _selectedSources = selectedSourcesData;
+            });
+          },
+        ),
+      ),
+    );
+  }
+
   Widget _buildSwitchTile(String title, bool value, Function(bool) onChanged) {
     return SwitchListTile(
       title: Text(
@@ -601,6 +639,10 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
   Widget build(BuildContext context) {
     final hasLeadStatusInConfig = _fieldConfigurations
         .any((config) => config.fieldName == 'lead_status_id');
+    final hasSourceInConfig = _fieldConfigurations.any(
+      (config) =>
+          config.fieldName == 'source_id' || config.fieldName == 'source',
+    );
 
     return Scaffold(
       backgroundColor: Color(0xffF4F7FD),
@@ -625,6 +667,7 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
                 widget.onResetFilters?.call();
                 _selectedManagers.clear();
                 _selectedRegions.clear();
+                _selectedSources.clear();
                 _selectedLeads.clear();
                 _selectedStatuses = null;
                 _fromDate = null;
@@ -673,6 +716,7 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
               Map<String, dynamic> filterData = {
                 'managers': _selectedManagers,
                 'regions': _selectedRegions,
+                'sources': _selectedSources,
                 'leads': _selectedLeads,
                 'statuses': _selectedStatuses,
                 'fromDate': _fromDate,
@@ -709,6 +753,7 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
               }
               if (_selectedManagers.isNotEmpty ||
                   _selectedRegions.isNotEmpty ||
+                  _selectedSources.isNotEmpty ||
                   _selectedLeads.isNotEmpty ||
                   _selectedStatuses != null ||
                   _fromDate != null ||
@@ -798,6 +843,13 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
                       }),
                     if (_isConfigurationLoaded &&
                         _fieldConfigurations.isNotEmpty &&
+                        !hasSourceInConfig)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: _buildSourceFilterCard(),
+                      ),
+                    if (_isConfigurationLoaded &&
+                        _fieldConfigurations.isNotEmpty &&
                         !hasLeadStatusInConfig) ...[
                       Padding(
                         padding: const EdgeInsets.only(bottom: 8),
@@ -811,6 +863,26 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
                         ),
                       )
                     else ...[
+                      Card(
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                        color: Colors.white,
+                        child: Padding(
+                          padding: const EdgeInsets.all(8),
+                          child: SourcesMultiSelectWidget(
+                            selectedSources: _selectedSources
+                                .map((source) => source.id.toString())
+                                .toList(),
+                            onSelectSources:
+                                (List<SourceData> selectedSourcesData) {
+                              setState(() {
+                                _selectedSources = selectedSourcesData;
+                              });
+                            },
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
                       Card(
                         shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12)),

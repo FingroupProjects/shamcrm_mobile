@@ -3903,6 +3903,7 @@ class ApiService {
     String? search,
     List<int>? managers,
     List<int>? regions,
+    List<int>? sources,
     List<int>? leads,
     int? statuses,
     DateTime? fromDate,
@@ -3948,6 +3949,7 @@ class ApiService {
     bool hasFilters = (search != null && search.isNotEmpty) ||
         (managers != null && managers.isNotEmpty) ||
         (regions != null && regions.isNotEmpty) ||
+        (sources != null && sources.isNotEmpty) ||
         (leads != null && leads.isNotEmpty) ||
         (fromDate != null) ||
         (toDate != null) ||
@@ -3981,6 +3983,12 @@ class ApiService {
     if (regions != null && regions.isNotEmpty) {
       for (int i = 0; i < regions.length; i++) {
         path += '&regions[$i]=${regions[i]}';
+      }
+    }
+
+    if (sources != null && sources.isNotEmpty) {
+      for (int i = 0; i < sources.length; i++) {
+        path += '&sources[$i]=${sources[i]}';
       }
     }
 
@@ -15933,10 +15941,6 @@ class ApiService {
   }) async {
     await ensureInitialized();
 
-    final path = await _appendQueryParams(
-      '/employee/get-by-remaining?search=&page=1&per_page=20&month=$month',
-    );
-
     try {
       final token = await getToken();
       if (token == null) {
@@ -15946,7 +15950,30 @@ class ApiService {
         throw ApiException('Base URL is not initialized', 500);
       }
 
-      final uri = Uri.parse('$baseUrl$path');
+      final organizationId = await getSelectedOrganization();
+      final salesFunnelId = await getSelectedSalesFunnel() ??
+          await ensureSelectedSalesFunnelInitialized();
+
+      if (organizationId == null ||
+          organizationId.isEmpty ||
+          organizationId == 'null') {
+        throw ApiException('organization_id не найден', 400);
+      }
+
+      if (salesFunnelId == null ||
+          salesFunnelId.isEmpty ||
+          salesFunnelId == 'null') {
+        throw ApiException('sales_funnel_id не найден', 400);
+      }
+
+      final uri = Uri.parse('$baseUrl/employee/get-by-remaining').replace(
+        queryParameters: {
+          'month': month,
+          'organization_id': organizationId,
+          'sales_funnel_id': salesFunnelId,
+        },
+      );
+
       debugPrint('ApiService: getEmployeesByRemaining -> $uri');
       final response = await http.get(
         uri,
@@ -15963,8 +15990,18 @@ class ApiService {
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         final rawData = json.decode(response.body);
-        if (rawData is List) {
-          return rawData
+        final employeesData = rawData is List
+            ? rawData
+            : rawData is Map<String, dynamic>
+                ? (rawData['result'] is List
+                    ? rawData['result']
+                    : rawData['result'] is Map<String, dynamic>
+                        ? rawData['result']['data']
+                        : rawData['data'])
+                : null;
+
+        if (employeesData is List) {
+          return employeesData
               .whereType<Map<String, dynamic>>()
               .map(EmployeeRemainingModel.fromJson)
               .toList();

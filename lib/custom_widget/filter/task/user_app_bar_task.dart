@@ -6,7 +6,6 @@ import 'package:crm_task_manager/custom_widget/custom_chat_styles.dart';
 import 'package:crm_task_manager/custom_widget/custom_field_multi_select.dart';
 import 'package:crm_task_manager/custom_widget/filter/chat/task/ProjectMultiSelectWidget.dart';
 import 'package:crm_task_manager/custom_widget/filter/lead/multi_directory_dropdown_widget.dart';
-import 'package:crm_task_manager/custom_widget/filter/task/author_multi_list.dart';
 import 'package:crm_task_manager/custom_widget/filter/task/multi_task_status_list.dart';
 import 'package:crm_task_manager/custom_widget/filter/task/multi_user_list.dart';
 import 'package:crm_task_manager/models/author_data_response.dart';
@@ -16,6 +15,7 @@ import 'package:crm_task_manager/models/main_field_model.dart';
 import 'package:crm_task_manager/models/project_task_model.dart';
 import 'package:crm_task_manager/models/task_model.dart';
 import 'package:crm_task_manager/models/user_data_response.dart';
+import 'package:crm_task_manager/page_2/money/widgets/author_multi_select_widget.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/task/task_cache.dart';
 import 'package:crm_task_manager/screens/task/task_details/department_list.dart';
@@ -114,24 +114,50 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
   List<FieldConfiguration> _fieldConfigurations = [];
   bool _isConfigurationLoaded = false;
 
-  void _initializeCustomFieldSelections(Map<String, List<String>> initialSelections) {
+  bool get _hasAuthorFieldInConfiguration => _fieldConfigurations.any(
+        (config) =>
+            config.fieldName == 'author' || config.fieldName == 'author_id',
+      );
+
+  Widget _buildAuthorFilterCard() {
+    return Card(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      color: Colors.white,
+      child: Padding(
+        padding: const EdgeInsets.all(8),
+        child: AuthorMultiSelectWidget(
+          selectedAuthors: _selectedAuthors,
+          onSelectAuthors: (List<AuthorData> selectedAuthorsData) {
+            setState(() {
+              _selectedAuthors = selectedAuthorsData
+                  .map((author) => author.id.toString())
+                  .toList();
+            });
+          },
+        ),
+      ),
+    );
+  }
+
+  void _initializeCustomFieldSelections(
+      Map<String, List<String>> initialSelections) {
     final titles = _customFieldTitles;
     _selectedCustomFieldValues = {};
     for (final title in titles) {
       final initial = initialSelections[title];
       _selectedCustomFieldValues[title] =
-      initial != null ? List<String>.from(initial) : <String>[];
+          initial != null ? List<String>.from(initial) : <String>[];
     }
   }
 
   @override
   void initState() {
     super.initState();
-    
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadFieldConfiguration();
     });
-    
+
     _selectedUsers = widget.initialUsers ?? [];
     _selectedStatuses = widget.initialStatuses;
     _fromDate = widget.initialFromDate;
@@ -142,7 +168,9 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
       if (widget.initialProjects is List<String>) {
         _selectedProjects = widget.initialProjects as List<String>;
       } else if (widget.initialProjects is List<int>) {
-        _selectedProjects = (widget.initialProjects as List<int>).map((id) => id.toString()).toList();
+        _selectedProjects = (widget.initialProjects as List<int>)
+            .map((id) => id.toString())
+            .toList();
       } else {
         _selectedProjects = [];
       }
@@ -165,7 +193,6 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
     _loadTaskCustomFields();
   }
 
-
   Future<void> _loadTaskCustomFields() async {
     try {
       final titles = await _apiService.getTaskCustomFields();
@@ -174,8 +201,8 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
         _customFieldTitles = titles;
       });
       // Инициализируем выбранные значения на основе входящих selection'ов, когда появились заголовки
-      _initializeCustomFieldSelections(
-          widget.initialCustomFieldSelections ?? const <String, List<String>>{});
+      _initializeCustomFieldSelections(widget.initialCustomFieldSelections ??
+          const <String, List<String>>{});
       for (final title in titles) {
         unawaited(_loadSingleCustomField(title));
       }
@@ -189,7 +216,7 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
     setState(() {
       _customFieldLoadingStates[title] = true;
     });
-    
+
     try {
       final values = await _apiService.getTaskCustomFieldValues(title);
       if (!mounted) return;
@@ -211,13 +238,13 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
     try {
       final response = await _apiService.getFieldPositions(tableName: 'tasks');
       if (!mounted) return;
-      
+
       // Фильтруем только активные поля и сортируем по position
       final activeFields = response.result
           // .where((field) => field.isActive)
           .toList()
         ..sort((a, b) => a.position.compareTo(b.position));
-      
+
       print("activeFields: $activeFields");
 
       setState(() {
@@ -247,14 +274,17 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
       if (response.data != null) {
         setState(() {
           _directoryLinks = response.data!;
-          final initialDirectoryValues = widget.initialDirectoryValues ?? const [];
+          final initialDirectoryValues =
+              widget.initialDirectoryValues ?? const [];
           final Map<int, List<MainField>> updatedSelections = {};
 
           for (var link in _directoryLinks) {
-            final existingSelection = _selectedDirectoryFields[link.id] ?? const <MainField>[];
+            final existingSelection =
+                _selectedDirectoryFields[link.id] ?? const <MainField>[];
 
             if (existingSelection.isNotEmpty) {
-              updatedSelections[link.id] = List<MainField>.from(existingSelection);
+              updatedSelections[link.id] =
+                  List<MainField>.from(existingSelection);
               continue;
             }
 
@@ -408,22 +438,26 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
     switch (config.fieldName) {
       case 'executor':
         return Card(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           color: Colors.white,
           child: Padding(
             padding: const EdgeInsets.all(8),
             child: UserMultiSelectWidget(
-              selectedUsers: _selectedUsers.map((user) => user.id.toString()).toList(),
+              selectedUsers:
+                  _selectedUsers.map((user) => user.id.toString()).toList(),
               onSelectUsers: (List<UserData> selectedUsersData) {
                 setState(() => _selectedUsers = selectedUsersData);
               },
             ),
           ),
         );
-        
+
       case 'author_id':
+      case 'author':
         return Card(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           color: Colors.white,
           child: Padding(
             padding: const EdgeInsets.all(8),
@@ -459,8 +493,8 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
 
       case 'project':
         return Card(
-          shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           color: Colors.white,
           child: Padding(
             padding: const EdgeInsets.all(8),
@@ -478,38 +512,44 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
         );
       default:
         // Проверяем custom field
-        if (config.isCustomField && _customFieldTitles.contains(config.fieldName)) {
+        if (config.isCustomField &&
+            _customFieldTitles.contains(config.fieldName)) {
           final isLoading = _customFieldLoadingStates[config.fieldName] == true;
-          
+
           return Card(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             color: Colors.white,
             child: Padding(
               padding: const EdgeInsets.all(8),
               child: CustomFieldMultiSelect(
                 title: config.fieldName,
-                items: List<String>.from(_customFieldValues[config.fieldName] ?? const []),
-                initialSelectedValues: _selectedCustomFieldValues[config.fieldName],
+                items: List<String>.from(
+                    _customFieldValues[config.fieldName] ?? const []),
+                initialSelectedValues:
+                    _selectedCustomFieldValues[config.fieldName],
                 isLoading: isLoading,
                 onChanged: (values) {
                   setState(() {
-                    _selectedCustomFieldValues[config.fieldName] = List<String>.from(values);
+                    _selectedCustomFieldValues[config.fieldName] =
+                        List<String>.from(values);
                   });
                 },
               ),
             ),
           );
         }
-        
+
         // Проверяем directory
         if (config.isDirectory && config.directoryId != null) {
           try {
             final link = _directoryLinks.firstWhere(
               (l) => l.directory.id == config.directoryId,
             );
-            
+
             return Card(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
               color: Colors.white,
               child: Padding(
                 padding: const EdgeInsets.all(8),
@@ -518,7 +558,8 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
                   directoryName: link.directory.name,
                   onSelectField: (List<MainField> fields) {
                     setState(() {
-                      _selectedDirectoryFields[link.id] = List<MainField>.from(fields);
+                      _selectedDirectoryFields[link.id] =
+                          List<MainField>.from(fields);
                     });
                   },
                   initialFields: _selectedDirectoryFields[link.id],
@@ -530,7 +571,7 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
             return null;
           }
         }
-        
+
         return null;
     }
   }
@@ -548,7 +589,8 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
       value: value,
       onChanged: onChanged,
       activeColor: const Color.fromARGB(255, 255, 255, 255),
-      inactiveTrackColor: const Color.fromARGB(255, 179, 179, 179).withOpacity(0.5),
+      inactiveTrackColor:
+          const Color.fromARGB(255, 179, 179, 179).withOpacity(0.5),
       activeTrackColor: ChatSmsStyles.messageBubbleSenderColor,
       inactiveThumbColor: const Color.fromARGB(255, 255, 255, 255),
     );
@@ -595,7 +637,8 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
                 for (var link in _directoryLinks) {
                   _selectedDirectoryFields[link.id] = <MainField>[];
                 }
-                _initializeCustomFieldSelections(const <String, List<String>>{});
+                _initializeCustomFieldSelections(
+                    const <String, List<String>>{});
               });
             },
             style: TextButton.styleFrom(
@@ -620,7 +663,7 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
           TextButton(
             onPressed: () async {
               await TaskCache.clearAllTasks();
-              
+
               final directoryIdByLinkId = {
                 for (var link in _directoryLinks) link.id: link.directory.id,
               };
@@ -643,20 +686,19 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
                     ? _selectedProjects.map((id) => int.parse(id)).toList()
                     : null,
                 'department': _selectedDepartment,
-                'directory_values': _selectedDirectoryFields.entries
-                    .expand((entry) {
-                      final directoryId = directoryIdByLinkId[entry.key];
-                      if (directoryId == null || entry.value.isEmpty) {
-                        return const Iterable<Map<String, dynamic>>.empty();
-                      }
-                      return entry.value.map((field) => {
-                            'directory_id': directoryId,
-                            'entry_id': field.id,
-                          });
-                    })
-                    .toList(),
+                'directory_values':
+                    _selectedDirectoryFields.entries.expand((entry) {
+                  final directoryId = directoryIdByLinkId[entry.key];
+                  if (directoryId == null || entry.value.isEmpty) {
+                    return const Iterable<Map<String, dynamic>>.empty();
+                  }
+                  return entry.value.map((field) => {
+                        'directory_id': directoryId,
+                        'entry_id': field.id,
+                      });
+                }).toList(),
               };
-              
+
               final customFieldFilters = <String, List<String>>{};
               _selectedCustomFieldValues.forEach((key, values) {
                 if (values.isNotEmpty) {
@@ -679,7 +721,8 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
                   _selectedAuthors.isNotEmpty ||
                   _selectedProjects.isNotEmpty ||
                   _selectedDepartment != null ||
-                  _selectedDirectoryFields.values.any((fields) => fields.isNotEmpty) ||
+                  _selectedDirectoryFields.values
+                      .any((fields) => fields.isNotEmpty) ||
                   customFieldFilters.isNotEmpty;
 
               if (hasFilters) {
@@ -808,7 +851,8 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
                 child: Column(
                   children: [
                     // Поля по position из field configuration
-                    if (_isConfigurationLoaded && _fieldConfigurations.isNotEmpty)
+                    if (_isConfigurationLoaded &&
+                        _fieldConfigurations.isNotEmpty)
                       ..._fieldConfigurations.map((config) {
                         final widget = _buildFieldWidgetByConfig(config);
                         if (widget == null) return SizedBox.shrink();
@@ -816,7 +860,12 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
                           padding: const EdgeInsets.only(bottom: 8),
                           child: widget,
                         );
-                      })
+                      }),
+                    if (!_hasAuthorFieldInConfiguration)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: _buildAuthorFilterCard(),
+                      )
                     else if (!_isConfigurationLoaded)
                       // Показываем loader пока грузится конфигурация
                       Center(
@@ -828,63 +877,45 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
                     else
                       // Fallback: показываем поля в стандартном порядке если конфигурация пуста
                       ...[
-                        Card(
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12)),
-                          color: Colors.white,
-                          child: Padding(
-                            padding: const EdgeInsets.all(8),
-                            child: UserMultiSelectWidget(
-                              selectedUsers: _selectedUsers
-                                  .map((user) => user.id.toString())
-                                  .toList(),
-                              onSelectUsers: (List<UserData> selectedUsersData) {
-                                setState(() {
-                                  _selectedUsers = selectedUsersData;
-                                });
-                              },
-                            ),
+                      Card(
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                        color: Colors.white,
+                        child: Padding(
+                          padding: const EdgeInsets.all(8),
+                          child: UserMultiSelectWidget(
+                            selectedUsers: _selectedUsers
+                                .map((user) => user.id.toString())
+                                .toList(),
+                            onSelectUsers: (List<UserData> selectedUsersData) {
+                              setState(() {
+                                _selectedUsers = selectedUsersData;
+                              });
+                            },
                           ),
                         ),
-                        // const SizedBox(height: 8),
-                        // Card(
-                        //   shape: RoundedRectangleBorder(
-                        //       borderRadius: BorderRadius.circular(12)),
-                        //   color: Colors.white,
-                        //   child: Padding(
-                        //     padding: const EdgeInsets.all(8),
-                        //     child: TaskStatusRadioGroupWidget(
-                        //       selectedStatus: _selectedStatuses?.toString(),
-                        //       onSelectStatus: (TaskStatus selectedStatusData) {
-                        //         setState(() {
-                        //           _selectedStatuses = selectedStatusData.id;
-                        //         });
-                        //       },
-                        //     ),
-                        //   ),
-                        // ),
-                        const SizedBox(height: 8),
-                        Card(
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12)),
-                          color: Colors.white,
-                          child: Padding(
-                            padding: const EdgeInsets.all(8),
-                            child: AuthorMultiSelectWidget(
-                              selectedAuthors: _selectedAuthors,
-                              onSelectAuthors:
-                                  (List<AuthorData> selectedAuthorsData) {
-                                setState(() {
-                                  _selectedAuthors = selectedAuthorsData
-                                      .map((author) => author.id.toString())
-                                      .toList();
-                                });
-                              },
-                            ),
-                          ),
-                        ),
-                      ],
-                    
+                      ),
+                      // const SizedBox(height: 8),
+                      // Card(
+                      //   shape: RoundedRectangleBorder(
+                      //       borderRadius: BorderRadius.circular(12)),
+                      //   color: Colors.white,
+                      //   child: Padding(
+                      //     padding: const EdgeInsets.all(8),
+                      //     child: TaskStatusRadioGroupWidget(
+                      //       selectedStatus: _selectedStatuses?.toString(),
+                      //       onSelectStatus: (TaskStatus selectedStatusData) {
+                      //         setState(() {
+                      //           _selectedStatuses = selectedStatusData.id;
+                      //         });
+                      //       },
+                      //     ),
+                      //   ),
+                      // ),
+                      const SizedBox(height: 8),
+                      _buildAuthorFilterCard(),
+                    ],
+
                     // Department widget если включен
                     if (_isDepartmentEnabled) ...[
                       const SizedBox(height: 8),
@@ -908,7 +939,7 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
                         ),
                       ),
                     ],
-                    
+
                     // Switches - всегда в конце
                     const SizedBox(height: 8),
                     Card(

@@ -15,6 +15,7 @@ class DealBloc extends Bloc<DealEvent, DealState> {
   String? _currentQuery;
   List<int>? _currentManagerIds;
   List<int>? _currentRegionsIds;
+  List<int>? _currentSources;
   int? _currentStatusId;
   DateTime? _currentFromDate;
   DateTime? _currentToDate;
@@ -48,6 +49,7 @@ class DealBloc extends Bloc<DealEvent, DealState> {
             _currentQuery!.isNotEmpty) ||
         (_currentManagerIds != null && _currentManagerIds!.isNotEmpty) ||
         (_currentRegionsIds != null && _currentRegionsIds!.isNotEmpty) ||
+        (_currentSources != null && _currentSources!.isNotEmpty) ||
         (_currentLeadIds != null && _currentLeadIds!.isNotEmpty) ||
         (_currentLeadStatuses != null && _currentLeadStatuses!.isNotEmpty) ||
         (_currentDirectoryValues != null &&
@@ -99,6 +101,7 @@ class DealBloc extends Bloc<DealEvent, DealState> {
       _currentQuery = event.query;
       _currentManagerIds = event.managerIds;
       _currentRegionsIds = event.regionsIds;
+      _currentSources = event.sources;
       _currentStatusId = event.statusIds;
       _currentFromDate = event.fromDate;
       _currentToDate = event.toDate;
@@ -143,6 +146,7 @@ class DealBloc extends Bloc<DealEvent, DealState> {
           search: event.query,
           managers: event.managerIds,
           regions: event.regionsIds,
+          sources: event.sources,
           statuses: event.statusIds,
           fromDate: event.fromDate,
           toDate: event.toDate,
@@ -220,6 +224,8 @@ class DealBloc extends Bloc<DealEvent, DealState> {
         // Сбрасываем все параметры фильтрации
         _currentQuery = null;
         _currentManagerIds = null;
+        _currentRegionsIds = null;
+        _currentSources = null;
         _currentStatusId = null;
         _currentFromDate = null;
         _currentToDate = null;
@@ -369,6 +375,7 @@ class DealBloc extends Bloc<DealEvent, DealState> {
         search: _currentQuery,
         managers: _currentManagerIds,
         regions: _currentRegionsIds,
+        sources: _currentSources,
         statuses: _currentStatusId,
         fromDate: _currentFromDate,
         toDate: _currentToDate,
@@ -637,6 +644,8 @@ class DealBloc extends Bloc<DealEvent, DealState> {
         // Сохраняем фильтры для последующих запросов
         _currentQuery = null;
         _currentManagerIds = event.managerIds;
+        _currentRegionsIds = event.regionsIds;
+        _currentSources = event.sources;
         _currentLeadIds = event.leadIds;
         _currentStatusId = event.statusIds;
         _currentFromDate = event.fromDate;
@@ -658,6 +667,7 @@ class DealBloc extends Bloc<DealEvent, DealState> {
             status.id,
             event.managerIds,
             event.regionsIds,
+            event.sources,
             event.leadIds,
             event.statusIds,
             event.fromDate,
@@ -700,6 +710,7 @@ class DealBloc extends Bloc<DealEvent, DealState> {
     int statusId,
     List<int>? managerIds,
     List<int>? regionsIds,
+    List<int>? sources,
     List<int>? leadIds,
     int? statusIds,
     DateTime? fromDate,
@@ -729,6 +740,7 @@ class DealBloc extends Bloc<DealEvent, DealState> {
         perPage: 20,
         managers: managerIds,
         regions: regionsIds,
+        sources: sources,
         leads: leadIds,
         statuses: statusId, // ID статуса через параметр statuses
         fromDate: fromDate,
@@ -773,6 +785,7 @@ class DealBloc extends Bloc<DealEvent, DealState> {
     _currentQuery = null;
     _currentManagerIds = null;
     _currentRegionsIds = null;
+    _currentSources = null;
     _currentStatusId = null;
     _currentFromDate = null;
     _currentToDate = null;
