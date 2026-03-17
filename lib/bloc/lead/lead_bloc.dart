@@ -1,6 +1,9 @@
 import 'dart:io';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/models/lead_model.dart';
+import 'package:crm_task_manager/offline/core/offline_module.dart';
+import 'package:crm_task_manager/offline/core/offline_runtime.dart';
+import 'package:crm_task_manager/offline/core/request_priority.dart';
 import 'package:crm_task_manager/screens/lead/lead_cache.dart';
 import 'package:flutter/cupertino.dart' show debugPrint;
 import 'package:flutter/foundation.dart';
@@ -543,9 +546,31 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
         requestData['price_type_id'] =
             event.priceTypeId; // Добавляем price_type_id
 
-      final result = await apiService.createLeadWithData(
-        requestData,
-      );
+      if (!await _checkInternetConnection()) {
+        if (event.files != null && event.files!.isNotEmpty) {
+          emit(LeadError(
+              'Офлайн-очередь для вложений будет доведена в phase 2. Текстовые изменения можно отправлять без файлов.'));
+          return;
+        }
+        await OfflineRuntime.instance.outboxService.enqueue(
+          id: 'lead_create_${DateTime.now().millisecondsSinceEpoch}',
+          module: OfflineModule.lead,
+          entityType: 'lead',
+          entityId: 'local_${DateTime.now().millisecondsSinceEpoch}',
+          operationType: 'create',
+          payload: {
+            'data': requestData,
+          },
+          idempotencyKey:
+              'lead-create-${DateTime.now().millisecondsSinceEpoch}',
+          priority: RequestPriority.high,
+        );
+        emit(LeadSuccess(
+            'Действие принято. Лид поставлен в очередь и будет синхронизирован после восстановления сети.'));
+        return;
+      }
+
+      final result = await apiService.createLeadWithData(requestData);
 
       if (result['success']) {
         emit(LeadSuccess(
@@ -569,11 +594,6 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
 
   Future<void> _updateLead(UpdateLead event, Emitter<LeadState> emit) async {
     emit(LeadLoading());
-
-    if (!await _checkInternetConnection()) {
-      emit(LeadError(event.localizations.translate('no_internet_connection')));
-      return;
-    }
 
     debugPrint("files: ${event.files}");
 
@@ -608,6 +628,31 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
       requestData['manager_id'] = 0;
     } else if (event.managerId != null) {
       requestData['manager_id'] = event.managerId;
+    }
+
+    if (!await _checkInternetConnection()) {
+      if (event.files != null && event.files!.isNotEmpty) {
+        emit(LeadError(
+            'Офлайн-очередь для вложений будет доведена в phase 2. Текстовые изменения можно отправлять без файлов.'));
+        return;
+      }
+      await OfflineRuntime.instance.outboxService.enqueue(
+        id: 'lead_update_${event.leadId}_${DateTime.now().millisecondsSinceEpoch}',
+        module: OfflineModule.lead,
+        entityType: 'lead',
+        entityId: event.leadId.toString(),
+        operationType: 'update',
+        payload: {
+          'leadId': event.leadId,
+          'data': requestData,
+        },
+        idempotencyKey:
+            'lead-update-${event.leadId}-${DateTime.now().millisecondsSinceEpoch}',
+        priority: RequestPriority.high,
+      );
+      emit(LeadSuccess(
+          'Изменения приняты и поставлены в очередь на синхронизацию.'));
+      return;
     }
 
     final result = await apiService.updateLeadWithData(

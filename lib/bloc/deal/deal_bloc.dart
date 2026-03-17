@@ -1,6 +1,9 @@
 import 'dart:io';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/models/deal_model.dart';
+import 'package:crm_task_manager/offline/core/offline_module.dart';
+import 'package:crm_task_manager/offline/core/offline_runtime.dart';
+import 'package:crm_task_manager/offline/core/request_priority.dart';
 import 'package:crm_task_manager/screens/deal/deal_cache.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -441,7 +444,37 @@ class DealBloc extends Bloc<DealEvent, DealState> {
   Future<void> _createDeal(CreateDeal event, Emitter<DealState> emit) async {
     emit(DealLoading());
     if (!await _checkInternetConnection()) {
-      emit(DealError(event.localizations.translate('no_internet_connection')));
+      if (event.files != null && event.files!.isNotEmpty) {
+        emit(DealError(
+            'Офлайн-очередь для вложений будет доведена в phase 2. Сейчас офлайн поддерживаются только текстовые операции.'));
+        return;
+      }
+      await OfflineRuntime.instance.outboxService.enqueue(
+        id: 'deal_create_${DateTime.now().millisecondsSinceEpoch}',
+        module: OfflineModule.deal,
+        entityType: 'deal',
+        entityId: 'local_${DateTime.now().millisecondsSinceEpoch}',
+        operationType: 'create',
+        payload: {
+          'name': event.name,
+          'dealStatusId': event.dealStatusId,
+          'managerId': event.managerId,
+          'startDate': event.startDate?.toIso8601String(),
+          'endDate': event.endDate?.toIso8601String(),
+          'sum': event.sum,
+          'description': event.description,
+          'dealtypeId': event.dealtypeId,
+          'leadId': event.leadId,
+          'customFields': event.customFields,
+          'directoryValues': event.directoryValues,
+          'userIds': event.userIds,
+        },
+        idempotencyKey:
+            'deal-create-${DateTime.now().millisecondsSinceEpoch}',
+        priority: RequestPriority.high,
+      );
+      emit(DealSuccess(
+          'Сделка принята локально и поставлена в outbox для синхронизации.'));
       return;
     }
     try {
@@ -476,7 +509,40 @@ class DealBloc extends Bloc<DealEvent, DealState> {
     emit(DealLoading());
 
     if (!await _checkInternetConnection()) {
-      emit(DealError(event.localizations.translate('no_internet_connection')));
+      if (event.files != null && event.files!.isNotEmpty) {
+        emit(DealError(
+            'Офлайн-очередь для вложений будет доведена в phase 2. Сейчас офлайн поддерживаются только текстовые операции.'));
+        return;
+      }
+      await OfflineRuntime.instance.outboxService.enqueue(
+        id: 'deal_update_${event.dealId}_${DateTime.now().millisecondsSinceEpoch}',
+        module: OfflineModule.deal,
+        entityType: 'deal',
+        entityId: event.dealId.toString(),
+        operationType: 'update',
+        payload: {
+          'dealId': event.dealId,
+          'name': event.name,
+          'dealStatusId': event.dealStatusId,
+          'managerId': event.managerId,
+          'startDate': event.startDate?.toIso8601String(),
+          'endDate': event.endDate?.toIso8601String(),
+          'sum': event.sum,
+          'description': event.description,
+          'dealtypeId': event.dealtypeId,
+          'leadId': event.leadId,
+          'customFields': event.customFields,
+          'directoryValues': event.directoryValues,
+          'dealStatusIds': event.dealStatusIds,
+          'existingFiles': event.existingFiles,
+          'userIds': event.userIds,
+        },
+        idempotencyKey:
+            'deal-update-${event.dealId}-${DateTime.now().millisecondsSinceEpoch}',
+        priority: RequestPriority.high,
+      );
+      emit(DealSuccess(
+          'Изменения сделки приняты локально и поставлены в очередь.'));
       return;
     }
 

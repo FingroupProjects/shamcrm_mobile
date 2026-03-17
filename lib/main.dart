@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:app_tracking_transparency/app_tracking_transparency.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/api/service/firebase_api.dart';
@@ -121,6 +123,8 @@ import 'package:crm_task_manager/bloc/user/client/get_all_client_bloc.dart';
 import 'package:crm_task_manager/bloc/user/create_cleant/create_client_bloc.dart';
 import 'package:crm_task_manager/bloc/user/user_bloc.dart';
 import 'package:crm_task_manager/firebase_options.dart';
+import 'package:crm_task_manager/offline/core/core_outbox_executors.dart';
+import 'package:crm_task_manager/offline/core/offline_bootstrap.dart';
 import 'package:crm_task_manager/screens/auth/pin_screen.dart';
 import 'package:crm_task_manager/screens/chats/chats_screen.dart';
 import 'package:crm_task_manager/screens/auth/pin_setup_screen.dart';
@@ -155,6 +159,7 @@ final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
 void main() async {
   try {
     WidgetsFlutterBinding.ensureInitialized();
+    await OfflineBootstrap.initialize();
 
     await _initializeFirebase();
     
@@ -174,14 +179,11 @@ void main() async {
 
       if (isDomainChecked) {
         await apiService.initialize();
-        await apiService.ensureSelectedSalesFunnelInitialized();
+        CoreOutboxExecutors.register(apiService);
       }
     } else {
       await _clearAllApplicationData(apiService, authService);
     }
-
-    await AppTrackingTransparency.requestTrackingAuthorization();
-    await _initializeFirebaseMessaging(apiService);
 
     RemoteMessage? initialMessage;
     try {
@@ -269,7 +271,7 @@ Future<void> _initializeFirebaseMessaging(ApiService apiService) async {
 
     await Future.delayed(const Duration(milliseconds: 500));
 
-    final settings = await FirebaseMessaging.instance.requestPermission(
+    await FirebaseMessaging.instance.requestPermission(
       alert: true,
       badge: true,
       sound: true,
@@ -504,6 +506,7 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   Locale? _locale;
   bool _platformServicesInitialized = false;
+  bool _deferredStartupInitialized = false;
 
   @override
   void initState() {
@@ -522,6 +525,20 @@ class _MyAppState extends State<MyApp> {
 
     WidgetService.initialize();
     await NativeInternetMonitor().initialize();
+    _initializeDeferredStartup();
+  }
+
+  Future<void> _initializeDeferredStartup() async {
+    if (_deferredStartupInitialized) {
+      return;
+    }
+    _deferredStartupInitialized = true;
+
+    unawaited(AppTrackingTransparency.requestTrackingAuthorization());
+    unawaited(_initializeFirebaseMessaging(widget.apiService));
+    if (widget.isDomainChecked && widget.sessionValid) {
+      unawaited(widget.apiService.ensureSelectedSalesFunnelInitialized());
+    }
   }
 //1
   Future<void> checkForNewVersion(BuildContext context) async {
@@ -582,7 +599,7 @@ class _MyAppState extends State<MyApp> {
         BlocProvider(create: (context) => GetAllManagerBloc()),
         BlocProvider(create: (context) => GetAllRegionBloc()),
         BlocProvider(create: (context) => GetAllSourceBloc()),
-        BlocProvider(create: (context) => GetAllLeadBloc()),
+        BlocProvider(create: (context) => GetAllLeadBloc(apiService: widget.apiService)),
         BlocProvider(create: (context) => GetAllCashRegisterBloc()),
         BlocProvider(create: (context) => GetAllIncomeCategoryBloc()),
         BlocProvider(create: (context) => GetAllSupplierBloc()),
@@ -622,14 +639,14 @@ class _MyAppState extends State<MyApp> {
         BlocProvider(create: (context) => ListenSenderVoiceCubit()),
         BlocProvider(create: (context) => ListenSenderFileCubit()),
         BlocProvider(
-          create: (context) => ChatsBloc(ApiService()),
+          create: (context) => ChatsBloc(widget.apiService),
         ),
         BlocProvider(create: (context) => TaskStatusBloc(ApiService())),
         BlocProvider(create: (context) => MyTaskStatusBloc(ApiService())),
         BlocProvider(create: (context) => OrganizationBloc(ApiService())),
         BlocProvider(create: (context) => NotificationBloc(ApiService())),
         BlocProvider(
-          create: (context) => ChatsBloc(ApiService()),
+          create: (context) => ChatsBloc(widget.apiService),
         ),
         BlocProvider(create: (context) => TaskStatusBloc(ApiService())),
         BlocProvider(create: (context) => DashboardChartBloc(ApiService())),

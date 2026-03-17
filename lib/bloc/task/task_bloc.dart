@@ -3,6 +3,9 @@ import 'dart:io';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/models/api_exception_model.dart';
 import 'package:crm_task_manager/models/task_model.dart';
+import 'package:crm_task_manager/offline/core/offline_module.dart';
+import 'package:crm_task_manager/offline/core/offline_runtime.dart';
+import 'package:crm_task_manager/offline/core/request_priority.dart';
 import 'package:crm_task_manager/screens/task/task_cache.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -533,7 +536,36 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
   Future<void> _createTask(CreateTask event, Emitter<TaskState> emit) async {
     emit(TaskLoading());
     if (!await _checkInternetConnection()) {
-      emit(TaskError(event.localizations.translate('no_internet_connection')));
+      if (event.files != null && event.files!.isNotEmpty) {
+        emit(TaskError(
+            'Офлайн-очередь для вложений будет доведена в phase 2. Сейчас офлайн поддерживаются только текстовые операции.'));
+        return;
+      }
+      await OfflineRuntime.instance.outboxService.enqueue(
+        id: 'task_create_${DateTime.now().millisecondsSinceEpoch}',
+        module: OfflineModule.task,
+        entityType: 'task',
+        entityId: 'local_${DateTime.now().millisecondsSinceEpoch}',
+        operationType: 'create',
+        payload: {
+          'name': event.name,
+          'statusId': event.statusId,
+          'taskStatusId': event.taskStatusId,
+          'priority': event.priority,
+          'startDate': event.startDate?.toIso8601String(),
+          'endDate': event.endDate?.toIso8601String(),
+          'projectId': event.projectId,
+          'userId': event.userId,
+          'description': event.description,
+          'customFields': event.customFields,
+          'directoryValues': event.directoryValues,
+        },
+        idempotencyKey:
+            'task-create-${DateTime.now().millisecondsSinceEpoch}',
+        priority: RequestPriority.high,
+      );
+      emit(TaskSuccess(
+          'Задача принята локально и поставлена в очередь на синхронизацию.'));
       return;
     }
     try {
@@ -566,7 +598,32 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
     emit(TaskLoading());
 
     if (!await _checkInternetConnection()) {
-      emit(TaskError(event.localizations.translate('no_internet_connection')));
+      await OfflineRuntime.instance.outboxService.enqueue(
+        id: 'task_update_${event.taskId}_${DateTime.now().millisecondsSinceEpoch}',
+        module: OfflineModule.task,
+        entityType: 'task',
+        entityId: event.taskId.toString(),
+        operationType: 'update',
+        payload: {
+          'taskId': event.taskId,
+          'name': event.name,
+          'taskStatusId': event.taskStatusId,
+          'priority': event.priority,
+          'startDate': event.startDate?.toIso8601String(),
+          'endDate': event.endDate?.toIso8601String(),
+          'projectId': event.projectId,
+          'userId': event.userId,
+          'description': event.description,
+          'customFields': event.customFields,
+          'filePaths': event.filePaths,
+          'directoryValues': event.directoryValues,
+        },
+        idempotencyKey:
+            'task-update-${event.taskId}-${DateTime.now().millisecondsSinceEpoch}',
+        priority: RequestPriority.high,
+      );
+      emit(TaskSuccess(
+          'Изменения задачи приняты локально и поставлены в очередь.'));
       return;
     }
 
