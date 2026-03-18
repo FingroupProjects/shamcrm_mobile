@@ -4,6 +4,7 @@ import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/department/department_bloc.dart';
 import 'package:crm_task_manager/custom_widget/custom_chat_styles.dart';
 import 'package:crm_task_manager/custom_widget/custom_field_multi_select.dart';
+import 'package:crm_task_manager/custom_widget/filter/common/multi_reason_for_refusal_list.dart';
 import 'package:crm_task_manager/custom_widget/filter/chat/task/ProjectMultiSelectWidget.dart';
 import 'package:crm_task_manager/custom_widget/filter/lead/multi_directory_dropdown_widget.dart';
 import 'package:crm_task_manager/custom_widget/filter/task/multi_task_status_list.dart';
@@ -13,6 +14,7 @@ import 'package:crm_task_manager/models/directory_link_model.dart';
 import 'package:crm_task_manager/models/field_configuration.dart';
 import 'package:crm_task_manager/models/main_field_model.dart';
 import 'package:crm_task_manager/models/project_task_model.dart';
+import 'package:crm_task_manager/models/reason_for_refusal_model.dart';
 import 'package:crm_task_manager/models/task_model.dart';
 import 'package:crm_task_manager/models/user_data_response.dart';
 import 'package:crm_task_manager/page_2/money/widgets/author_multi_select_widget.dart';
@@ -41,6 +43,7 @@ class UserFilterScreen extends StatefulWidget {
   final DateTime? initialDeadlineToDate;
   final DateTime? initialCompletedFromDate;
   final DateTime? initialCompletedToDate;
+  final List<int>? initialReasonForRefusalIds;
   final VoidCallback? onResetFilters;
   final List<String>? initialAuthors;
   final String? initialDepartment;
@@ -69,6 +72,7 @@ class UserFilterScreen extends StatefulWidget {
     this.initialDeadlineToDate,
     this.initialCompletedFromDate,
     this.initialCompletedToDate,
+    this.initialReasonForRefusalIds,
     this.onResetFilters,
     this.initialAuthors,
     this.initialDepartment,
@@ -94,6 +98,7 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
   DateTime? _deadlinetoDate;
   DateTime? _completedFromDate;
   DateTime? _completedToDate;
+  List<ReasonForRefusalData> _selectedReasonForRefusals = [];
   bool _isOverdue = false;
   bool _hasFile = false;
   bool _hasDeal = false;
@@ -113,6 +118,7 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
   // Field configuration
   List<FieldConfiguration> _fieldConfigurations = [];
   bool _isConfigurationLoaded = false;
+  bool _askReasonForRefusal = false;
 
   bool get _hasAuthorFieldInConfiguration => _fieldConfigurations.any(
         (config) =>
@@ -185,12 +191,26 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
     _deadlinetoDate = widget.initialDeadlineToDate;
     _completedFromDate = widget.initialCompletedFromDate;
     _completedToDate = widget.initialCompletedToDate;
+    if (widget.initialReasonForRefusalIds != null) {
+      _selectedReasonForRefusals = widget.initialReasonForRefusalIds!
+          .map((id) => ReasonForRefusalData(id: id, text: '', type: 'task'))
+          .toList();
+    }
     _selectedDepartment = widget.initialDepartment;
+    _loadAskReasonForRefusal();
     _loadDepartmentStatus();
     _fetchDirectoryLinks();
     _initializeCustomFieldSelections(
         widget.initialCustomFieldSelections ?? const <String, List<String>>{});
     _loadTaskCustomFields();
+  }
+
+  Future<void> _loadAskReasonForRefusal() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
+    setState(() {
+      _askReasonForRefusal = prefs.getBool('ask_reason_for_refusal') ?? false;
+    });
   }
 
   Future<void> _loadTaskCustomFields() async {
@@ -510,6 +530,28 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
             ),
           ),
         );
+      case 'reason_for_refusal':
+      case 'reason_for_refusal_id':
+        if (!_askReasonForRefusal) return null;
+        return Card(
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          color: Colors.white,
+          child: Padding(
+            padding: const EdgeInsets.all(8),
+            child: ReasonForRefusalMultiSelectWidget(
+              type: 'task',
+              selectedReasonIds: _selectedReasonForRefusals
+                  .map((reason) => reason.id)
+                  .toList(),
+              onSelectReasons: (selectedReasons) {
+                setState(() {
+                  _selectedReasonForRefusals = selectedReasons;
+                });
+              },
+            ),
+          ),
+        );
       default:
         // Проверяем custom field
         if (config.isCustomField &&
@@ -632,6 +674,7 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
                 _deadlinetoDate = null;
                 _completedFromDate = null;
                 _completedToDate = null;
+                _selectedReasonForRefusals.clear();
                 _selectedDepartment = null;
                 _selectedDirectoryFields.clear();
                 for (var link in _directoryLinks) {
@@ -681,6 +724,9 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
                 'deadlinetoDate': _deadlinetoDate,
                 'completedFromDate': _completedFromDate,
                 'completedToDate': _completedToDate,
+                'reason_for_refusal_ids': _selectedReasonForRefusals
+                    .map((reason) => reason.id)
+                    .toList(),
                 'authors': _selectedAuthors,
                 'project_ids': _selectedProjects.isNotEmpty
                     ? _selectedProjects.map((id) => int.parse(id)).toList()
@@ -718,6 +764,7 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
                   _isUrgent ||
                   (_deadlinefromDate != null && _deadlinetoDate != null) ||
                   (_completedFromDate != null && _completedToDate != null) ||
+                  _selectedReasonForRefusals.isNotEmpty ||
                   _selectedAuthors.isNotEmpty ||
                   _selectedProjects.isNotEmpty ||
                   _selectedDepartment != null ||
@@ -861,6 +908,36 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
                           child: widget,
                         );
                       }),
+                    if (_isConfigurationLoaded &&
+                        _fieldConfigurations.isNotEmpty &&
+                        _askReasonForRefusal &&
+                        !_fieldConfigurations.any(
+                          (config) =>
+                              config.fieldName == 'reason_for_refusal' ||
+                              config.fieldName == 'reason_for_refusal_id',
+                        ))
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: Card(
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12)),
+                          color: Colors.white,
+                          child: Padding(
+                            padding: const EdgeInsets.all(8),
+                            child: ReasonForRefusalMultiSelectWidget(
+                              type: 'task',
+                              selectedReasonIds: _selectedReasonForRefusals
+                                  .map((reason) => reason.id)
+                                  .toList(),
+                              onSelectReasons: (selectedReasons) {
+                                setState(() {
+                                  _selectedReasonForRefusals = selectedReasons;
+                                });
+                              },
+                            ),
+                          ),
+                        ),
+                      ),
                     if (!_hasAuthorFieldInConfiguration)
                       Padding(
                         padding: const EdgeInsets.only(bottom: 8),

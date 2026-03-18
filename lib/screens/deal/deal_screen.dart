@@ -77,6 +77,7 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
   List<SourceData> _selectedSources = [];
   List<LeadData> _selectedLeads = [];
   List<int> _selectedLeadStatusIds = [];
+  List<int> _selectedReasonForRefusalIds = [];
   int? _selectedStatuses;
   DateTime? _fromDate;
   DateTime? _toDate;
@@ -92,6 +93,7 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
   List<SourceData> _initialSelectedSources = [];
   List<LeadData> _initialselectedLeads = [];
   List<int> _initialLeadStatusIds = [];
+  List<int> _initialReasonForRefusalIds = [];
   int? _initialSelStatus;
   DateTime? _intialFromDate;
   DateTime? _intialToDate;
@@ -176,6 +178,7 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
           _selectedSources.clear();
           _selectedLeads.clear();
           _selectedLeadStatusIds = [];
+          _selectedReasonForRefusalIds = [];
           _selectedStatuses = null;
           _fromDate = null;
           _toDate = null;
@@ -192,6 +195,7 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
           _initialSelectedSources.clear();
           _initialselectedLeads.clear();
           _initialLeadStatusIds = [];
+          _initialReasonForRefusalIds = [];
           _initialSelStatus = null;
           _intialFromDate = null;
           _intialToDate = null;
@@ -484,6 +488,7 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
         _selectedSources.isNotEmpty ||
         _selectedLeads.isNotEmpty ||
         _selectedLeadStatusIds.isNotEmpty ||
+        _selectedReasonForRefusalIds.isNotEmpty ||
         _selectedStatuses != null ||
         _fromDate != null ||
         _toDate != null ||
@@ -674,6 +679,9 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
           : null,
       leadStatuses:
           _selectedLeadStatusIds.isNotEmpty ? _selectedLeadStatusIds : null,
+      reasonForRefusalIds: _selectedReasonForRefusalIds.isNotEmpty
+          ? _selectedReasonForRefusalIds
+          : null,
       statusIds: _selectedStatuses,
       fromDate: _fromDate,
       toDate: _toDate,
@@ -701,6 +709,7 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
         _selectedSources = [];
         _selectedLeads = [];
         _selectedLeadStatusIds = [];
+        _selectedReasonForRefusalIds = [];
         _selectedStatuses = null;
         _fromDate = null;
         _toDate = null;
@@ -716,6 +725,7 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
         _initialSelectedSources = [];
         _initialselectedLeads = [];
         _initialLeadStatusIds = [];
+        _initialReasonForRefusalIds = [];
         _initialSelStatus = null;
         _intialFromDate = null;
         _intialToDate = null;
@@ -759,6 +769,12 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
                 .where((id) => id != 0)
                 .toList() ??
             [];
+        _selectedReasonForRefusalIds =
+            (managers['reason_for_refusal_ids'] as List?)
+                    ?.map((id) => int.tryParse(id.toString()) ?? 0)
+                    .where((id) => id != 0)
+                    .toList() ??
+                [];
         _selectedStatuses = managers['statuses'];
         _fromDate = managers['fromDate'];
         _toDate = managers['toDate'];
@@ -788,6 +804,8 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
         _initialSelectedSources = List<SourceData>.from(_selectedSources);
         _initialselectedLeads = managers['leads'] ?? [];
         _initialLeadStatusIds = List<int>.from(_selectedLeadStatusIds);
+        _initialReasonForRefusalIds =
+            List<int>.from(_selectedReasonForRefusalIds);
         _initialSelStatus = managers['statuses'];
         _intialFromDate = managers['fromDate'];
         _intialToDate = managers['toDate'];
@@ -817,6 +835,9 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
           : null,
       leadStatuses:
           _selectedLeadStatusIds.isNotEmpty ? _selectedLeadStatusIds : null,
+      reasonForRefusalIds: _selectedReasonForRefusalIds.isNotEmpty
+          ? _selectedReasonForRefusalIds
+          : null,
       statusIds: _selectedStatuses,
       fromDate: _fromDate,
       toDate: _toDate,
@@ -857,6 +878,9 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
           : null,
       leadStatuses:
           _selectedLeadStatusIds.isNotEmpty ? _selectedLeadStatusIds : null,
+      reasonForRefusalIds: _selectedReasonForRefusalIds.isNotEmpty
+          ? _selectedReasonForRefusalIds
+          : null,
       withoutNotices: _withoutNotices,
       overdueNotices: _overdueNotices,
       customFieldFilters: _selectedDealCustomFieldFilters,
@@ -886,6 +910,9 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
           : null,
       leadStatuses:
           _selectedLeadStatusIds.isNotEmpty ? _selectedLeadStatusIds : null,
+      reasonForRefusalIds: _selectedReasonForRefusalIds.isNotEmpty
+          ? _selectedReasonForRefusalIds
+          : null,
       withoutNotices: _withoutNotices,
       overdueNotices: _overdueNotices,
       customFieldFilters: _selectedDealCustomFieldFilters,
@@ -919,6 +946,9 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
           : null,
       leadStatuses:
           _selectedLeadStatusIds.isNotEmpty ? _selectedLeadStatusIds : null,
+      reasonForRefusalIds: _selectedReasonForRefusalIds.isNotEmpty
+          ? _selectedReasonForRefusalIds
+          : null,
       withoutNotices: _withoutNotices,
       overdueNotices: _overdueNotices,
       customFieldFilters: _selectedDealCustomFieldFilters,
@@ -950,6 +980,9 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
           : null,
       leadStatuses:
           _selectedLeadStatusIds.isNotEmpty ? _selectedLeadStatusIds : null,
+      reasonForRefusalIds: _selectedReasonForRefusalIds.isNotEmpty
+          ? _selectedReasonForRefusalIds
+          : null,
       statusIds: _selectedStatuses ?? targetStatusId,
       fromDate: _fromDate,
       toDate: _toDate,
@@ -1037,6 +1070,7 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
             initialManagerDealWithoutNotices: _initialWithoutNotices,
             initialManagerDealOverdueNotices: _initialOverdueNotices,
             initialLeadStatusesDeal: _initialLeadStatusIds,
+            initialReasonForRefusalIdsDeal: _initialReasonForRefusalIds,
             initialDirectoryValuesDeal: _initialDirectoryValues,
             initialDealNames: _initialSelectedDealNames
                 .map((dealName) => dealName.title)
@@ -1064,6 +1098,7 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
                   if (_selectedManagers.isEmpty &&
                       _selectedRegions.isEmpty &&
                       _selectedSources.isEmpty &&
+                      _selectedReasonForRefusalIds.isEmpty &&
                       _selectedStatuses == null &&
                       _fromDate == null &&
                       _toDate == null &&
@@ -1110,6 +1145,10 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
                       leadStatuses: _selectedLeadStatusIds.isNotEmpty
                           ? _selectedLeadStatusIds
                           : null,
+                      reasonForRefusalIds:
+                          _selectedReasonForRefusalIds.isNotEmpty
+                              ? _selectedReasonForRefusalIds
+                              : null,
                       salesFunnelId: _selectedFunnel?.id,
                     ));
                   }
@@ -1130,6 +1169,9 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
                         : null,
                     leadStatuses: _selectedLeadStatusIds.isNotEmpty
                         ? _selectedLeadStatusIds
+                        : null,
+                    reasonForRefusalIds: _selectedReasonForRefusalIds.isNotEmpty
+                        ? _selectedReasonForRefusalIds
                         : null,
                     withoutNotices: _withoutNotices,
                     overdueNotices: _overdueNotices,
@@ -1735,6 +1777,10 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
                                 _selectedLeadStatusIds.isNotEmpty
                             ? _selectedLeadStatusIds
                             : null,
+                        reasonForRefusalIds: hasActiveFilters &&
+                                _selectedReasonForRefusalIds.isNotEmpty
+                            ? _selectedReasonForRefusalIds
+                            : null,
                         statusIds: hasActiveFilters ? currentStatusId : null,
                         fromDate: hasActiveFilters ? _fromDate : null,
                         toDate: hasActiveFilters ? _toDate : null,
@@ -1948,6 +1994,10 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
                             leadStatuses: _selectedLeadStatusIds.isNotEmpty
                                 ? _selectedLeadStatusIds
                                 : null,
+                            reasonForRefusalIds:
+                                _selectedReasonForRefusalIds.isNotEmpty
+                                    ? _selectedReasonForRefusalIds
+                                    : null,
                             statusIds: _selectedStatuses,
                             fromDate: _fromDate,
                             toDate: _toDate,
@@ -1993,6 +2043,10 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
                           leadStatuses: _selectedLeadStatusIds.isNotEmpty
                               ? _selectedLeadStatusIds
                               : null,
+                          reasonForRefusalIds:
+                              _selectedReasonForRefusalIds.isNotEmpty
+                                  ? _selectedReasonForRefusalIds
+                                  : null,
                           statusIds: _selectedStatuses,
                           fromDate: _fromDate,
                           toDate: _toDate,

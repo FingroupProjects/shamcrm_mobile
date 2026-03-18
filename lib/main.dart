@@ -9,6 +9,7 @@ import 'package:crm_task_manager/bloc/My-Task_Status_Name/statusName_bloc.dart';
 import 'package:crm_task_manager/bloc/Task_Status_Name/statusName_bloc.dart';
 import 'package:crm_task_manager/bloc/auth_bloc_pin/forgot_auth_bloc.dart';
 import 'package:crm_task_manager/bloc/auth_domain/domain_bloc.dart';
+import 'package:crm_task_manager/bloc/advertising_campaign_list/advertising_campaign_bloc.dart';
 import 'package:crm_task_manager/bloc/author/get_all_author_bloc.dart';
 import 'package:crm_task_manager/bloc/calendar/calendar_bloc.dart';
 import 'package:crm_task_manager/bloc/call_bloc/call_center_bloc.dart';
@@ -143,7 +144,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:new_version_plus/new_version_plus.dart';
-import 'package:provider/provider.dart'; 
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'bloc/cash_register_list/cash_register_list_bloc.dart';
 import 'bloc/page_2_BLOC/document/incoming/incoming_document_history/incoming_document_history_bloc.dart';
@@ -162,7 +163,7 @@ void main() async {
     await OfflineBootstrap.initialize();
 
     await _initializeFirebase();
-    
+
     final apiService = ApiService();
     final authService = AuthService();
 
@@ -482,7 +483,7 @@ class MyApp extends StatefulWidget {
   final Locale initialLocale;
   final RemoteMessage? initialMessage;
   final bool sessionValid;
-  
+
   const MyApp({
     required this.apiService,
     required this.authService,
@@ -540,6 +541,7 @@ class _MyAppState extends State<MyApp> {
       unawaited(widget.apiService.ensureSelectedSalesFunnelInitialized());
     }
   }
+
 //1
   Future<void> checkForNewVersion(BuildContext context) async {
     // TODO remove on building ipa or apk files
@@ -599,7 +601,9 @@ class _MyAppState extends State<MyApp> {
         BlocProvider(create: (context) => GetAllManagerBloc()),
         BlocProvider(create: (context) => GetAllRegionBloc()),
         BlocProvider(create: (context) => GetAllSourceBloc()),
-        BlocProvider(create: (context) => GetAllLeadBloc(apiService: widget.apiService)),
+        BlocProvider(create: (context) => GetAllAdvertisingCampaignBloc()),
+        BlocProvider(
+            create: (context) => GetAllLeadBloc(apiService: widget.apiService)),
         BlocProvider(create: (context) => GetAllCashRegisterBloc()),
         BlocProvider(create: (context) => GetAllIncomeCategoryBloc()),
         BlocProvider(create: (context) => GetAllSupplierBloc()),
@@ -785,7 +789,7 @@ class _MyAppState extends State<MyApp> {
         supportedLocales: [
           const Locale('ru', ''),
           const Locale('en', ''),
-          const Locale('uz', ''), 
+          const Locale('uz', ''),
         ],
         localeResolutionCallback: (locale, supportedLocales) {
           for (var supportedLocale in supportedLocales) {

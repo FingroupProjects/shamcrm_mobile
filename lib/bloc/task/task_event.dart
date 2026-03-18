@@ -23,6 +23,7 @@ class FetchTaskStatusesWithFilters extends TaskEvent {
   final DateTime? completedFromDate;
   final DateTime? completedToDate;
   final List<int>? projectIds;
+  final List<int>? reasonForRefusalIds;
   final List<String>? authors;
   final String? department;
   final List<Map<String, dynamic>>? directoryValues;
@@ -41,6 +42,7 @@ class FetchTaskStatusesWithFilters extends TaskEvent {
     this.completedFromDate,
     this.completedToDate,
     this.projectIds,
+    this.reasonForRefusalIds,
     this.authors,
     this.department,
     this.directoryValues,
@@ -63,6 +65,7 @@ class FetchTasks extends TaskEvent {
   final DateTime? completedFromDate;
   final DateTime? completedToDate;
   final List<int>? projectIds;
+  final List<int>? reasonForRefusalIds;
   final List<String>? authors;
   final String? department;
   final List<Map<String, dynamic>>?
@@ -84,6 +87,7 @@ class FetchTasks extends TaskEvent {
     this.hasDeal,
     this.urgent,
     this.projectIds,
+    this.reasonForRefusalIds,
     this.authors,
     this.department,
     this.directoryValues, // Добавляем в конструктор
@@ -112,6 +116,7 @@ class FetchMoreTasks extends TaskEvent {
   final DateTime? completedFromDate;
   final DateTime? completedToDate;
   final List<int>? projectIds;
+  final List<int>? reasonForRefusalIds;
   final List<String>? authors;
   final String? department;
   final List<Map<String, dynamic>>?
@@ -134,6 +139,7 @@ class FetchMoreTasks extends TaskEvent {
     this.hasDeal,
     this.urgent,
     this.projectIds,
+    this.reasonForRefusalIds,
     this.authors,
     this.department,
     this.directoryValues, // Добавляем в конструктор

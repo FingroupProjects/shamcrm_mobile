@@ -15,6 +15,7 @@ import 'package:crm_task_manager/models/manager_model.dart';
 import 'package:crm_task_manager/models/region_model.dart';
 import 'package:crm_task_manager/models/sales_funnel_model.dart';
 import 'package:crm_task_manager/models/source_list_model.dart';
+import 'package:crm_task_manager/models/advertising_campaign_model.dart';
 import 'package:crm_task_manager/screens/auth/login_screen.dart';
 import 'package:crm_task_manager/screens/deal/deal_cache.dart';
 import 'package:crm_task_manager/screens/lead/lead_cache.dart';
@@ -72,6 +73,8 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
   List<ManagerData> _selectedManagers = [];
   List<RegionData> _selectedRegions = [];
   List<SourceData> _selectedSources = [];
+  List<AdvertisingCampaignData> _selectedAdvertisingCampaigns = [];
+  List<int> _selectedReasonForRefusalIds = [];
   int? _selectedStatuses;
   DateTime? _fromDate;
   DateTime? _toDate;
@@ -93,6 +96,8 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
   List<ManagerData> _initialSelectedManagers = [];
   List<RegionData> _initialSelectedRegions = [];
   List<SourceData> _initialSelectedSources = [];
+  List<AdvertisingCampaignData> _initialSelectedAdvertisingCampaigns = [];
+  List<int> _initialReasonForRefusalIds = [];
   int? _initialSelStatus;
   DateTime? _initialFromDate;
   DateTime? _initialToDate;
@@ -149,6 +154,8 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
     return _selectedManagers.isNotEmpty ||
         _selectedRegions.isNotEmpty ||
         _selectedSources.isNotEmpty ||
+        _selectedAdvertisingCampaigns.isNotEmpty ||
+        _selectedReasonForRefusalIds.isNotEmpty ||
         _selectedStatuses != null ||
         _fromDate != null ||
         _toDate != null ||
@@ -254,6 +261,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
           _selectedManagers.clear();
           _selectedRegions.clear();
           _selectedSources.clear();
+          _selectedAdvertisingCampaigns.clear();
           _selectedStatuses = null;
           _fromDate = null;
           _toDate = null;
@@ -403,6 +411,9 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
       managerIds: _selectedManagers.map((manager) => manager.id).toList(),
       regionsIds: _selectedRegions.map((region) => region.id).toList(),
       sourcesIds: _selectedSources.map((source) => source.id).toList(),
+      advertisingCampaignIds:
+          _selectedAdvertisingCampaigns.map((campaign) => campaign.id).toList(),
+      reasonForRefusalIds: _selectedReasonForRefusalIds,
       statusIds: _selectedStatuses,
       fromDate: _fromDate,
       toDate: _toDate,
@@ -430,6 +441,8 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
         _selectedManagers = [];
         _selectedRegions = [];
         _selectedSources = [];
+        _selectedAdvertisingCampaigns = [];
+        _selectedReasonForRefusalIds = [];
         _selectedStatuses = null;
         _fromDate = null;
         _toDate = null;
@@ -450,6 +463,8 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
         _initialSelectedManagers = [];
         _initialSelectedRegions = [];
         _initialSelectedSources = [];
+        _initialSelectedAdvertisingCampaigns = [];
+        _initialReasonForRefusalIds = [];
         _initialSelStatus = null;
         _initialFromDate = null;
         _initialToDate = null;
@@ -499,6 +514,16 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
         _selectedManagers = managers['managers'];
         _selectedRegions = managers['regions'];
         _selectedSources = managers['sources'];
+        _selectedAdvertisingCampaigns =
+            (managers['advertising_campaigns'] as List?)
+                    ?.cast<AdvertisingCampaignData>() ??
+                [];
+        _selectedReasonForRefusalIds =
+            (managers['reason_for_refusal_ids'] as List?)
+                    ?.map((id) => int.tryParse(id.toString()) ?? 0)
+                    .where((id) => id != 0)
+                    .toList() ??
+                [];
         _selectedStatuses = managers['statuses'];
         _fromDate = managers['fromDate'];
         _toDate = managers['toDate'];
@@ -520,6 +545,12 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
         _initialSelectedManagers = managers['managers'];
         _initialSelectedRegions = managers['regions'];
         _initialSelectedSources = managers['sources'];
+        _initialSelectedAdvertisingCampaigns =
+            (managers['advertising_campaigns'] as List?)
+                    ?.cast<AdvertisingCampaignData>() ??
+                [];
+        _initialReasonForRefusalIds =
+            List<int>.from(_selectedReasonForRefusalIds);
         _initialSelStatus = managers['statuses'];
         _initialFromDate = managers['fromDate'];
         _initialToDate = managers['toDate'];
@@ -552,6 +583,14 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
           : null,
       sourcesIds: _selectedSources.isNotEmpty
           ? _selectedSources.map((source) => source.id).toList()
+          : null,
+      advertisingCampaignIds: _selectedAdvertisingCampaigns.isNotEmpty
+          ? _selectedAdvertisingCampaigns
+              .map((campaign) => campaign.id)
+              .toList()
+          : null,
+      reasonForRefusalIds: _selectedReasonForRefusalIds.isNotEmpty
+          ? _selectedReasonForRefusalIds
           : null,
       fromDate: _fromDate,
       toDate: _toDate,
@@ -777,6 +816,9 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
             initialManagersLead: _initialSelectedManagers,
             initialManagersLeadRegions: _initialSelectedRegions,
             initialManagersLeadSources: _initialSelectedSources,
+            initialManagersLeadAdvertisingCampaigns:
+                _initialSelectedAdvertisingCampaigns,
+            initialManagersLeadReasonForRefusalIds: _initialReasonForRefusalIds,
             initialManagerLeadStatuses: _initialSelStatus,
             initialManagerLeadFromDate: _initialFromDate,
             initialManagerLeadToDate: _initialToDate,
@@ -817,6 +859,8 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
                   if (_selectedManagers.isEmpty &&
                       _selectedRegions.isEmpty &&
                       _selectedSources.isEmpty &&
+                      _selectedAdvertisingCampaigns.isEmpty &&
+                      _selectedReasonForRefusalIds.isEmpty &&
                       _selectedStatuses == null &&
                       _fromDate == null &&
                       _toDate == null &&
@@ -855,6 +899,16 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
                       sourcesIds: _selectedSources.isNotEmpty
                           ? _selectedSources.map((source) => source.id).toList()
                           : null,
+                      advertisingCampaignIds:
+                          _selectedAdvertisingCampaigns.isNotEmpty
+                              ? _selectedAdvertisingCampaigns
+                                  .map((campaign) => campaign.id)
+                                  .toList()
+                              : null,
+                      reasonForRefusalIds:
+                          _selectedReasonForRefusalIds.isNotEmpty
+                              ? _selectedReasonForRefusalIds
+                              : null,
                       statusIds: _selectedStatuses,
                       fromDate: _fromDate,
                       toDate: _toDate,
@@ -973,9 +1027,25 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
                                       builder: (context) => LeadAddScreen(
                                           statusId: currentStatusId),
                                     ),
-                                  ).then((_) => context
-                                      .read<LeadBloc>()
-                                      .add(FetchLeads(currentStatusId)));
+                                  ).then((_) => context.read<LeadBloc>().add(
+                                        FetchLeads(
+                                          currentStatusId,
+                                          salesFunnelId: _selectedFunnel?.id,
+                                          advertisingCampaignIds:
+                                              _selectedAdvertisingCampaigns
+                                                      .isNotEmpty
+                                                  ? _selectedAdvertisingCampaigns
+                                                      .map((campaign) =>
+                                                          campaign.id)
+                                                      .toList()
+                                                  : null,
+                                          reasonForRefusalIds:
+                                              _selectedReasonForRefusalIds
+                                                      .isNotEmpty
+                                                  ? _selectedReasonForRefusalIds
+                                                  : null,
+                                        ),
+                                      ));
                                 },
                               ),
                               ListTile(
@@ -1008,9 +1078,25 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
                                       builder: (context) => ContactsScreen(
                                           statusId: currentStatusId),
                                     ),
-                                  ).then((_) => context
-                                      .read<LeadBloc>()
-                                      .add(FetchLeads(currentStatusId)));
+                                  ).then((_) => context.read<LeadBloc>().add(
+                                        FetchLeads(
+                                          currentStatusId,
+                                          salesFunnelId: _selectedFunnel?.id,
+                                          advertisingCampaignIds:
+                                              _selectedAdvertisingCampaigns
+                                                      .isNotEmpty
+                                                  ? _selectedAdvertisingCampaigns
+                                                      .map((campaign) =>
+                                                          campaign.id)
+                                                      .toList()
+                                                  : null,
+                                          reasonForRefusalIds:
+                                              _selectedReasonForRefusalIds
+                                                      .isNotEmpty
+                                                  ? _selectedReasonForRefusalIds
+                                                  : null,
+                                        ),
+                                      ));
                                 },
                               ),
                               SizedBox(height: 10),
@@ -1026,9 +1112,22 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
                         builder: (context) =>
                             LeadAddScreen(statusId: currentStatusId),
                       ),
-                    ).then((_) => context
-                        .read<LeadBloc>()
-                        .add(FetchLeads(currentStatusId)));
+                    ).then((_) => context.read<LeadBloc>().add(
+                          FetchLeads(
+                            currentStatusId,
+                            salesFunnelId: _selectedFunnel?.id,
+                            advertisingCampaignIds:
+                                _selectedAdvertisingCampaigns.isNotEmpty
+                                    ? _selectedAdvertisingCampaigns
+                                        .map((campaign) => campaign.id)
+                                        .toList()
+                                    : null,
+                            reasonForRefusalIds:
+                                _selectedReasonForRefusalIds.isNotEmpty
+                                    ? _selectedReasonForRefusalIds
+                                    : null,
+                          ),
+                        ));
                   }
                 },
                 backgroundColor: Color(0xff1E2E52),
@@ -1480,7 +1579,22 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
           _currentTabIndex = 0;
           _isSearching = false;
           _searchController.clear();
-          context.read<LeadBloc>().add(FetchLeads(_currentTabIndex));
+          if (_tabTitles.isNotEmpty) {
+            final activeStatusId = _tabTitles[_currentTabIndex]['id'];
+            context.read<LeadBloc>().add(FetchLeads(
+                  activeStatusId,
+                  salesFunnelId: _selectedFunnel?.id,
+                  advertisingCampaignIds:
+                      _selectedAdvertisingCampaigns.isNotEmpty
+                          ? _selectedAdvertisingCampaigns
+                              .map((campaign) => campaign.id)
+                              .toList()
+                          : null,
+                  reasonForRefusalIds: _selectedReasonForRefusalIds.isNotEmpty
+                      ? _selectedReasonForRefusalIds
+                      : null,
+                ));
+          }
         });
       }
 
@@ -1587,6 +1701,8 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
                       bool hasActiveFilters = _selectedManagers.isNotEmpty ||
                           _selectedRegions.isNotEmpty ||
                           _selectedSources.isNotEmpty ||
+                          _selectedAdvertisingCampaigns.isNotEmpty ||
+                          _selectedReasonForRefusalIds.isNotEmpty ||
                           _selectedStatuses != null ||
                           _fromDate != null ||
                           _toDate != null ||
@@ -1635,6 +1751,16 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
                                         .map((source) => source.id)
                                         .toList()
                                     : null,
+                            advertisingCampaignIds: hasActiveFilters &&
+                                    _selectedAdvertisingCampaigns.isNotEmpty
+                                ? _selectedAdvertisingCampaigns
+                                    .map((campaign) => campaign.id)
+                                    .toList()
+                                : null,
+                            reasonForRefusalIds: hasActiveFilters &&
+                                    _selectedReasonForRefusalIds.isNotEmpty
+                                ? _selectedReasonForRefusalIds
+                                : null,
                             // ВАЖНО: всегда пробрасываем текущий статус вкладки,
                             // чтобы в каждом запросе присутствовал lead_status_id
                             statusIds: currentStatusId,
@@ -1750,6 +1876,8 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
                         _selectedManagers.isNotEmpty ||
                             _selectedRegions.isNotEmpty ||
                             _selectedSources.isNotEmpty ||
+                            _selectedAdvertisingCampaigns.isNotEmpty ||
+                            _selectedReasonForRefusalIds.isNotEmpty ||
                             _selectedStatuses != null ||
                             _fromDate != null ||
                             _toDate != null ||
@@ -1879,6 +2007,16 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
                                       .map((source) => source.id)
                                       .toList()
                                   : null,
+                              advertisingCampaignIds:
+                                  _selectedAdvertisingCampaigns.isNotEmpty
+                                      ? _selectedAdvertisingCampaigns
+                                          .map((campaign) => campaign.id)
+                                          .toList()
+                                      : null,
+                              reasonForRefusalIds:
+                                  _selectedReasonForRefusalIds.isNotEmpty
+                                      ? _selectedReasonForRefusalIds
+                                      : null,
                               statusIds: _selectedStatuses,
                               fromDate: _fromDate,
                               toDate: _toDate,

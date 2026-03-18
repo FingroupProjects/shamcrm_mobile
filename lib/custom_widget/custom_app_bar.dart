@@ -95,6 +95,8 @@ class CustomAppBar extends StatefulWidget {
   final List? initialManagersLead;
   final List? initialManagersLeadRegions;
   final List? initialManagersLeadSources;
+  final List? initialManagersLeadAdvertisingCampaigns;
+  final List<int>? initialManagersLeadReasonForRefusalIds;
   final int? initialManagerLeadStatuses;
   final DateTime? initialManagerLeadFromDate;
   final DateTime? initialManagerLeadToDate;
@@ -127,6 +129,7 @@ class CustomAppBar extends StatefulWidget {
   final bool? initialManagerDealOverdueNotices;
   final int? initialManagerDealDaysWithoutActivity;
   final List<int>? initialLeadStatusesDeal;
+  final List<int>? initialReasonForRefusalIdsDeal;
   final List<Map<String, dynamic>>?
       initialDirectoryValuesDeal; // Добавляем начальные значения справочников
 
@@ -154,6 +157,7 @@ class CustomAppBar extends StatefulWidget {
   final DateTime? initialDeadlineToDate;
   final DateTime? initialCompletedFromDate;
   final DateTime? initialCompletedToDate;
+  final List<int>? initialReasonForRefusalIdsTask;
   final List<String>? initialAuthors;
   final String? initialDepartment;
   final List<Map<String, dynamic>>?
@@ -205,6 +209,8 @@ class CustomAppBar extends StatefulWidget {
     this.initialManagersLead,
     this.initialManagersLeadRegions,
     this.initialManagersLeadSources,
+    this.initialManagersLeadAdvertisingCampaigns,
+    this.initialManagersLeadReasonForRefusalIds,
     this.initialManagerLeadStatuses,
     this.initialManagerLeadFromDate,
     this.initialManagerLeadToDate,
@@ -251,6 +257,7 @@ class CustomAppBar extends StatefulWidget {
     this.initialManagerDealOverdueNotices,
     this.initialManagerDealDaysWithoutActivity,
     this.initialLeadStatusesDeal,
+    this.initialReasonForRefusalIdsDeal,
     this.initialManagersEvent,
     this.initialManagerEventStatuses,
     this.initialManagerEventFromDate,
@@ -307,6 +314,7 @@ class CustomAppBar extends StatefulWidget {
     this.initialDeadlineToDate,
     this.initialCompletedFromDate,
     this.initialCompletedToDate,
+    this.initialReasonForRefusalIdsTask,
     this.initialAuthors,
     this.initialDepartment,
     this.initialProjects,
@@ -1796,6 +1804,10 @@ class _CustomAppBarState extends State<CustomAppBar>
           initialManagers: widget.initialManagersLead,
           initialRegions: widget.initialManagersLeadRegions,
           initialSources: widget.initialManagersLeadSources,
+          initialAdvertisingCampaigns:
+              widget.initialManagersLeadAdvertisingCampaigns,
+          initialReasonForRefusalIds:
+              widget.initialManagersLeadReasonForRefusalIds,
           initialStatuses: widget.initialManagerLeadStatuses,
           initialFromDate: widget.initialManagerLeadFromDate,
           initialToDate: widget.initialManagerLeadToDate,
@@ -1838,6 +1850,7 @@ class _CustomAppBarState extends State<CustomAppBar>
           initialWithoutNotices: widget.initialManagerDealWithoutNotices,
           initialOverdueNotices: widget.initialManagerDealOverdueNotices,
           initialLeadStatuses: widget.initialLeadStatusesDeal,
+          initialReasonForRefusalIds: widget.initialReasonForRefusalIdsDeal,
           initialStatuses: widget.initialManagerDealStatuses,
           initialFromDate: widget.initialManagerDealFromDate,
           initialToDate: widget.initialManagerDealToDate,
@@ -1876,6 +1889,7 @@ class _CustomAppBarState extends State<CustomAppBar>
           initialDeadlineToDate: widget.initialDeadlineToDate,
           initialCompletedFromDate: widget.initialCompletedFromDate,
           initialCompletedToDate: widget.initialCompletedToDate,
+          initialReasonForRefusalIds: widget.initialReasonForRefusalIdsTask,
           initialDirectoryValues:
               _safeConvertToMapList(widget.initialDirectoryValuesTask),
           initialProjects: widget.initialProjects,

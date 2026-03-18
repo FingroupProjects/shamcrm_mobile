@@ -27,6 +27,7 @@ class DealBloc extends Bloc<DealEvent, DealState> {
   bool? _currentWithoutNotices;
   bool? _currentOverdueNotices;
   List<int>? _currentLeadStatuses;
+  List<int>? _currentReasonForRefusalIds;
   int? _currentDaysWithoutActivity;
   List<Map<String, dynamic>>? _currentDirectoryValues;
   List<String>? _currentNames;
@@ -55,6 +56,8 @@ class DealBloc extends Bloc<DealEvent, DealState> {
         (_currentSources != null && _currentSources!.isNotEmpty) ||
         (_currentLeadIds != null && _currentLeadIds!.isNotEmpty) ||
         (_currentLeadStatuses != null && _currentLeadStatuses!.isNotEmpty) ||
+        (_currentReasonForRefusalIds != null &&
+            _currentReasonForRefusalIds!.isNotEmpty) ||
         (_currentDirectoryValues != null &&
             _currentDirectoryValues!.isNotEmpty) ||
         (_currentCustomFieldFilters != null &&
@@ -113,6 +116,7 @@ class DealBloc extends Bloc<DealEvent, DealState> {
       _currentWithoutNotices = event.withoutNotices;
       _currentOverdueNotices = event.overdueNotices;
       _currentLeadStatuses = event.leadStatuses;
+      _currentReasonForRefusalIds = event.reasonForRefusalIds;
       _currentDaysWithoutActivity = event.daysWithoutActivity;
       _currentDirectoryValues = event.directoryValues;
       _currentNames = event.names;
@@ -158,6 +162,7 @@ class DealBloc extends Bloc<DealEvent, DealState> {
           withoutNotices: event.withoutNotices,
           overdueNotices: event.overdueNotices,
           leadStatuses: event.leadStatuses,
+          reasonForRefusalIds: event.reasonForRefusalIds,
           daysWithoutActivity: event.daysWithoutActivity,
           directoryValues: event.directoryValues,
           names: event.names,
@@ -237,6 +242,7 @@ class DealBloc extends Bloc<DealEvent, DealState> {
         _currentWithoutNotices = null;
         _currentOverdueNotices = null;
         _currentLeadStatuses = null;
+        _currentReasonForRefusalIds = null;
         _currentDaysWithoutActivity = null;
         _currentDirectoryValues = null;
         _currentNames = null;
@@ -469,8 +475,7 @@ class DealBloc extends Bloc<DealEvent, DealState> {
           'directoryValues': event.directoryValues,
           'userIds': event.userIds,
         },
-        idempotencyKey:
-            'deal-create-${DateTime.now().millisecondsSinceEpoch}',
+        idempotencyKey: 'deal-create-${DateTime.now().millisecondsSinceEpoch}',
         priority: RequestPriority.high,
       );
       emit(DealSuccess(
@@ -670,6 +675,7 @@ class DealBloc extends Bloc<DealEvent, DealState> {
       // Фильтры применяются только при загрузке сделок
       final statuses = await apiService.getDealStatuses(
         salesFunnelId: event.salesFunnelId,
+        reasonForRefusalIds: event.reasonForRefusalIds,
       );
 
       // КРИТИЧНО: Проверяем, не переключил ли пользователь воронку, пока мы ждали ответа
@@ -720,6 +726,7 @@ class DealBloc extends Bloc<DealEvent, DealState> {
         _currentWithoutNotices = event.withoutNotices;
         _currentOverdueNotices = event.overdueNotices;
         _currentLeadStatuses = event.leadStatuses;
+        _currentReasonForRefusalIds = event.reasonForRefusalIds;
         _currentDaysWithoutActivity = event.daysWithoutActivity;
         _currentDirectoryValues = event.directoryValues;
         _currentNames = event.names;
@@ -743,6 +750,7 @@ class DealBloc extends Bloc<DealEvent, DealState> {
             event.overdueNotices,
             event.daysWithoutActivity,
             event.leadStatuses,
+            event.reasonForRefusalIds,
             event.directoryValues,
             event.names,
             event.salesFunnelId,
@@ -786,6 +794,7 @@ class DealBloc extends Bloc<DealEvent, DealState> {
     bool? overdueNotices,
     int? daysWithoutActivity,
     List<int>? leadStatuses,
+    List<int>? reasonForRefusalIds,
     List<Map<String, dynamic>>? directoryValues,
     List<String>? names,
     int? salesFunnelId,
@@ -815,6 +824,7 @@ class DealBloc extends Bloc<DealEvent, DealState> {
         withoutNotices: withoutNotices,
         overdueNotices: overdueNotices,
         leadStatuses: leadStatuses,
+        reasonForRefusalIds: reasonForRefusalIds,
         daysWithoutActivity: daysWithoutActivity,
         directoryValues: directoryValues,
         names: names,

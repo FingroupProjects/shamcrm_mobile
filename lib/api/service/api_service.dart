@@ -137,6 +137,7 @@ import 'package:crm_task_manager/models/price_type_model.dart';
 import 'package:crm_task_manager/models/project_task_model.dart';
 import 'package:crm_task_manager/models/sales_funnel_model.dart';
 import 'package:crm_task_manager/models/source_list_model.dart';
+import 'package:crm_task_manager/models/advertising_campaign_model.dart';
 import 'package:crm_task_manager/models/source_model.dart';
 import 'package:crm_task_manager/models/supplier_list_model.dart';
 import 'package:crm_task_manager/models/task_Status_Name_model.dart';
@@ -2036,6 +2037,8 @@ class ApiService {
     List<int>? managers,
     List<int>? regions,
     List<int>? sources,
+    List<int>? advertisingCampaignIds,
+    List<int>? reasonForRefusalIds,
     int? statuses,
     DateTime? fromDate,
     DateTime? toDate,
@@ -2072,6 +2075,8 @@ class ApiService {
         (managers != null && managers.isNotEmpty) ||
         (regions != null && regions.isNotEmpty) ||
         (sources != null && sources.isNotEmpty) ||
+        (advertisingCampaignIds != null && advertisingCampaignIds.isNotEmpty) ||
+        (reasonForRefusalIds != null && reasonForRefusalIds.isNotEmpty) ||
         (fromDate != null) ||
         (toDate != null) ||
         (hasSuccessDeals == true) ||
@@ -2110,6 +2115,16 @@ class ApiService {
     if (sources != null && sources.isNotEmpty) {
       for (int i = 0; i < sources.length; i++) {
         path += '&sources[$i]=${sources[i]}';
+      }
+    }
+    if (advertisingCampaignIds != null && advertisingCampaignIds.isNotEmpty) {
+      for (int i = 0; i < advertisingCampaignIds.length; i++) {
+        path += '&campaign[$i]=${advertisingCampaignIds[i]}';
+      }
+    }
+    if (reasonForRefusalIds != null && reasonForRefusalIds.isNotEmpty) {
+      for (int i = 0; i < reasonForRefusalIds.length; i++) {
+        path += '&reason_for_refusals[$i]=${reasonForRefusalIds[i]}';
       }
     }
     if (hasNoReplies == true) {
@@ -2249,6 +2264,8 @@ class ApiService {
     List<int>? managers,
     List<int>? regions,
     List<int>? sources,
+    List<int>? advertisingCampaignIds,
+    List<int>? reasonForRefusalIds,
     DateTime? fromDate,
     DateTime? toDate,
     bool? hasSuccessDeals,
@@ -2308,6 +2325,16 @@ class ApiService {
       if (sources != null && sources.isNotEmpty) {
         for (int i = 0; i < sources.length; i++) {
           path += '&sources[$i]=${sources[i]}';
+        }
+      }
+      if (advertisingCampaignIds != null && advertisingCampaignIds.isNotEmpty) {
+        for (int i = 0; i < advertisingCampaignIds.length; i++) {
+          path += '&campaign[$i]=${advertisingCampaignIds[i]}';
+        }
+      }
+      if (reasonForRefusalIds != null && reasonForRefusalIds.isNotEmpty) {
+        for (int i = 0; i < reasonForRefusalIds.length; i++) {
+          path += '&reason_for_refusals[$i]=${reasonForRefusalIds[i]}';
         }
       }
       if (fromDate != null && toDate != null) {
@@ -3324,6 +3351,59 @@ class ApiService {
     }
   }
 
+  Future<List<AdvertisingCampaignData>> getAllAdvertisingCampaigns() async {
+    final organizationId = await getSelectedOrganization();
+    if (organizationId == null ||
+        organizationId.isEmpty ||
+        organizationId == 'null') {
+      throw Exception('Organization ID is required but missing');
+    }
+
+    if (!await _isSessionValid()) {
+      await _forceLogoutAndRedirect();
+      throw Exception('Session is invalid');
+    }
+
+    if (baseUrl == null) {
+      await _initializeIfDomainExists();
+      if (baseUrl == null) {
+        throw Exception('Base URL is not initialized');
+      }
+    }
+
+    final token = await getToken();
+    final uri = Uri.parse(
+      '$baseUrl/advertising-campaigns?organization_id=$organizationId&per_page=1000',
+    );
+
+    final response = await http.get(
+      uri,
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Device': 'mobile',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body) as Map<String, dynamic>;
+      final result = data['result'] as Map<String, dynamic>?;
+      final campaigns = result?['data'] as List<dynamic>?;
+
+      if (campaigns == null) {
+        return <AdvertisingCampaignData>[];
+      }
+
+      return campaigns
+          .map((campaign) => AdvertisingCampaignData.fromJson(
+              campaign as Map<String, dynamic>))
+          .toList();
+    } else {
+      throw Exception('Ошибка при получении рекламных кампаний!');
+    }
+  }
+
 //Метод для получения Менеджера
   Future<ManagersDataResponse> getAllManager({
     String? search,
@@ -3913,6 +3993,7 @@ class ApiService {
     bool? withoutNotices,
     bool? overdueNotices,
     List<int>? leadStatuses,
+    List<int>? reasonForRefusalIds,
     List<Map<String, dynamic>>? directoryValues,
     List<String>? names,
     int? salesFunnelId, // ← КРИТИЧНО: Явный параметр
@@ -3959,6 +4040,7 @@ class ApiService {
         (overdueNotices == true) ||
         (statuses != null) ||
         (leadStatuses != null && leadStatuses.isNotEmpty) ||
+        (reasonForRefusalIds != null && reasonForRefusalIds.isNotEmpty) ||
         (directoryValues != null && directoryValues.isNotEmpty) ||
         (names != null && names.isNotEmpty) ||
         (customFieldFilters != null &&
@@ -4021,6 +4103,12 @@ class ApiService {
     if (leadStatuses != null && leadStatuses.isNotEmpty) {
       for (int i = 0; i < leadStatuses.length; i++) {
         path += '&lead_statuses[$i]=${leadStatuses[i]}';
+      }
+    }
+
+    if (reasonForRefusalIds != null && reasonForRefusalIds.isNotEmpty) {
+      for (int i = 0; i < reasonForRefusalIds.length; i++) {
+        path += '&reason_for_refusals[$i]=${reasonForRefusalIds[i]}';
       }
     }
 
@@ -4125,6 +4213,7 @@ class ApiService {
   Future<List<DealStatus>> getDealStatuses({
     bool includeAll = false,
     int? salesFunnelId, // ← КРИТИЧНО: Добавили явный параметр
+    List<int>? reasonForRefusalIds,
   }) async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
     final organizationId = await getSelectedOrganization();
@@ -4172,6 +4261,12 @@ class ApiService {
         if (kDebugMode) {
           debugPrint(
               '⚠️ getDealStatuses - No funnel selected, loading ALL deal statuses');
+        }
+      }
+
+      if (reasonForRefusalIds != null && reasonForRefusalIds.isNotEmpty) {
+        for (int i = 0; i < reasonForRefusalIds.length; i++) {
+          path += '&reason_for_refusals[$i]=${reasonForRefusalIds[i]}';
         }
       }
 
@@ -4956,6 +5051,7 @@ class ApiService {
     List<int>? projectIds,
     List<String>? authors,
     String? department,
+    List<int>? reasonForRefusalIds,
     List<Map<String, dynamic>>? directoryValues, // Добавляем directoryValues
   }) async {
     // Формируем базовый путь
@@ -4982,6 +5078,7 @@ class ApiService {
         (projectIds != null && projectIds.isNotEmpty) ||
         (authors != null && authors.isNotEmpty) ||
         (department != null && department.isNotEmpty) ||
+        (reasonForRefusalIds != null && reasonForRefusalIds.isNotEmpty) ||
         (directoryValues != null &&
             directoryValues.isNotEmpty); // Проверяем directoryValues
 
@@ -5042,6 +5139,11 @@ class ApiService {
     }
     if (department != null && department.isNotEmpty) {
       path += '&department_id=$department';
+    }
+    if (reasonForRefusalIds != null && reasonForRefusalIds.isNotEmpty) {
+      for (int i = 0; i < reasonForRefusalIds.length; i++) {
+        path += '&reason_for_refusals[$i]=${reasonForRefusalIds[i]}';
+      }
     }
     if (directoryValues != null && directoryValues.isNotEmpty) {
       final Map<String, LinkedHashSet<String>> groupedDirectoryValues = {};
@@ -5131,6 +5233,7 @@ class ApiService {
     List<int>? projectIds,
     List<String>? authors,
     String? department,
+    List<int>? reasonForRefusalIds,
     List<Map<String, dynamic>>? directoryValues,
   }) async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -5191,6 +5294,11 @@ class ApiService {
       }
       if (department != null && department.isNotEmpty) {
         path += '&department=${Uri.encodeQueryComponent(department)}';
+      }
+      if (reasonForRefusalIds != null && reasonForRefusalIds.isNotEmpty) {
+        for (int i = 0; i < reasonForRefusalIds.length; i++) {
+          path += '&reason_for_refusals[$i]=${reasonForRefusalIds[i]}';
+        }
       }
       if (directoryValues != null && directoryValues.isNotEmpty) {
         for (int i = 0; i < directoryValues.length; i++) {

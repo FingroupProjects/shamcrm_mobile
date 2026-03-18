@@ -18,6 +18,8 @@ class FetchLeads extends LeadEvent {
   final List<int>? managerIds;
   final List<int>? regionsIds;
   final List<int>? sourcesIds;
+  final List<int>? advertisingCampaignIds;
+  final List<int>? reasonForRefusalIds;
   final int? statusIds;
   final DateTime? fromDate;
   final DateTime? toDate;
@@ -43,6 +45,8 @@ class FetchLeads extends LeadEvent {
     this.managerIds,
     this.regionsIds,
     this.sourcesIds,
+    this.advertisingCampaignIds,
+    this.reasonForRefusalIds,
     this.statusIds,
     this.fromDate,
     this.toDate,
@@ -267,6 +271,8 @@ class FetchLeadStatusesWithFilters extends LeadEvent {
   final List<int>? managerIds;
   final List<int>? regionsIds;
   final List<int>? sourcesIds;
+  final List<int>? advertisingCampaignIds;
+  final List<int>? reasonForRefusalIds;
   final DateTime? fromDate;
   final DateTime? toDate;
   final bool? hasSuccessDeals;
@@ -287,6 +293,8 @@ class FetchLeadStatusesWithFilters extends LeadEvent {
     this.managerIds,
     this.regionsIds,
     this.sourcesIds,
+    this.advertisingCampaignIds,
+    this.reasonForRefusalIds,
     this.fromDate,
     this.toDate,
     this.hasSuccessDeals,

@@ -26,6 +26,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
   bool? _currentHasDeal;
   bool? _currentUrgent;
   List<int>? _currentProjectIds;
+  List<int>? _currentReasonForRefusalIds;
   List<String>? _currentAuthors;
   DateTime? _currentDeadlineFromDate;
   DateTime? _currentDeadlineToDate;
@@ -137,6 +138,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
         _currentHasDeal = null;
         _currentUrgent = null;
         _currentProjectIds = null;
+        _currentReasonForRefusalIds = null;
         _currentAuthors = null;
         _currentDeadlineFromDate = null;
         _currentDeadlineToDate = null;
@@ -323,6 +325,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
       _currentHasDeal = event.hasDeal;
       _currentUrgent = event.urgent;
       _currentProjectIds = event.projectIds;
+      _currentReasonForRefusalIds = event.reasonForRefusalIds;
       _currentAuthors = event.authors;
       _currentDeadlineFromDate = event.deadlinefromDate;
       _currentDeadlineToDate = event.deadlinetoDate;
@@ -384,6 +387,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
             hasDeal: event.hasDeal,
             urgent: event.urgent,
             projectIds: event.projectIds,
+            reasonForRefusalIds: event.reasonForRefusalIds,
             authors: event.authors,
             deadlinefromDate: event.deadlinefromDate,
             deadlinetoDate: event.deadlinetoDate,
@@ -503,14 +507,15 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
             hasDeal: event.hasDeal ?? _currentHasDeal,
             urgent: event.urgent ?? _currentUrgent,
             projectIds: event.projectIds ?? _currentProjectIds,
+            reasonForRefusalIds:
+                event.reasonForRefusalIds ?? _currentReasonForRefusalIds,
             authors: event.authors ?? _currentAuthors,
             deadlinefromDate:
                 event.deadlinefromDate ?? _currentDeadlineFromDate,
             deadlinetoDate: event.deadlinetoDate ?? _currentDeadlineToDate,
             completedFromDate:
                 event.completedFromDate ?? _currentCompletedFromDate,
-            completedToDate:
-                event.completedToDate ?? _currentCompletedToDate,
+            completedToDate: event.completedToDate ?? _currentCompletedToDate,
             department: event.department ?? _currentDepartment,
             directoryValues: event.directoryValues ?? _currentDirectoryValues,
           )
@@ -560,8 +565,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
           'customFields': event.customFields,
           'directoryValues': event.directoryValues,
         },
-        idempotencyKey:
-            'task-create-${DateTime.now().millisecondsSinceEpoch}',
+        idempotencyKey: 'task-create-${DateTime.now().millisecondsSinceEpoch}',
         priority: RequestPriority.high,
       );
       emit(TaskSuccess(
@@ -668,6 +672,8 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
         (_currentHasDeal == true) ||
         (_currentUrgent == true) ||
         (_currentProjectIds != null && _currentProjectIds!.isNotEmpty) ||
+        (_currentReasonForRefusalIds != null &&
+            _currentReasonForRefusalIds!.isNotEmpty) ||
         (_currentAuthors != null && _currentAuthors!.isNotEmpty) ||
         (_currentDeadlineFromDate != null) ||
         (_currentDeadlineToDate != null) ||
@@ -845,6 +851,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
         urgent: event.urgent,
         deadlinefromDate: event.deadlinefromDate,
         deadlinetoDate: event.deadlinetoDate,
+        reasonForRefusalIds: event.reasonForRefusalIds,
         projectIds: event.projectIds,
         authors: event.authors,
         department: event.department,
@@ -902,6 +909,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
         _currentHasDeal = event.hasDeal;
         _currentUrgent = event.urgent;
         _currentProjectIds = event.projectIds;
+        _currentReasonForRefusalIds = event.reasonForRefusalIds;
         _currentAuthors = event.authors;
         _currentDeadlineFromDate = event.deadlinefromDate;
         _currentDeadlineToDate = event.deadlinetoDate;
@@ -937,6 +945,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
               event.completedFromDate,
               event.completedToDate,
               event.projectIds,
+              event.reasonForRefusalIds,
               event.authors,
               event.department,
               event.directoryValues,
@@ -985,6 +994,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
     DateTime? completedFromDate,
     DateTime? completedToDate,
     List<int>? projectIds,
+    List<int>? reasonForRefusalIds,
     List<String>? authors,
     String? department,
     List<Map<String, dynamic>>? directoryValues,
@@ -1021,6 +1031,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
             completedFromDate: completedFromDate,
             completedToDate: completedToDate,
             projectIds: projectIds,
+            reasonForRefusalIds: reasonForRefusalIds,
             authors: authors,
             department: department,
             directoryValues: directoryValues,
@@ -1070,6 +1081,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
     _currentHasDeal = null;
     _currentUrgent = null;
     _currentProjectIds = null;
+    _currentReasonForRefusalIds = null;
     _currentAuthors = null;
     _currentDeadlineFromDate = null;
     _currentDeadlineToDate = null;

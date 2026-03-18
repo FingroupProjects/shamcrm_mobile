@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:crm_task_manager/custom_widget/custom_chat_styles.dart';
+import 'package:crm_task_manager/custom_widget/filter/common/multi_reason_for_refusal_list.dart';
 import 'package:crm_task_manager/custom_widget/filter/deal/deal_NamesMultiSelectWidget.dart';
 import 'package:crm_task_manager/custom_widget/filter/deal/deal_status_list.dart';
 import 'package:crm_task_manager/custom_widget/filter/deal/multi_lead_status_list.dart';
@@ -19,6 +20,7 @@ import 'package:crm_task_manager/models/field_configuration.dart';
 import 'package:crm_task_manager/models/manager_model.dart';
 import 'package:crm_task_manager/models/region_model.dart';
 import 'package:crm_task_manager/models/main_field_model.dart';
+import 'package:crm_task_manager/models/reason_for_refusal_model.dart';
 import 'package:crm_task_manager/models/source_list_model.dart';
 import 'package:crm_task_manager/screens/deal/deal_cache.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
@@ -46,6 +48,7 @@ class DealManagerFilterScreen extends StatefulWidget {
   final bool? initialWithoutNotices;
   final bool? initialOverdueNotices;
   final List<int>? initialLeadStatuses;
+  final List<int>? initialReasonForRefusalIds;
   final List<Map<String, dynamic>>? initialDirectoryValues;
   final List<String>? initialDealNames;
   final List<String>? customFieldTitles;
@@ -72,6 +75,7 @@ class DealManagerFilterScreen extends StatefulWidget {
     this.initialWithoutNotices,
     this.initialOverdueNotices,
     this.initialLeadStatuses,
+    this.initialReasonForRefusalIds,
     this.initialDirectoryValues,
     this.initialDealNames,
     this.customFieldTitles,
@@ -93,6 +97,7 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
   Map<String, bool> _customFieldLoadingStates = {};
   List<FieldConfiguration> _fieldConfigurations = [];
   bool _isConfigurationLoaded = false;
+  bool _askReasonForRefusal = false;
 
   List _selectedManagers = [];
   List _selectedRegions = [];
@@ -107,6 +112,7 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
   bool _createTaskInDealEnabled = false;
   int? _daysWithoutActivity;
   List<LeadStatusForFilter> _selectedLeadStatuses = [];
+  List<ReasonForRefusalData> _selectedReasonForRefusals = [];
   Map<int, List<MainField>> _selectedDirectoryFields = {};
   List<DirectoryLink> _directoryLinks = [];
   List<DealNameData> _selectedDealNames = [];
@@ -153,10 +159,16 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
     _selectedLeadStatuses = (widget.initialLeadStatuses ?? const [])
         .map((id) => LeadStatusForFilter(id: id, title: ''))
         .toList();
+    if (widget.initialReasonForRefusalIds != null) {
+      _selectedReasonForRefusals = widget.initialReasonForRefusalIds!
+          .map((id) => ReasonForRefusalData(id: id, text: '', type: 'deal'))
+          .toList();
+    }
     _selectedDealNames = widget.initialDealNames
             ?.map((name) => DealNameData(id: 0, title: name))
             .toList() ??
         [];
+    _loadAskReasonForRefusal();
     _loadCreateTaskInDealSetting();
     _loadFilterState();
     _fetchDirectoryLinks();
@@ -171,6 +183,14 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
     _initializeCustomFieldSelections(
         widget.initialCustomFieldSelections ?? const {});
     _loadDealCustomFields();
+  }
+
+  Future<void> _loadAskReasonForRefusal() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
+    setState(() {
+      _askReasonForRefusal = prefs.getBool('ask_reason_for_refusal') ?? false;
+    });
   }
 
   Future<void> _loadFilterState() async {
@@ -477,6 +497,28 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
             ),
           ),
         );
+      case 'reason_for_refusal':
+      case 'reason_for_refusal_id':
+        if (!_askReasonForRefusal) return null;
+        return Card(
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          color: Colors.white,
+          child: Padding(
+            padding: const EdgeInsets.all(8),
+            child: ReasonForRefusalMultiSelectWidget(
+              type: 'deal',
+              selectedReasonIds: _selectedReasonForRefusals
+                  .map((reason) => reason.id)
+                  .toList(),
+              onSelectReasons: (selectedReasons) {
+                setState(() {
+                  _selectedReasonForRefusals = selectedReasons;
+                });
+              },
+            ),
+          ),
+        );
       default:
         if (config.isCustomField &&
             _customFieldTitles.contains(config.fieldName)) {
@@ -643,6 +685,11 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
       (config) =>
           config.fieldName == 'source_id' || config.fieldName == 'source',
     );
+    final hasReasonForRefusalInConfig = _fieldConfigurations.any(
+      (config) =>
+          config.fieldName == 'reason_for_refusal' ||
+          config.fieldName == 'reason_for_refusal_id',
+    );
 
     return Scaffold(
       backgroundColor: Color(0xffF4F7FD),
@@ -677,6 +724,7 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
                 _withoutNotices = false;
                 _overdueNotices = false;
                 _selectedLeadStatuses.clear();
+                _selectedReasonForRefusals.clear();
                 _selectedDirectoryFields.clear();
                 _selectedDealNames.clear();
                 _selectedCustomFieldValues.clear();
@@ -727,6 +775,9 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
                 'overdueNotices': _overdueNotices,
                 'leadStatuses':
                     _selectedLeadStatuses.map((status) => status.id).toList(),
+                'reason_for_refusal_ids': _selectedReasonForRefusals
+                    .map((reason) => reason.id)
+                    .toList(),
                 'directory_values':
                     _selectedDirectoryFields.entries.expand((entry) {
                   final directoryId = directoryIdByLinkId[entry.key];
@@ -763,6 +814,7 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
                   _withoutNotices ||
                   _overdueNotices ||
                   _selectedLeadStatuses.isNotEmpty ||
+                  _selectedReasonForRefusals.isNotEmpty ||
                   _selectedDirectoryFields.values
                       .any((fields) => fields.isNotEmpty) ||
                   _selectedDealNames.isNotEmpty ||
@@ -850,6 +902,32 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
                       ),
                     if (_isConfigurationLoaded &&
                         _fieldConfigurations.isNotEmpty &&
+                        _askReasonForRefusal &&
+                        !hasReasonForRefusalInConfig)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: Card(
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12)),
+                          color: Colors.white,
+                          child: Padding(
+                            padding: const EdgeInsets.all(8),
+                            child: ReasonForRefusalMultiSelectWidget(
+                              type: 'deal',
+                              selectedReasonIds: _selectedReasonForRefusals
+                                  .map((reason) => reason.id)
+                                  .toList(),
+                              onSelectReasons: (selectedReasons) {
+                                setState(() {
+                                  _selectedReasonForRefusals = selectedReasons;
+                                });
+                              },
+                            ),
+                          ),
+                        ),
+                      ),
+                    if (_isConfigurationLoaded &&
+                        _fieldConfigurations.isNotEmpty &&
                         !hasLeadStatusInConfig) ...[
                       Padding(
                         padding: const EdgeInsets.only(bottom: 8),
@@ -904,6 +982,28 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
                       ),
                       const SizedBox(height: 8),
                       _buildLeadStatusFilterCard(),
+                      if (_askReasonForRefusal) ...[
+                        const SizedBox(height: 8),
+                        Card(
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12)),
+                          color: Colors.white,
+                          child: Padding(
+                            padding: const EdgeInsets.all(8),
+                            child: ReasonForRefusalMultiSelectWidget(
+                              type: 'deal',
+                              selectedReasonIds: _selectedReasonForRefusals
+                                  .map((reason) => reason.id)
+                                  .toList(),
+                              onSelectReasons: (selectedReasons) {
+                                setState(() {
+                                  _selectedReasonForRefusals = selectedReasons;
+                                });
+                              },
+                            ),
+                          ),
+                        ),
+                      ],
                       const SizedBox(height: 8),
                       Card(
                         shape: RoundedRectangleBorder(
