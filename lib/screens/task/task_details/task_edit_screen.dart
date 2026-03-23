@@ -30,6 +30,7 @@ import 'package:crm_task_manager/screens/lead/tabBar/lead_details/add_custom_dir
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/lead_create_custom.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/main_field_dropdown_widget.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/screens/common/reason_for_refusal_modal.dart';
 import 'package:crm_task_manager/screens/task/task_details/project_list_task.dart';
 import 'package:crm_task_manager/screens/task/task_details/task_status_list_edit.dart';
 import 'package:crm_task_manager/screens/task/task_details/user_list.dart';
@@ -103,6 +104,8 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
   bool _canUpdateTask = false;
   bool _hasTaskCreateForMySelfPermission = false;
   int? _currentUserId;
+  bool _askReasonForRefusal = false;
+  TaskStatus? _selectedTaskStatusData;
 
   // Конфигурация полей с сервера
   Map<String, Widget> fieldWidgets = {};
@@ -127,6 +130,7 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
     _checkPermissions();
     _initializeControllers();
     _loadInitialData();
+    _loadAskReasonForRefusal();
     selectedPriority ??= 1;
     if (widget.files != null) {
       files = widget.files!.map((file) {
@@ -212,6 +216,49 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
   void _loadInitialData() {
     context.read<GetTaskProjectBloc>().add(GetTaskProjectEv());
     context.read<UserTaskBloc>().add(FetchUsers());
+  }
+
+  Future<void> _loadAskReasonForRefusal() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
+    setState(() {
+      _askReasonForRefusal = prefs.getBool('ask_reason_for_refusal') ?? false;
+    });
+  }
+
+  Future<TaskStatus?> _resolveSelectedTaskStatusData() async {
+    if (_selectedStatuses == null) return null;
+    if (_selectedTaskStatusData?.id == _selectedStatuses) {
+      return _selectedTaskStatusData;
+    }
+
+    try {
+      final status = await _apiService.getTaskStatus(_selectedStatuses!);
+      if (!mounted) return status;
+      setState(() {
+        _selectedTaskStatusData = status;
+      });
+      return status;
+    } catch (_) {
+      return _selectedTaskStatusData;
+    }
+  }
+
+  Future<ReasonForRefusalSubmitData?> _collectReasonForRefusalIfNeeded() async {
+    final bool statusChanged = _selectedStatuses != null &&
+        _selectedStatuses != widget.statusId;
+    final targetStatus = await _resolveSelectedTaskStatusData();
+    final bool requiresReason =
+        _askReasonForRefusal && targetStatus?.isUnassembled == true;
+
+    if (!statusChanged || !requiresReason) {
+      return null;
+    }
+
+    return showReasonForRefusalDialog(
+      context: context,
+      type: 'task',
+    );
   }
 
   Widget _buildFileSelection() {
@@ -527,6 +574,7 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
           onSelectStatus: (TaskStatus selectedStatusData) {
             setState(() {
               _selectedStatuses = selectedStatusData.id;
+              _selectedTaskStatusData = selectedStatusData;
             });
           },
         );
@@ -1954,7 +2002,7 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                     buttonText: AppLocalizations.of(context)!.translate('save'),
                     buttonColor: const Color(0xff4759FF),
                     textColor: Colors.white,
-                    onPressed: () {
+                    onPressed: () async {
                       if (_formKey.currentState!.validate()) {
                         DateTime? startDate;
                         DateTime? endDate;
@@ -2097,6 +2145,18 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                           }).toList();
 
                           final localizations = AppLocalizations.of(context)!;
+                          final refusalData =
+                              await _collectReasonForRefusalIfNeeded();
+
+                          if (!mounted) return;
+                          if (_selectedStatuses != widget.statusId &&
+                              _askReasonForRefusal &&
+                              (await _resolveSelectedTaskStatusData())
+                                      ?.isUnassembled ==
+                                  true &&
+                              refusalData == null) {
+                            return;
+                          }
 
                           context.read<TaskBloc>().add(
                                 UpdateTask(
@@ -2125,6 +2185,8 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                                   existingFiles: keptExistingFiles.isNotEmpty
                                       ? keptExistingFiles
                                       : null,
+                                  reasonForRefusalId: refusalData?.reasonId,
+                                  reasonForRefusal: refusalData?.comment,
                                 ),
                               );
                         } catch (e) {

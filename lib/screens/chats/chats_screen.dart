@@ -1495,7 +1495,31 @@ class _ChatItemsWidgetState extends State<_ChatItemsWidget> {
       return localizations.translate('no_internet_connection');
     }
 
-    return rawMessage.replaceFirst('Exception:', '').trim();
+    if (rawMessage.contains('SqliteException') ||
+        rawMessage.contains('DatabaseException') ||
+        rawMessage.contains('UNIQUE constraint failed') ||
+        rawMessage.contains('cached_records')) {
+      return 'Не удалось обновить список чатов. Попробуйте еще раз.';
+    }
+
+    if (rawMessage.contains('Exception:')) {
+      final sanitized = rawMessage.replaceFirst('Exception:', '').trim();
+      if (sanitized.isEmpty) {
+        return localizations.translate('error');
+      }
+      return sanitized;
+    }
+
+    final looksTechnical = rawMessage.contains('type \'') ||
+        rawMessage.contains('StackTrace') ||
+        rawMessage.contains('http') ||
+        rawMessage.contains('FormatException');
+
+    if (looksTechnical) {
+      return 'Не удалось загрузить чаты. Попробуйте еще раз.';
+    }
+
+    return rawMessage;
   }
 
   Widget _buildChatsErrorState(BuildContext context, Object? error) {

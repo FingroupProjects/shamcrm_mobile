@@ -635,6 +635,11 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
         'sales_funnel_id': event.salesFunnelId, // ДОБАВЛЕННАЯ СТРОКА
       if (event.duplicate != null)
         'duplicate': event.duplicate, // Добавляем duplicate
+      if (event.reasonForRefusalId != null)
+        'reason_for_refusal_id': event.reasonForRefusalId,
+      if (event.reasonForRefusal != null &&
+          event.reasonForRefusal!.trim().isNotEmpty)
+        'reason_for_refusal': event.reasonForRefusal!.trim(),
       'lead_custom_fields': event.customFields ?? [],
       'directory_values': event.directoryValues ?? [],
       if (event.files != null) 'files': event.files

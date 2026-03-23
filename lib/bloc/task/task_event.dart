@@ -195,6 +195,8 @@ class UpdateTask extends TaskEvent {
   final List<TaskFiles>? existingFiles;
   final List<Map<String, int>>? directoryValues; // Add for consistency
   final AppLocalizations localizations;
+  final int? reasonForRefusalId;
+  final String? reasonForRefusal;
 
   UpdateTask({
     required this.taskId,
@@ -212,6 +214,8 @@ class UpdateTask extends TaskEvent {
     this.existingFiles,
     this.directoryValues,
     required this.localizations,
+    this.reasonForRefusalId,
+    this.reasonForRefusal,
   });
 }
 

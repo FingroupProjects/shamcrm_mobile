@@ -621,6 +621,8 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
           'customFields': event.customFields,
           'filePaths': event.filePaths,
           'directoryValues': event.directoryValues,
+          'reasonForRefusalId': event.reasonForRefusalId,
+          'reasonForRefusal': event.reasonForRefusal,
         },
         idempotencyKey:
             'task-update-${event.taskId}-${DateTime.now().millisecondsSinceEpoch}',
@@ -646,6 +648,8 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
         filePaths: event.filePaths,
         existingFiles: event.existingFiles,
         directoryValues: event.directoryValues, // Add for consistency
+        reasonForRefusalId: event.reasonForRefusalId,
+        reasonForRefusal: event.reasonForRefusal,
       );
 
       if (result['success']) {

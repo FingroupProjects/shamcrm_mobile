@@ -3168,6 +3168,15 @@ class ApiService {
       request.fields['duplicate'] =
           data['duplicate'].toString(); // Добавляем duplicate
     }
+    if (data['reason_for_refusal_id'] != null) {
+      request.fields['reason_for_refusal_id'] =
+          data['reason_for_refusal_id'].toString();
+    }
+    if (data['reason_for_refusal'] != null &&
+        data['reason_for_refusal'].toString().trim().isNotEmpty) {
+      request.fields['reason_for_refusal'] =
+          data['reason_for_refusal'].toString().trim();
+    }
     // Обрабатываем lead_custom_fields
     final customFields = data['lead_custom_fields'] as List<dynamic>? ?? [];
     if (customFields.isNotEmpty) {
@@ -4750,6 +4759,8 @@ class ApiService {
     List<int>? dealStatusIds, // ✅ НОВОЕ
     List<int>? existingFiles, // ID существующих файлов
     List<int>? userIds, // ✅ НОВОЕ: массив ID пользователей
+    int? reasonForRefusalId,
+    String? reasonForRefusal,
   }) async {
     // Формируем путь с query-параметрами
     final updatedPath = await _appendQueryParams('/deal/$dealId');
@@ -4772,6 +4783,12 @@ class ApiService {
     if (dealtypeId != null)
       request.fields['deal_type_id'] = dealtypeId.toString();
     if (leadId != null) request.fields['lead_id'] = leadId.toString();
+    if (reasonForRefusalId != null) {
+      request.fields['reason_for_refusal_id'] = reasonForRefusalId.toString();
+    }
+    if (reasonForRefusal != null && reasonForRefusal.trim().isNotEmpty) {
+      request.fields['reason_for_refusal'] = reasonForRefusal.trim();
+    }
 
     // Отправляем массив статусов
     if (dealStatusIds != null && dealStatusIds.isNotEmpty) {
@@ -5930,6 +5947,8 @@ class ApiService {
     List<Map<String, dynamic>>? customFields,
     List<TaskFiles>? existingFiles,
     List<Map<String, int>>? directoryValues,
+    int? reasonForRefusalId,
+    String? reasonForRefusal,
   }) async {
     try {
       final token = await getToken();
@@ -5970,6 +5989,13 @@ class ApiService {
       }
       if (description != null) {
         request.fields['description'] = description;
+      }
+      if (reasonForRefusalId != null) {
+        request.fields['reason_for_refusal_id'] =
+            reasonForRefusalId.toString();
+      }
+      if (reasonForRefusal != null && reasonForRefusal.trim().isNotEmpty) {
+        request.fields['reason_for_refusal'] = reasonForRefusal.trim();
       }
 
       // Добавляем пользователей

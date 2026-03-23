@@ -80,6 +80,30 @@ class ChatsBloc extends Bloc<ChatsEvent, ChatsState> {
     _currentQuery = event.query;
   }
 
+  String _toUserFriendlyErrorMessage(Object error) {
+    final message = error.toString();
+
+    if (message.contains('SocketException') ||
+        message.contains('No internet connection')) {
+      return 'Нет подключения к интернету';
+    }
+
+    if (message.contains('SqliteException') ||
+        message.contains('DatabaseException') ||
+        message.contains('UNIQUE constraint failed') ||
+        message.contains('cached_records')) {
+      return 'Не удалось обновить список чатов. Попробуйте еще раз.';
+    }
+
+    if (message.contains('No host specified in URI null') ||
+        message.contains('Base URL is not initialized') ||
+        message.contains('Домен не установлен')) {
+      return 'Проблема с настройками подключения. Попробуйте войти заново.';
+    }
+
+    return 'Не удалось загрузить чаты. Попробуйте еще раз.';
+  }
+
   // Начальная загрузка чатов
   Future<void> _fetchChatsEvent(
       FetchChats event, Emitter<ChatsState> emit) async {
@@ -170,12 +194,12 @@ class ChatsBloc extends Bloc<ChatsEvent, ChatsState> {
       } catch (e) {
         debugPrint(
             '=================-=== ChatsBloc._fetchChatsEvent: Error: $e, Type: ${e.runtimeType}');
-        emit(ChatsError(e.toString()));
+        emit(ChatsError(_toUserFriendlyErrorMessage(e)));
       }
     } else {
       debugPrint('ChatsBloc._fetchChatsEvent: No internet connection');
       if (cached == null) {
-        emit(ChatsError('No internet connection'));
+        emit(ChatsError('Нет подключения к интернету'));
       }
     }
     _isFetching = false;
@@ -244,7 +268,7 @@ class ChatsBloc extends Bloc<ChatsEvent, ChatsState> {
         // ✅ ИСПРАВЛЕНИЕ: Отключена автоматическая предзагрузка для предотвращения бесконечных запросов
         // _prefetchNextPages(2, emit);
       } catch (e) {
-        emit(ChatsError(e.toString()));
+        emit(ChatsError(_toUserFriendlyErrorMessage(e)));
       }
     } else {
       if (cached == null) {
@@ -332,7 +356,7 @@ class ChatsBloc extends Bloc<ChatsEvent, ChatsState> {
             debugPrint('ChatsBloc._getNextPageChatsEvent: Error: $e');
             // ✅ ИСПРАВЛЕНИЕ: Убираем страницу из списка загружающихся при ошибке
             _loadingPages.remove(nextPage);
-            emit(ChatsError(e.toString()));
+            emit(ChatsError(_toUserFriendlyErrorMessage(e)));
           }
         } else {
           // ✅ ИСПРАВЛЕНИЕ: Убираем страницу из списка загружающихся при отсутствии интернета
@@ -553,7 +577,7 @@ class ChatsBloc extends Bloc<ChatsEvent, ChatsState> {
         emit(ChatsLoaded(chatsPagination!));
       } catch (e) {
         debugPrint('ChatsBloc._updateChatsFromSocketFetch: Error: $e');
-        emit(ChatsError(e.toString()));
+        emit(ChatsError(_toUserFriendlyErrorMessage(e)));
       }
       _isFetching = false;
     }

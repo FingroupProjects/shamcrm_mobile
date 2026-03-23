@@ -188,6 +188,8 @@ class UpdateDeal extends DealEvent {
   final List<FileHelper>? files; // Новые файлы (id == 0)
   final List<int>? existingFiles; // ID существующих файлов (id != 0)
   final List<int>? userIds; // ✅ НОВОЕ: массив ID пользователей
+  final int? reasonForRefusalId;
+  final String? reasonForRefusal;
 
   UpdateDeal({
     required this.dealId,
@@ -207,6 +209,8 @@ class UpdateDeal extends DealEvent {
     this.dealStatusIds, // ✅ НОВОЕ
     this.existingFiles, // ID существующих файлов
     this.userIds, // ✅ НОВОЕ
+    this.reasonForRefusalId,
+    this.reasonForRefusal,
   });
 }
 

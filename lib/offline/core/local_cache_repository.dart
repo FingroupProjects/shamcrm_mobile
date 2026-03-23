@@ -51,18 +51,44 @@ class LocalCacheRepository {
     DateTime? lastSyncedAt,
   }) async {
     final now = DateTime.now();
-    await _database.into(_database.cachedRecords).insertOnConflictUpdate(
-          CachedRecordsCompanion.insert(
-            module: module,
-            cacheKey: cacheKey,
-            payload: jsonEncode(payload),
-            entityVersion: Value(entityVersion),
-            deltaToken: Value(deltaToken),
-            createdAt: now,
-            updatedAt: now,
-            lastSyncedAt: Value(lastSyncedAt),
-          ),
-        );
+    final encodedPayload = jsonEncode(payload);
+
+    await _database.transaction(() async {
+      final existing = await (_database.select(_database.cachedRecords)
+            ..where(
+              (tbl) => tbl.module.equals(module) & tbl.cacheKey.equals(cacheKey),
+            ))
+          .getSingleOrNull();
+
+      if (existing == null) {
+        await _database.into(_database.cachedRecords).insert(
+              CachedRecordsCompanion.insert(
+                module: module,
+                cacheKey: cacheKey,
+                payload: encodedPayload,
+                entityVersion: Value(entityVersion),
+                deltaToken: Value(deltaToken),
+                createdAt: now,
+                updatedAt: now,
+                lastSyncedAt: Value(lastSyncedAt),
+              ),
+            );
+        return;
+      }
+
+      await (_database.update(_database.cachedRecords)
+            ..where((tbl) => tbl.id.equals(existing.id)))
+          .write(
+        CachedRecordsCompanion(
+          payload: Value(encodedPayload),
+          entityVersion: Value(entityVersion),
+          deltaToken: Value(deltaToken),
+          isDeleted: const Value(false),
+          updatedAt: Value(now),
+          lastSyncedAt: Value(lastSyncedAt),
+        ),
+      );
+    });
   }
 
   Future<void> clearModule(String module) async {

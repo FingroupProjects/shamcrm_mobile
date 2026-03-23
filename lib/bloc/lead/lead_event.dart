@@ -186,6 +186,8 @@ class UpdateLead extends LeadEvent {
   final String? priceTypeId; // Новое поле
   final String? salesFunnelId; // ДОБАВЛЕННОЕ ПОЛЕ
   final String? duplicate; // Новое поле
+  final int? reasonForRefusalId;
+  final String? reasonForRefusal;
 
   UpdateLead({
     required this.leadId,
@@ -211,6 +213,8 @@ class UpdateLead extends LeadEvent {
     this.priceTypeId,
     this.salesFunnelId, // ДОБАВЛЕННЫЙ ПАРАМЕТР
     this.duplicate, // Новое поле]
+    this.reasonForRefusalId,
+    this.reasonForRefusal,
   });
 }
 

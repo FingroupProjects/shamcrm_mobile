@@ -541,6 +541,8 @@ class DealBloc extends Bloc<DealEvent, DealState> {
           'dealStatusIds': event.dealStatusIds,
           'existingFiles': event.existingFiles,
           'userIds': event.userIds,
+          'reasonForRefusalId': event.reasonForRefusalId,
+          'reasonForRefusal': event.reasonForRefusal,
         },
         idempotencyKey:
             'deal-update-${event.dealId}-${DateTime.now().millisecondsSinceEpoch}',
@@ -569,6 +571,8 @@ class DealBloc extends Bloc<DealEvent, DealState> {
         dealStatusIds: event.dealStatusIds,
         existingFiles: event.existingFiles,
         userIds: event.userIds, // ✅ НОВОЕ: передаем userIds
+        reasonForRefusalId: event.reasonForRefusalId,
+        reasonForRefusal: event.reasonForRefusal,
       );
 
       if (result['success']) {
