@@ -569,6 +569,8 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
         orderId: event.orderId,
         statusId: event.statusId,
         organizationId: event.organizationId,
+        reasonForRefusalId: event.reasonForRefusalId,
+        reasonForRefusal: event.reasonForRefusal,
       );
       // //print('OrderBloc: Результат смены статуса заказа: $success');
       if (success) {
@@ -728,6 +730,8 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
         orderId: event.orderId,
         statusId: event.statusId,
         organizationId: event.organizationId,
+        reasonForRefusalId: event.reasonForRefusalId,
+        reasonForRefusal: event.reasonForRefusal,
       );
       if (success) {
         if (state is OrderLoaded) {

@@ -5,9 +5,11 @@ import 'package:crm_task_manager/custom_widget/custom_bottom_dropdown.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/models/page_2/order_card.dart';
+import 'package:crm_task_manager/screens/common/reason_for_refusal_modal.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 void OrderDropdownBottomSheet(
   BuildContext context,
   String defaultValue,
@@ -40,6 +42,7 @@ void OrderDropdownBottomSheet(
 
           if (currentState is OrderLoaded && currentState.statuses.isNotEmpty) {
             final orderStatuses = currentState.statuses;
+            bool isSubmittingSave = false;
             return StatefulBuilder(
               builder: (BuildContext context, StateSetter setState) {
                 return Container(
@@ -74,12 +77,51 @@ void OrderDropdownBottomSheet(
                           }).toList(),
                         ),
                       ),
-                      CustomButton(
+                      isSubmittingSave
+                          ? const Padding(
+                              padding: EdgeInsets.symmetric(vertical: 12),
+                              child: Center(
+                                child: CircularProgressIndicator(
+                                  color: Color(0xff1E2E52),
+                                ),
+                              ),
+                            )
+                          : CustomButton(
                         buttonText: AppLocalizations.of(context)!.translate('save'),
                         buttonColor: const Color(0xff4F40EC),
                         textColor: Colors.white,
-                        onPressed: () {
+                        onPressed: () async {
+                          if (isSubmittingSave) return;
                           if (selectedStatusId != null) {
+                            setState(() {
+                              isSubmittingSave = true;
+                            });
+                            final prefs = await SharedPreferences.getInstance();
+                            final askReasonForRefusal =
+                                prefs.getBool('ask_reason_for_refusal') ??
+                                    false;
+                            final selectedStatusIndex = orderStatuses.indexWhere(
+                              (status) => status.id == selectedStatusId,
+                            );
+                            final selectedStatus = selectedStatusIndex != -1
+                                ? orderStatuses[selectedStatusIndex]
+                                : null;
+                            ReasonForRefusalSubmitData? refusalData;
+                            if (selectedStatusId != order.orderStatus.id &&
+                                askReasonForRefusal &&
+                                selectedStatus != null &&
+                                selectedStatus.isFailed == true) {
+                              refusalData = await showReasonForRefusalDialog(
+                                context: context,
+                                type: 'order',
+                              );
+                              if (refusalData == null) {
+                                setState(() {
+                                  isSubmittingSave = false;
+                                });
+                                return;
+                              }
+                            }
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                 content: Text(
@@ -110,6 +152,8 @@ void OrderDropdownBottomSheet(
                               orderId: order.id,
                               statusId: selectedStatusId!,
                               organizationId: order.organizationId,
+                              reasonForRefusalId: refusalData?.reasonId,
+                              reasonForRefusal: refusalData?.comment,
                             ));
 
                             Navigator.pop(context);
@@ -119,6 +163,9 @@ void OrderDropdownBottomSheet(
                               onTabChange(newTabIndex);
                             }
                           } else {
+                            setState(() {
+                              isSubmittingSave = false;
+                            });
                             //print('Статус не выбран');
                           }
                         },

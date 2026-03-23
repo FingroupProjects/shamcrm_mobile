@@ -12379,6 +12379,8 @@ class ApiService {
     required int orderId,
     required int statusId,
     required int? organizationId,
+    int? reasonForRefusalId,
+    String? reasonForRefusal,
   }) async {
     try {
       final token = await getToken();
@@ -12401,6 +12403,10 @@ class ApiService {
         },
         body: jsonEncode({
           'status_id': statusId,
+          if (reasonForRefusalId != null)
+            'reason_for_refusal_id': reasonForRefusalId,
+          if (reasonForRefusal != null && reasonForRefusal.trim().isNotEmpty)
+            'reason_for_refusal': reasonForRefusal.trim(),
         }),
       );
 

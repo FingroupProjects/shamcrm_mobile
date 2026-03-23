@@ -168,11 +168,15 @@ class ChangeOrderStatus extends OrderEvent {
   final int orderId;
   final int statusId;
   final int? organizationId;
+  final int? reasonForRefusalId;
+  final String? reasonForRefusal;
 
   ChangeOrderStatus({
     required this.orderId,
     required this.statusId,
     this.organizationId,
+    this.reasonForRefusalId,
+    this.reasonForRefusal,
   });
 }
 

@@ -106,6 +106,7 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
   int? _currentUserId;
   bool _askReasonForRefusal = false;
   TaskStatus? _selectedTaskStatusData;
+  bool _isSubmittingSave = false;
 
   // Конфигурация полей с сервера
   Map<String, Widget> fieldWidgets = {};
@@ -1997,13 +1998,23 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                       color: Color(0xff1E2E52),
                     ),
                   );
+                } else if (_isSubmittingSave) {
+                  return Center(
+                    child: CircularProgressIndicator(
+                      color: Color(0xff1E2E52),
+                    ),
+                  );
                 } else {
                   return CustomButton(
                     buttonText: AppLocalizations.of(context)!.translate('save'),
                     buttonColor: const Color(0xff4759FF),
                     textColor: Colors.white,
                     onPressed: () async {
+                      if (_isSubmittingSave) return;
                       if (_formKey.currentState!.validate()) {
+                        setState(() {
+                          _isSubmittingSave = true;
+                        });
                         DateTime? startDate;
                         DateTime? endDate;
                         try {
@@ -2020,6 +2031,7 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                               startDate.isAfter(endDate)) {
                             setState(() {
                               isEndDateInvalid = true;
+                              _isSubmittingSave = false;
                             });
                             _showErrorSnackBar(
                               AppLocalizations.of(context)!
@@ -2034,6 +2046,7 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                                   selectedUsers!.isEmpty)) {
                             setState(() {
                               isExecutorInvalid = true;
+                              _isSubmittingSave = false;
                             });
                             _showErrorSnackBar(
                               '${AppLocalizations.of(context)!.translate('assignees_list')} - ${AppLocalizations.of(context)!.translate('field_required')}',
@@ -2046,6 +2059,7 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                               selectedProject!.isEmpty) {
                             setState(() {
                               isProjectInvalid = true;
+                              _isSubmittingSave = false;
                             });
                             _showErrorSnackBar(
                               '${AppLocalizations.of(context)!.translate('project')} - ${AppLocalizations.of(context)!.translate('field_required')}',
@@ -2070,6 +2084,9 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                             if (fieldType == 'number' &&
                                 fieldValue.isNotEmpty) {
                               if (!RegExp(r'^\d+$').hasMatch(fieldValue)) {
+                                setState(() {
+                                  _isSubmittingSave = false;
+                                });
                                 _showErrorSnackBar(AppLocalizations.of(context)!
                                     .translate('enter_valid_number'));
                                 return;
@@ -2102,6 +2119,9 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                                     backgroundColor: Colors.red,
                                   ),
                                 );
+                                setState(() {
+                                  _isSubmittingSave = false;
+                                });
                                 return;
                               }
                             }
@@ -2155,6 +2175,9 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                                       ?.isUnassembled ==
                                   true &&
                               refusalData == null) {
+                            setState(() {
+                              _isSubmittingSave = false;
+                            });
                             return;
                           }
 
@@ -2189,13 +2212,28 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                                   reasonForRefusal: refusalData?.comment,
                                 ),
                               );
+                          if (mounted) {
+                            setState(() {
+                              _isSubmittingSave = false;
+                            });
+                          }
                         } catch (e) {
+                          if (mounted) {
+                            setState(() {
+                              _isSubmittingSave = false;
+                            });
+                          }
                           _showErrorSnackBar(
                             AppLocalizations.of(context)!
                                 .translate('error_format_date'),
                           );
                         }
                       } else {
+                        if (mounted) {
+                          setState(() {
+                            _isSubmittingSave = false;
+                          });
+                        }
                         _showErrorSnackBar(
                           AppLocalizations.of(context)!
                               .translate('fill_required_fields'),

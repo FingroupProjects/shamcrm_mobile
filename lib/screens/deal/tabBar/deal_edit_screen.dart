@@ -118,6 +118,7 @@ class _DealEditScreenState extends State<DealEditScreen> {
   List<int> _initialStatusIds = [];
   bool _askReasonForRefusal = false;
   DealStatus? _selectedDealStatusData;
+  bool _isSubmittingSave = false;
 
   @override
   void initState() {
@@ -1774,6 +1775,11 @@ class _DealEditScreenState extends State<DealEditScreen> {
                                     child: CircularProgressIndicator(
                                         color: Color(0xff1E2E52)),
                                   );
+                                } else if (_isSubmittingSave) {
+                                  return const Center(
+                                    child: CircularProgressIndicator(
+                                        color: Color(0xff1E2E52)),
+                                  );
                                 } else {
                                   return CustomButton(
                                     buttonText: AppLocalizations.of(context)!
@@ -1781,8 +1787,12 @@ class _DealEditScreenState extends State<DealEditScreen> {
                                     buttonColor: const Color(0xff4759FF),
                                     textColor: Colors.white,
                                     onPressed: () async {
+                                      if (_isSubmittingSave) return;
                                       if (_formKey.currentState!.validate() &&
                                           selectedManager != null) {
+                                        setState(() {
+                                          _isSubmittingSave = true;
+                                        });
                                         DateTime? parsedStartDate;
                                         DateTime? parsedEndDate;
 
@@ -1798,6 +1808,9 @@ class _DealEditScreenState extends State<DealEditScreen> {
                                                 AppLocalizations.of(context)!
                                                     .translate(
                                                         'error_parsing_date'));
+                                            setState(() {
+                                              _isSubmittingSave = false;
+                                            });
                                             return;
                                           }
                                         }
@@ -1812,6 +1825,9 @@ class _DealEditScreenState extends State<DealEditScreen> {
                                                 AppLocalizations.of(context)!
                                                     .translate(
                                                         'error_parsing_date'));
+                                            setState(() {
+                                              _isSubmittingSave = false;
+                                            });
                                             return;
                                           }
                                         }
@@ -1955,6 +1971,9 @@ class _DealEditScreenState extends State<DealEditScreen> {
                                                     ?.isFailure ==
                                                 true &&
                                             refusalData == null) {
+                                          setState(() {
+                                            _isSubmittingSave = false;
+                                          });
                                           return;
                                         }
 
@@ -1995,7 +2014,17 @@ class _DealEditScreenState extends State<DealEditScreen> {
                                               reasonForRefusal:
                                                   refusalData?.comment,
                                             ));
+                                        if (mounted) {
+                                          setState(() {
+                                            _isSubmittingSave = false;
+                                          });
+                                        }
                                       } else {
+                                        if (mounted) {
+                                          setState(() {
+                                            _isSubmittingSave = false;
+                                          });
+                                        }
                                         _showErrorSnackBar(AppLocalizations.of(
                                                 context)!
                                             .translate('fill_required_fields'));
