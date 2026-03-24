@@ -15,6 +15,7 @@ import 'package:crm_task_manager/bloc/calendar/calendar_bloc.dart';
 import 'package:crm_task_manager/bloc/call_bloc/call_center_bloc.dart';
 import 'package:crm_task_manager/bloc/call_bloc/operator_bloc/operator_bloc.dart';
 import 'package:crm_task_manager/bloc/cash_desk/cash_desk_bloc.dart';
+import 'package:crm_task_manager/bloc/city_list/city_bloc.dart';
 import 'package:crm_task_manager/bloc/chats/chat_profile/chats_profile_task_bloc.dart';
 import 'package:crm_task_manager/bloc/chats/delete_message/delete_message_bloc.dart';
 import 'package:crm_task_manager/bloc/chats/groupe_chat/group_chat_bloc.dart';
@@ -60,6 +61,7 @@ import 'package:crm_task_manager/bloc/history_deal/deal_history_bloc.dart';
 import 'package:crm_task_manager/bloc/history_lead/history_bloc.dart';
 import 'package:crm_task_manager/bloc/history_task/task_history_bloc.dart';
 import 'package:crm_task_manager/bloc/lead/lead_bloc.dart';
+import 'package:crm_task_manager/bloc/lead_channel_list/lead_channel_bloc.dart';
 import 'package:crm_task_manager/bloc/lead_by_id/leadById_bloc.dart';
 import 'package:crm_task_manager/bloc/lead_deal/lead_deal_bloc.dart';
 import 'package:crm_task_manager/bloc/login/login_bloc.dart';
@@ -600,7 +602,9 @@ class _MyAppState extends State<MyApp> {
         BlocProvider(create: (context) => NotesBloc(widget.apiService)),
         BlocProvider(create: (context) => GetAllManagerBloc()),
         BlocProvider(create: (context) => GetAllRegionBloc()),
+        BlocProvider(create: (context) => GetAllCityBloc()),
         BlocProvider(create: (context) => GetAllSourceBloc()),
+        BlocProvider(create: (context) => GetAllLeadChannelBloc()),
         BlocProvider(create: (context) => GetAllAdvertisingCampaignBloc()),
         BlocProvider(
             create: (context) => GetAllLeadBloc(apiService: widget.apiService)),

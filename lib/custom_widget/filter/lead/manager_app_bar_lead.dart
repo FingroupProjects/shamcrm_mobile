@@ -3,11 +3,16 @@ import 'package:crm_task_manager/custom_widget/custom_chat_styles.dart';
 import 'package:crm_task_manager/custom_widget/custom_field_multi_select.dart';
 import 'package:crm_task_manager/custom_widget/filter/common/multi_reason_for_refusal_list.dart';
 import 'package:crm_task_manager/custom_widget/filter/lead/multi_manager_list.dart';
+import 'package:crm_task_manager/custom_widget/filter/lead/multi_city_list.dart';
+import 'package:crm_task_manager/custom_widget/filter/lead/multi_channel_list.dart';
 import 'package:crm_task_manager/custom_widget/filter/lead/multi_region_list.dart';
 import 'package:crm_task_manager/custom_widget/filter/lead/multi_advertising_campaign_list.dart';
 import 'package:crm_task_manager/custom_widget/filter/lead/multi_source_list.dart';
 import 'package:crm_task_manager/custom_widget/filter/lead/multi_directory_dropdown_widget.dart';
+import 'package:crm_task_manager/custom_widget/filter/lead/state_single_select_widget.dart';
 import 'package:crm_task_manager/models/advertising_campaign_model.dart';
+import 'package:crm_task_manager/models/city_model.dart';
+import 'package:crm_task_manager/models/lead_filter_channel_model.dart';
 import 'package:crm_task_manager/models/manager_model.dart';
 import 'package:crm_task_manager/models/region_model.dart';
 import 'package:crm_task_manager/models/source_list_model.dart';
@@ -25,7 +30,10 @@ class ManagerFilterScreen extends StatefulWidget {
   final Function(Map<String, dynamic>)? onManagersSelected;
   final List? initialManagers;
   final List? initialRegions;
+  final RegionData? initialState;
+  final List? initialCities;
   final List? initialSources;
+  final List? initialChannels;
   final List? initialAdvertisingCampaigns;
   final List<int>? initialReasonForRefusalIds;
   final int? initialStatuses;
@@ -43,6 +51,7 @@ class ManagerFilterScreen extends StatefulWidget {
   final bool? initialHasOrders;
   final bool? initialUnreadOnly;
   final int? initialDaysWithoutActivity;
+  final int? initialNumberOfDaysDeal;
   final VoidCallback? onResetFilters;
   final List<Map<String, dynamic>>? initialDirectoryValues;
   final List<String>? customFieldTitles;
@@ -54,7 +63,10 @@ class ManagerFilterScreen extends StatefulWidget {
     this.onManagersSelected,
     this.initialManagers,
     this.initialRegions,
+    this.initialState,
+    this.initialCities,
     this.initialSources,
+    this.initialChannels,
     this.initialAdvertisingCampaigns,
     this.initialReasonForRefusalIds,
     this.initialStatuses,
@@ -72,6 +84,7 @@ class ManagerFilterScreen extends StatefulWidget {
     this.initialHasOrders,
     this.initialUnreadOnly, // ИЗМЕНЕНО: Добавили параметр для фильтрации по непрочитанным сообщениям
     this.initialDaysWithoutActivity,
+    this.initialNumberOfDaysDeal,
     this.onResetFilters,
     this.initialDirectoryValues,
     this.customFieldTitles,
@@ -86,7 +99,10 @@ class ManagerFilterScreen extends StatefulWidget {
 class _ManagerFilterScreenState extends State<ManagerFilterScreen> {
   List _selectedManagers = [];
   List _selectedRegions = [];
+  RegionData? _selectedState;
+  List _selectedCities = [];
   List _selectedSources = [];
+  List _selectedChannels = [];
   List _selectedAdvertisingCampaigns = [];
   List<ReasonForRefusalData> _selectedReasonForRefusals = [];
   bool _askReasonForRefusal = false;
@@ -107,6 +123,7 @@ class _ManagerFilterScreenState extends State<ManagerFilterScreen> {
   bool? _hasOrders;
 
   int? _daysWithoutActivity;
+  int? _numberOfDaysDeal;
 
   Map<int, List<MainField>> _selectedDirectoryFields = {};
   List<DirectoryLink> _directoryLinks = [];
@@ -197,7 +214,10 @@ class _ManagerFilterScreenState extends State<ManagerFilterScreen> {
 
     _selectedManagers = widget.initialManagers ?? [];
     _selectedRegions = widget.initialRegions ?? [];
+    _selectedState = widget.initialState;
+    _selectedCities = widget.initialCities ?? [];
     _selectedSources = widget.initialSources ?? [];
+    _selectedChannels = widget.initialChannels ?? [];
     _selectedAdvertisingCampaigns = widget.initialAdvertisingCampaigns ?? [];
     if (widget.initialReasonForRefusalIds != null) {
       _selectedReasonForRefusals = widget.initialReasonForRefusalIds!
@@ -218,6 +238,7 @@ class _ManagerFilterScreenState extends State<ManagerFilterScreen> {
     _hasDeal = widget.initialHasDeal;
     _hasOrders = widget.initialHasOrders;
     _daysWithoutActivity = widget.initialDaysWithoutActivity;
+    _numberOfDaysDeal = widget.initialNumberOfDaysDeal;
     _loadAskReasonForRefusal();
     _fetchDirectoryLinks();
     _initializeCustomFieldSelections(
@@ -377,11 +398,32 @@ class _ManagerFilterScreenState extends State<ManagerFilterScreen> {
           color: Colors.white,
           child: Padding(
             padding: const EdgeInsets.all(8),
-            child: RegionsMultiSelectWidget(
-              selectedRegions:
-                  _selectedRegions.map((r) => r.id.toString()).toList(),
-              onSelectRegions: (List<RegionData> selectedRegionsData) {
-                setState(() => _selectedRegions = selectedRegionsData);
+            child: StateSingleSelectWidget(
+              selectedState: _selectedState,
+              onChanged: (selectedState) {
+                setState(() {
+                  _selectedState = selectedState;
+                  _selectedCities = [];
+                });
+              },
+            ),
+          ),
+        );
+
+      case 'city_id':
+      case 'city':
+        return Card(
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          color: Colors.white,
+          child: Padding(
+            padding: const EdgeInsets.all(8),
+            child: CityMultiSelectWidget(
+              parentId: _selectedState?.id,
+              selectedCities:
+                  _selectedCities.map((c) => c.id.toString()).toList(),
+              onSelectCities: (List<CityData> selectedCitiesData) {
+                setState(() => _selectedCities = selectedCitiesData);
               },
             ),
           ),
@@ -399,6 +441,26 @@ class _ManagerFilterScreenState extends State<ManagerFilterScreen> {
                   _selectedSources.map((s) => s.id.toString()).toList(),
               onSelectSources: (List<SourceData> selectedSourcesData) {
                 setState(() => _selectedSources = selectedSourcesData);
+              },
+            ),
+          ),
+        );
+
+      case 'channels':
+      case 'channel':
+      case 'integration_id':
+        return Card(
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          color: Colors.white,
+          child: Padding(
+            padding: const EdgeInsets.all(8),
+            child: ChannelsMultiSelectWidget(
+              selectedChannels:
+                  _selectedChannels.map((c) => c.id.toString()).toList(),
+              onSelectChannels:
+                  (List<LeadFilterChannelData> selectedChannelsData) {
+                setState(() => _selectedChannels = selectedChannelsData);
               },
             ),
           ),
@@ -535,7 +597,10 @@ class _ManagerFilterScreenState extends State<ManagerFilterScreen> {
                 widget.onResetFilters?.call();
                 _selectedManagers.clear();
                 _selectedRegions.clear();
+                _selectedState = null;
+                _selectedCities.clear();
                 _selectedSources.clear();
+                _selectedChannels.clear();
                 _selectedAdvertisingCampaigns.clear();
                 _selectedReasonForRefusals.clear();
                 _selectedStatuses = null;
@@ -552,6 +617,7 @@ class _ManagerFilterScreenState extends State<ManagerFilterScreen> {
                 _hasDeal = false;
                 _hasOrders = false;
                 _daysWithoutActivity = null;
+                _numberOfDaysDeal = null;
                 _selectedDirectoryFields.clear();
                 for (var link in _directoryLinks) {
                   _selectedDirectoryFields[link.id] = <MainField>[];
@@ -589,7 +655,10 @@ class _ManagerFilterScreenState extends State<ManagerFilterScreen> {
               Map<String, dynamic> filterData = {
                 'managers': _selectedManagers,
                 'regions': _selectedRegions,
+                'state': _selectedState,
+                'cities': _selectedCities,
                 'sources': _selectedSources,
+                'channels': _selectedChannels,
                 'advertising_campaigns': _selectedAdvertisingCampaigns,
                 'reason_for_refusal_ids': _selectedReasonForRefusals
                     .map((reason) => reason.id)
@@ -608,6 +677,7 @@ class _ManagerFilterScreenState extends State<ManagerFilterScreen> {
                 'hasDeal': _hasDeal,
                 'hasOrders': _hasOrders,
                 'daysWithoutActivity': _daysWithoutActivity,
+                'numberOfDaysDeal': _numberOfDaysDeal,
                 'directory_values':
                     _selectedDirectoryFields.entries.expand((entry) {
                   final directoryId = directoryIdByLinkId[entry.key];
@@ -631,7 +701,10 @@ class _ManagerFilterScreenState extends State<ManagerFilterScreen> {
               }
               if (_selectedManagers.isNotEmpty ||
                   _selectedRegions.isNotEmpty ||
+                  _selectedState != null ||
+                  _selectedCities.isNotEmpty ||
                   _selectedSources.isNotEmpty ||
+                  _selectedChannels.isNotEmpty ||
                   _selectedAdvertisingCampaigns.isNotEmpty ||
                   _selectedReasonForRefusals.isNotEmpty ||
                   _selectedStatuses != null ||
@@ -648,6 +721,7 @@ class _ManagerFilterScreenState extends State<ManagerFilterScreen> {
                   _hasDeal == true ||
                   _hasOrders == true ||
                   _daysWithoutActivity != null ||
+                  _numberOfDaysDeal != null ||
                   _selectedDirectoryFields.values
                       .any((fields) => fields.isNotEmpty) ||
                   customFieldFilters.isNotEmpty) {
@@ -724,6 +798,92 @@ class _ManagerFilterScreenState extends State<ManagerFilterScreen> {
                           child: widget,
                         );
                       }),
+                    if (_isConfigurationLoaded &&
+                        _fieldConfigurations.isNotEmpty &&
+                        !_fieldConfigurations.any(
+                          (config) => config.fieldName == 'region_id',
+                        ))
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: Card(
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          color: Colors.white,
+                          child: Padding(
+                            padding: const EdgeInsets.all(8),
+                            child: StateSingleSelectWidget(
+                              selectedState: _selectedState,
+                              onChanged: (selectedState) {
+                                setState(() {
+                                  _selectedState = selectedState;
+                                  _selectedCities = [];
+                                });
+                              },
+                            ),
+                          ),
+                        ),
+                      ),
+                    if (_isConfigurationLoaded &&
+                        _fieldConfigurations.isNotEmpty &&
+                        !_fieldConfigurations.any(
+                          (config) =>
+                              config.fieldName == 'city_id' ||
+                              config.fieldName == 'city',
+                        ))
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: Card(
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          color: Colors.white,
+                          child: Padding(
+                            padding: const EdgeInsets.all(8),
+                            child: CityMultiSelectWidget(
+                              parentId: _selectedState?.id,
+                              selectedCities: _selectedCities
+                                  .map((c) => c.id.toString())
+                                  .toList(),
+                              onSelectCities:
+                                  (List<CityData> selectedCitiesData) {
+                                setState(
+                                    () => _selectedCities = selectedCitiesData);
+                              },
+                            ),
+                          ),
+                        ),
+                      ),
+                    if (_isConfigurationLoaded &&
+                        _fieldConfigurations.isNotEmpty &&
+                        !_fieldConfigurations.any(
+                          (config) =>
+                              config.fieldName == 'channels' ||
+                              config.fieldName == 'channel' ||
+                              config.fieldName == 'integration_id',
+                        ))
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: Card(
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          color: Colors.white,
+                          child: Padding(
+                            padding: const EdgeInsets.all(8),
+                            child: ChannelsMultiSelectWidget(
+                              selectedChannels: _selectedChannels
+                                  .map((c) => c.id.toString())
+                                  .toList(),
+                              onSelectChannels: (List<LeadFilterChannelData>
+                                  selectedChannelsData) {
+                                setState(() =>
+                                    _selectedChannels = selectedChannelsData);
+                              },
+                            ),
+                          ),
+                        ),
+                      ),
                     if (_isConfigurationLoaded &&
                         _fieldConfigurations.isNotEmpty &&
                         _askReasonForRefusal &&
@@ -818,14 +978,52 @@ class _ManagerFilterScreenState extends State<ManagerFilterScreen> {
                         color: Colors.white,
                         child: Padding(
                           padding: const EdgeInsets.all(8),
-                          child: RegionsMultiSelectWidget(
-                            selectedRegions: _selectedRegions
-                                .map((r) => r.id.toString())
+                          child: StateSingleSelectWidget(
+                            selectedState: _selectedState,
+                            onChanged: (selectedState) {
+                              setState(() {
+                                _selectedState = selectedState;
+                                _selectedCities = [];
+                              });
+                            },
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Card(
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                        color: Colors.white,
+                        child: Padding(
+                          padding: const EdgeInsets.all(8),
+                          child: CityMultiSelectWidget(
+                            parentId: _selectedState?.id,
+                            selectedCities: _selectedCities
+                                .map((c) => c.id.toString())
                                 .toList(),
-                            onSelectRegions:
-                                (List<RegionData> selectedRegionsData) {
+                            onSelectCities:
+                                (List<CityData> selectedCitiesData) {
                               setState(
-                                  () => _selectedRegions = selectedRegionsData);
+                                  () => _selectedCities = selectedCitiesData);
+                            },
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Card(
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                        color: Colors.white,
+                        child: Padding(
+                          padding: const EdgeInsets.all(8),
+                          child: ChannelsMultiSelectWidget(
+                            selectedChannels: _selectedChannels
+                                .map((c) => c.id.toString())
+                                .toList(),
+                            onSelectChannels: (List<LeadFilterChannelData>
+                                selectedChannelsData) {
+                              setState(() =>
+                                  _selectedChannels = selectedChannelsData);
                             },
                           ),
                         ),
@@ -962,6 +1160,59 @@ class _ManagerFilterScreenState extends State<ManagerFilterScreen> {
                             (value) => setState(() => _hasOrders = value),
                           ),
                         ],
+                      ),
+                    ),
+
+                    Card(
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                      color: Colors.white,
+                      child: Padding(
+                        padding: const EdgeInsets.only(
+                            left: 12, right: 12, top: 4, bottom: 0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              AppLocalizations.of(context)!
+                                  .translate('days_without_deal'),
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                                fontFamily: 'Gilroy',
+                                color: Color(0xff1E2E52),
+                              ),
+                            ),
+                            Slider(
+                              value: (_numberOfDaysDeal ?? 0).toDouble(),
+                              min: 0,
+                              max: 100,
+                              divisions: 100,
+                              label: _numberOfDaysDeal.toString(),
+                              onChanged: (double value) {
+                                setState(() {
+                                  _numberOfDaysDeal = value.toInt();
+                                });
+                              },
+                              activeColor:
+                                  ChatSmsStyles.messageBubbleSenderColor,
+                              inactiveColor: Color.fromARGB(255, 179, 179, 179)
+                                  .withOpacity(0.5),
+                            ),
+                            Center(
+                              child: Text(
+                                "${_numberOfDaysDeal ?? '0'}",
+                                style: TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w500,
+                                  fontFamily: 'Gilroy',
+                                  color: Color(0xff1E2E52),
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
 

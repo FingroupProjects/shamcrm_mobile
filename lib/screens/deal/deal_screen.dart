@@ -7,6 +7,7 @@ import 'package:crm_task_manager/bloc/sales_funnel/sales_funnel_event.dart';
 import 'package:crm_task_manager/bloc/sales_funnel/sales_funnel_state.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/custom_widget/custom_app_bar.dart';
+import 'package:crm_task_manager/models/city_model.dart';
 import 'package:crm_task_manager/models/deal_model.dart';
 import 'package:crm_task_manager/models/deal_name_list.dart';
 import 'package:crm_task_manager/models/lead_multi_model.dart';
@@ -14,6 +15,7 @@ import 'package:crm_task_manager/models/manager_model.dart';
 import 'package:crm_task_manager/models/region_model.dart';
 import 'package:crm_task_manager/models/sales_funnel_model.dart';
 import 'package:crm_task_manager/models/source_list_model.dart';
+import 'package:crm_task_manager/models/user_data_response.dart';
 import 'package:crm_task_manager/screens/auth/login_screen.dart';
 import 'package:crm_task_manager/screens/deal/deal_cache.dart';
 import 'package:crm_task_manager/screens/deal/deal_status_delete.dart';
@@ -74,6 +76,9 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
 
   List<ManagerData> _selectedManagers = [];
   List<RegionData> _selectedRegions = [];
+  RegionData? _selectedState;
+  List<CityData> _selectedCities = [];
+  List<UserData> _selectedExecutors = [];
   List<SourceData> _selectedSources = [];
   List<LeadData> _selectedLeads = [];
   List<int> _selectedLeadStatusIds = [];
@@ -90,6 +95,9 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
 
   List<ManagerData> _initialselectedManagers = [];
   List<RegionData> _initialselectedRegions = [];
+  RegionData? _initialSelectedState;
+  List<CityData> _initialSelectedCities = [];
+  List<UserData> _initialSelectedExecutors = [];
   List<SourceData> _initialSelectedSources = [];
   List<LeadData> _initialselectedLeads = [];
   List<int> _initialLeadStatusIds = [];
@@ -441,6 +449,9 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
               .toList();
       _initialselectedManagers = List.from(_selectedManagers);
       _initialselectedRegions = List.from(_selectedRegions);
+      _initialSelectedState = _selectedState;
+      _initialSelectedCities = List.from(_selectedCities);
+      _initialSelectedExecutors = List.from(_selectedExecutors);
       _initialSelectedSources = List.from(_selectedSources);
       _initialselectedLeads = List.from(_selectedLeads);
       _initialLeadStatusIds = List.from(_selectedLeadStatusIds);
@@ -485,6 +496,9 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
   bool _hasActiveFilters() {
     return _selectedManagers.isNotEmpty ||
         _selectedRegions.isNotEmpty ||
+        _selectedState != null ||
+        _selectedCities.isNotEmpty ||
+        _selectedExecutors.isNotEmpty ||
         _selectedSources.isNotEmpty ||
         _selectedLeads.isNotEmpty ||
         _selectedLeadStatusIds.isNotEmpty ||
@@ -671,6 +685,13 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
       regionsIds: _selectedRegions.isNotEmpty
           ? _selectedRegions.map((region) => region.id).toList()
           : null,
+      regionId: _selectedState?.id,
+      cityIds: _selectedCities.isNotEmpty
+          ? _selectedCities.map((city) => city.id).toList()
+          : null,
+      executorIds: _selectedExecutors.isNotEmpty
+          ? _selectedExecutors.map((user) => user.id).toList()
+          : null,
       sources: _selectedSources.isNotEmpty
           ? _selectedSources.map((source) => source.id).toList()
           : null,
@@ -706,6 +727,9 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
         _isSearching = false;
         _selectedManagers = [];
         _selectedRegions = [];
+        _selectedState = null;
+        _selectedCities = [];
+        _selectedExecutors = [];
         _selectedSources = [];
         _selectedLeads = [];
         _selectedLeadStatusIds = [];
@@ -722,6 +746,9 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
         _selectedDealCustomFieldFilters = null;
         _initialselectedManagers = [];
         _initialselectedRegions = [];
+        _initialSelectedState = null;
+        _initialSelectedCities = [];
+        _initialSelectedExecutors = [];
         _initialSelectedSources = [];
         _initialselectedLeads = [];
         _initialLeadStatusIds = [];
@@ -760,6 +787,10 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
 
         _selectedManagers = managers['managers'] ?? [];
         _selectedRegions = managers['regions'] ?? [];
+        _selectedState = managers['state'] as RegionData?;
+        _selectedCities = (managers['cities'] as List?)?.cast<CityData>() ?? [];
+        _selectedExecutors =
+            (managers['executors'] as List?)?.cast<UserData>() ?? [];
         _selectedSources = List<SourceData>.from(
           managers['sources'] ?? const <SourceData>[],
         );
@@ -801,6 +832,9 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
         // Сохраняем initial значения
         _initialselectedManagers = managers['managers'] ?? [];
         _initialselectedRegions = managers['regions'] ?? [];
+        _initialSelectedState = _selectedState;
+        _initialSelectedCities = List<CityData>.from(_selectedCities);
+        _initialSelectedExecutors = List<UserData>.from(_selectedExecutors);
         _initialSelectedSources = List<SourceData>.from(_selectedSources);
         _initialselectedLeads = managers['leads'] ?? [];
         _initialLeadStatusIds = List<int>.from(_selectedLeadStatusIds);
@@ -826,6 +860,13 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
           : null,
       regionsIds: _selectedRegions.isNotEmpty
           ? _selectedRegions.map((region) => region.id).toList()
+          : null,
+      regionId: _selectedState?.id,
+      cityIds: _selectedCities.isNotEmpty
+          ? _selectedCities.map((city) => city.id).toList()
+          : null,
+      executorIds: _selectedExecutors.isNotEmpty
+          ? _selectedExecutors.map((user) => user.id).toList()
           : null,
       sources: _selectedSources.isNotEmpty
           ? _selectedSources.map((source) => source.id).toList()
@@ -873,6 +914,19 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
       statusIds: _selectedStatuses,
       query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
       salesFunnelId: _selectedFunnel?.id,
+      managerIds: _selectedManagers.isNotEmpty
+          ? _selectedManagers.map((manager) => manager.id).toList()
+          : null,
+      regionsIds: _selectedRegions.isNotEmpty
+          ? _selectedRegions.map((region) => region.id).toList()
+          : null,
+      regionId: _selectedState?.id,
+      cityIds: _selectedCities.isNotEmpty
+          ? _selectedCities.map((city) => city.id).toList()
+          : null,
+      executorIds: _selectedExecutors.isNotEmpty
+          ? _selectedExecutors.map((user) => user.id).toList()
+          : null,
       sources: _selectedSources.isNotEmpty
           ? _selectedSources.map((source) => source.id).toList()
           : null,
@@ -905,6 +959,19 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
       toDate: _toDate,
       query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
       salesFunnelId: _selectedFunnel?.id,
+      managerIds: _selectedManagers.isNotEmpty
+          ? _selectedManagers.map((manager) => manager.id).toList()
+          : null,
+      regionsIds: _selectedRegions.isNotEmpty
+          ? _selectedRegions.map((region) => region.id).toList()
+          : null,
+      regionId: _selectedState?.id,
+      cityIds: _selectedCities.isNotEmpty
+          ? _selectedCities.map((city) => city.id).toList()
+          : null,
+      executorIds: _selectedExecutors.isNotEmpty
+          ? _selectedExecutors.map((user) => user.id).toList()
+          : null,
       sources: _selectedSources.isNotEmpty
           ? _selectedSources.map((source) => source.id).toList()
           : null,
@@ -941,6 +1008,19 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
       toDate: _toDate,
       query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
       salesFunnelId: _selectedFunnel?.id,
+      managerIds: _selectedManagers.isNotEmpty
+          ? _selectedManagers.map((manager) => manager.id).toList()
+          : null,
+      regionsIds: _selectedRegions.isNotEmpty
+          ? _selectedRegions.map((region) => region.id).toList()
+          : null,
+      regionId: _selectedState?.id,
+      cityIds: _selectedCities.isNotEmpty
+          ? _selectedCities.map((city) => city.id).toList()
+          : null,
+      executorIds: _selectedExecutors.isNotEmpty
+          ? _selectedExecutors.map((user) => user.id).toList()
+          : null,
       sources: _selectedSources.isNotEmpty
           ? _selectedSources.map((source) => source.id).toList()
           : null,
@@ -971,6 +1051,13 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
           : null,
       regionsIds: _selectedRegions.isNotEmpty
           ? _selectedRegions.map((region) => region.id).toList()
+          : null,
+      regionId: _selectedState?.id,
+      cityIds: _selectedCities.isNotEmpty
+          ? _selectedCities.map((city) => city.id).toList()
+          : null,
+      executorIds: _selectedExecutors.isNotEmpty
+          ? _selectedExecutors.map((user) => user.id).toList()
           : null,
       sources: _selectedSources.isNotEmpty
           ? _selectedSources.map((source) => source.id).toList()
@@ -1060,6 +1147,9 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
             onStatusAndDateRangeDealSelected: _handleStatusAndDateSelected,
             initialManagersDeal: _initialselectedManagers,
             initialRegionsDeal: _initialselectedRegions,
+            initialStateDeal: _initialSelectedState,
+            initialCitiesDeal: _initialSelectedCities,
+            initialExecutorsDeal: _initialSelectedExecutors,
             initialSourcesDeal: _initialSelectedSources,
             initialLeadsDeal: _initialselectedLeads,
             initialManagerDealStatuses: _initialSelStatus,
@@ -1097,6 +1187,9 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
                 if (_searchController.text.isEmpty) {
                   if (_selectedManagers.isEmpty &&
                       _selectedRegions.isEmpty &&
+                      _selectedState == null &&
+                      _selectedCities.isEmpty &&
+                      _selectedExecutors.isEmpty &&
                       _selectedSources.isEmpty &&
                       _selectedReasonForRefusalIds.isEmpty &&
                       _selectedStatuses == null &&
@@ -1128,6 +1221,13 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
                           : null,
                       regionsIds: _selectedRegions.isNotEmpty
                           ? _selectedRegions.map((region) => region.id).toList()
+                          : null,
+                      regionId: _selectedState?.id,
+                      cityIds: _selectedCities.isNotEmpty
+                          ? _selectedCities.map((city) => city.id).toList()
+                          : null,
+                      executorIds: _selectedExecutors.isNotEmpty
+                          ? _selectedExecutors.map((user) => user.id).toList()
                           : null,
                       sources: _selectedSources.isNotEmpty
                           ? _selectedSources.map((source) => source.id).toList()
@@ -1765,6 +1865,14 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
                                     .map((region) => region.id)
                                     .toList()
                                 : null,
+                        regionId: hasActiveFilters ? _selectedState?.id : null,
+                        cityIds: hasActiveFilters && _selectedCities.isNotEmpty
+                            ? _selectedCities.map((city) => city.id).toList()
+                            : null,
+                        executorIds: hasActiveFilters &&
+                                _selectedExecutors.isNotEmpty
+                            ? _selectedExecutors.map((user) => user.id).toList()
+                            : null,
                         sources: hasActiveFilters && _selectedSources.isNotEmpty
                             ? _selectedSources
                                 .map((source) => source.id)
@@ -1983,6 +2091,17 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
                                     .map((region) => region.id)
                                     .toList()
                                 : null,
+                            regionId: _selectedState?.id,
+                            cityIds: _selectedCities.isNotEmpty
+                                ? _selectedCities
+                                    .map((city) => city.id)
+                                    .toList()
+                                : null,
+                            executorIds: _selectedExecutors.isNotEmpty
+                                ? _selectedExecutors
+                                    .map((user) => user.id)
+                                    .toList()
+                                : null,
                             sources: _selectedSources.isNotEmpty
                                 ? _selectedSources
                                     .map((source) => source.id)
@@ -2030,6 +2149,15 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
                           regionsIds: _selectedRegions.isNotEmpty
                               ? _selectedRegions
                                   .map((region) => region.id)
+                                  .toList()
+                              : null,
+                          regionId: _selectedState?.id,
+                          cityIds: _selectedCities.isNotEmpty
+                              ? _selectedCities.map((city) => city.id).toList()
+                              : null,
+                          executorIds: _selectedExecutors.isNotEmpty
+                              ? _selectedExecutors
+                                  .map((user) => user.id)
                                   .toList()
                               : null,
                           sources: _selectedSources.isNotEmpty

@@ -18,7 +18,10 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
   String? _currentQuery;
   List<int>? _currentManagerIds;
   List<int>? _currentRegionIds;
+  int? _currentRegionId;
+  List<int>? _currentCityIds;
   List<int>? _currentSourceIds;
+  List<int>? _currentChannelIds;
   List<int>? _currentAdvertisingCampaignIds;
   List<int>? _currentReasonForRefusalIds;
   int? _currentStatusId;
@@ -35,6 +38,7 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
   bool? _currentHasDeal;
   bool? _currentHasOrders;
   int? _currentDaysWithoutActivity;
+  int? _currentNumberOfDaysDeal;
   bool isFetching = false; // Новый флаг
   List<Map<String, dynamic>>? _currentDirectoryValues; // Новый параметр
   Map<String, List<String>>? _currentCustomFieldFilters;
@@ -61,7 +65,10 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
         (_currentQuery != null && _currentQuery!.isNotEmpty) ||
             (_currentManagerIds != null && _currentManagerIds!.isNotEmpty) ||
             (_currentRegionIds != null && _currentRegionIds!.isNotEmpty) ||
+            (_currentRegionId != null) ||
+            (_currentCityIds != null && _currentCityIds!.isNotEmpty) ||
             (_currentSourceIds != null && _currentSourceIds!.isNotEmpty) ||
+            (_currentChannelIds != null && _currentChannelIds!.isNotEmpty) ||
             (_currentAdvertisingCampaignIds != null &&
                 _currentAdvertisingCampaignIds!.isNotEmpty) ||
             (_currentReasonForRefusalIds != null &&
@@ -84,7 +91,8 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
         (_currentHasUnreadMessages == true) ||
         (_currentHasDeal == true) ||
         (_currentHasOrders == true) ||
-        (_currentDaysWithoutActivity != null);
+        (_currentDaysWithoutActivity != null) ||
+        (_currentNumberOfDaysDeal != null);
 
     return listsOrQuery || flagsOrDates;
   }
@@ -124,7 +132,10 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
       _currentQuery = event.query;
       _currentManagerIds = event.managerIds;
       _currentRegionIds = event.regionsIds;
+      _currentRegionId = event.regionId;
+      _currentCityIds = event.cityIds;
       _currentSourceIds = event.sourcesIds;
+      _currentChannelIds = event.channelIds;
       _currentAdvertisingCampaignIds = event.advertisingCampaignIds;
       _currentReasonForRefusalIds = event.reasonForRefusalIds;
       _currentStatusId = event.statusIds;
@@ -141,6 +152,7 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
       _currentHasDeal = event.hasDeal;
       _currentHasOrders = event.hasOrders;
       _currentDaysWithoutActivity = event.daysWithoutActivity;
+      _currentNumberOfDaysDeal = event.numberOfDaysDeal;
       _currentDirectoryValues = event.directoryValues;
       _currentCustomFieldFilters = event.customFieldFilters;
 
@@ -198,7 +210,10 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
           search: event.query,
           managers: event.managerIds,
           regions: event.regionsIds,
+          regionId: event.regionId,
+          cityIds: event.cityIds,
           sources: event.sourcesIds,
+          channelIds: event.channelIds,
           advertisingCampaignIds: event.advertisingCampaignIds,
           reasonForRefusalIds: event.reasonForRefusalIds,
           statuses: event.statusIds,
@@ -215,6 +230,7 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
           hasDeal: event.hasDeal,
           hasOrders: event.hasOrders,
           daysWithoutActivity: event.daysWithoutActivity,
+          numberOfDaysDeal: event.numberOfDaysDeal,
           directoryValues: event.directoryValues,
           customFieldFilters: event.customFieldFilters,
           bypassAnalyticsCache: event.ignoreCache,
@@ -312,7 +328,10 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
         _currentQuery = null;
         _currentManagerIds = null;
         _currentRegionIds = null;
+        _currentRegionId = null;
+        _currentCityIds = null;
         _currentSourceIds = null;
+        _currentChannelIds = null;
         _currentAdvertisingCampaignIds = null;
         _currentReasonForRefusalIds = null;
         _currentStatusId = null;
@@ -329,6 +348,7 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
         _currentHasDeal = null;
         _currentHasOrders = null;
         _currentDaysWithoutActivity = null;
+        _currentNumberOfDaysDeal = null;
         _currentDirectoryValues = null;
 
         // Загружаем статусы с сервера
@@ -464,7 +484,10 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
         search: _currentQuery,
         managers: _currentManagerIds,
         regions: _currentRegionIds,
+        regionId: _currentRegionId,
+        cityIds: _currentCityIds,
         sources: _currentSourceIds,
+        channelIds: _currentChannelIds,
         advertisingCampaignIds: _currentAdvertisingCampaignIds,
         statuses: _currentStatusId,
         fromDate: _currentFromDate,
@@ -480,6 +503,7 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
         hasDeal: _currentHasDeal,
         hasOrders: _currentHasOrders,
         daysWithoutActivity: _currentDaysWithoutActivity,
+        numberOfDaysDeal: _currentNumberOfDaysDeal,
         directoryValues:
             _currentDirectoryValues, // Передаем сохраненные значения
         customFieldFilters: _currentCustomFieldFilters,
@@ -842,6 +866,7 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
     _currentHasDeal = null;
     _currentHasOrders = null;
     _currentDaysWithoutActivity = null;
+    _currentNumberOfDaysDeal = null;
     _currentDirectoryValues = null;
 
     // Радикальная очистка кэша
@@ -947,7 +972,10 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
       final statuses = await apiService.getLeadStatuses(
         managers: event.managerIds,
         regions: event.regionsIds,
+        regionId: event.regionId,
+        cityIds: event.cityIds,
         sources: event.sourcesIds,
+        channelIds: event.channelIds,
         advertisingCampaignIds: event.advertisingCampaignIds,
         reasonForRefusalIds: event.reasonForRefusalIds,
         fromDate: event.fromDate,
@@ -963,6 +991,7 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
         hasDeal: event.hasDeal,
         hasOrders: event.hasOrders,
         daysWithoutActivity: event.daysWithoutActivity,
+        numberOfDaysDeal: event.numberOfDaysDeal,
         directoryValues: event.directoryValues,
       );
 
@@ -1000,7 +1029,10 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
         _currentQuery = null; // При фильтрах query обычно null
         _currentManagerIds = event.managerIds;
         _currentRegionIds = event.regionsIds;
+        _currentRegionId = event.regionId;
+        _currentCityIds = event.cityIds;
         _currentSourceIds = event.sourcesIds;
+        _currentChannelIds = event.channelIds;
         _currentAdvertisingCampaignIds = event.advertisingCampaignIds;
         _currentReasonForRefusalIds = event.reasonForRefusalIds;
         _currentStatusId =
@@ -1018,6 +1050,7 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
         _currentHasDeal = event.hasDeal;
         _currentHasOrders = event.hasOrders;
         _currentDaysWithoutActivity = event.daysWithoutActivity;
+        _currentNumberOfDaysDeal = event.numberOfDaysDeal;
         _currentDirectoryValues = event.directoryValues;
 
         if (kDebugMode) {
@@ -1030,7 +1063,10 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
             status.id,
             event.managerIds,
             event.regionsIds,
+            event.regionId,
+            event.cityIds,
             event.sourcesIds,
+            event.channelIds,
             event.advertisingCampaignIds,
             event.reasonForRefusalIds,
             event.fromDate,
@@ -1046,6 +1082,7 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
             event.hasDeal,
             event.hasOrders,
             event.daysWithoutActivity,
+            event.numberOfDaysDeal,
             event.directoryValues,
             event.salesFunnelId,
           );
@@ -1081,7 +1118,10 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
     int statusId,
     List<int>? managerIds,
     List<int>? regionsIds,
+    int? regionId,
+    List<int>? cityIds,
     List<int>? sourcesIds,
+    List<int>? channelIds,
     List<int>? advertisingCampaignIds,
     List<int>? reasonForRefusalIds,
     DateTime? fromDate,
@@ -1097,6 +1137,7 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
     bool? hasDeal,
     bool? hasOrders,
     int? daysWithoutActivity,
+    int? numberOfDaysDeal,
     List<Map<String, dynamic>>? directoryValues,
     int? salesFunnelId,
   ) async {
@@ -1113,7 +1154,10 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
             '🔍 LeadBloc: _fetchLeadsForStatusWithFilters for status $statusId');
         debugPrint('   managerIds: $managerIds');
         debugPrint('   regionsIds: $regionsIds');
+        debugPrint('   regionId: $regionId');
+        debugPrint('   cityIds: $cityIds');
         debugPrint('   sourcesIds: $sourcesIds');
+        debugPrint('   channelIds: $channelIds');
         debugPrint('   hasContact: $hasContact');
         debugPrint('   hasOrders: $hasOrders');
         debugPrint('   hasSuccessDeals: $hasSuccessDeals');
@@ -1128,7 +1172,10 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
         perPage: 20,
         managers: managerIds, // ← КРИТИЧНО: Передаём фильтры!
         regions: regionsIds,
+        regionId: regionId,
+        cityIds: cityIds,
         sources: sourcesIds,
+        channelIds: channelIds,
         advertisingCampaignIds: advertisingCampaignIds,
         reasonForRefusalIds: reasonForRefusalIds,
         statuses: statusId, // ← ВАЖНО: ID статуса через параметр statuses
@@ -1145,6 +1192,7 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
         hasDeal: hasDeal,
         hasOrders: hasOrders, // ← Проверь что передаётся!
         daysWithoutActivity: daysWithoutActivity,
+        numberOfDaysDeal: numberOfDaysDeal,
         directoryValues: directoryValues,
         salesFunnelId: salesFunnelId,
       );

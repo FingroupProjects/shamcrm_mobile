@@ -14,6 +14,9 @@ class FetchDealStatuses extends DealEvent {
 class FetchDealStatusesWithFilters extends DealEvent {
   final List<int>? managerIds;
   final List<int>? regionsIds;
+  final int? regionId;
+  final List<int>? cityIds;
+  final List<int>? executorIds;
   final List<int>? sources;
   final List<int>? leadIds;
   final int? statusIds;
@@ -33,6 +36,9 @@ class FetchDealStatusesWithFilters extends DealEvent {
   FetchDealStatusesWithFilters({
     this.managerIds,
     this.regionsIds,
+    this.regionId,
+    this.cityIds,
+    this.executorIds,
     this.sources,
     this.leadIds,
     this.statusIds,
@@ -56,6 +62,9 @@ class FetchDeals extends DealEvent {
   final String? query;
   final List<int>? managerIds;
   final List<int>? regionsIds;
+  final int? regionId;
+  final List<int>? cityIds;
+  final List<int>? executorIds;
   final List<int>? sources;
   final List<int>? leadIds;
   final int? statusIds;
@@ -78,6 +87,9 @@ class FetchDeals extends DealEvent {
     this.query,
     this.managerIds,
     this.regionsIds,
+    this.regionId,
+    this.cityIds,
+    this.executorIds,
     this.sources,
     this.leadIds,
     this.statusIds,

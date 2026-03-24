@@ -9,6 +9,8 @@ import 'package:crm_task_manager/custom_widget/filter/chat/task/chat_task_filter
 import 'package:crm_task_manager/custom_widget/filter/deal/manager_app_bar_deal.dart';
 import 'package:crm_task_manager/custom_widget/filter/event/manager_app_bar_event.dart';
 import 'package:crm_task_manager/custom_widget/filter/lead/manager_app_bar_lead.dart';
+import 'package:crm_task_manager/models/region_model.dart';
+import 'package:crm_task_manager/models/user_data_response.dart';
 import 'package:crm_task_manager/custom_widget/filter/task/user_app_bar_task.dart';
 import 'package:crm_task_manager/custom_widget/gps_screen_for_admin.dart';
 import 'package:crm_task_manager/models/user_byId_model..dart';
@@ -94,7 +96,10 @@ class CustomAppBar extends StatefulWidget {
 
   final List? initialManagersLead;
   final List? initialManagersLeadRegions;
+  final RegionData? initialManagersLeadState;
+  final List? initialManagersLeadCities;
   final List? initialManagersLeadSources;
+  final List? initialManagersLeadChannels;
   final List? initialManagersLeadAdvertisingCampaigns;
   final List<int>? initialManagersLeadReasonForRefusalIds;
   final int? initialManagerLeadStatuses;
@@ -112,6 +117,7 @@ class CustomAppBar extends StatefulWidget {
   final bool? initialManagerLeadHasDeal;
   final bool? initialManagerLeadHasOrders;
   final int? initialManagerLeadDaysWithoutActivity;
+  final int? initialManagerLeadNumberOfDaysDeal;
   final List<Map<String, dynamic>>?
       initialDirectoryValuesLead; // Новый параметр для лидов
   final Map<String, List<String>>?
@@ -119,6 +125,9 @@ class CustomAppBar extends StatefulWidget {
 
   final List? initialManagersDeal;
   final List? initialRegionsDeal;
+  final RegionData? initialStateDeal;
+  final List? initialCitiesDeal;
+  final List<UserData>? initialExecutorsDeal;
   final List? initialSourcesDeal;
   final List? initialLeadsDeal;
   final int? initialManagerDealStatuses;
@@ -208,7 +217,10 @@ class CustomAppBar extends StatefulWidget {
     this.initialToDate,
     this.initialManagersLead,
     this.initialManagersLeadRegions,
+    this.initialManagersLeadState,
+    this.initialManagersLeadCities,
     this.initialManagersLeadSources,
+    this.initialManagersLeadChannels,
     this.initialManagersLeadAdvertisingCampaigns,
     this.initialManagersLeadReasonForRefusalIds,
     this.initialManagerLeadStatuses,
@@ -225,6 +237,7 @@ class CustomAppBar extends StatefulWidget {
     this.initialManagerLeadHasDeal,
     this.initialManagerLeadHasOrders,
     this.initialManagerLeadDaysWithoutActivity,
+    this.initialManagerLeadNumberOfDaysDeal,
     this.initialDirectoryValuesLead, // Добавляем в конструктор
     this.initialLeadCustomFields,
     this.initialDirectoryValuesTask, // Добавляем в конструктор
@@ -247,6 +260,9 @@ class CustomAppBar extends StatefulWidget {
     this.initialChatFilters,
     this.initialManagersDeal,
     this.initialRegionsDeal,
+    this.initialStateDeal,
+    this.initialCitiesDeal,
+    this.initialExecutorsDeal,
     this.initialSourcesDeal,
     this.initialLeadsDeal,
     this.initialManagerDealStatuses,
@@ -1803,7 +1819,10 @@ class _CustomAppBarState extends State<CustomAppBar>
           onManagersSelected: widget.onManagersLeadSelected,
           initialManagers: widget.initialManagersLead,
           initialRegions: widget.initialManagersLeadRegions,
+          initialState: widget.initialManagersLeadState,
+          initialCities: widget.initialManagersLeadCities,
           initialSources: widget.initialManagersLeadSources,
+          initialChannels: widget.initialManagersLeadChannels,
           initialAdvertisingCampaigns:
               widget.initialManagersLeadAdvertisingCampaigns,
           initialReasonForRefusalIds:
@@ -1824,6 +1843,7 @@ class _CustomAppBarState extends State<CustomAppBar>
           initialHasOrders: widget.initialManagerLeadHasOrders,
           initialDaysWithoutActivity:
               widget.initialManagerLeadDaysWithoutActivity,
+          initialNumberOfDaysDeal: widget.initialManagerLeadNumberOfDaysDeal,
           onResetFilters: widget.onLeadResetFilters,
           initialDirectoryValues:
               _safeConvertToMapList(widget.initialDirectoryValuesLead),
@@ -1844,6 +1864,9 @@ class _CustomAppBarState extends State<CustomAppBar>
           onStatusAndDateRangeSelected: widget.onStatusAndDateRangeDealSelected,
           initialManagers: widget.initialManagersDeal,
           initialRegions: widget.initialRegionsDeal,
+          initialState: widget.initialStateDeal,
+          initialCities: widget.initialCitiesDeal,
+          initialExecutors: widget.initialExecutorsDeal,
           initialSources: widget.initialSourcesDeal,
           initialLeads: widget.initialLeadsDeal,
           initialHasTasks: widget.initialManagerDealHasTasks,

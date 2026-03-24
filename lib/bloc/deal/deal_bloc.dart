@@ -18,6 +18,9 @@ class DealBloc extends Bloc<DealEvent, DealState> {
   String? _currentQuery;
   List<int>? _currentManagerIds;
   List<int>? _currentRegionsIds;
+  int? _currentRegionId;
+  List<int>? _currentCityIds;
+  List<int>? _currentExecutorIds;
   List<int>? _currentSources;
   int? _currentStatusId;
   DateTime? _currentFromDate;
@@ -53,6 +56,9 @@ class DealBloc extends Bloc<DealEvent, DealState> {
             _currentQuery!.isNotEmpty) ||
         (_currentManagerIds != null && _currentManagerIds!.isNotEmpty) ||
         (_currentRegionsIds != null && _currentRegionsIds!.isNotEmpty) ||
+        (_currentRegionId != null) ||
+        (_currentCityIds != null && _currentCityIds!.isNotEmpty) ||
+        (_currentExecutorIds != null && _currentExecutorIds!.isNotEmpty) ||
         (_currentSources != null && _currentSources!.isNotEmpty) ||
         (_currentLeadIds != null && _currentLeadIds!.isNotEmpty) ||
         (_currentLeadStatuses != null && _currentLeadStatuses!.isNotEmpty) ||
@@ -107,6 +113,9 @@ class DealBloc extends Bloc<DealEvent, DealState> {
       _currentQuery = event.query;
       _currentManagerIds = event.managerIds;
       _currentRegionsIds = event.regionsIds;
+      _currentRegionId = event.regionId;
+      _currentCityIds = event.cityIds;
+      _currentExecutorIds = event.executorIds;
       _currentSources = event.sources;
       _currentStatusId = event.statusIds;
       _currentFromDate = event.fromDate;
@@ -153,6 +162,9 @@ class DealBloc extends Bloc<DealEvent, DealState> {
           search: event.query,
           managers: event.managerIds,
           regions: event.regionsIds,
+          regionId: event.regionId,
+          cityIds: event.cityIds,
+          executorIds: event.executorIds,
           sources: event.sources,
           statuses: event.statusIds,
           fromDate: event.fromDate,
@@ -233,6 +245,9 @@ class DealBloc extends Bloc<DealEvent, DealState> {
         _currentQuery = null;
         _currentManagerIds = null;
         _currentRegionsIds = null;
+        _currentRegionId = null;
+        _currentCityIds = null;
+        _currentExecutorIds = null;
         _currentSources = null;
         _currentStatusId = null;
         _currentFromDate = null;
@@ -384,6 +399,9 @@ class DealBloc extends Bloc<DealEvent, DealState> {
         search: _currentQuery,
         managers: _currentManagerIds,
         regions: _currentRegionsIds,
+        regionId: _currentRegionId,
+        cityIds: _currentCityIds,
+        executorIds: _currentExecutorIds,
         sources: _currentSources,
         statuses: _currentStatusId,
         fromDate: _currentFromDate,
@@ -721,6 +739,9 @@ class DealBloc extends Bloc<DealEvent, DealState> {
         _currentQuery = null;
         _currentManagerIds = event.managerIds;
         _currentRegionsIds = event.regionsIds;
+        _currentRegionId = event.regionId;
+        _currentCityIds = event.cityIds;
+        _currentExecutorIds = event.executorIds;
         _currentSources = event.sources;
         _currentLeadIds = event.leadIds;
         _currentStatusId = event.statusIds;
@@ -744,6 +765,9 @@ class DealBloc extends Bloc<DealEvent, DealState> {
             status.id,
             event.managerIds,
             event.regionsIds,
+            event.regionId,
+            event.cityIds,
+            event.executorIds,
             event.sources,
             event.leadIds,
             event.statusIds,
@@ -788,6 +812,9 @@ class DealBloc extends Bloc<DealEvent, DealState> {
     int statusId,
     List<int>? managerIds,
     List<int>? regionsIds,
+    int? regionId,
+    List<int>? cityIds,
+    List<int>? executorIds,
     List<int>? sources,
     List<int>? leadIds,
     int? statusIds,
@@ -819,6 +846,9 @@ class DealBloc extends Bloc<DealEvent, DealState> {
         perPage: 20,
         managers: managerIds,
         regions: regionsIds,
+        regionId: regionId,
+        cityIds: cityIds,
+        executorIds: executorIds,
         sources: sources,
         leads: leadIds,
         statuses: statusId, // ID статуса через параметр statuses

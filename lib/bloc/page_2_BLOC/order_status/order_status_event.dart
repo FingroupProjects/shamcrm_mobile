@@ -14,6 +14,9 @@ class FetchOrderStatusesWithFilters extends OrderEvent {
   final DateTime? toDate;
   final String? status;
   final String? paymentMethod;
+  final String? deliveryType;
+  final List<int>? reasonForRefusalIds;
+  final Map<String, List<String>>? customFieldFilters;
 
   FetchOrderStatusesWithFilters({
     this.managerIds,
@@ -23,6 +26,9 @@ class FetchOrderStatusesWithFilters extends OrderEvent {
     this.toDate,
     this.status,
     this.paymentMethod,
+    this.deliveryType,
+    this.reasonForRefusalIds,
+    this.customFieldFilters,
   });
 }
 
@@ -39,6 +45,9 @@ class FetchOrders extends OrderEvent {
   final DateTime? toDate;
   final String? status;
   final String? paymentMethod;
+  final String? deliveryType;
+  final List<int>? reasonForRefusalIds;
+  final Map<String, List<String>>? customFieldFilters;
 
   FetchOrders({
     this.statusId,
@@ -53,6 +62,9 @@ class FetchOrders extends OrderEvent {
     this.toDate,
     this.status,
     this.paymentMethod,
+    this.deliveryType,
+    this.reasonForRefusalIds,
+    this.customFieldFilters,
   });
 }
 
