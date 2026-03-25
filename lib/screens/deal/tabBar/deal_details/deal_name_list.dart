@@ -1,4 +1,3 @@
-import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/deal_name_list_bloc/deal_name_list_bloc.dart';
 import 'package:crm_task_manager/bloc/deal_name_list_bloc/deal_name_list_event.dart';
@@ -28,53 +27,210 @@ class DealNameSelectionWidget extends StatefulWidget {
 class _DealNameSelectionWidgetState extends State<DealNameSelectionWidget> {
   static const int _pageSize = 20;
   final ApiService _apiService = ApiService();
+  late final TextEditingController _textController;
   List<DealNameData> dealNameList = [];
-  DealNameData? selectedDealNameData;
 
   @override
   void initState() {
     super.initState();
+    _textController =
+        TextEditingController(text: widget.selectedDealName ?? '');
     context.read<GetAllDealNameBloc>().add(GetAllDealNameEv());
+  }
+
+  @override
+  void dispose() {
+    _textController.dispose();
+    super.dispose();
   }
 
   @override
   void didUpdateWidget(covariant DealNameSelectionWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.selectedDealName != widget.selectedDealName) {
+      final nextValue = widget.selectedDealName ?? '';
+      if (_textController.text != nextValue) {
+        _textController.value = _textController.value.copyWith(
+          text: nextValue,
+          selection: TextSelection.collapsed(offset: nextValue.length),
+          composing: TextRange.empty,
+        );
+      }
       _updateSelectedDealNameData();
     }
   }
 
   void _updateSelectedDealNameData() {
-    if (widget.selectedDealName == null || dealNameList.isEmpty) {
-      selectedDealNameData = null;
-      return;
-    }
-
-    try {
-      selectedDealNameData = dealNameList.firstWhere(
-        (dealName) => dealName.title == widget.selectedDealName,
-      );
-    } catch (_) {
-      selectedDealNameData = null;
-    }
+    if (widget.selectedDealName == null) return;
   }
 
-  Future<CustomDropdownPaginatedResponse<DealNameData>> _searchDealNames(
-    String query,
-    int page,
-  ) async {
+  Future<List<DealNameData>> _searchDealNames(String query) async {
     final response = await _apiService.getAllDealNames(
       search: query,
-      page: page,
+      page: 1,
       perPage: _pageSize,
     );
-    final items = response.result ?? <DealNameData>[];
+    return response.result ?? <DealNameData>[];
+  }
 
-    return CustomDropdownPaginatedResponse<DealNameData>(
-      items: items,
-      hasMore: items.length >= _pageSize,
+  Future<void> _openDealNamePicker() async {
+    final searchController = TextEditingController();
+    List<DealNameData> items = List<DealNameData>.from(dealNameList);
+    bool isLoading = false;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            Future<void> handleSearch(String query) async {
+              setModalState(() {
+                isLoading = true;
+              });
+
+              try {
+                final results = await _searchDealNames(query);
+                if (!mounted) return;
+                setModalState(() {
+                  items = results;
+                });
+              } finally {
+                if (mounted) {
+                  setModalState(() {
+                    isLoading = false;
+                  });
+                }
+              }
+            }
+
+            return SafeArea(
+              child: Padding(
+                padding: EdgeInsets.only(
+                  left: 16,
+                  right: 16,
+                  top: 12,
+                  bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+                ),
+                child: SizedBox(
+                  height: MediaQuery.of(context).size.height * 0.7,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Center(
+                        child: Container(
+                          width: 44,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: const Color(0xffD7DCE9),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        AppLocalizations.of(context)!.translate('deal_name'),
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                          fontFamily: 'Gilroy',
+                          color: Color(0xff1E2E52),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: searchController,
+                        onChanged: handleSearch,
+                        decoration: InputDecoration(
+                          hintText:
+                              AppLocalizations.of(context)!.translate('search'),
+                          prefixIcon: const Icon(Icons.search,
+                              color: Color(0xff99A4BA)),
+                          filled: true,
+                          fillColor: const Color(0xffF4F7FD),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide.none,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Expanded(
+                        child: isLoading
+                            ? const Center(
+                                child: CircularProgressIndicator(
+                                  color: Color(0xff1E2E52),
+                                ),
+                              )
+                            : items.isEmpty
+                                ? Center(
+                                    child: Text(
+                                      AppLocalizations.of(context)!
+                                          .translate('no_data_to_display'),
+                                      style: const TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w500,
+                                        fontFamily: 'Gilroy',
+                                        color: Color(0xff99A4BA),
+                                      ),
+                                    ),
+                                  )
+                                : ListView.separated(
+                                    itemCount: items.length,
+                                    separatorBuilder: (_, __) =>
+                                        const SizedBox(height: 8),
+                                    itemBuilder: (context, index) {
+                                      final item = items[index];
+                                      final isSelected =
+                                          item.title == _textController.text;
+                                      return Material(
+                                        color: const Color(0xffF4F7FD),
+                                        borderRadius: BorderRadius.circular(12),
+                                        child: ListTile(
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(12),
+                                          ),
+                                          title: Text(
+                                            item.title,
+                                            style: const TextStyle(
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.w500,
+                                              fontFamily: 'Gilroy',
+                                              color: Color(0xff1E2E52),
+                                            ),
+                                          ),
+                                          trailing: isSelected
+                                              ? const Icon(
+                                                  Icons.check,
+                                                  color: Color(0xff1E2E52),
+                                                )
+                                              : null,
+                                          onTap: () {
+                                            _textController.text = item.title;
+                                            widget.onSelectDealName(item.title);
+                                            Navigator.pop(context);
+                                          },
+                                        ),
+                                      );
+                                    },
+                                  ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
     );
+
+    searchController.dispose();
   }
 
   @override
@@ -135,95 +291,61 @@ class _DealNameSelectionWidgetState extends State<DealNameSelectionWidget> {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                CustomDropdown<DealNameData>.searchRequestPaginated(
-                  paginatedRequest: _searchDealNames,
-                  futureRequestDelay: const Duration(milliseconds: 350),
-                  closeDropDownOnClearFilterSearch: true,
-                  items: dealNameList,
-                  initialItem: selectedDealNameData,
-                  searchHintText:
-                      AppLocalizations.of(context)!.translate('search'),
-                  hintText: AppLocalizations.of(context)!
-                      .translate('select_deal_name'),
-                  overlayHeight: 400,
-                  enabled: true,
-                  decoration: CustomDropdownDecoration(
-                    closedFillColor: const Color(0xffF4F7FD),
-                    expandedFillColor: Colors.white,
-                    closedBorder: Border.all(
-                      color: widget.hasError
-                          ? Colors.red
-                          : const Color(0xffF4F7FD),
-                      width: 1.5,
-                    ),
-                    closedBorderRadius: BorderRadius.circular(12),
-                    expandedBorder: Border.all(
-                      color: widget.hasError
-                          ? Colors.red
-                          : const Color(0xffF4F7FD),
-                      width: 1.5,
-                    ),
-                    expandedBorderRadius: BorderRadius.circular(12),
+                TextFormField(
+                  controller: _textController,
+                  onChanged: (value) {
+                    widget.onSelectDealName(value);
+                  },
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    fontFamily: 'Gilroy',
+                    color: Color(0xff1E2E52),
                   ),
-                  listItemBuilder: (context, item, isSelected, onItemSelect) {
-                    return Text(
-                      item.title,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        fontFamily: 'Gilroy',
-                        color: Color(0xff1E2E52),
-                      ),
-                    );
-                  },
-                  headerBuilder: (context, selectedItem, enabled) {
-                    return Text(
-                      selectedItem.title,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        fontFamily: 'Gilroy',
-                        color: Color(0xff1E2E52),
-                      ),
-                    );
-                  },
-                  hintBuilder: (context, hint, enabled) => Text(
-                    AppLocalizations.of(context)!.translate('select_deal_name'),
-                    style: const TextStyle(
+                  decoration: InputDecoration(
+                    hintText: AppLocalizations.of(context)!
+                        .translate('select_deal_name'),
+                    hintStyle: const TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
                       fontFamily: 'Gilroy',
-                      color: Color(0xff1E2E52),
+                      color: Color(0xff99A4BA),
+                    ),
+                    filled: true,
+                    fillColor: const Color(0xffF4F7FD),
+                    contentPadding: const EdgeInsets.symmetric(
+                      vertical: 12,
+                      horizontal: 12,
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(
+                        color:
+                            widget.hasError ? Colors.red : Colors.transparent,
+                        width: 1.5,
+                      ),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(
+                        color: widget.hasError
+                            ? Colors.red
+                            : const Color(0xff1E2E52),
+                        width: 1.5,
+                      ),
+                    ),
+                    suffixIcon: IconButton(
+                      onPressed: _openDealNamePicker,
+                      icon: const Icon(
+                        Icons.keyboard_arrow_down_rounded,
+                        color: Color(0xff1E2E52),
+                      ),
                     ),
                   ),
-                  noResultFoundBuilder: (context, text) {
-                    return Center(
-                      child: Padding(
-                        padding: const EdgeInsets.all(20),
-                        child: Text(
-                          AppLocalizations.of(context)!
-                              .translate('no_data_to_display'),
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w500,
-                            color: Colors.grey,
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                  excludeSelected: false,
-                  onChanged: (value) {
-                    if (value == null) {
-                      return;
-                    }
-
-                    widget.onSelectDealName(value.title);
-                    setState(() {
-                      selectedDealNameData = value;
-                    });
-                    FocusScope.of(context).unfocus();
-                  },
                 ),
                 if (widget.hasError)
                   Text(
