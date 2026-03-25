@@ -83,6 +83,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
   bool _hasFile = false;
   bool _hasDeal = false;
   bool _isUrgent = false;
+  List<int> _selectedReasonForRefusalIds = [];
   String? _selectedProject;
   List<String>? authors;
   List<UserData> _initialselectedUsers = [];
@@ -99,6 +100,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
   bool _initialHasFile = false;
   bool _initialHasDeal = false;
   bool _initialUrgent = false;
+  List<int> _initialReasonForRefusalIds = [];
   List<String> _selectedAuthors = [];
   List<String> _initialSelectedAuthors = [];
   List<String> _selectedProjects = [];
@@ -568,6 +570,9 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       hasFile: _hasFile,
       hasDeal: _hasDeal,
       urgent: _isUrgent,
+      reasonForRefusalIds: _selectedReasonForRefusalIds.isNotEmpty
+          ? _selectedReasonForRefusalIds
+          : null,
       deadlinefromDate: _deadlinefromDate,
       deadlinetoDate: _deadlinetoDate,
       projectIds: projectIdsList,
@@ -604,6 +609,12 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
         _hasFile = filterData['hasFile'] ?? false;
         _hasDeal = filterData['hasDeal'] ?? false;
         _isUrgent = filterData['urgent'] ?? false;
+        _selectedReasonForRefusalIds =
+            (filterData['reason_for_refusal_ids'] as List?)
+                    ?.map((id) => int.tryParse(id.toString()) ?? 0)
+                    .where((id) => id != 0)
+                    .toList() ??
+                [];
         _selectedProject = filterData['project'];
         _selectedAuthors = filterData['authors'] ?? [];
 
@@ -642,6 +653,8 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
         _initialHasFile = filterData['hasFile'] ?? false;
         _initialHasDeal = filterData['hasDeal'] ?? false;
         _initialUrgent = filterData['urgent'] ?? false;
+        _initialReasonForRefusalIds =
+            List<int>.from(_selectedReasonForRefusalIds);
         _initialSelectedAuthors = filterData['authors'] ?? [];
         _initialSelectedProjects = List.from(_selectedProjects);
         _initialSelectedDepartment = filterData['department'];
@@ -670,6 +683,9 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       hasFile: _hasFile,
       hasDeal: _hasDeal,
       urgent: _isUrgent,
+      reasonForRefusalIds: _selectedReasonForRefusalIds.isNotEmpty
+          ? _selectedReasonForRefusalIds
+          : null,
       deadlinefromDate: _deadlinefromDate,
       deadlinetoDate: _deadlinetoDate,
       completedFromDate: _completedFromDate,
@@ -695,6 +711,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
         _hasFile == true ||
         _hasDeal == true ||
         _isUrgent == true ||
+        _selectedReasonForRefusalIds.isNotEmpty ||
         _deadlinefromDate != null ||
         _deadlinetoDate != null ||
         _completedFromDate != null ||
@@ -720,6 +737,9 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       currentStatusId,
       statusIds: _selectedStatuses,
       query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
+      reasonForRefusalIds: _selectedReasonForRefusalIds.isNotEmpty
+          ? _selectedReasonForRefusalIds
+          : null,
       directoryValues: _selectedDirectoryValues, // Передаем directoryValues
     ));
   }
@@ -741,6 +761,9 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       fromDate: _fromDate,
       toDate: _toDate,
       query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
+      reasonForRefusalIds: _selectedReasonForRefusalIds.isNotEmpty
+          ? _selectedReasonForRefusalIds
+          : null,
       directoryValues: _selectedDirectoryValues, // Передаем directoryValues
     ));
   }
@@ -766,6 +789,9 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       fromDate: _fromDate,
       toDate: _toDate,
       query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
+      reasonForRefusalIds: _selectedReasonForRefusalIds.isNotEmpty
+          ? _selectedReasonForRefusalIds
+          : null,
       directoryValues: _selectedDirectoryValues, // Передаем directoryValues
     ));
   }
@@ -784,6 +810,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       _hasFile = false;
       _hasDeal = false;
       _isUrgent = false;
+      _selectedReasonForRefusalIds = [];
       _deadlinefromDate = null;
       _deadlinetoDate = null;
       _completedFromDate = null;
@@ -800,6 +827,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       _initialHasFile = false;
       _initialHasDeal = false;
       _initialUrgent = false;
+      _initialReasonForRefusalIds = [];
       _intialDeadlineFromDate = null;
       _intialDeadlineToDate = null;
       _initialCompletedFromDate = null;
@@ -898,6 +926,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
             initialTaskHasFile: _initialHasFile,
             initialTaskHasDeal: _initialHasDeal,
             initialTaskIsUrgent: _initialUrgent,
+            initialReasonForRefusalIdsTask: _initialReasonForRefusalIds,
             initialDirectoryValuesTask:
                 _initialDirectoryValues, // Передаем initialDirectoryValues
             onResetFilters: _resetFilters,
@@ -922,6 +951,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
                 if (_searchController.text.isEmpty) {
                   if (_selectedUsers.isEmpty &&
                       _selectedAuthors.isEmpty &&
+                      _selectedReasonForRefusalIds.isEmpty &&
                       _selectedStatuses == null &&
                       _hasDeal == false &&
                       _hasFile == false &&
@@ -953,6 +983,10 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
                       hasFile: _initialHasFile,
                       hasDeal: _initialHasDeal,
                       urgent: _initialUrgent,
+                      reasonForRefusalIds:
+                          _selectedReasonForRefusalIds.isNotEmpty
+                              ? _selectedReasonForRefusalIds
+                              : null,
                       deadlinefromDate: _fromDate,
                       deadlinetoDate: _toDate,
                       completedFromDate: _completedFromDate,
@@ -974,6 +1008,9 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
                     userIds: _selectedUserIds,
                     query: _searchController.text.isNotEmpty
                         ? _searchController.text
+                        : null,
+                    reasonForRefusalIds: _selectedReasonForRefusalIds.isNotEmpty
+                        ? _selectedReasonForRefusalIds
                         : null,
                   ));
                 }
@@ -1041,6 +1078,9 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
           hasFile: _hasFile,
           hasDeal: _hasDeal,
           urgent: _isUrgent,
+          reasonForRefusalIds: _selectedReasonForRefusalIds.isNotEmpty
+              ? _selectedReasonForRefusalIds
+              : null,
           deadlinefromDate: _deadlinefromDate,
           deadlinetoDate: _deadlinetoDate,
           completedFromDate: _completedFromDate,
@@ -1051,7 +1091,12 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
           directoryValues: _selectedDirectoryValues,
         ));
       } else {
-        taskBloc.add(FetchTasks(statusId));
+        taskBloc.add(FetchTasks(
+          statusId,
+          reasonForRefusalIds: _selectedReasonForRefusalIds.isNotEmpty
+              ? _selectedReasonForRefusalIds
+              : null,
+        ));
       }
     });
   }
@@ -1514,7 +1559,15 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
         _isSearching = false;
         _searchController.clear();
 
-        context.read<TaskBloc>().add(FetchTasks(_currentTabIndex));
+        if (_tabTitles.isNotEmpty) {
+          final activeStatusId = _tabTitles[_currentTabIndex]['id'];
+          context.read<TaskBloc>().add(FetchTasks(
+                activeStatusId,
+                reasonForRefusalIds: _selectedReasonForRefusalIds.isNotEmpty
+                    ? _selectedReasonForRefusalIds
+                    : null,
+              ));
+        }
       });
 
       if (_tabTitles.isEmpty) {
@@ -1635,6 +1688,10 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
                             hasFile: hasActiveFilters ? _hasFile : null,
                             hasDeal: hasActiveFilters ? _hasDeal : null,
                             urgent: hasActiveFilters ? _isUrgent : null,
+                            reasonForRefusalIds: hasActiveFilters &&
+                                    _selectedReasonForRefusalIds.isNotEmpty
+                                ? _selectedReasonForRefusalIds
+                                : null,
                             deadlinefromDate:
                                 hasActiveFilters ? _deadlinefromDate : null,
                             deadlinetoDate:
@@ -1737,7 +1794,13 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
                       if (!hasTasksForStatus) {
                         WidgetsBinding.instance.addPostFrameCallback((_) {
                           if (mounted) {
-                            taskBloc.add(FetchTasks(activeStatusId));
+                            taskBloc.add(FetchTasks(
+                              activeStatusId,
+                              reasonForRefusalIds:
+                                  _selectedReasonForRefusalIds.isNotEmpty
+                                      ? _selectedReasonForRefusalIds
+                                      : null,
+                            ));
                           }
                         });
                       }
@@ -1745,7 +1808,13 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
                       // Если нет состояния TaskDataLoaded, загружаем
                       WidgetsBinding.instance.addPostFrameCallback((_) {
                         if (mounted) {
-                          taskBloc.add(FetchTasks(activeStatusId));
+                          taskBloc.add(FetchTasks(
+                            activeStatusId,
+                            reasonForRefusalIds:
+                                _selectedReasonForRefusalIds.isNotEmpty
+                                    ? _selectedReasonForRefusalIds
+                                    : null,
+                          ));
                         }
                       });
                     }
@@ -1899,6 +1968,10 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
                               hasFile: _hasFile,
                               hasDeal: _hasDeal,
                               urgent: _isUrgent,
+                              reasonForRefusalIds:
+                                  _selectedReasonForRefusalIds.isNotEmpty
+                                      ? _selectedReasonForRefusalIds
+                                      : null,
                               deadlinefromDate: _deadlinefromDate,
                               deadlinetoDate: _deadlinetoDate,
                               completedFromDate: _completedFromDate,
@@ -1911,7 +1984,13 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
                           }
                         } else {
                           // Если нет состояния TaskDataLoaded, загружаем данные
-                          currentTaskBloc.add(FetchTasks(newStatusId));
+                          currentTaskBloc.add(FetchTasks(
+                            newStatusId,
+                            reasonForRefusalIds:
+                                _selectedReasonForRefusalIds.isNotEmpty
+                                    ? _selectedReasonForRefusalIds
+                                    : null,
+                          ));
                         }
                       }
                     },

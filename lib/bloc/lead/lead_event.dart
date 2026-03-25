@@ -17,7 +17,12 @@ class FetchLeads extends LeadEvent {
   final String? query;
   final List<int>? managerIds;
   final List<int>? regionsIds;
+  final int? regionId;
+  final List<int>? cityIds;
   final List<int>? sourcesIds;
+  final List<int>? channelIds;
+  final List<int>? advertisingCampaignIds;
+  final List<int>? reasonForRefusalIds;
   final int? statusIds;
   final DateTime? fromDate;
   final DateTime? toDate;
@@ -32,6 +37,7 @@ class FetchLeads extends LeadEvent {
   final bool? hasDeal;
   final bool? hasOrders;
   final int? daysWithoutActivity;
+  final int? numberOfDaysDeal;
   final List<Map<String, dynamic>>? directoryValues;
   final Map<String, List<String>>? customFieldFilters;
   final int? salesFunnelId;
@@ -42,7 +48,12 @@ class FetchLeads extends LeadEvent {
     this.query,
     this.managerIds,
     this.regionsIds,
+    this.regionId,
+    this.cityIds,
     this.sourcesIds,
+    this.channelIds,
+    this.advertisingCampaignIds,
+    this.reasonForRefusalIds,
     this.statusIds,
     this.fromDate,
     this.toDate,
@@ -57,6 +68,7 @@ class FetchLeads extends LeadEvent {
     this.hasDeal,
     this.hasOrders,
     this.daysWithoutActivity,
+    this.numberOfDaysDeal,
     this.directoryValues,
     this.customFieldFilters,
     this.salesFunnelId,
@@ -182,6 +194,8 @@ class UpdateLead extends LeadEvent {
   final String? priceTypeId; // Новое поле
   final String? salesFunnelId; // ДОБАВЛЕННОЕ ПОЛЕ
   final String? duplicate; // Новое поле
+  final int? reasonForRefusalId;
+  final String? reasonForRefusal;
 
   UpdateLead({
     required this.leadId,
@@ -207,6 +221,8 @@ class UpdateLead extends LeadEvent {
     this.priceTypeId,
     this.salesFunnelId, // ДОБАВЛЕННЫЙ ПАРАМЕТР
     this.duplicate, // Новое поле]
+    this.reasonForRefusalId,
+    this.reasonForRefusal,
   });
 }
 
@@ -266,7 +282,12 @@ class RefreshCurrentStatus extends LeadEvent {
 class FetchLeadStatusesWithFilters extends LeadEvent {
   final List<int>? managerIds;
   final List<int>? regionsIds;
+  final int? regionId;
+  final List<int>? cityIds;
   final List<int>? sourcesIds;
+  final List<int>? channelIds;
+  final List<int>? advertisingCampaignIds;
+  final List<int>? reasonForRefusalIds;
   final DateTime? fromDate;
   final DateTime? toDate;
   final bool? hasSuccessDeals;
@@ -280,13 +301,19 @@ class FetchLeadStatusesWithFilters extends LeadEvent {
   final bool? hasDeal;
   final bool? hasOrders;
   final int? daysWithoutActivity;
+  final int? numberOfDaysDeal;
   final List<Map<String, dynamic>>? directoryValues;
   final int? salesFunnelId;
 
   FetchLeadStatusesWithFilters({
     this.managerIds,
     this.regionsIds,
+    this.regionId,
+    this.cityIds,
     this.sourcesIds,
+    this.channelIds,
+    this.advertisingCampaignIds,
+    this.reasonForRefusalIds,
     this.fromDate,
     this.toDate,
     this.hasSuccessDeals,
@@ -300,6 +327,7 @@ class FetchLeadStatusesWithFilters extends LeadEvent {
     this.hasDeal,
     this.hasOrders,
     this.daysWithoutActivity,
+    this.numberOfDaysDeal,
     this.directoryValues,
     this.salesFunnelId,
   });

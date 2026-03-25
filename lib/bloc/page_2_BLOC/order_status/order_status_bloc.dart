@@ -23,6 +23,9 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
   DateTime? _currentToDate;
   String? _currentStatus;
   String? _currentPaymentMethod;
+  String? _currentDeliveryType;
+  List<int>? _currentReasonForRefusalIds;
+  Map<String, List<String>>? _currentCustomFieldFilters;
 
   OrderBloc(this.apiService) : super(OrderInitial()) {
     on<FetchOrderStatuses>(_fetchOrderStatuses);
@@ -50,7 +53,12 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
     final bool flagsOrDates = (_currentFromDate != null) ||
         (_currentToDate != null) ||
         (_currentStatus != null && _currentStatus!.isNotEmpty) ||
-        (_currentPaymentMethod != null && _currentPaymentMethod!.isNotEmpty);
+        (_currentPaymentMethod != null && _currentPaymentMethod!.isNotEmpty) ||
+        (_currentDeliveryType != null && _currentDeliveryType!.isNotEmpty) ||
+        (_currentReasonForRefusalIds != null &&
+            _currentReasonForRefusalIds!.isNotEmpty) ||
+        (_currentCustomFieldFilters != null &&
+            _currentCustomFieldFilters!.isNotEmpty);
 
     return listsOrQuery || flagsOrDates;
   }
@@ -93,6 +101,9 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
         _currentToDate = null;
         _currentStatus = null;
         _currentPaymentMethod = null;
+        _currentDeliveryType = null;
+        _currentReasonForRefusalIds = null;
+        _currentCustomFieldFilters = null;
 
         // Загружаем статусы с сервера
         response = await apiService.getOrderStatuses();
@@ -220,6 +231,9 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
       _currentToDate = event.toDate;
       _currentStatus = event.status;
       _currentPaymentMethod = event.paymentMethod;
+      _currentDeliveryType = event.deliveryType;
+      _currentReasonForRefusalIds = event.reasonForRefusalIds;
+      _currentCustomFieldFilters = event.customFieldFilters;
 
       // КРИТИЧНО: Восстанавливаем ВСЕ постоянные счетчики
       final allPersistentCounts = await OrderCache.getPersistentOrderCounts();
@@ -265,6 +279,9 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
           toDate: event.toDate,
           status: event.status,
           paymentMethod: event.paymentMethod,
+          deliveryType: event.deliveryType,
+          reasonForRefusalIds: event.reasonForRefusalIds,
+          customFieldFilters: event.customFieldFilters,
         );
 
         if (event.page == 1) {
@@ -347,6 +364,9 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
         toDate: _currentToDate,
         status: _currentStatus,
         paymentMethod: _currentPaymentMethod,
+        deliveryType: _currentDeliveryType,
+        reasonForRefusalIds: _currentReasonForRefusalIds,
+        customFieldFilters: _currentCustomFieldFilters,
       );
 
       final existingOrderIds =
@@ -569,6 +589,8 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
         orderId: event.orderId,
         statusId: event.statusId,
         organizationId: event.organizationId,
+        reasonForRefusalId: event.reasonForRefusalId,
+        reasonForRefusal: event.reasonForRefusal,
       );
       // //print('OrderBloc: Результат смены статуса заказа: $success');
       if (success) {
@@ -728,6 +750,8 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
         orderId: event.orderId,
         statusId: event.statusId,
         organizationId: event.organizationId,
+        reasonForRefusalId: event.reasonForRefusalId,
+        reasonForRefusal: event.reasonForRefusal,
       );
       if (success) {
         if (state is OrderLoaded) {
@@ -773,6 +797,9 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
             toDate: _currentToDate,
             status: _currentStatus,
             paymentMethod: _currentPaymentMethod,
+            deliveryType: _currentDeliveryType,
+            reasonForRefusalIds: _currentReasonForRefusalIds,
+            customFieldFilters: _currentCustomFieldFilters,
           ));
 
           // Если статус изменился, обновляем заказы для старого статуса
@@ -784,11 +811,15 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
               forceRefresh: true,
               query: _currentQuery,
               managerIds: _currentManagerIds,
+              regionsIds: _currentRegionsIds,
               leadIds: _currentLeadIds,
               fromDate: _currentFromDate,
               toDate: _currentToDate,
               status: _currentStatus,
               paymentMethod: _currentPaymentMethod,
+              deliveryType: _currentDeliveryType,
+              reasonForRefusalIds: _currentReasonForRefusalIds,
+              customFieldFilters: _currentCustomFieldFilters,
             ));
           }
         } else {
@@ -906,6 +937,9 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
         _currentToDate = event.toDate;
         _currentStatus = event.status;
         _currentPaymentMethod = event.paymentMethod;
+        _currentDeliveryType = event.deliveryType;
+        _currentReasonForRefusalIds = event.reasonForRefusalIds;
+        _currentCustomFieldFilters = event.customFieldFilters;
 
         debugPrint('✅ OrderBloc: Filters saved to bloc state');
 
@@ -920,6 +954,9 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
             event.toDate,
             event.status,
             event.paymentMethod,
+            event.deliveryType,
+            event.reasonForRefusalIds,
+            event.customFieldFilters,
           );
         }).toList();
 
@@ -963,6 +1000,9 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
     DateTime? toDate,
     String? status,
     String? paymentMethod,
+    String? deliveryType,
+    List<int>? reasonForRefusalIds,
+    Map<String, List<String>>? customFieldFilters,
   ) async {
     try {
       if (!await _checkInternetConnection()) {
@@ -984,6 +1024,9 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
         toDate: toDate,
         status: status,
         paymentMethod: paymentMethod,
+        deliveryType: deliveryType,
+        reasonForRefusalIds: reasonForRefusalIds,
+        customFieldFilters: customFieldFilters,
       );
 
       debugPrint(
@@ -1024,6 +1067,9 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
     _currentToDate = null;
     _currentStatus = null;
     _currentPaymentMethod = null;
+    _currentDeliveryType = null;
+    _currentReasonForRefusalIds = null;
+    _currentCustomFieldFilters = null;
 
     // Радикальная очистка кэша
     await OrderCache.clearEverything();

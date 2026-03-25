@@ -20,6 +20,7 @@ import 'package:crm_task_manager/models/chatById_model.dart';
 import 'package:crm_task_manager/models/chat_messages_page.dart';
 import 'package:crm_task_manager/models/chatGetId_model.dart';
 import 'package:crm_task_manager/models/chatTaskProfile_model.dart';
+import 'package:crm_task_manager/models/city_model.dart';
 import 'package:crm_task_manager/models/contact_person_model.dart';
 import 'package:crm_task_manager/models/dashboard_charts_models/deal_stats_model.dart';
 import 'package:crm_task_manager/models/dashboard_charts_models/lead_conversion_model.dart';
@@ -43,6 +44,7 @@ import 'package:crm_task_manager/utils/global_value.dart';
 import 'package:crm_task_manager/models/history_model_my-task.dart';
 import 'package:crm_task_manager/models/integration_model.dart';
 import 'package:crm_task_manager/models/lead_deal_model.dart';
+import 'package:crm_task_manager/models/lead_filter_channel_model.dart';
 import 'package:crm_task_manager/models/lead_list_model.dart';
 import 'package:crm_task_manager/models/lead_multi_model.dart' hide LeadData;
 import 'package:crm_task_manager/models/lead_navigate_to_chat.dart'
@@ -138,6 +140,7 @@ import 'package:crm_task_manager/models/price_type_model.dart';
 import 'package:crm_task_manager/models/project_task_model.dart';
 import 'package:crm_task_manager/models/sales_funnel_model.dart';
 import 'package:crm_task_manager/models/source_list_model.dart';
+import 'package:crm_task_manager/models/advertising_campaign_model.dart';
 import 'package:crm_task_manager/models/source_model.dart';
 import 'package:crm_task_manager/models/supplier_list_model.dart';
 import 'package:crm_task_manager/models/task_Status_Name_model.dart';
@@ -2036,7 +2039,12 @@ class ApiService {
     String? search,
     List<int>? managers,
     List<int>? regions,
+    int? regionId,
+    List<int>? cityIds,
     List<int>? sources,
+    List<int>? channelIds,
+    List<int>? advertisingCampaignIds,
+    List<int>? reasonForRefusalIds,
     int? statuses,
     DateTime? fromDate,
     DateTime? toDate,
@@ -2049,6 +2057,7 @@ class ApiService {
     bool? hasDeal,
     bool? hasOrders,
     int? daysWithoutActivity,
+    int? numberOfDaysDeal,
     bool? hasNoReplies,
     bool? hasUnreadMessages,
     List<Map<String, dynamic>>? directoryValues,
@@ -2072,7 +2081,12 @@ class ApiService {
     bool hasFilters = (search != null && search.isNotEmpty) ||
         (managers != null && managers.isNotEmpty) ||
         (regions != null && regions.isNotEmpty) ||
+        (regionId != null) ||
+        (cityIds != null && cityIds.isNotEmpty) ||
         (sources != null && sources.isNotEmpty) ||
+        (channelIds != null && channelIds.isNotEmpty) ||
+        (advertisingCampaignIds != null && advertisingCampaignIds.isNotEmpty) ||
+        (reasonForRefusalIds != null && reasonForRefusalIds.isNotEmpty) ||
         (fromDate != null) ||
         (toDate != null) ||
         (hasSuccessDeals == true) ||
@@ -2086,6 +2100,7 @@ class ApiService {
         (hasNoReplies == true) ||
         (hasUnreadMessages == true) ||
         (daysWithoutActivity != null) ||
+        (numberOfDaysDeal != null) ||
         (statuses != null) ||
         (directoryValues != null && directoryValues.isNotEmpty) ||
         (customFieldFilters != null && customFieldFilters.isNotEmpty);
@@ -2108,9 +2123,32 @@ class ApiService {
         path += '&regions[$i]=${regions[i]}';
       }
     }
+    if (regionId != null) {
+      path += '&region_id=$regionId';
+    }
+    if (cityIds != null && cityIds.isNotEmpty) {
+      for (int i = 0; i < cityIds.length; i++) {
+        path += '&city_id[$i]=${cityIds[i]}';
+      }
+    }
     if (sources != null && sources.isNotEmpty) {
       for (int i = 0; i < sources.length; i++) {
         path += '&sources[$i]=${sources[i]}';
+      }
+    }
+    if (channelIds != null && channelIds.isNotEmpty) {
+      for (int i = 0; i < channelIds.length; i++) {
+        path += '&channels[$i]=${channelIds[i]}';
+      }
+    }
+    if (advertisingCampaignIds != null && advertisingCampaignIds.isNotEmpty) {
+      for (int i = 0; i < advertisingCampaignIds.length; i++) {
+        path += '&campaign[$i]=${advertisingCampaignIds[i]}';
+      }
+    }
+    if (reasonForRefusalIds != null && reasonForRefusalIds.isNotEmpty) {
+      for (int i = 0; i < reasonForRefusalIds.length; i++) {
+        path += '&reason_for_refusals[$i]=${reasonForRefusalIds[i]}';
       }
     }
     if (hasNoReplies == true) {
@@ -2153,6 +2191,9 @@ class ApiService {
     }
     if (daysWithoutActivity != null) {
       path += '&lastUpdate=$daysWithoutActivity';
+    }
+    if (numberOfDaysDeal != null) {
+      path += '&numberOfDaysDeal=$numberOfDaysDeal';
     }
     if (directoryValues != null && directoryValues.isNotEmpty) {
       final Map<String, LinkedHashSet<String>> groupedDirectoryValues = {};
@@ -2249,7 +2290,12 @@ class ApiService {
   Future<List<LeadStatus>> getLeadStatuses({
     List<int>? managers,
     List<int>? regions,
+    int? regionId,
+    List<int>? cityIds,
     List<int>? sources,
+    List<int>? channelIds,
+    List<int>? advertisingCampaignIds,
+    List<int>? reasonForRefusalIds,
     DateTime? fromDate,
     DateTime? toDate,
     bool? hasSuccessDeals,
@@ -2263,6 +2309,7 @@ class ApiService {
     bool? hasDeal,
     bool? hasOrders,
     int? daysWithoutActivity,
+    int? numberOfDaysDeal,
     List<Map<String, dynamic>>? directoryValues,
     bool bypassAnalyticsCache = false,
   }) async {
@@ -2306,9 +2353,32 @@ class ApiService {
           path += '&regions[$i]=${regions[i]}';
         }
       }
+      if (regionId != null) {
+        path += '&region_id=$regionId';
+      }
+      if (cityIds != null && cityIds.isNotEmpty) {
+        for (int i = 0; i < cityIds.length; i++) {
+          path += '&city_id[$i]=${cityIds[i]}';
+        }
+      }
       if (sources != null && sources.isNotEmpty) {
         for (int i = 0; i < sources.length; i++) {
           path += '&sources[$i]=${sources[i]}';
+        }
+      }
+      if (channelIds != null && channelIds.isNotEmpty) {
+        for (int i = 0; i < channelIds.length; i++) {
+          path += '&channels[$i]=${channelIds[i]}';
+        }
+      }
+      if (advertisingCampaignIds != null && advertisingCampaignIds.isNotEmpty) {
+        for (int i = 0; i < advertisingCampaignIds.length; i++) {
+          path += '&campaign[$i]=${advertisingCampaignIds[i]}';
+        }
+      }
+      if (reasonForRefusalIds != null && reasonForRefusalIds.isNotEmpty) {
+        for (int i = 0; i < reasonForRefusalIds.length; i++) {
+          path += '&reason_for_refusals[$i]=${reasonForRefusalIds[i]}';
         }
       }
       if (fromDate != null && toDate != null) {
@@ -2328,6 +2398,8 @@ class ApiService {
       if (hasOrders == true) path += '&hasOrders=1';
       if (daysWithoutActivity != null)
         path += '&lastUpdate=$daysWithoutActivity';
+      if (numberOfDaysDeal != null)
+        path += '&numberOfDaysDeal=$numberOfDaysDeal';
       if (directoryValues != null && directoryValues.isNotEmpty) {
         for (int i = 0; i < directoryValues.length; i++) {
           final directoryId = directoryValues[i]['directory_id'];
@@ -3142,6 +3214,15 @@ class ApiService {
       request.fields['duplicate'] =
           data['duplicate'].toString(); // Добавляем duplicate
     }
+    if (data['reason_for_refusal_id'] != null) {
+      request.fields['reason_for_refusal_id'] =
+          data['reason_for_refusal_id'].toString();
+    }
+    if (data['reason_for_refusal'] != null &&
+        data['reason_for_refusal'].toString().trim().isNotEmpty) {
+      request.fields['reason_for_refusal'] =
+          data['reason_for_refusal'].toString().trim();
+    }
     // Обрабатываем lead_custom_fields
     final customFields = data['lead_custom_fields'] as List<dynamic>? ?? [];
     if (customFields.isNotEmpty) {
@@ -3282,6 +3363,51 @@ class ApiService {
     return dataRegion;
   }
 
+  Future<RegionsDataResponse> getAllState({String? search}) async {
+    String path = await _appendQueryParams('/region?type=state');
+    if (search != null && search.trim().isNotEmpty) {
+      path += '&search=${Uri.encodeComponent(search.trim())}';
+    }
+
+    final response = await _getRequest(path);
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+
+      if (data['result'] != null) {
+        return RegionsDataResponse.fromJson(data);
+      } else {
+        throw Exception('Результат отсутствует в ответе');
+      }
+    } else {
+      throw Exception('Ошибка при получении областей!');
+    }
+  }
+
+  Future<CitiesDataResponse> getAllCity({String? search, int? parentId}) async {
+    String path = await _appendQueryParams('/region?type=city');
+    if (search != null && search.trim().isNotEmpty) {
+      path += '&search=${Uri.encodeComponent(search.trim())}';
+    }
+    if (parentId != null) {
+      path += '&parent_id=$parentId';
+    }
+
+    final response = await _getRequest(path);
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+
+      if (data['result'] != null) {
+        return CitiesDataResponse.fromJson(data);
+      } else {
+        throw Exception('Результат отсутствует в ответе');
+      }
+    } else {
+      throw Exception('Ошибка при получении городов!');
+    }
+  }
+
   Future<List<ReasonForRefusalData>> getReasonsForRefusal({
     required String type,
     int perPage = 100,
@@ -3322,6 +3448,81 @@ class ApiService {
       }
     } else {
       throw Exception('Ошибка при получении данных!');
+    }
+  }
+
+  Future<List<LeadFilterChannelData>> getLeadFilterChannels() async {
+    final path =
+        await _appendQueryParams('/integrations/get-by-category/messenger');
+
+    final response = await _getRequest(path);
+
+    if (response.statusCode != 200) {
+      throw Exception('Ошибка загрузки каналов!');
+    }
+
+    final data = json.decode(response.body);
+    final result = data['result'];
+    if (result is! List) {
+      return [];
+    }
+
+    return result
+        .whereType<Map<String, dynamic>>()
+        .map(LeadFilterChannelData.fromJson)
+        .toList();
+  }
+
+  Future<List<AdvertisingCampaignData>> getAllAdvertisingCampaigns() async {
+    final organizationId = await getSelectedOrganization();
+    if (organizationId == null ||
+        organizationId.isEmpty ||
+        organizationId == 'null') {
+      throw Exception('Organization ID is required but missing');
+    }
+
+    if (!await _isSessionValid()) {
+      await _forceLogoutAndRedirect();
+      throw Exception('Session is invalid');
+    }
+
+    if (baseUrl == null) {
+      await _initializeIfDomainExists();
+      if (baseUrl == null) {
+        throw Exception('Base URL is not initialized');
+      }
+    }
+
+    final token = await getToken();
+    final uri = Uri.parse(
+      '$baseUrl/advertising-campaigns?organization_id=$organizationId&per_page=1000',
+    );
+
+    final response = await http.get(
+      uri,
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Device': 'mobile',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body) as Map<String, dynamic>;
+      final result = data['result'] as Map<String, dynamic>?;
+      final campaigns = result?['data'] as List<dynamic>?;
+
+      if (campaigns == null) {
+        return <AdvertisingCampaignData>[];
+      }
+
+      return campaigns
+          .map((campaign) => AdvertisingCampaignData.fromJson(
+              campaign as Map<String, dynamic>))
+          .toList();
+    } else {
+      throw Exception('Ошибка при получении рекламных кампаний!');
     }
   }
 
@@ -3904,6 +4105,10 @@ class ApiService {
     String? search,
     List<int>? managers,
     List<int>? regions,
+    int? regionId,
+    List<int>? cityIds,
+    List<int>? executorIds,
+    List<int>? sources,
     List<int>? leads,
     int? statuses,
     DateTime? fromDate,
@@ -3913,6 +4118,7 @@ class ApiService {
     bool? withoutNotices,
     bool? overdueNotices,
     List<int>? leadStatuses,
+    List<int>? reasonForRefusalIds,
     List<Map<String, dynamic>>? directoryValues,
     List<String>? names,
     int? salesFunnelId, // ← КРИТИЧНО: Явный параметр
@@ -3949,6 +4155,10 @@ class ApiService {
     bool hasFilters = (search != null && search.isNotEmpty) ||
         (managers != null && managers.isNotEmpty) ||
         (regions != null && regions.isNotEmpty) ||
+        (regionId != null) ||
+        (cityIds != null && cityIds.isNotEmpty) ||
+        (executorIds != null && executorIds.isNotEmpty) ||
+        (sources != null && sources.isNotEmpty) ||
         (leads != null && leads.isNotEmpty) ||
         (fromDate != null) ||
         (toDate != null) ||
@@ -3958,6 +4168,7 @@ class ApiService {
         (overdueNotices == true) ||
         (statuses != null) ||
         (leadStatuses != null && leadStatuses.isNotEmpty) ||
+        (reasonForRefusalIds != null && reasonForRefusalIds.isNotEmpty) ||
         (directoryValues != null && directoryValues.isNotEmpty) ||
         (names != null && names.isNotEmpty) ||
         (customFieldFilters != null &&
@@ -3982,6 +4193,28 @@ class ApiService {
     if (regions != null && regions.isNotEmpty) {
       for (int i = 0; i < regions.length; i++) {
         path += '&regions[$i]=${regions[i]}';
+      }
+    }
+
+    if (regionId != null) {
+      path += '&region_id=$regionId';
+    }
+
+    if (cityIds != null && cityIds.isNotEmpty) {
+      for (int i = 0; i < cityIds.length; i++) {
+        path += '&city_id[$i]=${cityIds[i]}';
+      }
+    }
+
+    if (executorIds != null && executorIds.isNotEmpty) {
+      for (int i = 0; i < executorIds.length; i++) {
+        path += '&users[$i]=${executorIds[i]}';
+      }
+    }
+
+    if (sources != null && sources.isNotEmpty) {
+      for (int i = 0; i < sources.length; i++) {
+        path += '&sources[$i]=${sources[i]}';
       }
     }
 
@@ -4014,6 +4247,12 @@ class ApiService {
     if (leadStatuses != null && leadStatuses.isNotEmpty) {
       for (int i = 0; i < leadStatuses.length; i++) {
         path += '&lead_statuses[$i]=${leadStatuses[i]}';
+      }
+    }
+
+    if (reasonForRefusalIds != null && reasonForRefusalIds.isNotEmpty) {
+      for (int i = 0; i < reasonForRefusalIds.length; i++) {
+        path += '&reason_for_refusals[$i]=${reasonForRefusalIds[i]}';
       }
     }
 
@@ -4118,6 +4357,7 @@ class ApiService {
   Future<List<DealStatus>> getDealStatuses({
     bool includeAll = false,
     int? salesFunnelId, // ← КРИТИЧНО: Добавили явный параметр
+    List<int>? reasonForRefusalIds,
   }) async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
     final organizationId = await getSelectedOrganization();
@@ -4165,6 +4405,12 @@ class ApiService {
         if (kDebugMode) {
           debugPrint(
               '⚠️ getDealStatuses - No funnel selected, loading ALL deal statuses');
+        }
+      }
+
+      if (reasonForRefusalIds != null && reasonForRefusalIds.isNotEmpty) {
+        for (int i = 0; i < reasonForRefusalIds.length; i++) {
+          path += '&reason_for_refusals[$i]=${reasonForRefusalIds[i]}';
         }
       }
 
@@ -4648,6 +4894,8 @@ class ApiService {
     List<int>? dealStatusIds, // ✅ НОВОЕ
     List<int>? existingFiles, // ID существующих файлов
     List<int>? userIds, // ✅ НОВОЕ: массив ID пользователей
+    int? reasonForRefusalId,
+    String? reasonForRefusal,
   }) async {
     // Формируем путь с query-параметрами
     final updatedPath = await _appendQueryParams('/deal/$dealId');
@@ -4670,6 +4918,12 @@ class ApiService {
     if (dealtypeId != null)
       request.fields['deal_type_id'] = dealtypeId.toString();
     if (leadId != null) request.fields['lead_id'] = leadId.toString();
+    if (reasonForRefusalId != null) {
+      request.fields['reason_for_refusal_id'] = reasonForRefusalId.toString();
+    }
+    if (reasonForRefusal != null && reasonForRefusal.trim().isNotEmpty) {
+      request.fields['reason_for_refusal'] = reasonForRefusal.trim();
+    }
 
     // Отправляем массив статусов
     if (dealStatusIds != null && dealStatusIds.isNotEmpty) {
@@ -4949,6 +5203,7 @@ class ApiService {
     List<int>? projectIds,
     List<String>? authors,
     String? department,
+    List<int>? reasonForRefusalIds,
     List<Map<String, dynamic>>? directoryValues, // Добавляем directoryValues
   }) async {
     // Формируем базовый путь
@@ -4975,6 +5230,7 @@ class ApiService {
         (projectIds != null && projectIds.isNotEmpty) ||
         (authors != null && authors.isNotEmpty) ||
         (department != null && department.isNotEmpty) ||
+        (reasonForRefusalIds != null && reasonForRefusalIds.isNotEmpty) ||
         (directoryValues != null &&
             directoryValues.isNotEmpty); // Проверяем directoryValues
 
@@ -5035,6 +5291,11 @@ class ApiService {
     }
     if (department != null && department.isNotEmpty) {
       path += '&department_id=$department';
+    }
+    if (reasonForRefusalIds != null && reasonForRefusalIds.isNotEmpty) {
+      for (int i = 0; i < reasonForRefusalIds.length; i++) {
+        path += '&reason_for_refusals[$i]=${reasonForRefusalIds[i]}';
+      }
     }
     if (directoryValues != null && directoryValues.isNotEmpty) {
       final Map<String, LinkedHashSet<String>> groupedDirectoryValues = {};
@@ -5124,6 +5385,7 @@ class ApiService {
     List<int>? projectIds,
     List<String>? authors,
     String? department,
+    List<int>? reasonForRefusalIds,
     List<Map<String, dynamic>>? directoryValues,
   }) async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -5184,6 +5446,11 @@ class ApiService {
       }
       if (department != null && department.isNotEmpty) {
         path += '&department=${Uri.encodeQueryComponent(department)}';
+      }
+      if (reasonForRefusalIds != null && reasonForRefusalIds.isNotEmpty) {
+        for (int i = 0; i < reasonForRefusalIds.length; i++) {
+          path += '&reason_for_refusals[$i]=${reasonForRefusalIds[i]}';
+        }
       }
       if (directoryValues != null && directoryValues.isNotEmpty) {
         for (int i = 0; i < directoryValues.length; i++) {
@@ -5815,6 +6082,8 @@ class ApiService {
     List<Map<String, dynamic>>? customFields,
     List<TaskFiles>? existingFiles,
     List<Map<String, int>>? directoryValues,
+    int? reasonForRefusalId,
+    String? reasonForRefusal,
   }) async {
     try {
       final token = await getToken();
@@ -5855,6 +6124,12 @@ class ApiService {
       }
       if (description != null) {
         request.fields['description'] = description;
+      }
+      if (reasonForRefusalId != null) {
+        request.fields['reason_for_refusal_id'] = reasonForRefusalId.toString();
+      }
+      if (reasonForRefusal != null && reasonForRefusal.trim().isNotEmpty) {
+        request.fields['reason_for_refusal'] = reasonForRefusal.trim();
       }
 
       // Добавляем пользователей
@@ -8317,6 +8592,37 @@ class ApiService {
     }
 
     return dataUser;
+  }
+
+  Future<UsersDataResponse> getDealExecutors({String? search}) async {
+    final token = await getToken();
+    String path = await _appendQueryParams('/department/get/users');
+    if (search != null && search.trim().isNotEmpty) {
+      path += '&search=${Uri.encodeComponent(search.trim())}';
+    }
+    if (kDebugMode) {
+      debugPrint('ApiService: getDealExecutors - Path: $path');
+    }
+
+    final response = await http.get(
+      Uri.parse('$baseUrl$path'),
+      headers: {
+        'Content-Type': 'application/json',
+        if (token != null) 'Authorization': 'Bearer $token',
+      },
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('Failed to load deal executors: ${response.statusCode}');
+    }
+
+    final data = json.decode(response.body) as Map<String, dynamic>;
+    if (kDebugMode) {
+      final result = data['result'];
+      final count = result is List ? result.length : 0;
+      debugPrint('ApiService: getDealExecutors - Loaded $count executors');
+    }
+    return UsersDataResponse.fromJson(data);
   }
 
   Future<UsersDataResponse> getAnotherUsers() async {
@@ -11641,6 +11947,9 @@ class ApiService {
     DateTime? toDate,
     String? status,
     String? paymentMethod,
+    String? deliveryType,
+    List<int>? reasonForRefusalIds,
+    Map<String, List<String>>? customFieldFilters,
   }) async {
     String url = '/order';
     url += '?page=$page&per_page=$perPage';
@@ -11677,6 +11986,27 @@ class ApiService {
     if (paymentMethod != null && paymentMethod.isNotEmpty) {
       url += '&payment_type=$paymentMethod';
     }
+    if (deliveryType != null && deliveryType.isNotEmpty) {
+      url += '&delivery_type=${Uri.encodeComponent(deliveryType)}';
+    }
+    if (reasonForRefusalIds != null && reasonForRefusalIds.isNotEmpty) {
+      for (int i = 0; i < reasonForRefusalIds.length; i++) {
+        url += '&reason_for_refusals[$i]=${reasonForRefusalIds[i]}';
+      }
+    }
+    if (customFieldFilters != null && customFieldFilters.isNotEmpty) {
+      var index = 0;
+      customFieldFilters.forEach((fieldKey, values) {
+        if (values.isEmpty) return;
+        final encodedKey = Uri.encodeComponent(fieldKey);
+        url += '&custom_fields[$index][key]=$encodedKey';
+        for (int i = 0; i < values.length; i++) {
+          final encodedValue = Uri.encodeComponent(values[i]);
+          url += '&custom_fields[$index][value][$i]=$encodedValue';
+        }
+        index++;
+      });
+    }
 
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams(url);
@@ -11696,6 +12026,50 @@ class ApiService {
     } catch (e) {
       throw e;
     }
+  }
+
+  Future<List<String>> getOrderCustomFields() async {
+    final path = await _appendQueryParams('/field-position?table=orders');
+    final response = await _getRequest(path);
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      final resultList = data['result'] as List<dynamic>?;
+      return resultList
+              ?.where((e) =>
+                  (e['is_custom_field'] == true || e['is_custom_field'] == 1) &&
+                  (e['field_name']?.toString().isNotEmpty ?? false))
+              .map((e) => e['field_name'] as String)
+              .toList() ??
+          <String>[];
+    }
+
+    final message = _extractErrorMessageFromResponse(response);
+    throw ApiException(
+      message ?? 'Ошибка загрузки пользовательских полей заказов',
+      response.statusCode,
+    );
+  }
+
+  Future<List<String>> getOrderCustomFieldValues(String key) async {
+    final path =
+        await _appendQueryParams('/order/get/custom-field-values?key=$key');
+    final response = await _getRequest(path);
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      final resultList = data['result'] as List?;
+      if (resultList == null) {
+        return [];
+      }
+      return resultList.map((value) => value.toString()).toList();
+    }
+
+    final message = _extractErrorMessageFromResponse(response);
+    throw ApiException(
+      message ?? 'Ошибка загрузки значений пользовательского поля заказов',
+      response.statusCode,
+    );
   }
 
   Future<Order> getOrderDetails(int orderId) async {
@@ -12222,6 +12596,8 @@ class ApiService {
     required int orderId,
     required int statusId,
     required int? organizationId,
+    int? reasonForRefusalId,
+    String? reasonForRefusal,
   }) async {
     try {
       final token = await getToken();
@@ -12244,6 +12620,10 @@ class ApiService {
         },
         body: jsonEncode({
           'status_id': statusId,
+          if (reasonForRefusalId != null)
+            'reason_for_refusal_id': reasonForRefusalId,
+          if (reasonForRefusal != null && reasonForRefusal.trim().isNotEmpty)
+            'reason_for_refusal': reasonForRefusal.trim(),
         }),
       );
 
@@ -15918,10 +16298,6 @@ class ApiService {
   }) async {
     await ensureInitialized();
 
-    final path = await _appendQueryParams(
-      '/employee/get-by-remaining?search=&page=1&per_page=20&month=$month',
-    );
-
     try {
       final token = await getToken();
       if (token == null) {
@@ -15931,7 +16307,30 @@ class ApiService {
         throw ApiException('Base URL is not initialized', 500);
       }
 
-      final uri = Uri.parse('$baseUrl$path');
+      final organizationId = await getSelectedOrganization();
+      final salesFunnelId = await getSelectedSalesFunnel() ??
+          await ensureSelectedSalesFunnelInitialized();
+
+      if (organizationId == null ||
+          organizationId.isEmpty ||
+          organizationId == 'null') {
+        throw ApiException('organization_id не найден', 400);
+      }
+
+      if (salesFunnelId == null ||
+          salesFunnelId.isEmpty ||
+          salesFunnelId == 'null') {
+        throw ApiException('sales_funnel_id не найден', 400);
+      }
+
+      final uri = Uri.parse('$baseUrl/employee/get-by-remaining').replace(
+        queryParameters: {
+          'month': month,
+          'organization_id': organizationId,
+          'sales_funnel_id': salesFunnelId,
+        },
+      );
+
       debugPrint('ApiService: getEmployeesByRemaining -> $uri');
       final response = await http.get(
         uri,
@@ -15948,8 +16347,18 @@ class ApiService {
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         final rawData = json.decode(response.body);
-        if (rawData is List) {
-          return rawData
+        final employeesData = rawData is List
+            ? rawData
+            : rawData is Map<String, dynamic>
+                ? (rawData['result'] is List
+                    ? rawData['result']
+                    : rawData['result'] is Map<String, dynamic>
+                        ? rawData['result']['data']
+                        : rawData['data'])
+                : null;
+
+        if (employeesData is List) {
+          return employeesData
               .whereType<Map<String, dynamic>>()
               .map(EmployeeRemainingModel.fromJson)
               .toList();

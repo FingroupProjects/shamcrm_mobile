@@ -1469,6 +1469,126 @@ class _ChatItemsWidgetState extends State<_ChatItemsWidget> {
     );
   }
 
+  void _retryCurrentChatsRequest() {
+    final chatsBloc = context.read<ChatsBloc>();
+    final hasItems = (widget.pagingController.itemList ?? []).isNotEmpty;
+
+    if (hasItems) {
+      chatsBloc.add(RefreshChats());
+      return;
+    }
+
+    chatsBloc.add(FetchChats(endPoint: widget.endPointInTab));
+  }
+
+  String _normalizeErrorMessage(BuildContext context, Object? error) {
+    final localizations = AppLocalizations.of(context)!;
+    final rawMessage = (error?.toString() ?? '').trim();
+
+    if (rawMessage.isEmpty) {
+      return localizations.translate('error');
+    }
+
+    if (rawMessage.contains('No internet connection') ||
+        rawMessage.contains(localizations.translate('no_internet_connection')) ||
+        rawMessage.contains('SocketException')) {
+      return localizations.translate('no_internet_connection');
+    }
+
+    if (rawMessage.contains('SqliteException') ||
+        rawMessage.contains('DatabaseException') ||
+        rawMessage.contains('UNIQUE constraint failed') ||
+        rawMessage.contains('cached_records')) {
+      return 'Не удалось обновить список чатов. Попробуйте еще раз.';
+    }
+
+    if (rawMessage.contains('Exception:')) {
+      final sanitized = rawMessage.replaceFirst('Exception:', '').trim();
+      if (sanitized.isEmpty) {
+        return localizations.translate('error');
+      }
+      return sanitized;
+    }
+
+    final looksTechnical = rawMessage.contains('type \'') ||
+        rawMessage.contains('StackTrace') ||
+        rawMessage.contains('http') ||
+        rawMessage.contains('FormatException');
+
+    if (looksTechnical) {
+      return 'Не удалось загрузить чаты. Попробуйте еще раз.';
+    }
+
+    return rawMessage;
+  }
+
+  Widget _buildChatsErrorState(BuildContext context, Object? error) {
+    final localizations = AppLocalizations.of(context)!;
+    final message = _normalizeErrorMessage(context, error);
+    final isOffline =
+        message == localizations.translate('no_internet_connection');
+
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              isOffline ? Icons.wifi_off_rounded : Icons.forum_outlined,
+              size: 56,
+              color: AppColors.primaryBlue.withValues(alpha: 0.7),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              isOffline
+                  ? localizations.translate('no_internet_connection')
+                  : localizations.translate('error'),
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontFamily: 'Gilroy',
+                fontSize: 22,
+                fontWeight: FontWeight.w700,
+                color: AppColors.primaryBlue,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              isOffline ? 'Чаты появятся сразу после восстановления сети.' : message,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontFamily: 'Gilroy',
+                fontSize: 15,
+                fontWeight: FontWeight.w500,
+                color: Colors.black54,
+              ),
+            ),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: 220,
+              child: OutlinedButton.icon(
+                onPressed: _retryCurrentChatsRequest,
+                icon: const Icon(Icons.refresh_rounded),
+                label: Text(localizations.translate('retry')),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.primaryBlue,
+                  side: BorderSide(
+                    color: AppColors.primaryBlue.withValues(alpha: 0.35),
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   bool _shouldRefreshData(List<Chats> current, List<Chats> updated) {
     if (current.isEmpty && updated.isEmpty) {
       debugPrint(
@@ -1651,8 +1771,10 @@ class _ChatItemsWidgetState extends State<_ChatItemsWidget> {
             }
           }
         } else if (state is ChatsError) {
-          //print('_ChatItemsWidget: Error - ${state.message}');
-          widget.pagingController.error = state.message;
+          final currentItems = widget.pagingController.itemList ?? const <Chats>[];
+          if (currentItems.isEmpty) {
+            widget.pagingController.error = state.message;
+          }
 
           if (state.message.contains(
             AppLocalizations.of(context)!.translate('no_internet_connection'),
@@ -1710,12 +1832,33 @@ class _ChatItemsWidgetState extends State<_ChatItemsWidget> {
               ),
             );
           },
+          firstPageErrorIndicatorBuilder: (context) {
+            return _buildChatsErrorState(
+              context,
+              widget.pagingController.error,
+            );
+          },
           newPageProgressIndicatorBuilder: (context) {
             //print('_ChatItemsWidget: Showing new page progress indicator for endpoint ${widget.endPointInTab}');
             return Center(
               child: PlayStoreImageLoading(
                 size: 80.0,
                 duration: Duration(milliseconds: 1000),
+              ),
+            );
+          },
+          newPageErrorIndicatorBuilder: (context) {
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              child: Center(
+                child: TextButton.icon(
+                  onPressed: _retryCurrentChatsRequest,
+                  icon: const Icon(Icons.refresh_rounded),
+                  label: Text(AppLocalizations.of(context)!.translate('retry')),
+                  style: TextButton.styleFrom(
+                    foregroundColor: AppColors.primaryBlue,
+                  ),
+                ),
               ),
             );
           },

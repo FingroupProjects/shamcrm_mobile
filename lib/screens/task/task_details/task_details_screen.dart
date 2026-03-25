@@ -175,6 +175,13 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
   final GlobalKey keyTaskForReview = GlobalKey();
   final GlobalKey keyTaskHistory = GlobalKey();
 
+  String _getTaskErrorMessage(String error) {
+    if (error.toLowerCase().contains('интернет')) {
+      return error;
+    }
+    return 'Задача была удалена';
+  }
+
   //
   List<FieldConfiguration> _fieldConfiguration = [];
   bool _isConfigurationLoaded = false;
@@ -1899,7 +1906,15 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
           } else if (state is TaskByIdError) {
             return Scaffold(
               body: Center(
-                child: Text(state.message),
+                child: Text(
+                  _getTaskErrorMessage(state.message),
+                  style: const TextStyle(
+                    fontFamily: 'Gilroy',
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.black,
+                  ),
+                ),
               ),
             );
           }

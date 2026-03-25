@@ -23,6 +23,7 @@ class FetchTaskStatusesWithFilters extends TaskEvent {
   final DateTime? completedFromDate;
   final DateTime? completedToDate;
   final List<int>? projectIds;
+  final List<int>? reasonForRefusalIds;
   final List<String>? authors;
   final String? department;
   final List<Map<String, dynamic>>? directoryValues;
@@ -41,6 +42,7 @@ class FetchTaskStatusesWithFilters extends TaskEvent {
     this.completedFromDate,
     this.completedToDate,
     this.projectIds,
+    this.reasonForRefusalIds,
     this.authors,
     this.department,
     this.directoryValues,
@@ -63,6 +65,7 @@ class FetchTasks extends TaskEvent {
   final DateTime? completedFromDate;
   final DateTime? completedToDate;
   final List<int>? projectIds;
+  final List<int>? reasonForRefusalIds;
   final List<String>? authors;
   final String? department;
   final List<Map<String, dynamic>>?
@@ -84,6 +87,7 @@ class FetchTasks extends TaskEvent {
     this.hasDeal,
     this.urgent,
     this.projectIds,
+    this.reasonForRefusalIds,
     this.authors,
     this.department,
     this.directoryValues, // Добавляем в конструктор
@@ -112,6 +116,7 @@ class FetchMoreTasks extends TaskEvent {
   final DateTime? completedFromDate;
   final DateTime? completedToDate;
   final List<int>? projectIds;
+  final List<int>? reasonForRefusalIds;
   final List<String>? authors;
   final String? department;
   final List<Map<String, dynamic>>?
@@ -134,6 +139,7 @@ class FetchMoreTasks extends TaskEvent {
     this.hasDeal,
     this.urgent,
     this.projectIds,
+    this.reasonForRefusalIds,
     this.authors,
     this.department,
     this.directoryValues, // Добавляем в конструктор
@@ -189,6 +195,8 @@ class UpdateTask extends TaskEvent {
   final List<TaskFiles>? existingFiles;
   final List<Map<String, int>>? directoryValues; // Add for consistency
   final AppLocalizations localizations;
+  final int? reasonForRefusalId;
+  final String? reasonForRefusal;
 
   UpdateTask({
     required this.taskId,
@@ -206,6 +214,8 @@ class UpdateTask extends TaskEvent {
     this.existingFiles,
     this.directoryValues,
     required this.localizations,
+    this.reasonForRefusalId,
+    this.reasonForRefusal,
   });
 }
 

@@ -14,6 +14,10 @@ class FetchDealStatuses extends DealEvent {
 class FetchDealStatusesWithFilters extends DealEvent {
   final List<int>? managerIds;
   final List<int>? regionsIds;
+  final int? regionId;
+  final List<int>? cityIds;
+  final List<int>? executorIds;
+  final List<int>? sources;
   final List<int>? leadIds;
   final int? statusIds;
   final DateTime? fromDate;
@@ -23,6 +27,7 @@ class FetchDealStatusesWithFilters extends DealEvent {
   final bool? withoutNotices;
   final bool? overdueNotices;
   final List<int>? leadStatuses;
+  final List<int>? reasonForRefusalIds;
   final List<Map<String, dynamic>>? directoryValues;
   final List<String>? names;
   final int? salesFunnelId;
@@ -31,6 +36,10 @@ class FetchDealStatusesWithFilters extends DealEvent {
   FetchDealStatusesWithFilters({
     this.managerIds,
     this.regionsIds,
+    this.regionId,
+    this.cityIds,
+    this.executorIds,
+    this.sources,
     this.leadIds,
     this.statusIds,
     this.fromDate,
@@ -40,6 +49,7 @@ class FetchDealStatusesWithFilters extends DealEvent {
     this.withoutNotices,
     this.overdueNotices,
     this.leadStatuses,
+    this.reasonForRefusalIds,
     this.directoryValues,
     this.names,
     this.salesFunnelId,
@@ -52,6 +62,10 @@ class FetchDeals extends DealEvent {
   final String? query;
   final List<int>? managerIds;
   final List<int>? regionsIds;
+  final int? regionId;
+  final List<int>? cityIds;
+  final List<int>? executorIds;
+  final List<int>? sources;
   final List<int>? leadIds;
   final int? statusIds;
   final DateTime? fromDate;
@@ -61,6 +75,7 @@ class FetchDeals extends DealEvent {
   final bool? withoutNotices;
   final bool? overdueNotices;
   final List<int>? leadStatuses;
+  final List<int>? reasonForRefusalIds;
   final int? salesFunnelId;
   final List<Map<String, dynamic>>?
       directoryValues; // Добавляем directory_values
@@ -72,6 +87,10 @@ class FetchDeals extends DealEvent {
     this.query,
     this.managerIds,
     this.regionsIds,
+    this.regionId,
+    this.cityIds,
+    this.executorIds,
+    this.sources,
     this.leadIds,
     this.statusIds,
     this.fromDate,
@@ -81,6 +100,7 @@ class FetchDeals extends DealEvent {
     this.withoutNotices,
     this.overdueNotices,
     this.leadStatuses,
+    this.reasonForRefusalIds,
     this.directoryValues,
     this.salesFunnelId,
     this.names,
@@ -180,6 +200,8 @@ class UpdateDeal extends DealEvent {
   final List<FileHelper>? files; // Новые файлы (id == 0)
   final List<int>? existingFiles; // ID существующих файлов (id != 0)
   final List<int>? userIds; // ✅ НОВОЕ: массив ID пользователей
+  final int? reasonForRefusalId;
+  final String? reasonForRefusal;
 
   UpdateDeal({
     required this.dealId,
@@ -199,6 +221,8 @@ class UpdateDeal extends DealEvent {
     this.dealStatusIds, // ✅ НОВОЕ
     this.existingFiles, // ID существующих файлов
     this.userIds, // ✅ НОВОЕ
+    this.reasonForRefusalId,
+    this.reasonForRefusal,
   });
 }
 

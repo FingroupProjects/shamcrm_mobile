@@ -101,6 +101,18 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
   }
 
   void _updateSelectedLeadData() {
+    if (widget.selectedLead == null || widget.selectedLead!.isEmpty) {
+      selectedLeadData = null;
+      _initialLeadSet = true;
+      return;
+    }
+
+    if (leadsList.isEmpty) {
+      selectedLeadData = null;
+      _initialLeadSet = true;
+      return;
+    }
+
     if (widget.selectedLead != null && leadsList.isNotEmpty) {
       try {
         selectedLeadData = leadsList.firstWhere(
@@ -161,16 +173,14 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
               _isInitialized = true;
               _updateSelectedLeadData();
             }
-            // ANY OTHER STATE → reset everything (no stale data, no validator)
-            else {
-              leadsList = [];
-              selectedLeadData = null;
-              _isInitialized = false;
-              _initialLeadSet = false;
+            // ERROR → stop infinite loading and keep last known data if any
+            else if (state is GetAllLeadError) {
+              _isInitialized = true;
+              _updateSelectedLeadData();
             }
 
             final isStillLoading =
-                isLoading || isInitial || !_isInitialized || !_initialLeadSet;
+                ((isLoading || isInitial) && !_isInitialized) || !_initialLeadSet;
 
             final actualInitialItem = isStillLoading
                 ? null

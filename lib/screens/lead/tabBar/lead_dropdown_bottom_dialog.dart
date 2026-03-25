@@ -105,11 +105,12 @@ void DropdownBottomSheet(
                                           status?.id == selectedStatusId,
                                       orElse: () => null,
                                     );
+                            final requiresReason =
+                                targetStatus != null && targetStatus.isFailure;
 
                             ReasonForRefusalSubmitData? refusalData;
                             if (askReason &&
-                                targetStatus != null &&
-                                targetStatus.isFailure) {
+                                requiresReason) {
                               refusalData = await showReasonForRefusalDialog(
                                 context: context,
                                 type: 'lead',

@@ -1,11 +1,12 @@
-import 'dart:io';
 import 'dart:async';
-import 'package:bloc/bloc.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/lead_list/lead_list_event.dart';
 import 'package:crm_task_manager/bloc/lead_list/lead_list_state.dart';
 import 'package:crm_task_manager/models/lead_list_model.dart';
+import 'package:crm_task_manager/offline/core/offline_runtime.dart';
+import 'package:crm_task_manager/offline/repositories/lead_offline_repository.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 class GetAllLeadBloc extends Bloc<GetAllLeadEvent, GetAllLeadState> {
   // ИСПРАВЛЕНО: Два отдельных кэша для разных типов данных
@@ -16,9 +17,13 @@ class GetAllLeadBloc extends Bloc<GetAllLeadEvent, GetAllLeadState> {
   DateTime? _lastLoadTimeWithDebt;
 
   static const Duration _cacheExpiration = Duration(minutes: 5);
-  final apiService = ApiService();
+  final ApiService apiService;
+  late final LeadOfflineRepository _offlineRepository;
 
-  GetAllLeadBloc() : super(GetAllLeadInitial()) {
+  GetAllLeadBloc({ApiService? apiService})
+      : apiService = apiService ?? ApiService(),
+        super(GetAllLeadInitial()) {
+    _offlineRepository = LeadOfflineRepository.fromRuntime(this.apiService);
     on<GetAllLeadEv>(_getLeads);
     on<RefreshAllLeadEv>(_refreshLeads);
   }
@@ -67,22 +72,42 @@ class GetAllLeadBloc extends Bloc<GetAllLeadEvent, GetAllLeadState> {
 
   Future<void> _loadLeadsProgressive(
       Emitter<GetAllLeadState> emit, bool showDebt) async {
+    final cached = await _offlineRepository.readCachedPage(
+      page: 1,
+      showDebt: showDebt,
+    );
+
+    if (cached != null) {
+      if (showDebt) {
+        _cachedLeadsWithDebt = cached;
+        _lastLoadTimeWithDebt = DateTime.now();
+      } else {
+        _cachedLeadsWithoutDebt = cached;
+        _lastLoadTimeWithoutDebt = DateTime.now();
+      }
+      emit(GetAllLeadSuccess(dataLead: cached));
+    }
+
     if (!await _checkInternetConnection()) {
-      emit(GetAllLeadError(
-          message:
-              'Ошибка подключения к интернету. Проверьте ваше соединение и попробуйте снова.'));
+      if (cached == null) {
+        emit(GetAllLeadError(
+            message:
+                'Нет сети и локальный кэш для лидов ещё не создан.'));
+      }
       return;
     }
 
     try {
-      emit(GetAllLeadLoading());
+      if (cached == null) {
+        emit(GetAllLeadLoading());
+      }
 
       if (kDebugMode) {
         //print('GetAllLeadBloc: Loading first page of leads (showDebt=$showDebt)...');
       }
 
-      // Загружаем только первую страницу
-      var firstPageRes = await apiService.getLeadPage(1, showDebt: showDebt);
+      final firstPageRes =
+          await _offlineRepository.refreshPage(page: 1, showDebt: showDebt);
 
       if (kDebugMode) {
         //print('GetAllLeadBloc: First page loaded with ${firstPageRes.result?.length ?? 0} leads (showDebt=$showDebt)');
@@ -107,12 +132,7 @@ class GetAllLeadBloc extends Bloc<GetAllLeadEvent, GetAllLeadState> {
   }
 
   Future<bool> _checkInternetConnection() async {
-    try {
-      final result = await InternetAddress.lookup('example.com');
-      return result.isNotEmpty && result[0].rawAddress.isNotEmpty;
-    } on SocketException {
-      return false;
-    }
+    return OfflineRuntime.instance.networkProfileService.currentProfile.isOnline;
   }
 
   // ИСПРАВЛЕНО: Метод теперь принимает параметр showDebt

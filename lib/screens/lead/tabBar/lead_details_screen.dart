@@ -216,6 +216,13 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
   bool _isAcceptingLead = false;
   bool _isRejectingLead = false;
 
+  String _getLeadErrorMessage(String error) {
+    if (error.toLowerCase().contains('интернет')) {
+      return error;
+    }
+    return 'Лид был удален';
+  }
+
   @override
   void initState() {
     super.initState();
@@ -1081,7 +1088,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
             if (state is LeadByIdError) {
               return Center(
                 child: Text(
-                  AppLocalizations.of(context)!.translate(state.message),
+                  _getLeadErrorMessage(state.message),
                   style: TextStyle(
                     fontFamily: 'Gilroy',
                     fontSize: 16,

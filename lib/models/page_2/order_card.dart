@@ -27,6 +27,9 @@ class Order {
       storageId; // Новое поле для storage_id (пока используется вместо branchId)
   final List<CustomFieldValue> customFieldValues;
   final List<DirectoryValue> directoryValues;
+  final int? reasonForRefusalId;
+  final String? reasonForRefusalComment;
+  final String? refusalReasonText;
 
   Order({
     required this.id,
@@ -52,6 +55,9 @@ class Order {
     this.storageId,
     this.customFieldValues = const [],
     this.directoryValues = const [],
+    this.reasonForRefusalId,
+    this.reasonForRefusalComment,
+    this.refusalReasonText,
   });
 
   factory Order.fromJson(Map<String, dynamic> json) {
@@ -103,6 +109,11 @@ class Order {
         storageId: json['storage_id'] != null
             ? int.tryParse(json['storage_id'].toString())
             : null,
+        reasonForRefusalId: json['reason_for_refusal_id'] is int
+            ? json['reason_for_refusal_id'] as int
+            : int.tryParse('${json['reason_for_refusal_id']}'),
+        reasonForRefusalComment: json['reason_for_refusal']?.toString(),
+        refusalReasonText: _extractRefusalReasonText(json['refusalReason']),
         customFieldValues: (json['customFieldValues'] as List<dynamic>? ?? [])
             .map((item) =>
                 CustomFieldValue.fromJson(item as Map<String, dynamic>))
@@ -142,6 +153,9 @@ class Order {
       'payment_type': paymentMethod, // Add to JSON
       'integration_id': integrationId,
       'storage_id': storageId,
+      'reason_for_refusal_id': reasonForRefusalId,
+      'reason_for_refusal': reasonForRefusalComment,
+      'refusalReason': refusalReasonText,
       'customFieldValues': customFieldValues.map((e) => e.toJson()).toList(),
       'directory_values': directoryValues.map((e) => e.toJson()).toList(),
     };
@@ -168,6 +182,9 @@ class Order {
     int? storageId,
     List<CustomFieldValue>? customFieldValues,
     List<DirectoryValue>? directoryValues,
+    int? reasonForRefusalId,
+    String? reasonForRefusalComment,
+    String? refusalReasonText,
   }) {
     return Order(
       id: id ?? this.id,
@@ -188,10 +205,28 @@ class Order {
       paymentStatus: paymentStatus ?? this.paymentStatus,
       integrationId: integrationId ?? this.integrationId,
       storageId: storageId ?? this.storageId,
+      reasonForRefusalId: reasonForRefusalId ?? this.reasonForRefusalId,
+      reasonForRefusalComment:
+          reasonForRefusalComment ?? this.reasonForRefusalComment,
+      refusalReasonText: refusalReasonText ?? this.refusalReasonText,
       customFieldValues: customFieldValues ?? this.customFieldValues,
       directoryValues: directoryValues ?? this.directoryValues,
     );
   }
+}
+
+String? _extractRefusalReasonText(dynamic raw) {
+  if (raw == null) return null;
+  if (raw is String) {
+    return raw.trim().isEmpty ? null : raw.trim();
+  }
+  if (raw is Map<String, dynamic>) {
+    final text = raw['text']?.toString().trim();
+    if (text != null && text.isNotEmpty) return text;
+    final name = raw['name']?.toString().trim();
+    if (name != null && name.isNotEmpty) return name;
+  }
+  return null;
 }
 
 class OrderDeal {
