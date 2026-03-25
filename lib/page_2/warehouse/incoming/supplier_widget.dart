@@ -1,4 +1,5 @@
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
+import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/supplier_bloc/supplier_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/supplier_bloc/supplier_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/supplier_bloc/supplier_state.dart';
@@ -12,17 +13,20 @@ class SupplierWidget extends StatefulWidget {
   final ValueChanged<String?> onChanged;
   final ValueChanged<Supplier?>? onChangedSupplier;
 
-  SupplierWidget({
+  const SupplierWidget({
+    super.key,
     required this.selectedSupplier,
     required this.onChanged,
     this.onChangedSupplier,
   });
 
   @override
-  _SupplierWidgetState createState() => _SupplierWidgetState();
+  State<SupplierWidget> createState() => _SupplierWidgetState();
 }
 
 class _SupplierWidgetState extends State<SupplierWidget> {
+  static const int _pageSize = 20;
+  final ApiService _apiService = ApiService();
   Supplier? selectedSupplierData;
   bool _isInitialLoad = true; // ✅ Track if this is the first load
   String? _autoSelectedSupplierId;
@@ -31,6 +35,21 @@ class _SupplierWidgetState extends State<SupplierWidget> {
   void initState() {
     super.initState();
     context.read<SupplierBloc>().add(FetchSupplier(query: null));
+  }
+
+  Future<CustomDropdownPaginatedResponse<Supplier>> _searchSuppliers(
+    String query,
+    int page,
+  ) async {
+    final items = await _apiService.getSupplier(
+      search: query,
+      page: page,
+      perPage: _pageSize,
+    );
+    return CustomDropdownPaginatedResponse<Supplier>(
+      items: items,
+      hasMore: items.length >= _pageSize,
+    );
   }
 
   @override
@@ -118,7 +137,9 @@ class _SupplierWidgetState extends State<SupplierWidget> {
               ),
               const SizedBox(height: 4),
               Container(
-                child: CustomDropdown<Supplier>.search(
+                child: CustomDropdown<Supplier>.searchRequestPaginated(
+                  paginatedRequest: _searchSuppliers,
+                  futureRequestDelay: const Duration(milliseconds: 350),
                   closeDropDownOnClearFilterSearch: true,
                   items: state is SupplierLoaded ? state.supplierList : [],
                   searchHintText:
@@ -184,9 +205,7 @@ class _SupplierWidgetState extends State<SupplierWidget> {
                     }
 
                     return Text(
-                      selectedItem?.name ??
-                          AppLocalizations.of(context)!
-                              .translate('select_supplier'),
+                      selectedItem.name,
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,

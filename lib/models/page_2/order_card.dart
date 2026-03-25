@@ -13,6 +13,7 @@ class Order {
   final int? branchId; // Новое поле для branch_id
   final ManagerData? manager;
   final OrderLead lead;
+  final OrderDeal? deal;
   final OrderStatusName orderStatus;
   final List<Good> goods;
   final int? organizationId;
@@ -37,6 +38,7 @@ class Order {
     this.branchName,
     this.branchId,
     required this.lead,
+    this.deal,
     required this.orderStatus,
     required this.goods,
     this.organizationId,
@@ -54,23 +56,33 @@ class Order {
 
   factory Order.fromJson(Map<String, dynamic> json) {
     try {
+      final deliveryAddressRaw = json['delivery_address'];
+      final branchRaw = json['branch'];
+      final isDelivery = json['delivery'] is bool
+          ? json['delivery'] as bool
+          : json['deliveryType'] == 'delivery';
+
       return Order(
         id: json['id'] ?? 0,
         phone: (json['phone'] ?? '').toString(),
         orderNumber: json['order_number'] ?? '',
-        delivery: json['deliveryType'] == 'delivery',
-        deliveryAddress: json['delivery_address'] != null
-            ? json['delivery_address']['address']?.toString()
-            : null,
+        delivery: isDelivery,
+        deliveryAddress: deliveryAddressRaw is Map<String, dynamic>
+            ? deliveryAddressRaw['address']?.toString()
+            : deliveryAddressRaw?.toString(),
         deliveryAddressId: json['delivery_address_id'] != null
             ? int.tryParse(json['delivery_address_id'].toString())
             : null,
-        branchName:
-            json['branch'] != null ? json['branch']['name']?.toString() : null,
+        branchName: branchRaw is Map<String, dynamic>
+            ? branchRaw['name']?.toString()
+            : (json['branch_name'] ?? branchRaw)?.toString(),
         branchId: json['branch_id'] != null
             ? int.tryParse(json['branch_id'].toString())
             : null,
         lead: OrderLead.fromJson(json['lead'] ?? {}),
+        deal: json['deal'] != null
+            ? OrderDeal.fromJson(json['deal'] as Map<String, dynamic>)
+            : null,
         orderStatus: OrderStatusName.fromJson(json['order_status'] ?? {}),
         createdAt: json['created_at'] != null
             ? DateTime.tryParse(json['created_at'])
@@ -118,6 +130,7 @@ class Order {
       'branch_name': branchName,
       'branch_id': branchId, // Добавляем в JSON
       'lead': lead.toJson(),
+      'deal': deal?.toJson(),
       'order_status': orderStatus.toJson(),
       'created_at': createdAt?.toIso8601String(),
 
@@ -144,6 +157,7 @@ class Order {
     String? branchName,
     int? branchId,
     OrderLead? lead,
+    OrderDeal? deal,
     OrderStatusName? orderStatus,
     List<Good>? goods,
     int? organizationId,
@@ -165,6 +179,7 @@ class Order {
       branchName: branchName ?? this.branchName,
       branchId: branchId ?? this.branchId, // Добавляем
       lead: lead ?? this.lead,
+      deal: deal ?? this.deal,
       orderStatus: orderStatus ?? this.orderStatus,
       goods: goods ?? this.goods,
       organizationId: organizationId ?? this.organizationId,
@@ -176,6 +191,30 @@ class Order {
       customFieldValues: customFieldValues ?? this.customFieldValues,
       directoryValues: directoryValues ?? this.directoryValues,
     );
+  }
+}
+
+class OrderDeal {
+  final int id;
+  final String name;
+
+  const OrderDeal({
+    required this.id,
+    required this.name,
+  });
+
+  factory OrderDeal.fromJson(Map<String, dynamic> json) {
+    return OrderDeal(
+      id: json['id'] ?? 0,
+      name: json['name'] ?? '',
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+    };
   }
 }
 
@@ -316,22 +355,42 @@ class Good {
   }
 
   factory Good.fromJson(Map<String, dynamic> json) {
-    final goodItem = GoodItem.fromJson(json['good'] ?? {});
-    final variantGoodItem =
-        json['variant'] != null && json['variant']['good'] != null
-            ? GoodItem.fromJson(json['variant']['good'])
-            : null;
+    final goodRaw = json['good'];
+    final variantRaw = json['variant'];
+    final goodItem = goodRaw is Map<String, dynamic>
+        ? GoodItem.fromJson(goodRaw)
+        : GoodItem(
+            id: json['good_id'] ?? json['variant_id'] ?? 0,
+            name: json['good_name']?.toString() ?? '',
+            description: '',
+            quantity: json['quantity'] ?? 0,
+            files: const [],
+          );
+    final variantGoodItem = variantRaw is Map<String, dynamic> &&
+            variantRaw['good'] is Map<String, dynamic>
+        ? GoodItem.fromJson(variantRaw['good'] as Map<String, dynamic>)
+        : null;
+    final cachedGoodName = json['good_name']?.toString();
 
     return Good(
       good: goodItem,
       variantGood: variantGoodItem,
-      goodId: json['variant_id'] ?? json['good_id'] ?? json['good']?['id'] ?? 0,
-      goodName:
-          json['good']?['name'] ?? json['variant']?['good']?['name'] ?? '',
+      goodId: json['variant_id'] ?? json['good_id'] ?? goodItem.id,
+      goodName: cachedGoodName ??
+          (goodItem.name.isNotEmpty ? goodItem.name : (variantGoodItem?.name ?? '')),
       quantity: json['quantity'] ?? 0,
-      price: double.tryParse(json['variant']?['price']?['price']?.toString() ??
-              json['good']?['good_price']?['price']?.toString() ??
-              '0') ??
+      price: double.tryParse(
+            json['price']?.toString() ??
+                (variantRaw is Map<String, dynamic>
+                    ? ((variantRaw['price'] as Map<String, dynamic>?)?['price'])
+                        ?.toString()
+                    : null) ??
+                (goodRaw is Map<String, dynamic>
+                    ? ((goodRaw['good_price'] as Map<String, dynamic>?)?['price'])
+                        ?.toString()
+                    : null) ??
+                '0',
+          ) ??
           0.0,
     );
   }
@@ -401,10 +460,21 @@ class OrderResponse {
   OrderResponse({required this.data, required this.pagination});
 
   factory OrderResponse.fromJson(Map<String, dynamic> json) {
+    final rawOrders = (json['data'] as List?) ??
+        (json['result'] as List?) ??
+        const <dynamic>[];
+    final rawPagination = json['pagination'] ??
+        {
+          'total': rawOrders.length,
+          'count': rawOrders.length,
+          'per_page': rawOrders.length == 0 ? 20 : rawOrders.length,
+          'current_page': 1,
+          'total_pages': 1,
+        };
+
     return OrderResponse(
-      data:
-          (json['data'] as List? ?? []).map((o) => Order.fromJson(o)).toList(),
-      pagination: Pagination.fromJson(json['pagination'] ?? {}),
+      data: rawOrders.map((o) => Order.fromJson(o)).toList(),
+      pagination: Pagination.fromJson(rawPagination),
     );
   }
 }

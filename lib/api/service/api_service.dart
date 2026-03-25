@@ -105,6 +105,7 @@ import 'package:crm_task_manager/models/page_2/dashboard/dashboard_top.dart';
 import 'package:crm_task_manager/models/page_2/dashboard/debtors_model.dart';
 import 'package:crm_task_manager/models/page_2/dashboard/creditors_model.dart';
 import 'package:crm_task_manager/models/page_2/dashboard/illiquids_model.dart';
+import 'package:crm_task_manager/models/page_2/dashboard/salary_report_model.dart';
 import 'package:crm_task_manager/models/page_2/delivery_address_model.dart';
 import 'package:crm_task_manager/models/page_2/good_dashboard_warehouse_model.dart'
     as dgrmodel;
@@ -151,6 +152,7 @@ import 'package:crm_task_manager/models/notes_model.dart';
 import 'package:crm_task_manager/models/pagination_dto.dart';
 import 'package:crm_task_manager/models/project_model.dart';
 import 'package:crm_task_manager/models/region_model.dart';
+import 'package:crm_task_manager/models/reason_for_refusal_model.dart';
 import 'package:crm_task_manager/models/role_model.dart';
 import 'package:crm_task_manager/models/task_model.dart';
 import 'package:crm_task_manager/models/taskbyId_model.dart' hide ChatById;
@@ -179,6 +181,7 @@ import '../../models/domain_check.dart';
 import '../../models/income_categories_data_response.dart';
 import '../../models/login_model.dart';
 import '../../models/money/money_income_document_model.dart';
+import '../../models/money/employee_remaining_model.dart';
 import '../../models/money/money_outcome_document_model.dart';
 import '../../models/outcome_categories_data_response.dart';
 import '../../models/page_2/dashboard/act_of_reconciliation_model.dart';
@@ -332,11 +335,36 @@ class ApiService {
 
 // Новый метод для получения message из body ответа
   String? _extractErrorMessageFromResponse(http.Response response) {
-    final body = jsonDecode(response.body) as Map<String, dynamic>;
-    final rawMessage = body['message'] ?? body['error'] ?? body['errors'];
-    final message = jsonDecode(jsonEncode(rawMessage));
-
-    return message;
+    try {
+      final body = jsonDecode(response.body);
+      if (body is Map<String, dynamic>) {
+        final rawMessage = body['message'] ?? body['error'] ?? body['errors'];
+        if (rawMessage == null) {
+          return null;
+        }
+        if (rawMessage is String) {
+          return rawMessage;
+        }
+        if (rawMessage is List) {
+          return rawMessage.map((item) => item.toString()).join('\n');
+        }
+        if (rawMessage is Map) {
+          final parts = <String>[];
+          rawMessage.forEach((key, value) {
+            if (value is List) {
+              parts.add(value.map((item) => item.toString()).join('\n'));
+            } else if (value != null) {
+              parts.add(value.toString());
+            }
+          });
+          return parts.where((item) => item.trim().isNotEmpty).join('\n');
+        }
+        return rawMessage.toString();
+      }
+      return body?.toString();
+    } catch (_) {
+      return response.body.isEmpty ? null : response.body;
+    }
   }
 
   // Также нужно обновить метод _initializeIfDomainExists
@@ -1831,7 +1859,10 @@ class ApiService {
     }
 
     try {
-      final response = await _analyticsRequest(path);
+      final response = await _analyticsRequest(
+        path,
+        bypassCache: true,
+      );
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -1925,7 +1956,7 @@ class ApiService {
       final path = await _appendQueryParams('/lead/$leadId');
       //debugPrint('ApiService: getLeadById - Generated path: $path');
 
-      final response = await _analyticsRequest(path);
+      final response = await _analyticsRequest(path, bypassCache: true);
       if (response.statusCode == 200) {
         final Map<String, dynamic> decodedJson = json.decode(response.body);
         final Map<String, dynamic> jsonLead = decodedJson['result'];
@@ -1936,6 +1967,63 @@ class ApiService {
     } catch (e) {
       //debugPrint('ApiService: getLeadById - Error:');
       throw Exception('Ошибка загрузки лида ID!');
+    }
+  }
+
+  Future<Map<String, dynamic>> acceptLead(int leadId) async {
+    try {
+      final path = await _appendQueryParams('/lead/accept/$leadId');
+      final response = await _postRequest(path, {});
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return json.decode(response.body) as Map<String, dynamic>;
+      }
+
+      if (response.statusCode == 422) {
+        final data = json.decode(response.body);
+        final message = (data is Map<String, dynamic> ? data['message'] : null)
+                ?.toString() ??
+            'Ошибка валидации при создании сделки';
+        throw Exception(message);
+      }
+
+      throw Exception('Ошибка создания сделки из лида');
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>> declineLead(
+    int leadId, {
+    int? reasonForRefusalId,
+    String? reasonForRefusal,
+  }) async {
+    try {
+      final path = await _appendQueryParams('/lead/decline/$leadId');
+      final payload = <String, dynamic>{
+        if (reasonForRefusalId != null)
+          'reason_for_refusal_id': reasonForRefusalId,
+        if (reasonForRefusal != null && reasonForRefusal.trim().isNotEmpty)
+          'reason_for_refusal': reasonForRefusal.trim(),
+      };
+
+      final response = await _postRequest(path, payload);
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return json.decode(response.body) as Map<String, dynamic>;
+      }
+
+      if (response.statusCode == 422) {
+        final data = json.decode(response.body);
+        final message = (data is Map<String, dynamic> ? data['message'] : null)
+                ?.toString() ??
+            'Ошибка валидации при отказе лида';
+        throw LeadStatusUpdateException(422, message);
+      }
+
+      throw Exception('Ошибка отказа от лида');
+    } catch (e) {
+      rethrow;
     }
   }
 
@@ -2334,7 +2422,12 @@ class ApiService {
 
 // Метод для создания Cтатуса Лида
   Future<Map<String, dynamic>> createLeadStatus(
-      String title, String color, bool? isFailure, bool? isSuccess) async {
+    String title,
+    String color,
+    bool? isFailure,
+    bool? isSuccess,
+    bool isUnassembled,
+  ) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/lead-status');
     if (kDebugMode) {
@@ -2346,6 +2439,7 @@ class ApiService {
       'color': color,
       "is_success": isSuccess == true ? 1 : 0,
       "is_failure": isFailure == true ? 1 : 0,
+      "is_unassembled": isUnassembled,
     });
 
     if (response.statusCode == 200 || response.statusCode == 201) {
@@ -2356,26 +2450,39 @@ class ApiService {
   }
 
 //Обновление статуса карточки Лида в колонке
-  Future<void> updateLeadStatus(int leadId, int position, int statusId) async {
+  Future<void> updateLeadStatus(
+    int leadId,
+    int position,
+    int statusId, {
+    int? reasonForRefusalId,
+    String? reasonForRefusal,
+  }) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/lead/changeStatus/$leadId');
     if (kDebugMode) {
       //debugPrint('ApiService: updateLeadStatus - Generated path: $path');
     }
 
-    final response = await _postRequest(
-      path,
-      {
-        'position': position,
-        'status_id': statusId,
-      },
-    );
+    final payload = <String, dynamic>{
+      'position': position,
+      'status_id': statusId,
+      if (reasonForRefusalId != null)
+        'reason_for_refusal_id': reasonForRefusalId,
+      if (reasonForRefusal != null && reasonForRefusal.trim().isNotEmpty)
+        'reason_for_refusal': reasonForRefusal.trim(),
+    };
+
+    final response = await _postRequest(path, payload);
 
     if (response.statusCode == 200) {
       ////debugPrint('Статус задачи успешно обновлен');
     } else if (response.statusCode == 422) {
       final responseData = jsonDecode(response.body);
-      final errorMessage = responseData['message'];
+      final errorMessage = (responseData is Map<String, dynamic>
+                  ? responseData['message']
+                  : null)
+              ?.toString() ??
+          'Вы не можете переместить лид на этот статус';
 
       throw LeadStatusUpdateException(422, errorMessage);
     } else {
@@ -2476,10 +2583,29 @@ class ApiService {
     }
   }
 
+  Future<List<Notes>> getDealNotes(int dealId,
+      {int page = 1, int perPage = 20}) async {
+    final basePath =
+        '/notices/get-by-deal/$dealId?page=$page&per_page=$perPage';
+    final path = await _appendQueryParams(basePath);
+
+    final response = await _getRequest(path);
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      return (data['result']['data'] as List)
+          .map((note) => Notes.fromJson(note))
+          .toList();
+    } else {
+      throw Exception('Ошибка загрузки заметок сделки');
+    }
+  }
+
   Future<Map<String, dynamic>> createNotes({
     required String title,
     required String body,
     required int leadId,
+    int? dealId,
     DateTime? date,
     required List<int> users,
     List<String>? filePaths, // Новое поле для файлов
@@ -2505,6 +2631,9 @@ class ApiService {
       request.fields['title'] = title;
       request.fields['body'] = body;
       request.fields['lead_id'] = leadId.toString();
+      if (dealId != null) {
+        request.fields['deal_id'] = dealId.toString();
+      }
       if (date != null) {
         request.fields['date'] = DateFormat('yyyy-MM-dd HH:mm').format(date);
       }
@@ -2543,6 +2672,59 @@ class ApiService {
       } else {
         return {'success': false, 'message': 'error_create_note'};
       }
+    } catch (e) {
+      return {'success': false, 'message': 'error_create_note'};
+    }
+  }
+
+  Future<Map<String, dynamic>> createDealNotice({
+    String? title,
+    required String body,
+    required int leadId,
+    required int dealId,
+    DateTime? date,
+    List<int>? users,
+  }) async {
+    try {
+      final token = await getToken();
+      final path = await _appendQueryParams('/notices');
+      final uri = Uri.parse('$baseUrl$path');
+
+      final request = http.MultipartRequest('POST', uri);
+      request.headers.addAll({
+        'Authorization': 'Bearer $token',
+        'Accept': 'application/json',
+        'Device': 'mobile',
+      });
+
+      if (title != null && title.trim().isNotEmpty) {
+        request.fields['title'] = title.trim();
+      }
+      request.fields['body'] = body;
+      request.fields['lead_id'] = leadId.toString();
+      request.fields['deal_id'] = dealId.toString();
+      if (date != null) {
+        request.fields['date'] = DateFormat('yyyy/MM/dd HH:mm').format(date);
+      }
+      if (users != null && users.isNotEmpty) {
+        for (int i = 0; i < users.length; i++) {
+          request.fields['users[$i]'] = users[i].toString();
+        }
+      }
+
+      final response = await _multipartPostRequest('', request);
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return {'success': true, 'message': 'note_created_successfully'};
+      }
+      if (response.statusCode == 422) {
+        final data = json.decode(response.body);
+        final message = (data is Map<String, dynamic> ? data['message'] : null)
+                ?.toString() ??
+            'Ошибка валидации';
+        return {'success': false, 'message': message};
+      }
+      return {'success': false, 'message': 'error_create_note'};
     } catch (e) {
       return {'success': false, 'message': 'error_create_note'};
     }
@@ -3039,9 +3221,18 @@ class ApiService {
   }
 
 // Api Service
-  Future<DealNameDataResponse> getAllDealNames() async {
+  Future<DealNameDataResponse> getAllDealNames({
+    String? search,
+    int page = 1,
+    int perPage = 20,
+  }) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
-    final path = await _appendQueryParams('/service/by-sales-funnel-id');
+    String path = await _appendQueryParams(
+      '/service/by-sales-funnel-id?page=$page&per_page=$perPage',
+    );
+    if (search != null && search.trim().isNotEmpty) {
+      path += '&search=${Uri.encodeComponent(search.trim())}';
+    }
     if (kDebugMode) {
       //debugPrint('ApiService: getAllDealNames - Generated path: $path');
     }
@@ -3057,9 +3248,12 @@ class ApiService {
   }
 
 //Метод для получения региона
-  Future<RegionsDataResponse> getAllRegion() async {
+  Future<RegionsDataResponse> getAllRegion({String? search}) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
-    final path = await _appendQueryParams('/region');
+    String path = await _appendQueryParams('/region');
+    if (search != null && search.trim().isNotEmpty) {
+      path += '&search=${Uri.encodeComponent(search.trim())}';
+    }
     if (kDebugMode) {
       //debugPrint('ApiService: getAllRegion - Generated path: $path');
     }
@@ -3087,6 +3281,25 @@ class ApiService {
     return dataRegion;
   }
 
+  Future<List<ReasonForRefusalData>> getReasonsForRefusal({
+    required String type,
+    int perPage = 100,
+  }) async {
+    final safeType = type.trim().isEmpty ? 'lead' : type.trim();
+    final basePath = '/reason-for-refusal?type=$safeType&per_page=$perPage';
+    final path = await _appendQueryParams(basePath);
+
+    final response = await _getRequest(path);
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body) as Map<String, dynamic>;
+      final parsed = ReasonForRefusalResponse.fromJson(data);
+      return parsed.data;
+    } else {
+      throw Exception('Ошибка при получении причин отказа!');
+    }
+  }
+
 //Метод для получения региона
   Future<List<SourceData>> getAllSource() async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
@@ -3112,9 +3325,17 @@ class ApiService {
   }
 
 //Метод для получения Менеджера
-  Future<ManagersDataResponse> getAllManager() async {
+  Future<ManagersDataResponse> getAllManager({
+    String? search,
+    int page = 1,
+    int perPage = 20,
+  }) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
-    final path = await _appendQueryParams('/manager');
+    String path =
+        await _appendQueryParams('/manager?page=$page&per_page=$perPage');
+    if (search != null && search.trim().isNotEmpty) {
+      path += '&search=${Uri.encodeComponent(search.trim())}';
+    }
     if (kDebugMode) {
       //debugPrint('ApiService: getAllManager - Generated path: $path');
     }
@@ -3172,8 +3393,11 @@ class ApiService {
   }
 
 // Метод для получения Лидов с Пагинацией
-  Future<LeadsDataResponse> getLeadPage(int page,
-      {bool showDebt = false}) async {
+  Future<LeadsDataResponse> getLeadPage(
+    int page, {
+    bool showDebt = false,
+    String? search,
+  }) async {
     try {
       // Формируем путь с параметром страницы
       String basePath = '/lead?page=$page';
@@ -3181,6 +3405,10 @@ class ApiService {
       // Добавляем параметр show_debt если нужно
       if (showDebt) {
         basePath += '&show_debt=1';
+      }
+
+      if (search != null && search.trim().isNotEmpty) {
+        basePath += '&search=${Uri.encodeComponent(search.trim())}';
       }
 
       // Добавляем остальные query параметры (язык, токен и т.д.)
@@ -3245,7 +3473,12 @@ class ApiService {
 
 // Метод для изменения статуса лида в ApiService
   Future<Map<String, dynamic>> updateLeadStatusEdit(
-      int leadStatusId, String title, bool isSuccess, bool isFailure) async {
+    int leadStatusId,
+    String title,
+    bool isSuccess,
+    bool isFailure,
+    bool isUnassembled,
+  ) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/lead-status/$leadStatusId');
     if (kDebugMode) {
@@ -3256,6 +3489,7 @@ class ApiService {
       "title": title,
       "is_success": isSuccess ? 1 : 0,
       "is_failure": isFailure ? 1 : 0,
+      "is_unassembled": isUnassembled,
       "organization_id": await getSelectedOrganization(),
     };
 
@@ -3449,9 +3683,12 @@ class ApiService {
   }
 
 // Метод для получения Источников
-  Future<List<SourceLead>> getSourceLead() async {
+  Future<List<SourceLead>> getSourceLead({String? search}) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
-    final path = await _appendQueryParams('/source');
+    String path = await _appendQueryParams('/source');
+    if (search != null && search.trim().isNotEmpty) {
+      path += '&search=${Uri.encodeComponent(search.trim())}';
+    }
     if (kDebugMode) {
       //debugPrint('ApiService: getSourceLead - Generated path: $path');
     }
@@ -3672,6 +3909,9 @@ class ApiService {
     DateTime? toDate,
     int? daysWithoutActivity,
     bool? hasTasks,
+    bool? withoutNotices,
+    bool? overdueNotices,
+    List<int>? leadStatuses,
     List<Map<String, dynamic>>? directoryValues,
     List<String>? names,
     int? salesFunnelId, // ← КРИТИЧНО: Явный параметр
@@ -3713,7 +3953,10 @@ class ApiService {
         (toDate != null) ||
         (daysWithoutActivity != null) ||
         (hasTasks == true) ||
+        (withoutNotices == true) ||
+        (overdueNotices == true) ||
         (statuses != null) ||
+        (leadStatuses != null && leadStatuses.isNotEmpty) ||
         (directoryValues != null && directoryValues.isNotEmpty) ||
         (names != null && names.isNotEmpty) ||
         (customFieldFilters != null &&
@@ -3755,8 +3998,22 @@ class ApiService {
       path += '&withTasks=1';
     }
 
+    if (withoutNotices == true) {
+      path += '&without_notices=1';
+    }
+
+    if (overdueNotices == true) {
+      path += '&overdue_notices=1';
+    }
+
     if (statuses != null) {
       path += '&deal_statuses=$statuses';
+    }
+
+    if (leadStatuses != null && leadStatuses.isNotEmpty) {
+      for (int i = 0; i < leadStatuses.length; i++) {
+        path += '&lead_statuses[$i]=${leadStatuses[i]}';
+      }
     }
 
     if (fromDate != null && toDate != null) {
@@ -3764,7 +4021,7 @@ class ApiService {
           "${fromDate.day.toString().padLeft(2, '0')}.${fromDate.month.toString().padLeft(2, '0')}.${fromDate.year}";
       final formattedToDate =
           "${toDate.day.toString().padLeft(2, '0')}.${toDate.month.toString().padLeft(2, '0')}.${toDate.year}";
-      path += '&created_from=$formattedFromDate&created_to=$formattedToDate';
+      path += '&from=$formattedFromDate&to=$formattedToDate';
     }
 
     if (directoryValues != null && directoryValues.isNotEmpty) {
@@ -4014,6 +4271,7 @@ class ApiService {
     bool showOnMainPage,
     bool isSuccess,
     bool isFailure,
+    bool isUnassembled,
     List<int>? userIds,
     List<int>? changeStatusUserIds, // ✅ НОВОЕ
   ) async {
@@ -4036,6 +4294,7 @@ class ApiService {
       'show_on_main_page': showOnMainPage ? 1 : 0,
       'is_success': isSuccess ? 1 : 0,
       'is_failure': isFailure ? 1 : 0,
+      'is_unassembled': isUnassembled,
       'organization_id': organizationId?.toString() ?? '',
       if (salesFunnelId != null) 'sales_funnel_id': salesFunnelId.toString(),
       if (userIds != null && userIds.isNotEmpty) 'users': userIds,
@@ -4114,6 +4373,8 @@ class ApiService {
     bool isMultiSelect = false, // новый параметр
     String? organizationId,
     String? salesFunnelId,
+    int? reasonForRefusalId,
+    String? reasonForRefusal,
   }) async {
     if (isMultiSelect) {
       // ============ МУЛЬТИВЫБОР (как было) ============
@@ -4138,9 +4399,15 @@ class ApiService {
           debugPrint('✅ Статусы успешно обновлены (multi-select)');
         }
       } else if (response.statusCode == 422) {
+        final responseData = jsonDecode(response.body);
+        final errorMessage = (responseData is Map<String, dynamic>
+                    ? responseData['message']
+                    : null)
+                ?.toString() ??
+            'Вы не можете переместить задачу на эти статусы';
         throw DealStatusUpdateException(
           422,
-          'Вы не можете переместить задачу на эти статусы',
+          errorMessage,
         );
       } else {
         throw Exception('Ошибка обновления статусов сделки!');
@@ -4186,6 +4453,10 @@ class ApiService {
           'position': 1,
           'organization_id': organizationId ?? '1',
           'sales_funnel_id': salesFunnelId ?? '1',
+          if (reasonForRefusalId != null)
+            'reason_for_refusal_id': reasonForRefusalId,
+          if (reasonForRefusal != null && reasonForRefusal.trim().isNotEmpty)
+            'reason_for_refusal': reasonForRefusal.trim(),
         },
       );
 
@@ -4194,9 +4465,15 @@ class ApiService {
           debugPrint('✅ Статус успешно обновлён (single-select)');
         }
       } else if (response.statusCode == 422) {
+        final responseData = jsonDecode(response.body);
+        final errorMessage = (responseData is Map<String, dynamic>
+                    ? responseData['message']
+                    : null)
+                ?.toString() ??
+            'Вы не можете переместить задачу на этот статус';
         throw DealStatusUpdateException(
           422,
-          'Вы не можете переместить задачу на этот статус',
+          errorMessage,
         );
       } else {
         throw Exception('Ошибка обновления статуса сделки!');
@@ -4546,6 +4823,7 @@ class ApiService {
     int day,
     bool isSuccess,
     bool isFailure,
+    bool isUnassembled,
     String notificationMessage,
     bool showOnMainPage,
     List<int>? userIds, // пользователи, которые могут ВИДЕТЬ сделки
@@ -4569,6 +4847,7 @@ class ApiService {
       "color": "#000",
       "is_success": isSuccess ? 1 : 0,
       "is_failure": isFailure ? 1 : 0,
+      "is_unassembled": isUnassembled,
       "notification_message": notificationMessage,
       "show_on_main_page": showOnMainPage ? 1 : 0,
       "organization_id": organizationId?.toString() ?? '',
@@ -4664,6 +4943,8 @@ class ApiService {
     bool? urgent,
     DateTime? deadlinefromDate,
     DateTime? deadlinetoDate,
+    DateTime? completedFromDate,
+    DateTime? completedToDate,
     List<int>? projectIds,
     List<String>? authors,
     String? department,
@@ -4688,6 +4969,8 @@ class ApiService {
         urgent == true ||
         (deadlinefromDate != null) ||
         (deadlinetoDate != null) ||
+        (completedFromDate != null) ||
+        (completedToDate != null) ||
         (projectIds != null && projectIds.isNotEmpty) ||
         (authors != null && authors.isNotEmpty) ||
         (department != null && department.isNotEmpty) ||
@@ -4730,6 +5013,14 @@ class ApiService {
           DateFormat('yyyy-MM-dd').format(deadlinefromDate);
       final formattedToDate = DateFormat('yyyy-MM-dd').format(deadlinetoDate);
       path += '&deadline_from=$formattedFromDate&deadline_to=$formattedToDate';
+    }
+    if (completedFromDate != null && completedToDate != null) {
+      final formattedCompletedFrom =
+          DateFormat('yyyy-MM-dd').format(completedFromDate);
+      final formattedCompletedTo =
+          DateFormat('yyyy-MM-dd').format(completedToDate);
+      path +=
+          '&completed_from=$formattedCompletedFrom&completed_to=$formattedCompletedTo';
     }
     if (projectIds != null && projectIds.isNotEmpty) {
       for (int projectId in projectIds) {
@@ -4827,6 +5118,8 @@ class ApiService {
     bool? urgent,
     DateTime? deadlinefromDate,
     DateTime? deadlinetoDate,
+    DateTime? completedFromDate,
+    DateTime? completedToDate,
     List<int>? projectIds,
     List<String>? authors,
     String? department,
@@ -4869,6 +5162,14 @@ class ApiService {
             DateFormat('yyyy-MM-dd').format(deadlinetoDate);
         path +=
             '&deadline_from=$formattedDeadlineFrom&deadline_to=$formattedDeadlineTo';
+      }
+      if (completedFromDate != null && completedToDate != null) {
+        final formattedCompletedFrom =
+            DateFormat('yyyy-MM-dd').format(completedFromDate);
+        final formattedCompletedTo =
+            DateFormat('yyyy-MM-dd').format(completedToDate);
+        path +=
+            '&completed_from=$formattedCompletedFrom&completed_to=$formattedCompletedTo';
       }
       if (projectIds != null && projectIds.isNotEmpty) {
         for (int i = 0; i < projectIds.length; i++) {
@@ -4968,7 +5269,13 @@ class ApiService {
   }
 
 // Обновление статуса карточки Задачи в колонке
-  Future<void> updateTaskStatus(int taskId, int position, int statusId) async {
+  Future<void> updateTaskStatus(
+    int taskId,
+    int position,
+    int statusId, {
+    int? reasonForRefusalId,
+    String? reasonForRefusal,
+  }) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/task/changeStatus/$taskId');
     if (kDebugMode) {
@@ -4978,6 +5285,10 @@ class ApiService {
     final response = await _postRequest(path, {
       'position': 1,
       'status_id': statusId,
+      if (reasonForRefusalId != null)
+        'reason_for_refusal_id': reasonForRefusalId,
+      if (reasonForRefusal != null && reasonForRefusal.trim().isNotEmpty)
+        'reason_for_refusal': reasonForRefusal.trim(),
     });
 
     if (response.statusCode == 200) {
@@ -5077,6 +5388,7 @@ class ApiService {
     required bool needsPermission,
     List<int>? roleIds,
     bool? finalStep,
+    bool isUnassembled = false,
   }) async {
     try {
       // Формируем данные для запроса
@@ -5090,6 +5402,7 @@ class ApiService {
       if (finalStep != null) {
         data['final_step'] = finalStep;
       }
+      data['is_unassembled'] = isUnassembled;
 
       // Обрабатываем список ролей, если он существует
       if (roleIds != null && roleIds.isNotEmpty) {
@@ -5715,9 +6028,17 @@ class ApiService {
   }
 
 // Метод для получения Проекта
-  Future<ProjectsDataResponse> getAllProject() async {
+  Future<ProjectsDataResponse> getAllProject({
+    String? search,
+    int page = 1,
+    int perPage = 20,
+  }) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
-    final path = await _appendQueryParams('/project');
+    String path =
+        await _appendQueryParams('/project?page=$page&per_page=$perPage');
+    if (search != null && search.trim().isNotEmpty) {
+      path += '&search=${Uri.encodeComponent(search.trim())}';
+    }
     if (kDebugMode) {
       //debugPrint('ApiService: getAllProject - Generated path: $path');
     }
@@ -5744,10 +6065,16 @@ class ApiService {
   }
 
   // Метод для получения Проекта
-  Future<ProjectTaskDataResponse> getTaskProject(
-      {int page = 1, int perPage = 20}) async {
+  Future<ProjectTaskDataResponse> getTaskProject({
+    int page = 1,
+    int perPage = 20,
+    String? search,
+  }) async {
     // Формируем базовый путь с параметрами пагинации
     String path = '/task/get/projects?page=$page&per_page=$perPage';
+    if (search != null && search.trim().isNotEmpty) {
+      path += '&search=${Uri.encodeComponent(search.trim())}';
+    }
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     path = await _appendQueryParams(path);
     if (kDebugMode) {
@@ -5988,6 +6315,7 @@ class ApiService {
     required bool needsPermission,
     required bool finalStep,
     required bool checkingStep,
+    bool isUnassembled = false,
     required List<int> roleIds,
   }) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
@@ -6003,6 +6331,7 @@ class ApiService {
       "needs_permission": needsPermission ? 1 : 0,
       "final_step": finalStep ? 1 : 0,
       "checking_step": checkingStep ? 1 : 0,
+      "is_unassembled": isUnassembled,
       "roles": roles,
       "organization_id": await getSelectedOrganization(),
     };
@@ -7963,9 +8292,18 @@ class ApiService {
   }
 
 // get all users
-  Future<UsersDataResponse> getAllUser() async {
+  Future<UsersDataResponse> getAllUser({
+    String? search,
+    int page = 1,
+    int perPage = 20,
+  }) async {
     final token = await getToken();
-    final path = await _appendQueryParams('/department/get/users');
+    String path = await _appendQueryParams(
+      '/department/get/users?page=$page&per_page=$perPage',
+    );
+    if (search != null && search.trim().isNotEmpty) {
+      path += '&search=${Uri.encodeComponent(search.trim())}';
+    }
     if (kDebugMode) {
       //debugPrint('ApiService: getAllUser - Generated path: $path');
     }
@@ -10078,6 +10416,7 @@ class ApiService {
     String? title,
     required String body,
     required int leadId,
+    int? dealId,
     DateTime? date,
     required int sendNotification,
     required List<int> users,
@@ -10096,6 +10435,9 @@ class ApiService {
     if (title != null) request.fields['title'] = title;
     request.fields['body'] = body;
     request.fields['lead_id'] = leadId.toString();
+    if (dealId != null) {
+      request.fields['deal_id'] = dealId.toString();
+    }
     if (date != null)
       request.fields['date'] = DateFormat('yyyy-MM-dd HH:mm').format(date);
     request.fields['send_notification'] = sendNotification.toString();
@@ -10172,9 +10514,18 @@ class ApiService {
     }
   }
 
-  Future<SubjectDataResponse> getAllSubjects() async {
+  Future<SubjectDataResponse> getAllSubjects({
+    String? search,
+    int page = 1,
+    int perPage = 20,
+  }) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
-    final path = await _appendQueryParams('/noteSubject/by-sales-funnel-id');
+    String path = await _appendQueryParams(
+      '/noteSubject/by-sales-funnel-id?page=$page&per_page=$perPage',
+    );
+    if (search != null && search.trim().isNotEmpty) {
+      path += '&search=${Uri.encodeComponent(search.trim())}';
+    }
     if (kDebugMode) {
       //debugPrint('ApiService: getAllSubjects - Generated path: $path');
     }
@@ -11398,10 +11749,14 @@ class ApiService {
 
   Future<OrderResponse> getOrdersByLead({
     required int leadId,
+    String relationType = 'lead',
     int page = 1,
     int perPage = 20,
   }) async {
-    String url = '/lead/get-orders/$leadId?page=$page&per_page=$perPage';
+    final normalizedRelation = relationType == 'deal' ? 'deal' : 'lead';
+    final String url = normalizedRelation == 'deal'
+        ? '/order/order-by-deal/$leadId'
+        : '/lead/get-orders/$leadId?page=$page&per_page=$perPage';
 
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams(url);
@@ -11419,6 +11774,19 @@ class ApiService {
       if (response.statusCode == 200) {
         final rawData = json.decode(response.body);
         return OrderResponse.fromJson(rawData);
+      } else if (response.statusCode == 404 ||
+          response.statusCode == 204 ||
+          response.body.trim().isEmpty) {
+        return OrderResponse.fromJson({
+          'data': [],
+          'pagination': {
+            'total': 0,
+            'count': 0,
+            'per_page': perPage,
+            'current_page': page,
+            'total_pages': 1,
+          },
+        });
       } else {
         throw Exception('Ошибка сервера при загрузке заказов!');
       }
@@ -11432,7 +11800,8 @@ class ApiService {
 
   Future<Map<String, dynamic>> createOrder({
     required String phone,
-    required int leadId,
+    int? leadId,
+    int? dealId,
     required bool delivery,
     String? deliveryAddress,
     int? deliveryAddressId,
@@ -11460,7 +11829,6 @@ class ApiService {
       final uri = Uri.parse('$baseUrl$path');
       final body = {
         'phone': phone,
-        'lead_id': leadId,
         'deliveryType': delivery ? 'delivery' : 'pickup',
         'goods': goods
             .map((item) => {
@@ -11477,6 +11845,13 @@ class ApiService {
         'integration_id': integration,
         'sum': sum,
       };
+
+      if (leadId != null) {
+        body['lead_id'] = leadId;
+      }
+      if (dealId != null) {
+        body['deal_id'] = dealId;
+      }
 
       if (delivery) {
         body['delivery_address_id'] = deliveryAddressId;
@@ -11547,7 +11922,8 @@ class ApiService {
   Future<Map<String, dynamic>> updateOrder({
     required int orderId,
     required String phone,
-    required int leadId,
+    int? leadId,
+    int? dealId,
     required bool delivery,
     String? deliveryAddress,
     int? deliveryAddressId,
@@ -11574,7 +11950,6 @@ class ApiService {
       final uri = Uri.parse('$baseUrl$path');
       final body = {
         'phone': phone,
-        'lead_id': leadId,
         'deliveryType': delivery
             ? 'delivery'
             : 'pickup', // Исправлено: delivery=true -> "delivery"
@@ -11592,6 +11967,13 @@ class ApiService {
         'integration_id': integration,
         'sum': sum,
       };
+
+      if (leadId != null) {
+        body['lead_id'] = leadId;
+      }
+      if (dealId != null) {
+        body['deal_id'] = dealId;
+      }
 
       if (delivery) {
         body['delivery_address'] = deliveryAddress;
@@ -11659,15 +12041,21 @@ class ApiService {
   }
 
   Future<DeliveryAddressResponse> getDeliveryAddresses({
-    required int leadId,
+    int? leadId,
+    int? dealId,
   }) async {
     try {
       final token = await getToken();
       if (token == null) throw Exception('Токен не найден');
 
+      if (leadId == null && dealId == null) {
+        throw Exception('Не указан lead_id или deal_id');
+      }
+
       // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
-      final path =
-          await _appendQueryParams('/delivery-address?lead_id=$leadId');
+      final relationQuery =
+          dealId != null ? 'deal_id=$dealId' : 'lead_id=$leadId';
+      final path = await _appendQueryParams('/delivery-address?$relationQuery');
       if (kDebugMode) {
         //debugPrint('ApiService: getDeliveryAddresses - Generated path: $path');
       }
@@ -11688,7 +12076,8 @@ class ApiService {
 
   Future<http.Response> createDeliveryAddress({
     required String address,
-    required int leadId,
+    int? leadId,
+    int? dealId,
   }) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/mini-app/delivery-address');
@@ -11700,8 +12089,12 @@ class ApiService {
 
     final body = <String, dynamic>{
       'address': address,
-      'lead_id': leadId,
     };
+    if (dealId != null) {
+      body['deal_id'] = dealId;
+    } else {
+      body['lead_id'] = leadId;
+    }
     if (organizationId != null &&
         organizationId.isNotEmpty &&
         organizationId != 'null') {
@@ -11882,9 +12275,12 @@ class ApiService {
     }
   }
 
-  Future<List<Branch>> getBranches() async {
+  Future<List<Branch>> getBranches({String? search}) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
-    final path = await _appendQueryParams('/storage');
+    String path = await _appendQueryParams('/storage');
+    if (search != null && search.trim().isNotEmpty) {
+      path += '&search=${Uri.encodeComponent(search.trim())}';
+    }
     if (kDebugMode) {
       //debugPrint('ApiService: getBranches - Generated path: $path');
     }
@@ -14033,9 +14429,14 @@ class ApiService {
   }
 
   //getSupplier
-  Future<List<Supplier>> getSupplier({String? search}) async {
+  Future<List<Supplier>> getSupplier({
+    String? search,
+    int page = 1,
+    int perPage = 20,
+  }) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
-    String path = await _appendQueryParams('/suppliers');
+    String path =
+        await _appendQueryParams('/suppliers?page=$page&per_page=$perPage');
 
     // Добавляем параметр поиска, если он передан
     if (search != null && search.isNotEmpty) {
@@ -14771,8 +15172,16 @@ class ApiService {
   }
 
   //Метод для получения suppliers
-  Future<SuppliersDataResponse> getAllSuppliers() async {
-    final path = await _appendQueryParams('/suppliers');
+  Future<SuppliersDataResponse> getAllSuppliers({
+    String? search,
+    int page = 1,
+    int perPage = 20,
+  }) async {
+    String path =
+        await _appendQueryParams('/suppliers?page=$page&per_page=$perPage');
+    if (search != null && search.trim().isNotEmpty) {
+      path += '&search=${Uri.encodeComponent(search.trim())}';
+    }
 
     final response = await _getRequest(path);
 
@@ -15194,6 +15603,8 @@ class ApiService {
     int? senderCashRegisterId,
     int? cashRegisterId,
     int? supplierId,
+    int? employeeId,
+    String? month,
     required bool approve,
     double? exchangeRate,
   }) async {
@@ -15211,6 +15622,8 @@ class ApiService {
         'comment': comment,
         'cash_register_id': cashRegisterId,
         'supplier_id': supplierId,
+        'employee_id': employeeId,
+        'month': month,
         'approved': approve,
         if (exchangeRate != null) 'exchange_rate': exchangeRate,
       });
@@ -15360,6 +15773,8 @@ class ApiService {
     int? senderCashRegisterId,
     int? cashRegisterId,
     int? supplierId,
+    int? employeeId,
+    String? month,
     double? exchangeRate,
   }) async {
     final path = await _appendQueryParams('/checking-account/$documentId');
@@ -15376,6 +15791,8 @@ class ApiService {
         'comment': comment,
         'cash_register_id': cashRegisterId,
         'supplier_id': supplierId,
+        'employee_id': employeeId,
+        'month': month,
         if (exchangeRate != null) 'exchange_rate': exchangeRate,
       });
       if (response.statusCode == 200 || response.statusCode == 201) {
@@ -15503,6 +15920,60 @@ class ApiService {
         final message = _extractErrorMessageFromResponse(response);
         throw ApiException(
           message ?? 'Ошибка при массовом восстановлении документов расхода!',
+          response.statusCode,
+        );
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<List<EmployeeRemainingModel>> getEmployeesByRemaining({
+    required String month,
+  }) async {
+    await ensureInitialized();
+
+    final path = await _appendQueryParams(
+      '/employee/get-by-remaining?search=&page=1&per_page=20&month=$month',
+    );
+
+    try {
+      final token = await getToken();
+      if (token == null) {
+        throw ApiException('Токен не найден', 401);
+      }
+      if (baseUrl == null || baseUrl!.isEmpty) {
+        throw ApiException('Base URL is not initialized', 500);
+      }
+
+      final uri = Uri.parse('$baseUrl$path');
+      debugPrint('ApiService: getEmployeesByRemaining -> $uri');
+      final response = await http.get(
+        uri,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'Device': 'web',
+        },
+      );
+      debugPrint(
+        'ApiService: getEmployeesByRemaining status=${response.statusCode}',
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final rawData = json.decode(response.body);
+        if (rawData is List) {
+          return rawData
+              .whereType<Map<String, dynamic>>()
+              .map(EmployeeRemainingModel.fromJson)
+              .toList();
+        }
+        return const [];
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(
+          message ?? 'Ошибка при получении списка сотрудников!',
           response.statusCode,
         );
       }
@@ -17045,6 +17516,67 @@ class ApiService {
         final message = _extractErrorMessageFromResponse(response);
         throw ApiException(
           message ?? 'Ошибка при получении списка кредиторов!',
+          response.statusCode,
+        );
+      }
+    } catch (e) {
+      throw e;
+    }
+  }
+
+  /// Получение отчета по задолженности зарплаты
+  Future<SalaryReportResponse> getSalaryReport({
+    int? page,
+    int? perPage,
+    Map<String, dynamic>? filters,
+    String? search,
+  }) async {
+    try {
+      final queryParams = <String, String>{};
+
+      queryParams['page'] = (page ?? 1).toString();
+      queryParams['per_page'] = (perPage ?? 20).toString();
+      queryParams['limit'] = (perPage ?? 20).toString();
+      queryParams['lead_id'] = '';
+      queryParams['supplier_id'] = '';
+      queryParams['date_from'] = '';
+      queryParams['date_to'] = '';
+      queryParams['sum_from'] = '';
+      queryParams['sum_to'] = '';
+      queryParams['category_id'] = '';
+      queryParams['days_without_movement'] = '';
+      queryParams['article_id'] = '';
+      queryParams['good_id'] = '';
+      queryParams['status_id'] = '';
+      queryParams['search'] = search?.trim() ?? '';
+      queryParams['period'] = '';
+      queryParams['year'] = filters?['year']?.toString() ?? '';
+      queryParams['storage_id'] = '';
+
+      var path = await _appendQueryParams('/fin/dashboard/salary-report');
+
+      final separator = path.contains('?') ? '&' : '?';
+      final encodedParams = queryParams.entries
+          .map((e) =>
+              '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}')
+          .join('&');
+      path += '$separator$encodedParams';
+
+      if (kDebugMode) {
+        debugPrint(
+          'ApiService: getSalaryReport - Generated path: $path, filter: $filters',
+        );
+      }
+
+      final response = await _getRequest(path);
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body) as Map<String, dynamic>;
+        return SalaryReportResponse.fromJson(data);
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(
+          message ?? 'Ошибка при получении отчета по задолженности зарплаты!',
           response.statusCode,
         );
       }

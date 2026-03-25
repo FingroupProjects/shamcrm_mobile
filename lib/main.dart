@@ -139,7 +139,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:new_version_plus/new_version_plus.dart';
-import 'package:provider/provider.dart';
+import 'package:provider/provider.dart'; 
 import 'package:shared_preferences/shared_preferences.dart';
 import 'bloc/cash_register_list/cash_register_list_bloc.dart';
 import 'bloc/page_2_BLOC/document/incoming/incoming_document_history/incoming_document_history_bloc.dart';
@@ -156,11 +156,8 @@ void main() async {
   try {
     WidgetsFlutterBinding.ensureInitialized();
 
-    WidgetService.initialize();
-    await NativeInternetMonitor().initialize();
-
     await _initializeFirebase();
-
+    
     final apiService = ApiService();
     final authService = AuthService();
 
@@ -506,12 +503,25 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   Locale? _locale;
+  bool _platformServicesInitialized = false;
 
   @override
   void initState() {
     super.initState();
     _locale = widget.initialLocale;
-    // ✅ УБРАНА ИНИЦИАЛИЗАЦИЯ - не нужна!
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initializePlatformServices();
+    });
+  }
+
+  Future<void> _initializePlatformServices() async {
+    if (_platformServicesInitialized) {
+      return;
+    }
+    _platformServicesInitialized = true;
+
+    WidgetService.initialize();
+    await NativeInternetMonitor().initialize();
   }
 //1
   Future<void> checkForNewVersion(BuildContext context) async {

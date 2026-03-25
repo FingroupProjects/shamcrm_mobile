@@ -1027,6 +1027,7 @@ class Model {
   final int? inn;
   final String? note;
   final int? currencyId;
+  final Currency? currency;
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
@@ -1037,6 +1038,7 @@ class Model {
     this.inn,
     this.note,
     this.currencyId,
+    this.currency,
     this.createdAt,
     this.updatedAt,
   });
@@ -1049,6 +1051,8 @@ class Model {
       inn: parseInt(json['inn']),
       note: json['note'],
       currencyId: parseInt(json['currency_id']),
+      currency:
+          json['currency'] != null ? Currency.fromJson(json['currency']) : null,
       createdAt: json['created_at'] != null
           ? DateTime.parse(json['created_at'])
           : null,
@@ -1066,6 +1070,7 @@ class Model {
       'inn': inn,
       'note': note,
       'currency_id': currencyId,
+      'currency': currency?.toJson(),
       'created_at': createdAt?.toIso8601String(),
       'updated_at': updatedAt?.toIso8601String(),
     };

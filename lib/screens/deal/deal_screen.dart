@@ -74,21 +74,27 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
   List<ManagerData> _selectedManagers = [];
   List<RegionData> _selectedRegions = [];
   List<LeadData> _selectedLeads = [];
+  List<int> _selectedLeadStatusIds = [];
   int? _selectedStatuses;
   DateTime? _fromDate;
   DateTime? _toDate;
   int? _daysWithoutActivity;
   bool? _hasTasks = false;
+  bool _withoutNotices = false;
+  bool _overdueNotices = false;
   List<Map<String, dynamic>> _selectedDirectoryValues = [];
   Map<String, List<String>>? _selectedDealCustomFieldFilters;
 
   List<ManagerData> _initialselectedManagers = [];
   List<RegionData> _initialselectedRegions = [];
   List<LeadData> _initialselectedLeads = [];
+  List<int> _initialLeadStatusIds = [];
   int? _initialSelStatus;
   DateTime? _intialFromDate;
   DateTime? _intialToDate;
   bool? _initialHasTasks;
+  bool _initialWithoutNotices = false;
+  bool _initialOverdueNotices = false;
   int? _initialDaysWithoutActivity;
   List<Map<String, dynamic>> _initialDirectoryValues = [];
   List<DealNameData> _initialSelectedDealNames = [];
@@ -164,10 +170,13 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
 
           _selectedManagers.clear();
           _selectedLeads.clear();
+          _selectedLeadStatusIds = [];
           _selectedStatuses = null;
           _fromDate = null;
           _toDate = null;
           _hasTasks = false;
+          _withoutNotices = false;
+          _overdueNotices = false;
           _daysWithoutActivity = null;
           _selectedDirectoryValues.clear();
           _selectedDealNames.clear();
@@ -175,10 +184,13 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
 
           _initialselectedManagers.clear();
           _initialselectedLeads.clear();
+          _initialLeadStatusIds = [];
           _initialSelStatus = null;
           _intialFromDate = null;
           _intialToDate = null;
           _initialHasTasks = false;
+          _initialWithoutNotices = false;
+          _initialOverdueNotices = false;
           _initialDaysWithoutActivity = null;
           _initialDirectoryValues.clear();
           _initialSelectedDealNames.clear();
@@ -377,6 +389,12 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
           (jsonDecode(prefs.getString('deal_selected_leads') ?? '[]') as List)
               .map((l) => LeadData.fromJson(l))
               .toList();
+      _selectedLeadStatusIds =
+          (jsonDecode(prefs.getString('deal_selected_lead_statuses') ?? '[]')
+                  as List)
+              .map((id) => int.tryParse(id.toString()) ?? 0)
+              .where((id) => id != 0)
+              .toList();
       _selectedStatuses = prefs.getInt('deal_selected_statuses');
 
       // Безопасный парсинг дат
@@ -395,6 +413,8 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
 
       _daysWithoutActivity = prefs.getInt('deal_days_without_activity');
       _hasTasks = prefs.getBool('deal_has_tasks') ?? false;
+      _withoutNotices = prefs.getBool('deal_without_notices') ?? false;
+      _overdueNotices = prefs.getBool('deal_overdue_notices') ?? false;
       _selectedDirectoryValues =
           (jsonDecode(prefs.getString('deal_selected_directory_values') ?? '[]')
                   as List)
@@ -406,10 +426,13 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
               .toList();
       _initialselectedManagers = List.from(_selectedManagers);
       _initialselectedLeads = List.from(_selectedLeads);
+      _initialLeadStatusIds = List.from(_selectedLeadStatusIds);
       _initialSelStatus = _selectedStatuses;
       _intialFromDate = _fromDate;
       _intialToDate = _toDate;
       _initialHasTasks = _hasTasks;
+      _initialWithoutNotices = _withoutNotices;
+      _initialOverdueNotices = _overdueNotices;
       _initialDaysWithoutActivity = _daysWithoutActivity;
       _initialDirectoryValues = List.from(_selectedDirectoryValues);
       _initialSelectedDealNames = List.from(_selectedDealNames);
@@ -422,11 +445,15 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
         jsonEncode(_selectedManagers.map((m) => m.toJson()).toList()));
     await prefs.setString('deal_selected_leads',
         jsonEncode(_selectedLeads.map((l) => l.toJson()).toList()));
+    await prefs.setString(
+        'deal_selected_lead_statuses', jsonEncode(_selectedLeadStatusIds));
     await prefs.setInt('deal_selected_statuses', _selectedStatuses ?? 0);
     await prefs.setString('deal_from_date', _fromDate?.toIso8601String() ?? '');
     await prefs.setString('deal_to_date', _toDate?.toIso8601String() ?? '');
     await prefs.setInt('deal_days_without_activity', _daysWithoutActivity ?? 0);
     await prefs.setBool('deal_has_tasks', _hasTasks ?? false);
+    await prefs.setBool('deal_without_notices', _withoutNotices);
+    await prefs.setBool('deal_overdue_notices', _overdueNotices);
     await prefs.setString(
         'deal_selected_directory_values', jsonEncode(_selectedDirectoryValues));
     await prefs.setString(
@@ -440,10 +467,13 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
     return _selectedManagers.isNotEmpty ||
         _selectedRegions.isNotEmpty ||
         _selectedLeads.isNotEmpty ||
+        _selectedLeadStatusIds.isNotEmpty ||
         _selectedStatuses != null ||
         _fromDate != null ||
         _toDate != null ||
         _hasTasks == true ||
+        _withoutNotices ||
+        _overdueNotices ||
         _daysWithoutActivity != null ||
         _selectedDirectoryValues.isNotEmpty ||
         _selectedDealNames.isNotEmpty ||
@@ -623,11 +653,15 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
       leadIds: _selectedLeads.isNotEmpty
           ? _selectedLeads.map((lead) => lead.id).toList()
           : null,
+      leadStatuses:
+          _selectedLeadStatusIds.isNotEmpty ? _selectedLeadStatusIds : null,
       statusIds: _selectedStatuses,
       fromDate: _fromDate,
       toDate: _toDate,
       daysWithoutActivity: _daysWithoutActivity,
       hasTasks: _hasTasks,
+      withoutNotices: _withoutNotices,
+      overdueNotices: _overdueNotices,
       directoryValues:
           _selectedDirectoryValues.isNotEmpty ? _selectedDirectoryValues : null,
       names: _selectedDealNames.isNotEmpty
@@ -646,10 +680,13 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
         _selectedManagers = [];
         _selectedRegions = [];
         _selectedLeads = [];
+        _selectedLeadStatusIds = [];
         _selectedStatuses = null;
         _fromDate = null;
         _toDate = null;
         _hasTasks = false;
+        _withoutNotices = false;
+        _overdueNotices = false;
         _daysWithoutActivity = null;
         _selectedDirectoryValues = [];
         _selectedDealNames = [];
@@ -657,12 +694,15 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
         _initialselectedManagers = [];
         _initialselectedRegions = [];
         _initialselectedLeads = [];
+        _initialLeadStatusIds = [];
         _initialSelStatus = null;
         _intialFromDate = null;
         _intialToDate = null;
         _lastSearchQuery = '';
         _searchController.clear();
         _initialHasTasks = false;
+        _initialWithoutNotices = false;
+        _initialOverdueNotices = false;
         _initialDaysWithoutActivity = null;
         _initialDirectoryValues = [];
         _initialSelectedDealNames = [];
@@ -690,10 +730,17 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
         _selectedManagers = managers['managers'] ?? [];
         _selectedRegions = managers['regions'] ?? [];
         _selectedLeads = managers['leads'] ?? [];
+        _selectedLeadStatusIds = (managers['leadStatuses'] as List?)
+                ?.map((id) => int.tryParse(id.toString()) ?? 0)
+                .where((id) => id != 0)
+                .toList() ??
+            [];
         _selectedStatuses = managers['statuses'];
         _fromDate = managers['fromDate'];
         _toDate = managers['toDate'];
         _hasTasks = managers['hasTask'];
+        _withoutNotices = managers['withoutNotices'] == true;
+        _overdueNotices = managers['overdueNotices'] == true;
         _daysWithoutActivity = managers['daysWithoutActivity'];
         _selectedDealNames = (managers['names'] as List?)
                 ?.map((name) => DealNameData(id: 0, title: name))
@@ -715,10 +762,13 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
         _initialselectedManagers = managers['managers'] ?? [];
         _initialselectedRegions = managers['regions'] ?? [];
         _initialselectedLeads = managers['leads'] ?? [];
+        _initialLeadStatusIds = List<int>.from(_selectedLeadStatusIds);
         _initialSelStatus = managers['statuses'];
         _intialFromDate = managers['fromDate'];
         _intialToDate = managers['toDate'];
         _initialHasTasks = managers['hasTask'];
+        _initialWithoutNotices = _withoutNotices;
+        _initialOverdueNotices = _overdueNotices;
         _initialDaysWithoutActivity = managers['daysWithoutActivity'];
         _initialDirectoryValues = List.from(_selectedDirectoryValues);
         _initialSelectedDealNames = List.from(_selectedDealNames);
@@ -737,10 +787,14 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
       leadIds: _selectedLeads.isNotEmpty
           ? _selectedLeads.map((lead) => lead.id).toList()
           : null,
+      leadStatuses:
+          _selectedLeadStatusIds.isNotEmpty ? _selectedLeadStatusIds : null,
       statusIds: _selectedStatuses,
       fromDate: _fromDate,
       toDate: _toDate,
       hasTasks: _hasTasks,
+      withoutNotices: _withoutNotices,
+      overdueNotices: _overdueNotices,
       daysWithoutActivity: _daysWithoutActivity,
       directoryValues:
           _selectedDirectoryValues.isNotEmpty ? _selectedDirectoryValues : null,
@@ -770,6 +824,10 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
       statusIds: _selectedStatuses,
       query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
       salesFunnelId: _selectedFunnel?.id,
+      leadStatuses:
+          _selectedLeadStatusIds.isNotEmpty ? _selectedLeadStatusIds : null,
+      withoutNotices: _withoutNotices,
+      overdueNotices: _overdueNotices,
       customFieldFilters: _selectedDealCustomFieldFilters,
     ));
   }
@@ -792,6 +850,10 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
       toDate: _toDate,
       query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
       salesFunnelId: _selectedFunnel?.id,
+      leadStatuses:
+          _selectedLeadStatusIds.isNotEmpty ? _selectedLeadStatusIds : null,
+      withoutNotices: _withoutNotices,
+      overdueNotices: _overdueNotices,
       customFieldFilters: _selectedDealCustomFieldFilters,
     ));
   }
@@ -817,6 +879,49 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
       fromDate: _fromDate,
       toDate: _toDate,
       query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
+      salesFunnelId: _selectedFunnel?.id,
+      leadStatuses:
+          _selectedLeadStatusIds.isNotEmpty ? _selectedLeadStatusIds : null,
+      withoutNotices: _withoutNotices,
+      overdueNotices: _overdueNotices,
+      customFieldFilters: _selectedDealCustomFieldFilters,
+    ));
+  }
+
+  void _refreshDealsAfterStatusChange({int? currentStatusId}) {
+    final fallbackStatusId =
+        _tabTitles.isNotEmpty && _currentTabIndex < _tabTitles.length
+            ? _tabTitles[_currentTabIndex]['id'] as int
+            : null;
+    final targetStatusId = currentStatusId ?? fallbackStatusId;
+    if (targetStatusId == null) return;
+
+    _dealBloc.add(FetchDeals(
+      targetStatusId,
+      query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
+      managerIds: _selectedManagers.isNotEmpty
+          ? _selectedManagers.map((manager) => manager.id).toList()
+          : null,
+      regionsIds: _selectedRegions.isNotEmpty
+          ? _selectedRegions.map((region) => region.id).toList()
+          : null,
+      leadIds: _selectedLeads.isNotEmpty
+          ? _selectedLeads.map((lead) => lead.id).toList()
+          : null,
+      leadStatuses:
+          _selectedLeadStatusIds.isNotEmpty ? _selectedLeadStatusIds : null,
+      statusIds: _selectedStatuses ?? targetStatusId,
+      fromDate: _fromDate,
+      toDate: _toDate,
+      daysWithoutActivity: _daysWithoutActivity,
+      hasTasks: _hasTasks,
+      withoutNotices: _withoutNotices,
+      overdueNotices: _overdueNotices,
+      directoryValues:
+          _selectedDirectoryValues.isNotEmpty ? _selectedDirectoryValues : null,
+      names: _selectedDealNames.isNotEmpty
+          ? _selectedDealNames.map((dealName) => dealName.title).toList()
+          : null,
       salesFunnelId: _selectedFunnel?.id,
       customFieldFilters: _selectedDealCustomFieldFilters,
     ));
@@ -888,6 +993,9 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
             initialManagerDealToDate: _intialToDate,
             initialManagerDealDaysWithoutActivity: _initialDaysWithoutActivity,
             initialManagerDealHasTasks: _initialHasTasks,
+            initialManagerDealWithoutNotices: _initialWithoutNotices,
+            initialManagerDealOverdueNotices: _initialOverdueNotices,
+            initialLeadStatusesDeal: _initialLeadStatusIds,
             initialDirectoryValuesDeal: _initialDirectoryValues,
             initialDealNames: _initialSelectedDealNames
                 .map((dealName) => dealName.title)
@@ -918,7 +1026,10 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
                       _fromDate == null &&
                       _toDate == null &&
                       _selectedLeads.isEmpty &&
+                      _selectedLeadStatusIds.isEmpty &&
                       _hasTasks == false &&
+                      _withoutNotices == false &&
+                      _overdueNotices == false &&
                       _daysWithoutActivity == null &&
                       _selectedDealNames.isEmpty) {
                     ////debugPrint("DealScreen: IF SEARCH EMPTY AND NO FILTERS");
@@ -946,8 +1057,13 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
                       toDate: _toDate,
                       daysWithoutActivity: _daysWithoutActivity,
                       hasTasks: _hasTasks,
+                      withoutNotices: _withoutNotices,
+                      overdueNotices: _overdueNotices,
                       leadIds: _selectedLeads.isNotEmpty
                           ? _selectedLeads.map((lead) => lead.id).toList()
+                          : null,
+                      leadStatuses: _selectedLeadStatusIds.isNotEmpty
+                          ? _selectedLeadStatusIds
                           : null,
                       salesFunnelId: _selectedFunnel?.id,
                     ));
@@ -964,6 +1080,11 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
                         ? _searchController.text
                         : null,
                     salesFunnelId: _selectedFunnel?.id,
+                    leadStatuses: _selectedLeadStatusIds.isNotEmpty
+                        ? _selectedLeadStatusIds
+                        : null,
+                    withoutNotices: _withoutNotices,
+                    overdueNotices: _overdueNotices,
                     customFieldFilters: _selectedDealCustomFieldFilters,
                   ));
                 }
@@ -1057,7 +1178,9 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
               deal: deal,
               title: deal.dealStatus?.title ?? "",
               statusId: deal.statusId,
-              onStatusUpdated: () {},
+              onStatusUpdated: () {
+                _refreshDealsAfterStatusChange(currentStatusId: deal.statusId);
+              },
               onStatusId: (StatusDealId) {
                 final index = _tabTitles
                     .indexWhere((status) => status['id'] == StatusDealId);
@@ -1159,7 +1282,10 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
                       deal: deal,
                       title: deal.dealStatus?.title ?? "",
                       statusId: deal.statusId,
-                      onStatusUpdated: () {},
+                      onStatusUpdated: () {
+                        _refreshDealsAfterStatusChange(
+                            currentStatusId: deal.statusId);
+                      },
                       onStatusId: (StatusDealId) {
                         final index = _tabTitles.indexWhere(
                             (status) => status['id'] == StatusDealId);
@@ -1321,6 +1447,7 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
                     dealsCount: 0,
                     isSuccess: false,
                     isFailure: false,
+                    isUnassembled: false,
                     showOnMainPage: false,
                   ),
                 );
@@ -1471,6 +1598,7 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
                     'id': status.id,
                     'title': status.title,
                     'deals_count': status.dealsCount,
+                    'is_unassembled': status.isUnassembled,
                   })
               .toList());
 
@@ -1550,10 +1678,18 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
                         leadIds: hasActiveFilters && _selectedLeads.isNotEmpty
                             ? _selectedLeads.map((lead) => lead.id).toList()
                             : null,
+                        leadStatuses: hasActiveFilters &&
+                                _selectedLeadStatusIds.isNotEmpty
+                            ? _selectedLeadStatusIds
+                            : null,
                         statusIds: hasActiveFilters ? currentStatusId : null,
                         fromDate: hasActiveFilters ? _fromDate : null,
                         toDate: hasActiveFilters ? _toDate : null,
                         hasTasks: hasActiveFilters ? _hasTasks : null,
+                        withoutNotices:
+                            hasActiveFilters ? _withoutNotices : null,
+                        overdueNotices:
+                            hasActiveFilters ? _overdueNotices : null,
                         daysWithoutActivity:
                             hasActiveFilters ? _daysWithoutActivity : null,
                         directoryValues: hasActiveFilters &&
@@ -1751,10 +1887,15 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
                             leadIds: _selectedLeads.isNotEmpty
                                 ? _selectedLeads.map((lead) => lead.id).toList()
                                 : null,
+                            leadStatuses: _selectedLeadStatusIds.isNotEmpty
+                                ? _selectedLeadStatusIds
+                                : null,
                             statusIds: _selectedStatuses,
                             fromDate: _fromDate,
                             toDate: _toDate,
                             hasTasks: _hasTasks,
+                            withoutNotices: _withoutNotices,
+                            overdueNotices: _overdueNotices,
                             daysWithoutActivity: _daysWithoutActivity,
                             directoryValues: _selectedDirectoryValues,
                             names: _selectedDealNames.isNotEmpty

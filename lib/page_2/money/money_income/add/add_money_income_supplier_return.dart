@@ -113,7 +113,7 @@ class _AddMoneyIncomeSupplierReturnState
       return;
     }
 
-    if (_isExchangeRateRequired) {
+    if (approve && _isExchangeRateRequired) {
       final rate = _exchangeRateValue;
       if (rate == null || rate <= 0) {
         setState(() {
@@ -168,7 +168,7 @@ class _AddMoneyIncomeSupplierReturnState
         comment: _commentController.text.trim(),
         operationType: MoneyIncomeOperationType.return_supplier.name,
         cashRegisterId: selectedCashRegister?.id,
-        exchangeRate: _isExchangeRateRequired ? _exchangeRateValue : null,
+        exchangeRate: _exchangeRateValue,
         approve: approve,
       ));
     } catch (e) {

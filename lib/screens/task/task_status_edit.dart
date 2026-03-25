@@ -27,6 +27,7 @@ class _TaskStatusEditScreenState extends State<TaskStatusEditScreen> {
   bool needsPermission = false;
   bool finalStep = false;
   bool checkingStep = false;
+  bool isUnassembled = false;
   late TaskBloc _taskBloc;
   bool _dataLoaded = false;
   List<int> selectedRoleIds = [];
@@ -63,6 +64,7 @@ class _TaskStatusEditScreenState extends State<TaskStatusEditScreen> {
           needsPermission: needsPermission,
           finalStep: finalStep,
           checkingStep: checkingStep,
+          isUnassembled: isUnassembled,
           roleIds: selectedRoleIds,
           localizations: localizations,
         ),
@@ -113,6 +115,7 @@ class _TaskStatusEditScreenState extends State<TaskStatusEditScreen> {
             needsPermission = state.taskStatus.needsPermission;
             finalStep = state.taskStatus.finalStep;
             checkingStep = state.taskStatus.checkingStep;
+            isUnassembled = state.taskStatus.isUnassembled;
             selectedRoleIds =
                 (state.taskStatus.roles ?? []).map((e) => e as int).toList();
             _dataLoaded = true;
@@ -221,8 +224,8 @@ class _TaskStatusEditScreenState extends State<TaskStatusEditScreen> {
                               children: [
                                 const SizedBox(height: 0),
                                 StatusList(
-                                  selectedTaskStatus: selectedStatusNameId
-                                      ?.toString(),
+                                  selectedTaskStatus:
+                                      selectedStatusNameId?.toString(),
                                   onChanged:
                                       (String? statusName, int? statusId) {
                                     setState(() {
@@ -263,6 +266,17 @@ class _TaskStatusEditScreenState extends State<TaskStatusEditScreen> {
                                     if (value != null) {
                                       setState(() {
                                         checkingStep = value;
+                                      });
+                                    }
+                                  },
+                                ),
+                                _buildCheckbox(
+                                  'Неразобранные',
+                                  isUnassembled,
+                                  (value) {
+                                    if (value != null) {
+                                      setState(() {
+                                        isUnassembled = value;
                                       });
                                     }
                                   },

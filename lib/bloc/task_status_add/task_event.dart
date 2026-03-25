@@ -13,7 +13,7 @@ class CreateTaskStatusAdd extends TaskStatusEvent {
   final bool needsPermission;
   final List<int>? roleIds;
   final bool? finalStep; // Добавлено поле finalStep
-
+  final bool isUnassembled;
 
   const CreateTaskStatusAdd({
     required this.taskStatusNameId,
@@ -21,6 +21,7 @@ class CreateTaskStatusAdd extends TaskStatusEvent {
     required this.needsPermission,
     this.roleIds,
     this.finalStep, // Инициализация нового поля
+    this.isUnassembled = false,
   });
 
   @override
@@ -30,5 +31,6 @@ class CreateTaskStatusAdd extends TaskStatusEvent {
         needsPermission,
         roleIds,
         finalStep, // Добавлено поле в список props
+        isUnassembled,
       ];
 }

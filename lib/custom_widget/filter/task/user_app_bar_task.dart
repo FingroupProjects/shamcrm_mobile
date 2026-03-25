@@ -39,6 +39,8 @@ class UserFilterScreen extends StatefulWidget {
   final bool? initialUnreadOnly;
   final DateTime? initialDeadlineFromDate;
   final DateTime? initialDeadlineToDate;
+  final DateTime? initialCompletedFromDate;
+  final DateTime? initialCompletedToDate;
   final VoidCallback? onResetFilters;
   final List<String>? initialAuthors;
   final String? initialDepartment;
@@ -65,6 +67,8 @@ class UserFilterScreen extends StatefulWidget {
     this.initialIsUrgent,
     this.initialDeadlineFromDate,
     this.initialDeadlineToDate,
+    this.initialCompletedFromDate,
+    this.initialCompletedToDate,
     this.onResetFilters,
     this.initialAuthors,
     this.initialDepartment,
@@ -88,6 +92,8 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
   DateTime? _toDate;
   DateTime? _deadlinefromDate;
   DateTime? _deadlinetoDate;
+  DateTime? _completedFromDate;
+  DateTime? _completedToDate;
   bool _isOverdue = false;
   bool _hasFile = false;
   bool _hasDeal = false;
@@ -149,6 +155,8 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
     _isUrgent = widget.initialIsUrgent ?? false;
     _deadlinefromDate = widget.initialDeadlineFromDate;
     _deadlinetoDate = widget.initialDeadlineToDate;
+    _completedFromDate = widget.initialCompletedFromDate;
+    _completedToDate = widget.initialCompletedToDate;
     _selectedDepartment = widget.initialDepartment;
     _loadDepartmentStatus();
     _fetchDirectoryLinks();
@@ -356,6 +364,46 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
     }
   }
 
+  void _selectCompletedDateRange() async {
+    final DateTimeRange? pickedRange = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2101),
+      initialDateRange: _completedFromDate != null && _completedToDate != null
+          ? DateTimeRange(
+              start: _completedFromDate!,
+              end: _completedToDate!,
+            )
+          : null,
+      builder: (BuildContext context, Widget? child) {
+        return Theme(
+          data: ThemeData.light().copyWith(
+            scaffoldBackgroundColor: Colors.white,
+            dialogBackgroundColor: Colors.white,
+            colorScheme: ColorScheme.light(
+              primary: Colors.blue,
+              onPrimary: Colors.white,
+              onSurface: Colors.black,
+              secondary: Colors.blue.withValues(alpha: 0.1),
+            ),
+            textButtonTheme: TextButtonThemeData(
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.blue,
+              ),
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+    if (pickedRange != null) {
+      setState(() {
+        _completedFromDate = pickedRange.start;
+        _completedToDate = pickedRange.end;
+      });
+    }
+  }
+
   Widget? _buildFieldWidgetByConfig(FieldConfiguration config) {
     switch (config.fieldName) {
       case 'executor':
@@ -540,6 +588,8 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
                 _isUrgent = false;
                 _deadlinefromDate = null;
                 _deadlinetoDate = null;
+                _completedFromDate = null;
+                _completedToDate = null;
                 _selectedDepartment = null;
                 _selectedDirectoryFields.clear();
                 for (var link in _directoryLinks) {
@@ -586,6 +636,8 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
                 'urgent': _isUrgent,
                 'deadlinefromDate': _deadlinefromDate,
                 'deadlinetoDate': _deadlinetoDate,
+                'completedFromDate': _completedFromDate,
+                'completedToDate': _completedToDate,
                 'authors': _selectedAuthors,
                 'project_ids': _selectedProjects.isNotEmpty
                     ? _selectedProjects.map((id) => int.parse(id)).toList()
@@ -623,6 +675,7 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
                   _hasDeal ||
                   _isUrgent ||
                   (_deadlinefromDate != null && _deadlinetoDate != null) ||
+                  (_completedFromDate != null && _completedToDate != null) ||
                   _selectedAuthors.isNotEmpty ||
                   _selectedProjects.isNotEmpty ||
                   _selectedDepartment != null ||
@@ -712,6 +765,35 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
                             ? "${_deadlinefromDate!.day.toString().padLeft(2, '0')}.${_deadlinefromDate!.month.toString().padLeft(2, '0')}.${_deadlinefromDate!.year} - ${_deadlinetoDate!.day.toString().padLeft(2, '0')}.${_deadlinetoDate!.month.toString().padLeft(2, '0')}.${_deadlinetoDate!.year}"
                             : AppLocalizations.of(context)!
                                 .translate('select_deadline_range'),
+                        style: TextStyle(color: Colors.black54, fontSize: 14),
+                      ),
+                      Icon(Icons.calendar_today, color: Colors.black54),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Card(
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+              color: Colors.white,
+              child: GestureDetector(
+                onTap: _selectCompletedDateRange,
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        _completedFromDate != null && _completedToDate != null
+                            ? "${_completedFromDate!.day.toString().padLeft(2, '0')}.${_completedFromDate!.month.toString().padLeft(2, '0')}.${_completedFromDate!.year} - ${_completedToDate!.day.toString().padLeft(2, '0')}.${_completedToDate!.month.toString().padLeft(2, '0')}.${_completedToDate!.year}"
+                            : AppLocalizations.of(context)!
+                                .translate('select_completed_date_range'),
                         style: TextStyle(color: Colors.black54, fontSize: 14),
                       ),
                       Icon(Icons.calendar_today, color: Colors.black54),

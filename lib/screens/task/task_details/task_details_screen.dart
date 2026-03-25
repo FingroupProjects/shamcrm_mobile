@@ -596,6 +596,21 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
       }
     }
 
+    final refusalReason = (task.refusalReasonText ?? '').trim();
+    final refusalComment = (task.reasonForRefusalComment ?? '').trim();
+    if (refusalReason.isNotEmpty || refusalComment.isNotEmpty) {
+      details.add({
+        'label': 'Причина отказа:',
+        'value': refusalReason.isNotEmpty ? refusalReason : refusalComment,
+      });
+      if (refusalReason.isNotEmpty && refusalComment.isNotEmpty) {
+        details.add({
+          'label': 'Комментарий отказа:',
+          'value': refusalComment,
+        });
+      }
+    }
+
     // Всегда добавляем файлы в конец списка, если они есть
     if (task.files != null && task.files!.isNotEmpty) {
       details.add({
@@ -1557,6 +1572,13 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
               ),
             );
           } else if (state is TaskByIdLoaded) {
+            if (!_isConfigurationLoaded) {
+              return Scaffold(
+                body: Center(
+                  child: CircularProgressIndicator(color: Color(0xff1E2E52)),
+                ),
+              );
+            }
             if (state.task == null) {
               return Scaffold(
                 body: Center(

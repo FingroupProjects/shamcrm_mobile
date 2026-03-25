@@ -26,8 +26,9 @@ class TaskStatusBloc extends Bloc<TaskStatusEvent, TaskStatusState> {
           needsPermission: event.needsPermission,
           roleIds: event.roleIds,
           finalStep: event.finalStep,
+          isUnassembled: event.isUnassembled,
         );
-        
+
         if (response['success']) {
           emit(TaskStatusCreated(response['message']));
         } else {

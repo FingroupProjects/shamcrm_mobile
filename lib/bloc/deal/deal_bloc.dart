@@ -20,6 +20,9 @@ class DealBloc extends Bloc<DealEvent, DealState> {
   DateTime? _currentToDate;
   List<int>? _currentLeadIds;
   bool? _currentHasTasks;
+  bool? _currentWithoutNotices;
+  bool? _currentOverdueNotices;
+  List<int>? _currentLeadStatuses;
   int? _currentDaysWithoutActivity;
   List<Map<String, dynamic>>? _currentDirectoryValues;
   List<String>? _currentNames;
@@ -41,21 +44,24 @@ class DealBloc extends Bloc<DealEvent, DealState> {
   }
 
   bool get _hasActiveFilters {
-    final bool listsOrQuery =
-        (_currentQuery != null && _currentQuery!.isNotEmpty) ||
-            (_currentManagerIds != null && _currentManagerIds!.isNotEmpty) ||
-            (_currentRegionsIds != null && _currentRegionsIds!.isNotEmpty) ||
-            (_currentLeadIds != null && _currentLeadIds!.isNotEmpty) ||
-            (_currentDirectoryValues != null &&
-                _currentDirectoryValues!.isNotEmpty) ||
-            (_currentCustomFieldFilters != null &&
-                _currentCustomFieldFilters!.isNotEmpty) ||
-            (_currentNames != null && _currentNames!.isNotEmpty);
+    final bool listsOrQuery = (_currentQuery != null &&
+            _currentQuery!.isNotEmpty) ||
+        (_currentManagerIds != null && _currentManagerIds!.isNotEmpty) ||
+        (_currentRegionsIds != null && _currentRegionsIds!.isNotEmpty) ||
+        (_currentLeadIds != null && _currentLeadIds!.isNotEmpty) ||
+        (_currentLeadStatuses != null && _currentLeadStatuses!.isNotEmpty) ||
+        (_currentDirectoryValues != null &&
+            _currentDirectoryValues!.isNotEmpty) ||
+        (_currentCustomFieldFilters != null &&
+            _currentCustomFieldFilters!.isNotEmpty) ||
+        (_currentNames != null && _currentNames!.isNotEmpty);
 
     final bool flagsOrDates = (_currentStatusId != null) ||
         (_currentFromDate != null) ||
         (_currentToDate != null) ||
         (_currentHasTasks == true) ||
+        (_currentWithoutNotices == true) ||
+        (_currentOverdueNotices == true) ||
         (_currentDaysWithoutActivity != null);
 
     return listsOrQuery || flagsOrDates;
@@ -98,6 +104,9 @@ class DealBloc extends Bloc<DealEvent, DealState> {
       _currentToDate = event.toDate;
       _currentLeadIds = event.leadIds;
       _currentHasTasks = event.hasTasks;
+      _currentWithoutNotices = event.withoutNotices;
+      _currentOverdueNotices = event.overdueNotices;
+      _currentLeadStatuses = event.leadStatuses;
       _currentDaysWithoutActivity = event.daysWithoutActivity;
       _currentDirectoryValues = event.directoryValues;
       _currentNames = event.names;
@@ -139,6 +148,9 @@ class DealBloc extends Bloc<DealEvent, DealState> {
           toDate: event.toDate,
           leads: event.leadIds,
           hasTasks: event.hasTasks,
+          withoutNotices: event.withoutNotices,
+          overdueNotices: event.overdueNotices,
+          leadStatuses: event.leadStatuses,
           daysWithoutActivity: event.daysWithoutActivity,
           directoryValues: event.directoryValues,
           names: event.names,
@@ -213,6 +225,9 @@ class DealBloc extends Bloc<DealEvent, DealState> {
         _currentToDate = null;
         _currentLeadIds = null;
         _currentHasTasks = null;
+        _currentWithoutNotices = null;
+        _currentOverdueNotices = null;
+        _currentLeadStatuses = null;
         _currentDaysWithoutActivity = null;
         _currentDirectoryValues = null;
         _currentNames = null;
@@ -237,6 +252,7 @@ class DealBloc extends Bloc<DealEvent, DealState> {
                   'id': status.id,
                   'title': status.title,
                   'deals_count': status.dealsCount ?? 0,
+                  'is_unassembled': status.isUnassembled,
                 })
             .toList());
 
@@ -273,6 +289,7 @@ class DealBloc extends Bloc<DealEvent, DealState> {
                 dealsCount: count,
                 isSuccess: false,
                 isFailure: false,
+                isUnassembled: status['is_unassembled'] == true,
                 showOnMainPage: false,
               );
             }).toList();
@@ -309,6 +326,7 @@ class DealBloc extends Bloc<DealEvent, DealState> {
                   'id': status.id,
                   'title': status.title,
                   'deals_count': status.dealsCount ?? 0,
+                  'is_unassembled': status.isUnassembled,
                 })
             .toList());
 
@@ -356,6 +374,9 @@ class DealBloc extends Bloc<DealEvent, DealState> {
         toDate: _currentToDate,
         leads: _currentLeadIds,
         hasTasks: _currentHasTasks,
+        withoutNotices: _currentWithoutNotices,
+        overdueNotices: _currentOverdueNotices,
+        leadStatuses: _currentLeadStatuses,
         daysWithoutActivity: _currentDaysWithoutActivity,
         directoryValues: _currentDirectoryValues,
         customFieldFilters: _currentCustomFieldFilters,
@@ -393,6 +414,7 @@ class DealBloc extends Bloc<DealEvent, DealState> {
         event.showOnMainPage,
         event.isSuccess,
         event.isFailure,
+        event.isUnassembled,
         event.userIds,
         event.changeStatusUserIds, // ✅ НОВОЕ
       );
@@ -542,6 +564,7 @@ class DealBloc extends Bloc<DealEvent, DealState> {
         event.day,
         event.isSuccess,
         event.isFailure,
+        event.isUnassembled,
         event.notificationMessage,
         event.showOnMainPage,
         event.userIds,
@@ -599,6 +622,7 @@ class DealBloc extends Bloc<DealEvent, DealState> {
                 'id': status.id,
                 'title': status.title,
                 'deals_count': status.dealsCount ?? 0,
+                'is_unassembled': status.isUnassembled,
               })
           .toList());
 
@@ -618,6 +642,9 @@ class DealBloc extends Bloc<DealEvent, DealState> {
         _currentFromDate = event.fromDate;
         _currentToDate = event.toDate;
         _currentHasTasks = event.hasTasks;
+        _currentWithoutNotices = event.withoutNotices;
+        _currentOverdueNotices = event.overdueNotices;
+        _currentLeadStatuses = event.leadStatuses;
         _currentDaysWithoutActivity = event.daysWithoutActivity;
         _currentDirectoryValues = event.directoryValues;
         _currentNames = event.names;
@@ -636,7 +663,10 @@ class DealBloc extends Bloc<DealEvent, DealState> {
             event.fromDate,
             event.toDate,
             event.hasTasks,
+            event.withoutNotices,
+            event.overdueNotices,
             event.daysWithoutActivity,
+            event.leadStatuses,
             event.directoryValues,
             event.names,
             event.salesFunnelId,
@@ -675,7 +705,10 @@ class DealBloc extends Bloc<DealEvent, DealState> {
     DateTime? fromDate,
     DateTime? toDate,
     bool? hasTasks,
+    bool? withoutNotices,
+    bool? overdueNotices,
     int? daysWithoutActivity,
+    List<int>? leadStatuses,
     List<Map<String, dynamic>>? directoryValues,
     List<String>? names,
     int? salesFunnelId,
@@ -701,6 +734,9 @@ class DealBloc extends Bloc<DealEvent, DealState> {
         fromDate: fromDate,
         toDate: toDate,
         hasTasks: hasTasks,
+        withoutNotices: withoutNotices,
+        overdueNotices: overdueNotices,
+        leadStatuses: leadStatuses,
         daysWithoutActivity: daysWithoutActivity,
         directoryValues: directoryValues,
         names: names,
@@ -742,6 +778,9 @@ class DealBloc extends Bloc<DealEvent, DealState> {
     _currentToDate = null;
     _currentLeadIds = null;
     _currentHasTasks = null;
+    _currentWithoutNotices = null;
+    _currentOverdueNotices = null;
+    _currentLeadStatuses = null;
     _currentDaysWithoutActivity = null;
     _currentDirectoryValues = null;
     _currentNames = null;

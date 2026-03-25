@@ -1372,6 +1372,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
                     isSuccess: false,
                     position: 1,
                     isFailure: false,
+                    isUnassembled: false,
                   ),
                 );
                 leadCount = leadStatus.leadsCount;

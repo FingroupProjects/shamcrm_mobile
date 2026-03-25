@@ -931,8 +931,8 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
         return localizations!.translate('lead_status');
       case 'sales_funnel_id':
         return localizations!.translate('sales_funnel');
-            case 'description':  // <-- ДОБАВЛЯЕМ ЭТУ СТРОКУ
-      return localizations!.translate('additional_client_info');  // <-- И ЭТУ
+      case 'description': // <-- ДОБАВЛЯЕМ ЭТУ СТРОКУ
+        return localizations!.translate('additional_client_info'); // <-- И ЭТУ
       default:
         return config.fieldName;
     }
@@ -2172,9 +2172,10 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                                             ? null
                                             : telegramController.text,
                                         birthday: parsedBirthday,
-                                        cityId: cityController.text.trim().isEmpty
-                                            ? null
-                                            : cityController.text.trim(),
+                                        cityId:
+                                            cityController.text.trim().isEmpty
+                                                ? null
+                                                : cityController.text.trim(),
                                         email: emailController.text.isEmpty
                                             ? null
                                             : emailController.text,

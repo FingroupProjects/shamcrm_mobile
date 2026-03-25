@@ -31,6 +31,8 @@ class UpdateMoneyOutcome extends MoneyOutcomeEvent {
   final int? cashRegisterId;
   final int? senderCashRegisterId;
   final int? supplierId;
+  final int? employeeId;
+  final String? month;
   final double? exchangeRate;
 
   UpdateMoneyOutcome({
@@ -44,6 +46,8 @@ class UpdateMoneyOutcome extends MoneyOutcomeEvent {
     this.cashRegisterId,
     this.senderCashRegisterId,
     this.supplierId,
+    this.employeeId,
+    this.month,
     this.exchangeRate,
   });
 
@@ -60,6 +64,8 @@ class UpdateMoneyOutcome extends MoneyOutcomeEvent {
         cashRegisterId ?? '',
         senderCashRegisterId ?? '',
         supplierId ?? 0,
+        employeeId ?? 0,
+        month ?? '',
         exchangeRate ?? -1,
       ];
 }
@@ -93,6 +99,8 @@ class CreateMoneyOutcome extends MoneyOutcomeEvent {
   final int? cashRegisterId;
   final int? senderCashRegisterId;
   final int? supplierId;
+  final int? employeeId;
+  final String? month;
   final bool approve;
   final double? exchangeRate;
 
@@ -106,6 +114,8 @@ class CreateMoneyOutcome extends MoneyOutcomeEvent {
     this.cashRegisterId,
     this.senderCashRegisterId,
     this.supplierId,
+    this.employeeId,
+    this.month,
     required this.approve,
     this.exchangeRate,
   });
@@ -122,6 +132,8 @@ class CreateMoneyOutcome extends MoneyOutcomeEvent {
         cashRegisterId ?? '',
         senderCashRegisterId ?? '',
         supplierId ?? 0,
+        employeeId ?? 0,
+        month ?? '',
         approve,
         exchangeRate ?? -1,
       ];
@@ -169,6 +181,8 @@ class UpdateThenToggleOneMoneyOutcomeDocument extends MoneyOutcomeEvent {
   final int? cashRegisterId;
   final int? senderCashRegisterId;
   final int? supplierId;
+  final int? employeeId;
+  final String? month;
   final bool approve;
   final double? exchangeRate;
 
@@ -183,6 +197,8 @@ class UpdateThenToggleOneMoneyOutcomeDocument extends MoneyOutcomeEvent {
     this.cashRegisterId,
     this.senderCashRegisterId,
     this.supplierId,
+    this.employeeId,
+    this.month,
     required this.approve,
     this.exchangeRate,
   });
@@ -200,6 +216,8 @@ class UpdateThenToggleOneMoneyOutcomeDocument extends MoneyOutcomeEvent {
         cashRegisterId ?? '',
         senderCashRegisterId ?? '',
         supplierId ?? 0,
+        employeeId ?? 0,
+        month ?? '',
         approve,
         exchangeRate ?? -1,
       ];

@@ -2,18 +2,22 @@ import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/custom_widget/custom_bottom_dropdown.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/screens/common/reason_for_refusal_modal.dart';
 import 'package:flutter/material.dart';
 import 'package:crm_task_manager/models/lead_model.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void DropdownBottomSheet(
   BuildContext context,
   String defaultValue,
-  Function(String, int) onSelect, 
+  Function(String, int) onSelect,
   Lead lead,
 ) {
+  final rootContext = context;
   String selectedValue = defaultValue;
   int? selectedStatusId;
   bool isLoading = false;
+  List<LeadStatus> loadedStatuses = [];
 
   showModalBottomSheet(
     context: context,
@@ -43,14 +47,21 @@ void DropdownBottomSheet(
                     future: ApiService().getLeadStatuses(),
                     builder: (context, snapshot) {
                       if (snapshot.hasError) {
-                        return Center(child: Text(AppLocalizations.of(context)!.translate('error_text')));
+                        return Center(
+                            child: Text(AppLocalizations.of(context)!
+                                .translate('error_text')));
                       } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                        return Center(child: Text(AppLocalizations.of(context)!.translate('loading')));
+                        return Center(
+                            child: Text(AppLocalizations.of(context)!
+                                .translate('loading')));
                       }
 
                       List<LeadStatus> statuses = snapshot.data!;
+                      loadedStatuses = statuses;
 
-                      statuses = statuses.where((status) => status.lead_status_id == null).toList();
+                      statuses = statuses
+                          .where((status) => status.lead_status_id == null)
+                          .toList();
 
                       return ListView(
                         children: statuses.map((LeadStatus status) {
@@ -78,51 +89,96 @@ void DropdownBottomSheet(
                         ),
                       )
                     : CustomButton(
-                        buttonText: AppLocalizations.of(context)!.translate('save'),
+                        buttonText:
+                            AppLocalizations.of(context)!.translate('save'),
                         buttonColor: Color(0xfff4F40EC),
                         textColor: Colors.white,
-                        onPressed: () {
+                        onPressed: () async {
                           if (selectedStatusId != null) {
+                            final prefs = await SharedPreferences.getInstance();
+                            final askReason =
+                                prefs.getBool('ask_reason_for_refusal') ??
+                                    false;
+                            final targetStatus =
+                                loadedStatuses.cast<LeadStatus?>().firstWhere(
+                                      (status) =>
+                                          status?.id == selectedStatusId,
+                                      orElse: () => null,
+                                    );
+
+                            ReasonForRefusalSubmitData? refusalData;
+                            if (askReason &&
+                                targetStatus != null &&
+                                targetStatus.isFailure) {
+                              refusalData = await showReasonForRefusalDialog(
+                                context: context,
+                                type: 'lead',
+                              );
+                              if (refusalData == null) {
+                                setState(() {
+                                  isLoading = false;
+                                });
+                                return;
+                              }
+                            }
+
                             setState(() {
                               isLoading = true;
                             });
 
-                            ApiService().updateLeadStatus(lead.id, lead.statusId, selectedStatusId!).then((_) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                 SnackBar(
-                                   content: Text(
-                                     AppLocalizations.of(context)!.translate('status_changed_successfully'),
-                                     style: TextStyle(
-                                       fontFamily: 'Gilroy',
-                                       fontSize: 16,
-                                       fontWeight: FontWeight.w500,
-                                       color: Colors.white,
-                                     ),
-                                   ),
-                                   behavior: SnackBarBehavior.floating,
-                                   margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                   shape: RoundedRectangleBorder(
-                                     borderRadius: BorderRadius.circular(12),
-                                   ),
-                                   backgroundColor: Colors.green,
-                                   elevation: 3,
-                                   padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                                   duration: Duration(seconds: 3),
-                                 ),
-                               );
+                            ApiService()
+                                .updateLeadStatus(
+                              lead.id,
+                              lead.statusId,
+                              selectedStatusId!,
+                              reasonForRefusalId: refusalData?.reasonId,
+                              reasonForRefusal: refusalData?.comment,
+                            )
+                                .then((_) {
+                              ScaffoldMessenger.of(rootContext).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    AppLocalizations.of(context)!.translate(
+                                        'status_changed_successfully'),
+                                    style: TextStyle(
+                                      fontFamily: 'Gilroy',
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w500,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                  behavior: SnackBarBehavior.floating,
+                                  margin: EdgeInsets.symmetric(
+                                      horizontal: 16, vertical: 8),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  backgroundColor: Colors.green,
+                                  elevation: 3,
+                                  padding: EdgeInsets.symmetric(
+                                      vertical: 12, horizontal: 16),
+                                  duration: Duration(seconds: 3),
+                                ),
+                              );
                               Navigator.pop(context);
-                              
+
                               onSelect(selectedValue, selectedStatusId!);
                             }).catchError((error) {
                               setState(() {
                                 isLoading = false;
                               });
-                              if (error is LeadStatusUpdateException && error.code == 422) {
-                                String errorMessage = error.message.replaceAll(RegExp(r'\(and \d+ more error[s]?\)'), '').trim();
-                                ScaffoldMessenger.of(context).showSnackBar(
+                              if (error is LeadStatusUpdateException &&
+                                  error.code == 422) {
+                                String errorMessage = error.message
+                                    .replaceAll(
+                                        RegExp(r'\(and \d+ more error[s]?\)'),
+                                        '')
+                                    .trim();
+                                Navigator.pop(context);
+                                ScaffoldMessenger.of(rootContext).showSnackBar(
                                   SnackBar(
                                     content: Text(
-                                      errorMessage, 
+                                      errorMessage,
                                       style: TextStyle(
                                         fontFamily: 'Gilroy',
                                         fontSize: 16,
@@ -131,17 +187,18 @@ void DropdownBottomSheet(
                                       ),
                                     ),
                                     behavior: SnackBarBehavior.floating,
-                                    margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                    margin: EdgeInsets.symmetric(
+                                        horizontal: 16, vertical: 8),
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(12),
                                     ),
                                     backgroundColor: Colors.red,
                                     elevation: 3,
-                                    padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                                    padding: EdgeInsets.symmetric(
+                                        vertical: 12, horizontal: 16),
                                     duration: Duration(seconds: 3),
                                   ),
                                 );
-                                Navigator.pop(context);
                               } else {
                                 //print('Ошибка обновления статуса задачи!rror');
                               }

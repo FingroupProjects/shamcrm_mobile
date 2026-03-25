@@ -1,4 +1,5 @@
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
+import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/user/client/get_all_client_bloc.dart';
 import 'package:crm_task_manager/models/user_data_response.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
@@ -13,7 +14,7 @@ class UserMultiSelectWidget extends StatefulWidget {
   final bool hasError; // Флаг для отображения ошибки
   final bool isRequired; // ✅ НОВОЕ: обязательность поля
 
-  UserMultiSelectWidget({
+  const UserMultiSelectWidget({
     super.key,
     required this.onSelectUsers,
     this.selectedUsers,
@@ -27,6 +28,8 @@ class UserMultiSelectWidget extends StatefulWidget {
 }
 
 class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
+  static const int _pageSize = 20;
+  final ApiService _apiService = ApiService();
   List<UserData> usersList = [];
   List<UserData> selectedUsersData = [];
   List<UserData> displayUsersList =
@@ -104,6 +107,22 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
     }
   }
 
+  Future<CustomDropdownPaginatedResponse<UserData>> _searchUsers(
+    String query,
+    int page,
+  ) async {
+    final response = await _apiService.getAllUser(
+      search: query,
+      page: page,
+      perPage: _pageSize,
+    );
+    final result = response.result ?? <UserData>[];
+    return CustomDropdownPaginatedResponse<UserData>(
+      items: page == 1 ? [selectAllItem, ...result] : result,
+      hasMore: result.length >= _pageSize,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return FormField<List<UserData>>(
@@ -179,7 +198,9 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
 
                   // Используем selectedUsersData напрямую без синхронизации в build()
                   // Синхронизация происходит только в listener при изменении данных
-                  return CustomDropdown<UserData>.multiSelectSearch(
+                  return CustomDropdown<UserData>.multiSelectSearchRequestPaginated(
+                    paginatedRequest: _searchUsers,
+                    futureRequestDelay: const Duration(milliseconds: 350),
                     items: currentDisplayList,
                     initialItems: selectedUsersData,
                     searchHintText:

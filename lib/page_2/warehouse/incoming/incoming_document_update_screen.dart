@@ -499,26 +499,6 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
       return;
     }
 
-    if (_isExchangeRateRequired) {
-      final rate = _exchangeRateValue;
-      if (rate == null || rate <= 0) {
-        setState(() {
-          _exchangeRateErrorText = AppLocalizations.of(context)!
-                  .translate('field_required_project') ??
-              'Заполните курс валюты';
-        });
-        if (_tabController.index != 0) {
-          _tabController.animateTo(0);
-        }
-        _showSnackBar(
-          AppLocalizations.of(context)!.translate('fill_valid_exchange_rate') ??
-              'Заполните корректный курс валюты',
-          false,
-        );
-        return;
-      }
-    }
-
     if (_exchangeRateErrorText != null) {
       setState(() {
         _exchangeRateErrorText = null;
@@ -593,7 +573,7 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
         }).toList(),
         organizationId: widget.document.organizationId ?? 1,
         salesFunnelId: 1,
-        exchangeRate: _isExchangeRateRequired ? _exchangeRateValue : null,
+        exchangeRate: _exchangeRateValue,
       ));
     } catch (e) {
       setState(() => _isLoading = false);

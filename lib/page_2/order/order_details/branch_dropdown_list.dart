@@ -1,4 +1,5 @@
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
+import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/branch/branch_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/branch/branch_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/branch/branch_state.dart';
@@ -11,17 +12,18 @@ class BranchRadioGroupWidget extends StatefulWidget {
   final String? selectedStatus;
   final Function(Branch) onSelectStatus;
 
-  BranchRadioGroupWidget({
-    Key? key,
+  const BranchRadioGroupWidget({
+    super.key,
     required this.onSelectStatus,
     this.selectedStatus,
-  }) : super(key: key);
+  });
 
   @override
   State<BranchRadioGroupWidget> createState() => _BranchRadioGroupWidgetState();
 }
 
 class _BranchRadioGroupWidgetState extends State<BranchRadioGroupWidget> {
+  final ApiService _apiService = ApiService();
   List<Branch> statusList = [];
   Branch? selectedStatusData;
   bool _hasInitialized = false;
@@ -36,8 +38,14 @@ class _BranchRadioGroupWidgetState extends State<BranchRadioGroupWidget> {
   @override
   void initState() {
     super.initState();
-    debugPrint('BranchRadioGroupWidget initState - selectedStatus: ${widget.selectedStatus}');
+    debugPrint(
+        'BranchRadioGroupWidget initState - selectedStatus: ${widget.selectedStatus}');
     context.read<BranchBloc>().add(FetchBranches());
+  }
+
+  Future<List<Branch>> _searchBranches(String query) async {
+    final branches = await _apiService.getBranches(search: query);
+    return branches.where((branch) => branch.isActive == 1).toList();
   }
 
   @override
@@ -53,7 +61,8 @@ class _BranchRadioGroupWidgetState extends State<BranchRadioGroupWidget> {
                 children: [
                   Text(
                     AppLocalizations.of(context)!.translate('branches'),
-                    style: statusTextStyle.copyWith(fontWeight: FontWeight.w400),
+                    style:
+                        statusTextStyle.copyWith(fontWeight: FontWeight.w400),
                   ),
                   const SizedBox(height: 4),
                   Container(
@@ -72,7 +81,8 @@ class _BranchRadioGroupWidgetState extends State<BranchRadioGroupWidget> {
                       height: 16,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
+                        valueColor:
+                            AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
                       ),
                     ),
                   ),
@@ -88,13 +98,15 @@ class _BranchRadioGroupWidgetState extends State<BranchRadioGroupWidget> {
                       style: statusTextStyle.copyWith(color: Colors.white),
                     ),
                     behavior: SnackBarBehavior.floating,
-                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    margin:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
                     backgroundColor: Colors.red,
                     elevation: 3,
-                    padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                    padding: const EdgeInsets.symmetric(
+                        vertical: 12, horizontal: 16),
                     duration: const Duration(seconds: 3),
                   ),
                 );
@@ -107,14 +119,19 @@ class _BranchRadioGroupWidgetState extends State<BranchRadioGroupWidget> {
               debugPrint('=== BranchRadioGroupWidget - BranchLoaded ===');
               debugPrint('Total branches: ${state.branches.length}');
               for (var branch in state.branches) {
-                debugPrint('Branch: id=${branch.id}, name=${branch.name}, isActive=${branch.isActive}');
+                debugPrint(
+                    'Branch: id=${branch.id}, name=${branch.name}, isActive=${branch.isActive}');
               }
-              debugPrint('Looking for selectedStatus: ${widget.selectedStatus}');
+              debugPrint(
+                  'Looking for selectedStatus: ${widget.selectedStatus}');
               debugPrint('_hasInitialized: $_hasInitialized');
-              debugPrint('Current selectedStatusData: ${selectedStatusData?.id} - ${selectedStatusData?.name}');
+              debugPrint(
+                  'Current selectedStatusData: ${selectedStatusData?.id} - ${selectedStatusData?.name}');
 
               // Filter branches with isActive = 1
-              statusList = state.branches.where((branch) => branch.isActive == 1).toList();
+              statusList = state.branches
+                  .where((branch) => branch.isActive == 1)
+                  .toList();
               debugPrint('Active branches count: ${statusList.length}');
 
               // If no active branches available
@@ -124,7 +141,8 @@ class _BranchRadioGroupWidgetState extends State<BranchRadioGroupWidget> {
                   children: [
                     Text(
                       AppLocalizations.of(context)!.translate('branches'),
-                      style: statusTextStyle.copyWith(fontWeight: FontWeight.w400),
+                      style:
+                          statusTextStyle.copyWith(fontWeight: FontWeight.w400),
                     ),
                     const SizedBox(height: 4),
                     GestureDetector(
@@ -135,7 +153,8 @@ class _BranchRadioGroupWidgetState extends State<BranchRadioGroupWidget> {
                           builder: (context) => Container(
                             decoration: const BoxDecoration(
                               color: Colors.white,
-                              borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+                              borderRadius: BorderRadius.vertical(
+                                  top: Radius.circular(16)),
                             ),
                             padding: const EdgeInsets.all(20),
                             child: Column(
@@ -151,7 +170,8 @@ class _BranchRadioGroupWidgetState extends State<BranchRadioGroupWidget> {
                                 ),
                                 const SizedBox(height: 20),
                                 Text(
-                                  AppLocalizations.of(context)!.translate('no_data'),
+                                  AppLocalizations.of(context)!
+                                      .translate('no_data'),
                                   style: statusTextStyle.copyWith(
                                     color: const Color(0xff9CA3AF),
                                   ),
@@ -163,7 +183,8 @@ class _BranchRadioGroupWidgetState extends State<BranchRadioGroupWidget> {
                         );
                       },
                       child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 12, horizontal: 16),
                         decoration: BoxDecoration(
                           color: const Color(0xFFF4F7FD),
                           borderRadius: BorderRadius.circular(12),
@@ -176,7 +197,8 @@ class _BranchRadioGroupWidgetState extends State<BranchRadioGroupWidget> {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              AppLocalizations.of(context)!.translate('select_branch'),
+                              AppLocalizations.of(context)!
+                                  .translate('select_branch'),
                               style: statusTextStyle.copyWith(
                                 color: const Color(0xff9CA3AF),
                                 fontSize: 14,
@@ -200,23 +222,27 @@ class _BranchRadioGroupWidgetState extends State<BranchRadioGroupWidget> {
                 _hasInitialized = true;
 
                 if (widget.selectedStatus != null) {
-                  debugPrint('Searching for branch with ID: ${widget.selectedStatus}');
+                  debugPrint(
+                      'Searching for branch with ID: ${widget.selectedStatus}');
 
                   // Try to find the branch by ID
                   try {
                     selectedStatusData = statusList.firstWhere(
-                          (branch) {
-                        debugPrint('Comparing: branch.id=${branch.id} with selectedStatus=${widget.selectedStatus}');
+                      (branch) {
+                        debugPrint(
+                            'Comparing: branch.id=${branch.id} with selectedStatus=${widget.selectedStatus}');
                         return branch.id.toString() == widget.selectedStatus;
                       },
                     );
 
-                    debugPrint('✅ Found branch: ${selectedStatusData?.id} - ${selectedStatusData?.name}');
+                    debugPrint(
+                        '✅ Found branch: ${selectedStatusData?.id} - ${selectedStatusData?.name}');
 
                     // Notify parent about the selected branch
                     WidgetsBinding.instance.addPostFrameCallback((_) {
                       if (selectedStatusData != null) {
-                        debugPrint('Notifying parent with branch: ${selectedStatusData!.id}');
+                        debugPrint(
+                            'Notifying parent with branch: ${selectedStatusData!.id}');
                         widget.onSelectStatus(selectedStatusData!);
                       }
                     });
@@ -227,25 +253,29 @@ class _BranchRadioGroupWidgetState extends State<BranchRadioGroupWidget> {
                   }
                 } else if (statusList.length == 1) {
                   // If only one branch and nothing selected, auto-select it
-                  debugPrint('Auto-selecting single branch: ${statusList[0].id} - ${statusList[0].name}');
+                  debugPrint(
+                      'Auto-selecting single branch: ${statusList[0].id} - ${statusList[0].name}');
                   selectedStatusData = statusList[0];
 
                   WidgetsBinding.instance.addPostFrameCallback((_) {
                     widget.onSelectStatus(statusList[0]);
                   });
                 } else {
-                  debugPrint('No selectedStatus provided and multiple branches available');
+                  debugPrint(
+                      'No selectedStatus provided and multiple branches available');
                 }
               }
 
-              debugPrint('Final selectedStatusData for dropdown: ${selectedStatusData?.id} - ${selectedStatusData?.name}');
+              debugPrint(
+                  'Final selectedStatusData for dropdown: ${selectedStatusData?.id} - ${selectedStatusData?.name}');
 
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     AppLocalizations.of(context)!.translate('branches'),
-                    style: statusTextStyle.copyWith(fontWeight: FontWeight.w400),
+                    style:
+                        statusTextStyle.copyWith(fontWeight: FontWeight.w400),
                   ),
                   const SizedBox(height: 4),
                   Container(
@@ -257,10 +287,13 @@ class _BranchRadioGroupWidgetState extends State<BranchRadioGroupWidget> {
                         color: const Color(0xFFF4F7FD),
                       ),
                     ),
-                    child: CustomDropdown<Branch>.search(
+                    child: CustomDropdown<Branch>.searchRequest(
+                      futureRequest: _searchBranches,
+                      futureRequestDelay: const Duration(milliseconds: 350),
                       closeDropDownOnClearFilterSearch: true,
                       items: statusList,
-                      searchHintText: AppLocalizations.of(context)!.translate('search'),
+                      searchHintText:
+                          AppLocalizations.of(context)!.translate('search'),
                       overlayHeight: 400,
                       decoration: CustomDropdownDecoration(
                         closedFillColor: const Color(0xffF4F7FD),
@@ -276,7 +309,8 @@ class _BranchRadioGroupWidgetState extends State<BranchRadioGroupWidget> {
                         ),
                         expandedBorderRadius: BorderRadius.circular(12),
                       ),
-                      listItemBuilder: (context, item, isSelected, onItemSelect) {
+                      listItemBuilder:
+                          (context, item, isSelected, onItemSelect) {
                         return Text(
                           item.name,
                           style: statusTextStyle,
@@ -284,19 +318,21 @@ class _BranchRadioGroupWidgetState extends State<BranchRadioGroupWidget> {
                       },
                       headerBuilder: (context, selectedItem, enabled) {
                         return Text(
-                          selectedItem?.name ?? AppLocalizations.of(context)!.translate('select_branch'),
+                          selectedItem.name,
                           style: statusTextStyle,
                         );
                       },
                       hintBuilder: (context, hint, enabled) => Text(
-                        AppLocalizations.of(context)!.translate('select_branch'),
+                        AppLocalizations.of(context)!
+                            .translate('select_branch'),
                         style: statusTextStyle.copyWith(fontSize: 14),
                       ),
                       excludeSelected: false,
                       initialItem: selectedStatusData,
                       onChanged: (value) {
                         if (value != null) {
-                          debugPrint('User selected branch: ${value.id} - ${value.name}');
+                          debugPrint(
+                              'User selected branch: ${value.id} - ${value.name}');
                           setState(() {
                             selectedStatusData = value;
                           });

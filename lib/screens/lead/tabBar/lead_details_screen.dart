@@ -33,7 +33,11 @@ import 'package:crm_task_manager/screens/lead/tabBar/lead_details/lead_deal_scre
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/lead_navigate_to_chat.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/lead_to_1c.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/orders_widget.dart';
+import 'package:crm_task_manager/screens/lead/tabBar/lead_dropdown_bottom_dialog.dart'
+    show LeadStatusUpdateException;
 import 'package:crm_task_manager/screens/lead/tabBar/lead_edit_screen.dart';
+import 'package:crm_task_manager/screens/common/reason_for_refusal_modal.dart';
+import 'package:crm_task_manager/screens/deal/tabBar/deal_details_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/utils/TutorialStyleWidget.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
@@ -207,6 +211,10 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
   bool _notesDataReady = false;
   bool _dealsDataReady = false;
   bool _ordersDataReady = false;
+  bool _showAcceptDeclineButton = false;
+  bool _askReasonForRefusal = false;
+  bool _isAcceptingLead = false;
+  bool _isRejectingLead = false;
 
   @override
   void initState() {
@@ -217,6 +225,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       final leadId = int.parse(widget.leadId);
       context.read<OrganizationBloc>().add(FetchOrganizations());
       _loadSelectedOrganization();
+      _loadLeadActionSettings();
       context.read<LeadByIdBloc>().add(FetchLeadByIdEvent(leadId: leadId));
 
       if (_canReadNotes) {
@@ -232,7 +241,9 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       }
 
       if (_canReadOrders) {
-        context.read<OrderByLeadBloc>().add(FetchOrdersByLead(leadId: leadId));
+        context.read<OrderByLeadBloc>().add(
+              FetchOrdersByLead(entityId: leadId),
+            );
       } else {
         _ordersDataReady = true;
       }
@@ -251,6 +262,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
         _notesDataReady &&
         _dealsDataReady &&
         _ordersDataReady &&
+        _isConfigurationLoaded &&
         mounted) {
       setState(() {
         _showCombinedLoader = false;
@@ -322,6 +334,16 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
           _isExportContactEnabled = newValue;
         });
       }
+    });
+  }
+
+  Future<void> _loadLeadActionSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
+    setState(() {
+      _showAcceptDeclineButton =
+          prefs.getBool('show_accept_decline_button') ?? false;
+      _askReasonForRefusal = prefs.getBool('ask_reason_for_refusal') ?? false;
     });
   }
 
@@ -871,6 +893,23 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       });
     }
 
+    final refusalReason = (lead.refusalReasonText ?? '').trim();
+    final refusalComment = (lead.reasonForRefusalComment ?? '').trim();
+    if (refusalReason.isNotEmpty || refusalComment.isNotEmpty) {
+      details.add({
+        'label': 'Причина отказа:',
+        'value': refusalReason.isNotEmpty ? refusalReason : refusalComment,
+        'fieldName': 'reason_for_refusal',
+      });
+      if (refusalReason.isNotEmpty && refusalComment.isNotEmpty) {
+        details.add({
+          'label': 'Комментарий отказа:',
+          'value': refusalComment,
+          'fieldName': 'reason_for_refusal_comment',
+        });
+      }
+    }
+
     // Всегда добавляем файлы в конец списка, если они есть
     if (lead.files != null && lead.files!.isNotEmpty) {
       details.add({
@@ -915,8 +954,8 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       });
     }
     return Scaffold(
-      appBar: _buildAppBar(
-          context, AppLocalizations.of(context)!.translate('view_lead') + widget.leadId),
+      appBar: _buildAppBar(context,
+          AppLocalizations.of(context)!.translate('view_lead') + widget.leadId),
       backgroundColor: Colors.white,
       body: MultiBlocListener(
         listeners: [
@@ -930,7 +969,8 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   showCustomSnackBar(
                     context: context,
-                    message: AppLocalizations.of(context)!.translate(state.message),
+                    message:
+                        AppLocalizations.of(context)!.translate(state.message),
                     isSuccess: false,
                   );
                 });
@@ -974,11 +1014,14 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
               LeadById lead = state.lead;
               _updateDetails(lead);
               return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 child: ListView(
                   controller: _scrollController,
                   children: [
                     _buildDetailsList(),
+                    if (_shouldShowAcceptDeclineButtons)
+                      _buildAcceptDeclineActions(),
                     const SizedBox(height: 8),
                     LeadNavigateToChat(
                       key: keyLeadNavigateChat,
@@ -1021,7 +1064,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                       ),
                     if (_canReadOrders)
                       OrdersWidget(
-                        leadId: int.parse(widget.leadId),
+                        entityId: int.parse(widget.leadId),
                         clientPhone: lead.phone,
                         autoFetch: false,
                         key: GlobalKey(),
@@ -1207,7 +1250,9 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                           );
 
                       if (deleted == true) {
-                        context.read<LeadBloc>().add(FetchLeadStatuses(forceRefresh: true));
+                        context
+                            .read<LeadBloc>()
+                            .add(FetchLeadStatuses(forceRefresh: true));
                         Navigator.pop(context, true);
                       }
                     });
@@ -1253,6 +1298,219 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
         ),
       ],
     );
+  }
+
+  bool get _shouldShowAcceptDeclineButtons {
+    final isUnassembled = currentLead?.leadStatus?.isUnassembled ?? false;
+    return _showAcceptDeclineButton && isUnassembled;
+  }
+
+  Widget _buildAcceptDeclineActions() {
+    return Padding(
+      padding: const EdgeInsets.only(top: 4, bottom: 8),
+      child: Row(
+        children: [
+          Expanded(
+            child: SizedBox(
+              height: 42,
+              child: ElevatedButton(
+                onPressed: (_isAcceptingLead || _isRejectingLead)
+                    ? null
+                    : _handleAcceptLead,
+                style: ElevatedButton.styleFrom(
+                  elevation: 0,
+                  backgroundColor: const Color(0xff2DBE60),
+                  disabledBackgroundColor:
+                      const Color(0xff2DBE60).withValues(alpha: 0.45),
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                child: _isAcceptingLead
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Text(
+                        'В сделку',
+                        style: TextStyle(
+                          fontFamily: 'Gilroy',
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: SizedBox(
+              height: 42,
+              child: ElevatedButton(
+                onPressed: (_isAcceptingLead || _isRejectingLead)
+                    ? null
+                    : _handleDeclineLead,
+                style: ElevatedButton.styleFrom(
+                  elevation: 0,
+                  backgroundColor: const Color(0xffEB4B4B),
+                  disabledBackgroundColor:
+                      const Color(0xffEB4B4B).withValues(alpha: 0.45),
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                child: _isRejectingLead
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Text(
+                        'Отказать',
+                        style: TextStyle(
+                          fontFamily: 'Gilroy',
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  int? _parseInt(dynamic value) {
+    if (value is int) return value;
+    if (value is String) return int.tryParse(value);
+    return int.tryParse('$value');
+  }
+
+  Future<void> _handleAcceptLead() async {
+    final lead = currentLead;
+    if (lead == null) return;
+
+    setState(() {
+      _isAcceptingLead = true;
+    });
+
+    try {
+      final response = await _apiService.acceptLead(lead.id);
+      final result = response['result'];
+      if (result is! Map<String, dynamic>) {
+        throw Exception('Некорректный ответ сервера');
+      }
+
+      final dealId = _parseInt(result['id']);
+      if (dealId == null || !mounted) {
+        throw Exception('Не удалось определить созданную сделку');
+      }
+
+      showCustomSnackBar(
+        context: context,
+        message: 'Сделка успешно создана',
+        isSuccess: true,
+      );
+
+      final dealStatusMap = result['deal_status'] is Map<String, dynamic>
+          ? result['deal_status'] as Map<String, dynamic>
+          : null;
+
+      await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => DealDetailsScreen(
+            dealId: dealId.toString(),
+            dealName: (result['name'] ?? '').toString(),
+            sum: (result['sum'] ?? '0').toString(),
+            dealStatus: (dealStatusMap?['title'] ?? '').toString(),
+            statusId: _parseInt(
+                  dealStatusMap?['id'],
+                ) ??
+                0,
+          ),
+        ),
+      );
+
+      if (!mounted) return;
+      context.read<LeadByIdBloc>().add(FetchLeadByIdEvent(leadId: lead.id));
+      context.read<LeadDealsBloc>().add(FetchLeadDeals(lead.id));
+      context.read<LeadBloc>().add(FetchLeadStatuses(forceRefresh: true));
+    } catch (e) {
+      if (!mounted) return;
+      showCustomSnackBar(
+        context: context,
+        message: e.toString().replaceFirst('Exception: ', ''),
+        isSuccess: false,
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isAcceptingLead = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _handleDeclineLead() async {
+    final lead = currentLead;
+    if (lead == null) return;
+
+    ReasonForRefusalSubmitData? refusalData;
+    if (_askReasonForRefusal) {
+      refusalData = await showReasonForRefusalDialog(
+        context: context,
+        type: 'lead',
+      );
+      if (refusalData == null) return;
+    }
+
+    setState(() {
+      _isRejectingLead = true;
+    });
+
+    try {
+      await _apiService.declineLead(
+        lead.id,
+        reasonForRefusalId: refusalData?.reasonId,
+        reasonForRefusal: refusalData?.comment,
+      );
+
+      if (!mounted) return;
+      context.read<LeadByIdBloc>().add(FetchLeadByIdEvent(leadId: lead.id));
+      context.read<LeadBloc>().add(FetchLeadStatuses(forceRefresh: true));
+      showCustomSnackBar(
+        context: context,
+        message: 'Причина отказа сохранена',
+        isSuccess: true,
+      );
+    } catch (e) {
+      if (!mounted) return;
+      final message = e is LeadStatusUpdateException
+          ? e.message
+          : e.toString().replaceFirst('Exception: ', '');
+      showCustomSnackBar(
+        context: context,
+        message: message,
+        isSuccess: false,
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isRejectingLead = false;
+        });
+      }
+    }
   }
 
   Widget _buildDetailItem(String label, String value, String fieldName) {
@@ -1619,6 +1877,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       if (currentLead != null) {
         _updateDetails(currentLead!);
       }
+      _tryHideCombinedLoader();
     } catch (e) {
       // В случае ошибки показываем поля в стандартном порядке
       if (mounted) {
@@ -1626,6 +1885,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
           _isConfigurationLoaded = true;
         });
       }
+      _tryHideCombinedLoader();
     }
   }
 

@@ -42,7 +42,8 @@ dependencies:
   infinite_scroll_pagination: ^4.0.0
   modal_bottom_sheet: ^3.0.0
   radio_group_v2: ^3.2.1
-  animated_custom_dropdown: ^3.1.1
+  animated_custom_dropdown:
+    path: third_party/animated_custom_dropdown
   flutter_svg: ^2.0.16
   image_gallery_saver_plus: ^4.0.1
   flutter_launcher_icons: ^0.14.1

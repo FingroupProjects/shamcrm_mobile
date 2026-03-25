@@ -77,9 +77,9 @@ class Task {
         user: json['user'] != null && json['user'] is Map<String, dynamic>
             ? UserData.fromJson(json['user'])
             : null,
-          deal: json['deal'] != null && json['deal'] is Map<String, dynamic>
-          ? Deal.fromJson(json['deal'], 0)
-          : null,
+        deal: json['deal'] != null && json['deal'] is Map<String, dynamic>
+            ? Deal.fromJson(json['deal'], 0)
+            : null,
         color: json['color'] is String ? json['color'] : null,
         file: json['file'] != null
             ? (json['file'] is Map<String, dynamic>
@@ -146,12 +146,12 @@ class CustomFields {
   });
 
   factory CustomFields.fromJson(Map<String, dynamic> json) {
-      return CustomFields(
-        name: json['name'] is String ? json['name'] : '',
-        value: json['value'] is String ? json['value'] : '',
-        fieldId: json['field_id'] is int ? json['field_id'] : 0,
-        type: json['type'] is String ? json['type'] : null,
-      );
+    return CustomFields(
+      name: json['name'] is String ? json['name'] : '',
+      value: json['value'] is String ? json['value'] : '',
+      fieldId: json['field_id'] is int ? json['field_id'] : 0,
+      type: json['type'] is String ? json['type'] : null,
+    );
   }
 
   Map<String, dynamic> toJson() {
@@ -242,6 +242,7 @@ class TaskStatus {
   final bool needsPermission;
   final bool finalStep;
   final bool checkingStep;
+  final bool isUnassembled;
   final List<String> roles; // Added roles field
 
   TaskStatus({
@@ -252,6 +253,7 @@ class TaskStatus {
     required this.needsPermission,
     required this.finalStep,
     required this.checkingStep,
+    required this.isUnassembled,
     required this.roles, // Initialize roles
   });
 
@@ -262,6 +264,8 @@ class TaskStatus {
           json['needs_permission'] == true || json['needs_permission'] == 1,
       finalStep: json['final_step'] == true || json['final_step'] == 1,
       checkingStep: json['checking_step'] == true || json['checking_step'] == 1,
+      isUnassembled:
+          json['is_unassembled'] == true || json['is_unassembled'] == 1,
       taskStatus: json['taskStatus'] != null &&
               json['taskStatus'] is Map<String, dynamic>
           ? TaskStatusName.fromJson(json['taskStatus'])
@@ -284,6 +288,7 @@ class TaskStatus {
       'needs_permission': needsPermission,
       'final_step': finalStep,
       'checking_step': checkingStep,
+      'is_unassembled': isUnassembled,
       'roles': roles, // Include roles in toJson
     };
   }

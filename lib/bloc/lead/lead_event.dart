@@ -8,7 +8,7 @@ abstract class LeadEvent {}
 // ОБНОВЛЕННЫЙ класс с поддержкой forceRefresh
 class FetchLeadStatuses extends LeadEvent {
   final bool forceRefresh;
-  
+
   FetchLeadStatuses({this.forceRefresh = false});
 }
 
@@ -91,6 +91,7 @@ class CreateLeadStatus extends LeadEvent {
   final AppLocalizations localizations;
   final bool? isSuccess;
   final bool? isFailure;
+  final bool isUnassembled;
 
   CreateLeadStatus({
     required this.title,
@@ -98,6 +99,7 @@ class CreateLeadStatus extends LeadEvent {
     required this.localizations,
     this.isSuccess,
     this.isFailure,
+    this.isUnassembled = false,
   });
 }
 
@@ -122,8 +124,6 @@ class CreateLead extends LeadEvent {
   final bool isSystemManager;
   final List<FileHelper>? files;
   final String? priceTypeId; // Новое поле
-
-
 
   CreateLead({
     required this.name,
@@ -157,6 +157,7 @@ class UpdateLeadStatus extends LeadEvent {
 
   UpdateLeadStatus(this.leadId, this.oldStatusId, this.newStatusId);
 }
+
 class UpdateLead extends LeadEvent {
   final int leadId;
   final String name;
@@ -179,9 +180,8 @@ class UpdateLead extends LeadEvent {
   final AppLocalizations localizations;
   final List<FileHelper>? files;
   final String? priceTypeId; // Новое поле
-    final String? salesFunnelId; // ДОБАВЛЕННОЕ ПОЛЕ
-    final String? duplicate; // Новое поле
-
+  final String? salesFunnelId; // ДОБАВЛЕННОЕ ПОЛЕ
+  final String? duplicate; // Новое поле
 
   UpdateLead({
     required this.leadId,
@@ -205,12 +205,10 @@ class UpdateLead extends LeadEvent {
     this.isSystemManager = false,
     this.files,
     this.priceTypeId,
-        this.salesFunnelId, // ДОБАВЛЕННЫЙ ПАРАМЕТР
-    this.duplicate, // Новое поле]  
-
+    this.salesFunnelId, // ДОБАВЛЕННЫЙ ПАРАМЕТР
+    this.duplicate, // Новое поле]
   });
 }
-
 
 class DeleteLead extends LeadEvent {
   final int leadId;
@@ -232,12 +230,12 @@ class DeleteLeadStatuses extends LeadEvent {
   );
 }
 
-
 class UpdateLeadStatusEdit extends LeadEvent {
   final int leadStatusId;
   final String title;
   final bool isSuccess;
   final bool isFailure;
+  final bool isUnassembled;
   final AppLocalizations localizations;
 
   UpdateLeadStatusEdit(
@@ -245,16 +243,18 @@ class UpdateLeadStatusEdit extends LeadEvent {
     this.title,
     this.isSuccess,
     this.isFailure,
+    this.isUnassembled,
     this.localizations,
   );
 }
+
 class UpdateLeadStatusCount extends LeadEvent {
   final int oldStatusId;
   final int newStatusId;
   UpdateLeadStatusCount(this.oldStatusId, this.newStatusId);
 }
-class RestoreCountsFromCache extends LeadEvent {}
 
+class RestoreCountsFromCache extends LeadEvent {}
 
 class RefreshCurrentStatus extends LeadEvent {
   final int statusId;

@@ -1,4 +1,5 @@
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
+import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/lead_list/lead_list_bloc.dart';
 import 'package:crm_task_manager/bloc/lead_list/lead_list_event.dart';
 import 'package:crm_task_manager/bloc/lead_list/lead_list_state.dart';
@@ -6,7 +7,6 @@ import 'package:crm_task_manager/models/lead_list_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter/foundation.dart';
 
 class LeadRadioGroupWidget extends StatefulWidget {
   final String? selectedLead;
@@ -25,10 +25,50 @@ class LeadRadioGroupWidget extends StatefulWidget {
 }
 
 class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
+  final ApiService _apiService = ApiService();
   List<LeadData> leadsList = [];
   LeadData? selectedLeadData;
   bool _isInitialized = false;
   bool _initialLeadSet = false;
+
+  bool _hasPhone(LeadData lead) => (lead.phone ?? '').trim().isNotEmpty;
+
+  Widget _buildLeadInfo(
+    LeadData lead, {
+    double nameFontSize = 14,
+    double phoneFontSize = 12,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          lead.name,
+          style: TextStyle(
+            color: const Color(0xff1E2E52),
+            fontSize: nameFontSize,
+            fontWeight: FontWeight.w500,
+            fontFamily: 'Gilroy',
+            height: 1.2,
+          ),
+        ),
+        if (_hasPhone(lead))
+          Padding(
+            padding: const EdgeInsets.only(top: 3),
+            child: Text(
+              lead.phone!.trim(),
+              style: TextStyle(
+                color: const Color(0xff99A4BA),
+                fontSize: phoneFontSize,
+                fontWeight: FontWeight.w400,
+                fontFamily: 'Gilroy',
+                height: 1.2,
+              ),
+            ),
+          ),
+      ],
+    );
+  }
 
   @override
   void initState() {
@@ -36,7 +76,9 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        context.read<GetAllLeadBloc>().add(RefreshAllLeadEv(showDebt: widget.showDebt));
+        context
+            .read<GetAllLeadBloc>()
+            .add(RefreshAllLeadEv(showDebt: widget.showDebt));
       }
     });
   }
@@ -47,7 +89,9 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
 
     // Reload when showDebt changes
     if (oldWidget.showDebt != widget.showDebt) {
-      context.read<GetAllLeadBloc>().add(RefreshAllLeadEv(showDebt: widget.showDebt));
+      context
+          .read<GetAllLeadBloc>()
+          .add(RefreshAllLeadEv(showDebt: widget.showDebt));
     }
 
     // React to external selectedLead change
@@ -60,7 +104,7 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
     if (widget.selectedLead != null && leadsList.isNotEmpty) {
       try {
         selectedLeadData = leadsList.firstWhere(
-              (lead) => lead.id.toString() == widget.selectedLead,
+          (lead) => lead.id.toString() == widget.selectedLead,
         );
         _initialLeadSet = true;
       } catch (e) {
@@ -73,6 +117,24 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
     }
   }
 
+  Future<CustomDropdownPaginatedResponse<LeadData>> _searchLeads(
+    String query,
+    int page,
+  ) async {
+    final response = await _apiService.getLeadPage(
+      page,
+      showDebt: widget.showDebt,
+      search: query,
+    );
+    final items = response.result ?? <LeadData>[];
+    final pagination = response.pagination;
+
+    return CustomDropdownPaginatedResponse<LeadData>(
+      items: items,
+      hasMore: (pagination?.currentPage ?? page) < (pagination?.totalPages ?? 1),
+    );
+  }
+  
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -107,16 +169,21 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
               _initialLeadSet = false;
             }
 
-            final isStillLoading = isLoading || isInitial || !_isInitialized || !_initialLeadSet;
+            final isStillLoading =
+                isLoading || isInitial || !_isInitialized || !_initialLeadSet;
 
             final actualInitialItem = isStillLoading
                 ? null
-                : (selectedLeadData != null && leadsList.contains(selectedLeadData))
-                ? selectedLeadData
-                : null;
+                : (selectedLeadData != null &&
+                        leadsList.contains(selectedLeadData))
+                    ? selectedLeadData
+                    : null;
 
-            return CustomDropdown<LeadData>.search(
-              key: ValueKey(selectedLeadData?.id), // ← Forces rebuild when pre-selected lead changes
+            return CustomDropdown<LeadData>.searchRequestPaginated(
+              key: ValueKey(selectedLeadData
+                  ?.id), // ← Forces rebuild when pre-selected lead changes
+              paginatedRequest: _searchLeads,
+              futureRequestDelay: const Duration(milliseconds: 350),
               closeDropDownOnClearFilterSearch: true,
               items: leadsList,
               searchHintText: AppLocalizations.of(context)!.translate('search'),
@@ -125,27 +192,23 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
               decoration: CustomDropdownDecoration(
                 closedFillColor: const Color(0xffF4F7FD),
                 expandedFillColor: Colors.white,
-                closedBorder: Border.all(color: const Color(0xffF4F7FD), width: 1),
+                closedBorder:
+                    Border.all(color: const Color(0xffF4F7FD), width: 1),
                 closedBorderRadius: BorderRadius.circular(12),
-                expandedBorder: Border.all(color: const Color(0xffF4F7FD), width: 1),
+                expandedBorder:
+                    Border.all(color: const Color(0xffF4F7FD), width: 1),
                 expandedBorderRadius: BorderRadius.circular(12),
               ),
               listItemBuilder: (context, item, isSelected, onItemSelect) {
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      item.name ?? '',
-                      style: const TextStyle(
-                        color: Color(0xff1E2E52),
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        fontFamily: 'Gilroy',
-                      ),
-                    ),
+                    _buildLeadInfo(item),
                     if (widget.showDebt && item.debt != null && item.debt != 0)
                       Padding(
-                        padding: const EdgeInsets.only(top: 2),
+                        padding: EdgeInsets.only(
+                          top: _hasPhone(item) ? 4 : 2,
+                        ),
                         child: Text(
                           'Долг: ${item.debt!.toStringAsFixed(2)}',
                           style: TextStyle(
@@ -167,7 +230,8 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
                       height: 20,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
+                        valueColor:
+                            AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
                       ),
                     ),
                   );
@@ -176,20 +240,19 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      selectedItem?.name ?? AppLocalizations.of(context)!.translate('select_lead'),
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        fontFamily: 'Gilroy',
-                        color: Color(0xff1E2E52),
-                      ),
+                    _buildLeadInfo(
+                      selectedItem,
+                      phoneFontSize: 11,
                     ),
-                    if (widget.showDebt && selectedItem?.debt != null && selectedItem!.debt! != 0)
+                    if (widget.showDebt &&
+                        selectedItem.debt != null &&
+                        selectedItem.debt! != 0)
                       Text(
                         'Долг: ${selectedItem.debt!.toStringAsFixed(2)}',
                         style: TextStyle(
-                          color: selectedItem.debt! > 0 ? Colors.red : Colors.green,
+                          color: selectedItem.debt! > 0
+                              ? Colors.red
+                              : Colors.green,
                           fontSize: 11,
                           fontWeight: FontWeight.w500,
                           fontFamily: 'Gilroy',
@@ -206,7 +269,8 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
                       height: 20,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
+                        valueColor:
+                            AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
                       ),
                     ),
                   );
@@ -229,7 +293,8 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
                       padding: EdgeInsets.all(20.0),
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
+                        valueColor:
+                            AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
                       ),
                     ),
                   );
@@ -252,11 +317,12 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
               initialItem: actualInitialItem,
               validator: (_isInitialized && _initialLeadSet)
                   ? (value) {
-                if (value == null) {
-                  return AppLocalizations.of(context)!.translate('field_required_project');
-                }
-                return null;
-              }
+                      if (value == null) {
+                        return AppLocalizations.of(context)!
+                            .translate('field_required_project');
+                      }
+                      return null;
+                    }
                   : null,
               onChanged: (value) {
                 if (value != null) {

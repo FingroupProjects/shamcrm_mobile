@@ -140,11 +140,14 @@ class _ClientSalesDocumentDetailsScreenState
       return;
     }
 
+    final clientCurrencyName =
+        document.model?.currency?.name ?? document.currency?.name;
+
     details = [
       {
-        'label':
-            '${AppLocalizations.of(context)!.translate('document_number') ?? 'Номер документа'}:',
-        'value': document.docNumber ?? '',
+            'label':
+            '${AppLocalizations.of(context)!.translate('document_number') ?? 'Документ'}:',
+        'value': "№${document.docNumber ?? ''}",
       },
       {
         'label': '${AppLocalizations.of(context)!.translate('date') ?? 'Дата'}',
@@ -162,6 +165,11 @@ class _ClientSalesDocumentDetailsScreenState
             '${AppLocalizations.of(context)!.translate('client') ?? 'Клиент'}',
         'value': document.model?.name ?? '',
       },
+      if ((clientCurrencyName ?? '').isNotEmpty)
+        {
+          'label': 'Валюта клиента:',
+          'value': clientCurrencyName!,
+        },
       {
         'label':
             '${AppLocalizations.of(context)!.translate('client_phone') ?? 'Телефон клиента'}',

@@ -60,11 +60,14 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
   List<int>? _selectedUserIds;
   bool _showCustomTabBar = true;
   bool _hasPermissionToAddTask = false;
-  bool _canUpdateTaskStatus = false; // Добавляем право на редактирование статусов
-  List<Map<String, dynamic>> _selectedDirectoryValues = []; // Добавляем directoryValues
+  bool _canUpdateTaskStatus =
+      false; // Добавляем право на редактирование статусов
+  List<Map<String, dynamic>> _selectedDirectoryValues =
+      []; // Добавляем directoryValues
   bool _isFilterLoading = false;
   bool _shouldShowLoader = false;
-  bool _skipNextTabListener = false; // КРИТИЧНО: Флаг для пропуска TabListener при фильтрации
+  bool _skipNextTabListener =
+      false; // КРИТИЧНО: Флаг для пропуска TabListener при фильтрации
 
   String _lastSearchQuery = "";
 
@@ -74,6 +77,8 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
   DateTime? _toDate;
   DateTime? _deadlinefromDate;
   DateTime? _deadlinetoDate;
+  DateTime? _completedFromDate;
+  DateTime? _completedToDate;
   bool _isOverdue = false;
   bool _hasFile = false;
   bool _hasDeal = false;
@@ -86,7 +91,10 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
   DateTime? _intialToDate;
   DateTime? _intialDeadlineFromDate;
   DateTime? _intialDeadlineToDate;
-  List<Map<String, dynamic>> _initialDirectoryValues = []; // Добавляем initialDirectoryValues
+  DateTime? _initialCompletedFromDate;
+  DateTime? _initialCompletedToDate;
+  List<Map<String, dynamic>> _initialDirectoryValues =
+      []; // Добавляем initialDirectoryValues
   bool _initialOverdue = false;
   bool _initialHasFile = false;
   bool _initialHasDeal = false;
@@ -105,7 +113,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
 
   bool _isTaskScreenTutorialCompleted = false;
   Map<String, dynamic>? tutorialProgress;
-  
+
   // ОПТИМИЗАЦИЯ: Debounce timer для поиска
   Timer? _searchDebounceTimer;
   static const Duration _searchDebounce = Duration(milliseconds: 500);
@@ -113,68 +121,73 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
-    
+
     // ← КРИТИЧНО: Инициализируем пустой TabController
     _tabController = TabController(length: 0, vsync: this);
-    
+
     // ОПТИМИЗАЦИЯ: Запускаем GetAllClientBloc асинхронно, не блокируя UI
     Future.microtask(() {
       if (mounted) {
-    context.read<GetAllClientBloc>().add(GetAllClientEv());
+        context.read<GetAllClientBloc>().add(GetAllClientEv());
       }
     });
-    
+
     _scrollController = ScrollController();
     _scrollController.addListener(_onScroll);
-    
+
     // ОПТИМИЗАЦИЯ: Загружаем роли и разрешения асинхронно
     Future.microtask(() {
       if (mounted) {
-    _loadUserRoles();
+        _loadUserRoles();
         _checkPermissions();
       }
     });
-    
+
     // НЕ загружаем состояние фильтров - каждый раз начинаем с чистого листа
-    
+
     // Запускаем загрузку статусов
     BlocProvider.of<TaskBloc>(context).add(FetchTaskStatuses());
   }
 
-void _onScroll() {
-  if (_scrollController.position.pixels == _scrollController.position.maxScrollExtent) {
-    final taskBloc = BlocProvider.of<TaskBloc>(context);
-    if (taskBloc.state is TaskDataLoaded) {
-      final state = taskBloc.state as TaskDataLoaded;
-      if (!taskBloc.allTasksFetched) {
-        final currentStatusId = _tabTitles[_currentTabIndex]['id'];
-        // Преобразуем project_ids в List<int>
-        List<int>? projectIdsList = _selectedProjects.isNotEmpty
-            ? _selectedProjects.map((id) => int.parse(id)).toList()
-            : null;
-        taskBloc.add(FetchMoreTasks(
-          currentStatusId,
-          state.currentPage,
-          query: _lastSearchQuery,
-          userIds: _selectedUsers.map((user) => user.id).toList(),
-          statusIds: _selectedStatuses,
-          fromDate: _fromDate,
-          toDate: _toDate,
-          overdue: _isOverdue,
-          hasFile: _hasFile,
-          hasDeal: _hasDeal,
-          urgent: _isUrgent,
-          deadlinefromDate: _deadlinefromDate,
-          deadlinetoDate: _deadlinetoDate,
-          projectIds: projectIdsList,
-          authors: _selectedAuthors,
-          department: _selectedDepartment,
-          directoryValues: _selectedDirectoryValues, // Передаем directoryValues
-        ));
+  void _onScroll() {
+    if (_scrollController.position.pixels ==
+        _scrollController.position.maxScrollExtent) {
+      final taskBloc = BlocProvider.of<TaskBloc>(context);
+      if (taskBloc.state is TaskDataLoaded) {
+        final state = taskBloc.state as TaskDataLoaded;
+        if (!taskBloc.allTasksFetched) {
+          final currentStatusId = _tabTitles[_currentTabIndex]['id'];
+          // Преобразуем project_ids в List<int>
+          List<int>? projectIdsList = _selectedProjects.isNotEmpty
+              ? _selectedProjects.map((id) => int.parse(id)).toList()
+              : null;
+          taskBloc.add(FetchMoreTasks(
+            currentStatusId,
+            state.currentPage,
+            query: _lastSearchQuery,
+            userIds: _selectedUsers.map((user) => user.id).toList(),
+            statusIds: _selectedStatuses,
+            fromDate: _fromDate,
+            toDate: _toDate,
+            overdue: _isOverdue,
+            hasFile: _hasFile,
+            hasDeal: _hasDeal,
+            urgent: _isUrgent,
+            deadlinefromDate: _deadlinefromDate,
+            deadlinetoDate: _deadlinetoDate,
+            completedFromDate: _completedFromDate,
+            completedToDate: _completedToDate,
+            projectIds: projectIdsList,
+            authors: _selectedAuthors,
+            department: _selectedDepartment,
+            directoryValues:
+                _selectedDirectoryValues, // Передаем directoryValues
+          ));
+        }
       }
     }
   }
-  }
+
   @override
   void dispose() {
     _searchDebounceTimer?.cancel();
@@ -187,14 +200,16 @@ void _onScroll() {
   Future<void> _loadUserRoles() async {
     try {
       SharedPreferences prefs = await SharedPreferences.getInstance();
-      
+
       // ОПТИМИЗАЦИЯ: Проверяем кэш ролей
       final cachedRoles = prefs.getStringList('cached_user_roles');
       final cacheTime = prefs.getInt('cached_user_roles_time');
       final now = DateTime.now().millisecondsSinceEpoch;
-      
+
       // Если кэш свежий (< 1 часа), используем его
-      if (cachedRoles != null && cacheTime != null && (now - cacheTime) < 3600000) {
+      if (cachedRoles != null &&
+          cacheTime != null &&
+          (now - cacheTime) < 3600000) {
         if (mounted) {
           setState(() {
             userRoles = cachedRoles;
@@ -202,28 +217,31 @@ void _onScroll() {
         }
         return;
       }
-      
+
       String userId = prefs.getString('userID') ?? '';
       if (userId.isEmpty) {
         if (mounted) {
-        setState(() { userRoles = ['No user ID found']; });
+          setState(() {
+            userRoles = ['No user ID found'];
+          });
         }
         return;
       }
-      
+
       // Загружаем с сервера с timeout
       UserByIdProfile userProfile = await ApiService()
           .getUserById(int.parse(userId))
           .timeout(Duration(seconds: 5), onTimeout: () {
         throw Exception('Timeout loading user profile');
       });
-      
-      final roles = userProfile.role?.map((role) => role.name).toList() ?? ['No role assigned'];
-      
+
+      final roles = userProfile.role?.map((role) => role.name).toList() ??
+          ['No role assigned'];
+
       // Сохраняем в кэш
       await prefs.setStringList('cached_user_roles', roles);
       await prefs.setInt('cached_user_roles_time', now);
-      
+
       if (mounted) {
         setState(() {
           userRoles = roles;
@@ -231,7 +249,9 @@ void _onScroll() {
       }
     } catch (e) {
       if (mounted) {
-        setState(() { userRoles = ['Error loading roles']; });
+        setState(() {
+          userRoles = ['Error loading roles'];
+        });
       }
     }
   }
@@ -239,25 +259,33 @@ void _onScroll() {
   Future<void> _checkPermissions() async {
     try {
       SharedPreferences prefs = await SharedPreferences.getInstance();
-      
+
       // ОПТИМИЗАЦИЯ: Проверяем кэш разрешений
       final cacheTime = prefs.getInt('cached_permissions_time');
       final now = DateTime.now().millisecondsSinceEpoch;
-      
+
       // Если кэш свежий (< 30 минут), используем его
       if (cacheTime != null && (now - cacheTime) < 1800000) {
         if (!mounted) return;
         setState(() {
-          _canReadTaskStatus = prefs.getBool('cached_canReadTaskStatus') ?? false;
-          _canCreateTaskStatus = prefs.getBool('cached_canCreateTaskStatus') ?? false;
-          _canUpdateTaskStatus = prefs.getBool('cached_canUpdateTaskStatus') ?? false;
-          _canDeleteTaskStatus = prefs.getBool('cached_canDeleteTaskStatus') ?? false;
-          _hasPermissionToAddTask = prefs.getBool('cached_hasPermissionToAddTask') ?? false;
+          _canReadTaskStatus =
+              prefs.getBool('cached_canReadTaskStatus') ?? false;
+          _canCreateTaskStatus =
+              prefs.getBool('cached_canCreateTaskStatus') ?? false;
+          _canUpdateTaskStatus =
+              prefs.getBool('cached_canUpdateTaskStatus') ?? false;
+          _canDeleteTaskStatus =
+              prefs.getBool('cached_canDeleteTaskStatus') ?? false;
+          _hasPermissionToAddTask =
+              prefs.getBool('cached_hasPermissionToAddTask') ?? false;
           showFilter = _hasPermissionToAddTask;
         });
-        
-        bool isTutorialShown = prefs.getBool('isTutorialShownTaskSearchIconAppBar') ?? false;
-        setState(() { _isTutorialShown = isTutorialShown; });
+
+        bool isTutorialShown =
+            prefs.getBool('isTutorialShownTaskSearchIconAppBar') ?? false;
+        setState(() {
+          _isTutorialShown = isTutorialShown;
+        });
 
         // ✅ Если статусы уже пришли, но табы пустые — повторно обработаем статусы
         if (mounted && _canReadTaskStatus && _tabTitles.isEmpty) {
@@ -268,7 +296,7 @@ void _onScroll() {
         }
         return;
       }
-      
+
       // Загружаем с сервера с timeout
       final results = await Future.wait([
         _apiService.hasPermission('taskStatus.read'),
@@ -290,7 +318,7 @@ void _onScroll() {
           {'result': null},
         ];
       });
-      
+
       final canRead = results[0] as bool;
       final canCreate = results[1] as bool;
       final canUpdate = results[2] as bool;
@@ -299,7 +327,7 @@ void _onScroll() {
       final canCreateTaskForMySelf = results[5] as bool;
       final hasPermission = canCreateTask || canCreateTaskForMySelf;
       final progress = results[6] as Map<String, dynamic>;
-      
+
       // Сохраняем в кэш
       await prefs.setBool('cached_canReadTaskStatus', canRead);
       await prefs.setBool('cached_canCreateTaskStatus', canCreate);
@@ -307,36 +335,42 @@ void _onScroll() {
       await prefs.setBool('cached_canDeleteTaskStatus', canDelete);
       await prefs.setBool('cached_hasPermissionToAddTask', hasPermission);
       await prefs.setInt('cached_permissions_time', now);
-      
-    if (!mounted) return;
-    setState(() {
-      _canReadTaskStatus = canRead;
-      _canCreateTaskStatus = canCreate;
-      _canUpdateTaskStatus = canUpdate;
-      _canDeleteTaskStatus = canDelete;
-      _hasPermissionToAddTask = hasPermission;
-      showFilter = hasPermission;
-      tutorialProgress = progress['result'];
-    });
 
-    bool isTutorialShown = prefs.getBool('isTutorialShownTaskSearchIconAppBar') ?? false;
-    setState(() { _isTutorialShown = isTutorialShown; });
+      if (!mounted) return;
+      setState(() {
+        _canReadTaskStatus = canRead;
+        _canCreateTaskStatus = canCreate;
+        _canUpdateTaskStatus = canUpdate;
+        _canDeleteTaskStatus = canDelete;
+        _hasPermissionToAddTask = hasPermission;
+        showFilter = hasPermission;
+        tutorialProgress = progress['result'];
+      });
 
-    // ✅ ВАЖНО: если статусы уже загружены, но права пришли позже,
-    // табы могли остаться пустыми → триггерим повторную обработку статусов
-    if (mounted && _canReadTaskStatus && _tabTitles.isEmpty) {
-      final taskBloc = context.read<TaskBloc>();
-      if (taskBloc.state is TaskLoaded) {
-        taskBloc.add(FetchTaskStatuses());
-      }
-    }
+      bool isTutorialShown =
+          prefs.getBool('isTutorialShownTaskSearchIconAppBar') ?? false;
+      setState(() {
+        _isTutorialShown = isTutorialShown;
+      });
 
-    if (tutorialProgress != null && tutorialProgress!['tasks']?['index'] == false && !_isTutorialShown && mounted) {
-      _initTutorialTargets();
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          //showTutorial();
+      // ✅ ВАЖНО: если статусы уже загружены, но права пришли позже,
+      // табы могли остаться пустыми → триггерим повторную обработку статусов
+      if (mounted && _canReadTaskStatus && _tabTitles.isEmpty) {
+        final taskBloc = context.read<TaskBloc>();
+        if (taskBloc.state is TaskLoaded) {
+          taskBloc.add(FetchTaskStatuses());
         }
+      }
+
+      if (tutorialProgress != null &&
+          tutorialProgress!['tasks']?['index'] == false &&
+          !_isTutorialShown &&
+          mounted) {
+        _initTutorialTargets();
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            //showTutorial();
+          }
         });
       }
     } catch (e) {
@@ -345,10 +379,14 @@ void _onScroll() {
       SharedPreferences prefs = await SharedPreferences.getInstance();
       setState(() {
         _canReadTaskStatus = prefs.getBool('cached_canReadTaskStatus') ?? false;
-        _canCreateTaskStatus = prefs.getBool('cached_canCreateTaskStatus') ?? false;
-        _canUpdateTaskStatus = prefs.getBool('cached_canUpdateTaskStatus') ?? false;
-        _canDeleteTaskStatus = prefs.getBool('cached_canDeleteTaskStatus') ?? false;
-        _hasPermissionToAddTask = prefs.getBool('cached_hasPermissionToAddTask') ?? false;
+        _canCreateTaskStatus =
+            prefs.getBool('cached_canCreateTaskStatus') ?? false;
+        _canUpdateTaskStatus =
+            prefs.getBool('cached_canUpdateTaskStatus') ?? false;
+        _canDeleteTaskStatus =
+            prefs.getBool('cached_canDeleteTaskStatus') ?? false;
+        _hasPermissionToAddTask =
+            prefs.getBool('cached_hasPermissionToAddTask') ?? false;
         showFilter = _hasPermissionToAddTask;
       });
     }
@@ -360,8 +398,10 @@ void _onScroll() {
       createTarget(
         identify: "TaskSearchIcon",
         keyTarget: keySearchIcon,
-        title: AppLocalizations.of(context)!.translate('tutorial_task_screen_search_title'),
-        description: AppLocalizations.of(context)!.translate('tutorial_task_screen_search_description'),
+        title: AppLocalizations.of(context)!
+            .translate('tutorial_task_screen_search_title'),
+        description: AppLocalizations.of(context)!
+            .translate('tutorial_task_screen_search_description'),
         align: ContentAlign.bottom,
         context: context,
         contentPosition: ContentPosition.above,
@@ -369,8 +409,10 @@ void _onScroll() {
       createTarget(
         identify: "TaskMenuIcon",
         keyTarget: keyMenuIcon,
-        title: AppLocalizations.of(context)!.translate('tutorial_task_screen_menu_title'),
-        description: AppLocalizations.of(context)!.translate('tutorial_task_screen_menu_description'),
+        title: AppLocalizations.of(context)!
+            .translate('tutorial_task_screen_menu_title'),
+        description: AppLocalizations.of(context)!
+            .translate('tutorial_task_screen_menu_description'),
         align: ContentAlign.bottom,
         context: context,
         contentPosition: ContentPosition.above,
@@ -443,6 +485,8 @@ void _onScroll() {
           _toDate = null;
           _deadlinefromDate = null;
           _deadlinetoDate = null;
+          _completedFromDate = null;
+          _completedToDate = null;
           _isOverdue = false;
           _hasFile = false;
           _hasDeal = false;
@@ -459,6 +503,8 @@ void _onScroll() {
           _intialToDate = null;
           _intialDeadlineFromDate = null;
           _intialDeadlineToDate = null;
+          _initialCompletedFromDate = null;
+          _initialCompletedToDate = null;
           _initialOverdue = false;
           _initialHasFile = false;
           _initialHasDeal = false;
@@ -482,11 +528,10 @@ void _onScroll() {
       final taskBloc = BlocProvider.of<TaskBloc>(context);
       await taskBloc.clearAllCountsAndCache();
       taskBloc.add(FetchTaskStatuses(forceRefresh: true));
-
     } catch (e) {
       // ✅ УБРАНО: Не показываем SnackBar с кнопкой "Повторить"
       debugPrint('TaskScreen: Ошибка при обновлении данных: $e');
-      
+
       if (mounted) {
         final taskBloc = BlocProvider.of<TaskBloc>(context);
         taskBloc.add(FetchTaskStatuses(forceRefresh: false));
@@ -528,21 +573,21 @@ void _onScroll() {
       projectIds: projectIdsList,
       authors: _selectedAuthors.isNotEmpty ? _selectedAuthors : null,
       department: _selectedDepartment,
-      directoryValues: _selectedDirectoryValues.isNotEmpty
-          ? _selectedDirectoryValues
-          : null,
+      directoryValues:
+          _selectedDirectoryValues.isNotEmpty ? _selectedDirectoryValues : null,
     ));
   }
 
   Future<void> _handleUserSelected(Map filterData) async {
     debugPrint('TaskScreen: _handleUserSelected - START WITH NEW LOGIC');
-    
+
     if (mounted) {
       setState(() {
         _isFilterLoading = true;
         _shouldShowLoader = true;
         _showCustomTabBar = true;
-        _skipNextTabListener = true; // ← КРИТИЧНО: Пропускаем следующий TabListener!
+        _skipNextTabListener =
+            true; // ← КРИТИЧНО: Пропускаем следующий TabListener!
         _isSearching = false; // Выключаем режим поиска
         _searchController.clear();
         _lastSearchQuery = '';
@@ -553,28 +598,35 @@ void _onScroll() {
         _toDate = filterData['toDate'];
         _deadlinefromDate = filterData['deadlinefromDate'];
         _deadlinetoDate = filterData['deadlinetoDate'];
+        _completedFromDate = filterData['completedFromDate'];
+        _completedToDate = filterData['completedToDate'];
         _isOverdue = filterData['overdue'] ?? false;
         _hasFile = filterData['hasFile'] ?? false;
         _hasDeal = filterData['hasDeal'] ?? false;
         _isUrgent = filterData['urgent'] ?? false;
         _selectedProject = filterData['project'];
         _selectedAuthors = filterData['authors'] ?? [];
-        
+
         // Обработка project_ids
         if (filterData['project_ids'] != null) {
           if (filterData['project_ids'] is List) {
-            _selectedProjects = (filterData['project_ids'] as List).map((id) => id.toString()).toList();
+            _selectedProjects = (filterData['project_ids'] as List)
+                .map((id) => id.toString())
+                .toList();
           } else {
             _selectedProjects = [];
           }
         } else {
           _selectedProjects = [];
         }
-        
-        _selectedDirectoryValues = (filterData['directory_values'] as List?)?.map((item) => {
-            'directory_id': item['directory_id'],
-            'entry_id': item['entry_id'],
-          }).toList() ?? [];
+
+        _selectedDirectoryValues = (filterData['directory_values'] as List?)
+                ?.map((item) => {
+                      'directory_id': item['directory_id'],
+                      'entry_id': item['entry_id'],
+                    })
+                .toList() ??
+            [];
         _selectedDepartment = filterData['department'];
 
         // Сохраняем initial значения
@@ -584,6 +636,8 @@ void _onScroll() {
         _intialToDate = filterData['toDate'];
         _intialDeadlineFromDate = filterData['deadlinefromDate'];
         _intialDeadlineToDate = filterData['deadlinetoDate'];
+        _initialCompletedFromDate = filterData['completedFromDate'];
+        _initialCompletedToDate = filterData['completedToDate'];
         _initialOverdue = filterData['overdue'] ?? false;
         _initialHasFile = filterData['hasFile'] ?? false;
         _initialHasDeal = filterData['hasDeal'] ?? false;
@@ -599,7 +653,7 @@ void _onScroll() {
     // await Future.delayed(Duration(milliseconds: 50));
 
     final taskBloc = BlocProvider.of<TaskBloc>(context);
-    
+
     // Преобразуем project_ids в List<int>
     List<int>? projectIdsList = _selectedProjects.isNotEmpty
         ? _selectedProjects.map((id) => int.parse(id)).toList()
@@ -618,13 +672,17 @@ void _onScroll() {
       urgent: _isUrgent,
       deadlinefromDate: _deadlinefromDate,
       deadlinetoDate: _deadlinetoDate,
+      completedFromDate: _completedFromDate,
+      completedToDate: _completedToDate,
       projectIds: projectIdsList,
       authors: _selectedAuthors.isNotEmpty ? _selectedAuthors : null,
       department: _selectedDepartment,
-      directoryValues: _selectedDirectoryValues.isNotEmpty ? _selectedDirectoryValues : null,
+      directoryValues:
+          _selectedDirectoryValues.isNotEmpty ? _selectedDirectoryValues : null,
     ));
 
-    debugPrint('TaskScreen: _handleUserSelected - Dispatched FetchTaskStatusesWithFilters');
+    debugPrint(
+        'TaskScreen: _handleUserSelected - Dispatched FetchTaskStatusesWithFilters');
   }
 
   // Метод для проверки наличия активных фильтров
@@ -639,6 +697,8 @@ void _onScroll() {
         _isUrgent == true ||
         _deadlinefromDate != null ||
         _deadlinetoDate != null ||
+        _completedFromDate != null ||
+        _completedToDate != null ||
         _selectedProjects.isNotEmpty ||
         (_selectedProject != null && _selectedProject!.isNotEmpty) ||
         _selectedAuthors.isNotEmpty ||
@@ -726,6 +786,8 @@ void _onScroll() {
       _isUrgent = false;
       _deadlinefromDate = null;
       _deadlinetoDate = null;
+      _completedFromDate = null;
+      _completedToDate = null;
       _selectedProject = null;
       _selectedAuthors = [];
       _selectedProjects = [];
@@ -740,6 +802,8 @@ void _onScroll() {
       _initialUrgent = false;
       _intialDeadlineFromDate = null;
       _intialDeadlineToDate = null;
+      _initialCompletedFromDate = null;
+      _initialCompletedToDate = null;
       _initialSelectedAuthors = [];
       _initialSelectedProjects = [];
       _selectedDepartment = null;
@@ -752,17 +816,17 @@ void _onScroll() {
 
   void _onSearch(String query) {
     _lastSearchQuery = query;
-    
+
     // ОПТИМИЗАЦИЯ: Отменяем предыдущий таймер debounce
     _searchDebounceTimer?.cancel();
-    
+
     // Если строка пустая, выполняем поиск сразу
     if (query.isEmpty) {
-    final currentStatusId = _tabTitles[_currentTabIndex]['id'];
-    _searchTasks(query, currentStatusId);
+      final currentStatusId = _tabTitles[_currentTabIndex]['id'];
+      _searchTasks(query, currentStatusId);
       return;
     }
-    
+
     // ОПТИМИЗАЦИЯ: Используем debounce для непустых запросов
     _searchDebounceTimer = Timer(_searchDebounce, () {
       if (mounted && _tabTitles.isNotEmpty) {
@@ -828,11 +892,14 @@ void _onScroll() {
             initialToDate: _intialToDate,
             initialDeadlineFromDate: _intialDeadlineFromDate,
             initialDeadlineToDate: _intialDeadlineToDate,
+            initialCompletedFromDate: _initialCompletedFromDate,
+            initialCompletedToDate: _initialCompletedToDate,
             initialTaskIsOverdue: _initialOverdue,
             initialTaskHasFile: _initialHasFile,
             initialTaskHasDeal: _initialHasDeal,
             initialTaskIsUrgent: _initialUrgent,
-            initialDirectoryValuesTask: _initialDirectoryValues, // Передаем initialDirectoryValues
+            initialDirectoryValuesTask:
+                _initialDirectoryValues, // Передаем initialDirectoryValues
             onResetFilters: _resetFilters,
             textEditingController: textEditingController,
             focusNode: focusNode,
@@ -861,7 +928,9 @@ void _onScroll() {
                       _fromDate == null &&
                       _toDate == null &&
                       _deadlinefromDate == null &&
-                      _deadlinetoDate == null) {
+                      _deadlinetoDate == null &&
+                      _completedFromDate == null &&
+                      _completedToDate == null) {
                     //print("IF SEARCH EMPTY AND NO FILTERS");
                     setState(() {
                       _showCustomTabBar = true;
@@ -886,9 +955,12 @@ void _onScroll() {
                       urgent: _initialUrgent,
                       deadlinefromDate: _fromDate,
                       deadlinetoDate: _toDate,
+                      completedFromDate: _completedFromDate,
+                      completedToDate: _completedToDate,
                       authors: _selectedAuthors,
                       department: _selectedDepartment,
-                      directoryValues: _selectedDirectoryValues, // Передаем directoryValues
+                      directoryValues:
+                          _selectedDirectoryValues, // Передаем directoryValues
                     ));
                   }
                 } else if (_selectedUserIds != null &&
@@ -912,17 +984,16 @@ void _onScroll() {
       body: isClickAvatarIcon
           ? ProfileScreen()
           : Column(
-        children: [
-          const SizedBox(height: 15),
-          if (!_isSearching && _showCustomTabBar)
-            _buildCustomTabBar(),
-          Expanded(
-            child: _isSearching || _hasActiveFilters()
-                ? _buildUserView()
-                : _buildTabBarView(),
-          ),
-        ],
-      ),
+              children: [
+                const SizedBox(height: 15),
+                if (!_isSearching && _showCustomTabBar) _buildCustomTabBar(),
+                Expanded(
+                  child: _isSearching || _hasActiveFilters()
+                      ? _buildUserView()
+                      : _buildTabBarView(),
+                ),
+              ],
+            ),
     );
   }
 
@@ -953,7 +1024,9 @@ void _onScroll() {
         // Преобразуем project_ids в List<int>
         List<int>? projectIdsList = _selectedProjects.isNotEmpty
             ? _selectedProjects.map((id) => int.parse(id)).toList()
-            : (_selectedProject != null ? [int.parse(_selectedProject!)] : null);
+            : (_selectedProject != null
+                ? [int.parse(_selectedProject!)]
+                : null);
 
         taskBloc.add(FetchTasks(
           statusId,
@@ -970,6 +1043,8 @@ void _onScroll() {
           urgent: _isUrgent,
           deadlinefromDate: _deadlinefromDate,
           deadlinetoDate: _deadlinetoDate,
+          completedFromDate: _completedFromDate,
+          completedToDate: _completedToDate,
           projectIds: projectIdsList,
           authors: _selectedAuthors,
           department: _selectedDepartment,
@@ -982,9 +1057,8 @@ void _onScroll() {
   }
 
   Widget searchWidget(List<Task> tasks) {
-    final currentStatusId = _tabTitles.isNotEmpty
-        ? _tabTitles[_currentTabIndex]['id']
-        : 0;
+    final currentStatusId =
+        _tabTitles.isNotEmpty ? _tabTitles[_currentTabIndex]['id'] : 0;
 
     if (_isFilterLoading || _shouldShowLoader) {
       return const Center(
@@ -1052,8 +1126,8 @@ void _onScroll() {
               statusId: task.statusId,
               onStatusUpdated: () {},
               onStatusId: (StatusTaskId) {
-                final index = _tabTitles.indexWhere(
-                        (status) => status['id'] == StatusTaskId);
+                final index = _tabTitles
+                    .indexWhere((status) => status['id'] == StatusTaskId);
                 if (index != -1) {
                   _tabController.animateTo(index);
                 }
@@ -1068,7 +1142,8 @@ void _onScroll() {
   Widget _buildUserView() {
     return BlocListener<TaskBloc, TaskState>(
       listener: (context, state) {
-        debugPrint('TaskScreen: _buildUserView listener - state: ${state.runtimeType}');
+        debugPrint(
+            'TaskScreen: _buildUserView listener - state: ${state.runtimeType}');
         // Сбрасываем флаги когда данные загружены или произошла ошибка
         if ((state is TaskDataLoaded || state is TaskError) &&
             mounted &&
@@ -1108,12 +1183,11 @@ void _onScroll() {
                 }
               });
             }
-            
+
             final List<Task> tasks = state.tasks;
             final statusId = _tabTitles[_tabController.index]['id'];
-            final filteredTasks = tasks
-                .where((task) => task.statusId == statusId)
-                .toList();
+            final filteredTasks =
+                tasks.where((task) => task.statusId == statusId).toList();
 
             if (filteredTasks.isEmpty) {
               return RefreshIndicator(
@@ -1127,7 +1201,7 @@ void _onScroll() {
                       _selectedUsers.isNotEmpty
                           ? 'У выбранного пользователя нет задач'
                           : AppLocalizations.of(context)!
-                          .translate('nothing_found'),
+                              .translate('nothing_found'),
                       style: const TextStyle(
                         fontSize: 18,
                         fontFamily: 'Gilroy',
@@ -1149,8 +1223,8 @@ void _onScroll() {
                 itemBuilder: (context, index) {
                   final task = filteredTasks[index];
                   return Padding(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 8),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     child: TaskCard(
                       task: task,
                       name: task.taskStatus?.taskStatus?.name ?? "",
@@ -1158,7 +1232,7 @@ void _onScroll() {
                       onStatusUpdated: () {},
                       onStatusId: (StatusTaskId) {
                         final index = _tabTitles.indexWhere(
-                                (status) => status['id'] == StatusTaskId);
+                            (status) => status['id'] == StatusTaskId);
                         if (index != -1) {
                           _tabController.animateTo(index);
                         }
@@ -1259,6 +1333,7 @@ void _onScroll() {
                     needsPermission: false,
                     finalStep: false,
                     checkingStep: false,
+                    isUnassembled: false,
                     roles: [],
                   ),
                 );
@@ -1266,11 +1341,13 @@ void _onScroll() {
 
                 // Сразу сохраняем в постоянный кэш
                 TaskCache.setPersistentTaskCount(statusId, taskCount);
-              } else if (state is TaskDataLoaded && state.taskCounts.containsKey(_tabTitles[index]['id'])) {
+              } else if (state is TaskDataLoaded &&
+                  state.taskCounts.containsKey(_tabTitles[index]['id'])) {
                 taskCount = state.taskCounts[_tabTitles[index]['id']] ?? 0;
 
                 // Сразу сохраняем в постоянный кэш
-                TaskCache.setPersistentTaskCount(_tabTitles[index]['id'], taskCount);
+                TaskCache.setPersistentTaskCount(
+                    _tabTitles[index]['id'], taskCount);
               }
 
               return _buildTabButtonUI(index, isActive, taskCount);
@@ -1339,7 +1416,8 @@ void _onScroll() {
   }
 
   void _showStatusOptions(BuildContext context, int index) {
-    final RenderBox renderBox = _tabKeys[index].currentContext!.findRenderObject() as RenderBox;
+    final RenderBox renderBox =
+        _tabKeys[index].currentContext!.findRenderObject() as RenderBox;
     final Offset position = renderBox.localToGlobal(Offset.zero);
 
     showMenu(
@@ -1449,40 +1527,45 @@ void _onScroll() {
     }
   }
 
-Widget _buildTabBarView() {
-  return BlocListener<TaskBloc, TaskState>(
-    listener: (context, state) async {
-      debugPrint('TaskScreen: _buildTabBarView listener - state: ${state.runtimeType}');
-      // Сбрасываем флаги загрузки когда получены данные
-      if (state is TaskDataLoaded || state is TaskError) {
-        if (mounted && _isFilterLoading) {
-          debugPrint('TaskScreen: _buildTabBarView - Resetting loader flags');
-          setState(() {
-            _isFilterLoading = false;
-            _shouldShowLoader = false;
-          });
+  Widget _buildTabBarView() {
+    return BlocListener<TaskBloc, TaskState>(
+      listener: (context, state) async {
+        debugPrint(
+            'TaskScreen: _buildTabBarView listener - state: ${state.runtimeType}');
+        // Сбрасываем флаги загрузки когда получены данные
+        if (state is TaskDataLoaded || state is TaskError) {
+          if (mounted && _isFilterLoading) {
+            debugPrint('TaskScreen: _buildTabBarView - Resetting loader flags');
+            setState(() {
+              _isFilterLoading = false;
+              _shouldShowLoader = false;
+            });
+          }
         }
-      }
-      
-      if (state is TaskLoaded) {
-        await TaskCache.cacheTaskStatuses(state.taskStatuses
-            .map((status) =>
-        {'id': status.id, 'title': status.taskStatus?.name ?? ""})
-            .toList());
 
-        if (mounted) {
-          setState(() {
-            // Обновляем табы с новыми данными
-            _tabTitles = state.taskStatuses
-                .where((status) => _canReadTaskStatus)
-                .map((status) =>
-            {'id': status.id, 'title': status.taskStatus?.name ?? ""})
-                .toList();
-            _tabKeys = List.generate(_tabTitles.length, (_) => GlobalKey());
+        if (state is TaskLoaded) {
+          await TaskCache.cacheTaskStatuses(state.taskStatuses
+              .map((status) => {
+                    'id': status.id,
+                    'title': status.taskStatus?.name ?? "",
+                    'is_unassembled': status.isUnassembled,
+                  })
+              .toList());
 
-            if (_tabTitles.isNotEmpty) {
-              // Проверяем, нужно ли создавать новый контроллер
-              bool needNewController = _tabController.length != _tabTitles.length;
+          if (mounted) {
+            setState(() {
+              // Обновляем табы с новыми данными
+              _tabTitles = state.taskStatuses
+                  .where((status) => _canReadTaskStatus)
+                  .map((status) =>
+                      {'id': status.id, 'title': status.taskStatus?.name ?? ""})
+                  .toList();
+              _tabKeys = List.generate(_tabTitles.length, (_) => GlobalKey());
+
+              if (_tabTitles.isNotEmpty) {
+                // Проверяем, нужно ли создавать новый контроллер
+                bool needNewController =
+                    _tabController.length != _tabTitles.length;
 
                 if (needNewController) {
                   // Dispose старого контроллера если он существует
@@ -1491,139 +1574,175 @@ Widget _buildTabBarView() {
                   }
 
                   // Создаем новый контроллер
-                  _tabController = TabController(length: _tabTitles.length, vsync: this);
-                  
+                  _tabController =
+                      TabController(length: _tabTitles.length, vsync: this);
+
                   // ← КРИТИЧНО: Добавляем listener ТОЛЬКО при создании нового контроллера!
                   _tabController.addListener(() {
-                if (!_tabController.indexIsChanging) {
-                  // ← КРИТИЧНО: Проверяем флаг пропуска!
-                  if (_skipNextTabListener) {
-                    debugPrint('TaskScreen: TabController listener - SKIPPED (filter just applied)');
-                    setState(() {
-                      _skipNextTabListener = false;
-                      _currentTabIndex = _tabController.index;
-                    });
-                    return; // ← ВЫХОДИМ БЕЗ ЗАПРОСА!
-                  }
+                    if (!_tabController.indexIsChanging) {
+                      // ← КРИТИЧНО: Проверяем флаг пропуска!
+                      if (_skipNextTabListener) {
+                        debugPrint(
+                            'TaskScreen: TabController listener - SKIPPED (filter just applied)');
+                        setState(() {
+                          _skipNextTabListener = false;
+                          _currentTabIndex = _tabController.index;
+                        });
+                        return; // ← ВЫХОДИМ БЕЗ ЗАПРОСА!
+                      }
 
-                  debugPrint('TaskScreen: TabController listener triggered, new index: ${_tabController.index}');
-                  
-                  final currentStatusId = _tabTitles[_tabController.index]['id'];
-                  bool hasActiveFilters = _hasActiveFilters();
-                  
-                  // ИСПРАВЛЕНО: Устанавливаем флаг загрузки при переключении табов
-                  setState(() {
-                    _currentTabIndex = _tabController.index;
-                    // Показываем лоадер только если есть активные фильтры или поиск
-                    if (hasActiveFilters || _lastSearchQuery.isNotEmpty) {
-                      _shouldShowLoader = true;
+                      debugPrint(
+                          'TaskScreen: TabController listener triggered, new index: ${_tabController.index}');
+
+                      final currentStatusId =
+                          _tabTitles[_tabController.index]['id'];
+                      bool hasActiveFilters = _hasActiveFilters();
+
+                      // ИСПРАВЛЕНО: Устанавливаем флаг загрузки при переключении табов
+                      setState(() {
+                        _currentTabIndex = _tabController.index;
+                        // Показываем лоадер только если есть активные фильтры или поиск
+                        if (hasActiveFilters || _lastSearchQuery.isNotEmpty) {
+                          _shouldShowLoader = true;
+                        }
+                      });
+
+                      if (_scrollController.hasClients) {
+                        _scrollToActiveTab();
+                      }
+
+                      // Преобразуем project_ids в List<int>
+                      List<int>? projectIdsList = _selectedProjects.isNotEmpty
+                          ? _selectedProjects
+                              .map((id) => int.parse(id))
+                              .toList()
+                          : null;
+
+                      context.read<TaskBloc>().add(FetchTasks(
+                            currentStatusId,
+                            query: _lastSearchQuery.isNotEmpty
+                                ? _lastSearchQuery
+                                : null,
+                            userIds: hasActiveFilters &&
+                                    _selectedUsers.isNotEmpty
+                                ? _selectedUsers.map((user) => user.id).toList()
+                                : null,
+                            statusIds:
+                                hasActiveFilters ? currentStatusId : null,
+                            fromDate: hasActiveFilters ? _fromDate : null,
+                            toDate: hasActiveFilters ? _toDate : null,
+                            overdue: hasActiveFilters ? _isOverdue : null,
+                            hasFile: hasActiveFilters ? _hasFile : null,
+                            hasDeal: hasActiveFilters ? _hasDeal : null,
+                            urgent: hasActiveFilters ? _isUrgent : null,
+                            deadlinefromDate:
+                                hasActiveFilters ? _deadlinefromDate : null,
+                            deadlinetoDate:
+                                hasActiveFilters ? _deadlinetoDate : null,
+                            completedFromDate:
+                                hasActiveFilters ? _completedFromDate : null,
+                            completedToDate:
+                                hasActiveFilters ? _completedToDate : null,
+                            projectIds:
+                                hasActiveFilters ? projectIdsList : null,
+                            authors:
+                                hasActiveFilters && _selectedAuthors.isNotEmpty
+                                    ? _selectedAuthors
+                                    : null,
+                            department:
+                                hasActiveFilters ? _selectedDepartment : null,
+                            directoryValues: hasActiveFilters &&
+                                    _selectedDirectoryValues.isNotEmpty
+                                ? _selectedDirectoryValues
+                                : null,
+                          ));
+
+                      debugPrint(
+                          'TaskScreen: FetchTasks dispatched for statusId: $currentStatusId');
                     }
-                  });
-                  
-                  if (_scrollController.hasClients) {
-                    _scrollToActiveTab();
-                  }
-                  
-                  // Преобразуем project_ids в List<int>
-                  List<int>? projectIdsList = _selectedProjects.isNotEmpty
-                      ? _selectedProjects.map((id) => int.parse(id)).toList()
-                      : null;
-
-                  context.read<TaskBloc>().add(FetchTasks(
-                    currentStatusId,
-                    query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
-
-                    userIds: hasActiveFilters && _selectedUsers.isNotEmpty
-                        ? _selectedUsers.map((user) => user.id).toList()
-                        : null,
-                    statusIds: hasActiveFilters ? currentStatusId : null,
-                    fromDate: hasActiveFilters ? _fromDate : null,
-                    toDate: hasActiveFilters ? _toDate : null,
-                    overdue: hasActiveFilters ? _isOverdue : null,
-                    hasFile: hasActiveFilters ? _hasFile : null,
-                    hasDeal: hasActiveFilters ? _hasDeal : null,
-                    urgent: hasActiveFilters ? _isUrgent : null,
-                    deadlinefromDate: hasActiveFilters ? _deadlinefromDate : null,
-                    deadlinetoDate: hasActiveFilters ? _deadlinetoDate : null,
-                    projectIds: hasActiveFilters ? projectIdsList : null,
-                    authors: hasActiveFilters && _selectedAuthors.isNotEmpty ? _selectedAuthors : null,
-                    department: hasActiveFilters ? _selectedDepartment : null,
-                    directoryValues: hasActiveFilters && _selectedDirectoryValues.isNotEmpty
-                        ? _selectedDirectoryValues
-                        : null,
-                    ));
-
-                    debugPrint('TaskScreen: FetchTasks dispatched for statusId: $currentStatusId');
-                  }
                   }); // ← Закрываем listener здесь, только для нового контроллера!
                 }
 
                 // Установка правильного индекса
                 if (needNewController) {
-                if (_currentTabIndex < _tabTitles.length && _currentTabIndex >= 0) {
-                  _tabController.index = _currentTabIndex;
-                } else {
-                  _tabController.index = 0;
-                  _currentTabIndex = 0;
-                }
-              } else {
-                int initialIndex = state.taskStatuses
-                    .indexWhere((status) => status.id == widget.initialStatusId);
-                if (initialIndex != -1 && initialIndex != _currentTabIndex) {
-                  _tabController.index = initialIndex;
-                  _currentTabIndex = initialIndex;
-                } else if (_tabTitles.isNotEmpty) {
-                  int safeIndex = _currentTabIndex < _tabTitles.length ? _currentTabIndex : 0;
-                  _tabController.index = safeIndex;
-                  _currentTabIndex = safeIndex;
-                }
-              }
-
-              // Прокручиваем к активному табу
-              if (_scrollController.hasClients) {
-                _scrollToActiveTab();
-              }
-
-              // Обрабатываем специальные навигации
-              if (navigateToEnd) {
-                navigateToEnd = false;
-                Future.delayed(Duration(milliseconds: 100), () {
-                  if (mounted && _tabTitles.isNotEmpty) {
-                    _tabController.animateTo(_tabTitles.length - 1);
+                  if (_currentTabIndex < _tabTitles.length &&
+                      _currentTabIndex >= 0) {
+                    _tabController.index = _currentTabIndex;
+                  } else {
+                    _tabController.index = 0;
+                    _currentTabIndex = 0;
                   }
-                });
-              }
+                } else {
+                  int initialIndex = state.taskStatuses.indexWhere(
+                      (status) => status.id == widget.initialStatusId);
+                  if (initialIndex != -1 && initialIndex != _currentTabIndex) {
+                    _tabController.index = initialIndex;
+                    _currentTabIndex = initialIndex;
+                  } else if (_tabTitles.isNotEmpty) {
+                    int safeIndex = _currentTabIndex < _tabTitles.length
+                        ? _currentTabIndex
+                        : 0;
+                    _tabController.index = safeIndex;
+                    _currentTabIndex = safeIndex;
+                  }
+                }
 
-              if (navigateAfterDelete && _tabTitles.isNotEmpty) {
-                navigateAfterDelete = false;
-                if (_deletedIndex != null) {
-                  int newIndex = _deletedIndex! >= _tabTitles.length ? _tabTitles.length - 1 : _deletedIndex!;
-                  newIndex = newIndex < 0 ? 0 : newIndex;
+                // Прокручиваем к активному табу
+                if (_scrollController.hasClients) {
+                  _scrollToActiveTab();
+                }
+
+                // Обрабатываем специальные навигации
+                if (navigateToEnd) {
+                  navigateToEnd = false;
                   Future.delayed(Duration(milliseconds: 100), () {
-                    if (mounted) {
-                      _tabController.animateTo(newIndex);
-                      _currentTabIndex = newIndex;
+                    if (mounted && _tabTitles.isNotEmpty) {
+                      _tabController.animateTo(_tabTitles.length - 1);
                     }
                   });
                 }
-              }
 
-              // ОПТИМИЗАЦИЯ: Убираем задержку и проверяем состояние перед загрузкой
-              // Автоматически загружаем задачи для активного статуса после refresh только если нет активных фильтров
-              if (_tabTitles.isNotEmpty) {
-                final activeStatusId = _tabTitles[_currentTabIndex]['id'];
-                final bool hasActiveFilters = _hasActiveFilters();
-                final taskBloc = context.read<TaskBloc>();
+                if (navigateAfterDelete && _tabTitles.isNotEmpty) {
+                  navigateAfterDelete = false;
+                  if (_deletedIndex != null) {
+                    int newIndex = _deletedIndex! >= _tabTitles.length
+                        ? _tabTitles.length - 1
+                        : _deletedIndex!;
+                    newIndex = newIndex < 0 ? 0 : newIndex;
+                    Future.delayed(Duration(milliseconds: 100), () {
+                      if (mounted) {
+                        _tabController.animateTo(newIndex);
+                        _currentTabIndex = newIndex;
+                      }
+                    });
+                  }
+                }
 
-                // Загружаем только если нет активных фильтров И нет уже загруженных данных
-                if (!hasActiveFilters) {
-                  // Проверяем есть ли уже данные для этого статуса
-                  if (taskBloc.state is TaskDataLoaded) {
-                    final currentState = taskBloc.state as TaskDataLoaded;
-                    final hasTasksForStatus = currentState.tasks.any((task) => task.statusId == activeStatusId);
-                    
-                    // Загружаем только если нет данных
-                    if (!hasTasksForStatus) {
+                // ОПТИМИЗАЦИЯ: Убираем задержку и проверяем состояние перед загрузкой
+                // Автоматически загружаем задачи для активного статуса после refresh только если нет активных фильтров
+                if (_tabTitles.isNotEmpty) {
+                  final activeStatusId = _tabTitles[_currentTabIndex]['id'];
+                  final bool hasActiveFilters = _hasActiveFilters();
+                  final taskBloc = context.read<TaskBloc>();
+
+                  // Загружаем только если нет активных фильтров И нет уже загруженных данных
+                  if (!hasActiveFilters) {
+                    // Проверяем есть ли уже данные для этого статуса
+                    if (taskBloc.state is TaskDataLoaded) {
+                      final currentState = taskBloc.state as TaskDataLoaded;
+                      final hasTasksForStatus = currentState.tasks
+                          .any((task) => task.statusId == activeStatusId);
+
+                      // Загружаем только если нет данных
+                      if (!hasTasksForStatus) {
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          if (mounted) {
+                            taskBloc.add(FetchTasks(activeStatusId));
+                          }
+                        });
+                      }
+                    } else {
+                      // Если нет состояния TaskDataLoaded, загружаем
                       WidgetsBinding.instance.addPostFrameCallback((_) {
                         if (mounted) {
                           taskBloc.add(FetchTasks(activeStatusId));
@@ -1631,177 +1750,184 @@ Widget _buildTabBarView() {
                       });
                     }
                   } else {
-                    // Если нет состояния TaskDataLoaded, загружаем
-                    WidgetsBinding.instance.addPostFrameCallback((_) {
-                      if (mounted) {
-                        taskBloc.add(FetchTasks(activeStatusId));
-                      }
-                    });
+                    debugPrint(
+                        'TaskScreen: Skip auto FetchTasks due to active filters');
                   }
-                } else {
-                  debugPrint('TaskScreen: Skip auto FetchTasks due to active filters');
                 }
+              } else {
+                // Если табы пустые, создаем пустой контроллер
+                if (_tabController.length > 0) {
+                  _tabController.dispose();
+                }
+                _tabController = TabController(length: 0, vsync: this);
+                _currentTabIndex = 0;
               }
-
-            } else {
-              // Если табы пустые, создаем пустой контроллер
-              if (_tabController.length > 0) {
-                _tabController.dispose();
-              }
-              _tabController = TabController(length: 0, vsync: this);
-              _currentTabIndex = 0;
-            }
-          });
-        }
-      } else if (state is TaskError) {
-        if (state.message.contains(
-          AppLocalizations.of(context)!.translate('unauthorized_access'),
-        )) {
-          ApiService apiService = ApiService();
-          await apiService.logout();
-          Navigator.pushAndRemoveUntil(
-            context,
-            MaterialPageRoute(builder: (context) => LoginScreen()),
-                (Route<dynamic> route) => false,
-          );
-        } else {
-          // ✅ УБРАНО: Не показываем SnackBar с кнопкой "Повторить"
-          // Переведенные сообщения об ошибках будут показаны в других местах
-          if (kDebugMode) {
-            debugPrint('TaskScreen: Error state - ${state.message}');
+            });
           }
-          // Можно показать простое сообщение БЕЗ кнопки повторить, если нужно
-          // if (mounted) {
-          //   ScaffoldMessenger.of(context).showSnackBar(
-          //     SnackBar(
-          //       content: Text(
-          //         state.message,
-          //         style: TextStyle(
-          //           fontFamily: 'Gilroy',
-          //           fontSize: 14,
-          //           color: Colors.white,
-          //         ),
-          //       ),
-          //       backgroundColor: Colors.red,
-          //       duration: Duration(seconds: 2),
-          //     ),
-          //   );
-          // }
-        }
-      } else if (state is TaskSuccess) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                state.message,
-                style: TextStyle(
-                  fontFamily: 'Gilroy',
-                  fontSize: 14,
-                  color: Colors.white,
+        } else if (state is TaskError) {
+          if (state.message.contains(
+            AppLocalizations.of(context)!.translate('unauthorized_access'),
+          )) {
+            ApiService apiService = ApiService();
+            await apiService.logout();
+            Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(builder: (context) => LoginScreen()),
+              (Route<dynamic> route) => false,
+            );
+          } else {
+            // ✅ УБРАНО: Не показываем SnackBar с кнопкой "Повторить"
+            // Переведенные сообщения об ошибках будут показаны в других местах
+            if (kDebugMode) {
+              debugPrint('TaskScreen: Error state - ${state.message}');
+            }
+            // Можно показать простое сообщение БЕЗ кнопки повторить, если нужно
+            // if (mounted) {
+            //   ScaffoldMessenger.of(context).showSnackBar(
+            //     SnackBar(
+            //       content: Text(
+            //         state.message,
+            //         style: TextStyle(
+            //           fontFamily: 'Gilroy',
+            //           fontSize: 14,
+            //           color: Colors.white,
+            //         ),
+            //       ),
+            //       backgroundColor: Colors.red,
+            //       duration: Duration(seconds: 2),
+            //     ),
+            //   );
+            // }
+          }
+        } else if (state is TaskSuccess) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  state.message,
+                  style: TextStyle(
+                    fontFamily: 'Gilroy',
+                    fontSize: 14,
+                    color: Colors.white,
+                  ),
                 ),
+                backgroundColor: Colors.green,
+                duration: Duration(seconds: 2),
               ),
-              backgroundColor: Colors.green,
-              duration: Duration(seconds: 2),
-            ),
-          );
-        }
-      } else if (state is TaskDeleted) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                state.message,
-                style: TextStyle(
-                  fontFamily: 'Gilroy',
-                  fontSize: 14,
-                  color: Colors.white,
+            );
+          }
+        } else if (state is TaskDeleted) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  state.message,
+                  style: TextStyle(
+                    fontFamily: 'Gilroy',
+                    fontSize: 14,
+                    color: Colors.white,
+                  ),
                 ),
+                backgroundColor: Colors.green,
+                duration: Duration(seconds: 2),
               ),
-              backgroundColor: Colors.green,
-              duration: Duration(seconds: 2),
-            ),
-          );
+            );
+          }
         }
-      }
-    },
-    child: _tabTitles.isEmpty
-        ? const Center(
-      child: PlayStoreImageLoading(
-        size: 80.0,
-        duration: Duration(milliseconds: 1000),
-      ),
-    )
-        : TabBarView(
-      controller: _tabController,
-      physics: const AlwaysScrollableScrollPhysics(),
-      children: _tabTitles.map((status) {
-        return RefreshIndicator(
-          onRefresh: () => _onRefresh(status['id']),
-          color: const Color(0xff1E2E52),
-          backgroundColor: Colors.white,
-          child: TaskColumn(
-            isTaskScreenTutorialCompleted: _isTaskScreenTutorialCompleted,
-            statusId: status['id'],
-            name: status['title'],
-            userId: _selectedUserId,
-            onStatusId: (newStatusId) {
-              final index = _tabTitles.indexWhere((s) => s['id'] == newStatusId);
-              if (index != -1) {
-                _tabController.animateTo(index);
+      },
+      child: _tabTitles.isEmpty
+          ? const Center(
+              child: PlayStoreImageLoading(
+                size: 80.0,
+                duration: Duration(milliseconds: 1000),
+              ),
+            )
+          : TabBarView(
+              controller: _tabController,
+              physics: const AlwaysScrollableScrollPhysics(),
+              children: _tabTitles.map((status) {
+                return RefreshIndicator(
+                  onRefresh: () => _onRefresh(status['id']),
+                  color: const Color(0xff1E2E52),
+                  backgroundColor: Colors.white,
+                  child: TaskColumn(
+                    isTaskScreenTutorialCompleted:
+                        _isTaskScreenTutorialCompleted,
+                    statusId: status['id'],
+                    name: status['title'],
+                    userId: _selectedUserId,
+                    onStatusId: (newStatusId) {
+                      final index =
+                          _tabTitles.indexWhere((s) => s['id'] == newStatusId);
+                      if (index != -1) {
+                        _tabController.animateTo(index);
 
-                // Проверяем, есть ли уже данные для этого статуса
-                final currentTaskBloc = context.read<TaskBloc>();
-                if (currentTaskBloc.state is TaskDataLoaded) {
-                  final currentState = currentTaskBloc.state as TaskDataLoaded;
-                  final hasTasksForStatus = currentState.tasks.any((task) => task.statusId == newStatusId);
+                        // Проверяем, есть ли уже данные для этого статуса
+                        final currentTaskBloc = context.read<TaskBloc>();
+                        if (currentTaskBloc.state is TaskDataLoaded) {
+                          final currentState =
+                              currentTaskBloc.state as TaskDataLoaded;
+                          final hasTasksForStatus = currentState.tasks
+                              .any((task) => task.statusId == newStatusId);
 
-                  // Загружаем только если нет данных для этого статуса
-                  if (!hasTasksForStatus) {
-                    // Преобразуем project_ids в List<int>
-                    List<int>? projectIdsList = _selectedProjects.isNotEmpty
-                        ? _selectedProjects.map((id) => int.parse(id)).toList()
-                        : (_selectedProject != null ? [int.parse(_selectedProject!)] : null);
+                          // Загружаем только если нет данных для этого статуса
+                          if (!hasTasksForStatus) {
+                            // Преобразуем project_ids в List<int>
+                            List<int>? projectIdsList =
+                                _selectedProjects.isNotEmpty
+                                    ? _selectedProjects
+                                        .map((id) => int.parse(id))
+                                        .toList()
+                                    : (_selectedProject != null
+                                        ? [int.parse(_selectedProject!)]
+                                        : null);
 
-                    currentTaskBloc.add(FetchTasks(
-                      newStatusId,
-                      query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
-                      userIds: _selectedUsers.isNotEmpty
-                          ? _selectedUsers.map((user) => user.id).toList()
-                          : null,
-                      statusIds: _selectedStatuses,
-                      fromDate: _fromDate,
-                      toDate: _toDate,
-                      overdue: _isOverdue,
-                      hasFile: _hasFile,
-                      hasDeal: _hasDeal,
-                      urgent: _isUrgent,
-                      deadlinefromDate: _deadlinefromDate,
-                      deadlinetoDate: _deadlinetoDate,
-                      projectIds: projectIdsList,
-                      authors: _selectedAuthors,
-                      department: _selectedDepartment,
-                      directoryValues: _selectedDirectoryValues,
-                    ));
-                  }
-                } else {
-                  // Если нет состояния TaskDataLoaded, загружаем данные
-                  currentTaskBloc.add(FetchTasks(newStatusId));
-                }
-              }
-            },
-          ),
-        );
-      }).toList(),
-    ),
-  );
-}
+                            currentTaskBloc.add(FetchTasks(
+                              newStatusId,
+                              query: _lastSearchQuery.isNotEmpty
+                                  ? _lastSearchQuery
+                                  : null,
+                              userIds: _selectedUsers.isNotEmpty
+                                  ? _selectedUsers
+                                      .map((user) => user.id)
+                                      .toList()
+                                  : null,
+                              statusIds: _selectedStatuses,
+                              fromDate: _fromDate,
+                              toDate: _toDate,
+                              overdue: _isOverdue,
+                              hasFile: _hasFile,
+                              hasDeal: _hasDeal,
+                              urgent: _isUrgent,
+                              deadlinefromDate: _deadlinefromDate,
+                              deadlinetoDate: _deadlinetoDate,
+                              completedFromDate: _completedFromDate,
+                              completedToDate: _completedToDate,
+                              projectIds: projectIdsList,
+                              authors: _selectedAuthors,
+                              department: _selectedDepartment,
+                              directoryValues: _selectedDirectoryValues,
+                            ));
+                          }
+                        } else {
+                          // Если нет состояния TaskDataLoaded, загружаем данные
+                          currentTaskBloc.add(FetchTasks(newStatusId));
+                        }
+                      }
+                    },
+                  ),
+                );
+              }).toList(),
+            ),
+    );
+  }
 
   void _scrollToActiveTab() {
     final keyContext = _tabKeys[_currentTabIndex].currentContext;
     if (keyContext != null) {
       final box = keyContext.findRenderObject() as RenderBox;
       final position =
-      box.localToGlobal(Offset.zero, ancestor: context.findRenderObject());
+          box.localToGlobal(Offset.zero, ancestor: context.findRenderObject());
       final tabWidth = box.size.width;
 
       if (position.dx < 0 ||

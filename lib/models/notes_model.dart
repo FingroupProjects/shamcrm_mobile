@@ -6,6 +6,8 @@ class Notes {
   final String body;
   final String? date;
   final String? createDate;
+  final bool isFinished;
+  final bool canFinish;
 
   Notes({
     required this.id,
@@ -13,6 +15,8 @@ class Notes {
     required this.body,
     this.date,
     this.createDate,
+    this.isFinished = false,
+    this.canFinish = false,
   });
 
   factory Notes.fromJson(Map<String, dynamic> json) {
@@ -26,6 +30,8 @@ class Notes {
       createDate: (json['created_at'] is String && _isValidDate(json['created_at']))
           ? json['created_at']
           : null, // Если дата некорректная, сохраняем null
+      isFinished: json['is_finished'] == true || json['is_finished'] == 1,
+      canFinish: json['can_finish'] == true || json['can_finish'] == 1,
     );
   }
 
