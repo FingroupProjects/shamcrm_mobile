@@ -79,7 +79,7 @@ class ChatMessagesPage {
           ),
         )
         .toList()
-      ..sort((a, b) => b.createMessateTime.compareTo(a.createMessateTime));
+      ..sort((a, b) => _compareMessagesByCreatedAtDesc(a, b));
 
     final paginationJson = resultMap['pagination'] is Map<String, dynamic>
         ? resultMap['pagination'] as Map<String, dynamic>
@@ -95,4 +95,22 @@ class ChatMessagesPage {
       ),
     );
   }
+}
+
+int _compareMessagesByCreatedAtDesc(Message left, Message right) {
+  final leftDate = _tryParseMessageDate(left.createMessateTime);
+  final rightDate = _tryParseMessageDate(right.createMessateTime);
+
+  if (leftDate != null && rightDate != null) {
+    return rightDate.compareTo(leftDate);
+  }
+  if (leftDate != null) return -1;
+  if (rightDate != null) return 1;
+  return right.createMessateTime.compareTo(left.createMessateTime);
+}
+
+DateTime? _tryParseMessageDate(String raw) {
+  final normalized = raw.trim();
+  if (normalized.isEmpty) return null;
+  return DateTime.tryParse(normalized)?.toUtc();
 }

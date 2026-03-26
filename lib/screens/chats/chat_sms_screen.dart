@@ -2547,12 +2547,11 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
                 return Duration(minutes: minutes, seconds: seconds);
               }
 
-              final tempMessage = Message(
+                final tempMessage = Message(
                 id: -DateTime.now().millisecondsSinceEpoch,
                 text: "Голосовое сообщение",
                 type: 'voice',
-                createMessateTime:
-                    DateTime.now().add(Duration(hours: -0)).toString(),
+                createMessateTime: DateTime.now().toUtc().toIso8601String(),
                 isMyMessage: true,
                 senderName: myName,
                 filePath: soundFile.path,
@@ -3508,7 +3507,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
           id: -DateTime.now().millisecondsSinceEpoch,
           text: messageText,
           type: 'text',
-          createMessateTime: DateTime.now().add(Duration(hours: 0)).toString(),
+          createMessateTime: DateTime.now().toUtc().toIso8601String(),
           isMyMessage: true,
           senderName: myName,
         );
@@ -3629,7 +3628,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
       id: -DateTime.now().millisecondsSinceEpoch,
       text: name,
       type: 'file',
-      createMessateTime: DateTime.now().add(Duration(hours: -0)).toString(),
+      createMessateTime: DateTime.now().toUtc().toIso8601String(),
       isMyMessage: true,
       senderName: myName,
       filePath: path,
