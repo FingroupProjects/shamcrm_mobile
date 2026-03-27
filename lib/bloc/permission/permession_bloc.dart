@@ -28,4 +28,21 @@ class PermissionsBloc extends Bloc<PermissionsEvent, PermissionsState> {
       emit(PermissionsError('Ошибка при загрузке прав доступа!'));
     }
   }
+
+  /// Получить список всех разрешений из текущего состояния
+  List<String> getAllPermissions() {
+    if (state is PermissionsLoaded) {
+      final loadedState = state as PermissionsLoaded;
+      // Извлекаем все разрешения из списка PermissionsModel
+      return loadedState.permissions
+          .expand((model) => model.permissions)
+          .toList();
+    }
+    return [];
+  }
+
+  /// Проверить наличие конкретного разрешения
+  bool hasPermission(String permission) {
+    return getAllPermissions().contains(permission);
+  }
 }

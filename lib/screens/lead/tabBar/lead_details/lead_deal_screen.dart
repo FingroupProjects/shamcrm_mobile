@@ -3,6 +3,8 @@ import 'package:crm_task_manager/bloc/deal/deal_bloc.dart';
 import 'package:crm_task_manager/bloc/deal/deal_event.dart';
 import 'package:crm_task_manager/bloc/lead/lead_bloc.dart';
 import 'package:crm_task_manager/bloc/lead/lead_event.dart';
+import 'package:crm_task_manager/bloc/lead_by_id/leadById_bloc.dart';
+import 'package:crm_task_manager/bloc/lead_by_id/leadById_state.dart';
 import 'package:crm_task_manager/bloc/lead_deal/lead_deal_bloc.dart';
 import 'package:crm_task_manager/bloc/lead_deal/lead_deal_event.dart';
 import 'package:crm_task_manager/bloc/lead_deal/lead_deal_state.dart';
@@ -21,11 +23,12 @@ import 'package:intl/intl.dart';
 class DealsWidget extends StatefulWidget {
   final int leadId;
 
-  DealsWidget({required this.leadId});
+  const DealsWidget({Key? key, required this.leadId}) : super(key: key);
 
   @override
   _DealsWidgetState createState() => _DealsWidgetState();
 }
+
 
 class _DealsWidgetState extends State<DealsWidget> {
   List<LeadDeal> deals = [];
@@ -166,10 +169,10 @@ class _DealsWidgetState extends State<DealsWidget> {
 
   try {
     formattedDate = (deal.lastseen != null && deal.lastseen!.isNotEmpty)
-        ? DateFormat('dd-MM-yyyy').format(DateTime.parse(deal.lastseen!))
-        : AppLocalizations.of(context)!.translate('not_specified');
+        ? DateFormat('dd.MM.yyyy').format(DateTime.parse(deal.lastseen!))
+        : AppLocalizations.of(context)!.translate('');
   } catch (e) {
-    formattedDate = AppLocalizations.of(context)!.translate('not_specified'); 
+    formattedDate = AppLocalizations.of(context)!.translate(''); 
       }
 
   return GestureDetector(
@@ -202,7 +205,14 @@ class _DealsWidgetState extends State<DealsWidget> {
                     ),
                     SizedBox(height: 4),
                     Text(
-                      formattedDate,
+                      '${AppLocalizations.of(context)!.translate('creation_date_details')} ${formattedDate}',
+                      style: TaskCardStyles.priorityStyle.copyWith(
+                        color: Color(0xff1E2E52),
+                      ),
+                    ),
+                    SizedBox(height: 4),
+                    Text(
+                      '${AppLocalizations.of(context)!.translate('status_details')} ${deal.dealStatus.title ?? ''}',
                       style: TaskCardStyles.priorityStyle.copyWith(
                         color: Color(0xff1E2E52),
                       ),
@@ -258,50 +268,60 @@ class _DealsWidgetState extends State<DealsWidget> {
   }
 
   Row _buildTitleRow(String title) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          title,
-          style: TaskCardStyles.titleStyle.copyWith(
-            fontWeight: FontWeight.w500,
-          ),
+  return Row(
+    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    children: [
+      Text(
+        title,
+        style: TaskCardStyles.titleStyle.copyWith(
+          fontWeight: FontWeight.w500,
         ),
-        if (_canCreateDeal)
-          TextButton(
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) =>
-                      LeadDealAddScreen(leadId: widget.leadId),
+      ),
+      if (_canCreateDeal)
+        BlocBuilder<LeadByIdBloc, LeadByIdState>(
+          builder: (context, state) {
+            int? managerId;
+            if (state is LeadByIdLoaded) {
+              managerId = state.lead.manager?.id;
+            }
+            return TextButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => LeadDealAddScreen(
+                      leadId: widget.leadId,
+                      managerId: managerId, // Передаём managerId
+                    ),
+                  ),
+                ).then((_) async {
+                  await LeadCache.clearLeadStatuses();
+                  await LeadCache.clearAllLeads();
+                  BlocProvider.of<LeadBloc>(context).add(FetchLeadStatuses());
+                  BlocProvider.of<DealBloc>(context).add(FetchDealStatuses());
+                });
+              },
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.white,
+                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                backgroundColor: Color(0xff1E2E52),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
                 ),
-              ).then((_) async {
-                await LeadCache.clearLeadStatuses();
-                await LeadCache.clearAllLeads();
-                BlocProvider.of<LeadBloc>(context).add(FetchLeadStatuses());
-                BlocProvider.of<DealBloc>(context).add(FetchDealStatuses());
-              });
-            },
-            style: TextButton.styleFrom(
-              foregroundColor: Colors.white,
-              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              backgroundColor: Color(0xff1E2E52),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
               ),
-            ),
-            child: Text(
-              AppLocalizations.of(context)!.translate('add'),
-              style: TextStyle(
-                fontSize: 16,
-                fontFamily: 'Gilroy',
-                fontWeight: FontWeight.w500,
-                color: Colors.white,
+              child: Text(
+                AppLocalizations.of(context)!.translate('add'),
+                style: TextStyle(
+                  fontSize: 16,
+                  fontFamily: 'Gilroy',
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white,
+                ),
               ),
-            ),
-          ),
-      ],
-    );
-  }
+            );
+          },
+        ),
+    ],
+  );
+}
 }

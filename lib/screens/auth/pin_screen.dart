@@ -1,35 +1,36 @@
-// lib/screens/auth/auth_screen.dart
+import 'dart:convert';
 import 'dart:io';
+// import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
-import 'package:crm_task_manager/bloc/deal/deal_bloc.dart';
-import 'package:crm_task_manager/bloc/deal/deal_event.dart';
-import 'package:crm_task_manager/bloc/lead/lead_bloc.dart';
-import 'package:crm_task_manager/bloc/lead/lead_event.dart';
-import 'package:crm_task_manager/bloc/my-task/my-task_bloc.dart';
-import 'package:crm_task_manager/bloc/my-task/my-task_event.dart';
-import 'package:crm_task_manager/bloc/permission/permession_bloc.dart';
-import 'package:crm_task_manager/bloc/permission/permession_event.dart';
-import 'package:crm_task_manager/bloc/task/task_bloc.dart';
-import 'package:crm_task_manager/bloc/task/task_event.dart';
-import 'package:crm_task_manager/models/user_byId_model..dart';
+import 'package:crm_task_manager/api/service/firebase_api.dart';
+import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/screens/auth/forgot_pin.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:new_version_plus/new_version_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:vibration/vibration.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:flutter/services.dart';
 
+import '../../update_dialog.dart';
+
 class PinScreen extends StatefulWidget {
-  const PinScreen({Key? key}) : super(key: key);
+  final RemoteMessage? initialMessage;
+
+  const PinScreen({
+    Key? key,
+    this.initialMessage,
+  }) : super(key: key);
 
   @override
-  State<PinScreen> createState() => _PinScreenState();
+  _PinScreenState createState() => _PinScreenState();
 }
 
-class _PinScreenState extends State<PinScreen>
-    with SingleTickerProviderStateMixin {
+class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMixin {
   String _pin = '';
   bool _isWrongPin = false;
   bool _isIosVersionAbove15 = false;
@@ -38,231 +39,325 @@ class _PinScreenState extends State<PinScreen>
   final LocalAuthentication _auth = LocalAuthentication();
   bool _canCheckBiometrics = false;
   List<BiometricType> _availableBiometrics = [];
+  bool _isBiometricEnabled = false;
   String _userName = '';
   String _userNameProfile = '';
   String _userImage = '';
-  int? userRoleId;
-  bool _isLoading = true; 
-  bool isPermissionsLoaded = false;
+  bool _isLoading = true;
+  bool _isInitialized = false;
+  bool _isPinVerified = false; // ✅ НОВОЕ: Флаг верификации PIN
+  final ApiService _apiService = ApiService();
+  
+  FirebaseApi? _firebaseApi;
 
- @override
-void initState() {
-  super.initState();
-    context.read<PermissionsBloc>().add(FetchPermissionsEvent());
+  @override
+  void initState() {
+    super.initState();
+    
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 500),
+      vsync: this,
+    );
 
-  _loadUserPhone().then((_) {
-    if (mounted) {
-      setState(() {
-        _isLoading = false;
-      });
+    _shakeAnimation = Tween<double>(begin: 0, end: 10).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.elasticIn),
+    );
+
+    _animationController.addStatusListener((status) {
+      if (status == AnimationStatus.completed) {
+        _animationController.reset();
+      }
+    });
+
+    _initializeMinimal();
+  }
+
+  // ==========================================================================
+  // МИНИМАЛЬНАЯ ИНИЦИАЛИЗАЦИЯ
+  // ==========================================================================
+
+  Future<void> _initializeMinimal() async {
+    if (_isInitialized) return;
+    _isInitialized = true;
+
+    try {
+      // ШАГ 1: Проверка обновления (быстро, не блокирует)
+      _checkForNewVersionSilently();
+
+      // ШАГ 2: Инициализация FirebaseApi
+      await _initializeFirebaseApi();
+
+      // ШАГ 3: Загрузка базовой информации (из кэша - быстро)
+      await _loadUserBasicInfo();
+
+      // ШАГ 4: Проверка PIN
+      await _checkSavedPin();
+      
+      // ШАГ 5: Загрузка настройки биометрии
+      await _loadBiometricSetting();
+      
+      // ШАГ 6: Биометрия (только если включена)
+      await _initBiometrics();
+
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+      
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+        _showErrorDialog('Ошибка инициализации', e.toString());
+      }
     }
-  });
+  }
 
-  _loadUserRoleId().then((_) {
-    _checkSavedPin();
-    _initBiometrics();
+  // ==========================================================================
+  // ЗАГРУЗКА БАЗОВОЙ ИНФОРМАЦИИ
+  // ==========================================================================
 
-  });
-
-  _animationController = AnimationController(
-    duration: const Duration(milliseconds: 500),
-    vsync: this,
-  );
-
-  _shakeAnimation = Tween<double>(begin: 0, end: 10).animate(
-    CurvedAnimation(parent: _animationController, curve: Curves.elasticIn),
-  );
-
-  _animationController.addStatusListener((status) {
-    if (status == AnimationStatus.completed) {
-      _animationController.reset();
-    }
-  });
-}
- Future<void> _loadUserRoleId() async {
+  Future<void> _loadUserBasicInfo() async {
     try {
       SharedPreferences prefs = await SharedPreferences.getInstance();
-      String userId = prefs.getString('userID') ?? '';
-      if (userId.isEmpty) {
+
+      String? savedUserName = prefs.getString('userName');
+      String? savedUserNameProfile = prefs.getString('userNameProfile');
+      String? savedUserImage = prefs.getString('userImage');
+
+      if (mounted) {
         setState(() {
-          userRoleId = 0;
+          _userName = savedUserName ?? 'Пользователь';
+          _userNameProfile = savedUserNameProfile ?? 'Пользователь';
+          _userImage = savedUserImage ?? '';
         });
+      }
+    } catch (e) {
+      //print('PinScreen: Ошибка загрузки базовой информации: $e');
+    }
+  }
+
+  // ==========================================================================
+  // ПРОВЕРКА ОБНОВЛЕНИЙ
+  // ==========================================================================
+
+  Future<void> _checkForNewVersionSilently() async {
+    try {
+      final newVersionPlus = NewVersionPlus();
+      final status = await newVersionPlus.getVersionStatus();
+      debugPrint("pinScreen. APP_VERSION: Current: ${status?.localVersion}, Store: ${status?.storeVersion}, CanUpdate: ${status?.canUpdate}");
+
+      if (mounted && context.mounted && status != null && status.canUpdate == true) {
+        final localizations = AppLocalizations.of(context);
+        
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted && context.mounted) {
+            UpdateDialog.show(
+              context: context,
+              status: status,
+              title: localizations?.translate('app_update_available_title') ?? 'Обновление',
+              message: localizations?.translate('app_update_available_message') ?? 'Доступна новая версия приложения',
+              updateButton: localizations?.translate('app_update_button') ?? 'Обновить',
+            );
+          }
+        });
+      }
+    } catch (e) {
+      // Игнорируем
+    }
+  }
+
+  // ==========================================================================
+  // FIREBASE
+  // ==========================================================================
+
+  Future<void> _initializeFirebaseApi() async {
+    try {
+      if (Firebase.apps.isEmpty) {
+        _firebaseApi = null;
         return;
       }
 
-      // Получение ИД РОЛЯ через API
-      UserByIdProfile userProfile =
-          await ApiService().getUserById(int.parse(userId));
-      setState(() {
-        userRoleId = userProfile.role!.first.id;
-      });
-      // Выводим данные в консоль
-      // context.read<PermissionsBloc>().add(FetchPermissionsEvent());
-      BlocProvider.of<LeadBloc>(context).add(FetchLeadStatuses());
-      BlocProvider.of<DealBloc>(context).add(FetchDealStatuses());
-      BlocProvider.of<TaskBloc>(context).add(FetchTaskStatuses());
-      BlocProvider.of<MyTaskBloc>(context).add(FetchMyTaskStatuses());
+      try {
+        Firebase.app();
+      } catch (e) {
+        _firebaseApi = null;
+        return;
+      }
 
+      await Future.delayed(const Duration(milliseconds: 300));
+
+      try {
+        Firebase.app();
+      } catch (e) {
+        _firebaseApi = null;
+        return;
+      }
+
+      _firebaseApi = FirebaseApi();
       
-      setState(() {
-        isPermissionsLoaded = true; 
-      });
-
     } catch (e) {
-      print('Error loading user role!');
-      setState(() {
-        userRoleId = 0;
-      });
+      _firebaseApi = null;
     }
   }
-Future<void> _loadUserPhone() async {
-  SharedPreferences prefs = await SharedPreferences.getInstance();
 
-  String? savedUserName = prefs.getString('userName');
-  String? savedUserNameProfile = prefs.getString('userNameProfile');
-  String? savedUserImage = prefs.getString('userImage');
+  // ==========================================================================
+  // PIN И БИОМЕТРИЯ
+  // ==========================================================================
 
-  if (savedUserName != null && savedUserNameProfile != null && savedUserImage != null) {
-    if (mounted) {
-      setState(() {
-        _userName = savedUserName;
-        _userNameProfile = savedUserNameProfile;
-        _userImage = savedUserImage;
-      });
+  Future<void> _checkSavedPin() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final savedPin = prefs.getString('user_pin');
+      
+      if (savedPin == null) {
+        if (mounted) {
+          Navigator.of(context).pushReplacementNamed('/pin_setup');
+        }
+      }
+    } catch (e) {
+      //print('PinScreen: Ошибка проверки PIN: $e');
     }
-    return;
   }
 
-try {
-  // Инициализация SharedPreferences
-  SharedPreferences prefs = await SharedPreferences.getInstance();
-
-  // Получение userID из SharedPreferences
-  String UUID = prefs.getString('userID') ?? '';
-  print('userID : $UUID');
-
-  // Преобразование UUID в число и вызов метода getUserById
-  UserByIdProfile userProfile = await ApiService().getUserById(int.parse(UUID));
-
-  // Сохранение данных пользователя в SharedPreferences
-  await prefs.setString('userName', userProfile.name);
-  await prefs.setString('userNameProfile', userProfile.name ?? '');
-  await prefs.setString('userImage', userProfile.image ?? '');
-
-  // Обновление состояния
-  if (mounted) {
-    setState(() {
-      _userName = userProfile.name;
-      _userNameProfile = userProfile.name ?? '';
-      _userImage = userProfile.image ?? '';
-    });
+  Future<void> _loadBiometricSetting() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      if (mounted) {
+        setState(() {
+          _isBiometricEnabled = prefs.getBool('biometric_auth_enabled') ?? false;
+        });
+      }
+    } catch (e) {
+      //print('PinScreen: Ошибка загрузки настройки биометрии: $e');
+    }
   }
-} catch (e) {
-  // Обработка ошибок
-  print('Ошибка при загрузке данных с сервера: $e');
 
-  if (mounted) {
-    setState(() {
-      _userName = 'Не найдено';
-      _userNameProfile = 'Не найдено';
-      _userImage = '';
-    });
-  }
-}
-}
   Future<void> _initBiometrics() async {
-    final localizations = AppLocalizations.of(context)!;
+    try {
+      // Check if biometric auth is enabled in settings
+      if (!_isBiometricEnabled) {
+        return; // Biometric auth is disabled, don't show/trigger it
+      }
 
-   try {
+      final localizations = AppLocalizations.of(context);
+      if (localizations == null) return;
+
       _canCheckBiometrics = await _auth.canCheckBiometrics;
 
       if (_canCheckBiometrics) {
         _availableBiometrics = await _auth.getAvailableBiometrics();
+        
         if (_availableBiometrics.isNotEmpty) {
-          if (Platform.isIOS &&
-              _availableBiometrics.contains(BiometricType.face)) {
+          if (Platform.isIOS && _availableBiometrics.contains(BiometricType.face)) {
             _authenticate();
-          } else if (Platform.isAndroid &&
-              _availableBiometrics.contains(BiometricType.strong)) {
+          } else if (Platform.isAndroid && _availableBiometrics.contains(BiometricType.strong)) {
             _authenticate();
           }
         }
-      } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-            content: Text(localizations.translate('biometric_unavailable')), 
-            ),
-          );
-        }
       }
     } on PlatformException catch (e) {
-      debugPrint('Ошибка инициализации биометрии!');
+      //print('PinScreen: Ошибка инициализации биометрии: $e');
+    } catch (e) {
+      //print('PinScreen: Неожиданная ошибка биометрии: $e');
     }
   }
 
-Future<void> _authenticate() async {
-  final localizations = AppLocalizations.of(context)!;
+  Future<void> _authenticate() async {
+    try {
+      final localizations = AppLocalizations.of(context);
+      if (localizations == null) return;
 
-  try {
-    if (!_canCheckBiometrics || _availableBiometrics.isEmpty) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(localizations.translate('biometric_unavailable')), 
-          ),
-        );
-      }
-      return;
-    }
+      if (!_canCheckBiometrics || _availableBiometrics.isEmpty) return;
 
-    final bool didAuthenticate = await _auth.authenticate(
-      localizedReason: localizations.translate('confirm_identity'),
-      options: const AuthenticationOptions(
-        biometricOnly: true,
-        useErrorDialogs: true,
-        stickyAuth: true,
-      ),
-    );
-
+      final bool didAuthenticate = await _auth.authenticate(
+        localizedReason: localizations.translate('confirm_identity'),
+        options: const AuthenticationOptions(
+          biometricOnly: true,
+          useErrorDialogs: true,
+          stickyAuth: true,
+        ),
+      );
 
       if (didAuthenticate && mounted) {
-        Navigator.of(context).pushReplacementNamed('/home');
-           
+        // ✅ ИСПРАВЛЕНИЕ: Устанавливаем флаг верификации
+        setState(() {
+          _isPinVerified = true;
+        });
+        _navigateToHome();
       }
     } on PlatformException catch (e) {
-      if (mounted) {
-      }
+      //print('PinScreen: Ошибка биометрической аутентификации: $e');
+    } catch (e) {
+      //print('PinScreen: Неожиданная ошибка аутентификации: $e');
     }
   }
 
-  Future<void> _checkSavedPin() async {
-    final prefs = await SharedPreferences.getInstance();
-    final savedPin = prefs.getString('user_pin');
-    if (savedPin == null) {
-      if (mounted) {
-        Navigator.of(context).pushReplacementNamed('/pin_setup');
-      }
+  // ==========================================================================
+  // НАВИГАЦИЯ
+  // ==========================================================================
+
+  void _navigateToHome() {
+    if (!mounted) return;
+    
+    // ✅ КРИТИЧНО: Проверяем флаг верификации
+    if (!_isPinVerified) {
+      debugPrint('PinScreen: PIN не верифицирован, отменяем навигацию');
+      return;
     }
+    
+    debugPrint('PinScreen: PIN верифицирован, переход на HomeScreen');
+    
+    // ✅ ИСПРАВЛЕНИЕ: Передаем initialMessage через arguments
+    Future.delayed(Duration(milliseconds: 50), () {
+      if (!mounted) return;
+      
+      if (mounted) {
+        Navigator.of(context).pushReplacementNamed(
+          '/home',
+          arguments: {
+            'initialMessage': widget.initialMessage, // ⬅️ Передаем сообщение
+          },
+        );
+      }
+    });
   }
+
+  // ==========================================================================
+  // ОБРАБОТКА PIN
+  // ==========================================================================
 
   void _onNumberPressed(String number) async {
     if (_pin.length < 4) {
       setState(() {
         _pin += number;
       });
-      // Вибрация при каждом нажатии на кнопку
-      if (await Vibration.hasVibrator() ?? false) {
-        Vibration.vibrate(duration: 50); // Вибрация длиной 50 миллисекунд
-      }
+
+      try {
+        if (await Vibration.hasVibrator() ?? false) {
+          Vibration.vibrate(duration: 50);
+        }
+      } catch (e) {}
+
       if (_pin.length == 4) {
         final prefs = await SharedPreferences.getInstance();
         final savedPin = prefs.getString('user_pin');
+
         if (_pin == savedPin) {
+          debugPrint('PinScreen: PIN корректен');
+          
+          // ✅ ИСПРАВЛЕНИЕ: Устанавливаем флаг ПЕРЕД навигацией
+          setState(() {
+            _isPinVerified = true;
+          });
+          
           if (mounted) {
-            Navigator.of(context).pushReplacementNamed('/home');
+            _navigateToHome();
           }
         } else {
+          debugPrint('PinScreen: PIN некорректен');
           _triggerErrorEffect();
         }
       }
@@ -270,9 +365,12 @@ Future<void> _authenticate() async {
   }
 
   void _triggerErrorEffect() async {
-    if (await Vibration.hasVibrator() ?? false) {
-      Vibration.vibrate(duration: 200);
-    }
+    try {
+      if (await Vibration.hasVibrator() ?? false) {
+        Vibration.vibrate(duration: 200);
+      }
+    } catch (e) {}
+    
     setState(() {
       _isWrongPin = true;
       _pin = '';
@@ -301,35 +399,210 @@ Future<void> _authenticate() async {
     SystemNavigator.pop();
   }
 
+  // ==========================================================================
+  // ДИАЛОГИ
+  // ==========================================================================
+
+  void _showErrorDialog(String title, String message) {
+    if (!mounted) return;
+    
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: Text(title),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              SystemNavigator.pop();
+            },
+            child: Text('Закрыть приложение'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              setState(() {
+                _isInitialized = false;
+                _isLoading = true;
+              });
+              _initializeMinimal();
+            },
+            child: Text('Повторить'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<bool> _showNoInternetDialog(BuildContext context) async {
+    final localizations = AppLocalizations.of(context);
+    
+    final result = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      barrierColor: Colors.black54,
+      builder: (BuildContext context) {
+        return WillPopScope(
+          onWillPop: () async => false,
+          child: Dialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16.0),
+            ),
+            elevation: 0,
+            backgroundColor: Colors.white,
+            child: Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.wifi_off_rounded,
+                    size: 48.0,
+                    color: Colors.redAccent,
+                  ),
+                  const SizedBox(height: 16.0),
+                  Text(
+                    localizations?.translate('no_internet') ?? 'Нет интернета',
+                    style: const TextStyle(
+                      fontSize: 20.0,
+                      fontWeight: FontWeight.bold,
+                      fontFamily: 'Gilroy',
+                      color: Colors.black87,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 8.0),
+                  Text(
+                    localizations?.translate('please_check_internet') ??
+                        'Пожалуйста, проверьте подключение к интернету',
+                    style: const TextStyle(
+                      fontSize: 16.0,
+                      color: Colors.black54,
+                      fontFamily: 'Gilroy',
+                      height: 1.5,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 24.0),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      TextButton(
+                        onPressed: () {
+                          Navigator.of(context).pop(false);
+                        },
+                        child: Text(
+                          'Отмена',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            fontFamily: 'Gilroy',
+                            color: Colors.grey,
+                          ),
+                        ),
+                      ),
+                      ElevatedButton(
+                        onPressed: () {
+                          Navigator.of(context).pop(true);
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blueAccent,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 32.0,
+                            vertical: 12.0,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12.0),
+                          ),
+                          elevation: 2.0,
+                        ),
+                        child: Text(
+                          localizations?.translate('retry') ?? 'Повторить',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            fontFamily: 'Gilroy',
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+
+    return result ?? false;
+  }
+
+  // ==========================================================================
+  // ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ
+  // ==========================================================================
+
+  String getGreetingMessage() {
+    final hour = DateTime.now().hour;
+    final localizations = AppLocalizations.of(context);
+    if (localizations == null) return 'Добро пожаловать!';
+
+    if (hour >= 5 && hour < 11) {
+      return '${localizations.translate('greeting_morning')}, $_userNameProfile!';
+    } else if (hour >= 11 && hour < 18) {
+      return '${localizations.translate('greeting_day')}, $_userNameProfile!';
+    } else if (hour >= 18 && hour < 22) {
+      return '${localizations.translate('greeting_evening')}, $_userNameProfile!';
+    } else {
+      return '${localizations.translate('greeting_night')}, $_userNameProfile!';
+    }
+  }
+
   @override
   void dispose() {
     _animationController.dispose();
     super.dispose();
   }
 
-String getGreetingMessage() {
-  final hour = DateTime.now().hour;
-  final localizations = AppLocalizations.of(context)!;
-
-  if (hour >= 5 && hour < 11) {
-    return '${localizations.translate('greeting_morning')}, $_userNameProfile!';
-  } else if (hour >= 11 && hour < 18) {
-    return '${localizations.translate('greeting_day')}, $_userNameProfile!';
-  } else if (hour >= 18 && hour < 22) {
-    return '${localizations.translate('greeting_evening')}, $_userNameProfile!';
-  } else {
-    return '${localizations.translate('greeting_night')}, $_userNameProfile!';
-  }
-}
-
+  // ==========================================================================
+  // BUILD
+  // ==========================================================================
 
   @override
   Widget build(BuildContext context) {
-    final localizations = AppLocalizations.of(context)!;
+    final localizations = AppLocalizations.of(context);
+    
+    if (_isLoading) {
+      return Scaffold(
+        backgroundColor: Colors.white,
+        body: Center(
+          child: PlayStoreImageLoading(
+            size: 80.0,
+            duration: Duration(milliseconds: 1000),
+          ),
+        ),
+      );
+    }
+
+    if (localizations == null) {
+      return Scaffold(
+        backgroundColor: Colors.white,
+        body: Center(
+          child: PlayStoreImageLoading(
+            size: 80.0,
+            duration: Duration(milliseconds: 1000),
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
+      backgroundColor: Colors.white,
       body: SafeArea(
         child: Padding(
-          // В виджете используйте _userImage для отображения
           padding: const EdgeInsets.symmetric(horizontal: 30.0),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -352,14 +625,14 @@ String getGreetingMessage() {
               ),
               const SizedBox(height: 8),
               Text(
-              _isWrongPin
-                  ? localizations.translate('wrong_pin')
-                  : localizations.translate('enter_pin'),
-              style: TextStyle(
-                fontSize: 16,
-                color: _isWrongPin ? Colors.red : Colors.grey,
+                _isWrongPin
+                    ? localizations.translate('wrong_pin')
+                    : localizations.translate('enter_pin'),
+                style: TextStyle(
+                  fontSize: 16,
+                  color: _isWrongPin ? Colors.red : Colors.grey,
+                ),
               ),
-            ),
               const SizedBox(height: 24),
               AnimatedBuilder(
                 animation: _shakeAnimation,
@@ -404,16 +677,16 @@ String getGreetingMessage() {
                               fontSize: 24, color: Colors.black),
                         ),
                       ),
-                  TextButton(
-                    onPressed: _onExitPressed,
-                    child: Text(
-                      localizations.translate('exit'),
-                      style: const TextStyle(
-                        fontSize: 16,
-                        color: Color.fromARGB(255, 33, 41, 188),
+                    TextButton(
+                      onPressed: _onExitPressed,
+                      child: Text(
+                        localizations.translate('exit'),
+                        style: const TextStyle(
+                          fontSize: 16,
+                          color: Color.fromARGB(255, 33, 41, 188),
+                        ),
                       ),
                     ),
-                  ),
                     TextButton(
                       onPressed: () => _onNumberPressed('0'),
                       child: const Text(
@@ -421,7 +694,7 @@ String getGreetingMessage() {
                         style: TextStyle(fontSize: 24, color: Colors.black),
                       ),
                     ),
-                    if (!_isIosVersionAbove15)
+                    if (!_isIosVersionAbove15 && _isBiometricEnabled)
                       TextButton(
                         onPressed: _pin.isEmpty ? _authenticate : _onDelete,
                         child: Icon(
@@ -429,6 +702,14 @@ String getGreetingMessage() {
                               ? Icons.fingerprint
                               : Icons.backspace_outlined,
                           color: const Color.fromARGB(255, 33, 41, 188),
+                        ),
+                      )
+                    else if (!_isIosVersionAbove15 && !_isBiometricEnabled && _pin.isNotEmpty)
+                      TextButton(
+                        onPressed: _onDelete,
+                        child: const Icon(
+                          Icons.backspace_outlined,
+                          color: Color.fromARGB(255, 33, 41, 188),
                         ),
                       ),
                   ],
@@ -441,10 +722,11 @@ String getGreetingMessage() {
                     builder: (context) => ForgotPinScreen(),
                   ));
                 },
-              child: Text(
-                localizations.translate('forgot_pin'),
-                style: const TextStyle(color: Color.fromARGB(255, 24, 65, 99)),
-              ),
+                child: Text(
+                  localizations.translate('forgot_pin'),
+                  style:
+                      const TextStyle(color: Color.fromARGB(255, 24, 65, 99)),
+                ),
               ),
             ],
           ),

@@ -85,11 +85,11 @@ void _showErrorSnackBar(BuildContext context, String message) {
         ),
       ),
       body: BlocListener<ContactPersonBloc, ContactPersonState>(
-  listener: (context, state) {
-    if (state is ContactPersonError) {
-      _showErrorSnackBar(context,AppLocalizations.of(context)!.translate(state.message), // Локализация сообщения
-      );
-    } else if (state is ContactPersonSuccess) {
+      listener: (context, state) {
+       if (state is ContactPersonError) {
+         _showErrorSnackBar(context,AppLocalizations.of(context)!.translate(state.message), // Локализация сообщения
+         );
+       } else if (state is ContactPersonSuccess) {
        ScaffoldMessenger.of(context).showSnackBar(
                    SnackBar(
                      content: Text(
@@ -112,14 +112,18 @@ void _showErrorSnackBar(BuildContext context, String message) {
                      duration: Duration(seconds: 3),
                    ),
                 );
-      Navigator.pop(context, widget.leadId);
+               Navigator.pop(context, widget.leadId);
           }
         },
         child: Form(
-          key: _formKey,
-          child: Column(
-            children: [
-              Expanded(
+        key: _formKey,
+        child: Column(
+          children: [
+            Expanded(
+              child: GestureDetector(
+                onTap: () {
+                  FocusScope.of(context).unfocus();
+                },
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.all(16),
                   child: Column(
@@ -167,6 +171,7 @@ void _showErrorSnackBar(BuildContext context, String message) {
                     ],
                   ),
                 ),
+              ),
               ),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 30),

@@ -11,11 +11,15 @@ class ForgotPinLoading extends ForgotPinState {}
 
 class ForgotPinSuccess extends ForgotPinState {
   final int pin;
+  final String email; // 👈 НОВОЕ ПОЛЕ
 
-  ForgotPinSuccess(this.pin);
+  ForgotPinSuccess({
+    required this.pin,
+    required this.email,
+  });
 
   @override
-  List<Object?> get props => [pin];
+  List<Object?> get props => [pin, email];
 }
 
 class ForgotPinFailure extends ForgotPinState {

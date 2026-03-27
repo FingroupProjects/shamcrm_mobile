@@ -1,6 +1,6 @@
 part of 'chats_bloc.dart';
 
-sealed class ChatsState extends Equatable {
+abstract class ChatsState extends Equatable {
   const ChatsState();
 
   @override
@@ -31,7 +31,10 @@ class ChatsError extends ChatsState {
 class ChatsDeleted extends ChatsState {
   final String message;
 
-  ChatsDeleted(this.message);
+  const ChatsDeleted(this.message);
+
+  @override
+  List<Object> get props => [message];
 }
 
 class ChatsSearched extends ChatsState {

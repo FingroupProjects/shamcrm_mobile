@@ -40,7 +40,7 @@ class ParticipantProfileScreen extends StatelessWidget {
     try {
       DateTime parsedDate =
           DateTime.parse(date).toUtc().add(Duration(hours: 5));
-      return DateFormat('dd-MM-yyyy HH:mm').format(parsedDate);
+      return DateFormat('dd.MM.yyyy HH:mm').format(parsedDate);
     } catch (e) {
       return AppLocalizations.of(context)!.translate('unknow');
     }
@@ -232,6 +232,7 @@ class ParticipantProfileScreen extends StatelessWidget {
                     buildInfoRow(
                         AppLocalizations.of(context)!.translate('user_name'),
                         name,
+                        
                         Icons.person),
                     buildDivider(),
                     buildInfoRow(
@@ -273,7 +274,7 @@ class ParticipantProfileScreen extends StatelessWidget {
                               lastMessage: "",
                               messageType: "",
                               createDate: "",
-                              unredMessage: 0,
+                              unreadCount: 0,
                               canSendMessage: true,
                               chatUsers: [],
                             ).toChatItem(),
@@ -376,6 +377,8 @@ class ParticipantProfileScreen extends StatelessWidget {
                   fontFamily: 'Gilroy',
                   color: Color(0xff6E7C97),
                 ),
+                  maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
               ),
               // Проверяем тип поля и делаем его кликабельным если это телефон или email
               title == "Номер телефона" || title == "Email"
@@ -396,6 +399,8 @@ class ParticipantProfileScreen extends StatelessWidget {
                           color: Color(0xff1E2E52),
                           decoration: TextDecoration.underline,
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     )
                   : Text(
@@ -406,6 +411,8 @@ class ParticipantProfileScreen extends StatelessWidget {
                         fontFamily: 'Gilroy',
                         color: Color(0xff1E2E52),
                       ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                     ),
             ],
           ),

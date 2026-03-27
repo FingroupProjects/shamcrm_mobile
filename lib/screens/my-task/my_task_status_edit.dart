@@ -26,6 +26,7 @@ class _EditMyTaskStatusScreenState extends State<EditMyTaskStatusScreen> {
   bool _needsPermission = true;
   late MyTaskBloc _myTaskBloc;
   bool _dataLoaded = false;
+  bool isFinalStage = false;
 
   @override
   void initState() {
@@ -56,6 +57,7 @@ class _EditMyTaskStatusScreenState extends State<EditMyTaskStatusScreen> {
           widget.myTaskStatusId,
           _titleController.text,
           localizations,
+          _needsPermission, // Передаем значение чекбокса
         ),
       );
     }
@@ -101,33 +103,31 @@ class _EditMyTaskStatusScreenState extends State<EditMyTaskStatusScreen> {
         if (state is MyTaskStatusLoaded && !_dataLoaded) {
           setState(() {
             _titleController.text = state.myTaskStatus.title;
-            // _needsPermission = state.myTaskStatus.needsPermission!;
+            _needsPermission = state.myTaskStatus.finalStep; // Update this line
             _dataLoaded = true;
           });
         } else if (state is MyTaskStatusUpdatedEdit) {
           ScaffoldMessenger.of(context).showSnackBar(
-
             SnackBar(
-                          content: Text(
-                            "Статус успешно обновлен!",
-                            style: TextStyle(
-                              fontFamily: 'Gilroy',
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.white,
-                            ),
-                          ),
-                          behavior: SnackBarBehavior.floating,
-                          margin:
-                              EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          backgroundColor: Colors.green,
-                          elevation: 3,
-                          padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                          duration: Duration(seconds: 3),
-                        ),
+              content: Text(
+                "Статус успешно обновлен!",
+                style: TextStyle(
+                  fontFamily: 'Gilroy',
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white,
+                ),
+              ),
+              behavior: SnackBarBehavior.floating,
+              margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              backgroundColor: Colors.green,
+              elevation: 3,
+              padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+              duration: Duration(seconds: 3),
+            ),
           );
           final taskBloc = BlocProvider.of<MyTaskBloc>(context, listen: false);
           taskBloc.add(FetchMyTaskStatuses());
@@ -136,26 +136,25 @@ class _EditMyTaskStatusScreenState extends State<EditMyTaskStatusScreen> {
         } else if (state is MyTaskError) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-                          content: Text(
-                            "Ошибка обновления статуса!",
-                            style: TextStyle(
-                              fontFamily: 'Gilroy',
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.white,
-                            ),
-                          ),
-                          behavior: SnackBarBehavior.floating,
-                          margin:
-                              EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          backgroundColor: Colors.red,
-                          elevation: 3,
-                          padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                          duration: Duration(seconds: 3),
-                        ),
+              content: Text(
+                "Ошибка обновления статуса!",
+                style: TextStyle(
+                  fontFamily: 'Gilroy',
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white,
+                ),
+              ),
+              behavior: SnackBarBehavior.floating,
+              margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              backgroundColor: Colors.red,
+              elevation: 3,
+              padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+              duration: Duration(seconds: 3),
+            ),
           );
         }
       },

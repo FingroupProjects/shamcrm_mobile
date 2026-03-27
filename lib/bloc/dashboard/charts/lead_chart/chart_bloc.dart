@@ -35,18 +35,15 @@ class DashboardChartBloc extends Bloc<DashboardChartEvent, DashboardChartState> 
       List<ChartData>? cachedData = await LeadChartCacheHandler.getLeadChartData();
 
       if (cachedData != null) {
-        print("📦 Найдены данные графика в кеше.");
         emit(DashboardChartLoaded(chartData: cachedData));
       }
 
       // 2. Проверка подключения к интернету
       if (await _checkInternetConnection()) {
-        print("🌐 Интернет подключен. Получаем данные с сервера...");
         final chartData = await _apiService.getLeadChart();
 
         // Если данные в кеше равны null или отличаются от данных с сервера, обновляем кэш и UI
         if (cachedData == null || !_areChartDataEqual(chartData, cachedData)) {
-          print("✅ Новые данные с сервера. Обновляем кэш и UI.");
 
           // Сохраняем новые данные в кеш
           await LeadChartCacheHandler.saveLeadChartData(chartData);
@@ -54,10 +51,8 @@ class DashboardChartBloc extends Bloc<DashboardChartEvent, DashboardChartState> 
           // Отправляем новые данные в UI
           emit(DashboardChartLoaded(chartData: chartData));
         } else {
-          print("🔄 КЛИЕНТЫ Данные с сервера совпадают с кешированными. Обновление не требуется.");
         }
       } else {
-        print("🚫 Нет подключения к интернету.");
         if (cachedData == null) {
           emit(DashboardChartError(message: "Нет данных и нет подключения к интернету."));
         }

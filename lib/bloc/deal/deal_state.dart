@@ -54,6 +54,11 @@ class DealDataLoaded extends DealState {
     );
   }
 }
+class DealWarning extends DealState {
+  final String message;
+
+  DealWarning(this.message);
+}
 
 class DealError extends DealState {
   final String message;

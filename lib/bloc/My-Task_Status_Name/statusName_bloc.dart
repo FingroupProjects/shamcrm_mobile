@@ -15,11 +15,11 @@ class MyTaskMyStatusNameBloc extends Bloc<MyStatusNameEvent, MyStatusNameState> 
       if (await _checkInternetConnection()) {
         try {
           final statuses = await apiService.getMyStatusName();
-          print('Полученные статусы в блоке: $statuses');
+          //print('Полученные статусы в блоке: $statuses');
 
           emit(MyStatusNameLoaded(statuses));
         } catch (e) {
-          print('Ошибка при загрузке статусов!'); // For debugging
+          //print('Ошибка при загрузке статусов!'); // For debugging
           emit(MyStatusNameError('Ошибка при загрузке имен статусов!'));
         }
       } else {
@@ -34,7 +34,7 @@ class MyTaskMyStatusNameBloc extends Bloc<MyStatusNameEvent, MyStatusNameState> 
       final result = await InternetAddress.lookup('example.com');
       return result.isNotEmpty && result[0].rawAddress.isNotEmpty;
     } on SocketException catch (e) {
-      print('Нет интернета!'); // For debugging
+      //print('Нет интернета!'); // For debugging
       return false;
     }
   }
