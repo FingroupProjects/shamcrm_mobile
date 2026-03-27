@@ -11,6 +11,7 @@ class UserByIdProfile {
   final String? image;
   final String? lastSeen;
   final List<Role>? role;
+  final String? uniqueId; // Новое поле
 
   UserByIdProfile({
     required this.id,
@@ -23,6 +24,7 @@ class UserByIdProfile {
     this.image,
     this.lastSeen,
     this.role,
+    this.uniqueId, // Добавляем в конструктор
   });
 
   factory UserByIdProfile.fromJson(Map<String, dynamic> json) {
@@ -36,6 +38,7 @@ class UserByIdProfile {
       phone: json['phone'] ?? '',
       image: json['image'] as String?,
       lastSeen: json['last_seen'] as String?,
+      uniqueId: json['unique_id'] as String?, // Парсим unique_id
       role: (json['roles'] as List<dynamic>?)
           ?.map((roleJson) => Role.fromJson(roleJson))
           .toList(),

@@ -1,14 +1,11 @@
 import 'dart:io';
 
-import 'package:crm_task_manager/main.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:restart_app/restart_app.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
-import 'package:crm_task_manager/screens/auth/auth_screen.dart';
-import 'dart:ui' as ui; // Добавьте этот импорт
 
 class LogoutButtonWidget extends StatelessWidget {
   const LogoutButtonWidget({super.key});
@@ -19,16 +16,16 @@ class LogoutButtonWidget extends StatelessWidget {
 
     return GestureDetector(
       onTap: () async {
-
+   ApiService apiService = ApiService();
+    await apiService.logoutAccount();
         // Очистка SharedPreferences
         SharedPreferences prefs = await SharedPreferences.getInstance();
         String? token = prefs.getString('token') ?? '';
-        print('------=-=--=-==--=-=-=-=-=-=-TOKEN LOGOUT =-=-=-==--=-=-=-=-==--==-=-');
-        print(token);
+        //print('------=-=--=-==--=-=-=-=-=-=-TOKEN LOGOUT =-=-=-==--=-=-=-=-==--==-=-');
+        //print(token);
         await prefs.clear();
 
-        // Вызов метода logout в ApiService
-        ApiService apiService = ApiService();
+
         await apiService.logout();
 
 

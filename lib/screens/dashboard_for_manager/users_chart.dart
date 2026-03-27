@@ -82,7 +82,7 @@ Future<void> _loadUserName() async {
       }
     }
   } catch (e) {
-    print('Ошибка при загрузке имени пользователя: $e');
+    // print('Ошибка при загрузке имени пользователя: $e');
     setState(() {
       userName = ''; // В случае ошибки, ставим пустую строку
     });
@@ -103,7 +103,7 @@ Future<void> _loadUserName() async {
       }
       _loadUserStatsFromApi(); 
     } catch (e) {
-      print('Ошибка при загрузке данных о задачах из кэша: $e');
+      // print('Ошибка при загрузке данных о задачах из кэша: $e');
       _loadUserStatsFromApi(); 
     }
   }
@@ -119,7 +119,7 @@ Future<void> _loadUserName() async {
       });
       await UserTaskCompletionCacheHandler.saveUserTaskCompletionData(monthlyData);
     } catch (e) {
-      print('Ошибка при загрузке данных с API: $e');
+      // print('Ошибка при загрузке данных с API: $e');
     }
   }
 

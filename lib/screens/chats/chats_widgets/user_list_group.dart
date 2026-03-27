@@ -193,9 +193,12 @@ class _UserListGroup extends State<UserListGroup> {
                                     color: Color(0xff1E2E52),
                                     fontWeight: FontWeight.w400,
                                   ),
+                                  maxLines: 1,  
                                   overflow: TextOverflow.ellipsis,
                                 ),
+                                
                               ),
+                              
                             ],
                           ),
                         );

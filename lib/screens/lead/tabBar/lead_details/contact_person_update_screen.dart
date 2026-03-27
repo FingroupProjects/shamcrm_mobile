@@ -93,7 +93,7 @@ class _ContactPersonUpdateScreenState extends State<ContactPersonUpdateScreen> {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(
-                  AppLocalizations.of(context)!.translate(state.message), // Локализация сообщения
+                  AppLocalizations.of(context)!.translate(state.message),
                   style: TextStyle(
                     fontFamily: 'Gilroy',
                     fontSize: 16,
@@ -139,10 +139,14 @@ class _ContactPersonUpdateScreenState extends State<ContactPersonUpdateScreen> {
           }
         },
         child: Form(
-          key: _formKey,
-          child: Column(
-            children: [
-              Expanded(
+        key: _formKey,
+        child: Column(
+          children: [
+            Expanded(
+              child: GestureDetector(
+                onTap: () {
+                  FocusScope.of(context).unfocus();
+                },
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.all(16),
                   child: Column(
@@ -189,6 +193,7 @@ class _ContactPersonUpdateScreenState extends State<ContactPersonUpdateScreen> {
                     ],
                   ),
                 ),
+              ),
               ),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 30),

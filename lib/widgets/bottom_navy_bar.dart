@@ -27,9 +27,8 @@ class BottomNavyBar extends StatelessWidget {
     this.showInactiveTitle = false,
     required this.items,
     required this.onItemSelected,
-    this.curve = Curves.linear,
-  })  : assert(items.length >= 2 && items.length <= 5),
-        super(key: key);
+  this.curve = Curves.linear,
+}) : super(key: key); // Убрали assert
 
   /// The selected item is index. Changing this property will change and animate
   /// the item being selected. Defaults to zero.
@@ -165,93 +164,88 @@ class _ItemWidget extends StatelessWidget {
   }) : super(key: key);
 
   @override
-  Widget build(BuildContext context) {
-    return Semantics(
-      container: true,
-      selected: isSelected,
-      child: AnimatedContainer(
-        width: (showInactiveTitle)
-            ? ((isSelected)
-                ? MediaQuery.of(context).size.width * 0.25
-                : MediaQuery.of(context).size.width * 0.2)
-            : ((isSelected)
-                ? MediaQuery.of(context).size.width * 0.3
-                : MediaQuery.of(context).size.width * 0.1),
-        height: double.maxFinite,
-        duration: animationDuration,
-        curve: curve,
-        decoration: BoxDecoration(
-          color:
-              isSelected ? item.activeColor.withOpacity(1) : backgroundColor,
-          borderRadius: BorderRadius.circular(itemCornerRadius),
-        ),
-        child: SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          physics: NeverScrollableScrollPhysics(),
-          child: Container(
-            width: (showInactiveTitle)
-                ? ((isSelected)
-                ? MediaQuery.of(context).size.width * 0.25
-                : MediaQuery.of(context).size.width * 0.2)
-                : ((isSelected)
-                ? MediaQuery.of(context).size.width * 0.3
-                : MediaQuery.of(context).size.width * 0.1),
-            padding: EdgeInsets.symmetric(horizontal: 4),
-            child: Row(
-              mainAxisSize: MainAxisSize.max,
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                IconTheme(
-                  data: IconThemeData(
-                    size: iconSize,
-                    color: isSelected
-                        ? item.activeColor.withOpacity(1)
-                        : item.inactiveColor == null
-                            ? item.activeColor
-                            : item.inactiveColor,
-                  ),
-                  child: item.icon,
+Widget build(BuildContext context) {
+  // Получаем ширину экрана
+  final screenWidth = MediaQuery.of(context).size.width;
+  
+  // Адаптивные коэффициенты ширины в зависимости от размера экрана
+  double selectedWidthFactor = 0.3;
+  double unselectedWidthFactor = 0.1;
+  double selectedWidthFactorWithTitle = 0.25;
+  double unselectedWidthFactorWithTitle = 0.2;
+  
+  // Адаптация для узких экранов (менее 360px ширины)
+  if (screenWidth < 360) {
+    selectedWidthFactor = 0.35; // Увеличиваем для узких экранов
+    selectedWidthFactorWithTitle = 0.3;
+  }
+  
+  // Рассчитываем ширину в зависимости от состояния
+  final width = (showInactiveTitle)
+      ? ((isSelected)
+          ? screenWidth * selectedWidthFactorWithTitle
+          : screenWidth * unselectedWidthFactorWithTitle)
+      : ((isSelected)
+          ? screenWidth * selectedWidthFactor
+          : screenWidth * unselectedWidthFactor);
+  
+  return Semantics(
+    container: true,
+    selected: isSelected,
+    child: AnimatedContainer(
+      width: width,
+      height: double.maxFinite,
+      duration: animationDuration,
+      curve: curve,
+      decoration: BoxDecoration(
+        color: isSelected ? item.activeColor.withOpacity(1) : backgroundColor,
+        borderRadius: BorderRadius.circular(itemCornerRadius),
+      ),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        physics: NeverScrollableScrollPhysics(),
+        child: Container(
+          width: width,
+          padding: EdgeInsets.symmetric(horizontal: 4),
+          child: Row(
+            mainAxisSize: MainAxisSize.max,
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              IconTheme(
+                data: IconThemeData(
+                  size: iconSize,
+                  color: isSelected
+                      ? item.activeColor.withOpacity(1)
+                      : item.inactiveColor == null
+                          ? item.activeColor
+                          : item.inactiveColor,
                 ),
-                if (showInactiveTitle)
-                  Flexible(
-                    child: Container(
-                      padding: itemPadding,
-                      child: DefaultTextStyle.merge(
-                        style: TextStyle(
-                          color: item.activeColor,
-                          fontWeight: FontWeight.bold,
-                        ),
-                        maxLines: 1,
-                        textAlign: item.textAlign,
-                        overflow: TextOverflow.ellipsis,
-                        child: item.title,
+                child: item.icon,
+              ),
+              if (showInactiveTitle || isSelected)
+                Flexible(
+                  child: Container(
+                    padding: itemPadding,
+                    child: DefaultTextStyle.merge(
+                      style: TextStyle(
+                        color: item.activeColor,
+                        fontWeight: FontWeight.bold,
                       ),
-                    ),
-                  )
-                else if (isSelected)
-                  Flexible(
-                    child: Container(
-                      padding: itemPadding,
-                      child: DefaultTextStyle.merge(
-                        style: TextStyle(
-                          color: item.activeColor,
-                          fontWeight: FontWeight.bold,
-                        ),
-                        maxLines: 1,
-                        textAlign: item.textAlign,
-                        overflow: TextOverflow.ellipsis,
-                        child: item.title,
-                      ),
+                      maxLines: 1,
+                      textAlign: item.textAlign,
+                      overflow: TextOverflow.ellipsis,
+                      child: item.title,
                     ),
                   ),
-              ],
-            ),
+                ),
+            ],
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 }
 
 /// The [BottomNavyBar.items] definition.
