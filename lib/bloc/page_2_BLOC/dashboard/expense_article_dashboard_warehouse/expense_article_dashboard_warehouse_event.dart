@@ -1,0 +1,4 @@
+
+abstract class ExpenseArticleDashboardWarehouseEvent {}
+
+class FetchExpenseArticleDashboardWarehouse extends ExpenseArticleDashboardWarehouseEvent {}

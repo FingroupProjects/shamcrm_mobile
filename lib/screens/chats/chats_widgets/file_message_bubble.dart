@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:crm_task_manager/custom_widget/custom_chat_styles.dart';
+import 'package:crm_task_manager/models/message_reaction_model.dart';
+import 'package:crm_task_manager/screens/chats/chats_widgets/compact_reaction_chip.dart';
 
 class FileMessageBubble extends StatelessWidget {
   final String time;
@@ -8,7 +10,12 @@ class FileMessageBubble extends StatelessWidget {
   final String fileName;
   final String senderName;
   final Function(String) onTap;
-  final bool isHighlighted; // Add this line
+  final bool isHighlighted;
+  final bool isRead;
+  final bool isLeadChat;
+  final bool? isGroupChat;
+  final List<MessageReaction> reactions;
+  final Function(String)? onReactionTap;
 
   const FileMessageBubble({
     Key? key,
@@ -18,7 +25,12 @@ class FileMessageBubble extends StatelessWidget {
     required this.fileName,
     required this.onTap,
     required this.senderName,
-    this.isHighlighted = false, // Add this line
+    this.isHighlighted = false,
+    required this.isRead,
+    this.isLeadChat = false,
+    this.isGroupChat,
+    this.reactions = const [],
+    this.onReactionTap,
   }) : super(key: key);
 
   @override
@@ -31,16 +43,32 @@ class FileMessageBubble extends StatelessWidget {
         iconPath = 'assets/icons/chats/pdf.png';
         break;
       case 'jpg':
+        iconPath = 'assets/icons/files/jpg.png';
+        break;
       case 'jpeg':
+        iconPath = 'assets/icons/files/jpg.png';
+        break;
       case 'png':
         iconPath = 'assets/icons/chats/jpg-file.png';
         break;
       case 'doc':
+        iconPath = 'assets/icons/files/doc.png';
+        break;
       case 'docx':
+        iconPath = 'assets/icons/files/doc.png';
+        break;
+      case 'pptx':
+        iconPath = 'assets/icons/files/pptx.png';
+        break;
+      case 'ppt':
+        iconPath = 'assets/icons/files/ppt.png';
+        break;
       case 'document':
         iconPath = 'assets/icons/chats/doc.png';
         break;
       case 'xls':
+        iconPath = 'assets/icons/chats/xls.png';
+        break;
       case 'xlsx':
         iconPath = 'assets/icons/chats/xls.png';
         break;
@@ -50,8 +78,14 @@ class FileMessageBubble extends StatelessWidget {
       case 'svg':
         iconPath = 'assets/icons/chats/svg-file.png';
         break;
+      case 'mp4':
+        iconPath = 'assets/icons/chats/mp4.png';
+        break;
+      case 'mp3':
+        iconPath = 'assets/icons/chats/mp3.png';
+        break;
       default:
-        iconPath = 'assets/icons/chats/file.png';
+        iconPath = 'assets/icons/files/file.png';
     }
 
     return DecoratedBox(
@@ -74,10 +108,17 @@ class FileMessageBubble extends StatelessWidget {
               isSender ? CrossAxisAlignment.end : CrossAxisAlignment.start,
           children: [
             const SizedBox(height: 8),
-            if (!isSender)
+            // ✅ Логика отображения имени отправителя:
+            // - В лид-чатах: показываем имя для ОБЕИХ сторон (несколько менеджеров могут отвечать)
+            // - В корпоративных группах: показываем имя только для собеседника
+            // - В корпоративных чатах (не группа): показываем имя хотя бы для собеседника
+            if (isLeadChat || isGroupChat == true || !isSender)
               Text(
                 senderName,
-                style: TextStyle(fontWeight: FontWeight.w600),
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: isSender ? Colors.grey.shade600 : Colors.black87,
+                ),
               ),
             GestureDetector(
               onTap: () => onTap(filePath),
@@ -99,9 +140,14 @@ class FileMessageBubble extends StatelessWidget {
                   ],
                 ),
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  crossAxisAlignment:
+                      CrossAxisAlignment.center, // Центрируем по вертикали
                   children: [
                     Image.asset(iconPath, width: 32, height: 32),
+                    const SizedBox(
+                        width: 10), // Add this line to create spacing
+
                     Flexible(
                       child: Text(
                         fileName,
@@ -114,14 +160,43 @@ class FileMessageBubble extends StatelessWidget {
                 ),
               ),
             ),
-            Text(
-              time,
-              style: const TextStyle(
-                fontSize: 12,
-                color: ChatSmsStyles.appBarTitleColor,
-                fontWeight: FontWeight.w400,
-                fontFamily: 'Gilroy',
-              ),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                if (reactions.isNotEmpty) ...[
+                  Wrap(
+                    spacing: 3,
+                    runSpacing: 3,
+                    children: reactions.map((reaction) {
+                      return CompactReactionChip(
+                        reaction: reaction,
+                        isSender: isSender,
+                        onTap: () => onReactionTap?.call(reaction.emoji),
+                      );
+                    }).toList(),
+                  ),
+                  const SizedBox(width: 8),
+                ],
+                Text(
+                  time,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: ChatSmsStyles.appBarTitleColor,
+                    fontWeight: FontWeight.w400,
+                    fontFamily: 'Gilroy',
+                  ),
+                ),
+                const SizedBox(width: 3),
+                if (isSender)
+                  Icon(
+                    isRead ? Icons.done_all : Icons.done_all,
+                    size: 18,
+                    color: isRead
+                        ? const Color.fromARGB(255, 45, 28, 235)
+                        : Colors.grey.shade400,
+                  ),
+              ],
             ),
           ],
         ),

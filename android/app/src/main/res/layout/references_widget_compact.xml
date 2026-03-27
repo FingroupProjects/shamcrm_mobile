@@ -1,0 +1,205 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- References Widget Compact Layout: 1x4 size (single row) - UP TO 4 ITEMS -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <!-- Transparent margin wrapper - makes widget appear smaller -->
+    <LinearLayout
+        android:id="@+id/widget_root"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:layout_marginTop="16dp"
+        android:layout_marginBottom="16dp"
+        android:orientation="vertical"
+        android:background="@drawable/widget_background"
+        android:paddingStart="12dp"
+        android:paddingEnd="12dp"
+        android:paddingTop="10dp"
+        android:paddingBottom="10dp">
+
+        <!-- Header -->
+        <ImageView
+            android:layout_width="wrap_content"
+            android:layout_height="@dimen/widget_logo_compact_size"
+            android:layout_gravity="start"
+            android:adjustViewBounds="true"
+            android:scaleType="fitCenter"
+            android:src="@drawable/sham_crm_logo" />
+
+        <!-- Empty state (shown when no permissions) -->
+        <LinearLayout
+            android:id="@+id/empty_state"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:padding="8dp"
+            android:visibility="gone">
+
+            <TextView
+                android:id="@+id/empty_state_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Войдите в приложение"
+                android:textColor="#666666"
+                android:textSize="11sp" />
+        </LinearLayout>
+
+        <!-- Buttons (single row, up to 4 items) -->
+        <LinearLayout
+            android:id="@+id/first_row_layout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center">
+
+            <!-- Склад -->
+            <LinearLayout
+                android:id="@+id/btn_reference_warehouse"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:padding="4dp">
+
+                <ImageView
+                    android:id="@+id/icon_reference_warehouse"
+                    android:layout_width="@dimen/widget_icon_size"
+                    android:layout_height="@dimen/widget_icon_size"
+                    android:background="@drawable/widget_button_bg"
+                    android:padding="10dp"
+                    android:scaleType="fitCenter"
+                    android:tint="@android:color/white"
+                    android:contentDescription="Склад" />
+
+                <TextView
+                    android:id="@+id/label_reference_warehouse"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="Склад"
+                    android:textSize="@dimen/widget_text_compact_size"
+android:textStyle="bold"
+                    android:textColor="#FFFFFF"
+                    android:maxLines="1"
+                    android:ellipsize="end" />
+            </LinearLayout>
+
+            <!-- Поставщик -->
+            <LinearLayout
+                android:id="@+id/btn_reference_supplier"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:padding="4dp">
+
+                <ImageView
+                    android:id="@+id/icon_reference_supplier"
+                    android:layout_width="@dimen/widget_icon_size"
+                    android:layout_height="@dimen/widget_icon_size"
+                    android:background="@drawable/widget_button_bg"
+                    android:padding="10dp"
+                    android:scaleType="fitCenter"
+                    android:tint="@android:color/white"
+                    android:contentDescription="Поставщик" />
+
+                <TextView
+                    android:id="@+id/label_reference_supplier"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="Поставщик"
+                    android:textSize="@dimen/widget_text_compact_size"
+android:textStyle="bold"
+                    android:textColor="#FFFFFF"
+                    android:maxLines="1"
+                    android:ellipsize="end" />
+            </LinearLayout>
+
+            <!-- Товар -->
+            <LinearLayout
+                android:id="@+id/btn_reference_product"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:padding="4dp">
+
+                <ImageView
+                    android:id="@+id/icon_reference_product"
+                    android:layout_width="@dimen/widget_icon_size"
+                    android:layout_height="@dimen/widget_icon_size"
+                    android:background="@drawable/widget_button_bg"
+                    android:padding="10dp"
+                    android:scaleType="fitCenter"
+                    android:tint="@android:color/white"
+                    android:contentDescription="Товар" />
+
+                <TextView
+                    android:id="@+id/label_reference_product"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="Товар"
+                    android:textSize="@dimen/widget_text_compact_size"
+android:textStyle="bold"
+                    android:textColor="#FFFFFF"
+                    android:maxLines="1"
+                    android:ellipsize="end" />
+            </LinearLayout>
+
+            <!-- Категории -->
+            <LinearLayout
+                android:id="@+id/btn_reference_category"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:padding="4dp">
+
+                <ImageView
+                    android:id="@+id/icon_reference_category"
+                    android:layout_width="@dimen/widget_icon_size"
+                    android:layout_height="@dimen/widget_icon_size"
+                    android:background="@drawable/widget_button_bg"
+                    android:padding="10dp"
+                    android:scaleType="fitCenter"
+                    android:tint="@android:color/white"
+                    android:contentDescription="Категории" />
+
+                <TextView
+                    android:id="@+id/label_reference_category"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="Категории"
+                    android:textSize="@dimen/widget_text_compact_size"
+android:textStyle="bold"
+                    android:textColor="#FFFFFF"
+                    android:maxLines="1"
+                    android:ellipsize="end" />
+            </LinearLayout>
+
+        </LinearLayout>
+
+        <!-- Second row (hidden in compact layout) -->
+        <LinearLayout
+            android:id="@+id/second_row_layout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:visibility="gone">
+        </LinearLayout>
+
+    </LinearLayout>
+
+</FrameLayout>
+

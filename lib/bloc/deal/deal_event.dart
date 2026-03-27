@@ -1,43 +1,115 @@
+import 'package:crm_task_manager/models/dealById_model.dart';
+import 'package:crm_task_manager/models/file_helper.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 
 abstract class DealEvent {}
 
-class FetchDealStatuses extends DealEvent {}
+ class FetchDealStatuses extends DealEvent {
+  final int? salesFunnelId;
+  final bool forceRefresh;
 
-class FetchDeals extends DealEvent {
-  final int statusId;
-  final String? query;
-  final List<int>? managerIds; // Changed from single managerId
+  FetchDealStatuses({this.salesFunnelId, this.forceRefresh = false});
+}
 
-  FetchDeals(
-    this.statusId, {
-    this.query,
-    this.managerIds, 
+class FetchDealStatusesWithFilters extends DealEvent {
+  final List<int>? managerIds;
+  final List<int>? regionsIds;
+  final List<int>? leadIds;
+  final int? statusIds;
+  final DateTime? fromDate;
+  final DateTime? toDate;
+  final int? daysWithoutActivity;
+  final bool? hasTasks;
+  final List<Map<String, dynamic>>? directoryValues;
+  final List<String>? names;
+  final int? salesFunnelId;
+  final Map<String, List<String>>? customFieldFilters;
+
+  FetchDealStatusesWithFilters({
+    this.managerIds,
+    this.regionsIds,
+    this.leadIds,
+    this.statusIds,
+    this.fromDate,
+    this.toDate,
+    this.daysWithoutActivity,
+    this.hasTasks,
+    this.directoryValues,
+    this.names,
+    this.salesFunnelId,
+    this.customFieldFilters,
   });
 }
-class FetchDealStatus extends DealEvent {
-  final int dealStatusId;
-  FetchDealStatus(this.dealStatusId);
-}
 
-class FetchMoreDeals extends DealEvent {
-  final int statusId;
-  final int currentPage;
+  class FetchDeals extends DealEvent {
+    final int statusId;
+    final String? query;
+    final List<int>? managerIds;
+    final List<int>? regionsIds;
+    final List<int>? leadIds;
+    final int? statusIds;
+    final DateTime? fromDate;
+    final DateTime? toDate;
+    final int? daysWithoutActivity;
+    final bool? hasTasks;
+    final int? salesFunnelId;
+    final List<Map<String, dynamic>>? directoryValues; // Добавляем directory_values
+    final List<String>? names; // Новое поле
+    final Map<String, List<String>>? customFieldFilters; // Новое поле
 
-  FetchMoreDeals(this.statusId, this.currentPage);
-}
+    FetchDeals(
+      this.statusId, {
+      this.query,
+      this.managerIds,
+      this.regionsIds,
+      this.leadIds,
+      this.statusIds,
+      this.fromDate,
+      this.toDate,
+      this.daysWithoutActivity,
+      this.hasTasks,
+      this.directoryValues,
+      this.salesFunnelId,
+      this.names,
+      this.customFieldFilters,
 
+    });
+  }
+
+  class FetchDealStatus extends DealEvent {
+    final int dealStatusId;
+    FetchDealStatus(this.dealStatusId);
+  }
+
+  class FetchMoreDeals extends DealEvent {
+    final int statusId;
+    final int currentPage;
+
+    FetchMoreDeals(this.statusId, this.currentPage);
+  }
 class CreateDealStatus extends DealEvent {
   final String title;
   final int? day;
   final String color;
-   final AppLocalizations localizations; 
+  final String? notificationMessage;
+  final bool showOnMainPage;
+  final bool isSuccess;
+  final bool isFailure;
+  final AppLocalizations localizations;
+  final List<int>? userIds;
+  final List<int>? changeStatusUserIds; // ✅ НОВОЕ
 
   CreateDealStatus({
     required this.title,
     this.day,
     required this.color,
-    required this.localizations
+    this.notificationMessage,
+    required this.showOnMainPage,
+    required this.isSuccess,
+    required this.isFailure,
+    required this.localizations,
+    this.userIds,
+    this.changeStatusUserIds, // ✅ НОВОЕ
   });
 }
 
@@ -51,8 +123,11 @@ class CreateDeal extends DealEvent {
   final String? description;
   final int? dealtypeId;
   final int? leadId;
-  final List<Map<String, String>>? customFields;
-   final AppLocalizations localizations; 
+  final List<Map<String, dynamic>>? customFields;
+  final List<Map<String, int>>? directoryValues;
+  final List<FileHelper>? files; // Новое поле для файлов
+  final List<int>? userIds; // ✅ НОВОЕ
+  final AppLocalizations localizations;
 
   CreateDeal({
     required this.name,
@@ -65,10 +140,12 @@ class CreateDeal extends DealEvent {
     this.dealtypeId,
     this.leadId,
     this.customFields,
+    this.directoryValues,
+    this.userIds, // ✅ НОВОЕ
+    this.files, // Добавляем в конструктор
     required this.localizations,
   });
 }
-
 class UpdateDeal extends DealEvent {
   final int dealId;
   final String name;
@@ -76,12 +153,18 @@ class UpdateDeal extends DealEvent {
   final int? managerId;
   final DateTime? startDate;
   final DateTime? endDate;
-  final String sum;
+  final String? sum;
   final String? description;
   final int? dealtypeId;
   final int? leadId;
-  final List<Map<String, String>>? customFields;
-   final AppLocalizations localizations; 
+  final List<Map<String, dynamic>>? customFields; // Изменён тип
+  final List<Map<String, int>>? directoryValues;
+  final AppLocalizations localizations;
+  final List<int>? dealStatusIds; // ✅ НОВОЕ: массив ID статусов
+  final List<FileHelper>? files; // Новые файлы (id == 0)
+  final List<int>? existingFiles; // ID существующих файлов (id != 0)
+  final List<int>? userIds; // ✅ НОВОЕ: массив ID пользователей
+
 
   UpdateDeal({
     required this.dealId,
@@ -90,12 +173,17 @@ class UpdateDeal extends DealEvent {
     this.managerId,
     this.startDate,
     this.endDate,
-    required this.sum,
+    this.sum,
     this.description,
     this.dealtypeId,
     this.leadId,
     this.customFields,
+    this.directoryValues,
     required this.localizations,
+    this.files,
+    this.dealStatusIds, // ✅ НОВОЕ
+    this.existingFiles, // ID существующих файлов
+    this.userIds, // ✅ НОВОЕ
   });
 }
 
@@ -125,7 +213,11 @@ class UpdateDealStatusEdit extends DealEvent {
   final int day;
   final bool isSuccess;
   final bool isFailure;
+  final String notificationMessage;
+  final bool showOnMainPage;
   final AppLocalizations localizations;
+  final List<int>? userIds;
+  final List<int>? changeStatusUserIds; // ✅ НОВОЕ
 
   UpdateDealStatusEdit(
     this.dealStatusId,
@@ -133,6 +225,10 @@ class UpdateDealStatusEdit extends DealEvent {
     this.day,
     this.isSuccess,
     this.isFailure,
+    this.notificationMessage,
+    this.showOnMainPage,
     this.localizations,
+    this.userIds,
+    this.changeStatusUserIds, // ✅ НОВОЕ
   );
 }

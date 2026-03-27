@@ -4,13 +4,13 @@ class DealStatsResponse {
   DealStatsResponse({
     required this.data,
   }) {
-    print('DealStatsResponse: Создан новый объект');
-    print('DealStatsResponse: количество месяцев = ${data.length}');
+    // print('DealStatsResponse: Создан новый объект');
+    // print('DealStatsResponse: количество месяцев = ${data.length}');
   }
 
   factory DealStatsResponse.fromJson(Map<String, dynamic> json) {
-    print('DealStatsResponse: Начало парсинга JSON');
-    print('DealStatsResponse: Входящий JSON = $json');
+    // print('DealStatsResponse: Начало парсинга JSON');
+    // print('DealStatsResponse: Входящий JSON = $json');
     
     if (json['result'] == null || json['result']['data'] == null) {
       throw Exception('Отсутствует ключ "result" или "data" в JSON');
@@ -23,7 +23,7 @@ class DealStatsResponse {
       data: monthlyData,
     );
     
-    print('DealStatsResponse: Успешно создан объект из JSON');
+    // print('DealStatsResponse: Успешно создан объект из JSON');
     return response;
   }
 }

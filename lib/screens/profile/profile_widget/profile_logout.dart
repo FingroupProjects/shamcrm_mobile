@@ -1,14 +1,10 @@
 import 'dart:io';
 
-import 'package:crm_task_manager/main.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:restart_app/restart_app.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
-import 'package:crm_task_manager/screens/auth/auth_screen.dart';
-import 'dart:ui' as ui; // Добавьте этот импорт
 
 class LogoutButtonWidget extends StatelessWidget {
   const LogoutButtonWidget({super.key});
@@ -19,35 +15,39 @@ class LogoutButtonWidget extends StatelessWidget {
 
     return GestureDetector(
       onTap: () async {
-
-        // Очистка SharedPreferences
-        SharedPreferences prefs = await SharedPreferences.getInstance();
-        String? token = prefs.getString('token') ?? '';
-        print('------=-=--=-==--=-=-=-=-=-=-TOKEN LOGOUT =-=-=-==--=-=-=-=-==--==-=-');
-        print(token);
-        await prefs.clear();
-
-        // Вызов метода logout в ApiService
-        ApiService apiService = ApiService();
-        await apiService.logout();
-
-
-      //  await Future.delayed(Duration(seconds: 2)); // Задержка в 2 секунды
-
-        // Navigator.pushAndRemoveUntil(
-        //   context,
-        //   MaterialPageRoute(builder: (context) => AuthScreen()),
-        //   (Route<dynamic> route) => false,
-        // );
-   Restart.restartApp();
-
-       
-    exit(0);
-
-             
-      //  ui.window.onBeginFrame = null;
-      //   ui.window.onDrawFrame = null;
-        // main();
+        try {
+          ApiService apiService = ApiService();
+          
+          // Вызов API для выхода из аккаунта
+          await apiService.logoutAccount();
+          
+          // Полная очистка SharedPreferences
+          SharedPreferences prefs = await SharedPreferences.getInstance();
+          await prefs.clear();
+          
+          // Вызов logout API
+          await apiService.logout();
+          
+          // Небольшая задержка для завершения всех операций
+          await Future.delayed(Duration(milliseconds: 500));
+          
+          // Закрытие приложения
+          if (Platform.isAndroid) {
+            // Для Android используем SystemNavigator
+            SystemNavigator.pop();
+          } else if (Platform.isIOS) {
+            // Для iOS используем exit(0)
+            exit(0);
+          }
+        } catch (e) {
+          debugPrint('Ошибка при выходе: $e');
+          // Даже при ошибке закрываем приложение
+          if (Platform.isAndroid) {
+            SystemNavigator.pop();
+          } else {
+            exit(0);
+          }
+        }
       },
       child: _buildProfileOption(
         iconPath: 'assets/icons/Profile/logout.png',

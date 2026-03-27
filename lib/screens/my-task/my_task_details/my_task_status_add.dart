@@ -2,6 +2,7 @@ import 'package:crm_task_manager/bloc/my-task/my-task_bloc.dart';
 import 'package:crm_task_manager/bloc/my-task/my-task_event.dart';
 import 'package:crm_task_manager/bloc/my-task_status_add/task_bloc.dart';
 import 'package:crm_task_manager/bloc/my-task_status_add/task_event.dart';
+import 'package:crm_task_manager/custom_widget/custom_chat_styles.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -42,12 +43,19 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const SizedBox(height: 16),
             TextFormField(
               controller: _controller,
+              maxLines: 1,
+              onChanged: (value) {
+                if (_errorMessage != null && value.trim().isNotEmpty) {
+                  setState(() {
+                    _errorMessage = null;
+                  });
+                }
+              },
               decoration: InputDecoration(
-                hintText:
-                    AppLocalizations.of(context)!.translate('enter_name_list'),
+                hintText: AppLocalizations.of(context)!
+                    .translate('enter_category_name'),
                 hintStyle: TextStyle(
                   fontSize: 16,
                   fontFamily: 'Gilroy',
@@ -62,24 +70,49 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
                 fillColor: Color(0xffF4F7FD),
                 contentPadding:
                     EdgeInsets.symmetric(vertical: 10, horizontal: 12),
-              ),
-            ),
-            if (_errorMessage != null)
-              Padding(
-                padding: const EdgeInsets.only(top: 8.0),
-                child: Text(
-                  _errorMessage!,
-                  style: TextStyle(
+                errorText: _errorMessage,
+                errorMaxLines: 2,
+                errorStyle: TextStyle(
+                  fontSize: 14,
+                  color: Colors.red,
+                  fontWeight: FontWeight.w400,
+                  fontFamily: 'Gilroy',
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(
+                    color:
+                        _errorMessage != null ? Colors.red : Colors.transparent,
+                    width: _errorMessage != null ? 1.5 : 0,
+                  ),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(
+                    color:
+                        _errorMessage != null ? Colors.red : Color(0xff1E2E52),
+                    width: 1.5,
+                  ),
+                ),
+                errorBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(
                     color: Colors.red,
-                    fontSize: 14,
-                    fontFamily: 'Gilroy',
-                    fontWeight: FontWeight.w400,
+                    width: 1.5,
+                  ),
+                ),
+                focusedErrorBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(
+                    color: Colors.red,
+                    width: 1.5,
                   ),
                 ),
               ),
-            const SizedBox(height: 16),
+            ),
+            const SizedBox(height: 8),
             Container(
-              padding: EdgeInsets.symmetric(vertical: 8),
+              padding: EdgeInsets.symmetric(vertical: 0),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -88,7 +121,8 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
                     style: TextStyle(
                       fontFamily: 'Gilroy',
                       fontSize: 14,
-                      fontWeight: FontWeight.w400,
+                      color: Color(0xFF1E2E52),
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                   Switch(
@@ -101,8 +135,7 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
                     activeColor: const Color.fromARGB(255, 255, 255, 255),
                     inactiveTrackColor: const Color.fromARGB(255, 179, 179, 179)
                         .withOpacity(0.5),
-                    activeTrackColor:
-                        const Color.fromARGB(255, 51, 65, 98).withOpacity(0.5),
+                    activeTrackColor: ChatSmsStyles.messageBubbleSenderColor,
                     inactiveThumbColor:
                         const Color.fromARGB(255, 255, 255, 255),
                   ),
@@ -114,7 +147,7 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
       ),
       actions: [
         Padding(
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.all(0),
           child: Row(
             children: [
               Expanded(
@@ -173,7 +206,7 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
     if (statusName.isEmpty) {
       setState(() {
         _errorMessage =
-            AppLocalizations.of(context)!.translate('fill_required_fields');
+            AppLocalizations.of(context)!.translate('field_required');
       });
       return;
     }
@@ -182,10 +215,10 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
       _errorMessage = null;
     });
 
-    // Отправляем событие на добавление статуса
     context.read<MyTaskStatusBloc>().add(
           CreateMyTaskStatusAdd(
-            statusName: statusName, // Передаем название статуса
+            statusName: statusName,
+            finalStep: isFinalStage,
           ),
         );
     ScaffoldMessenger.of(context).showSnackBar(

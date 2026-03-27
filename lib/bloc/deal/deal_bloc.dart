@@ -1,21 +1,34 @@
 import 'dart:io';
 import 'package:crm_task_manager/api/service/api_service.dart';
-import 'package:crm_task_manager/models/api_exception_model.dart';
 import 'package:crm_task_manager/models/deal_model.dart';
 import 'package:crm_task_manager/screens/deal/deal_cache.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'deal_event.dart';
 import 'deal_state.dart';
 
 class DealBloc extends Bloc<DealEvent, DealState> {
   final ApiService apiService;
-  bool allDealsFetched =
-      false; // Переменная для отслеживания завершения загрузки
-  Map<int, int> _dealCounts =
-      {}; // Приватное поле для хранения количества сделок
+  bool allDealsFetched = false;
+  bool isFetching = false;
+  Map<int, int> _dealCounts = {};
+  String? _currentQuery;
+  List<int>? _currentManagerIds;
+  List<int>? _currentRegionsIds;
+  int? _currentStatusId;
+  DateTime? _currentFromDate;
+  DateTime? _currentToDate;
+  List<int>? _currentLeadIds;
+  bool? _currentHasTasks;
+  int? _currentDaysWithoutActivity;
+  List<Map<String, dynamic>>? _currentDirectoryValues;
+  List<String>? _currentNames;
+  Map<String, List<String>>? _currentCustomFieldFilters;
+  int? currentSalesFunnelId;
 
   DealBloc(this.apiService) : super(DealInitial()) {
     on<FetchDealStatuses>(_fetchDealStatuses);
+    on<FetchDealStatusesWithFilters>(_fetchDealStatusesWithFilters);
     on<FetchDeals>(_fetchDeals);
     on<CreateDeal>(_createDeal);
     on<FetchMoreDeals>(_fetchMoreDeals);
@@ -26,7 +39,30 @@ class DealBloc extends Bloc<DealEvent, DealState> {
     on<UpdateDealStatusEdit>(_updateDealStatusEdit);
     on<FetchDealStatus>(_fetchDealStatus);
   }
-Future<void> _fetchDealStatus(FetchDealStatus event, Emitter<DealState> emit) async {
+
+  bool get _hasActiveFilters {
+    final bool listsOrQuery =
+        (_currentQuery != null && _currentQuery!.isNotEmpty) ||
+            (_currentManagerIds != null && _currentManagerIds!.isNotEmpty) ||
+            (_currentRegionsIds != null && _currentRegionsIds!.isNotEmpty) ||
+            (_currentLeadIds != null && _currentLeadIds!.isNotEmpty) ||
+            (_currentDirectoryValues != null &&
+                _currentDirectoryValues!.isNotEmpty) ||
+            (_currentCustomFieldFilters != null &&
+                _currentCustomFieldFilters!.isNotEmpty) ||
+            (_currentNames != null && _currentNames!.isNotEmpty);
+
+    final bool flagsOrDates = (_currentStatusId != null) ||
+        (_currentFromDate != null) ||
+        (_currentToDate != null) ||
+        (_currentHasTasks == true) ||
+        (_currentDaysWithoutActivity != null);
+
+    return listsOrQuery || flagsOrDates;
+  }
+
+  Future<void> _fetchDealStatus(
+      FetchDealStatus event, Emitter<DealState> emit) async {
     emit(DealLoading());
     try {
       final dealStatus = await apiService.getDealStatus(event.dealStatusId);
@@ -35,106 +71,272 @@ Future<void> _fetchDealStatus(FetchDealStatus event, Emitter<DealState> emit) as
       emit(DealError('Failed to fetch deal status: ${e.toString()}'));
     }
   }
-  // Метод для загрузки сделок с учётом кэша
-  Future<void> _fetchDeals(FetchDeals event, Emitter<DealState> emit) async {
-    emit(DealLoading());
 
-    if (!await _checkInternetConnection()) {
-      final cachedDeals = await DealCache.getDealsForStatus(event.statusId);
-      if (cachedDeals.isNotEmpty) {
-        emit(DealDataLoaded(cachedDeals, currentPage: 1, dealCounts: {}));
-      } else {
-        emit(DealError('Нет подключения к интернету и нет данных в кэше!'));
-      }
+  Future<void> _fetchDeals(FetchDeals event, Emitter<DealState> emit) async {
+    if (isFetching) {
+      debugPrint('⚠️ DealBloc: _fetchDeals - Already fetching, skipping');
       return;
     }
 
+    isFetching = true;
+
+    debugPrint('🔍 DealBloc: _fetchDeals - START');
+    debugPrint('🔍 DealBloc: statusId=${event.statusId}');
+    debugPrint('🔍 DealBloc: salesFunnelId=${event.salesFunnelId}');
+
     try {
-      final cachedDeals = await DealCache.getDealsForStatus(event.statusId);
-      if (cachedDeals.isNotEmpty) {
-        emit(DealDataLoaded(cachedDeals, currentPage: 1, dealCounts: {}));
+      if (state is! DealDataLoaded) {
+        emit(DealLoading());
       }
 
-      final deals = await apiService.getDeals(
-        event.statusId,
-        page: 1,
-        perPage: 20,
-        search: event.query,
-        managers: event.managerIds ?? [], // Pass managers list
-      );
+      // Сохраняем параметры текущего запроса
+      _currentQuery = event.query;
+      _currentManagerIds = event.managerIds;
+      _currentRegionsIds = event.regionsIds;
+      _currentStatusId = event.statusIds;
+      _currentFromDate = event.fromDate;
+      _currentToDate = event.toDate;
+      _currentLeadIds = event.leadIds;
+      _currentHasTasks = event.hasTasks;
+      _currentDaysWithoutActivity = event.daysWithoutActivity;
+      _currentDirectoryValues = event.directoryValues;
+      _currentNames = event.names;
+      _currentCustomFieldFilters = event.customFieldFilters;
 
-      print('Переданные менеджеры: ${event.managerIds}');
+      // КРИТИЧНО: Восстанавливаем ВСЕ постоянные счетчики
+      final allPersistentCounts = await DealCache.getPersistentDealCounts();
+      for (String statusIdStr in allPersistentCounts.keys) {
+        int statusId = int.parse(statusIdStr);
+        int count = allPersistentCounts[statusIdStr] ?? 0;
+        _dealCounts[statusId] = count;
+      }
 
-      await DealCache.cacheDealsForStatus(event.statusId, deals);
+      debugPrint('✅ DealBloc: Restored persistent counts: $_dealCounts');
 
-      final dealCounts = Map<int, int>.from(_dealCounts);
-      for (var deal in deals) {
-        dealCounts[deal.statusId] = (dealCounts[deal.statusId] ?? 0) + 1;
+      List<Deal> deals = [];
+
+      // Попытка загрузить из кэша
+      deals = await DealCache.getDealsForStatus(event.statusId);
+      if (deals.isNotEmpty) {
+        debugPrint(
+            '✅ DealBloc: _fetchDeals - Emitting ${deals.length} cached deals for status ${event.statusId}');
+        emit(DealDataLoaded(deals,
+            currentPage: 1, dealCounts: Map.from(_dealCounts)));
+      }
+
+      if (await _checkInternetConnection()) {
+        debugPrint('📡 DealBloc: Internet available, fetching from API');
+
+        deals = await apiService.getDeals(
+          event.statusId,
+          page: 1,
+          perPage: 20,
+          search: event.query,
+          managers: event.managerIds,
+          regions: event.regionsIds,
+          statuses: event.statusIds,
+          fromDate: event.fromDate,
+          toDate: event.toDate,
+          leads: event.leadIds,
+          hasTasks: event.hasTasks,
+          daysWithoutActivity: event.daysWithoutActivity,
+          directoryValues: event.directoryValues,
+          names: event.names,
+          salesFunnelId: event.salesFunnelId,
+          customFieldFilters: event.customFieldFilters,
+        );
+
+        debugPrint(
+            '✅ DealBloc: Fetched ${deals.length} deals from API for status ${event.statusId}');
+
+        // КЛЮЧЕВОЙ МОМЕНТ: Берём реальный счётчик из _dealCounts
+        final int? realTotalCount = _dealCounts[event.statusId];
+
+        debugPrint(
+            '🔍 DealBloc: Real total count for status ${event.statusId}: $realTotalCount');
+
+        // Кэшируем сделки с РЕАЛЬНЫМ общим счётчиком
+        await DealCache.cacheDealsForStatus(
+          event.statusId,
+          deals,
+          updatePersistentCount: true,
+          actualTotalCount: realTotalCount,
+        );
+
+        debugPrint(
+            '✅ DealBloc: Cached ${deals.length} deals for status ${event.statusId}');
+      } else {
+        debugPrint('❌ DealBloc: No internet connection');
       }
 
       allDealsFetched = deals.isEmpty;
-      emit(DealDataLoaded(deals, currentPage: 1, dealCounts: dealCounts));
+
+      debugPrint(
+          '✅ DealBloc: _fetchDeals - Emitting DealDataLoaded with ${deals.length} deals');
+      debugPrint('✅ DealBloc: Final dealCounts: $_dealCounts');
+
+      emit(DealDataLoaded(deals,
+          currentPage: 1, dealCounts: Map.from(_dealCounts)));
     } catch (e) {
+      debugPrint('❌ DealBloc: _fetchDeals - Error: $e');
       emit(DealError('Не удалось загрузить данные!'));
+    } finally {
+      isFetching = false;
+      debugPrint('🏁 DealBloc: _fetchDeals - FINISHED');
     }
   }
 
-// Метод для загрузки статусов сделок с учётом кэша
   Future<void> _fetchDealStatuses(
       FetchDealStatuses event, Emitter<DealState> emit) async {
     emit(DealLoading());
 
-    // Сначала пробуем получить данные из кэша
-    final cachedStatuses = await DealCache.getDealStatuses();
-    if (cachedStatuses.isNotEmpty) {
-      emit(DealLoaded(
-        cachedStatuses.map((status) => DealStatus.fromJson(status)).toList(),
-        dealCounts: Map.from(_dealCounts),
-      ));
-    }
-
-    // Затем запрашиваем данные из API
-    if (!await _checkInternetConnection()) {
-      emit(DealError('Нет подключения к интернету'));
-      return;
-    }
-
     try {
-      final response = await apiService.getDealStatuses();
-      if (response.isEmpty) {
-        emit(DealError('Нет статусов'));
-        return;
-      }
+      List<DealStatus> response;
 
-      // Сохраняем статусы в кэш
-      await DealCache.cacheDealStatuses(
-        response
-            .map((status) => {'id': status.id, 'title': status.title})
-            .toList(),
-      );
+      // При forceRefresh = true делаем РАДИКАЛЬНУЮ перезагрузку
+      if (event.forceRefresh) {
+        if (!await _checkInternetConnection()) {
+          emit(DealError('Нет подключения к интернету для обновления данных'));
+          return;
+        }
 
-      // Параллельно загружаем количество сделок для каждого статуса
-      final futures = response.map((status) {
-        return apiService.getDeals(status.id, page: 1, perPage: 1);
-      }).toList();
+        // РАДИКАЛЬНАЯ очистка всех локальных данных блока
+        _dealCounts.clear();
+        allDealsFetched = false;
+        isFetching = false;
 
-      final dealCountsResults = await Future.wait(futures);
+        // Сбрасываем все параметры фильтрации
+        _currentQuery = null;
+        _currentManagerIds = null;
+        _currentStatusId = null;
+        _currentFromDate = null;
+        _currentToDate = null;
+        _currentLeadIds = null;
+        _currentHasTasks = null;
+        _currentDaysWithoutActivity = null;
+        _currentDirectoryValues = null;
+        _currentNames = null;
+        _currentCustomFieldFilters = null;
 
-      // Обновляем количество сделок
-      for (int i = 0; i < response.length; i++) {
-        _dealCounts[response[i].id] = dealCountsResults[i].length;
+        // Загружаем статусы с сервера
+        currentSalesFunnelId = event.salesFunnelId;
+        response = await apiService.getDealStatuses(
+            salesFunnelId: event.salesFunnelId);
+
+        // КРИТИЧНО: Проверяем, не переключил ли пользователь воронку, пока мы ждали ответа
+        if (event.salesFunnelId != currentSalesFunnelId) {
+          debugPrint(
+              '⚠️ DealBloc: _fetchDealStatuses (forceRefresh) - Funnel changed, ignoring result');
+          return;
+        }
+
+        // ПОЛНОСТЬЮ перезаписываем кэш новыми данными
+        await DealCache.clearEverything();
+        await DealCache.cacheDealStatuses(response
+            .map((status) => {
+                  'id': status.id,
+                  'title': status.title,
+                  'deals_count': status.dealsCount ?? 0,
+                })
+            .toList());
+
+        // Устанавливаем новые счетчики ТОЛЬКО из свежих данных API
+        for (var status in response) {
+          final count = status.dealsCount ?? 0;
+          _dealCounts[status.id] = count;
+          await DealCache.setPersistentDealCount(status.id, count);
+        }
+      } else {
+        // Стандартная логика для обычной загрузки
+        if (!await _checkInternetConnection()) {
+          final cachedStatuses = await DealCache.getDealStatuses();
+          if (cachedStatuses.isNotEmpty) {
+            // Восстанавливаем счетчики из кэша
+            _dealCounts.clear();
+            final allPersistentCounts =
+                await DealCache.getPersistentDealCounts();
+            for (String statusIdStr in allPersistentCounts.keys) {
+              int statusId = int.parse(statusIdStr);
+              int count = allPersistentCounts[statusIdStr] ?? 0;
+              _dealCounts[statusId] = count;
+            }
+
+            // Создаём минимальные DealStatus объекты для отображения
+            final List<DealStatus> minimalStatuses =
+                cachedStatuses.map((status) {
+              final statusId = status['id'] as int;
+              final count = _dealCounts[statusId] ?? 0;
+              return DealStatus(
+                id: statusId,
+                title: status['title'] as String,
+                color: '#000000',
+                dealsCount: count,
+                isSuccess: false,
+                isFailure: false,
+                showOnMainPage: false,
+              );
+            }).toList();
+
+            emit(
+                DealLoaded(minimalStatuses, dealCounts: Map.from(_dealCounts)));
+          } else {
+            emit(DealError(
+                'Нет подключения к интернету и нет кэшированных данных'));
+          }
+          return;
+        }
+
+        // ВСЕГДА загружаем с API для получения актуальных счётчиков
+        currentSalesFunnelId = event.salesFunnelId;
+        response = await apiService.getDealStatuses(
+            salesFunnelId: event.salesFunnelId);
+
+        // КРИТИЧНО: Проверяем, не переключил ли пользователь воронку, пока мы ждали ответа
+        if (event.salesFunnelId != currentSalesFunnelId) {
+          debugPrint(
+              '⚠️ DealBloc: _fetchDealStatuses - Funnel changed, ignoring result');
+          return;
+        }
+
+        if (response.isEmpty) {
+          debugPrint("DealBloc: API returned empty statuses array");
+          emit(DealLoaded([], dealCounts: {}));
+          return;
+        }
+
+        await DealCache.cacheDealStatuses(response
+            .map((status) => {
+                  'id': status.id,
+                  'title': status.title,
+                  'deals_count': status.dealsCount ?? 0,
+                })
+            .toList());
+
+        // Устанавливаем счетчики из свежих данных API
+        _dealCounts.clear();
+        for (var status in response) {
+          final count = status.dealsCount ?? 0;
+          _dealCounts[status.id] = count;
+          await DealCache.setPersistentDealCount(status.id, count);
+        }
       }
 
       emit(DealLoaded(response, dealCounts: Map.from(_dealCounts)));
+
+      // При обычной загрузке автоматически загружаем сделки для первого статуса
+      if (response.isNotEmpty && !event.forceRefresh && !_hasActiveFilters) {
+        final firstStatusId = response.first.id;
+        add(FetchDeals(firstStatusId, salesFunnelId: event.salesFunnelId));
+      }
     } catch (e) {
-      emit(DealError('Не удалось загрузить данные!'));
+      debugPrint('❌ DealBloc: _fetchDealStatuses - Error: $e');
+      emit(DealError('Не удалось загрузить статусы: $e'));
     }
   }
 
   Future<void> _fetchMoreDeals(
       FetchMoreDeals event, Emitter<DealState> emit) async {
-    if (allDealsFetched)
-      return; // Если все сделки уже загружены, ничего не делаем
+    if (allDealsFetched) return;
 
     if (!await _checkInternetConnection()) {
       emit(DealError('Нет подключения к интернету'));
@@ -142,15 +344,31 @@ Future<void> _fetchDealStatus(FetchDealStatus event, Emitter<DealState> emit) as
     }
 
     try {
-      final deals = await apiService.getDeals(event.statusId,
-          page: event.currentPage + 1);
+      final deals = await apiService.getDeals(
+        _currentStatusId ?? event.statusId,
+        page: event.currentPage + 1,
+        perPage: 20,
+        search: _currentQuery,
+        managers: _currentManagerIds,
+        regions: _currentRegionsIds,
+        statuses: _currentStatusId,
+        fromDate: _currentFromDate,
+        toDate: _currentToDate,
+        leads: _currentLeadIds,
+        hasTasks: _currentHasTasks,
+        daysWithoutActivity: _currentDaysWithoutActivity,
+        directoryValues: _currentDirectoryValues,
+        customFieldFilters: _currentCustomFieldFilters,
+      );
+
       if (deals.isEmpty) {
         allDealsFetched = true;
         return;
       }
+
       if (state is DealDataLoaded) {
         final currentState = state as DealDataLoaded;
-        emit(currentState.merge(deals)); // Объединяем старые и новые сделки
+        emit(currentState.merge(deals));
       }
     } catch (e) {
       emit(DealError('Не удалось загрузить дополнительные сделки!'));
@@ -168,7 +386,16 @@ Future<void> _fetchDealStatus(FetchDealStatus event, Emitter<DealState> emit) as
 
     try {
       final result = await apiService.createDealStatus(
-          event.title, event.color, event.day);
+        event.title,
+        event.color,
+        event.day,
+        event.notificationMessage,
+        event.showOnMainPage,
+        event.isSuccess,
+        event.isFailure,
+        event.userIds,
+        event.changeStatusUserIds, // ✅ НОВОЕ
+      );
 
       if (result['success']) {
         emit(DealSuccess(result['message']));
@@ -200,13 +427,15 @@ Future<void> _fetchDealStatus(FetchDealStatus event, Emitter<DealState> emit) as
         dealtypeId: event.dealtypeId,
         leadId: event.leadId,
         customFields: event.customFields,
+        directoryValues: event.directoryValues,
+        files: event.files,
+        userIds: event.userIds,
       );
       if (result['success']) {
         emit(DealSuccess(
             event.localizations.translate('deal_created_successfully')));
-        // add(FetchDeals(event.dealStatusId));
       } else {
-        emit(DealError(result['message']));
+        emit(DealError(event.localizations.translate(result['message'])));
       }
     } catch (e) {
       emit(DealError(
@@ -230,23 +459,26 @@ Future<void> _fetchDealStatus(FetchDealStatus event, Emitter<DealState> emit) as
         managerId: event.managerId,
         startDate: event.startDate,
         endDate: event.endDate,
-        sum: event.sum,
+        sum: event.sum ?? '',
         description: event.description,
         dealtypeId: event.dealtypeId,
         leadId: event.leadId,
         customFields: event.customFields,
+        directoryValues: event.directoryValues,
+        files: event.files,
+        dealStatusIds: event.dealStatusIds,
+        existingFiles: event.existingFiles,
+        userIds: event.userIds, // ✅ НОВОЕ: передаем userIds
       );
 
       if (result['success']) {
         emit(DealSuccess(
-            event.localizations.translate('deal_update_successfully')));
-        // add(FetchDeals(event.dealStatusId));
+            event.localizations.translate('deal_updated_successfully')));
       } else {
         emit(DealError(result['message']));
       }
     } catch (e) {
-      emit(DealError(
-          event.localizations.translate('error_deal_update_successfully')));
+      emit(DealError(event.localizations.translate('error_deal_update')));
     }
   }
 
@@ -310,6 +542,10 @@ Future<void> _fetchDealStatus(FetchDealStatus event, Emitter<DealState> emit) as
         event.day,
         event.isSuccess,
         event.isFailure,
+        event.notificationMessage,
+        event.showOnMainPage,
+        event.userIds,
+        event.changeStatusUserIds,
       );
 
       if (response['result'] == 'Success') {
@@ -320,6 +556,226 @@ Future<void> _fetchDealStatus(FetchDealStatus event, Emitter<DealState> emit) as
       }
     } catch (e) {
       emit(DealError(event.localizations.translate('error_update_status')));
+    }
+  }
+
+  // ======================== ФИЛЬТРАЦИЯ СО СТАТУСАМИ ========================
+
+  Future<void> _fetchDealStatusesWithFilters(
+    FetchDealStatusesWithFilters event,
+    Emitter<DealState> emit,
+  ) async {
+    debugPrint('🔍 DealBloc: _fetchDealStatusesWithFilters - START');
+
+    emit(DealLoading());
+
+    try {
+      // 1. Получаем ВСЕ статусы (метод getDealStatuses не поддерживает фильтры)
+      // Фильтры применяются только при загрузке сделок
+      final statuses = await apiService.getDealStatuses(
+        salesFunnelId: event.salesFunnelId,
+      );
+
+      // КРИТИЧНО: Проверяем, не переключил ли пользователь воронку, пока мы ждали ответа
+      if (event.salesFunnelId != currentSalesFunnelId) {
+        debugPrint(
+            '⚠️ DealBloc: _fetchDealStatusesWithFilters - Funnel changed, ignoring result');
+        return;
+      }
+
+      debugPrint('✅ DealBloc: Got ${statuses.length} statuses');
+
+      // 2. Обновляем счётчики из полученных статусов
+      _dealCounts.clear();
+      for (var status in statuses) {
+        final count = status.dealsCount ?? 0;
+        _dealCounts[status.id] = count;
+        await DealCache.setPersistentDealCount(status.id, count);
+      }
+
+      // 3. Кэшируем статусы
+      await DealCache.cacheDealStatuses(statuses
+          .map((status) => {
+                'id': status.id,
+                'title': status.title,
+                'deals_count': status.dealsCount ?? 0,
+              })
+          .toList());
+
+      // 4. Эмитим состояние со статусами
+      emit(DealLoaded(statuses, dealCounts: Map.from(_dealCounts)));
+
+      // 5. СОХРАНЯЕМ ФИЛЬТРЫ В БЛОКЕ ПЕРЕД ПАРАЛЛЕЛЬНОЙ ЗАГРУЗКОЙ
+      if (statuses.isNotEmpty) {
+        debugPrint(
+            '🚀 DealBloc: Starting parallel fetch for ${statuses.length} statuses');
+
+        // Сохраняем фильтры для последующих запросов
+        _currentQuery = null;
+        _currentManagerIds = event.managerIds;
+        _currentLeadIds = event.leadIds;
+        _currentStatusId = event.statusIds;
+        _currentFromDate = event.fromDate;
+        _currentToDate = event.toDate;
+        _currentHasTasks = event.hasTasks;
+        _currentDaysWithoutActivity = event.daysWithoutActivity;
+        _currentDirectoryValues = event.directoryValues;
+        _currentNames = event.names;
+        _currentCustomFieldFilters = event.customFieldFilters;
+
+        debugPrint('✅ DealBloc: Filters saved to bloc state');
+
+        // Создаём список Future для параллельной загрузки
+        final List<Future<void>> fetchTasks = statuses.map((status) {
+          return _fetchDealsForStatusWithFilters(
+            status.id,
+            event.managerIds,
+            event.regionsIds,
+            event.leadIds,
+            event.statusIds,
+            event.fromDate,
+            event.toDate,
+            event.hasTasks,
+            event.daysWithoutActivity,
+            event.directoryValues,
+            event.names,
+            event.salesFunnelId,
+            event.customFieldFilters,
+          );
+        }).toList();
+
+        // Запускаем все запросы параллельно
+        await Future.wait(fetchTasks);
+
+        debugPrint('✅ DealBloc: All parallel fetches completed');
+
+        // После загрузки всех данных эмитим финальное состояние
+        final allDeals = <Deal>[];
+        for (var status in statuses) {
+          final dealsForStatus = await DealCache.getDealsForStatus(status.id);
+          allDeals.addAll(dealsForStatus);
+        }
+
+        emit(DealDataLoaded(allDeals,
+            currentPage: 1, dealCounts: Map.from(_dealCounts)));
+      }
+    } catch (e) {
+      debugPrint('❌ DealBloc: _fetchDealStatusesWithFilters - Error: $e');
+      emit(DealError('Не удалось загрузить статусы с фильтрами: $e'));
+    }
+  }
+
+  // Вспомогательный метод для загрузки сделок одного статуса
+  Future<void> _fetchDealsForStatusWithFilters(
+    int statusId,
+    List<int>? managerIds,
+    List<int>? regionsIds,
+    List<int>? leadIds,
+    int? statusIds,
+    DateTime? fromDate,
+    DateTime? toDate,
+    bool? hasTasks,
+    int? daysWithoutActivity,
+    List<Map<String, dynamic>>? directoryValues,
+    List<String>? names,
+    int? salesFunnelId,
+    Map<String, List<String>>? customFieldFilters,
+  ) async {
+    try {
+      if (!await _checkInternetConnection()) {
+        debugPrint('⚠️ DealBloc: No internet for status $statusId');
+        return;
+      }
+
+      debugPrint(
+          '🔍 DealBloc: _fetchDealsForStatusWithFilters for status $statusId');
+
+      final deals = await apiService.getDeals(
+        null, // dealStatusId = null, используем statuses параметр
+        page: 1,
+        perPage: 20,
+        managers: managerIds,
+        regions: regionsIds,
+        leads: leadIds,
+        statuses: statusId, // ID статуса через параметр statuses
+        fromDate: fromDate,
+        toDate: toDate,
+        hasTasks: hasTasks,
+        daysWithoutActivity: daysWithoutActivity,
+        directoryValues: directoryValues,
+        names: names,
+        salesFunnelId: salesFunnelId,
+        customFieldFilters: customFieldFilters,
+      );
+
+      debugPrint(
+          '✅ DealBloc: Fetched ${deals.length} deals for status $statusId WITH FILTERS');
+
+      // Кэшируем с сохранением реального счётчика
+      final realCount = _dealCounts[statusId];
+      await DealCache.cacheDealsForStatus(
+        statusId,
+        deals,
+        updatePersistentCount: true,
+        actualTotalCount: realCount,
+      );
+    } catch (e) {
+      debugPrint('❌ DealBloc: Error fetching deals for status $statusId: $e');
+    }
+  }
+
+  // ======================== ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ ========================
+
+  /// РАДИКАЛЬНАЯ очистка - удаляет ВСЕ данные и сбрасывает состояние блока
+  Future<void> clearAllCountsAndCache() async {
+    // Очищаем локальные переменные блока
+    _dealCounts.clear();
+    allDealsFetched = false;
+    isFetching = false;
+
+    // Сбрасываем все текущие параметры фильтрации
+    _currentQuery = null;
+    _currentManagerIds = null;
+    _currentRegionsIds = null;
+    _currentStatusId = null;
+    _currentFromDate = null;
+    _currentToDate = null;
+    _currentLeadIds = null;
+    _currentHasTasks = null;
+    _currentDaysWithoutActivity = null;
+    _currentDirectoryValues = null;
+    _currentNames = null;
+    _currentCustomFieldFilters = null;
+
+    // Радикальная очистка кэша
+    await DealCache.clearEverything();
+  }
+
+  /// Дополнительный метод для принудительного сброса всех счетчиков
+  Future<void> resetAllCounters() async {
+    _dealCounts.clear();
+    await DealCache.clearPersistentCounts();
+  }
+
+  /// Вызывать перед переходом между табами
+  Future<void> _preserveCurrentCounts() async {
+    if (_dealCounts.isNotEmpty) {
+      for (int statusId in _dealCounts.keys) {
+        int currentCount = _dealCounts[statusId] ?? 0;
+        await DealCache.setPersistentDealCount(statusId, currentCount);
+      }
+    }
+  }
+
+  /// Метод для восстановления всех счетчиков из постоянного кэша
+  Future<void> _restoreAllCounts() async {
+    final allPersistentCounts = await DealCache.getPersistentDealCounts();
+    _dealCounts.clear();
+
+    for (String statusIdStr in allPersistentCounts.keys) {
+      int statusId = int.parse(statusIdStr);
+      int count = allPersistentCounts[statusIdStr] ?? 0;
+      _dealCounts[statusId] = count;
     }
   }
 }

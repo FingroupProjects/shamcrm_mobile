@@ -93,7 +93,7 @@ class _ContactPersonUpdateScreenState extends State<ContactPersonUpdateScreen> {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(
-                  AppLocalizations.of(context)!.translate(state.message), // Локализация сообщения
+                  AppLocalizations.of(context)!.translate(state.message),
                   style: TextStyle(
                     fontFamily: 'Gilroy',
                     fontSize: 16,
@@ -139,10 +139,14 @@ class _ContactPersonUpdateScreenState extends State<ContactPersonUpdateScreen> {
           }
         },
         child: Form(
-          key: _formKey,
-          child: Column(
-            children: [
-              Expanded(
+        key: _formKey,
+        child: Column(
+          children: [
+            Expanded(
+              child: GestureDetector(
+                onTap: () {
+                  FocusScope.of(context).unfocus();
+                },
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.all(16),
                   child: Column(
@@ -179,16 +183,17 @@ class _ContactPersonUpdateScreenState extends State<ContactPersonUpdateScreen> {
                         controller: positionController,
                         hintText: AppLocalizations.of(context)!.translate('enter_position'),
                         label: AppLocalizations.of(context)!.translate('position'),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return AppLocalizations.of(context)!.translate('field_required');
-                          }
-                          return null;
-                        },
+                        // validator: (value) {
+                        //   if (value == null || value.isEmpty) {
+                        //     return AppLocalizations.of(context)!.translate('field_required');
+                        //   }
+                        //   return null;
+                        // },
                       ),
                     ],
                   ),
                 ),
+              ),
               ),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 30),

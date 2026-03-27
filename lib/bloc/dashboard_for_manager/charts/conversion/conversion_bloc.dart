@@ -31,14 +31,12 @@ class DashboardConversionBlocManager
     Emitter<DashboardConversionStateManager> emit,
   ) async {
     try {
-      print("🚀 Загрузка данных о конверсии лидов...");
       emit(DashboardConversionLoadingManager());
 
       // 1. Показываем данные из кэша (если они есть)
       List<double>? cachedData = await CacheHandlerManager.getLeadConversionDataManager();
 
       if (cachedData != null) {
-        print("📦 Найдены данные в кеше: ${cachedData.length} месяцев.");
         emit(DashboardConversionLoadedManager(
           leadConversionData: LeadConversionManager(monthlyData: cachedData),
         ));
@@ -46,12 +44,10 @@ class DashboardConversionBlocManager
 
       // 2. Асинхронно проверяем сервер
       if (await _checkInternetConnection()) {
-        print("🌐 Интернет подключен. Получаем данные с сервера...");
 
         final leadConversionData = await _apiService.getLeadConversionDataManager();
 
         if (cachedData == null || !_areListsEqual(leadConversionData.monthlyData, cachedData)) {
-          print("✅ Новые данные с сервера отличаются. Обновляем кэш и UI.");
 
           // Сохраняем новые данные в кэш
           await CacheHandlerManager.saveLeadConversionDataManager(leadConversionData.monthlyData);
@@ -59,10 +55,8 @@ class DashboardConversionBlocManager
           // Обновляем UI
           emit(DashboardConversionLoadedManager(leadConversionData: leadConversionData));
         } else {
-          print("🔄КОНВЕРСИЯ ЛИДОВ Данные с сервера совпадают с кешированными. Обновление не требуется.");
         }
       } else {
-        print("🚫 Нет подключения к интернету.");
         if (cachedData == null) {
           emit(DashboardConversionErrorManager(
             message: "Нет данных и отсутствует подключение к интернету.",
@@ -70,7 +64,6 @@ class DashboardConversionBlocManager
         }
       }
     } catch (e) {
-      print("❌ Произошла ошибка!");
       emit(DashboardConversionErrorManager(message: ""));
     }
   }

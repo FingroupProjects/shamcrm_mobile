@@ -8,11 +8,13 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 class StatusList extends StatefulWidget {
   final String? selectedTaskStatus;
   final Function(String? value, int? id) onChanged;
+  final String? errorText;
 
   const StatusList({
     Key? key,
     required this.selectedTaskStatus,
     required this.onChanged,
+    this.errorText,
   }) : super(key: key);
 
   @override
@@ -25,7 +27,6 @@ class _TaskStatusListState extends State<StatusList> {
     return BlocBuilder<TaskStatusNameBloc, StatusNameState>(
       builder: (context, state) {
         List<DropdownMenuItem<String>> dropdownItems = [];
-
         if (state is StatusNameLoading) {
           dropdownItems = [
             DropdownMenuItem(
@@ -62,7 +63,7 @@ class _TaskStatusListState extends State<StatusList> {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(
-                  AppLocalizations.of(context)!.translate(state.message), // Локализация сообщения
+                  AppLocalizations.of(context)!.translate(state.message),
                   style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
@@ -95,11 +96,10 @@ class _TaskStatusListState extends State<StatusList> {
             Container(
               decoration: BoxDecoration(
                 color: const Color(0xFFF4F7FD),
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(12),
               ),
               child: DropdownButtonFormField<String>(
-                menuMaxHeight:
-                    400, // Устанавливаем максимальную высоту выпадающего меню
+                menuMaxHeight: 400,
                 value: dropdownItems
                         .any((item) => item.value == widget.selectedTaskStatus)
                     ? widget.selectedTaskStatus
@@ -125,35 +125,73 @@ class _TaskStatusListState extends State<StatusList> {
                 },
                 validator: (value) {
                   if (value == null) {
-                    return AppLocalizations.of(context)!.translate('field_required');
+                    return AppLocalizations.of(context)!
+                        .translate('field_required');
                   }
                   return null;
                 },
                 decoration: InputDecoration(
                   contentPadding: const EdgeInsets.symmetric(
-                    vertical: 12,
+                    vertical: 16,
                     horizontal: 16,
                   ),
+                  errorText: widget.errorText,
+                  errorStyle: TextStyle(
+                    fontSize: 14,
+                    color: Colors.red,
+                    fontWeight: FontWeight.w400,
+                    fontFamily: 'Gilroy',
+                  ),
                   border: OutlineInputBorder(
-                    borderSide: const BorderSide(color: Color(0xFFF4F7FD)),
-                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide(
+                      color: widget.errorText != null
+                          ? Colors.red
+                          : Color(0xFFF4F7FD),
+                      width: widget.errorText != null ? 1.5 : 1,
+                    ),
+                    borderRadius: BorderRadius.circular(12),
                   ),
                   enabledBorder: OutlineInputBorder(
-                    borderSide: const BorderSide(color: Color(0xFFF4F7FD)),
-                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide(
+                      color: widget.errorText != null
+                          ? Colors.red
+                          : Color(0xFFF4F7FD),
+                      width: widget.errorText != null ? 1.5 : 1,
+                    ),
+                    borderRadius: BorderRadius.circular(12),
                   ),
                   focusedBorder: OutlineInputBorder(
-                    borderSide: const BorderSide(color: Color(0xFFF4F7FD)),
-                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide(
+                      color: widget.errorText != null
+                          ? Colors.red
+                          : Color(0xff1E2E52),
+                      width: 1.5,
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  errorBorder: OutlineInputBorder(
+                    borderSide: BorderSide(
+                      color: Colors.red,
+                      width: 1.5,
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  focusedErrorBorder: OutlineInputBorder(
+                    borderSide: BorderSide(
+                      color: Colors.red,
+                      width: 1.5,
+                    ),
+                    borderRadius: BorderRadius.circular(12),
                   ),
                   filled: true,
                   fillColor: const Color(0xFFF4F7FD),
                 ),
                 dropdownColor: Colors.white,
-                icon: Image.asset(
-                  'assets/icons/tabBar/dropdown.png',
-                  width: 16,
-                  height: 16,
+                iconSize: 20,
+                icon: Icon(
+                  Icons.keyboard_arrow_down,
+                  size: 20,
+                  color: Color(0xff1E2E52),
                 ),
               ),
             ),

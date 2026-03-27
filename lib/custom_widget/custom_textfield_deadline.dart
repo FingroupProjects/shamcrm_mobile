@@ -10,7 +10,9 @@ class CustomTextFieldDate extends StatelessWidget {
   final bool useCurrentDateAsDefault;
   final bool readOnly;
   final TextInputType keyboardType;
-  final bool hasError; // Новый параметр
+  final bool hasError;
+  final Function(String)? onDateSelected;
+  final Function(String)? onChanged;
 
   CustomTextFieldDate({
     required this.controller,
@@ -20,7 +22,9 @@ class CustomTextFieldDate extends StatelessWidget {
     this.useCurrentDateAsDefault = false,
     this.readOnly = false,
     this.keyboardType = TextInputType.text,
-    this.hasError = false, // Инициализация
+    this.hasError = false,
+    this.onDateSelected,
+    this.onChanged,
   }) {
     if (useCurrentDateAsDefault) {
       controller.text = withTime
@@ -30,11 +34,27 @@ class CustomTextFieldDate extends StatelessWidget {
   }
 
   Future<void> _selectDate(BuildContext context) async {
-    // Логика выбора даты
-    String formattedDate = DateFormat('dd/MM/yyyy').format(DateTime.now());
+    DateTime initialDate = DateTime.now();
+    TimeOfDay initialTime = TimeOfDay.now();
+    
+    if (controller.text.isNotEmpty) {
+      try {
+        if (withTime) {
+          final parsedDateTime = DateFormat('dd/MM/yyyy HH:mm').parse(controller.text);
+          initialDate = parsedDateTime;
+          initialTime = TimeOfDay(hour: parsedDateTime.hour, minute: parsedDateTime.minute);
+        } else {
+          initialDate = DateFormat('dd/MM/yyyy').parse(controller.text);
+        }
+      } catch (e) {
+        debugPrint('Ошибка парсинга даты: $e');
+      }
+    }
+    
+    String formattedDate = DateFormat('dd/MM/yyyy').format(initialDate);
     final DateTime? pickedDate = await showDatePicker(
       context: context,
-      initialDate: DateTime.now(),
+      initialDate: initialDate,
       fieldHintText: AppLocalizations.of(context)!.translate('ddmmyyyy'),
       cancelText: AppLocalizations.of(context)!.translate('back'),
       confirmText: AppLocalizations.of(context)!.translate('ok'),
@@ -61,7 +81,7 @@ class CustomTextFieldDate extends StatelessWidget {
       if (withTime) {
         final TimeOfDay? pickedTime = await showTimePicker(
           context: context,
-          initialTime: TimeOfDay.now(),
+          initialTime: initialTime,
           cancelText: AppLocalizations.of(context)!.translate('back'),
           confirmText: AppLocalizations.of(context)!.translate('ok'),
           helpText: AppLocalizations.of(context)!.translate('select_time'),
@@ -69,8 +89,7 @@ class CustomTextFieldDate extends StatelessWidget {
           hourLabelText: AppLocalizations.of(context)!.translate('hour'),
           builder: (BuildContext context, Widget? child) {
             return MediaQuery(
-              data:
-                  MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
+              data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
               child: Theme(
                 data: ThemeData.light().copyWith(
                   primaryColor: Colors.blue,
@@ -94,9 +113,23 @@ class CustomTextFieldDate extends StatelessWidget {
             pickedTime.minute,
           );
           controller.text = DateFormat('dd/MM/yyyy HH:mm').format(dateTime);
+          
+          if (onDateSelected != null) {
+            onDateSelected!(controller.text);
+          }
+          if (onChanged != null) {
+            onChanged!(controller.text);
+          }
         }
       } else {
         controller.text = DateFormat('dd/MM/yyyy').format(pickedDate);
+        
+        if (onDateSelected != null) {
+          onDateSelected!(controller.text);
+        }
+        if (onChanged != null) {
+          onChanged!(controller.text);
+        }
       }
     }
   }
@@ -144,12 +177,11 @@ class CustomTextFieldDate extends StatelessWidget {
                       ? const BorderSide(color: Colors.red, width: 1.5)
                       : const BorderSide(color: Colors.transparent),
                 ),
-                 errorStyle: const TextStyle(
-                   fontSize: 14, 
-                   fontFamily: 'Gilroy',
-                   color: Colors.red,
-                   fontWeight: FontWeight.w500, 
-                 ),
+                errorStyle: const TextStyle(
+                  fontSize: 14,
+                  color: Colors.red,
+                  fontWeight: FontWeight.w400,
+                ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: hasError
@@ -170,10 +202,15 @@ class CustomTextFieldDate extends StatelessWidget {
                     width: 1.5,
                   ),
                 ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: hasError
+                      ? const BorderSide(color: Colors.red, width: 1.5)
+                      : const BorderSide(color: Color(0xff4759FF), width: 1.5),
+                ),
                 filled: true,
                 fillColor: const Color(0xffF4F7FD),
-                contentPadding:
-                    const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+                contentPadding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
               ),
             ),
           ),

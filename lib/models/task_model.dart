@@ -1,10 +1,11 @@
+import 'package:crm_task_manager/models/dealById_model.dart';
+import 'package:crm_task_manager/models/deal_model.dart';
 import 'package:crm_task_manager/models/project_model.dart';
-import 'package:crm_task_manager/models/role_model.dart';
 import 'package:crm_task_manager/models/user_data_response.dart';
 
 class Task {
   final int id;
-  final int taskNumber;
+  final int? taskNumber;
   final String name;
   final String? startDate;
   final String? endDate;
@@ -13,16 +14,18 @@ class Task {
   final TaskStatus? taskStatus;
   final String? color;
   final Project? project;
+  final Deal? deal;
   final UserData? user;
   final List<UserTaskImage>? usersImage;
   final TaskFile? file;
   final int priority;
-  final List<TaskCustomField> taskCustomFields;
+  // final List<TaskCustomField> taskCustomFields;
   final int? overdue;
+  final List<CustomFields> customFields;
 
   Task({
     required this.id,
-    required this.taskNumber,
+    this.taskNumber,
     required this.name,
     required this.startDate,
     required this.endDate,
@@ -35,8 +38,10 @@ class Task {
     this.user,
     this.file,
     required this.priority,
-    required this.taskCustomFields,
+    // required this.taskCustomFields,
+    required this.customFields,
     this.overdue,
+    this.deal,
   });
 
   factory Task.fromJson(Map<String, dynamic> json, int taskStatusId) {
@@ -72,19 +77,26 @@ class Task {
         user: json['user'] != null && json['user'] is Map<String, dynamic>
             ? UserData.fromJson(json['user'])
             : null,
+          deal: json['deal'] != null && json['deal'] is Map<String, dynamic>
+          ? Deal.fromJson(json['deal'], 0)
+          : null,
         color: json['color'] is String ? json['color'] : null,
         file: json['file'] != null
             ? (json['file'] is Map<String, dynamic>
                 ? TaskFile.fromJson(json['file'])
                 : TaskFile(name: json['file'].toString(), size: 'Неизвестно'))
             : null,
-        taskCustomFields: (json['task_custom_fields'] as List?)
-                ?.map((field) => TaskCustomField.fromJson(field))
+        // taskCustomFields: (json['task_custom_fields'] as List?)
+        //         ?.map((field) => TaskCustomField.fromJson(field))
+        //         .toList() ??
+        //     [],
+        customFields: (json['custom_fields'] as List?)
+                ?.map((field) => CustomFields.fromJson(field))
                 .toList() ??
             [],
       );
     } catch (e) {
-      print('Error parsing Task: $e');
+      //print('Error parsing Task: $e');
       return Task(
         id: 0,
         taskNumber: 0,
@@ -94,7 +106,7 @@ class Task {
         description: 'Ошибка при получении данных',
         statusId: taskStatusId,
         priority: 1,
-        taskCustomFields: [],
+        customFields: [],
       );
     }
   }
@@ -114,41 +126,40 @@ class Task {
       'users': usersImage?.map((e) => e.toJson()).toList(),
       'file': file?.toJson(),
       'priority_level': priority,
-      'task_custom_fields': taskCustomFields.map((e) => e.toJson()).toList(),
+      'custom_fields': customFields.map((e) => e.toJson()).toList(),
       'overdue': overdue,
     };
   }
 }
 
-class TaskCustomField {
-  final int id;
-  final String key;
+class CustomFields {
+  final String name;
   final String value;
+  final int fieldId;
+  final String? type;
 
-  TaskCustomField({
-    required this.id,
-    required this.key,
+  CustomFields({
+    required this.name,
     required this.value,
+    required this.fieldId,
+    this.type,
   });
 
-  factory TaskCustomField.fromJson(Map<String, dynamic> json) {
-    try {
-      return TaskCustomField(
-        id: json['id'] ?? 0,
-        key: json['key'] ?? '',
-        value: json['value'] ?? '',
+  factory CustomFields.fromJson(Map<String, dynamic> json) {
+      return CustomFields(
+        name: json['name'] is String ? json['name'] : '',
+        value: json['value'] is String ? json['value'] : '',
+        fieldId: json['field_id'] is int ? json['field_id'] : 0,
+        type: json['type'] is String ? json['type'] : null,
       );
-    } catch (e) {
-      print('Error parsing TaskCustomField: $e');
-      return TaskCustomField(id: 0, key: 'Unknown', value: 'Unknown');
-    }
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'id': id,
-      'key': key,
+      'name': name,
       'value': value,
+      'field_id': fieldId,
+      'type': type,
     };
   }
 }
@@ -178,7 +189,7 @@ class UserTaskImage {
         image: json['image'] is String ? json['image'] : '',
       );
     } catch (e) {
-      print('Error parsing UserTaskImage: $e');
+      //print('Error parsing UserTaskImage: $e');
       return UserTaskImage(
         id: 0,
         name: 'Не указано',

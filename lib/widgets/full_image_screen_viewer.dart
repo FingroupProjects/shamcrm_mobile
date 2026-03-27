@@ -19,12 +19,30 @@ class FullImageScreenViewer extends StatefulWidget {
 }
 
 class _FullImageScreenViewerState extends State<FullImageScreenViewer> {
+  bool _isDownloading = false;
+  int _downloadProgress = 0;
+
   Future<void> saveNetworkImage(String url, BuildContext context) async {
     try {
+      setState(() {
+        _isDownloading = true;
+        _downloadProgress = 0;
+      });
+
       // Tarmoqdan rasmni yuklab olish
       var response = await Dio().get(
         url,
         options: Options(responseType: ResponseType.bytes),
+        onReceiveProgress: (received, total) {
+          if (total > 0) {
+            final percent = ((received / total) * 100).clamp(0, 100).round();
+            if (percent != _downloadProgress) {
+              setState(() {
+                _downloadProgress = percent;
+              });
+            }
+          }
+        },
       );
 
       // Rasmni galereyaga saqlash
@@ -57,6 +75,13 @@ class _FullImageScreenViewerState extends State<FullImageScreenViewer> {
           backgroundColor: Colors.red,
         ),
       );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isDownloading = false;
+          _downloadProgress = 0;
+        });
+      }
     }
   }
   @override
@@ -69,19 +94,65 @@ class _FullImageScreenViewerState extends State<FullImageScreenViewer> {
         ),
         title: Text(widget.senderName),
         actions: [
-
+          if (_isDownloading)
+            Padding(
+              padding: const EdgeInsets.only(right: 12),
+              child: Row(
+                children: [
+                  SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      value: _downloadProgress > 0
+                          ? _downloadProgress / 100
+                          : null,
+                      color: AppColors.primaryBlue,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text('$_downloadProgress%'),
+                ],
+              ),
+            ),
         ],
       ),
       backgroundColor: Colors.white, // Фон черный для полноэкранного режима
       floatingActionButton: FloatingActionButton.small(
         backgroundColor:  AppColors.primaryBlue,
-        onPressed: () {
-          saveNetworkImage(widget.imagePath, context);
-      }, child: Icon(CupertinoIcons.down_arrow, color: Colors.white,),),
+        onPressed: _isDownloading
+            ? null
+            : () {
+                saveNetworkImage(widget.imagePath, context);
+              },
+        child: _isDownloading
+            ? const SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Colors.white,
+                ),
+              )
+            : const Icon(CupertinoIcons.down_arrow, color: Colors.white,),
+      ),
       body: SafeArea(
         bottom: false,
         child: Stack(
           children: [
+            if (_isDownloading)
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                child: LinearProgressIndicator(
+                  value:
+                      _downloadProgress > 0 ? _downloadProgress / 100 : null,
+                  minHeight: 3,
+                  color: AppColors.primaryBlue,
+                  backgroundColor: Colors.grey.shade200,
+                ),
+              ),
             Center(
               child: InteractiveViewer(
                 panEnabled: true, // Включаем возможность перемещения

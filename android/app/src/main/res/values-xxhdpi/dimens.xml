@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+<!--    <dimen name="widget_min_width">270dp</dimen>-->
+<!--    <dimen name="widget_min_height">120dp</dimen>-->
+
+    <!-- Widget Icon Sizes (scaled by density) -->
+    <dimen name="widget_icon_size">50dp</dimen>
+    <dimen name="widget_logo_size">35dp</dimen>
+    <dimen name="widget_logo_compact_size">30dp</dimen>
+
+    <!-- Widget Text Sizes (sp - same across all densities) -->
+    <dimen name="widget_text_size">13sp</dimen>
+    <dimen name="widget_text_compact_size">13sp</dimen>
+    <dimen name="widget_title_size">20sp</dimen>
+    <dimen name="widget_title_compact_size">18sp</dimen>
+</resources>
