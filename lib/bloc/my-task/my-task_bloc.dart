@@ -34,27 +34,28 @@ class MyTaskBloc extends Bloc<MyTaskEvent, MyTaskState> {
     }
   }
   
-   Future<void> _updateMyTaskStatusEdit(
-      UpdateMyTaskStatusEdit event, Emitter<MyTaskState> emit) async {
-    emit(MyTaskLoading());
+  Future<void> _updateMyTaskStatusEdit(
+    UpdateMyTaskStatusEdit event, Emitter<MyTaskState> emit) async {
+  emit(MyTaskLoading());
 
-    try {
-      final response = await apiService.updateMyTaskStatusEdit(
-        event.myTaskStatusId,
-        event.title,
-        event.localizations,
-      );
+  try {
+    final response = await apiService.updateMyTaskStatusEdit(
+      event.myTaskStatusId,
+      event.title,
+      event.finalStep,  // Добавляем передачу finalStep
+      event.localizations,
+    );
 
-      if (response['result'] == 'Success') {
-        emit(MyTaskStatusUpdatedEdit(
-            event.localizations.translate('status_updated_successfully')));
-      } else {
-        emit(MyTaskError(event.localizations.translate('error_update_status')));
-      }
-    } catch (e) {
+    if (response['result'] == 'Success') {
+      emit(MyTaskStatusUpdatedEdit(
+          event.localizations.translate('status_updated_successfully')));
+    } else {
       emit(MyTaskError(event.localizations.translate('error_update_status')));
     }
+  } catch (e) {
+    emit(MyTaskError(event.localizations.translate('error_update_status')));
   }
+}
 
 // Метод для загрузки статусов задач с учётом кэша
   Future<void> _fetchMyTaskStatuses(
@@ -216,7 +217,7 @@ class MyTaskBloc extends Bloc<MyTaskEvent, MyTaskState> {
         startDate: event.startDate,
         endDate: event.endDate,
         description: event.description,
-        filePath: event.filePath,
+        filePaths: event.filePaths,
         setPush: event.setPush,
       );
 
@@ -230,7 +231,37 @@ class MyTaskBloc extends Bloc<MyTaskEvent, MyTaskState> {
       emit(MyTaskError(event.localizations.translate('task_creation_error')));
     }
   }
+/* Future<void> _createMyTask(
+      CreateMyTask event, Emitter<MyTaskState> emit) async {
+    emit(MyTaskLoading());
 
+    if (!await _checkInternetConnection()) {
+      emit(MyTaskError(event.localizations.translate('no_internet_connection')));
+      return;
+    }
+
+    try {
+      final result = await apiService.createMyTask(
+        name: event.name,
+        statusId: event.statusId,
+        taskStatusId: event.taskStatusId,
+        startDate: event.startDate,
+        endDate: event.endDate,
+        description: event.description,
+        filePaths: event.filePaths,
+        setPush: event.setPush,
+      );
+
+      if (result['success']) {
+        emit(MyTaskSuccess(event.localizations.translate('task_create_successfully')));
+        // add(FetchMyTasks(event.statusId));
+      } else {
+        emit(MyTaskError(result['message']));
+      }
+    } catch (e) {
+      emit(MyTaskError(event.localizations.translate('task_creation_error')));
+    }
+  }*/
   Future<void> _updateMyTask(
       UpdateMyTask event, Emitter<MyTaskState> emit) async {
     emit(MyTaskLoading());
@@ -244,11 +275,11 @@ class MyTaskBloc extends Bloc<MyTaskEvent, MyTaskState> {
       final result = await apiService.updateMyTask(
         taskId: event.taskId,
         name: event.name,
-        startDate: event.startDate,
+        // startDate: event.startDate,
         endDate: event.endDate,
         description: event.description,
         taskStatusId: event.taskStatusId,
-        filePath: event.filePath,
+        filePaths: event.filePaths,
         setPush: event.setPush,
       );
 

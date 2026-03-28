@@ -229,19 +229,19 @@ List<String> _buildActionHistoryItems(List<LeadHistory> history) {
     final changes = entry.changes;
 
     String formatBirthday(String? birthdayString) {
-  if (birthdayString == null || birthdayString == AppLocalizations.of(context)!.translate('not_specified')) {
-    return AppLocalizations.of(context)!.translate('not_specified');
+  if (birthdayString == null || birthdayString == AppLocalizations.of(context)!.translate('')) {
+    return AppLocalizations.of(context)!.translate('');
   }
 
   try {
     DateTime birthday = DateTime.parse(birthdayString);
-    return DateFormat('dd-MM-yyyy').format(birthday);
+    return DateFormat('dd.MM.yyyy').format(birthday);
   } catch (e) {
-    return AppLocalizations.of(context)!.translate('not_specified'); 
+    return AppLocalizations.of(context)!.translate(''); 
   }
 }
 
-    final formattedDate = DateFormat('dd-MM-yyyy HH:mm').format(entry.date.toLocal());
+    final formattedDate = DateFormat('dd.MM.yyyy HH:mm').format(entry.date.toLocal());
     String actionDetail = '${entry.status}\n${entry.user.name} $formattedDate';
 
     if (changes != null) {
@@ -249,37 +249,37 @@ List<String> _buildActionHistoryItems(List<LeadHistory> history) {
       // Статус клиента
       if (changes.leadStatusNewValue != null || changes.leadStatusPreviousValue != null) {
         actionDetail +=
-            '\n${AppLocalizations.of(context)!.translate('status_history')}${changes.leadStatusPreviousValue ?? AppLocalizations.of(context)!.translate('not_specified')} > ${changes.leadStatusNewValue ?? AppLocalizations.of(context)!.translate('not_specified')}';
+            '\n${AppLocalizations.of(context)!.translate('status_history')}${changes.leadStatusPreviousValue ?? AppLocalizations.of(context)!.translate('')} > ${changes.leadStatusNewValue ?? AppLocalizations.of(context)!.translate('')}';
       }
 
       // Название
       if (changes.historyNamePreviousValue != null || changes.historyNameNewValue != null) {
         actionDetail +=
-            '\n${AppLocalizations.of(context)!.translate('name_history')}${changes.historyNamePreviousValue ?? AppLocalizations.of(context)!.translate('not_specified')} > ${changes.historyNameNewValue ?? AppLocalizations.of(context)!.translate('not_specified')}';
+            '\n${AppLocalizations.of(context)!.translate('name_history')}${changes.historyNamePreviousValue ?? AppLocalizations.of(context)!.translate('')} > ${changes.historyNameNewValue ?? AppLocalizations.of(context)!.translate('')}';
       }
       
       // Email
       if (changes.emailPreviousValue != null || changes.emailNewValue != null) {
         actionDetail +=
-            '\nEmail: ${changes.emailPreviousValue ?? AppLocalizations.of(context)!.translate('not_specified')} > ${changes.emailNewValue ?? AppLocalizations.of(context)!.translate('not_specified')}';
+            '\nEmail: ${changes.emailPreviousValue ?? AppLocalizations.of(context)!.translate('')} > ${changes.emailNewValue ?? AppLocalizations.of(context)!.translate('')}';
       }
 
       // Телефон
       if (changes.phonePreviousValue != null || changes.phoneNewValue != null) {
         actionDetail +=
-            '\n${AppLocalizations.of(context)!.translate('phone_history')}${changes.phonePreviousValue ?? AppLocalizations.of(context)!.translate('not_specified')} > ${changes.phoneNewValue ?? AppLocalizations.of(context)!.translate('not_specified')}';
+            '\n${AppLocalizations.of(context)!.translate('phone_history')}${changes.phonePreviousValue ?? AppLocalizations.of(context)!.translate('')} > ${changes.phoneNewValue ?? AppLocalizations.of(context)!.translate('')}';
       }
 
       // Регион
       if (changes.regionPreviousValue != null || changes.regionNewValue != null) {
         actionDetail +=
-            '\n${AppLocalizations.of(context)!.translate('region_history')}${changes.regionPreviousValue ?? AppLocalizations.of(context)!.translate('not_specified')} > ${changes.regionNewValue ?? AppLocalizations.of(context)!.translate('not_specified')}';
+            '\n${AppLocalizations.of(context)!.translate('region_history')}${changes.regionPreviousValue ?? AppLocalizations.of(context)!.translate('')} > ${changes.regionNewValue ?? AppLocalizations.of(context)!.translate('')}';
       }
 
       // Менеджер
       if (changes.managerNewValue != null || changes.managerPreviousValue != null) {
         actionDetail +=
-            '\n${AppLocalizations.of(context)!.translate('manager_history')}${changes.managerPreviousValue ?? AppLocalizations.of(context)!.translate('not_specified')} > ${changes.managerNewValue ?? AppLocalizations.of(context)!.translate('not_specified')}';
+            '\n${AppLocalizations.of(context)!.translate('manager_history')}${changes.managerPreviousValue ?? AppLocalizations.of(context)!.translate('')} > ${changes.managerNewValue ?? AppLocalizations.of(context)!.translate('')}';
       }
       
       // Дата рождения
@@ -291,25 +291,25 @@ List<String> _buildActionHistoryItems(List<LeadHistory> history) {
       // TG Никнейм
       if (changes.tgNickNewValue != null || changes.tgNickPreviousValue != null) {
         actionDetail +=
-          '\nTelegram: ${changes.tgNickPreviousValue ?? AppLocalizations.of(context)!.translate('not_specified')} > ${changes.tgNickNewValue ?? AppLocalizations.of(context)!.translate('not_specified')}';
+          '\nTelegram: ${changes.tgNickPreviousValue ?? AppLocalizations.of(context)!.translate('')} > ${changes.tgNickNewValue ?? AppLocalizations.of(context)!.translate('')}';
       }
 
       // Instagram логин
       if (changes.instaLoginNewValue != null || changes.instaLoginPreviousValue != null) {
         actionDetail +=
-          '\nInstagram: ${changes.instaLoginPreviousValue ?? AppLocalizations.of(context)!.translate('not_specified')} > ${changes.instaLoginNewValue ?? AppLocalizations.of(context)!.translate('not_specified')}';
+          '\nInstagram: ${changes.instaLoginPreviousValue ?? AppLocalizations.of(context)!.translate('')} > ${changes.instaLoginNewValue ?? AppLocalizations.of(context)!.translate('')}';
       }
 
       // Facebook логин
       if (changes.facebookLoginNewValue != null || changes.facebookLoginPreviousValue != null) {
         actionDetail +=
-          '\nFacebook: ${changes.facebookLoginPreviousValue ?? AppLocalizations.of(context)!.translate('not_specified')} > ${changes.facebookLoginNewValue ?? AppLocalizations.of(context)!.translate('not_specified')}';
+          '\nFacebook: ${changes.facebookLoginPreviousValue ?? AppLocalizations.of(context)!.translate('')} > ${changes.facebookLoginNewValue ?? AppLocalizations.of(context)!.translate('')}';
       }
       
       // Описание
       if (changes.descriptionNewValue != null || changes.descriptionPreviousValue != null) {
         actionDetail +=
-          '\n${AppLocalizations.of(context)!.translate('description')}${changes.descriptionPreviousValue ?? AppLocalizations.of(context)!.translate('not_specified')} > ${changes.descriptionNewValue ?? AppLocalizations.of(context)!.translate('not_specified')}';
+          '\n${AppLocalizations.of(context)!.translate('description')}${changes.descriptionPreviousValue ?? AppLocalizations.of(context)!.translate('')} > ${changes.descriptionNewValue ?? AppLocalizations.of(context)!.translate('')}';
       }
     }
 

@@ -1,14 +1,21 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/page_2/dashboard/sales_dashboard_screen.dart';
+import 'package:crm_task_manager/page_2/goods/goods_screen.dart';
+import 'package:crm_task_manager/page_2/online_shop.dart';
+import 'package:crm_task_manager/page_2/order/order_screen.dart';
+import 'package:crm_task_manager/page_2/warehouse/warehouse_screen.dart';
 import 'package:crm_task_manager/screens/MyNavBar.dart';
 import 'package:crm_task_manager/screens/chats/chats_screen.dart';
 import 'package:crm_task_manager/screens/dashboard/dashboard_screen.dart';
 import 'package:crm_task_manager/screens/deal/deal_screen.dart';
+import 'package:crm_task_manager/screens/empty_screen.dart';
 import 'package:crm_task_manager/screens/lead/lead_screen.dart';
-import 'package:crm_task_manager/screens/placeholder_screen.dart';
+import 'package:crm_task_manager/page_2/category/category_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/task/task_screen.dart';
-import 'package:crm_task_manager/screens/profile/profile_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart'; // Добавляем для чтения hasMiniApp
+import '../page_2/money/money_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   @override
@@ -16,138 +23,241 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  int _selectedIndex = 0;
+  int _selectedIndexGroup1 = -1;  
+  int _selectedIndexGroup2 = -1;  
   bool _isSearching = false;
   final TextEditingController _searchController = TextEditingController();
   final ApiService _apiService = ApiService();
+  bool _isPushHandled = false;  
 
-  List<Widget> _widgetOptions = [];
-  List<String> _titleKeys = [];
-  List<String> _navBarTitleKeys = [];
-  List<String> _activeIcons = [];
-  List<String> _inactiveIcons = [];
+  List<Widget> _widgetOptionsGroup1 = [];
+  List<Widget> _widgetOptionsGroup2 = [];
+  List<String> _titleKeysGroup1 = [];
+  List<String> _titleKeysGroup2 = [];
+  List<String> _navBarTitleKeysGroup1 = [];
+  List<String> _navBarTitleKeysGroup2 = [];
+  List<String> _activeIconsGroup1 = [];
+  List<String> _activeIconsGroup2 = [];
+  List<String> _inactiveIconsGroup1 = [];
+  List<String> _inactiveIconsGroup2 = [];
 
   @override
+
   void initState() {
     super.initState();
-
     initializeScreensWithPermissions();
   }
 
   Future<void> initializeScreensWithPermissions() async {
-  List<Widget> widgets = [];
-  List<String> titleKeys = [];
-  List<String> navBarTitleKeys = [];
-  List<String> activeIcons = [];
-  List<String> inactiveIcons = [];
+    List<Widget> widgetsGroup1 = [];
+    List<Widget> widgetsGroup2 = [];
+    List<String> titleKeysGroup1 = [];
+    List<String> titleKeysGroup2 = [];
+    List<String> navBarTitleKeysGroup1 = [];
+    List<String> navBarTitleKeysGroup2 = [];
+    List<String> activeIconsGroup1 = [];
+    List<String> activeIconsGroup2 = [];
+    List<String> inactiveIconsGroup1 = [];
+    List<String> inactiveIconsGroup2 = [];
 
-  bool hasAvailableScreens = false;
+    bool hasAvailableScreens = false;
 
-  // Дашборд
-  widgets.add(DashboardScreen());
-  titleKeys.add('appbar_dashboard');
-  navBarTitleKeys.add('appbar_dashboard');
-  activeIcons.add('assets/icons/MyNavBar/dashboard_ON.png');
-  inactiveIcons.add('assets/icons/MyNavBar/dashboard_OFF.png');
-  hasAvailableScreens = true;
+    // Дашборд
+    if (await _apiService.hasPermission('section.dashboard')) {
+      widgetsGroup1.add(DashboardScreen());
+      titleKeysGroup1.add('appbar_dashboard');
+      navBarTitleKeysGroup1.add('appbar_dashboard');
+      activeIconsGroup1.add('assets/icons/MyNavBar/dashboard_ON.png');
+      inactiveIconsGroup1.add('assets/icons/MyNavBar/dashboard_OFF.png');
+      hasAvailableScreens = true;
+    }
 
-  // Задачи
-  widgets.add(TaskScreen());
-  titleKeys.add('appbar_tasks');
-  navBarTitleKeys.add('appbar_tasks');
-  activeIcons.add('assets/icons/MyNavBar/tasks_ON.png');
-  inactiveIcons.add('assets/icons/MyNavBar/tasks_OFF.png');
-  hasAvailableScreens = true;
+    // Задачи
+    if (await _apiService.hasPermission('task.read')) {
+      widgetsGroup1.add(TaskScreen());
+      titleKeysGroup1.add('appbar_tasks');
+      navBarTitleKeysGroup1.add('appbar_tasks');
+      activeIconsGroup1.add('assets/icons/MyNavBar/tasks_ON.png');
+      inactiveIconsGroup1.add('assets/icons/MyNavBar/tasks_OFF.png');
+      hasAvailableScreens = true;
+    }
 
-  // Лиды
-  if (await _apiService.hasPermission('lead.read')) {
-    widgets.add(LeadScreen());
-    titleKeys.add('appbar_leads');
-    navBarTitleKeys.add('appbar_leads');
-    activeIcons.add('assets/icons/MyNavBar/clients_ON.png');
-    inactiveIcons.add('assets/icons/MyNavBar/clients_OFF.png');
+    // Лиды
+    if (await _apiService.hasPermission('lead.read')) {
+      widgetsGroup1.add(LeadScreen());
+      titleKeysGroup1.add('appbar_leads');
+      navBarTitleKeysGroup1.add('appbar_leads');
+      activeIconsGroup1.add('assets/icons/MyNavBar/clients_ON.png');
+      inactiveIconsGroup1.add('assets/icons/MyNavBar/clients_OFF.png');
+      hasAvailableScreens = true;
+    }
+
+    // Сделки
+    if (await _apiService.hasPermission('deal.read')) {
+      widgetsGroup1.add(DealScreen());
+      titleKeysGroup1.add('appbar_deals');
+      navBarTitleKeysGroup1.add('appbar_deals');
+      activeIconsGroup1.add('assets/icons/MyNavBar/deal_ON.png');
+      inactiveIconsGroup1.add('assets/icons/MyNavBar/deal_OFF.png');
+      hasAvailableScreens = true;
+    }
+
+    // Чаты
+    widgetsGroup1.add(ChatsScreen());
+    titleKeysGroup1.add('appbar_chats');
+    navBarTitleKeysGroup1.add('appbar_chats');
+    activeIconsGroup1.add('assets/icons/MyNavBar/chats_ON.png');
+    inactiveIconsGroup1.add('assets/icons/MyNavBar/chats_OFF.png');
     hasAvailableScreens = true;
-  }
 
-  // Чаты
-  widgets.add(ChatsScreen());
-  titleKeys.add('appbar_chats');
-  navBarTitleKeys.add('appbar_chats');
-  activeIcons.add('assets/icons/MyNavBar/chats_ON.png');
-  inactiveIcons.add('assets/icons/MyNavBar/chats_OFF.png');
-  hasAvailableScreens = true;
+    // ========== КЛЮЧЕВАЯ ЛОГИКА ==========
+    
+    // Проверяем доступ к складскому учёту
+    bool hasWarehouseAccess = false;
+    if (await _apiService.hasPermission('accounting_of_goods') || 
+        await _apiService.hasPermission('accounting_money')) {
+      hasWarehouseAccess = true;
+    }
 
-  // Сделки
-  if (await _apiService.hasPermission('deal.read')) {
-    widgets.add(DealScreen());
-    titleKeys.add('appbar_deals');
-    navBarTitleKeys.add('appbar_deals');
-    activeIcons.add('assets/icons/MyNavBar/deal_ON.png');
-    inactiveIcons.add('assets/icons/MyNavBar/deal_OFF.png');
-    hasAvailableScreens = true;
-  }
+    // Проверяем доступ к заказам
+    bool hasOrderAccess = await _apiService.hasPermission('order.read');
 
-  setState(() {
-    _widgetOptions = widgets;
-    _titleKeys = titleKeys;
-    _navBarTitleKeys = navBarTitleKeys;
-    _activeIcons = activeIcons;
-    _inactiveIcons = inactiveIcons;
-  });
-
-  WidgetsBinding.instance.addPostFrameCallback((_) {
-    final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
-
-    setState(() {
-      if (args != null && args['screenIndex'] != null) {
-        _selectedIndex = args['screenIndex'];
-      } else if (_widgetOptions.isNotEmpty) {
-        _selectedIndex = 0;
+    // ЛОГИКА ВЗАИМОИСКЛЮЧЕНИЯ:
+    if (hasWarehouseAccess) { 
+      /*Если есть складской учёт → добавляем WarehouseAccountingScreen и OrderScreen (если есть доступ) */
+      widgetsGroup1.add(WarehouseAccountingScreen());
+      titleKeysGroup1.add('appbar_warehouse');
+      navBarTitleKeysGroup1.add('appbar_warehouse');
+      activeIconsGroup1.add('assets/icons/MyNavBar/money_on_.png');
+      inactiveIconsGroup1.add('assets/icons/MyNavBar/google-docs (5).png');
+      hasAvailableScreens = true;
+ 
+      // Добавляем OrderScreen во вторую группу, если естьдоступ 
+      if (hasOrderAccess) { 
+        widgetsGroup2.add(OrderScreen()); 
+        titleKeysGroup2.add('appbar_orders'); // Используем ключ 'orders' для локализации 
+        navBarTitleKeysGroup2.add('appbar_orders'); 
+        activeIconsGroup2.add('assets/icons/MyNavBar/orderon.png'); // Убедитесь, что иконка существует 
+        inactiveIconsGroup2.add('assets/icons/MyNavBar/order_OFF.png'); 
+        hasAvailableScreens = true; 
       }
-    });
-  });
+      
+      // НЕ добавляем OnlineStoreScreen!
+      
+    } else {
+      // Если НЕТ складского учёта → добавляем OnlineStoreScreen
+      // (внутри него уже есть заказы)
+      if (hasOrderAccess) {
+        
 
-  if (!hasAvailableScreens) {
-    setState(() {
-      _widgetOptions = [PlaceholderScreen(message: 'Нет доступных экранов.')];
-      _titleKeys = ['no_available_screens'];
-      _navBarTitleKeys = [];
-      _activeIcons = [];
-      _inactiveIcons = [];
-      _selectedIndex = 0;
-    });
+      widgetsGroup2.add(OnlineStoreScreen());
+      titleKeysGroup2.add('appbar_online_store');
+      navBarTitleKeysGroup2.add('appbar_online_store');
+      activeIconsGroup2.add('assets/icons/MyNavBar/category_ON.png');
+      inactiveIconsGroup2.add('assets/icons/MyNavBar/category_OFF.png');
+      hasAvailableScreens = true;
+      
+      // НЕ добавляем OrderScreen отдельно!
+    } }
+
+    if (mounted) {
+      setState(() {
+        _widgetOptionsGroup1 = widgetsGroup1;
+        _widgetOptionsGroup2 = widgetsGroup2;
+        _titleKeysGroup1 = titleKeysGroup1;
+        _titleKeysGroup2 = titleKeysGroup2;
+        _navBarTitleKeysGroup1 = navBarTitleKeysGroup1;
+        _navBarTitleKeysGroup2 = navBarTitleKeysGroup2;
+        _activeIconsGroup1 = activeIconsGroup1;
+        _activeIconsGroup2 = activeIconsGroup2;
+        _inactiveIconsGroup1 = inactiveIconsGroup1;
+        _inactiveIconsGroup2 = inactiveIconsGroup2;
+        
+        // Если текущий пользователь находится во второй группе, но она пуста,
+        // переключаем на первую группу
+        if (_selectedIndexGroup2 != -1 && widgetsGroup2.isEmpty) {
+          _selectedIndexGroup1 = 0;
+          _selectedIndexGroup2 = -1;
+        }
+      });
+    }
   }
-}
 
   @override
-Widget build(BuildContext context) {
-  return Scaffold(
-    body: _selectedIndex == -1 // Экран профиля
-        ? ProfileScreen()
-        : (_widgetOptions.isNotEmpty &&
-                _selectedIndex >= 0 &&
-                _selectedIndex < _widgetOptions.length
-            ? _widgetOptions[_selectedIndex]
-            : Center(
-                child: Text(AppLocalizations.of(context)!.translate('no_available_screens')),
-              )),
-    backgroundColor: Colors.white,
-    bottomNavigationBar: _widgetOptions.isNotEmpty
-        ? MyNavBar(
-            currentIndex: _selectedIndex,
-            onItemSelected: (index) {
-              setState(() {
-                _selectedIndex = index;
-                _isSearching = false;
-              });
-            },
-            navBarTitles: _navBarTitleKeys
-                .map((key) => AppLocalizations.of(context)!.translate(key))
-                .toList(), // Локализация заголовков NavBar
-            activeIcons: _activeIcons,
-            inactiveIcons: _inactiveIcons,
-          )
-        : null,
-  );
-}
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+
+    if (args != null && !_isPushHandled) {
+      setState(() {
+        if (args['group'] == 1) {
+          _selectedIndexGroup1 = args['screenIndex'] ?? 0;
+          _selectedIndexGroup2 = -1;
+        } else if (args['group'] == 2) {
+          // Проверяем, есть ли элементы во второй группе
+          if (_widgetOptionsGroup2.isNotEmpty) {
+            _selectedIndexGroup2 = args['screenIndex'] ?? 0;
+            _selectedIndexGroup1 = -1;
+          } else {
+            // Если нет элементов во второй группе, переключаемся на первую
+            _selectedIndexGroup1 = 0;
+            _selectedIndexGroup2 = -1;
+          }
+        }
+        _isPushHandled = true;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    Widget currentWidget;
+    
+    // Определяем, какой экран показывать
+    if (_selectedIndexGroup1 != -1 && _selectedIndexGroup1 < _widgetOptionsGroup1.length) {
+      currentWidget = _widgetOptionsGroup1[_selectedIndexGroup1];
+    } else if (_selectedIndexGroup2 != -1 && _selectedIndexGroup2 < _widgetOptionsGroup2.length) {
+      currentWidget = _widgetOptionsGroup2[_selectedIndexGroup2];
+    } else {
+      currentWidget = EmptyScreen();
+    }
+    
+    // ИСПРАВЛЕНИЕ: Оборачиваем currentWidget в SafeArea для bottom padding на iOS
+    // Это предотвратит перекрытие кнопок/элементов внизу body nav bar'ом
+    Widget safeBody = SafeArea(
+      bottom: true,  // Только bottom, чтобы не влиять на top (appBar уже есть)
+      child: currentWidget,
+    );
+    
+    return Scaffold(
+      body: safeBody,  // Используем safeBody вместо currentWidget
+      backgroundColor: Colors.white,
+      bottomNavigationBar: MyNavBar(
+        currentIndexGroup1: _selectedIndexGroup1,
+        currentIndexGroup2: _selectedIndexGroup2,
+        onItemSelected: (groupIndex, itemIndex) {
+          setState(() {
+            if (groupIndex == 1) {
+              _selectedIndexGroup1 = itemIndex;
+              _selectedIndexGroup2 = -1;
+            } else if (groupIndex == 2) {
+              _selectedIndexGroup2 = itemIndex;
+              _selectedIndexGroup1 = -1;
+            }
+            _isSearching = false;
+          });
+        },
+        navBarTitlesGroup1: _navBarTitleKeysGroup1
+            .map((key) => AppLocalizations.of(context)!.translate(key))
+            .toList(),
+        navBarTitlesGroup2: _navBarTitleKeysGroup2
+            .map((key) => AppLocalizations.of(context)!.translate(key))
+            .toList(),
+        activeIconsGroup1: _activeIconsGroup1,
+        activeIconsGroup2: _activeIconsGroup2,
+        inactiveIconsGroup1: _inactiveIconsGroup1,
+        inactiveIconsGroup2: _inactiveIconsGroup2,
+      ),
+    );
+  }
 }

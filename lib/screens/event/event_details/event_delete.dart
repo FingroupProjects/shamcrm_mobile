@@ -44,11 +44,13 @@ class DeleteNoticeDialog extends StatelessWidget {
         title: Center(
           child: Text(
             AppLocalizations.of(context)!.translate('delete_notice'),
+            maxLines: 1,
             style: TextStyle(
-              fontSize: 20,
+              fontSize: 18,
               fontFamily: 'Gilroy',
               fontWeight: FontWeight.w600,
               color: Color(0xff1E2E52),
+              overflow: TextOverflow.ellipsis,
             ),
           ),
         ),
@@ -81,14 +83,17 @@ class DeleteNoticeDialog extends StatelessWidget {
                   buttonText: AppLocalizations.of(context)!.translate('delete'),
                   onPressed: () {
                     final localizations = AppLocalizations.of(context)!;
-                    
-                    context.read<EventBloc>().add(DeleteNotice(noticeId, localizations));
+
+                    context
+                        .read<EventBloc>()
+                        .add(DeleteNotice(noticeId, localizations));
                     context.read<EventBloc>().add(FetchEvents());
-                    
+
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text(
-                          AppLocalizations.of(context)!.translate('notice_deleted_successfully'),
+                          AppLocalizations.of(context)!
+                              .translate('notice_deleted_successfully'),
                           style: TextStyle(
                             fontFamily: 'Gilroy',
                             fontSize: 16,
@@ -97,13 +102,15 @@ class DeleteNoticeDialog extends StatelessWidget {
                           ),
                         ),
                         behavior: SnackBarBehavior.floating,
-                        margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        margin:
+                            EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
                         backgroundColor: Colors.green,
                         elevation: 3,
-                        padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                        padding:
+                            EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                         duration: Duration(seconds: 3),
                       ),
                     );

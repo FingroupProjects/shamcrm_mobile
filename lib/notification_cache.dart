@@ -13,15 +13,26 @@ class NotificationCacheHandler {
   }
 
   // Получение уведомлений из кэша
-  static Future<List<Notifications>?> getNotifications() async {
-    final prefs = await SharedPreferences.getInstance();
-    final jsonString = prefs.getString(_cacheKey);
-    if (jsonString == null) return null;
+ static Future<List<Notifications>?> getNotifications() async {
+  final prefs = await SharedPreferences.getInstance();
+  final jsonString = prefs.getString(_cacheKey);
+  if (jsonString == null) return null;
 
+  try {
     final List<dynamic> jsonList = json.decode(jsonString);
-    return jsonList.map((e) => Notifications.fromJson(e)).toList();
+    return jsonList.map((e) {
+      try {
+        return Notifications.fromJson(e);
+      } catch (e) {
+        print('Ошибка десериализации кэшированного уведомления: $e, JSON: $e');
+        return null;
+      }
+    }).where((e) => e != null).cast<Notifications>().toList();
+  } catch (e) {
+    print('Ошибка декодирования кэша: $e');
+    return null;
   }
-
+}
   // Очистка кэша уведомлений
   static Future<void> clearCache() async {
     final prefs = await SharedPreferences.getInstance();

@@ -1,0 +1,57 @@
+import 'package:flutter/material.dart';
+import 'package:crm_task_manager/models/page_2/dashboard/order_quantity_content.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+
+class OrderQuantityCard extends StatelessWidget {
+  final ChartDataContent chartData;
+
+  const OrderQuantityCard({
+    Key? key,
+    required this.chartData,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context)!;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFE9EDF5),
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [BoxShadow(color: Colors.grey.shade200, blurRadius: 4)],
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '${localizations.translate('name')}: ${chartData.name}',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontFamily: 'Gilroy',
+                    fontWeight: FontWeight.w400,
+                    color: Color(0xff1E2E52),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  '${localizations.translate('quantity')}: ${chartData.amount}',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontFamily: 'Gilroy',
+                    fontWeight: FontWeight.w400,
+                    color: Color(0xff99A4BA),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
