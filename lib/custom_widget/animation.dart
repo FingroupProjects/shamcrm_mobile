@@ -17,6 +17,7 @@ class PlayStoreImageLoading extends StatefulWidget {
 class _PlayStoreImageLoadingState extends State<PlayStoreImageLoading>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
+  late Animation<double> _animation;
 
   @override
   void initState() {
@@ -24,7 +25,15 @@ class _PlayStoreImageLoadingState extends State<PlayStoreImageLoading>
     _controller = AnimationController(
       vsync: this,
       duration: widget.duration,
-    )..repeat();
+    );
+
+    // Создаём анимацию с кривой для эффекта ускорения/замедления
+    _animation = CurvedAnimation(
+      parent: _controller,
+      curve: Curves.easeInOut, // Можно попробовать: fastOutSlowIn, easeInOutCubic
+    );
+
+    _controller.repeat();
   }
 
   @override
@@ -36,10 +45,10 @@ class _PlayStoreImageLoadingState extends State<PlayStoreImageLoading>
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
-      animation: _controller,
+      animation: _animation,
       builder: (context, child) {
         return Transform.rotate(
-          angle: _controller.value * 2 * 3.14159,
+          angle: _animation.value * 2 * 3.14159,
           child: SizedBox(
             width: widget.size,
             height: widget.size,

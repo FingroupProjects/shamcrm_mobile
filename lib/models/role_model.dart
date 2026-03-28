@@ -13,17 +13,20 @@ class Role {
     required this.updatedAt,
   });
 
-  factory Role.fromJson(Map<String, dynamic> json) {
+factory Role.fromJson(Map<String, dynamic> json) {
+  try {
     return Role(
-      id: json['id'],
-      name: json['name'],
-      guardName: json['guard_name'],
-      createdAt: json['created_at'],
-      updatedAt: json['updated_at'],
+      id: json['id'] is int ? json['id'] : int.parse(json['id'].toString()),
+      name: json['name']?.toString() ?? '',
+      guardName: json['guard_name']?.toString() ?? '',
+      createdAt: json['created_at']?.toString() ?? '',
+      updatedAt: json['updated_at']?.toString() ?? '',
     );
+  } catch (e) {
+    throw FormatException('Failed to parse Role from JSON: $e');
   }
+}
 
-  // Added the toMap method to convert a Role to a map
   Map<String, dynamic> toMap() {
     return {
       'id': id,

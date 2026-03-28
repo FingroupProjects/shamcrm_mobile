@@ -1,0 +1,55 @@
+import 'package:crm_task_manager/models/page_2/call_center_by_id_model.dart';
+import 'package:crm_task_manager/models/page_2/call_center_model.dart';
+
+abstract class CallCenterState {}
+
+class CallCenterInitial extends CallCenterState {}
+
+class CallCenterLoading extends CallCenterState {}
+class CallCenterEmpty extends CallCenterState {}
+class CallCenterLoaded extends CallCenterState {
+  final List<CallLogEntry> calls;
+  final int currentPage;
+  final int totalPages;
+  final CallType? currentFilter;
+
+  CallCenterLoaded({
+    required this.calls,
+    required this.currentPage,
+    required this.totalPages,
+    this.currentFilter,
+  });
+
+  CallCenterLoaded merge(List<CallLogEntry> newCalls, {required int newPage}) {
+    //print("🔄 Merging states:");
+    //print("  - Current calls: ${calls.length}");
+    //print("  - New calls: ${newCalls.length}");
+    //print("  - Current page: $currentPage");
+    //print("  - New page: $newPage");
+    //print("  - Current filter: $currentFilter"); // ✅ Added for debugging
+
+    final merged = CallCenterLoaded(
+      calls: [...calls, ...newCalls],
+      currentPage: newPage,
+      totalPages: totalPages,
+      currentFilter: currentFilter, // ✅ MUST preserve the filter!
+    );
+
+    //print("  - Total calls after merge: ${merged.calls.length}");
+    //print("  - New current page: ${merged.currentPage}");
+
+    return merged;
+  }
+}
+
+class CallCenterError extends CallCenterState {
+  final String message;
+
+  CallCenterError(this.message);
+}
+
+class CallByIdLoaded extends CallCenterState {
+  final CallById call;
+
+  CallByIdLoaded({required this.call});
+}
