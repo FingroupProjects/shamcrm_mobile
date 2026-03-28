@@ -13,21 +13,24 @@ class MyTaskByIdBloc extends Bloc<MyTaskByIdEvent, MyTaskByIdState> {
   }
 
   Future<void> _getMyTaskById(FetchMyTaskByIdEvent event, Emitter<MyTaskByIdState> emit) async {
-    emit(MyTaskByIdLoading());
+  emit(MyTaskByIdLoading());
 
-    if (await _checkInternetConnection()) {
-      try {
-        final task = await apiService.getMyTaskById(event.taskId);
+  if (await _checkInternetConnection()) {
+    try {
+      final task = await apiService.getMyTaskById(event.taskId);
+      if (task != null) {
         emit(MyTaskByIdLoaded(task));
-      } catch (e) {
-        print('Ошибка при загрузке задачи!'); // For debugging
-        emit(MyTaskByIdError('Не удалось загрузить данные задачи!'));
+      } else {
+        emit(MyTaskByIdError('Задача не найдена'));
       }
-    } else {
-      emit(MyTaskByIdError('Нет подключения к интернету'));
+    } catch (e) {
+      //print('Ошибка при загрузке задачи: $e'); // Добавим вывод ошибки
+      emit(MyTaskByIdError('Не удалось загрузить данные задачи: ${e.toString()}'));
     }
+  } else {
+    emit(MyTaskByIdError('Нет подключения к интернету'));
   }
-
+}
   // Method to check internet connection
   Future<bool> _checkInternetConnection() async {
     try {

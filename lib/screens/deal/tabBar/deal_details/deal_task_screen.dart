@@ -135,12 +135,12 @@ class _TasksWidgetState extends State<TasksWidget> {
   }
 
   Widget _buildTaskItem(DealTask task) {
-    final formattedDateFrom = task.from != null
-        ? DateFormat('dd-MM-yyyy').format(DateTime.parse(task.from!))
-        : '';
+    // final formattedDateFrom = task.from != null
+    //     ? DateFormat('dd.MM.yyyy').format(DateTime.parse(task.from!))
+    //     : '';
 
     final formattedDateTo = task.to != null
-        ? DateFormat('dd-MM-yyyy').format(DateTime.parse(task.to!))
+        ? DateFormat('dd.MM.yyyy').format(DateTime.parse(task.to!))
         : '';
 
     return GestureDetector(
@@ -169,27 +169,31 @@ class _TasksWidgetState extends State<TasksWidget> {
                       Text(
                         task.name,
                         style: TaskCardStyles.titleStyle,
-                        overflow: TextOverflow
-                            .ellipsis, // Ограничение текста в одну строку
+                        overflow: TextOverflow.ellipsis,
                       ),
                       SizedBox(height: 4),
-                      Row(
+                       Row(
                         children: [
                           Text(
-                            '${AppLocalizations.of(context)!.translate('from')}$formattedDateFrom',
-                            style: TaskCardStyles.priorityStyle.copyWith(
-                              color: Color(0xff1E2E52),
-                            ),
-                          ),
-                          SizedBox(width: 16),
-                          Text(
-                            '${AppLocalizations.of(context)!.translate('to')}$formattedDateTo',
+                            '${AppLocalizations.of(context)!.translate('status_details')} ${task.taskStatus?.taskStatus?.name ?? ''} ',
                             style: TaskCardStyles.priorityStyle.copyWith(
                               color: Color(0xff1E2E52),
                             ),
                           ),
                         ],
                       ),
+                      SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Text(
+                            '${AppLocalizations.of(context)!.translate('deadLine')}$formattedDateTo',
+                            style: TaskCardStyles.priorityStyle.copyWith(
+                              color: Color(0xff1E2E52),
+                            ),
+                          ),
+                        ],
+                      ),
+                     
                     ],
                   ),
                 ),
@@ -207,9 +211,10 @@ class _TasksWidgetState extends State<TasksWidget> {
       MaterialPageRoute(
         builder: (context) => TaskDetailsScreen(
           taskId: task.id.toString(),
+          taskNumber: task.taskNumber,
           taskName: task.name ?? '',
           taskStatus: '',
-          statusId: 1,
+          statusId: 0,
           taskCustomFields: [],
         ),
       ),
@@ -228,12 +233,12 @@ class _TasksWidgetState extends State<TasksWidget> {
             fontWeight: FontWeight.w500,
           ),
         ),
-                if (_canCreateTask)
+     if (_canCreateTask)
         TextButton(
           onPressed: () {
             Navigator.push(
               context,
-              MaterialPageRoute(
+             MaterialPageRoute(
                 builder: (context) => TaskAddFromDeal(dealId: widget.dealId),
               ),
             ).then((_) {

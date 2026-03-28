@@ -21,7 +21,7 @@ class ContactPerson {
   String get formattedDate {
     try {
       final datetime = DateTime.parse(createAt);
-      return DateFormat('dd/MM/yyyy HH:mm').format(datetime);
+      return DateFormat('dd.MM.yyyy').format(datetime);
     } catch (e) {
       return createAt;
     }

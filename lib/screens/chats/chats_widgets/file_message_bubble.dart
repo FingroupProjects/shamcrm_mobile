@@ -8,7 +8,8 @@ class FileMessageBubble extends StatelessWidget {
   final String fileName;
   final String senderName;
   final Function(String) onTap;
-  final bool isHighlighted; // Add this line
+  final bool isHighlighted; 
+  final bool isRead;
 
   const FileMessageBubble({
     Key? key,
@@ -18,7 +19,8 @@ class FileMessageBubble extends StatelessWidget {
     required this.fileName,
     required this.onTap,
     required this.senderName,
-    this.isHighlighted = false, // Add this line
+    this.isHighlighted = false,
+    required this.isRead, 
   }) : super(key: key);
 
   @override
@@ -31,16 +33,32 @@ class FileMessageBubble extends StatelessWidget {
         iconPath = 'assets/icons/chats/pdf.png';
         break;
       case 'jpg':
+        iconPath = 'assets/icons/files/jpg.png';
+        break;
       case 'jpeg':
+        iconPath = 'assets/icons/files/jpg.png';
+        break;
       case 'png':
         iconPath = 'assets/icons/chats/jpg-file.png';
         break;
       case 'doc':
+        iconPath = 'assets/icons/files/doc.png';
+        break;
       case 'docx':
+        iconPath = 'assets/icons/files/doc.png';
+        break;
+      case 'pptx':
+        iconPath = 'assets/icons/files/pptx.png';
+        break;
+      case 'ppt':
+        iconPath = 'assets/icons/files/ppt.png';
+        break;
       case 'document':
         iconPath = 'assets/icons/chats/doc.png';
         break;
       case 'xls':
+        iconPath = 'assets/icons/chats/xls.png';
+        break;
       case 'xlsx':
         iconPath = 'assets/icons/chats/xls.png';
         break;
@@ -50,15 +68,20 @@ class FileMessageBubble extends StatelessWidget {
       case 'svg':
         iconPath = 'assets/icons/chats/svg-file.png';
         break;
+      case 'mp4':
+        iconPath = 'assets/icons/chats/mp4.png';
+        break;
+      case 'mp3':
+        iconPath = 'assets/icons/chats/mp3.png';
+        break;
       default:
-        iconPath = 'assets/icons/chats/file.png';
+        iconPath = 'assets/icons/files/file.png';
     }
 
     return DecoratedBox(
       decoration: BoxDecoration(
         boxShadow: isHighlighted
-            ? [
-                BoxShadow(
+            ? [ BoxShadow(
                   color: Colors.grey.withOpacity(0.3),
                   blurRadius: 5,
                   spreadRadius: 2,
@@ -70,14 +93,11 @@ class FileMessageBubble extends StatelessWidget {
       child: Align(
         alignment: isSender ? Alignment.centerRight : Alignment.centerLeft,
         child: Column(
-          crossAxisAlignment:
-              isSender ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+          crossAxisAlignment: isSender ? CrossAxisAlignment.end : CrossAxisAlignment.start,
           children: [
             const SizedBox(height: 8),
             if (!isSender)
-              Text(
-                senderName,
-                style: TextStyle(fontWeight: FontWeight.w600),
+              Text( senderName, style: const TextStyle(fontWeight: FontWeight.w600),
               ),
             GestureDetector(
               onTap: () => onTap(filePath),
@@ -99,14 +119,18 @@ class FileMessageBubble extends StatelessWidget {
                   ],
                 ),
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  crossAxisAlignment:
+                      CrossAxisAlignment.center, // Центрируем по вертикали
                   children: [
                     Image.asset(iconPath, width: 32, height: 32),
+                    const SizedBox(
+                        width: 10), // Add this line to create spacing
+
                     Flexible(
                       child: Text(
                         fileName,
-                        style: TextStyle(
-                            color: isSender ? Colors.white : Colors.black),
+                        style: TextStyle( color: isSender ? Colors.white : Colors.black),
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
@@ -114,14 +138,25 @@ class FileMessageBubble extends StatelessWidget {
                 ),
               ),
             ),
-            Text(
-              time,
-              style: const TextStyle(
-                fontSize: 12,
-                color: ChatSmsStyles.appBarTitleColor,
-                fontWeight: FontWeight.w400,
-                fontFamily: 'Gilroy',
-              ),
+            Row( mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(time, style: const TextStyle(
+                    fontSize: 12,
+                    color: ChatSmsStyles.appBarTitleColor,
+                    fontWeight: FontWeight.w400,
+                    fontFamily: 'Gilroy',
+                  ),
+                ),
+                const SizedBox(width: 3),
+                if (isSender)
+
+                  Icon(isRead ? Icons.done_all : Icons.done_all,
+                    size: 18,
+                    color: isRead
+                        ? const Color.fromARGB(255, 45, 28, 235)
+                        : Colors.grey.shade400,
+                  ),
+              ],
             ),
           ],
         ),

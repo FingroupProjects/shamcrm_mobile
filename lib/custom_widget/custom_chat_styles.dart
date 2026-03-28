@@ -10,6 +10,10 @@ class ChatSmsStyles {
   // Message Bubble Styles
   static const messageBubbleSenderColor = Color(0xfff4F40EC);
   static const messageBubbleReceiverColor = Colors.white;
+  static const messageBubbleNoteColor = Color(0xFFFFDB64); // Цвет для заметок (#FFDB64)
+  
+  
+
 
   // Input Field Styles
   static const hintTextColor = Color(0xfffCBD5E0);

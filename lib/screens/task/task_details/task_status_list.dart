@@ -25,7 +25,6 @@ class _TaskStatusListState extends State<StatusList> {
     return BlocBuilder<TaskStatusNameBloc, StatusNameState>(
       builder: (context, state) {
         List<DropdownMenuItem<String>> dropdownItems = [];
-
         if (state is StatusNameLoading) {
           dropdownItems = [
             DropdownMenuItem(
@@ -62,7 +61,7 @@ class _TaskStatusListState extends State<StatusList> {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(
-                  AppLocalizations.of(context)!.translate(state.message), // Локализация сообщения
+                  AppLocalizations.of(context)!.translate(state.message),
                   style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
@@ -95,13 +94,11 @@ class _TaskStatusListState extends State<StatusList> {
             Container(
               decoration: BoxDecoration(
                 color: const Color(0xFFF4F7FD),
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(12),
               ),
               child: DropdownButtonFormField<String>(
-                menuMaxHeight:
-                    400, // Устанавливаем максимальную высоту выпадающего меню
-                value: dropdownItems
-                        .any((item) => item.value == widget.selectedTaskStatus)
+                menuMaxHeight: 400,
+                value: dropdownItems.any((item) => item.value == widget.selectedTaskStatus)
                     ? widget.selectedTaskStatus
                     : null,
                 hint: Text(
@@ -131,29 +128,28 @@ class _TaskStatusListState extends State<StatusList> {
                 },
                 decoration: InputDecoration(
                   contentPadding: const EdgeInsets.symmetric(
-                    vertical: 12,
+                    vertical: 16,
                     horizontal: 16,
                   ),
                   border: OutlineInputBorder(
                     borderSide: const BorderSide(color: Color(0xFFF4F7FD)),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(12),
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderSide: const BorderSide(color: Color(0xFFF4F7FD)),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(12),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderSide: const BorderSide(color: Color(0xFFF4F7FD)),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(12),
                   ),
                   filled: true,
                   fillColor: const Color(0xFFF4F7FD),
                 ),
                 dropdownColor: Colors.white,
-                icon: Image.asset(
-                  'assets/icons/tabBar/dropdown.png',
-                  width: 16,
-                  height: 16,
+                icon: Transform.rotate(
+                  angle: 90 * 3.1415926535 / 180,
+                  child: Image.asset('assets/icons/arrow_down.png', width: 12, height: 10),
                 ),
               ),
             ),

@@ -73,7 +73,8 @@ class NotesBloc extends Bloc<NotesEvent, NotesState> {
           body: event.body,
           leadId: event.leadId,
           date: event.date,
-          users: event.users
+          users: event.users,
+          filePaths: event.filePaths, // Передаем файлы
         );
 
         if (result['success']) {

@@ -1,7 +1,8 @@
 # Uncomment this line to define a global platform for your project
-# platform :ios, '12.0'
+# Указываем минимальную версию iOS
+platform :ios, '16.0'
 
-# CocoaPods analytics sends network stats synchronously affecting flutter build latency.
+# Отключаем аналитику CocoaPods для ускорения сборки
 ENV['COCOAPODS_DISABLE_STATS'] = 'true'
 
 project 'Runner', {
@@ -32,29 +33,41 @@ target 'Runner' do
   use_modular_headers!
 
   flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
+  
   target 'RunnerTests' do
     inherit! :search_paths
   end
 end
 
+# ❌ ВРЕМЕННО ОТКЛЮЧЕНО: Раскомментируйте когда исправим проблему
+# target 'ShamCRMWidgetExtension' do
+#   use_frameworks!
+# end
+
 post_install do |installer|
   installer.pods_project.targets.each do |target|
     flutter_additional_ios_build_settings(target)
+    
     target.build_configurations.each do |config|
-            config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] ||= [
-               '$(inherited)',
-
-               ## dart: PermissionGroup.microphone
-               'PERMISSION_MICROPHONE=1',
-             ]
+      # Устанавливаем минимальную версию iOS
+      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '16.0'
+      
+      # ✅ Skip Install для Pod targets
+      # if target.name != 'ShamCRMWidgetExtension'
+      #   config.build_settings['SKIP_INSTALL'] = 'NO'
+      # end
+      
+      # Отключаем Bitcode
+      config.build_settings['ENABLE_BITCODE'] = 'NO'
+      
+      # Preprocessor definitions
+      config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] ||= [
+        '$(inherited)',
+        'PERMISSION_MICROPHONE=1',
+      ]
+      
+      # M1/M2 Mac fix
+      config.build_settings['EXCLUDED_ARCHS[sdk=iphonesimulator*]'] = 'arm64'
     end
   end
 end
-
-# post_install do |installer|
-#   installer.pods_project.targets.each do |target|
-#     target.build_configurations.each do |config|
-#       config.build_settings['EXCLUDED_ARCHS[sdk=iphonesimulator*]'] = 'arm64'
-#     end
-#   end
-# end

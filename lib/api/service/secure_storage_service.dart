@@ -4,7 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 class AuthService {
   static const String pinKey = 'user_pin';
   final LocalAuthentication _localAuth = LocalAuthentication();
-  
+
   Future<bool> isBiometricAvailable() async {
     final isAvailable = await _localAuth.canCheckBiometrics;
     final isDeviceSupported = await _localAuth.isDeviceSupported();
@@ -38,5 +38,37 @@ class AuthService {
   Future<bool> validatePin(String pin) async {
     final savedPin = await getPin();
     return savedPin == pin;
+  }
+
+  // Новый метод для очистки PIN
+  Future<void> clearPin() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(pinKey);
+      //print('AuthService: PIN cleared successfully');
+    } catch (e) {
+      //print('AuthService: Error clearing PIN: $e');
+    }
+  }
+
+  // Дополнительный метод для проверки наличия PIN
+  Future<bool> hasPin() async {
+    try {
+      final pin = await getPin();
+      return pin != null && pin.isNotEmpty;
+    } catch (e) {
+      //print('AuthService: Error checking PIN existence: $e');
+      return false;
+    }
+  }
+
+  // Метод для полной очистки всех данных авторизации
+  Future<void> clearAllAuthData() async {
+    try {
+      await clearPin();
+      //print('AuthService: All auth data cleared');
+    } catch (e) {
+      //print('AuthService: Error clearing auth data: $e');
+    }
   }
 }
