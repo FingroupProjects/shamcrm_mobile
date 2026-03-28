@@ -16,8 +16,8 @@ class DealCard extends StatefulWidget {
   final Deal deal;
   final String title;
   final int statusId;
-  final VoidCallback onStatusUpdated;
-  final void Function(int newStatusId) onStatusId;
+  final void Function(int oldStatusId, int newStatusId) onStatusUpdated;
+  final void Function(int oldStatusId, int newStatusId) onStatusId;
   final GlobalKey? dropdownKey;
 
   DealCard({
@@ -162,9 +162,15 @@ class _DealCardState extends State<DealCard>
           ),
         );
 
-        if (shouldRefresh == true && mounted) {
-          await DealCache.clearDealsForStatus(widget.statusId);
-          context.read<DealBloc>().add(FetchDeals(widget.statusId));
+        if (mounted && shouldRefresh != null) {
+          final needsRefresh = shouldRefresh is Map<String, dynamic>
+              ? shouldRefresh['refresh'] == true
+              : shouldRefresh == true;
+
+          if (needsRefresh) {
+            await DealCache.clearDealsForStatus(widget.statusId);
+            context.read<DealBloc>().add(FetchDeals(widget.statusId));
+          }
         }
       },
       child: AnimatedBuilder(
@@ -272,16 +278,32 @@ class _DealCardState extends State<DealCard>
                                 showDealStatusBottomSheet(
                                   context,
                                   dropdownValue,
-                                  (String newValue, List<int> newStatusIds) {
+                                  (String newValue, List<int> newStatusIds) async {
+                                    final oldStatusId = widget.statusId;
                                     final newStatusId = newStatusIds.isNotEmpty
                                         ? newStatusIds.first
-                                        : statusId;
+                                        : oldStatusId;
+
+                                    if (newStatusId != oldStatusId) {
+                                      await DealCache.clearDealsForStatus(
+                                          oldStatusId);
+                                      await DealCache.clearDealsForStatus(
+                                          newStatusId);
+                                      await DealCache.updateDealCountTemporary(
+                                        oldStatusId,
+                                        newStatusId,
+                                      );
+                                    }
+
                                     setState(() {
                                       dropdownValue = newValue;
                                       statusId = newStatusId;
                                     });
-                                    widget.onStatusId(newStatusId);
-                                    widget.onStatusUpdated();
+                                    widget.onStatusId(oldStatusId, newStatusId);
+                                    widget.onStatusUpdated(
+                                      oldStatusId,
+                                      newStatusId,
+                                    );
                                   },
                                   widget.deal,
                                   ApiService(),

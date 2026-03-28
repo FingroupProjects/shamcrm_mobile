@@ -318,10 +318,12 @@ class _OrderCardState extends State<OrderCard> {
         );
         
         // Обрабатываем результат редактирования заказа
-        if (result != null && result is Map<String, dynamic> && result['success'] == true && mounted) {
+        if (result != null &&
+            result is Map<String, dynamic> &&
+            result['success'] == true &&
+            mounted) {
           final statusId = result['statusId'];
           if (statusId != null) {
-            // Обновляем список заказов для соответствующего статуса
             context.read<OrderBloc>().add(FetchOrders(
               statusId: statusId,
               page: 1,

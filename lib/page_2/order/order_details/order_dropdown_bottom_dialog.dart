@@ -1,35 +1,33 @@
+import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_state.dart';
+import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/custom_widget/custom_bottom_dropdown.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
-import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/models/page_2/order_card.dart';
 import 'package:crm_task_manager/screens/common/reason_for_refusal_modal.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-void OrderDropdownBottomSheet(
+
+Future<void> OrderDropdownBottomSheet(
   BuildContext context,
   String defaultValue,
   Function(String, int) onSelect,
   Order order, {
   required Function(int) onTabChange,
-}) {
+}) async {
   String selectedValue = defaultValue;
   int? selectedStatusId = order.orderStatus.id;
 
-  final currentState = context.read<OrderBloc>().state;
-  //print('Состояние перед открытием BottomSheet: $currentState');
-  if (currentState is! OrderLoaded || currentState.statuses.isEmpty) {
+  final initialState = context.read<OrderBloc>().state;
+  if (initialState is! OrderLoaded || initialState.statuses.isEmpty) {
     context.read<OrderBloc>().add(FetchOrderStatuses());
-    //print('Отправлено событие FetchOrderStatuses');
-  } else {
-    //print('Статусы уже загружены: ${currentState.statuses.length}');
   }
 
-  showModalBottomSheet(
+  return showModalBottomSheet(
     context: context,
     backgroundColor: Colors.white,
     shape: const RoundedRectangleBorder(
@@ -38,159 +36,208 @@ void OrderDropdownBottomSheet(
     builder: (BuildContext context) {
       return BlocBuilder<OrderBloc, OrderState>(
         builder: (context, state) {
-          //print('Текущее состояние в BlocBuilder: $state');
+          final OrderLoaded? loadedState = state is OrderLoaded
+              ? state
+              : initialState is OrderLoaded
+                  ? initialState
+                  : null;
 
-          if (currentState is OrderLoaded && currentState.statuses.isNotEmpty) {
-            final orderStatuses = currentState.statuses;
-            bool isSubmittingSave = false;
-            return StatefulBuilder(
-              builder: (BuildContext context, StateSetter setState) {
-                return Container(
-                  height: 700,
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    children: [
-                      Container(
-                        width: 100,
-                        height: 4,
-                        margin: const EdgeInsets.only(top: 7),
-                        decoration: BoxDecoration(
-                          color: const Color(0xffDFE3EC),
-                          borderRadius: BorderRadius.circular(1200),
-                        ),
-                      ),
-                      Expanded(
-                        child: ListView(
-                          children: orderStatuses.map((status) {
-                            return GestureDetector(
-                              onTap: () {
-                                setState(() {
-                                  selectedValue = status.name;
-                                  selectedStatusId = status.id;
-                                });
-                              },
-                              child: buildDropDownStyles(
-                                text: status.name,
-                                isSelected: selectedValue == status.name,
-                              ),
-                            );
-                          }).toList(),
-                        ),
-                      ),
-                      isSubmittingSave
-                          ? const Padding(
-                              padding: EdgeInsets.symmetric(vertical: 12),
-                              child: Center(
-                                child: CircularProgressIndicator(
-                                  color: Color(0xff1E2E52),
-                                ),
-                              ),
-                            )
-                          : CustomButton(
-                        buttonText: AppLocalizations.of(context)!.translate('save'),
-                        buttonColor: const Color(0xff4F40EC),
-                        textColor: Colors.white,
-                        onPressed: () async {
-                          if (isSubmittingSave) return;
-                          if (selectedStatusId != null) {
-                            setState(() {
-                              isSubmittingSave = true;
-                            });
-                            final prefs = await SharedPreferences.getInstance();
-                            final askReasonForRefusal =
-                                prefs.getBool('ask_reason_for_refusal') ??
-                                    false;
-                            final selectedStatusIndex = orderStatuses.indexWhere(
-                              (status) => status.id == selectedStatusId,
-                            );
-                            final selectedStatus = selectedStatusIndex != -1
-                                ? orderStatuses[selectedStatusIndex]
-                                : null;
-                            ReasonForRefusalSubmitData? refusalData;
-                            if (selectedStatusId != order.orderStatus.id &&
-                                askReasonForRefusal &&
-                                selectedStatus != null &&
-                                selectedStatus.isFailed == true) {
-                              refusalData = await showReasonForRefusalDialog(
-                                context: context,
-                                type: 'order',
-                              );
-                              if (refusalData == null) {
-                                setState(() {
-                                  isSubmittingSave = false;
-                                });
-                                return;
-                              }
-                            }
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  AppLocalizations.of(context)!
-                                      .translate('status_changed_successfully'),
-                                  style: const TextStyle(
-                                    fontFamily: 'Gilroy',
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w500,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                                behavior: SnackBarBehavior.floating,
-                                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                backgroundColor: Colors.green,
-                                elevation: 3,
-                                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                                duration: const Duration(seconds: 3),
-                              ),
-                            );
-
-                            onSelect(selectedValue, selectedStatusId!);
-
-                            context.read<OrderBloc>().add(ChangeOrderStatus(
-                              orderId: order.id,
-                              statusId: selectedStatusId!,
-                              organizationId: order.organizationId,
-                              reasonForRefusalId: refusalData?.reasonId,
-                              reasonForRefusal: refusalData?.comment,
-                            ));
-
-                            Navigator.pop(context);
-
-                            final newTabIndex = orderStatuses.indexWhere((status) => status.id == selectedStatusId);
-                            if (newTabIndex != -1) {
-                              onTabChange(newTabIndex);
-                            }
-                          } else {
-                            setState(() {
-                              isSubmittingSave = false;
-                            });
-                            //print('Статус не выбран');
-                          }
-                        },
-                      ),
-                      const SizedBox(height: 16),
-                    ],
-                  ),
-                );
-              },
-            );
-          } else if (state is OrderLoading) {
+          if (loadedState == null || loadedState.statuses.isEmpty) {
+            if (state is OrderError) {
+              return Center(child: Text(state.message));
+            }
             return const Center(
               child: PlayStoreImageLoading(
                 size: 80.0,
                 duration: Duration(milliseconds: 1000),
               ),
             );
-          } else if (state is OrderError) {
-            return Center(child: Text(state.message));
           }
-          return const Center(
-            child: PlayStoreImageLoading(
-              size: 80.0,
-              duration: Duration(milliseconds: 1000),
-            ),
+
+          final orderStatuses = loadedState.statuses;
+          bool isSubmittingSave = false;
+
+          return StatefulBuilder(
+            builder: (BuildContext context, StateSetter setState) {
+              return Container(
+                height: 700,
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  children: [
+                    Container(
+                      width: 100,
+                      height: 4,
+                      margin: const EdgeInsets.only(top: 7),
+                      decoration: BoxDecoration(
+                        color: const Color(0xffDFE3EC),
+                        borderRadius: BorderRadius.circular(1200),
+                      ),
+                    ),
+                    Expanded(
+                      child: ListView(
+                        children: orderStatuses.map((status) {
+                          return GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                selectedValue = status.name;
+                                selectedStatusId = status.id;
+                              });
+                            },
+                            child: buildDropDownStyles(
+                              text: status.name,
+                              isSelected: selectedValue == status.name,
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ),
+                    isSubmittingSave
+                        ? const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 12),
+                            child: Center(
+                              child: CircularProgressIndicator(
+                                color: Color(0xff1E2E52),
+                              ),
+                            ),
+                          )
+                        : CustomButton(
+                            buttonText: AppLocalizations.of(context)!
+                                .translate('save'),
+                            buttonColor: const Color(0xff4F40EC),
+                            textColor: Colors.white,
+                            onPressed: () async {
+                              if (isSubmittingSave || selectedStatusId == null) {
+                                return;
+                              }
+
+                              final prefs =
+                                  await SharedPreferences.getInstance();
+                              final askReasonForRefusal =
+                                  prefs.getBool('ask_reason_for_refusal') ??
+                                      false;
+                              final selectedStatus = orderStatuses
+                                  .where((status) => status.id == selectedStatusId)
+                                  .cast<dynamic>()
+                                  .firstWhere(
+                                    (_) => true,
+                                    orElse: () => null,
+                                  );
+
+                              ReasonForRefusalSubmitData? refusalData;
+                              if (selectedStatusId != order.orderStatus.id &&
+                                  askReasonForRefusal &&
+                                  selectedStatus != null &&
+                                  selectedStatus.isFailed == true) {
+                                refusalData =
+                                    await showReasonForRefusalDialog(
+                                  context: context,
+                                  type: 'order',
+                                );
+                                if (refusalData == null) {
+                                  return;
+                                }
+                              }
+
+                              setState(() {
+                                isSubmittingSave = true;
+                              });
+
+                              final success =
+                                  await ApiService().changeOrderStatus(
+                                orderId: order.id,
+                                statusId: selectedStatusId!,
+                                organizationId: order.organizationId,
+                                reasonForRefusalId: refusalData?.reasonId,
+                                reasonForRefusal: refusalData?.comment,
+                              );
+
+                              if (!context.mounted) {
+                                return;
+                              }
+
+                              if (!success) {
+                                setState(() {
+                                  isSubmittingSave = false;
+                                });
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      AppLocalizations.of(context)!
+                                          .translate('error_text'),
+                                      style: const TextStyle(
+                                        fontFamily: 'Gilroy',
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w500,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                    behavior: SnackBarBehavior.floating,
+                                    margin: const EdgeInsets.symmetric(
+                                        horizontal: 16, vertical: 8),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    backgroundColor: Colors.red,
+                                    elevation: 3,
+                                    padding: const EdgeInsets.symmetric(
+                                        vertical: 12, horizontal: 16),
+                                    duration: const Duration(seconds: 3),
+                                  ),
+                                );
+                                return;
+                              }
+
+                              onSelect(selectedValue, selectedStatusId!);
+
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    AppLocalizations.of(context)!
+                                        .translate(
+                                            'status_changed_successfully'),
+                                    style: const TextStyle(
+                                      fontFamily: 'Gilroy',
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w500,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                  behavior: SnackBarBehavior.floating,
+                                  margin: const EdgeInsets.symmetric(
+                                      horizontal: 16, vertical: 8),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  backgroundColor: Colors.green,
+                                  elevation: 3,
+                                  padding: const EdgeInsets.symmetric(
+                                      vertical: 12, horizontal: 16),
+                                  duration: const Duration(seconds: 3),
+                                ),
+                              );
+
+                              context.read<OrderBloc>().add(
+                                    FetchOrderStatuses(forceRefresh: true),
+                                  );
+                              context.read<OrderBloc>().add(
+                                    FetchOrderDetails(order.id),
+                                  );
+
+                              Navigator.pop(context);
+
+                              final newTabIndex = orderStatuses.indexWhere(
+                                (status) => status.id == selectedStatusId,
+                              );
+                              if (newTabIndex != -1) {
+                                onTabChange(newTabIndex);
+                              }
+                            },
+                          ),
+                    const SizedBox(height: 16),
+                  ],
+                ),
+              );
+            },
           );
         },
       );

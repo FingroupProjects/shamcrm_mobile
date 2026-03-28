@@ -73,6 +73,8 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
   bool _skipNextTabListener =
       false; // КРИТИЧНО: Флаг для пропуска TabListener при фильтрации
   String _lastSearchQuery = "";
+  int _dealColumnsVersion = 0;
+  int? _pendingStatusNavigationId;
 
   List<ManagerData> _selectedManagers = [];
   List<RegionData> _selectedRegions = [];
@@ -169,11 +171,13 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
 
   Future<void> _onRefresh(int currentStatusId) async {
     try {
-      await DealCache.clearAllData();
-      await DealCache.clearPersistentCounts();
+      await DealCache.clearEverything();
+      ApiService.clearAnalyticsResponseCache();
 
       if (mounted) {
         setState(() {
+          _dealColumnsVersion++;
+          _pendingStatusNavigationId = currentStatusId;
           _isSearching = false;
           _lastSearchQuery = '';
           _searchController.clear();
@@ -1035,12 +1039,15 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
     ));
   }
 
-  void _refreshDealsAfterStatusChange({int? currentStatusId}) {
+  void _refreshDealsAfterStatusChange({
+    int? currentStatusId,
+    int? newStatusId,
+  }) {
     final fallbackStatusId =
         _tabTitles.isNotEmpty && _currentTabIndex < _tabTitles.length
             ? _tabTitles[_currentTabIndex]['id'] as int
             : null;
-    final targetStatusId = currentStatusId ?? fallbackStatusId;
+    final targetStatusId = newStatusId ?? currentStatusId ?? fallbackStatusId;
     if (targetStatusId == null) return;
 
     _dealBloc.add(FetchDeals(
@@ -1368,12 +1375,15 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
               deal: deal,
               title: deal.dealStatus?.title ?? "",
               statusId: deal.statusId,
-              onStatusUpdated: () {
-                _refreshDealsAfterStatusChange(currentStatusId: deal.statusId);
+              onStatusUpdated: (_, newStatusId) {
+                _refreshDealsAfterStatusChange(
+                  currentStatusId: deal.statusId,
+                  newStatusId: newStatusId,
+                );
               },
-              onStatusId: (StatusDealId) {
+              onStatusId: (_, newStatusId) {
                 final index = _tabTitles
-                    .indexWhere((status) => status['id'] == StatusDealId);
+                    .indexWhere((status) => status['id'] == newStatusId);
                 if (index != -1) {
                   _tabController.animateTo(index);
                 }
@@ -1472,13 +1482,15 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
                       deal: deal,
                       title: deal.dealStatus?.title ?? "",
                       statusId: deal.statusId,
-                      onStatusUpdated: () {
+                      onStatusUpdated: (_, newStatusId) {
                         _refreshDealsAfterStatusChange(
-                            currentStatusId: deal.statusId);
+                          currentStatusId: deal.statusId,
+                          newStatusId: newStatusId,
+                        );
                       },
-                      onStatusId: (StatusDealId) {
+                      onStatusId: (_, newStatusId) {
                         final index = _tabTitles.indexWhere(
-                            (status) => status['id'] == StatusDealId);
+                            (status) => status['id'] == newStatusId);
                         if (index != -1) {
                           _tabController.animateTo(index);
                         }
@@ -1809,6 +1821,11 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
                 // Проверяем, нужно ли создавать новый контроллер
                 bool needNewController =
                     _tabController.length != _tabTitles.length;
+                final pendingIndex = _pendingStatusNavigationId != null
+                    ? _tabTitles.indexWhere(
+                        (status) => status['id'] == _pendingStatusNavigationId,
+                      )
+                    : -1;
 
                 if (needNewController) {
                   // Dispose старого контроллера если он существует
@@ -1920,7 +1937,11 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
                 }
 
                 // Установка правильного индекса
-                if (needNewController) {
+                if (pendingIndex != -1) {
+                  _tabController.index = pendingIndex;
+                  _currentTabIndex = pendingIndex;
+                  _pendingStatusNavigationId = null;
+                } else if (needNewController) {
                   if (_currentTabIndex < _tabTitles.length &&
                       _currentTabIndex >= 0) {
                     _tabController.index = _currentTabIndex;
@@ -2055,14 +2076,30 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
                 color: const Color(0xff1E2E52),
                 backgroundColor: Colors.white,
                 child: DealColumn(
+                  key: ValueKey(
+                    'deal_column_${status['id']}_$_dealColumnsVersion',
+                  ),
                   isDealScreenTutorialCompleted: _isDealScreenTutorialCompleted,
                   statusId: status['id'],
                   title: status['title'],
                   salesFunnelId: _selectedFunnel?.id,
-                  onStatusId: (newStatusId) {
+                  refreshVersion: _dealColumnsVersion,
+                  onStatusId: (oldStatusId, newStatusId) {
+                    if (mounted) {
+                      setState(() {
+                        _dealColumnsVersion++;
+                        _pendingStatusNavigationId = newStatusId;
+                      });
+                    }
+
+                    _dealBloc.add(
+                      FetchDealStatuses(salesFunnelId: _selectedFunnel?.id),
+                    );
+
                     final index =
                         _tabTitles.indexWhere((s) => s['id'] == newStatusId);
                     if (index != -1) {
+                      _currentTabIndex = index;
                       _tabController.animateTo(index);
 
                       // Проверяем, есть ли уже данные для этого статуса

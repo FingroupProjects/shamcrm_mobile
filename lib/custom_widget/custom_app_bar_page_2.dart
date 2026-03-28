@@ -21,6 +21,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'filter/page_2/incoming/filter_app_bar_incoming.dart';
 import 'filter/page_2/client_sale/filter_app_bar_client_sale.dart';
 import 'filter/page_2/client_return/filter_app_bar_client_return.dart';
+import 'filter/page_2/manufacture/filter_app_bar_manufacture.dart';
 
 class CustomAppBarPage2 extends StatefulWidget {
   String title;
@@ -36,6 +37,7 @@ class CustomAppBarPage2 extends StatefulWidget {
   final bool showFilterOrderIcon;
   final bool showFilterIncomeIcon;
   final bool showFilterIncomingIcon;
+  final bool showFilterManufactureIcon;
   final bool showFilterClientSaleIcon;
   final bool showFilterClientReturnIcon;
 
@@ -43,6 +45,7 @@ class CustomAppBarPage2 extends StatefulWidget {
   final Function(Map<String, dynamic>)? onFilterIncomeSelected; // money income
   final Function(Map<String, dynamic>)?
       onFilterIncomingSelected; // new filter for documents -> incoming screen
+  final Function(Map<String, dynamic>)? onFilterManufactureSelected;
   final Function(Map<String, dynamic>)?
       onFilterClientSaleSelected; // new filter for documents -> client sale screen
   final Function(Map<String, dynamic>)?
@@ -52,6 +55,7 @@ class CustomAppBarPage2 extends StatefulWidget {
   final VoidCallback? onIncomeResetFilters; // money income
   final VoidCallback?
       onIncomingResetFilters; // new filter for documents -> incoming screen
+  final VoidCallback? onManufactureResetFilters;
   final VoidCallback?
       onClientSaleResetFilters; // new filter for documents -> client sale screen
   final VoidCallback?
@@ -74,16 +78,19 @@ class CustomAppBarPage2 extends StatefulWidget {
     this.showFilterOrderIcon = true,
     this.showFilterIncomeIcon = false,
     this.showFilterIncomingIcon = false,
+    this.showFilterManufactureIcon = false,
     this.showFilterClientSaleIcon = false,
     this.showFilterClientReturnIcon = false,
     this.onFilterGoodsSelected,
     this.onFilterIncomeSelected,
     this.onFilterIncomingSelected,
+    this.onFilterManufactureSelected,
     this.onFilterClientSaleSelected,
     this.onFilterClientReturnSelected,
     this.onGoodsResetFilters,
     this.onIncomeResetFilters,
     this.onIncomingResetFilters,
+    this.onManufactureResetFilters,
     this.onClientSaleResetFilters,
     this.onClientReturnResetFilters,
     required this.currentFilters,
@@ -120,6 +127,7 @@ class _CustomAppBarState extends State<CustomAppBarPage2>
   bool _isOrdersFiltering = false; // Новая переменная для фильтров заказов
   bool _isIncomeFiltering = false; // Новая переменная для фильтров доходов
   bool _isIncomingFiltering = false; //
+  bool _isManufactureFiltering = false;
   bool _isClientSaleFiltering =
       false; // Новая переменная для фильтров продажи клиентам
   bool _isClientReturnFiltering =
@@ -206,6 +214,15 @@ class _CustomAppBarState extends State<CustomAppBarPage2>
     _isIncomingFiltering = widget.currentFilters.isNotEmpty ||
         (widget.currentFilters['date_from'] != null ||
             widget.currentFilters['date_to'] != null ||
+            widget.currentFilters['status'] != null ||
+            widget.currentFilters['author_id'] != null ||
+            widget.currentFilters['deleted'] != null);
+
+    _isManufactureFiltering = widget.currentFilters.isNotEmpty ||
+        (widget.currentFilters['date_from'] != null ||
+            widget.currentFilters['date_to'] != null ||
+            widget.currentFilters['storage_id'] != null ||
+            widget.currentFilters['recipient_storage_id'] != null ||
             widget.currentFilters['status'] != null ||
             widget.currentFilters['author_id'] != null ||
             widget.currentFilters['deleted'] != null);
@@ -678,6 +695,21 @@ class _CustomAppBarState extends State<CustomAppBarPage2>
               navigateToIncomingFilterScreen(context);
             },
           ),
+        if (widget.showFilterManufactureIcon)
+          IconButton(
+            icon: Padding(
+              padding: const EdgeInsets.only(left: 0),
+              child: Image.asset(
+                'assets/icons/AppBar/filter.png',
+                width: 24,
+                height: 24,
+                color: _isManufactureFiltering ? _iconColor : null,
+              ),
+            ),
+            onPressed: () {
+              navigateToManufactureFilterScreen(context);
+            },
+          ),
         if (widget.showFilterClientSaleIcon)
           IconButton(
             icon: Padding(
@@ -1055,6 +1087,71 @@ class _CustomAppBarState extends State<CustomAppBarPage2>
           initialToDate: initialToDate,
           initialStatus: initialStatus,
           initialAuthor: initialAuthor,
+          initialIsDeleted: initialIsDeleted,
+        ),
+      ),
+    );
+  }
+
+  void navigateToManufactureFilterScreen(BuildContext context) {
+    DateTime? initialFromDate = widget.currentFilters['date_from'];
+    DateTime? initialToDate = widget.currentFilters['date_to'];
+    String? initialStatus;
+    String? initialAuthorId;
+    String? initialStorageId;
+    String? initialRecipientStorageId;
+    bool? initialIsDeleted;
+
+    if (widget.currentFilters.containsKey('status')) {
+      initialStatus = widget.currentFilters['status']?.toString();
+    }
+    if (widget.currentFilters.containsKey('author_id')) {
+      initialAuthorId = widget.currentFilters['author_id']?.toString();
+    }
+    if (widget.currentFilters.containsKey('storage_id')) {
+      initialStorageId = widget.currentFilters['storage_id']?.toString();
+    }
+    if (widget.currentFilters.containsKey('recipient_storage_id')) {
+      initialRecipientStorageId =
+          widget.currentFilters['recipient_storage_id']?.toString();
+    }
+    if (widget.currentFilters.containsKey('deleted')) {
+      final deletedValue = widget.currentFilters['deleted'];
+      if (deletedValue is String) {
+        initialIsDeleted = deletedValue == '1';
+      }
+    }
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ManufactureFilterScreen(
+          onSelectedDataFilter: (filters) {
+            setState(() {
+              _isManufactureFiltering = filters.isNotEmpty ||
+                  filters['date_from'] != null ||
+                  filters['date_to'] != null ||
+                  filters['storage_id'] != null ||
+                  filters['recipient_storage_id'] != null ||
+                  filters['status'] != null ||
+                  filters['author_id'] != null ||
+                  filters['deleted'] != null;
+            });
+            widget.onFilterManufactureSelected?.call(filters);
+          },
+          onResetFilters: () {
+            setState(() {
+              _isManufactureFiltering = false;
+              widget.currentFilters.clear();
+            });
+            widget.onManufactureResetFilters?.call();
+          },
+          initialFromDate: initialFromDate,
+          initialToDate: initialToDate,
+          initialStatus: initialStatus,
+          initialAuthorId: initialAuthorId,
+          initialStorageId: initialStorageId,
+          initialRecipientStorageId: initialRecipientStorageId,
           initialIsDeleted: initialIsDeleted,
         ),
       ),

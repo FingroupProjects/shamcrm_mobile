@@ -23,6 +23,7 @@ import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/custom_widget/file_utils.dart';
 import 'package:crm_task_manager/models/field_configuration.dart';
 import 'package:crm_task_manager/models/leadById_model.dart';
+import 'package:crm_task_manager/models/lead_model.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/history_dialog.dart';
 import 'package:crm_task_manager/screens/lead/export_lead_to_contact.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_delete.dart';
@@ -35,6 +36,8 @@ import 'package:crm_task_manager/screens/lead/tabBar/lead_details/lead_to_1c.dar
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/orders_widget.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_dropdown_bottom_dialog.dart'
     show LeadStatusUpdateException;
+import 'package:crm_task_manager/screens/lead/tabBar/lead_dropdown_bottom_dialog.dart'
+    as lead_status_sheet;
 import 'package:crm_task_manager/screens/lead/tabBar/lead_edit_screen.dart';
 import 'package:crm_task_manager/screens/common/reason_for_refusal_modal.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_details_screen.dart';
@@ -215,6 +218,8 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
   bool _askReasonForRefusal = false;
   bool _isAcceptingLead = false;
   bool _isRejectingLead = false;
+  late final int _initialStatusId;
+  int? _currentStatusId;
 
   String _getLeadErrorMessage(String error) {
     if (error.toLowerCase().contains('интернет')) {
@@ -226,6 +231,8 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
   @override
   void initState() {
     super.initState();
+    _initialStatusId = widget.statusId;
+    _currentStatusId = widget.statusId;
     _scrollController = ScrollController();
 
     _checkPermissions().then((_) {
@@ -1523,6 +1530,46 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
   Widget _buildDetailItem(String label, String value, String fieldName) {
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
+        if (fieldName == 'lead_status_id') {
+          return GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: _openStatusChangeSheet,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildLabel(label),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Flexible(
+                        child: Text(
+                          value,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontFamily: 'Gilroy',
+                            fontWeight: FontWeight.w500,
+                            color: Color(0xff1E2E52),
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      const Icon(
+                        Icons.keyboard_arrow_down_rounded,
+                        color: Color(0xff1E2E52),
+                        size: 16,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
         if (label == AppLocalizations.of(context)!.translate('files_details')) {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1938,6 +1985,55 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
         isSuccess: false,
       );
     }
+  }
+
+  void _openStatusChangeSheet() {
+    if (currentLead == null) return;
+
+    final lead = Lead(
+      id: currentLead!.id,
+      name: currentLead!.name,
+      statusId:
+          currentLead!.leadStatus?.id ?? _currentStatusId ?? _initialStatusId,
+      phone: currentLead!.phone,
+    );
+
+    lead_status_sheet.DropdownBottomSheet(
+      context,
+      currentLead!.leadStatus?.title ?? widget.leadStatus,
+      (String _, int newStatusId) {
+        if (!mounted) return;
+        setState(() {
+          _currentStatusId = newStatusId;
+        });
+        _refreshLeadView(currentLead!.id);
+      },
+      lead,
+    );
+  }
+
+  void _refreshLeadView(int leadId) {
+    setState(() {
+      currentLead = null;
+      details.clear();
+      _showCombinedLoader = true;
+      _leadDataReady = false;
+      _notesDataReady = !_canReadNotes;
+      _dealsDataReady = !_canReadDeal;
+      _ordersDataReady = !_canReadOrders;
+    });
+    _loadFieldConfiguration();
+    context.read<LeadByIdBloc>().add(FetchLeadByIdEvent(leadId: leadId));
+    if (_canReadNotes) {
+      context.read<NotesBloc>().add(FetchNotes(leadId));
+    }
+    if (_canReadDeal) {
+      context.read<LeadDealsBloc>().add(FetchLeadDeals(leadId));
+    }
+    if (_canReadOrders) {
+      context.read<OrderByLeadBloc>().add(FetchOrdersByLead(entityId: leadId));
+    }
+    context.read<LeadBloc>().add(FetchLeadStatuses(forceRefresh: true));
   }
 
   Future<void> _assignManager() async {

@@ -43,7 +43,8 @@ class FilterGoods extends GoodsEvent {
 
 class FetchSubCategories extends GoodsEvent {}
 
-class ResetSubCategories extends GoodsEvent {} // Новое событие для сброса подкатегорий
+class ResetSubCategories
+    extends GoodsEvent {} // Новое событие для сброса подкатегорий
 
 class CreateGoods extends GoodsEvent {
   final String name;
@@ -62,6 +63,8 @@ class CreateGoods extends GoodsEvent {
   final int? labelId; // Добавляем поле для ID метки
   final double? price; // Добавляем поле для цены
   final bool isService; // Добавляем поле для указания услуги
+  final String? productionType;
+  final List<Map<String, dynamic>> materialGoods;
 
   CreateGoods({
     required this.isService,
@@ -80,8 +83,8 @@ class CreateGoods extends GoodsEvent {
     required this.storageId,
     this.mainImageIndex,
     this.labelId, // Добавляем в конструктор
-
-
+    this.productionType,
+    this.materialGoods = const [],
   });
 }
 
@@ -102,7 +105,9 @@ class UpdateGoods extends GoodsEvent {
   final int? storageId; // Добавляем поле storageId
   final String? comments; // Добавляем поле comments
   final int? mainImageIndex; // Добавляем поле mainImageIndex
-final int? labelId; // Добавляем поле для ID метки
+  final int? labelId; // Добавляем поле для ID метки
+  final String? productionType;
+  final List<Map<String, dynamic>> materialGoods;
 
   UpdateGoods({
     required this.isService,
@@ -121,7 +126,9 @@ final int? labelId; // Добавляем поле для ID метки
     required this.storageId,
     this.comments,
     this.mainImageIndex,
-  this.labelId, // Добавляем в конструктор
+    this.labelId, // Добавляем в конструктор
+    this.productionType,
+    this.materialGoods = const [],
   });
 }
 

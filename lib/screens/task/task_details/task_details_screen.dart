@@ -18,6 +18,8 @@ import 'package:crm_task_manager/screens/deal/tabBar/deal_details_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/task/task_details/task_copy_screen.dart';
 import 'package:crm_task_manager/screens/task/task_details/task_delete.dart';
+import 'package:crm_task_manager/screens/task/task_details/task_dropdown_bottom_dialog.dart'
+    as task_status_sheet;
 import 'package:crm_task_manager/screens/task/task_details/task_edit_screen.dart';
 import 'package:crm_task_manager/screens/task/task_details/task_navigate_to_chat.dart';
 import 'package:crm_task_manager/utils/TutorialStyleWidget.dart';
@@ -158,6 +160,9 @@ class FileCacheManager {
 class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
   List<Map<String, String>> details = [];
   TaskById? currentTask;
+  late final int _initialStatusId;
+  int? _currentStatusId;
+  bool _statusChangedFromDetails = false;
   bool _canEditTask = false;
   bool _canDeleteTask = false;
   bool _canCreateTask = false;
@@ -194,6 +199,8 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
   @override
   void initState() {
     super.initState();
+    _initialStatusId = widget.statusId ?? 0;
+    _currentStatusId = widget.statusId;
     context.read<TaskBloc>().add(FetchTaskStatuses());
     _checkPermissions();
     context
@@ -266,6 +273,69 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
         _isAuthor = false;
       });
     }
+  }
+
+  Map<String, dynamic> _buildNavigationResult() {
+    return {
+      'refresh': _statusChangedFromDetails,
+      'statusId': _initialStatusId,
+      'newStatusId': _currentStatusId ?? _initialStatusId,
+    };
+  }
+
+  void _refreshTaskView() {
+    if (currentTask == null) return;
+    final taskId = currentTask!.id;
+    setState(() {
+      currentTask = null;
+      details.clear();
+      _isAuthor = false;
+      _isConfigurationLoaded = false;
+    });
+    _loadFieldConfiguration();
+    context
+        .read<TaskByIdBloc>()
+        .add(FetchTaskByIdEvent(taskId: taskId));
+    context.read<TaskBloc>().add(FetchTaskStatuses());
+    context.read<CalendarBloc>().add(FetchCalendarEvents(
+        widget.initialDate?.month ?? DateTime.now().month,
+        widget.initialDate?.year ?? DateTime.now().year));
+    Future.delayed(const Duration(milliseconds: 500), () {
+      if (!mounted) return;
+      context.read<TaskByIdBloc>().add(FetchTaskByIdEvent(taskId: taskId));
+      context.read<TaskBloc>().add(FetchTaskStatuses());
+    });
+  }
+
+  void _openStatusChangeSheet() {
+    if (currentTask == null) return;
+
+    final task = Task(
+      id: currentTask!.id,
+      taskNumber: currentTask!.taskNumber,
+      name: currentTask!.name,
+      startDate: currentTask!.startDate,
+      endDate: currentTask!.endDate,
+      description: currentTask!.description,
+      statusId:
+          currentTask!.taskStatus?.id ?? _currentStatusId ?? _initialStatusId,
+      priority: currentTask!.priority,
+      customFields: const [],
+    );
+
+    task_status_sheet.DropdownBottomSheet(
+      context,
+      currentTask!.taskStatus?.taskStatus?.name ?? widget.taskStatus,
+      (String _, int newStatusId) {
+        if (!mounted) return;
+        setState(() {
+          _statusChangedFromDetails = true;
+          _currentStatusId = newStatusId;
+        });
+        _refreshTaskView();
+      },
+      task,
+    );
   }
 
   // void _initTutorialTargets() {
@@ -824,7 +894,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
               height: leadingIconSize,
             ),
             onPressed: () {
-              Navigator.pop(context, widget.statusId);
+              Navigator.pop(context, _buildNavigationResult());
             },
           ),
         ),
@@ -1029,11 +1099,50 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
   }
 
   Widget _buildDetailItem(String label, String value) {
+    if (label == AppLocalizations.of(context)!.translate('status_details')) {
+      return GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: _openStatusChangeSheet,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildLabel(label),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Flexible(
+                    child: Text(
+                      value,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontFamily: 'Gilroy',
+                        fontWeight: FontWeight.w500,
+                        color: Color(0xff1E2E52),
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  const Icon(
+                    Icons.keyboard_arrow_down_rounded,
+                    color: Color(0xff1E2E52),
+                    size: 16,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
     if (label == AppLocalizations.of(context)!.translate('task_name') ||
         label ==
             AppLocalizations.of(context)!.translate('description_details') ||
-        label == AppLocalizations.of(context)!.translate('project_details') ||
-        label == AppLocalizations.of(context)!.translate('status_details')) {
+        label == AppLocalizations.of(context)!.translate('project_details')) {
       return GestureDetector(
         onTap: () {
           if (value.isNotEmpty) {

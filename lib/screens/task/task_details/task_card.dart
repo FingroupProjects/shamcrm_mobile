@@ -202,8 +202,8 @@ class _TaskCardState extends State<TaskCard> {
     int overdueDays = _getOverdueDays(widget.task.endDate);
 
     return GestureDetector(
-        onTap: () {
-          Navigator.push(
+        onTap: () async {
+          final result = await Navigator.push(
             context,
             MaterialPageRoute(
               builder: (context) => TaskDetailsScreen(
@@ -222,6 +222,10 @@ class _TaskCardState extends State<TaskCard> {
               ),
             ),
           );
+
+          if (result is Map<String, dynamic> && result['refresh'] == true) {
+            widget.onStatusUpdated();
+          }
         },
         child: Container(
           padding: const EdgeInsets.all(12),

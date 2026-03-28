@@ -3,6 +3,7 @@ import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/custom_widget/filter/page_2/reports/act_filter.dart';
 import 'package:crm_task_manager/custom_widget/filter/page_2/reports/expense_structure_filter.dart';
 import 'package:crm_task_manager/custom_widget/filter/page_2/reports/goods_movement_filter.dart';
+import 'package:crm_task_manager/custom_widget/filter/page_2/reports/manufacture_reports_filter.dart';
 import 'package:crm_task_manager/models/user_byId_model..dart';
 
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
@@ -37,6 +38,7 @@ class CustomAppBarReports extends StatefulWidget {
   final Map<int, Map<String, dynamic>> currentFilters;
   final List<String>? initialLabels;
   final int currentTabIndex;
+  final int currentTabId;
 
   CustomAppBarReports({
     super.key,
@@ -54,13 +56,15 @@ class CustomAppBarReports extends StatefulWidget {
     required this.currentFilters,
     this.initialLabels,
     required this.currentTabIndex,
+    required this.currentTabId,
   });
 
   @override
   State<CustomAppBarReports> createState() => _CustomAppBarState();
 }
 
-class _CustomAppBarState extends State<CustomAppBarReports> with TickerProviderStateMixin {
+class _CustomAppBarState extends State<CustomAppBarReports>
+    with TickerProviderStateMixin {
   bool _isSearching = false;
   late TextEditingController _searchController;
   late FocusNode focusNode;
@@ -109,7 +113,7 @@ class _CustomAppBarState extends State<CustomAppBarReports> with TickerProviderS
     _checkOverdueTasks();
     _checkOverdueTimer = Timer.periodic(
       const Duration(minutes: 5),
-          (_) => _checkOverdueTasks(),
+      (_) => _checkOverdueTasks(),
     );
 
     _timer = Timer.periodic(Duration(milliseconds: 700), (timer) {
@@ -175,8 +179,10 @@ class _CustomAppBarState extends State<CustomAppBarReports> with TickerProviderS
   Future<void> _loadUserProfile() async {
     try {
       SharedPreferences prefs = await SharedPreferences.getInstance();
-      String UUID = prefs.getString('userID') ?? AppLocalizations.of(context)!.translate('not_found');
-      UserByIdProfile userProfile = await ApiService().getUserById(int.parse(UUID));
+      String UUID = prefs.getString('userID') ??
+          AppLocalizations.of(context)!.translate('not_found');
+      UserByIdProfile userProfile =
+          await ApiService().getUserById(int.parse(UUID));
 
       if (userProfile.image != null && userProfile.image != _lastLoadedImage) {
         setState(() {
@@ -273,8 +279,10 @@ class _CustomAppBarState extends State<CustomAppBarReports> with TickerProviderS
           ),
         );
       } else {
-        final text = RegExp(r'>([^<]+)</text>').firstMatch(imageSource)?.group(1) ?? '';
-        final backgroundColor = extractBackgroundColorFromSvg(imageSource) ?? Color(0xFF2C2C2C);
+        final text =
+            RegExp(r'>([^<]+)</text>').firstMatch(imageSource)?.group(1) ?? '';
+        final backgroundColor =
+            extractBackgroundColorFromSvg(imageSource) ?? Color(0xFF2C2C2C);
 
         return Container(
           width: 40,
@@ -333,7 +341,8 @@ class _CustomAppBarState extends State<CustomAppBarReports> with TickerProviderS
   @override
   Widget build(BuildContext context) {
     // Calculate if current tab has filters
-    final isFiltering = widget.currentFilters[widget.currentTabIndex]?.isNotEmpty ?? false;
+    final isFiltering =
+        widget.currentFilters[widget.currentTabIndex]?.isNotEmpty ?? false;
 
     return Container(
       width: double.infinity,
@@ -378,7 +387,8 @@ class _CustomAppBarState extends State<CustomAppBarReports> with TickerProviderS
                 },
                 textInputAction: TextInputAction.search,
                 decoration: InputDecoration(
-                  hintText: AppLocalizations.of(context)!.translate('search_appbar'),
+                  hintText:
+                      AppLocalizations.of(context)!.translate('search_appbar'),
                   border: InputBorder.none,
                 ),
                 style: TextStyle(fontSize: 16),
@@ -413,10 +423,10 @@ class _CustomAppBarState extends State<CustomAppBarReports> with TickerProviderS
                 icon: _isSearching
                     ? Icon(Icons.close)
                     : Image.asset(
-                  'assets/icons/AppBar/search.png',
-                  width: 24,
-                  height: 24,
-                ),
+                        'assets/icons/AppBar/search.png',
+                        width: 24,
+                        height: 24,
+                      ),
                 onPressed: () {
                   setState(() {
                     _isSearching = !_isSearching;
@@ -474,8 +484,9 @@ class _CustomAppBarState extends State<CustomAppBarReports> with TickerProviderS
     final currentFilter = widget.currentFilters[widget.currentTabIndex] ?? {};
 
     // Extract filter parameters
-    if (currentFilter.containsKey('from_date')) {
-      final fromDate = currentFilter['from_date'];
+    if (currentFilter.containsKey('from_date') ||
+        currentFilter.containsKey('date_from')) {
+      final fromDate = currentFilter['from_date'] ?? currentFilter['date_from'];
       if (fromDate is DateTime) {
         initialFromDate = fromDate;
       } else if (fromDate is int) {
@@ -485,8 +496,9 @@ class _CustomAppBarState extends State<CustomAppBarReports> with TickerProviderS
       }
     }
 
-    if (currentFilter.containsKey('to_date')) {
-      final toDate = currentFilter['to_date'];
+    if (currentFilter.containsKey('to_date') ||
+        currentFilter.containsKey('date_to')) {
+      final toDate = currentFilter['to_date'] ?? currentFilter['date_to'];
       if (toDate is DateTime) {
         initialToDate = toDate;
       } else if (toDate is int) {
@@ -552,9 +564,9 @@ class _CustomAppBarState extends State<CustomAppBarReports> with TickerProviderS
       statusId = statusIdValue?.toString();
     }
 
-    // Navigate to the appropriate filter screen based on currentTabIndex
+    // Navigate to the appropriate filter screen based on currentTabId
     Widget filterScreen;
-    switch (widget.currentTabIndex) {
+    switch (widget.currentTabId) {
       case 0:
         filterScreen = GoodsFilterScreen(
           onSelectedDataFilter: (filters) {
@@ -595,10 +607,9 @@ class _CustomAppBarState extends State<CustomAppBarReports> with TickerProviderS
             // initialAmountFrom: sumFrom,
             // initialAmountTo: sumTo,
             initialLead: leadId,
-            initialSupplier: supplierId
-        );
+            initialSupplier: supplierId);
         break;
-      case 2:
+      case 11:
         filterScreen = GoodsMovementFilterScreen(
             onSelectedDataFilter: (filters) {
               if (kDebugMode) {
@@ -617,10 +628,9 @@ class _CustomAppBarState extends State<CustomAppBarReports> with TickerProviderS
             initialAmountFrom: sumFrom,
             initialAmountTo: sumTo,
             initialLead: leadId,
-            initialSupplier: supplierId
-        );
+            initialSupplier: supplierId);
         break;
-      case 3:
+      case 2:
         filterScreen = CashBalanceFilterScreen(
           onSelectedDataFilter: (filters) {
             if (kDebugMode) {
@@ -640,7 +650,7 @@ class _CustomAppBarState extends State<CustomAppBarReports> with TickerProviderS
           initialAmountTo: sumTo,
         );
         break;
-      case 4:
+      case 3:
         filterScreen = CreditorsFilterScreen(
           onSelectedDataFilter: (filters) {
             if (kDebugMode) {
@@ -663,29 +673,28 @@ class _CustomAppBarState extends State<CustomAppBarReports> with TickerProviderS
           initialSupplier: supplierId,
         );
         break;
-      case 5:
+      case 4:
         filterScreen = DebtorsFilterScreen(
-          onSelectedDataFilter: (filters) {
-            if (kDebugMode) {
-              //print('CustomAppBarReports: Получены фильтры из DebtorsFilterScreen: $filters');
-            }
-            widget.onFilterSelected?.call(filters);
-          },
-          onResetFilters: () {
-            if (kDebugMode) {
-              //print('CustomAppBarReports: Сброс фильтров из DebtorsFilterScreen');
-            }
-            widget.onResetFilters?.call();
-          },
-          initialFromDate: initialFromDate,
-          initialToDate: initialToDate,
-          initialAmountFrom: sumFrom,
-          initialAmountTo: sumTo,
-          initialLead: leadId,
-          initialSupplier: supplierId
-        );
+            onSelectedDataFilter: (filters) {
+              if (kDebugMode) {
+                //print('CustomAppBarReports: Получены фильтры из DebtorsFilterScreen: $filters');
+              }
+              widget.onFilterSelected?.call(filters);
+            },
+            onResetFilters: () {
+              if (kDebugMode) {
+                //print('CustomAppBarReports: Сброс фильтров из DebtorsFilterScreen');
+              }
+              widget.onResetFilters?.call();
+            },
+            initialFromDate: initialFromDate,
+            initialToDate: initialToDate,
+            initialAmountFrom: sumFrom,
+            initialAmountTo: sumTo,
+            initialLead: leadId,
+            initialSupplier: supplierId);
         break;
-      case 6:
+      case 5:
         filterScreen = TopSellingGoodsFilterScreen(
           onSelectedDataFilter: (filters) {
             if (kDebugMode) {
@@ -707,7 +716,7 @@ class _CustomAppBarState extends State<CustomAppBarReports> with TickerProviderS
           goodId: goodId,
         );
         break;
-      case 7:
+      case 6:
         filterScreen = SalesDynamicsFilterScreen(
           onSelectedDataFilter: (filters) {
             if (kDebugMode) {
@@ -726,7 +735,7 @@ class _CustomAppBarState extends State<CustomAppBarReports> with TickerProviderS
           period: period,
         );
         break;
-      case 8:
+      case 7:
         filterScreen = NetProfitFilterScreen(
           onSelectedDataFilter: (filters) {
             if (kDebugMode) {
@@ -745,7 +754,7 @@ class _CustomAppBarState extends State<CustomAppBarReports> with TickerProviderS
           period: period,
         );
         break;
-      case 9:
+      case 8:
         filterScreen = ProfitabilityFilterScreen(
           onSelectedDataFilter: (filters) {
             if (kDebugMode) {
@@ -764,7 +773,7 @@ class _CustomAppBarState extends State<CustomAppBarReports> with TickerProviderS
           goodId: goodId,
         );
         break;
-      case 10:
+      case 9:
         filterScreen = ExpenseStructureFilterScreen(
           onSelectedDataFilter: (filters) {
             if (kDebugMode) {
@@ -784,7 +793,7 @@ class _CustomAppBarState extends State<CustomAppBarReports> with TickerProviderS
           initialDateTo: initialToDate,
         );
         break;
-      case 11:
+      case 10:
         filterScreen = OrdersQuantityFilterScreen(
           onSelectedDataFilter: (filters) {
             if (kDebugMode) {
@@ -805,9 +814,24 @@ class _CustomAppBarState extends State<CustomAppBarReports> with TickerProviderS
           initialStatus: statusId,
         );
         break;
+      case 13:
+      case 14:
+        filterScreen = ManufactureReportsFilterScreen(
+          onSelectedDataFilter: (filters) {
+            widget.onFilterSelected?.call(filters);
+          },
+          onResetFilters: () {
+            widget.onResetFilters?.call();
+          },
+          initialFromDate: initialFromDate,
+          initialToDate: initialToDate,
+          initialStorageId: currentFilter['storage_id']?.toString(),
+          initialGoodId: currentFilter['good_id']?.toString(),
+        );
+        break;
       default:
         if (kDebugMode) {
-          //print('CustomAppBarReports: Неизвестный индекс таба: ${widget.currentTabIndex}');
+          //print('CustomAppBarReports: Неизвестный id таба: ${widget.currentTabId}');
         }
         return; // Exit if tab index is invalid
     }

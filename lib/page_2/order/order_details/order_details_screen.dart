@@ -8,6 +8,7 @@ import 'package:crm_task_manager/main.dart';
 import 'package:crm_task_manager/models/field_configuration.dart';
 import 'package:crm_task_manager/models/page_2/order_card.dart';
 import 'package:crm_task_manager/page_2/order/order_details/order_edits.dart';
+import 'package:crm_task_manager/page_2/order/order_details/order_dropdown_bottom_dialog.dart';
 import 'package:crm_task_manager/page_2/order/order_details/order_field_config_utils.dart';
 import 'package:crm_task_manager/page_2/order/order_details/order_good_screen.dart';
 import 'package:crm_task_manager/page_2/order/order_details/order_history_widget.dart';
@@ -42,6 +43,9 @@ class OrderDetailsScreen extends StatefulWidget {
 class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
   List<Map<String, String>> details = [];
   final ApiService _apiService = ApiService();
+  late final int _initialStatusId;
+  int? _currentStatusId;
+  bool _statusChangedFromDetails = false;
   bool _canEditOrder = false;
   int? currencyId; // Поле для хранения currency_id
   Map<String, dynamic>? _editResult; // Сохраняем результат редактирования
@@ -52,10 +56,52 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
   @override
   void initState() {
     super.initState();
+    _initialStatusId = widget.order.orderStatus.id;
+    _currentStatusId = widget.order.orderStatus.id;
     _checkPermissions();
     _loadCurrencyId(); // Загружаем currencyId
     _loadFieldConfiguration();
     context.read<OrderBloc>().add(FetchOrderDetails(widget.orderId));
+  }
+
+  Map<String, dynamic> _buildNavigationResult() {
+    return {
+      'success': _editResult?['success'] == true || _statusChangedFromDetails,
+      'refresh': _statusChangedFromDetails,
+      'statusId': _initialStatusId,
+      'newStatusId': _currentStatusId ?? _initialStatusId,
+    };
+  }
+
+  void _refreshOrderView() {
+    setState(() {
+      _currentOrderDetails = null;
+      details.clear();
+      _isConfigurationLoaded = false;
+    });
+    _loadFieldConfiguration();
+    context.read<OrderBloc>().add(FetchOrderStatuses(forceRefresh: true));
+    context.read<OrderBloc>().add(FetchOrderDetails(widget.orderId));
+  }
+
+  void _openStatusChangeSheet() {
+    final currentOrder = _currentOrderDetails ?? widget.order;
+
+    OrderDropdownBottomSheet(
+      context,
+      currentOrder.orderStatus.name,
+      (String _, int newStatusId) {
+        if (!mounted) return;
+        setState(() {
+          _statusChangedFromDetails = true;
+          _currentStatusId = newStatusId;
+          _editResult = _buildNavigationResult();
+        });
+        _refreshOrderView();
+      },
+      currentOrder,
+      onTabChange: (_) {},
+    );
   }
 
   // Метод загрузки currencyId из SharedPreferences
@@ -570,7 +616,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
       child: WillPopScope(
         onWillPop: () async {
           // Передаем результат редактирования при закрытии экрана
-          Navigator.pop(context, _editResult);
+          Navigator.pop(context, _buildNavigationResult());
           return false;
         },
         child: BlocBuilder<OrderBloc, OrderState>(
@@ -630,7 +676,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
         icon: const Icon(Icons.arrow_back, color: Color(0xff1E2E52)),
         onPressed: () {
           // Передаем результат редактирования при закрытии экрана
-          Navigator.pop(context, _editResult);
+          Navigator.pop(context, _buildNavigationResult());
         },
       ),
       title: Text(
@@ -705,6 +751,50 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
         AppLocalizations.of(context)!.translate('order_address');
     final String commentLabel =
         AppLocalizations.of(context)!.translate('comment_client');
+    final String statusLabel =
+        AppLocalizations.of(context)!.translate('order_status_label');
+    final String statusFallbackLabel =
+        AppLocalizations.of(context)!.translate('order_status');
+
+    if (label == statusLabel || label == statusFallbackLabel) {
+      return GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: _openStatusChangeSheet,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildLabel(label),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Flexible(
+                    child: Text(
+                      value,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontFamily: 'Gilroy',
+                        fontWeight: FontWeight.w500,
+                        color: Color(0xff1E2E52),
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  const Icon(
+                    Icons.keyboard_arrow_down_rounded,
+                    color: Color(0xff1E2E52),
+                    size: 16,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
 
     if (label == clientLabel && value.isNotEmpty) {
       return GestureDetector(
