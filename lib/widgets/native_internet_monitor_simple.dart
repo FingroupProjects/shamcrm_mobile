@@ -20,18 +20,53 @@ class NativeInternetMonitor with WidgetsBindingObserver {
   bool get isConnected => _isConnected;
 
   StreamSubscription? _nativeSubscription;
-  bool _isAppInForeground = true;
+  bool _isInitialized = false;
+
+  bool get _supportsNativeNetworkChannel {
+    if (kIsWeb) {
+      return false;
+    }
+
+    return defaultTargetPlatform == TargetPlatform.android ||
+        defaultTargetPlatform == TargetPlatform.iOS;
+  }
 
   /// Инициализация мониторинга
   Future<void> initialize() async {
+    if (_isInitialized) {
+      return;
+    }
+    _isInitialized = true;
+
     debugPrint('🚀 NativeInternetMonitor: Инициализация...');
     
     WidgetsBinding.instance.addObserver(this);
+
+    if (!_supportsNativeNetworkChannel) {
+      debugPrint(
+        '🚀 NativeInternetMonitor: native channel is not supported on this platform',
+      );
+      _isConnected = true;
+      _internetStatusController.add(true);
+      return;
+    }
     
     try {
       // ✅ Подписываемся на НАТИВНЫЕ события
       _nativeSubscription = _eventChannel
           .receiveBroadcastStream()
+          .handleError((dynamic error) {
+            if (error is MissingPluginException) {
+              debugPrint(
+                '🚀 NativeInternetMonitor: native stream is unavailable, fallback to connected state',
+              );
+              _isConnected = true;
+              _internetStatusController.add(true);
+              return;
+            }
+
+            throw error;
+          })
           .listen(
             (dynamic isConnected) {
               if (isConnected is bool) {
@@ -46,6 +81,15 @@ class NativeInternetMonitor with WidgetsBindingObserver {
               }
             },
             onError: (dynamic error) {
+              if (error is MissingPluginException) {
+                debugPrint(
+                  '🚀 NativeInternetMonitor: native stream missing, fallback to connected state',
+                );
+                _isConnected = true;
+                _internetStatusController.add(true);
+                return;
+              }
+
               debugPrint('🚀 NativeInternetMonitor: ❌ Ошибка: $error');
             },
           );
@@ -62,12 +106,6 @@ class NativeInternetMonitor with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     debugPrint('🚀 NativeInternetMonitor: App lifecycle -> $state');
-    
-    if (state == AppLifecycleState.resumed) {
-      _isAppInForeground = true;
-    } else if (state == AppLifecycleState.paused) {
-      _isAppInForeground = false;
-    }
   }
 
   void dispose() {

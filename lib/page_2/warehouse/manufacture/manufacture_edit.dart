@@ -752,6 +752,18 @@ class _EditManufactureDocumentScreenState
             selectedRecipientStorage: _selectedRecipientStorage,
             hasSenderError: _senderStorageError,
             hasRecipientError: _recipientStorageError,
+            senderLabel:
+                localizations.translate('manufacture_writeoff_storage') ??
+                    'Склад списания',
+            senderHint: localizations
+                    .translate('select_manufacture_writeoff_storage') ??
+                'Выберите склад списания',
+            recipientLabel:
+                localizations.translate('manufacture_income_storage') ??
+                    'Склад прихода',
+            recipientHint:
+                localizations.translate('select_manufacture_income_storage') ??
+                    'Выберите склад прихода',
             onSenderChanged: (value) {
               setState(() {
                 _selectedSenderStorage = value;

@@ -266,7 +266,9 @@ class Source {
   factory Source.fromJson(Map<String, dynamic> json) {
     //print('Source: Parsing JSON for source: ${json['id']}');
     final source = Source(
-      name: json['name'],
+      name: json['name']?.toString().trim().toLowerCase() == 'green_api'
+          ? 'WhatsApp'
+          : (json['name'] ?? ''),
       id: json['id'],
     );
     //print('Source: Source created: id=${source.id}, name=${source.name}');

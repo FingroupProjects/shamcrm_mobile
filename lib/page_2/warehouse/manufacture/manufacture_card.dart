@@ -90,7 +90,7 @@ class ManufactureCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '${localizations.translate('sender_storage') ?? 'От'}: ${document.sender_storage_id?.name ?? document.storage?.name ?? 'N/A'}',
+                    '${localizations.translate('manufacture_writeoff_storage') ?? 'Склад списания'}: ${document.sender_storage_id?.name ?? document.storage?.name ?? 'N/A'}',
                     style: const TextStyle(
                       fontSize: 14,
                       fontFamily: 'Gilroy',
@@ -100,7 +100,7 @@ class ManufactureCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '${localizations.translate('recipient_storage') ?? 'К'}: ${document.recipient_storage_id?.name ?? 'N/A'}',
+                    '${localizations.translate('manufacture_income_storage') ?? 'Склад прихода'}: ${document.recipient_storage_id?.name ?? 'N/A'}',
                     style: const TextStyle(
                       fontSize: 14,
                       fontFamily: 'Gilroy',

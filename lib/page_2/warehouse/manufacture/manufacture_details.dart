@@ -49,9 +49,11 @@ class _ManufactureDocumentDetailsScreenState
   String? baseUrl;
   bool _documentUpdated = false;
   bool _goodMeasurementEnabled = true;
+  final Map<int, bool> _collapsedMaterialSections = {};
 
   // ✅ НОВОЕ: Флаг разрешения на проведение документа
   bool _hasApprovePermission = false;
+  bool _hasUnapprovePermission = false;
 
   final Map<int, String> _unitMap = {
     23: 'шт',
@@ -69,12 +71,15 @@ class _ManufactureDocumentDetailsScreenState
   // ✅ НОВОЕ: Проверка разрешения на проведение документа
   Future<void> _checkApprovePermission() async {
     try {
-      final hasPermission =
-          await _apiService.hasPermission('manufacture_document.approve') ||
-              await _apiService.hasPermission('movement_document.approve');
+      final hasApprovePermission =
+          await _apiService.hasPermission('manufacture.approve') ||
+              await _apiService.hasPermission('manufacture_document.approve');
+      final hasUnapprovePermission =
+          await _apiService.hasPermission('manufacture.unapprove');
       if (mounted) {
         setState(() {
-          _hasApprovePermission = hasPermission;
+          _hasApprovePermission = hasApprovePermission;
+          _hasUnapprovePermission = hasUnapprovePermission;
         });
       }
     } catch (e) {
@@ -82,6 +87,7 @@ class _ManufactureDocumentDetailsScreenState
       if (mounted) {
         setState(() {
           _hasApprovePermission = false;
+          _hasUnapprovePermission = false;
         });
       }
     }
@@ -117,6 +123,7 @@ class _ManufactureDocumentDetailsScreenState
           await _apiService.getManufactureDocumentById(widget.documentId);
       setState(() {
         currentDocument = document;
+        _syncCollapsedMaterialSections(document);
         _updateDetails(document);
         _isLoading = false;
       });
@@ -158,13 +165,13 @@ class _ManufactureDocumentDetailsScreenState
       },
       {
         'label':
-            '${AppLocalizations.of(context)!.translate('sender_storage') ?? 'Склад отправитель'}:',
+            '${AppLocalizations.of(context)!.translate('manufacture_writeoff_storage') ?? 'Склад списания'}:',
         'value':
             document.sender_storage_id?.name ?? document.storage?.name ?? '',
       },
       {
         'label':
-            '${AppLocalizations.of(context)!.translate('recipient_storage') ?? 'Склад получатель'}:',
+            '${AppLocalizations.of(context)!.translate('manufacture_income_storage') ?? 'Склад прихода'}:',
         'value': document.recipient_storage_id?.name ?? '',
       },
       {
@@ -189,6 +196,38 @@ class _ManufactureDocumentDetailsScreenState
           'value': DateFormat('dd.MM.yyyy HH:mm').format(document.deletedAt!),
         },
     ];
+  }
+
+  void _syncCollapsedMaterialSections(IncomingDocument? document) {
+    final goods = document?.documentGoods ?? const <DocumentGood>[];
+    final activeKeys = <int>{};
+
+    for (final good in goods) {
+      if ((good.materials ?? const <DocumentGoodMaterial>[]).isEmpty) continue;
+      final key = _getMaterialSectionKey(good);
+      activeKeys.add(key);
+      _collapsedMaterialSections.putIfAbsent(key, () => true);
+    }
+
+    _collapsedMaterialSections.removeWhere(
+      (key, value) => !activeKeys.contains(key),
+    );
+  }
+
+  int _getMaterialSectionKey(DocumentGood good) {
+    return good.id ??
+        good.goodVariantId ??
+        good.variantId ??
+        good.good?.id ??
+        good.hashCode;
+  }
+
+  void _toggleMaterialSection(DocumentGood good) {
+    final key = _getMaterialSectionKey(good);
+    setState(() {
+      _collapsedMaterialSections[key] =
+          !(_collapsedMaterialSections[key] ?? true);
+    });
   }
 
   String _getLocalizedStatus(IncomingDocument document) {
@@ -379,12 +418,11 @@ class _ManufactureDocumentDetailsScreenState
       return const SizedBox.shrink();
     }
 
-    // ✅ НОВОЕ: Дополнительная проверка разрешения на проведение
-    if (!_hasApprovePermission) {
-      return const SizedBox.shrink();
-    }
-
     if (currentDocument!.approved == 0) {
+      if (!_hasApprovePermission) {
+        return const SizedBox.shrink();
+      }
+
       return StyledActionButton(
         text: AppLocalizations.of(context)!.translate('approve_document') ??
             'Провести',
@@ -392,6 +430,10 @@ class _ManufactureDocumentDetailsScreenState
         color: const Color(0xFF4CAF50),
         onPressed: _approveDocument,
       );
+    }
+
+    if (!_hasUnapprovePermission) {
+      return const SizedBox.shrink();
     }
 
     return StyledActionButton(
@@ -543,7 +585,7 @@ class _ManufactureDocumentDetailsScreenState
       title: Transform.translate(
         offset: const Offset(-10, 0),
         child: Text(
-          "${AppLocalizations.of(context)!.translate('view_document') ?? 'Просмотр документа'} №${widget.docNumber}",
+          "${AppLocalizations.of(context)!.translate('manufacture') ?? 'Производство'} №${widget.docNumber}",
           style: const TextStyle(
             fontSize: 20,
             fontFamily: 'Gilroy',
@@ -725,10 +767,14 @@ class _ManufactureDocumentDetailsScreenState
   Widget _buildGoodsItem(DocumentGood good) {
     final selectedUnit =
         good.good?.unit ?? Unit(id: null, name: '', shortName: '');
-    final amount = selectedUnit.amount ?? 1.0;
     final unitShortName = selectedUnit.shortName ?? selectedUnit.name ?? '';
-
-    debugPrint("selectedUnit: $selectedUnit");
+    final materials = good.materials ?? const <DocumentGoodMaterial>[];
+    final isMaterialsCollapsed =
+        _collapsedMaterialSections[_getMaterialSectionKey(good)] ?? true;
+    final costPrice = _formatNumberString(good.costPrice);
+    final quantity = _formatNumber(good.quantity);
+    final price = _formatNumberString(good.price);
+    final sum = _formatGoodsSum(good);
 
     return GestureDetector(
       onTap: () {
@@ -739,156 +785,321 @@ class _ManufactureDocumentDetailsScreenState
         child: Container(
           decoration: TaskCardStyles.taskCardDecoration,
           child: Padding(
-            padding:
-                const EdgeInsets.only(left: 16, right: 16, top: 12, bottom: 12),
-            child: Row(
+            padding: const EdgeInsets.all(14),
+            child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildImageWidget(good),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        good.fullName ?? good.good?.name ?? 'N/A',
-                        style: TaskCardStyles.titleStyle.copyWith(fontSize: 14),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildImageWidget(good),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          if (_goodMeasurementEnabled)
-                            Expanded(
-                              flex: 2,
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    AppLocalizations.of(context)!
-                                            .translate('unit') ??
-                                        'Ед.',
-                                    style: const TextStyle(
-                                      fontSize: 10,
-                                      fontFamily: 'Gilroy',
-                                      fontWeight: FontWeight.w400,
-                                      color: Color(0xff99A4BA),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    unitShortName,
-                                    style: const TextStyle(
-                                      fontSize: 12,
-                                      fontFamily: 'Gilroy',
-                                      fontWeight: FontWeight.w600,
-                                      color: Color(0xff1E2E52),
-                                    ),
-                                  ),
-                                ],
-                              ),
+                          Text(
+                            good.fullName ?? good.good?.name ?? 'N/A',
+                            style: TaskCardStyles.titleStyle
+                                .copyWith(fontSize: 14),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 10),
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 2,
+                              vertical: 2,
                             ),
-                          Expanded(
-                            flex: 2,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
+                            child: Wrap(
+                              spacing: 24,
+                              runSpacing: 6,
                               children: [
-                                Text(
+                                _buildInfoText(
+                                  AppLocalizations.of(context)!
+                                          .translate('cost_price_per_unit') ??
+                                      'Себестоимость',
+                                  costPrice,
+                                ),
+                                _buildInfoText(
                                   AppLocalizations.of(context)!
                                           .translate('quantity') ??
                                       'Кол-во',
-                                  style: const TextStyle(
-                                    fontSize: 10,
-                                    fontFamily: 'Gilroy',
-                                    fontWeight: FontWeight.w400,
-                                    color: Color(0xff99A4BA),
-                                  ),
+                                  quantity,
                                 ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  '${good.quantity ?? 0}',
-                                  style: const TextStyle(
-                                    fontSize: 12,
-                                    fontFamily: 'Gilroy',
-                                    fontWeight: FontWeight.w600,
-                                    color: Color(0xff1E2E52),
-                                  ),
+                                _buildInfoText(
+                                  (AppLocalizations.of(context)!
+                                              .translate('price') ??
+                                          'Цена')
+                                      .replaceAll(':', ''),
+                                  price,
                                 ),
+                                _buildInfoText(
+                                  AppLocalizations.of(context)!
+                                          .translate('sum') ??
+                                      'Сумма',
+                                  sum,
+                                ),
+                                if (_goodMeasurementEnabled &&
+                                    unitShortName.isNotEmpty)
+                                  _buildInfoText(
+                                    AppLocalizations.of(context)!
+                                            .translate('unit') ??
+                                        'Ед.',
+                                    unitShortName,
+                                  ),
                               ],
                             ),
                           ),
-                          // Expanded(
-                          //   flex: 3,
-                          //   child: Column(
-                          //     crossAxisAlignment: CrossAxisAlignment.start,
-                          //     children: [
-                          //       Text(
-                          //         AppLocalizations.of(context)!.translate('price') ?? 'Цена',
-                          //         style: const TextStyle(
-                          //           fontSize: 10,
-                          //           fontFamily: 'Gilroy',
-                          //           fontWeight: FontWeight.w400,
-                          //           color: Color(0xff99A4BA),
-                          //         ),
-                          //       ),
-                          //       const SizedBox(height: 2),
-                          //       Text(
-                          //         (amount * (double.tryParse(good.price ?? '0.00') ?? 0.00)).toStringAsFixed(2),
-                          //         style: const TextStyle(
-                          //           fontSize: 12,
-                          //           fontFamily: 'Gilroy',
-                          //           fontWeight: FontWeight.w600,
-                          //           color: Color(0xff1E2E52),
-                          //         ),
-                          //         overflow: TextOverflow.ellipsis,
-                          //       ),
-                          //     ],
-                          //   ),
-                          // ),
                         ],
                       ),
-                      // const SizedBox(height: 8),
-                      // Container(
-                      //   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                      //   decoration: BoxDecoration(
-                      //     color: const Color(0xFFF4F7FD),
-                      //     borderRadius: BorderRadius.circular(6),
-                      //   ),
-                      //   child: Row(
-                      //     mainAxisAlignment: MainAxisAlignment.start,
-                      //     children: [
-                      //       Text(
-                      //         AppLocalizations.of(context)!.translate('total') ?? 'Итого',
-                      //         style: const TextStyle(
-                      //           fontSize: 12,
-                      //           fontFamily: 'Gilroy',
-                      //           fontWeight: FontWeight.w500,
-                      //           color: Color(0xff1E2E52),
-                      //         ),
-                      //       ),
-                      //       const SizedBox(width: 8),
-                      //       Text(
-                      //         '${((good.quantity ?? 0) * amount * (double.tryParse(good.price ?? '0') ?? 0)).toStringAsFixed(2)} ${currentDocument!.currency?.symbolCode ?? ''}',
-                      //         style: const TextStyle(
-                      //           fontSize: 14,
-                      //           fontFamily: 'Gilroy',
-                      //           fontWeight: FontWeight.w700,
-                      //           color: Color(0xff4CAF50),
-                      //         ),
-                      //       ),
-                      //     ],
-                      //   ),
-                      // ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
+                if (materials.isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  _buildMaterialsSection(
+                    good: good,
+                    materials: materials,
+                    isCollapsed: isMaterialsCollapsed,
+                  ),
+                ],
               ],
             ),
           ),
         ),
       ),
     );
+  }
+
+  Widget _buildMaterialsSection({
+    required DocumentGood good,
+    required List<DocumentGoodMaterial> materials,
+    required bool isCollapsed,
+  }) {
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: const Color(0xFFF9FBFF),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: const Color(0xFFD9E4F5)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          InkWell(
+            borderRadius: BorderRadius.circular(10),
+            onTap: () => _toggleMaterialSection(good),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      AppLocalizations.of(context)!
+                              .translate('raw_materials') ??
+                          'Сырье',
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontFamily: 'Gilroy',
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xff1E2E52),
+                      ),
+                    ),
+                  ),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          AppLocalizations.of(context)!.translate(
+                                isCollapsed ? 'expand' : 'collapse',
+                              ) ??
+                              (isCollapsed ? 'Развернуть' : 'Свернуть'),
+                          style: const TextStyle(
+                            fontSize: 11,
+                            fontFamily: 'Gilroy',
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xff1E2E52),
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Icon(
+                          isCollapsed
+                              ? Icons.keyboard_arrow_down_rounded
+                              : Icons.keyboard_arrow_up_rounded,
+                          size: 18,
+                          color: const Color(0xff1E2E52),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          AnimatedCrossFade(
+            duration: const Duration(milliseconds: 220),
+            crossFadeState: isCollapsed
+                ? CrossFadeState.showFirst
+                : CrossFadeState.showSecond,
+            firstChild: const SizedBox.shrink(),
+            secondChild: Padding(
+              padding: const EdgeInsets.fromLTRB(12, 4, 12, 12),
+              child: Column(
+                children: List.generate(
+                  materials.length,
+                  (index) => Padding(
+                    padding: EdgeInsets.only(top: index == 0 ? 0 : 8),
+                    child: _buildMaterialItem(materials[index]),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMaterialItem(DocumentGoodMaterial material) {
+    final materialName = material.goodVariant?.fullName ??
+        material.goodVariant?.good?.name ??
+        'N/A';
+    final unitName = material.unit?.shortName ?? material.unit?.name ?? '';
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: const Color(0xFFE7EEF9)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            materialName,
+            style: const TextStyle(
+              fontSize: 13,
+              fontFamily: 'Gilroy',
+              fontWeight: FontWeight.w600,
+              color: Color(0xff1E2E52),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 12,
+            runSpacing: 8,
+            children: [
+              _buildMaterialMeta(
+                AppLocalizations.of(context)!.translate('norm') ?? 'Норма',
+                '${material.norm ?? 0}',
+              ),
+              _buildMaterialMeta(
+                AppLocalizations.of(context)!.translate('quantity') ?? 'Кол-во',
+                '${material.quantity ?? 0}',
+              ),
+              if (_goodMeasurementEnabled && unitName.isNotEmpty)
+                _buildMaterialMeta(
+                  'Ед. изм.',
+                  unitName,
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMaterialMeta(String label, String value) {
+    return RichText(
+      text: TextSpan(
+        style: const TextStyle(
+          fontSize: 12,
+          fontFamily: 'Gilroy',
+          color: Color(0xff1E2E52),
+        ),
+        children: [
+          TextSpan(
+            text: '$label: ',
+            style: const TextStyle(
+              fontWeight: FontWeight.w400,
+              color: Color(0xff99A4BA),
+            ),
+          ),
+          TextSpan(
+            text: value,
+            style: const TextStyle(fontWeight: FontWeight.w600),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoText(String label, String value) {
+    return SizedBox(
+      width: 145,
+      child: RichText(
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+        text: TextSpan(
+          style: const TextStyle(
+            fontSize: 12,
+            fontFamily: 'Gilroy',
+            color: Color(0xff1E2E52),
+          ),
+          children: [
+            TextSpan(
+              text: '$label: ',
+              style: const TextStyle(
+                fontWeight: FontWeight.w400,
+                color: Color(0xff99A4BA),
+              ),
+            ),
+            TextSpan(
+              text: value,
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _formatGoodsSum(DocumentGood good) {
+    if ((good.sum ?? '').isNotEmpty) {
+      return _formatNumberString(good.sum);
+    }
+
+    final quantity = good.quantity?.toDouble() ?? 0;
+    final price = double.tryParse(good.price ?? '0') ?? 0;
+    return _formatNumber(quantity * price);
+  }
+
+  String _formatNumberString(String? value) {
+    if (value == null || value.trim().isEmpty) return '-';
+    final normalized = value.replaceAll(',', '.').trim();
+    final parsed = double.tryParse(normalized);
+    if (parsed == null) return value;
+    return _formatNumber(parsed);
+  }
+
+  String _formatNumber(num? value) {
+    if (value == null) return '-';
+    if (value == value.toInt()) {
+      return value.toInt().toString();
+    }
+
+    return value.toStringAsFixed(3).replaceFirst(RegExp(r'\.?0+$'), '');
   }
 
   Widget _buildImageWidget(DocumentGood good) {

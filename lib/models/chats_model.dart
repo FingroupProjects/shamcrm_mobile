@@ -256,6 +256,7 @@ class Chats {
       'telegram_bot': 'assets/icons/leads/telegram.png',
       'telegram_account': 'assets/icons/leads/telegram.png',
       'whatsapp': 'assets/icons/leads/whatsapp.png',
+      'green_api': 'assets/icons/leads/whatsapp.png',
       'instagram': 'assets/icons/leads/instagram.png',
       'instagram_comment': 'assets/icons/leads/instagram.png',
       'facebook': 'assets/icons/leads/messenger.png',

@@ -72,6 +72,7 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
   late final int _initialStatusId;
   int? _currentStatusId;
   bool _statusChangedFromDetails = false;
+  bool _isStatusSheetOpen = false;
   bool _canEditDeal = false;
   bool _canDeleteDeal = false;
   bool _createTaskInDealEnabled = false;
@@ -160,7 +161,7 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
   }
 
   Future<void> _openStatusChangeSheet() async {
-    if (currentDeal == null) return;
+    if (currentDeal == null || _isStatusSheetOpen) return;
 
     final deal = Deal(
       id: currentDeal!.id,
@@ -179,23 +180,38 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
       createdAt: currentDeal!.createdAt,
     );
 
-    await showDealStatusBottomSheet(
-      context,
-      currentDeal!.dealStatuses.isNotEmpty
-          ? currentDeal!.dealStatuses.map((s) => s.title).join(', ')
-          : (currentDeal!.dealStatus?.title ?? widget.dealStatus),
-      (String _, List<int> newStatusIds) {
-        if (!mounted) return;
+    setState(() {
+      _isStatusSheetOpen = true;
+    });
+
+    try {
+      await showDealStatusBottomSheet(
+        context,
+        currentDeal!.dealStatuses.isNotEmpty
+            ? currentDeal!.dealStatuses.map((s) => s.title).join(', ')
+            : (currentDeal!.dealStatus?.title ?? widget.dealStatus),
+        (String _, List<int> newStatusIds) {
+          if (!mounted) return;
+          setState(() {
+            _statusChangedFromDetails = true;
+            _currentStatusId = newStatusIds.isNotEmpty
+                ? newStatusIds.first
+                : _currentStatusId;
+          });
+          _reloadDealView();
+        },
+        deal,
+        _apiService,
+      );
+    } finally {
+      if (mounted) {
         setState(() {
-          _statusChangedFromDetails = true;
-          _currentStatusId =
-              newStatusIds.isNotEmpty ? newStatusIds.first : _currentStatusId;
+          _isStatusSheetOpen = false;
         });
-        _reloadDealView();
-      },
-      deal,
-      _apiService,
-    );
+      } else {
+        _isStatusSheetOpen = false;
+      }
+    }
   }
 
   void _initTargets() {

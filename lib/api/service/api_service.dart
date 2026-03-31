@@ -213,6 +213,8 @@ import 'dio_client.dart';
 // final String baseUrlSocket ='https://fingroup-back.shamcrm.com/broadcasting/auth';
 
 class ApiService {
+  static const Duration _defaultRequestTimeout = Duration(seconds: 20);
+
   String? baseUrl;
   String? baseUrlSocket;
   static final GlobalKey<NavigatorState> navigatorKey =
@@ -370,6 +372,11 @@ class ApiService {
     } catch (_) {
       return response.body.isEmpty ? null : response.body;
     }
+  }
+
+  String _getOrderStatusChangeErrorMessage(http.Response response) {
+    return _extractErrorMessageFromResponse(response) ??
+        'Вы не можете переместить заказ на этот статус';
   }
 
   // Также нужно обновить метод _initializeIfDomainExists
@@ -818,6 +825,12 @@ class ApiService {
           'Accept': 'application/json',
           'Device': 'mobile'
         },
+      ).timeout(
+        _defaultRequestTimeout,
+        onTimeout: () => throw TimeoutException(
+          'Превышено время ожидания ответа сервера',
+          _defaultRequestTimeout,
+        ),
       );
 
       // HTTP Inspector: Обновляем лог с ответом (только в DEBUG)
@@ -5157,10 +5170,10 @@ class ApiService {
       // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
       final path = await _appendQueryParams('/task/$taskId');
       if (kDebugMode) {
-        //debugPrint('ApiService: getTaskById - Generated path: $path');
+        debugPrint('ApiService: getTaskById - Generated path: $path');
       }
 
-      final response = await _analyticsRequest(path);
+      final response = await _getRequest(path);
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> decodedJson = json.decode(response.body);
@@ -5180,6 +5193,9 @@ class ApiService {
         throw Exception('Ошибка загрузки task ID!');
       }
     } catch (e) {
+      if (kDebugMode) {
+        debugPrint('ApiService: getTaskById error: $e');
+      }
       throw Exception('Ошибка загрузки task ID');
     }
   }
@@ -12626,43 +12642,42 @@ class ApiService {
     String? reasonForRefusal,
   }) async {
     try {
-      final token = await getToken();
-      if (token == null) throw Exception('Токен не найден');
-
-      // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
       final path = await _appendQueryParams('/order/changeStatus/$orderId');
       if (kDebugMode) {
-        //debugPrint('ApiService: changeOrderStatus - Generated path: $path');
+        debugPrint('ApiService: changeOrderStatus - Generated path: $path');
       }
 
-      final uri = Uri.parse('$baseUrl$path');
-      final response = await http.post(
-        uri,
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-          'Device': 'mobile',
-        },
-        body: jsonEncode({
+      final response = await _postRequest(
+        '/order/changeStatus/$orderId',
+        {
           'status_id': statusId,
           if (reasonForRefusalId != null)
             'reason_for_refusal_id': reasonForRefusalId,
           if (reasonForRefusal != null && reasonForRefusal.trim().isNotEmpty)
             'reason_for_refusal': reasonForRefusal.trim(),
-        }),
+        },
       );
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         return true;
+      } else if (response.statusCode == 422) {
+        throw OrderStatusUpdateException(
+          response.statusCode,
+          _getOrderStatusChangeErrorMessage(response),
+        );
       } else {
-        final jsonResponse = jsonDecode(response.body);
         throw Exception(
-            jsonResponse['message'] ?? 'Ошибка при смене статуса заказа');
+          _extractErrorMessageFromResponse(response) ??
+              'Ошибка при смене статуса заказа',
+        );
       }
+    } on OrderStatusUpdateException {
+      rethrow;
     } catch (e) {
-      ////debugPrint('Ошибка смены статуса заказа: ');
-      return false;
+      if (kDebugMode) {
+        debugPrint('ApiService: changeOrderStatus error: $e');
+      }
+      rethrow;
     }
   }
 
@@ -21000,4 +21015,14 @@ class ApiService {
       return false;
     }
   }
+}
+
+class OrderStatusUpdateException implements Exception {
+  final int statusCode;
+  final String message;
+
+  OrderStatusUpdateException(this.statusCode, this.message);
+
+  @override
+  String toString() => 'OrderStatusUpdateException($statusCode, $message)';
 }

@@ -107,6 +107,7 @@ class _DealCardState extends State<DealCard>
     'telegram_account': 'assets/icons/leads/telegram.png',
     'telegram_bot': 'assets/icons/leads/telegram.png',
     'whatsapp': 'assets/icons/leads/whatsapp.png',
+    'green_api': 'assets/icons/leads/whatsapp.png',
     'facebook': 'assets/icons/leads/messenger.png',
     'instagram': 'assets/icons/leads/instagram.png',
   };
@@ -278,7 +279,8 @@ class _DealCardState extends State<DealCard>
                                 showDealStatusBottomSheet(
                                   context,
                                   dropdownValue,
-                                  (String newValue, List<int> newStatusIds) async {
+                                  (String newValue,
+                                      List<int> newStatusIds) async {
                                     final oldStatusId = widget.statusId;
                                     final newStatusId = newStatusIds.isNotEmpty
                                         ? newStatusIds.first

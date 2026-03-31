@@ -149,7 +149,7 @@ class _IncomingDocumentDetailsScreenState
 
     details = [
       {
-          'label':
+        'label':
             '${AppLocalizations.of(context)!.translate('document_number') ?? 'Документ'}:',
         'value': "№${document.docNumber ?? ''}",
       },
@@ -585,7 +585,7 @@ class _IncomingDocumentDetailsScreenState
       title: Transform.translate(
         offset: const Offset(-10, 0),
         child: Text(
-          "${AppLocalizations.of(context)!.translate('view_document') ?? 'Просмотр документа'} №${widget.docNumber}",
+          "Приход №${widget.docNumber}",
           style: const TextStyle(
             fontSize: 20,
             fontFamily: 'Gilroy',

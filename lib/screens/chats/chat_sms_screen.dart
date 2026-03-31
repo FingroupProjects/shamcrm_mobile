@@ -1445,7 +1445,9 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
 
       if (username.contains('telegram') || username.contains('tg')) {
         return 'telegram';
-      } else if (username.contains('whatsapp') || username.contains('wa')) {
+      } else if (username.contains('green_api') ||
+          username.contains('whatsapp') ||
+          username.contains('wa')) {
         return 'whatsapp';
       } else if (username.contains('instagram') || username.contains('ig')) {
         return 'instagram';
@@ -2547,7 +2549,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
                 return Duration(minutes: minutes, seconds: seconds);
               }
 
-                final tempMessage = Message(
+              final tempMessage = Message(
                 id: -DateTime.now().millisecondsSinceEpoch,
                 text: "Голосовое сообщение",
                 type: 'voice',

@@ -31,6 +31,12 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
   bool _isInitialized = false;
   bool _initialLeadSet = false;
 
+  void _reloadLeads() {
+    context.read<GetAllLeadBloc>().add(
+          RefreshAllLeadEv(showDebt: widget.showDebt),
+        );
+  }
+
   bool _hasPhone(LeadData lead) => (lead.phone ?? '').trim().isNotEmpty;
 
   Widget _buildLeadInfo(
@@ -76,9 +82,7 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        context
-            .read<GetAllLeadBloc>()
-            .add(RefreshAllLeadEv(showDebt: widget.showDebt));
+        _reloadLeads();
       }
     });
   }
@@ -89,9 +93,7 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
 
     // Reload when showDebt changes
     if (oldWidget.showDebt != widget.showDebt) {
-      context
-          .read<GetAllLeadBloc>()
-          .add(RefreshAllLeadEv(showDebt: widget.showDebt));
+      _reloadLeads();
     }
 
     // React to external selectedLead change
@@ -133,20 +135,28 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
     String query,
     int page,
   ) async {
-    final response = await _apiService.getLeadPage(
-      page,
-      showDebt: widget.showDebt,
-      search: query,
-    );
-    final items = response.result ?? <LeadData>[];
-    final pagination = response.pagination;
+    try {
+      final response = await _apiService.getLeadPage(
+        page,
+        showDebt: widget.showDebt,
+        search: query,
+      );
+      final items = response.result ?? <LeadData>[];
+      final pagination = response.pagination;
 
-    return CustomDropdownPaginatedResponse<LeadData>(
-      items: items,
-      hasMore: (pagination?.currentPage ?? page) < (pagination?.totalPages ?? 1),
-    );
+      return CustomDropdownPaginatedResponse<LeadData>(
+        items: items,
+        hasMore:
+            (pagination?.currentPage ?? page) < (pagination?.totalPages ?? 1),
+      );
+    } catch (_) {
+      return const CustomDropdownPaginatedResponse<LeadData>(
+        items: <LeadData>[],
+        hasMore: false,
+      );
+    }
   }
-  
+
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -166,6 +176,8 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
           builder: (context, state) {
             final isLoading = state is GetAllLeadLoading;
             final isInitial = state is GetAllLeadInitial;
+            final errorMessage =
+                state is GetAllLeadError ? state.message : null;
 
             // SUCCESS → fresh data
             if (state is GetAllLeadSuccess) {
@@ -180,7 +192,8 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
             }
 
             final isStillLoading =
-                ((isLoading || isInitial) && !_isInitialized) || !_initialLeadSet;
+                ((isLoading || isInitial) && !_isInitialized) ||
+                    !_initialLeadSet;
 
             final actualInitialItem = isStillLoading
                 ? null
@@ -189,160 +202,204 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
                     ? selectedLeadData
                     : null;
 
-            return CustomDropdown<LeadData>.searchRequestPaginated(
-              key: ValueKey(selectedLeadData
-                  ?.id), // ← Forces rebuild when pre-selected lead changes
-              paginatedRequest: _searchLeads,
-              futureRequestDelay: const Duration(milliseconds: 350),
-              closeDropDownOnClearFilterSearch: true,
-              items: leadsList,
-              searchHintText: AppLocalizations.of(context)!.translate('search'),
-              overlayHeight: 400,
-              enabled: !isStillLoading,
-              decoration: CustomDropdownDecoration(
-                closedFillColor: const Color(0xffF4F7FD),
-                expandedFillColor: Colors.white,
-                closedBorder:
-                    Border.all(color: const Color(0xffF4F7FD), width: 1),
-                closedBorderRadius: BorderRadius.circular(12),
-                expandedBorder:
-                    Border.all(color: const Color(0xffF4F7FD), width: 1),
-                expandedBorderRadius: BorderRadius.circular(12),
-              ),
-              listItemBuilder: (context, item, isSelected, onItemSelect) {
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildLeadInfo(item),
-                    if (widget.showDebt && item.debt != null && item.debt != 0)
-                      Padding(
-                        padding: EdgeInsets.only(
-                          top: _hasPhone(item) ? 4 : 2,
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                CustomDropdown<LeadData>.searchRequestPaginated(
+                  key: ValueKey(selectedLeadData
+                      ?.id), // ← Forces rebuild when pre-selected lead changes
+                  paginatedRequest: _searchLeads,
+                  futureRequestDelay: const Duration(milliseconds: 350),
+                  closeDropDownOnClearFilterSearch: true,
+                  items: leadsList,
+                  searchHintText:
+                      AppLocalizations.of(context)!.translate('search'),
+                  overlayHeight: 400,
+                  enabled: !isStillLoading,
+                  decoration: CustomDropdownDecoration(
+                    closedFillColor: const Color(0xffF4F7FD),
+                    expandedFillColor: Colors.white,
+                    closedBorder:
+                        Border.all(color: const Color(0xffF4F7FD), width: 1),
+                    closedBorderRadius: BorderRadius.circular(12),
+                    expandedBorder:
+                        Border.all(color: const Color(0xffF4F7FD), width: 1),
+                    expandedBorderRadius: BorderRadius.circular(12),
+                  ),
+                  listItemBuilder: (context, item, isSelected, onItemSelect) {
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildLeadInfo(item),
+                        if (widget.showDebt &&
+                            item.debt != null &&
+                            item.debt != 0)
+                          Padding(
+                            padding: EdgeInsets.only(
+                              top: _hasPhone(item) ? 4 : 2,
+                            ),
+                            child: Text(
+                              'Долг: ${item.debt!.toStringAsFixed(2)}',
+                              style: TextStyle(
+                                color:
+                                    item.debt! > 0 ? Colors.red : Colors.green,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                                fontFamily: 'Gilroy',
+                              ),
+                            ),
+                          ),
+                      ],
+                    );
+                  },
+                  headerBuilder: (context, selectedItem, enabled) {
+                    if (isStillLoading) {
+                      return const Center(
+                        child: SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Color(0xff1E2E52),
+                            ),
+                          ),
                         ),
+                      );
+                    }
+
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildLeadInfo(
+                          selectedItem,
+                          phoneFontSize: 11,
+                        ),
+                        if (widget.showDebt &&
+                            selectedItem.debt != null &&
+                            selectedItem.debt! != 0)
+                          Text(
+                            'Долг: ${selectedItem.debt!.toStringAsFixed(2)}',
+                            style: TextStyle(
+                              color: selectedItem.debt! > 0
+                                  ? Colors.red
+                                  : Colors.green,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w500,
+                              fontFamily: 'Gilroy',
+                            ),
+                          ),
+                      ],
+                    );
+                  },
+                  hintBuilder: (context, hint, enabled) {
+                    if (isStillLoading) {
+                      return const Center(
+                        child: SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Color(0xff1E2E52),
+                            ),
+                          ),
+                        ),
+                      );
+                    }
+
+                    return Text(
+                      AppLocalizations.of(context)!.translate('select_lead'),
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        fontFamily: 'Gilroy',
+                        color: Color(0xff1E2E52),
+                      ),
+                    );
+                  },
+                  noResultFoundBuilder: (context, text) {
+                    if (isStillLoading) {
+                      return const Center(
+                        child: Padding(
+                          padding: EdgeInsets.all(20.0),
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Color(0xff1E2E52),
+                            ),
+                          ),
+                        ),
+                      );
+                    }
+                    return Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(20.0),
                         child: Text(
-                          'Долг: ${item.debt!.toStringAsFixed(2)}',
-                          style: TextStyle(
-                            color: item.debt! > 0 ? Colors.red : Colors.green,
+                          AppLocalizations.of(context)!.translate('no_results'),
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontFamily: 'Gilroy',
+                            color: Color(0xff1E2E52),
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                  excludeSelected: false,
+                  initialItem: actualInitialItem,
+                  validator: (_isInitialized && _initialLeadSet)
+                      ? (value) {
+                          if (value == null) {
+                            return AppLocalizations.of(context)!
+                                .translate('field_required_project');
+                          }
+                          return null;
+                        }
+                      : null,
+                  onChanged: (value) {
+                    if (value != null) {
+                      widget.onSelectLead(value);
+                      setState(() {
+                        selectedLeadData = value;
+                      });
+                      FocusScope.of(context).unfocus();
+                    }
+                  },
+                ),
+                if (errorMessage != null && leadsList.isEmpty) ...[
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          errorMessage,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Color(0xffEF4444),
                             fontSize: 12,
-                            fontWeight: FontWeight.w500,
+                            fontWeight: FontWeight.w400,
                             fontFamily: 'Gilroy',
                           ),
                         ),
                       ),
-                  ],
-                );
-              },
-              headerBuilder: (context, selectedItem, enabled) {
-                if (isStillLoading) {
-                  return const Center(
-                    child: SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor:
-                            AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
-                      ),
-                    ),
-                  );
-                }
-
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildLeadInfo(
-                      selectedItem,
-                      phoneFontSize: 11,
-                    ),
-                    if (widget.showDebt &&
-                        selectedItem.debt != null &&
-                        selectedItem.debt! != 0)
-                      Text(
-                        'Долг: ${selectedItem.debt!.toStringAsFixed(2)}',
-                        style: TextStyle(
-                          color: selectedItem.debt! > 0
-                              ? Colors.red
-                              : Colors.green,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w500,
-                          fontFamily: 'Gilroy',
+                      TextButton(
+                        onPressed: _reloadLeads,
+                        child: Text(
+                          AppLocalizations.of(context)!.translate('refresh'),
+                          style: const TextStyle(
+                            color: Color(0xff4759FF),
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            fontFamily: 'Gilroy',
+                          ),
                         ),
                       ),
-                  ],
-                );
-              },
-              hintBuilder: (context, hint, enabled) {
-                if (isStillLoading) {
-                  return const Center(
-                    child: SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor:
-                            AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
-                      ),
-                    ),
-                  );
-                }
-
-                return Text(
-                  AppLocalizations.of(context)!.translate('select_lead'),
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    fontFamily: 'Gilroy',
-                    color: Color(0xff1E2E52),
+                    ],
                   ),
-                );
-              },
-              noResultFoundBuilder: (context, text) {
-                if (isStillLoading) {
-                  return const Center(
-                    child: Padding(
-                      padding: EdgeInsets.all(20.0),
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor:
-                            AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
-                      ),
-                    ),
-                  );
-                }
-                return Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(20.0),
-                    child: Text(
-                      AppLocalizations.of(context)!.translate('no_results'),
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontFamily: 'Gilroy',
-                        color: Color(0xff1E2E52),
-                      ),
-                    ),
-                  ),
-                );
-              },
-              excludeSelected: false,
-              initialItem: actualInitialItem,
-              validator: (_isInitialized && _initialLeadSet)
-                  ? (value) {
-                      if (value == null) {
-                        return AppLocalizations.of(context)!
-                            .translate('field_required_project');
-                      }
-                      return null;
-                    }
-                  : null,
-              onChanged: (value) {
-                if (value != null) {
-                  widget.onSelectLead(value);
-                  setState(() {
-                    selectedLeadData = value;
-                  });
-                  FocusScope.of(context).unfocus();
-                }
-              },
+                ],
+              ],
             );
           },
         ),

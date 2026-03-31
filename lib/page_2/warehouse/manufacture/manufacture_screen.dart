@@ -43,6 +43,8 @@ class _ManufactureScreenState extends State<ManufactureScreen> {
   bool _hasCreatePermission = false;
   bool _hasUpdatePermission = false;
   bool _hasDeletePermission = false;
+  bool _hasApprovePermission = false;
+  bool _hasUnapprovePermission = false;
   final ApiService _apiService = ApiService();
 
   @override
@@ -57,21 +59,24 @@ class _ManufactureScreenState extends State<ManufactureScreen> {
   // НОВОЕ: Проверка прав доступа
   Future<void> _checkPermissions() async {
     try {
-      final create =
-          await _apiService.hasPermission('manufacture_document.create') ||
-              await _apiService.hasPermission('movement_document.create');
-      final update =
-          await _apiService.hasPermission('manufacture_document.update') ||
-              await _apiService.hasPermission('movement_document.update');
-      final delete =
-          await _apiService.hasPermission('manufacture_document.delete') ||
-              await _apiService.hasPermission('movement_document.delete');
+      final create = await _apiService.hasPermission('manufacture.create') ||
+          await _apiService.hasPermission('manufacture_document.create');
+      final update = await _apiService.hasPermission('manufacture.update') ||
+          await _apiService.hasPermission('manufacture_document.update');
+      final delete = await _apiService.hasPermission('manufacture.delete') ||
+          await _apiService.hasPermission('manufacture_document.delete');
+      final approve = await _apiService.hasPermission('manufacture.approve') ||
+          await _apiService.hasPermission('manufacture_document.approve');
+      final unapprove =
+          await _apiService.hasPermission('manufacture.unapprove');
 
       if (mounted) {
         setState(() {
           _hasCreatePermission = create;
           _hasUpdatePermission = update;
           _hasDeletePermission = delete;
+          _hasApprovePermission = approve;
+          _hasUnapprovePermission = unapprove;
         });
       }
     } catch (e) {
@@ -249,10 +254,12 @@ class _ManufactureScreenState extends State<ManufactureScreen> {
                 ? BlocBuilder<ManufactureBloc, ManufactureState>(
                     builder: (context, state) {
                       if (state is ManufactureLoaded) {
-                        bool showApprove = state.selectedData!.any((doc) =>
-                            doc.approved == 0 && doc.deletedAt == null);
-                        bool showDisapprove = state.selectedData!.any((doc) =>
-                            doc.approved == 1 && doc.deletedAt == null);
+                        bool showApprove = _hasApprovePermission &&
+                            state.selectedData!.any((doc) =>
+                                doc.approved == 0 && doc.deletedAt == null);
+                        bool showDisapprove = _hasUnapprovePermission &&
+                            state.selectedData!.any((doc) =>
+                                doc.approved == 1 && doc.deletedAt == null);
                         // ИЗМЕНЕНО: Показываем кнопку удаления только если есть право
                         bool showDelete = _hasDeletePermission &&
                             state.selectedData!

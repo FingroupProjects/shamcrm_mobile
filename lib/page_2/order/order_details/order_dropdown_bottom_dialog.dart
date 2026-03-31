@@ -142,28 +142,115 @@ Future<void> OrderDropdownBottomSheet(
                                 isSubmittingSave = true;
                               });
 
-                              final success =
-                                  await ApiService().changeOrderStatus(
-                                orderId: order.id,
-                                statusId: selectedStatusId!,
-                                organizationId: order.organizationId,
-                                reasonForRefusalId: refusalData?.reasonId,
-                                reasonForRefusal: refusalData?.comment,
-                              );
+                              try {
+                                final success =
+                                    await ApiService().changeOrderStatus(
+                                  orderId: order.id,
+                                  statusId: selectedStatusId!,
+                                  organizationId: order.organizationId,
+                                  reasonForRefusalId: refusalData?.reasonId,
+                                  reasonForRefusal: refusalData?.comment,
+                                );
 
-                              if (!context.mounted) {
-                                return;
-                              }
+                                if (!context.mounted) {
+                                  return;
+                                }
 
-                              if (!success) {
-                                setState(() {
-                                  isSubmittingSave = false;
-                                });
+                                if (!success) {
+                                  setState(() {
+                                    isSubmittingSave = false;
+                                  });
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        AppLocalizations.of(context)!
+                                            .translate('error_text'),
+                                        style: const TextStyle(
+                                          fontFamily: 'Gilroy',
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w500,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                      behavior: SnackBarBehavior.floating,
+                                      margin: const EdgeInsets.symmetric(
+                                          horizontal: 16, vertical: 8),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      backgroundColor: Colors.red,
+                                      elevation: 3,
+                                      padding: const EdgeInsets.symmetric(
+                                          vertical: 12, horizontal: 16),
+                                      duration: const Duration(seconds: 3),
+                                    ),
+                                  );
+                                  return;
+                                }
+
+                                onSelect(selectedValue, selectedStatusId!);
+
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
                                     content: Text(
-                                      AppLocalizations.of(context)!
-                                          .translate('error_text'),
+                                      AppLocalizations.of(context)!.translate(
+                                          'status_changed_successfully'),
+                                      style: const TextStyle(
+                                        fontFamily: 'Gilroy',
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w500,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                    behavior: SnackBarBehavior.floating,
+                                    margin: const EdgeInsets.symmetric(
+                                        horizontal: 16, vertical: 8),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    backgroundColor: Colors.green,
+                                    elevation: 3,
+                                    padding: const EdgeInsets.symmetric(
+                                        vertical: 12, horizontal: 16),
+                                    duration: const Duration(seconds: 3),
+                                  ),
+                                );
+
+                                context.read<OrderBloc>().add(
+                                      FetchOrderStatuses(forceRefresh: true),
+                                    );
+                                context.read<OrderBloc>().add(
+                                      FetchOrderDetails(order.id),
+                                    );
+
+                                Navigator.pop(context);
+
+                                final newTabIndex = orderStatuses.indexWhere(
+                                  (status) => status.id == selectedStatusId,
+                                );
+                                if (newTabIndex != -1) {
+                                  onTabChange(newTabIndex);
+                                }
+                              } catch (error) {
+                                if (!context.mounted) {
+                                  return;
+                                }
+
+                                setState(() {
+                                  isSubmittingSave = false;
+                                });
+
+                                final errorMessage =
+                                    error is OrderStatusUpdateException
+                                        ? error.message
+                                        : error
+                                            .toString()
+                                            .replaceFirst('Exception: ', '');
+
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      errorMessage,
                                       style: const TextStyle(
                                         fontFamily: 'Gilroy',
                                         fontSize: 16,
@@ -184,52 +271,6 @@ Future<void> OrderDropdownBottomSheet(
                                     duration: const Duration(seconds: 3),
                                   ),
                                 );
-                                return;
-                              }
-
-                              onSelect(selectedValue, selectedStatusId!);
-
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    AppLocalizations.of(context)!
-                                        .translate(
-                                            'status_changed_successfully'),
-                                    style: const TextStyle(
-                                      fontFamily: 'Gilroy',
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w500,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                  behavior: SnackBarBehavior.floating,
-                                  margin: const EdgeInsets.symmetric(
-                                      horizontal: 16, vertical: 8),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  backgroundColor: Colors.green,
-                                  elevation: 3,
-                                  padding: const EdgeInsets.symmetric(
-                                      vertical: 12, horizontal: 16),
-                                  duration: const Duration(seconds: 3),
-                                ),
-                              );
-
-                              context.read<OrderBloc>().add(
-                                    FetchOrderStatuses(forceRefresh: true),
-                                  );
-                              context.read<OrderBloc>().add(
-                                    FetchOrderDetails(order.id),
-                                  );
-
-                              Navigator.pop(context);
-
-                              final newTabIndex = orderStatuses.indexWhere(
-                                (status) => status.id == selectedStatusId,
-                              );
-                              if (newTabIndex != -1) {
-                                onTabChange(newTabIndex);
                               }
                             },
                           ),

@@ -548,6 +548,7 @@ class DocumentGood {
   final int? unitId; // ИЗМЕНЕНО: int? вместо Unit?
   final int? goodVariantId;
   final String? sum;
+  final String? costPrice;
   final Unit? unit;
   final GoodVariant? goodVariant;
   final List<DocumentGoodMaterial>? materials;
@@ -582,6 +583,7 @@ class DocumentGood {
     this.unitId,
     this.goodVariantId,
     this.sum,
+    this.costPrice,
     this.unit,
     this.goodVariant,
     this.materials,
@@ -613,6 +615,8 @@ class DocumentGood {
           : null,
       goodVariantId: parseInt(json['good_variant_id']),
       sum: json['sum'] as String?,
+      costPrice: json['cost_price']?.toString() ??
+          json['cost_price_per_unit']?.toString(),
       unit: unitObj,
       materials: json['materials'] != null
           ? (json['materials'] as List)
@@ -635,6 +639,7 @@ class DocumentGood {
       'attributes': attributes?.map((e) => e.toJson()).toList(),
       'full_name': fullName,
       'unit_id': unitId,
+      'cost_price': costPrice,
       'materials': materials?.map((e) => e.toJson()).toList(),
     };
   }

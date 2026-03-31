@@ -140,6 +140,7 @@ import 'package:crm_task_manager/update_dialog.dart';
 import 'package:crm_task_manager/widgets/native_internet_aware_wrapper_WITH_GAME.dart';
 import 'package:crm_task_manager/widgets/native_internet_monitor_simple.dart';
 import 'package:crm_task_manager/widgets/http_inspector_fab.dart';
+import 'package:crm_task_manager/widgets/in_app_update_corner_indicator.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
@@ -547,8 +548,6 @@ class _MyAppState extends State<MyApp> {
 
 //1
   Future<void> checkForNewVersion(BuildContext context) async {
-    // TODO remove on building ipa or apk files
-    return;
     try {
       final newVersionPlus = NewVersionPlus();
       final status = await newVersionPlus.getVersionStatus();
@@ -558,7 +557,9 @@ class _MyAppState extends State<MyApp> {
       if (!mounted ||
           !context.mounted ||
           status == null ||
-          status.canUpdate == false) return;
+          status.canUpdate == false) {
+        return;
+      }
 
       final localizations = AppLocalizations.of(context);
 
@@ -813,6 +814,7 @@ class _MyAppState extends State<MyApp> {
                 // ← НОВОЕ ИМЯ
                 child: child ?? const SizedBox.shrink(),
               ),
+              const InAppUpdateCornerIndicator(),
               // HTTP Inspector FAB (только в DEBUG режиме)
               if (kDebugMode) const HttpInspectorFab(),
             ],

@@ -150,7 +150,7 @@ class _SupplierReturnDocumentDetailsScreenState
 
     details = [
       {
-            'label':
+        'label':
             '${AppLocalizations.of(context)!.translate('document_number') ?? 'Документ'}:',
         'value': "№${document.docNumber ?? ''}",
       },
@@ -638,7 +638,7 @@ class _SupplierReturnDocumentDetailsScreenState
       title: Transform.translate(
         offset: const Offset(-10, 0),
         child: Text(
-          "${AppLocalizations.of(context)!.translate('view_supplier_return_document') ?? 'Просмотр возврата поставщику'} №${widget.docNumber}",
+          "${AppLocalizations.of(context)!.translate('supplier_return') ?? 'Возврат от поставщика'} №${widget.docNumber}",
           style: const TextStyle(
             fontSize: 20,
             fontFamily: 'Gilroy',

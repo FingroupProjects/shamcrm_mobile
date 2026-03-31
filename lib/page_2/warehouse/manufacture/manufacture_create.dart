@@ -109,8 +109,8 @@ class CreateManufactureDocumentScreenState
   Future<void> _checkApprovePermission() async {
     try {
       final hasPermission =
-          await _apiService.hasPermission('manufacture_document.approve') ||
-              await _apiService.hasPermission('movement_document.approve');
+          await _apiService.hasPermission('manufacture.approve') ||
+              await _apiService.hasPermission('manufacture_document.approve');
       if (mounted) {
         setState(() {
           _hasApprovePermission = hasPermission;
@@ -702,6 +702,18 @@ class CreateManufactureDocumentScreenState
             selectedRecipientStorage: _selectedRecipientStorage,
             hasSenderError: _senderStorageError,
             hasRecipientError: _recipientStorageError,
+            senderLabel:
+                localizations.translate('manufacture_writeoff_storage') ??
+                    'Склад списания',
+            senderHint: localizations
+                    .translate('select_manufacture_writeoff_storage') ??
+                'Выберите склад списания',
+            recipientLabel:
+                localizations.translate('manufacture_income_storage') ??
+                    'Склад прихода',
+            recipientHint:
+                localizations.translate('select_manufacture_income_storage') ??
+                    'Выберите склад прихода',
             onSenderChanged: (value) {
               setState(() {
                 _selectedSenderStorage = value;

@@ -628,7 +628,11 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
       }
     } catch (e) {
       //print('OrderBloc: Ошибка при смене статуса заказа: $e');
-      emit(OrderError('Ошибка смены статуса заказа: $e'));
+      if (e is OrderStatusUpdateException) {
+        emit(OrderError(e.message));
+      } else {
+        emit(OrderError('Ошибка смены статуса заказа: $e'));
+      }
     }
   }
 
@@ -830,7 +834,11 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
             'Не удалось сменить статус заказа: сервер вернул ошибку'));
       }
     } catch (e) {
-      emit(OrderError('Ошибка смены статуса заказа: $e'));
+      if (e is OrderStatusUpdateException) {
+        emit(OrderError(e.message));
+      } else {
+        emit(OrderError('Ошибка смены статуса заказа: $e'));
+      }
     }
   }
 

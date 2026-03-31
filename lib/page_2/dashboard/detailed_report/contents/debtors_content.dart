@@ -14,8 +14,39 @@ class DebtorsContent extends StatefulWidget {
 }
 
 class _DebtorsContentState extends State<DebtorsContent> {
+  final ScrollController _scrollController = ScrollController();
   bool isSelectionMode = false;
   Set<int> selectedDebtors = {};
+  bool _isLoadingMore = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (!_scrollController.hasClients || _isLoadingMore) return;
+
+    final maxScroll = _scrollController.position.maxScrollExtent;
+    final currentScroll = _scrollController.offset;
+    if (currentScroll < maxScroll * 0.9) return;
+
+    final state = context.read<SalesDashboardDebtorsBloc>().state;
+    if (state is SalesDashboardDebtorsLoaded && !state.hasReachedMax) {
+      setState(() => _isLoadingMore = true);
+      context.read<SalesDashboardDebtorsBloc>().add(
+            LoadDebtorsReport(page: state.currentPage + 1),
+          );
+    }
+  }
 
   void _onDebtorTap(Debtor debtor) {
     if (isSelectionMode) {
@@ -43,8 +74,21 @@ class _DebtorsContentState extends State<DebtorsContent> {
         ? ListView.separated(
             separatorBuilder: (context, index) => SizedBox(height: 12),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-            itemCount: data.result!.debtors.length,
+            controller: _scrollController,
+            physics: const AlwaysScrollableScrollPhysics(),
+            itemCount: data.result!.debtors.length + (_isLoadingMore ? 1 : 0),
             itemBuilder: (context, index) {
+              if (index >= data.result!.debtors.length) {
+                return const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 16),
+                  child: Center(
+                    child: CircularProgressIndicator(
+                      color: Color(0xff1E2E52),
+                    ),
+                  ),
+                );
+              }
+
               final debtor = data.result!.debtors[index];
               return DebtorsCard(
                 debtor: debtor,
@@ -60,7 +104,7 @@ class _DebtorsContentState extends State<DebtorsContent> {
 
   Widget _buildEmptyState() {
     final localizations = AppLocalizations.of(context)!;
-    
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
@@ -99,7 +143,7 @@ class _DebtorsContentState extends State<DebtorsContent> {
 
   Widget _buildLoadingState() {
     final localizations = AppLocalizations.of(context)!;
-    
+
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -123,7 +167,7 @@ class _DebtorsContentState extends State<DebtorsContent> {
 
   Widget _buildErrorState(String message) {
     final localizations = AppLocalizations.of(context)!;
-    
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
@@ -169,7 +213,9 @@ class _DebtorsContentState extends State<DebtorsContent> {
               SizedBox(height: 16),
               ElevatedButton(
                 onPressed: () {
-                  context.read<SalesDashboardDebtorsBloc>().add(const LoadDebtorsReport());
+                  context
+                      .read<SalesDashboardDebtorsBloc>()
+                      .add(const LoadDebtorsReport());
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Color(0xff1E2E52),
@@ -202,8 +248,10 @@ class _DebtorsContentState extends State<DebtorsContent> {
         if (state is SalesDashboardDebtorsLoading) {
           return _buildLoadingState();
         } else if (state is SalesDashboardDebtorsError) {
+          _isLoadingMore = false;
           return _buildErrorState(state.message);
         } else if (state is SalesDashboardDebtorsLoaded) {
+          _isLoadingMore = false;
           if (state.result.result == null) {
             return _buildEmptyState();
           }

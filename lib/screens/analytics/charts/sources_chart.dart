@@ -73,7 +73,9 @@ class _SourcesChartState extends State<SourcesChart> {
 
   Color _colorForSource(String name) {
     final key = name.toLowerCase();
-    if (key.contains('whatsapp')) return const Color(0xff25D366);
+    if (key.contains('whatsapp') || key.contains('green_api')) {
+      return const Color(0xff25D366);
+    }
     if (key.contains('инстаграм') || key.contains('instagram')) {
       return const Color(0xffE1306C);
     }

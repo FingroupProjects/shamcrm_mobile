@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/models/source_model.dart';
 import 'dart:convert';
 
 class SourceData {
@@ -18,10 +19,14 @@ class SourceData {
   factory SourceData.fromJson(Map<String, dynamic> json) {
     return SourceData(
       id: json["id"],
-      name: json["name"],
-      createdAt: json["created_at"] != null ? DateTime.parse(json["created_at"]) : null,
-      updatedAt: json["updated_at"] != null ? DateTime.parse(json["updated_at"]) : null,
-      isDefault: json["default"] == true,  // Ensure it's a boolean value
+      name: normalizeSourceName(json["name"]?.toString()),
+      createdAt: json["created_at"] != null
+          ? DateTime.parse(json["created_at"])
+          : null,
+      updatedAt: json["updated_at"] != null
+          ? DateTime.parse(json["updated_at"])
+          : null,
+      isDefault: json["default"] == true, // Ensure it's a boolean value
     );
   }
 
@@ -39,6 +44,8 @@ class SourceData {
   }
 }
 
-List<SourceData> sourcesDataFromJson(String str) => List<SourceData>.from(json.decode(str).map((x) => SourceData.fromJson(x)));
+List<SourceData> sourcesDataFromJson(String str) =>
+    List<SourceData>.from(json.decode(str).map((x) => SourceData.fromJson(x)));
 
-String sourcesDataToJson(List<SourceData> data) => json.encode(List<dynamic>.from(data.map((x) => x.toJson())));
+String sourcesDataToJson(List<SourceData> data) =>
+    json.encode(List<dynamic>.from(data.map((x) => x.toJson())));

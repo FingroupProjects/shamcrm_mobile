@@ -14,8 +14,39 @@ class CreditorsContent extends StatefulWidget {
 }
 
 class _CreditorsContentState extends State<CreditorsContent> {
+  final ScrollController _scrollController = ScrollController();
   bool isSelectionMode = false;
   Set<int> selectedCreditors = {};
+  bool _isLoadingMore = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (!_scrollController.hasClients || _isLoadingMore) return;
+
+    final maxScroll = _scrollController.position.maxScrollExtent;
+    final currentScroll = _scrollController.offset;
+    if (currentScroll < maxScroll * 0.9) return;
+
+    final state = context.read<SalesDashboardCreditorsBloc>().state;
+    if (state is SalesDashboardCreditorsLoaded && !state.hasReachedMax) {
+      setState(() => _isLoadingMore = true);
+      context.read<SalesDashboardCreditorsBloc>().add(
+            LoadCreditorsReport(page: state.currentPage + 1),
+          );
+    }
+  }
 
   void _onCreditorTap(Creditor creditor) {
     if (isSelectionMode) {
@@ -41,26 +72,39 @@ class _CreditorsContentState extends State<CreditorsContent> {
   Widget _buildCreditorsList(CreditorsResponse data) {
     return data.result?.creditors.isNotEmpty == true
         ? ListView.separated(
-      separatorBuilder: (context, index) => SizedBox(height: 12),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-      itemCount: data.result!.creditors.length,
-      itemBuilder: (context, index) {
-        final creditor = data.result!.creditors[index];
-        return CreditorCard(
-          creditor: creditor,
-          onClick: _onCreditorTap,
-          onLongPress: _onCreditorLongPress,
-          isSelectionMode: isSelectionMode,
-          isSelected: selectedCreditors.contains(creditor.id),
-        );
-      },
-    )
+            separatorBuilder: (context, index) => SizedBox(height: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            controller: _scrollController,
+            physics: const AlwaysScrollableScrollPhysics(),
+            itemCount: data.result!.creditors.length + (_isLoadingMore ? 1 : 0),
+            itemBuilder: (context, index) {
+              if (index >= data.result!.creditors.length) {
+                return const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 16),
+                  child: Center(
+                    child: CircularProgressIndicator(
+                      color: Color(0xff1E2E52),
+                    ),
+                  ),
+                );
+              }
+
+              final creditor = data.result!.creditors[index];
+              return CreditorCard(
+                creditor: creditor,
+                onClick: _onCreditorTap,
+                onLongPress: _onCreditorLongPress,
+                isSelectionMode: isSelectionMode,
+                isSelected: selectedCreditors.contains(creditor.id),
+              );
+            },
+          )
         : _buildEmptyState();
   }
 
   Widget _buildEmptyState() {
     final localizations = AppLocalizations.of(context)!;
-    
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
@@ -99,7 +143,7 @@ class _CreditorsContentState extends State<CreditorsContent> {
 
   Widget _buildLoadingState() {
     final localizations = AppLocalizations.of(context)!;
-    
+
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -123,7 +167,7 @@ class _CreditorsContentState extends State<CreditorsContent> {
 
   Widget _buildErrorState(String message) {
     final localizations = AppLocalizations.of(context)!;
-    
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
@@ -169,7 +213,9 @@ class _CreditorsContentState extends State<CreditorsContent> {
               SizedBox(height: 16),
               ElevatedButton(
                 onPressed: () {
-                  context.read<SalesDashboardCreditorsBloc>().add(const LoadCreditorsReport());
+                  context
+                      .read<SalesDashboardCreditorsBloc>()
+                      .add(const LoadCreditorsReport());
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Color(0xff1E2E52),
@@ -197,13 +243,16 @@ class _CreditorsContentState extends State<CreditorsContent> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<SalesDashboardCreditorsBloc, SalesDashboardCreditorsState>(
+    return BlocBuilder<SalesDashboardCreditorsBloc,
+        SalesDashboardCreditorsState>(
       builder: (context, state) {
         if (state is SalesDashboardCreditorsLoading) {
           return _buildLoadingState();
         } else if (state is SalesDashboardCreditorsError) {
+          _isLoadingMore = false;
           return _buildErrorState(state.message);
         } else if (state is SalesDashboardCreditorsLoaded) {
+          _isLoadingMore = false;
           if (state.result.result == null) {
             return _buildEmptyState();
           }

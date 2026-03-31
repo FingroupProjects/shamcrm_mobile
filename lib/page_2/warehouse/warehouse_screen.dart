@@ -75,10 +75,10 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
       _hasMovementDocument =
           await _apiService.hasPermission('movement_document.read');
       _hasManufactureDocument =
-          await _apiService.hasPermission('manufacture_document.read');
+          await _apiService.hasPermission('manufacture.read') ||
+              await _apiService.hasPermission('manufacture_document.read');
       _hasManufactureDocument =
-          (_hasManufactureDocument || _hasMovementDocument) &&
-              _hasManufactureEnabled;
+          _hasManufactureDocument && _hasManufactureEnabled;
       _hasWriteOffDocument =
           await _apiService.hasPermission('write_off_document.read');
       _hasExpenseDocument =

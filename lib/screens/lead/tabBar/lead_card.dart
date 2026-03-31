@@ -30,8 +30,10 @@ class LeadCard extends StatefulWidget {
   @override
   _LeadCardState createState() => _LeadCardState();
 }
+
 //928886524
-class _LeadCardState extends State<LeadCard> with SingleTickerProviderStateMixin {
+class _LeadCardState extends State<LeadCard>
+    with SingleTickerProviderStateMixin {
   late String dropdownValue;
   late int statusId;
   late AnimationController _animationController;
@@ -61,39 +63,39 @@ class _LeadCardState extends State<LeadCard> with SingleTickerProviderStateMixin
   }
 
   Widget _buildDealCount(String statusColor, int count) {
-  if (count <= 0) {
+    if (count <= 0) {
+      return Container(
+        width: 30,
+        height: 30,
+      );
+    }
+
+    // Преобразуем HEX-цвет в Color
+    Color backgroundColor = _hexToColor(statusColor);
+
     return Container(
-      width: 30,
-      height: 30,
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        shape: BoxShape.circle,
+      ),
+      child: Text(
+        '$count',
+        style: const TextStyle(
+          fontSize: 12,
+          fontFamily: 'Gilroy',
+          fontWeight: FontWeight.w600,
+          color: Colors.white,
+        ),
+      ),
     );
   }
 
-  // Преобразуем HEX-цвет в Color
-  Color backgroundColor = _hexToColor(statusColor);
-
-  return Container(
-    padding: const EdgeInsets.all(8),
-    decoration: BoxDecoration(
-      color: backgroundColor,
-      shape: BoxShape.circle,
-    ),
-    child: Text(
-      '$count',
-      style: const TextStyle(
-        fontSize: 12,
-        fontFamily: 'Gilroy',
-        fontWeight: FontWeight.w600,
-        color: Colors.white,
-      ),
-    ),
-  );
-}
-
 // Вспомогательная функция для преобразования HEX в Color
-Color _hexToColor(String hexColor) {
-  final hexCode = hexColor.replaceAll('#', '');
-  return Color(int.parse('FF$hexCode', radix: 16));
-}
+  Color _hexToColor(String hexColor) {
+    final hexCode = hexColor.replaceAll('#', '');
+    return Color(int.parse('FF$hexCode', radix: 16));
+  }
 
   String formatDate(String dateString) {
     DateTime dateTime = DateTime.parse(dateString);
@@ -104,6 +106,7 @@ Color _hexToColor(String hexColor) {
     'Телеграм Аккаунт': 'assets/icons/leads/telegram.png',
     'Телеграм Бот': 'assets/icons/leads/telegram.png',
     'WhatsApp': 'assets/icons/leads/whatsapp.png',
+    'green_api': 'assets/icons/leads/whatsapp.png',
     'facebook': 'assets/icons/leads/messenger.png',
     'Инстаграм': 'assets/icons/leads/instagram.png',
     'Телефон': 'assets/icons/leads/telefon.png',
@@ -116,15 +119,18 @@ Color _hexToColor(String hexColor) {
     'Телеграм Аккаунт': Color(0xFF0088CC), // Telegram голубой
     'Телеграм Бот': Color(0xFF0088CC), // Telegram голубой
     'WhatsApp': Color(0xFF25D366), // WhatsApp зеленый
+    'green_api': Color(0xFF25D366),
     'Facebook': Color(0xFF4267B2), // Facebook синий
     'Инстаграм': Color(0xFFE1306C), // Instagram розово-красный
     'Телефон': Color(0xFF4CAF50), // Зеленый для телефона
     'Электронная почта': Color(0xFFFF5722), // Оранжево-красный для почты
-    'Messenger': Color.fromARGB(255, 217, 31, 205), // Messenger фиолетово-синий (соответствует цвету иконки)
+    'Messenger': Color.fromARGB(255, 217, 31,
+        205), // Messenger фиолетово-синий (соответствует цвету иконки)
   };
 
   Color getBorderColor(String? sourceName) {
-    return sourceColors[sourceName] ?? Color(0xFFB0BEC5); // Универсальный серый по умолчанию
+    return sourceColors[sourceName] ??
+        Color(0xFFB0BEC5); // Универсальный серый по умолчанию
   }
 
   Widget _buildHourglassIcon() {
@@ -212,7 +218,8 @@ Color _hexToColor(String hexColor) {
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: borderColor.withOpacity(_fadeAnimation.value * 0.3),
+                        color:
+                            borderColor.withOpacity(_fadeAnimation.value * 0.3),
                         blurRadius: 6,
                         spreadRadius: 1,
                       ),
@@ -257,7 +264,7 @@ Color _hexToColor(String hexColor) {
                                 DropdownBottomSheet(
                                   context,
                                   dropdownValue,
-                                      (String newValue, int newStatusId) {
+                                  (String newValue, int newStatusId) {
                                     setState(() {
                                       dropdownValue = newValue;
                                       statusId = newStatusId;
@@ -340,29 +347,31 @@ Color _hexToColor(String hexColor) {
                         ),
                       ],
                     ),
-                   // Заменяем секцию с кружочками в Column внутри build
-Row(
-  mainAxisAlignment: MainAxisAlignment.start,
-  children: [
-    // Проверяем, есть ли mainPageDeals и отображаем кружочки
-    if (widget.lead.mainPageDeals != null && widget.lead.mainPageDeals!.isNotEmpty)
-      ...widget.lead.mainPageDeals!.map((deal) {
-        return Row(
-          children: [
-            _buildDealCount(deal.statusColor, deal.count),
-            if (deal != widget.lead.mainPageDeals!.last) const SizedBox(width: 2),
-          ],
-        );
-      }).toList(),
-    // Если mainPageDeals пустой, показываем пустые кружочки для обратной совместимости
-    if (widget.lead.mainPageDeals == null || widget.lead.mainPageDeals!.isEmpty)
-      ...[
-        _buildDealCount('#000000', 0), // Пустой кружочек
-        _buildDealCount('#000000', 0), // Пустой кружочек
-        _buildDealCount('#000000', 0), // Пустой кружочек
-      ],
-  ],
-),
+                    // Заменяем секцию с кружочками в Column внутри build
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.start,
+                      children: [
+                        // Проверяем, есть ли mainPageDeals и отображаем кружочки
+                        if (widget.lead.mainPageDeals != null &&
+                            widget.lead.mainPageDeals!.isNotEmpty)
+                          ...widget.lead.mainPageDeals!.map((deal) {
+                            return Row(
+                              children: [
+                                _buildDealCount(deal.statusColor, deal.count),
+                                if (deal != widget.lead.mainPageDeals!.last)
+                                  const SizedBox(width: 2),
+                              ],
+                            );
+                          }).toList(),
+                        // Если mainPageDeals пустой, показываем пустые кружочки для обратной совместимости
+                        if (widget.lead.mainPageDeals == null ||
+                            widget.lead.mainPageDeals!.isEmpty) ...[
+                          _buildDealCount('#000000', 0), // Пустой кружочек
+                          _buildDealCount('#000000', 0), // Пустой кружочек
+                          _buildDealCount('#000000', 0), // Пустой кружочек
+                        ],
+                      ],
+                    ),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -389,30 +398,30 @@ Row(
                             ),
                           ],
                         ),
-                          const SizedBox(width: 12),
-                   Flexible(
-      child: Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: Color(0xFFE9EDF5),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(
-                            widget.lead.manager?.name ??
-                                AppLocalizations.of(context)!
-                                    .translate('system_text'),
-                            style: const TextStyle(
-                              fontSize: 12,
-                              fontFamily: 'Gilroy',
-                              fontWeight: FontWeight.w500,
-                              color: Color(0xff99A4BA),
+                        const SizedBox(width: 12),
+                        Flexible(
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: Color(0xFFE9EDF5),
+                              borderRadius: BorderRadius.circular(4),
                             ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                            child: Text(
+                              widget.lead.manager?.name ??
+                                  AppLocalizations.of(context)!
+                                      .translate('system_text'),
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontFamily: 'Gilroy',
+                                fontWeight: FontWeight.w500,
+                                color: Color(0xff99A4BA),
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
                         ),
-                   ),
                       ],
                     ),
                   ],
