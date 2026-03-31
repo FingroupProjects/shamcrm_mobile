@@ -359,7 +359,7 @@ class MessagingCubit extends Cubit<MessagingState> {
     _editingMessage = null;
     final currentState = state;
     if (currentState is EditingMessageState) {
-      _emitCollection(currentState.collection);
+      _emitBaseCollectionState(currentState.collection);
     }
   }
 
@@ -397,7 +397,7 @@ class MessagingCubit extends Cubit<MessagingState> {
   void clearReplyMessage() {
     final currentState = state;
     if (currentState is ReplyingToMessageState) {
-      _emitCollection(currentState.collection);
+      _emitBaseCollectionState(currentState.collection);
     }
   }
 
@@ -688,6 +688,23 @@ class MessagingCubit extends Cubit<MessagingState> {
       );
       return;
     }
+
+    if (normalizedCollection.pinnedMessages.isNotEmpty) {
+      emit(PinnedMessagesState(collection: normalizedCollection));
+      return;
+    }
+
+    emit(MessagesLoadedState(collection: normalizedCollection));
+  }
+
+  void _emitBaseCollectionState(MessagesCollection collection) {
+    final normalizedCollection = collection.copyWith(
+      messages: _normalizeMessages(collection.messages),
+      pinnedMessages: _buildPinnedMessages(
+        collection.messages,
+        previousPinnedMessages: collection.pinnedMessages,
+      ),
+    );
 
     if (normalizedCollection.pinnedMessages.isNotEmpty) {
       emit(PinnedMessagesState(collection: normalizedCollection));

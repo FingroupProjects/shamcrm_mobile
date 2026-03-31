@@ -120,6 +120,11 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
   final MessageReactionApiService _reactionApi = MessageReactionApiService();
   bool _isNearBottom = true;
   bool _isLoadingOlderFromScroll = false;
+  final Set<int> _pendingScrollButtonMessageIds = <int>{};
+
+  int get _pendingNewMessagesCount => _pendingScrollButtonMessageIds.length;
+
+  bool get _shouldShowScrollToBottomButton => !_isNearBottom;
 
   bool get _canUseReactionsInCurrentChat {
     final isLeadWith24hRestriction =
@@ -815,7 +820,16 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
     final isNearBottomNow = positions.any(
       (position) => position.index <= 1 && position.itemTrailingEdge > 0,
     );
+    final bottomStateChanged = _isNearBottom != isNearBottomNow;
     _isNearBottom = isNearBottomNow;
+
+    if (_isNearBottom && _pendingScrollButtonMessageIds.isNotEmpty) {
+      setState(() {
+        _pendingScrollButtonMessageIds.clear();
+      });
+    } else if (bottomStateChanged) {
+      setState(() {});
+    }
 
     final currentState = context.read<MessagingCubit>().state;
     if (currentState is! MessagesCollectionState) {
@@ -868,6 +882,123 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
       alignment: 0,
       duration: const Duration(milliseconds: 220),
       curve: Curves.easeOut,
+    );
+  }
+
+  void _registerIncomingMessageForScrollButton(Message message) {
+    if (message.isMyMessage || _isNearBottom || !mounted) {
+      return;
+    }
+
+    final wasAdded = _pendingScrollButtonMessageIds.add(message.id);
+    if (wasAdded) {
+      setState(() {});
+    }
+  }
+
+  Future<void> _handleScrollToBottomTap() async {
+    if (!mounted) return;
+
+    setState(() {
+      _pendingScrollButtonMessageIds.clear();
+    });
+
+    await _scrollToBottom(force: true);
+    _markMessagesAsRead();
+  }
+
+  Widget _buildScrollToBottomButton() {
+    return AnimatedSlide(
+      duration: const Duration(milliseconds: 180),
+      curve: Curves.easeOut,
+      offset:
+          _shouldShowScrollToBottomButton ? Offset.zero : const Offset(0, 0.25),
+      child: AnimatedOpacity(
+        duration: const Duration(milliseconds: 180),
+        opacity: _shouldShowScrollToBottomButton ? 1 : 0,
+        child: IgnorePointer(
+          ignoring: !_shouldShowScrollToBottomButton,
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: _handleScrollToBottomTap,
+              borderRadius: BorderRadius.circular(18),
+              child: Ink(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      Color(0xffF8FBFF),
+                      Color(0xffE5EEFF),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(
+                    color: const Color(0xffD6E2F5),
+                    width: 1,
+                  ),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Color(0x1A1E2E52),
+                      blurRadius: 16,
+                      offset: Offset(0, 8),
+                    ),
+                  ],
+                ),
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  alignment: Alignment.center,
+                  children: [
+                    const Icon(
+                      Icons.keyboard_arrow_down_rounded,
+                      color: Color(0xff1E2E52),
+                      size: 28,
+                    ),
+                    if (_pendingNewMessagesCount > 0)
+                      Positioned(
+                        top: -3,
+                        right: -3,
+                        child: Container(
+                          constraints: const BoxConstraints(
+                            minWidth: 20,
+                            minHeight: 20,
+                          ),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(0xff4759FF),
+                            borderRadius: BorderRadius.circular(999),
+                            border: Border.all(
+                              color: Colors.white,
+                              width: 2,
+                            ),
+                          ),
+                          child: Text(
+                            _pendingNewMessagesCount > 99
+                                ? '99+'
+                                : '$_pendingNewMessagesCount',
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              fontFamily: 'Gilroy',
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 
@@ -2488,6 +2619,11 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
                     color: Colors.black.withOpacity(0.3),
                   ),
                 ),
+              Positioned(
+                right: 14,
+                bottom: 18,
+                child: _buildScrollToBottomButton(),
+              ),
             ],
           );
         }
@@ -2992,6 +3128,8 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
           if (!msg.isMyMessage) {
             _markMessagesAsRead();
           }
+        } else {
+          _registerIncomingMessageForScrollButton(msg);
         }
         debugPrint('✅ [SOCKET] chat.message processing FINISHED');
         debugPrint(
@@ -3311,6 +3449,8 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
                     if (!isMyMessage) {
                       _markMessagesAsRead();
                     }
+                  } else {
+                    _registerIncomingMessageForScrollButton(newMessage);
                   }
                 }
 

@@ -13,6 +13,7 @@ class IntegrationListDialog extends StatelessWidget {
   final int leadId;
   final String leadName;
   final bool canSendMessage;
+  final String initialChannelName;
 
   const IntegrationListDialog({
     Key? key,
@@ -20,12 +21,13 @@ class IntegrationListDialog extends StatelessWidget {
     required this.leadId,
     required this.leadName,
     required this.canSendMessage,
+    required this.initialChannelName,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     //print('IntegrationListDialog: Building with ${integrations.length} integrations: $integrations');
-    
+
     // Если только одна интеграция, автоматически переходим в чат
     if (integrations.length == 1) {
       //print('IntegrationListDialog: Single integration found, navigating to chat ID: ${integrations[0]['id']}');
@@ -61,7 +63,8 @@ class IntegrationListDialog extends StatelessWidget {
             child: integrations.isEmpty
                 ? Center(
                     child: Text(
-                      AppLocalizations.of(context)!.translate('no_integrations'),
+                      AppLocalizations.of(context)!
+                          .translate('no_integrations'),
                       style: TextStyle(
                         color: Color(0xff1E2E52),
                         fontSize: 16,
@@ -76,7 +79,8 @@ class IntegrationListDialog extends StatelessWidget {
                       final integration = integrations[index];
                       final username = integration['username'].isNotEmpty
                           ? integration['username']
-                          : AppLocalizations.of(context)!.translate('no_username');
+                          : AppLocalizations.of(context)!
+                              .translate('no_username');
                       //print('IntegrationListDialog: Building integration item $index - ID: ${integration['id']}, Username: $username');
                       return ListTile(
                         title: Text(
@@ -90,7 +94,8 @@ class IntegrationListDialog extends StatelessWidget {
                         ),
                         onTap: () {
                           //print('IntegrationListDialog: Integration tapped - ID: ${integration['id']}, Username: $username');
-                          navigateToChatScreen(context, integration['id'], canSendMessage);
+                          navigateToChatScreen(
+                              context, integration['id'], canSendMessage);
                         },
                       );
                     },
@@ -113,7 +118,8 @@ class IntegrationListDialog extends StatelessWidget {
     );
   }
 
-  void navigateToChatScreen(BuildContext context, int chatId, bool canSendMessage) {
+  void navigateToChatScreen(
+      BuildContext context, int chatId, bool canSendMessage) {
     //print('IntegrationListDialog: Navigating to chat screen with ID: $chatId, canSendMessage: $canSendMessage');
     Navigator.pop(context);
     navigatorKey.currentState?.push(
@@ -139,6 +145,7 @@ class IntegrationListDialog extends StatelessWidget {
             chatId: chatId,
             endPointInTab: 'lead',
             canSendMessage: canSendMessage,
+            initialChannelName: initialChannelName,
           ),
         ),
       ),

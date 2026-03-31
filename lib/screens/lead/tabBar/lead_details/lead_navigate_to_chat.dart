@@ -234,9 +234,11 @@ class _LeadNavigateToChatDialogState extends State<LeadNavigateToChat> {
                                 if (chatsForChannel.length == 1) {
                                   //print('LeadNavigateToChat: Single chat found, navigating to chat ID: ${chatsForChannel[0].id}');
                                   navigateToScreen(
-                                      context,
-                                      chatsForChannel[0].id,
-                                      chatsForChannel[0].canSendMessage);
+                                    context,
+                                    chatsForChannel[0].id,
+                                    chatsForChannel[0].canSendMessage,
+                                    chatsForChannel[0].channel.name,
+                                  );
                                 } else {
                                   //print('LeadNavigateToChat: Multiple chats found, opening IntegrationListDialog');
                                   final integrations =
@@ -255,6 +257,7 @@ class _LeadNavigateToChatDialogState extends State<LeadNavigateToChat> {
                                     return {
                                       'id': chat.id,
                                       'username': username,
+                                      'channel_name': chat.channel.name,
                                     };
                                   }).toList();
                                   //print('LeadNavigateToChat: Integrations for dialog: $integrations');
@@ -269,6 +272,7 @@ class _LeadNavigateToChatDialogState extends State<LeadNavigateToChat> {
                                         leadName: widget.leadName,
                                         canSendMessage:
                                             chatsForChannel[0].canSendMessage,
+                                        initialChannelName: channelName,
                                       );
                                     },
                                   );
@@ -315,7 +319,12 @@ class _LeadNavigateToChatDialogState extends State<LeadNavigateToChat> {
     );
   }
 
-  void navigateToScreen(BuildContext context, int id, bool canSendMessage) {
+  void navigateToScreen(
+    BuildContext context,
+    int id,
+    bool canSendMessage,
+    String initialChannelName,
+  ) {
     //print('LeadNavigateToChat: Navigating to chat screen with ID: $id, canSendMessage: $canSendMessage');
     Navigator.pop(context);
     navigatorKey.currentState?.push(
@@ -341,6 +350,7 @@ class _LeadNavigateToChatDialogState extends State<LeadNavigateToChat> {
             chatId: id,
             endPointInTab: 'lead',
             canSendMessage: canSendMessage,
+            initialChannelName: initialChannelName,
           ),
         ),
       ),
