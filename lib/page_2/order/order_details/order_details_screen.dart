@@ -613,11 +613,11 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
           create: (context) => OrderHistoryBloc(context.read<ApiService>()),
         ),
       ],
-      child: WillPopScope(
-        onWillPop: () async {
-          // Передаем результат редактирования при закрытии экрана
+      child: PopScope(
+        canPop: false,
+        onPopInvokedWithResult: (didPop, result) {
+          if (didPop) return;
           Navigator.pop(context, _buildNavigationResult());
-          return false;
         },
         child: BlocBuilder<OrderBloc, OrderState>(
           builder: (context, state) {

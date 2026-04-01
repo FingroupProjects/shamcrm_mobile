@@ -7,6 +7,7 @@ import 'package:crm_task_manager/offline/core/offline_module.dart';
 import 'package:crm_task_manager/offline/core/offline_runtime.dart';
 import 'package:crm_task_manager/offline/core/request_priority.dart';
 import 'package:crm_task_manager/screens/task/task_cache.dart';
+import 'package:crm_task_manager/api/service/api_service.dart' as api_service;
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'task_event.dart';
@@ -146,7 +147,8 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
         _currentDirectoryValues = null;
 
         // ОПТИМИЗАЦИЯ: Загружаем статусы с сервера с timeout
-        response = await apiService.getTaskStatuses().timeout(
+        api_service.ApiService.clearAnalyticsResponseCache();
+        response = await apiService.getTaskStatuses(bypassCache: true).timeout(
           Duration(seconds: 15),
           onTimeout: () {
             throw TimeoutException(
@@ -232,7 +234,9 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
         }
 
         // ОПТИМИЗАЦИЯ: ВСЕГДА загружаем с009 API для получения актуальных счётчиков с timeout
-        response = await apiService.getTaskStatuses().timeout(
+        response = await apiService.getTaskStatuses(
+          bypassCache: event.forceRefresh,
+        ).timeout(
           Duration(seconds: 15),
           onTimeout: () async {
             // При timeout возвращаем кэшированные данные
@@ -434,9 +438,22 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
               debugPrint(
                   '✅ TaskBloc: Cached ${tasks.length} tasks for status ${event.statusId}');
             }
-          } else if (kDebugMode) {
-            debugPrint(
-                '⚠️ TaskBloc: API returned empty list, keeping cached data');
+          } else {
+            final int? realTotalCount = _taskCounts[event.statusId];
+
+            if ((realTotalCount ?? 0) == 0) {
+              tasks = <Task>[];
+              hasCachedData = false;
+              await TaskCache.clearTasksForStatus(event.statusId);
+
+              if (kDebugMode) {
+                debugPrint(
+                    '✅ TaskBloc: API returned empty list and count=0, clearing stale cache for status ${event.statusId}');
+              }
+            } else if (kDebugMode) {
+              debugPrint(
+                  '⚠️ TaskBloc: API returned empty list, keeping cached data');
+            }
           }
         } catch (e) {
           if (kDebugMode) {

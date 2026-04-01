@@ -194,6 +194,15 @@ class _MyTaskDetailsScreenState extends State<MyTaskDetailsScreen> {
     };
   }
 
+  Future<bool> _handleBackNavigation() async {
+    if (!mounted) return false;
+    context.read<CalendarBloc>().add(FetchCalendarEvents(
+        widget.initialDate?.month ?? DateTime.now().month,
+        widget.initialDate?.year ?? DateTime.now().year));
+    Navigator.pop(context, _buildNavigationResult());
+    return false;
+  }
+
   void _refreshMyTaskView() {
     if (currentMyTask == null) return;
     final taskId = currentMyTask!.id;
@@ -576,8 +585,14 @@ class _MyTaskDetailsScreenState extends State<MyTaskDetailsScreen> {
           },
         ),
       ],
-      child: BlocBuilder<MyTaskByIdBloc, MyTaskByIdState>(
-        builder: (context, state) {
+      child: PopScope(
+        canPop: false,
+        onPopInvokedWithResult: (didPop, result) async {
+          if (didPop) return;
+          await _handleBackNavigation();
+        },
+        child: BlocBuilder<MyTaskByIdBloc, MyTaskByIdState>(
+          builder: (context, state) {
           if (state is MyTaskByIdLoading) {
             return Scaffold(
               body: Center(
@@ -634,7 +649,8 @@ class _MyTaskDetailsScreenState extends State<MyTaskDetailsScreen> {
           return Scaffold(
             body: Center(child: Text('')),
           );
-        },
+          },
+        ),
       ),
     );
   }
@@ -657,12 +673,7 @@ class _MyTaskDetailsScreenState extends State<MyTaskDetailsScreen> {
               width: 24,
               height: 24,
             ),
-            onPressed: () {
-              context.read<CalendarBloc>().add(FetchCalendarEvents(
-                  widget.initialDate?.month ?? DateTime.now().month,
-                  widget.initialDate?.year ?? DateTime.now().year));
-              Navigator.pop(context, _buildNavigationResult());
-            },
+            onPressed: () => _handleBackNavigation(),
           ),
         ),
       ),
@@ -713,6 +724,9 @@ class _MyTaskDetailsScreenState extends State<MyTaskDetailsScreen> {
                   );
 
                   if (shouldUpdate == true) {
+                    setState(() {
+                      _statusChangedFromDetails = true;
+                    });
                     context
                         .read<MyTaskByIdBloc>()
                         .add(FetchMyTaskByIdEvent(taskId: currentMyTask!.id));

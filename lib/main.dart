@@ -164,12 +164,12 @@ final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
 void main() async {
   try {
     WidgetsFlutterBinding.ensureInitialized();
-    await OfflineBootstrap.initialize();
-
-    await _initializeFirebase();
 
     final apiService = ApiService();
     final authService = AuthService();
+
+    await _safeInitializeOfflineRuntime();
+    await _safeInitializeFirebase();
 
     final sessionValidation = await _validateApplicationSession(apiService);
 
@@ -183,34 +183,16 @@ void main() async {
       isDomainChecked = await apiService.isDomainChecked();
 
       if (isDomainChecked) {
-        await apiService.initialize();
-        CoreOutboxExecutors.register(apiService);
+        await _safeInitializeApiService(apiService);
+        _safeRegisterOutboxExecutors(apiService);
       }
     } else {
       await _clearAllApplicationData(apiService, authService);
     }
 
-    RemoteMessage? initialMessage;
-    try {
-      if (Firebase.apps.isNotEmpty) {
-        initialMessage = await FirebaseMessaging.instance.getInitialMessage();
-      }
-    } catch (e) {
-      //print('main: Ошибка получения initial message: $e');
-    }
-
-    SystemChrome.setSystemUIOverlayStyle(
-      const SystemUiOverlayStyle(
-        statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.dark,
-        systemNavigationBarColor: Colors.white,
-      ),
-    );
-
-    final String? savedLanguageCode = await LanguageManager.getLanguage();
-    final Locale savedLocale = savedLanguageCode != null
-        ? Locale(savedLanguageCode)
-        : const Locale('ru');
+    final initialMessage = await _safeLoadInitialMessage();
+    _safeConfigureSystemUi();
+    final savedLocale = await _safeLoadLocale();
 
     runApp(MyApp(
       apiService: apiService,
@@ -227,6 +209,84 @@ void main() async {
     debugPrint('main: startup stackTrace: $stackTrace');
     runApp(ErrorApp(error: e.toString()));
   }
+}
+
+Future<void> _safeInitializeOfflineRuntime() async {
+  try {
+    await OfflineBootstrap.initialize();
+  } catch (e, stackTrace) {
+    debugPrint('main: OfflineBootstrap initialize error: $e');
+    debugPrint('main: OfflineBootstrap stackTrace: $stackTrace');
+  }
+}
+
+Future<void> _safeInitializeFirebase() async {
+  try {
+    await _initializeFirebase();
+  } catch (e, stackTrace) {
+    debugPrint('main: Firebase initialize error: $e');
+    debugPrint('main: Firebase initialize stackTrace: $stackTrace');
+  }
+}
+
+Future<void> _safeInitializeApiService(ApiService apiService) async {
+  try {
+    await apiService.initialize();
+  } catch (e, stackTrace) {
+    debugPrint('main: ApiService initialize error: $e');
+    debugPrint('main: ApiService initialize stackTrace: $stackTrace');
+  }
+}
+
+void _safeRegisterOutboxExecutors(ApiService apiService) {
+  try {
+    CoreOutboxExecutors.register(apiService);
+  } catch (e, stackTrace) {
+    debugPrint('main: CoreOutboxExecutors register error: $e');
+    debugPrint('main: CoreOutboxExecutors register stackTrace: $stackTrace');
+  }
+}
+
+Future<RemoteMessage?> _safeLoadInitialMessage() async {
+  try {
+    if (Firebase.apps.isNotEmpty) {
+      return await FirebaseMessaging.instance.getInitialMessage();
+    }
+  } catch (e, stackTrace) {
+    debugPrint('main: initial message error: $e');
+    debugPrint('main: initial message stackTrace: $stackTrace');
+  }
+
+  return null;
+}
+
+void _safeConfigureSystemUi() {
+  try {
+    SystemChrome.setSystemUIOverlayStyle(
+      const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.dark,
+        systemNavigationBarColor: Colors.white,
+      ),
+    );
+  } catch (e, stackTrace) {
+    debugPrint('main: System UI configuration error: $e');
+    debugPrint('main: System UI configuration stackTrace: $stackTrace');
+  }
+}
+
+Future<Locale> _safeLoadLocale() async {
+  try {
+    final String? savedLanguageCode = await LanguageManager.getLanguage();
+    if (savedLanguageCode != null && savedLanguageCode.isNotEmpty) {
+      return Locale(savedLanguageCode);
+    }
+  } catch (e, stackTrace) {
+    debugPrint('main: locale load error: $e');
+    debugPrint('main: locale load stackTrace: $stackTrace');
+  }
+
+  return const Locale('ru');
 }
 
 Future<void> _initializeFirebase() async {

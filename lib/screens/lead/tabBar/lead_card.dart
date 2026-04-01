@@ -184,7 +184,7 @@ class _LeadCardState extends State<LeadCard>
 
     return GestureDetector(
       onTap: () async {
-        await Navigator.push(
+        final result = await Navigator.push(
           context,
           MaterialPageRoute(
             builder: (context) => LeadDetailsScreen(
@@ -196,7 +196,14 @@ class _LeadCardState extends State<LeadCard>
           ),
         );
 
-        if (mounted) {
+        if (!mounted) return;
+
+        if (result is Map<String, dynamic> && result['refresh'] == true) {
+          final newStatusId = result['newStatusId'] as int? ?? widget.statusId;
+          context.read<LeadBloc>().add(FetchLeadStatuses(forceRefresh: true));
+          widget.onStatusUpdated();
+          widget.onStatusId(newStatusId);
+        } else {
           context.read<LeadBloc>().add(
                 FetchLeads(
                   widget.statusId,

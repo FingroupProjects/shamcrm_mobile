@@ -9,6 +9,7 @@ import 'package:crm_task_manager/custom_widget/quantity_input_formatter.dart';
 import 'package:crm_task_manager/models/page_2/goods_model.dart';
 import 'package:crm_task_manager/models/page_2/incoming_document_model.dart';
 import 'package:crm_task_manager/page_2/warehouse/incoming/variant_selection_bottom_sheet.dart';
+import 'package:crm_task_manager/page_2/money/widgets/error_dialog.dart';
 import 'package:crm_task_manager/page_2/warehouse/widgets/save_hint_banner.dart';
 import 'package:crm_task_manager/page_2/warehouse/widgets/validation_helper.dart';
 import 'package:crm_task_manager/page_2/widgets/confirm_exit_dialog.dart';
@@ -156,6 +157,7 @@ class _EditManufactureDocumentScreenState
         _priceControllers[variantId] =
             TextEditingController(text: price.toString());
         _ensureMaterialControllersForItem(_items.last);
+        _syncMaterialQuantitiesForItem(variantId);
 
         // ✅ НОВОЕ: Создаём FocusNode для существующих товаров
         _quantityFocusNodes[variantId] = FocusNode();
@@ -172,15 +174,16 @@ class _EditManufactureDocumentScreenState
     return materials.map((material) {
       final variant = material.goodVariant;
       final name = variant?.fullName ?? variant?.good?.name ?? '';
+      final norm = material.norm ?? 0;
       return {
         'variantId': material.goodVariantId ?? variant?.id ?? 0,
         'good_id': variant?.good?.id,
         'name': name,
         'unit_id': material.unitId ?? material.unit?.id,
         'unit_name': material.unit?.shortName ?? material.unit?.name ?? '',
-        'norm': material.norm ?? 0,
+        'norm': norm,
         'quantity': material.quantity ?? 0,
-        'isManualQuantity': true,
+        'isManualQuantity': norm <= 0,
       };
     }).toList();
   }
@@ -690,6 +693,23 @@ class _EditManufactureDocumentScreenState
 
               if (state is ManufactureUpdateSuccess && mounted) {
                 Navigator.pop(context, true);
+                return;
+              }
+
+              if (state is ManufactureUpdateError && mounted) {
+                final localizations = AppLocalizations.of(context)!;
+
+                if ((state.statusCode == 409 || state.statusCode == 422) &&
+                    state.message.trim().isNotEmpty) {
+                  showSimpleErrorDialog(
+                    context,
+                    localizations.translate('error') ?? 'Ошибка',
+                    state.message,
+                    errorDialogEnum: ErrorDialogEnum.goodsMovementUpdate,
+                  );
+                } else {
+                  _showSnackBar(state.message, false);
+                }
               }
             },
             child: Form(

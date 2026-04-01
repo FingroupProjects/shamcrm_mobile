@@ -1,6 +1,4 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
-import 'package:crm_task_manager/bloc/deal/deal_bloc.dart';
-import 'package:crm_task_manager/bloc/deal/deal_event.dart';
 import 'package:crm_task_manager/custom_widget/custom_card_tasks_tabBar.dart';
 import 'package:crm_task_manager/models/deal_model.dart';
 import 'package:crm_task_manager/screens/deal/deal_cache.dart';
@@ -8,7 +6,6 @@ import 'package:crm_task_manager/screens/deal/tabBar/deal_details_screen.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_dropdown_bottom_dialog.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -164,13 +161,18 @@ class _DealCardState extends State<DealCard>
         );
 
         if (mounted && shouldRefresh != null) {
-          final needsRefresh = shouldRefresh is Map<String, dynamic>
-              ? shouldRefresh['refresh'] == true
-              : shouldRefresh == true;
+          final resultMap = shouldRefresh is Map<String, dynamic>
+              ? shouldRefresh
+              : <String, dynamic>{'refresh': shouldRefresh == true};
+          final needsRefresh = resultMap['refresh'] == true;
 
           if (needsRefresh) {
-            await DealCache.clearDealsForStatus(widget.statusId);
-            context.read<DealBloc>().add(FetchDeals(widget.statusId));
+            final oldStatusId = resultMap['statusId'] as int? ?? widget.statusId;
+            final newStatusId = resultMap['newStatusId'] as int? ?? oldStatusId;
+
+            await DealCache.clearDealsForStatus(oldStatusId);
+            widget.onStatusUpdated(oldStatusId, newStatusId);
+            widget.onStatusId(oldStatusId, newStatusId);
           }
         }
       },

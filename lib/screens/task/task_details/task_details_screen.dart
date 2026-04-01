@@ -201,7 +201,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
     super.initState();
     _initialStatusId = widget.statusId ?? 0;
     _currentStatusId = widget.statusId;
-    context.read<TaskBloc>().add(FetchTaskStatuses());
+    context.read<TaskBloc>().add(FetchTaskStatuses(forceRefresh: true));
     _checkPermissions();
     context
         .read<TaskByIdBloc>()
@@ -283,6 +283,12 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
     };
   }
 
+  Future<bool> _handleBackNavigation() async {
+    if (!mounted) return false;
+    Navigator.pop(context, _buildNavigationResult());
+    return false;
+  }
+
   void _refreshTaskView() {
     if (currentTask == null) return;
     final taskId = currentTask!.id;
@@ -296,14 +302,14 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
     context
         .read<TaskByIdBloc>()
         .add(FetchTaskByIdEvent(taskId: taskId));
-    context.read<TaskBloc>().add(FetchTaskStatuses());
+    context.read<TaskBloc>().add(FetchTaskStatuses(forceRefresh: true));
     context.read<CalendarBloc>().add(FetchCalendarEvents(
         widget.initialDate?.month ?? DateTime.now().month,
         widget.initialDate?.year ?? DateTime.now().year));
     Future.delayed(const Duration(milliseconds: 500), () {
       if (!mounted) return;
       context.read<TaskByIdBloc>().add(FetchTaskByIdEvent(taskId: taskId));
-      context.read<TaskBloc>().add(FetchTaskStatuses());
+      context.read<TaskBloc>().add(FetchTaskStatuses(forceRefresh: true));
     });
   }
 
@@ -893,9 +899,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
               width: leadingIconSize,
               height: leadingIconSize,
             ),
-            onPressed: () {
-              Navigator.pop(context, _buildNavigationResult());
-            },
+            onPressed: () => _handleBackNavigation(),
           ),
         ),
       ),
@@ -984,11 +988,14 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                       ),
                     );
                     if (shouldUpdate == true) {
+                      setState(() {
+                        _statusChangedFromDetails = true;
+                      });
                       _loadFieldConfiguration(); // ✅ Обновляем конфигурацию полей
                       context
                           .read<TaskByIdBloc>()
                           .add(FetchTaskByIdEvent(taskId: currentTask!.id));
-                      context.read<TaskBloc>().add(FetchTaskStatuses());
+                      context.read<TaskBloc>().add(FetchTaskStatuses(forceRefresh: true));
                       context.read<CalendarBloc>().add(FetchCalendarEvents(
                           widget.initialDate?.month ?? DateTime.now().month,
                           widget.initialDate?.year ?? DateTime.now().year));
@@ -1044,11 +1051,14 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                       ),
                     );
                     if (shouldUpdate == true) {
+                      setState(() {
+                        _statusChangedFromDetails = true;
+                      });
                       _loadFieldConfiguration(); // ✅ Обновляем конфигурацию полей
                       context
                           .read<TaskByIdBloc>()
                           .add(FetchTaskByIdEvent(taskId: currentTask!.id));
-                      context.read<TaskBloc>().add(FetchTaskStatuses());
+                      context.read<TaskBloc>().add(FetchTaskStatuses(forceRefresh: true));
                       context.read<CalendarBloc>().add(FetchCalendarEvents(
                           widget.initialDate?.month ?? DateTime.now().month,
                           widget.initialDate?.year ?? DateTime.now().year));
@@ -1562,35 +1572,41 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<TaskByIdBloc, TaskByIdState>(
-      listener: (context, state) {
-        if (state is TaskByIdError) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                state.message,
-                style: TextStyle(
-                  fontFamily: 'Gilroy',
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.white,
-                ),
-              ),
-              behavior: SnackBarBehavior.floating,
-              margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              backgroundColor: Colors.red,
-              elevation: 3,
-              padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-              duration: Duration(seconds: 3),
-            ),
-          );
-        }
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+        await _handleBackNavigation();
       },
-      child: BlocBuilder<TaskByIdBloc, TaskByIdState>(
-        builder: (context, state) {
+      child: BlocListener<TaskByIdBloc, TaskByIdState>(
+        listener: (context, state) {
+          if (state is TaskByIdError) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  state.message,
+                  style: TextStyle(
+                    fontFamily: 'Gilroy',
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.white,
+                  ),
+                ),
+                behavior: SnackBarBehavior.floating,
+                margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                backgroundColor: Colors.red,
+                elevation: 3,
+                padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                duration: Duration(seconds: 3),
+              ),
+            );
+          }
+        },
+        child: BlocBuilder<TaskByIdBloc, TaskByIdState>(
+          builder: (context, state) {
           // Удаляем вызов _updateDetails из BlocBuilder, чтобы избежать setState
           // if (state is TaskByIdLoaded) {
           //   // Обновляем данные без setState
@@ -1878,7 +1894,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                                                                 .read<
                                                                     TaskBloc>()
                                                                 .add(
-                                                                    FetchTaskStatuses());
+                                                                    FetchTaskStatuses(forceRefresh: true));
                                                           }
                                                         } catch (e) {
                                                           Navigator.pop(
@@ -2032,7 +2048,8 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
               child: Text(''),
             ),
           );
-        },
+          },
+        ),
       ),
     );
   }

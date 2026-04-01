@@ -68,6 +68,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
   bool _shouldShowLoader = false;
   bool _skipNextTabListener =
       false; // КРИТИЧНО: Флаг для пропуска TabListener при фильтрации
+  int? _pendingStatusIdAfterHardRefresh;
 
   String _lastSearchQuery = "";
 
@@ -529,6 +530,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
 
       final taskBloc = BlocProvider.of<TaskBloc>(context);
       await taskBloc.clearAllCountsAndCache();
+      ApiService.clearAnalyticsResponseCache();
       taskBloc.add(FetchTaskStatuses(forceRefresh: true));
     } catch (e) {
       // ✅ УБРАНО: Не показываем SnackBar с кнопкой "Повторить"
@@ -537,6 +539,35 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       if (mounted) {
         final taskBloc = BlocProvider.of<TaskBloc>(context);
         taskBloc.add(FetchTaskStatuses(forceRefresh: false));
+      }
+    }
+  }
+
+  Future<void> _hardRefreshAfterTaskChange(int targetStatusId) async {
+    try {
+      _pendingStatusIdAfterHardRefresh = targetStatusId;
+
+      if (mounted) {
+        setState(() {
+          _tabTitles.clear();
+          _tabKeys.clear();
+          _currentTabIndex = 0;
+        });
+
+        if (_tabController.length > 0) {
+          _tabController.dispose();
+        }
+        _tabController = TabController(length: 0, vsync: this);
+      }
+
+      final taskBloc = context.read<TaskBloc>();
+      await taskBloc.clearAllCountsAndCache();
+      ApiService.clearAnalyticsResponseCache();
+      taskBloc.add(FetchTaskStatuses(forceRefresh: true));
+    } catch (e) {
+      debugPrint('TaskScreen: hard refresh after task change failed: $e');
+      if (mounted) {
+        context.read<TaskBloc>().add(FetchTaskStatuses(forceRefresh: true));
       }
     }
   }
@@ -1171,11 +1202,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
               statusId: task.statusId,
               onStatusUpdated: () {},
               onStatusId: (StatusTaskId) {
-                final index = _tabTitles
-                    .indexWhere((status) => status['id'] == StatusTaskId);
-                if (index != -1) {
-                  _tabController.animateTo(index);
-                }
+                _hardRefreshAfterTaskChange(StatusTaskId);
               },
             ),
           );
@@ -1276,11 +1303,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
                       statusId: task.statusId,
                       onStatusUpdated: () {},
                       onStatusId: (StatusTaskId) {
-                        final index = _tabTitles.indexWhere(
-                            (status) => status['id'] == StatusTaskId);
-                        if (index != -1) {
-                          _tabController.animateTo(index);
-                        }
+                        _hardRefreshAfterTaskChange(StatusTaskId);
                       },
                     ),
                   );
@@ -1775,6 +1798,19 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
                   }
                 }
 
+                if (_pendingStatusIdAfterHardRefresh != null) {
+                  final pendingIndex = _tabTitles.indexWhere(
+                    (status) => status['id'] == _pendingStatusIdAfterHardRefresh,
+                  );
+
+                  if (pendingIndex != -1) {
+                    _currentTabIndex = pendingIndex;
+                    _tabController.index = pendingIndex;
+                  }
+
+                  _pendingStatusIdAfterHardRefresh = null;
+                }
+
                 // ОПТИМИЗАЦИЯ: Убираем задержку и проверяем состояние перед загрузкой
                 // Автоматически загружаем задачи для активного статуса после refresh только если нет активных фильтров
                 if (_tabTitles.isNotEmpty) {
@@ -1926,73 +1962,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
                     name: status['title'],
                     userId: _selectedUserId,
                     onStatusId: (newStatusId) {
-                      final index =
-                          _tabTitles.indexWhere((s) => s['id'] == newStatusId);
-                      if (index != -1) {
-                        _tabController.animateTo(index);
-
-                        // Проверяем, есть ли уже данные для этого статуса
-                        final currentTaskBloc = context.read<TaskBloc>();
-                        if (currentTaskBloc.state is TaskDataLoaded) {
-                          final currentState =
-                              currentTaskBloc.state as TaskDataLoaded;
-                          final hasTasksForStatus = currentState.tasks
-                              .any((task) => task.statusId == newStatusId);
-
-                          // Загружаем только если нет данных для этого статуса
-                          if (!hasTasksForStatus) {
-                            // Преобразуем project_ids в List<int>
-                            List<int>? projectIdsList =
-                                _selectedProjects.isNotEmpty
-                                    ? _selectedProjects
-                                        .map((id) => int.parse(id))
-                                        .toList()
-                                    : (_selectedProject != null
-                                        ? [int.parse(_selectedProject!)]
-                                        : null);
-
-                            currentTaskBloc.add(FetchTasks(
-                              newStatusId,
-                              query: _lastSearchQuery.isNotEmpty
-                                  ? _lastSearchQuery
-                                  : null,
-                              userIds: _selectedUsers.isNotEmpty
-                                  ? _selectedUsers
-                                      .map((user) => user.id)
-                                      .toList()
-                                  : null,
-                              statusIds: _selectedStatuses,
-                              fromDate: _fromDate,
-                              toDate: _toDate,
-                              overdue: _isOverdue,
-                              hasFile: _hasFile,
-                              hasDeal: _hasDeal,
-                              urgent: _isUrgent,
-                              reasonForRefusalIds:
-                                  _selectedReasonForRefusalIds.isNotEmpty
-                                      ? _selectedReasonForRefusalIds
-                                      : null,
-                              deadlinefromDate: _deadlinefromDate,
-                              deadlinetoDate: _deadlinetoDate,
-                              completedFromDate: _completedFromDate,
-                              completedToDate: _completedToDate,
-                              projectIds: projectIdsList,
-                              authors: _selectedAuthors,
-                              department: _selectedDepartment,
-                              directoryValues: _selectedDirectoryValues,
-                            ));
-                          }
-                        } else {
-                          // Если нет состояния TaskDataLoaded, загружаем данные
-                          currentTaskBloc.add(FetchTasks(
-                            newStatusId,
-                            reasonForRefusalIds:
-                                _selectedReasonForRefusalIds.isNotEmpty
-                                    ? _selectedReasonForRefusalIds
-                                    : null,
-                          ));
-                        }
-                      }
+                      _hardRefreshAfterTaskChange(newStatusId);
                     },
                   ),
                 );

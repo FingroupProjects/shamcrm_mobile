@@ -145,6 +145,12 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
     };
   }
 
+  Future<bool> _handleBackNavigation() async {
+    if (!mounted) return false;
+    Navigator.pop(context, _buildNavigationResult());
+    return false;
+  }
+
   Future<void> _reloadDealView() async {
     if (mounted) {
       setState(() {
@@ -796,8 +802,14 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return MultiBlocListener(
-      listeners: [
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+        await _handleBackNavigation();
+      },
+      child: MultiBlocListener(
+        listeners: [
         BlocListener<DealByIdBloc, DealByIdState>(
           listener: (context, state) {
             if (state is DealByIdError) {
@@ -841,9 +853,9 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
             }
           },
         ),
-      ],
-      child: BlocBuilder<DealByIdBloc, DealByIdState>(
-        builder: (context, state) {
+        ],
+        child: BlocBuilder<DealByIdBloc, DealByIdState>(
+          builder: (context, state) {
           if (state is DealByIdLoading) {
             return Scaffold(
               backgroundColor: Colors.white,
@@ -935,7 +947,8 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
             backgroundColor: Colors.white,
             body: Center(child: Text('')),
           );
-        },
+          },
+        ),
       ),
     );
   }
@@ -2018,9 +2031,7 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
               width: 24,
               height: 24,
             ),
-            onPressed: () {
-              Navigator.pop(context, _buildNavigationResult());
-            },
+            onPressed: () => _handleBackNavigation(),
           ),
         ),
       ),
@@ -2124,6 +2135,9 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
                 );
 
                 if (shouldUpdate == true) {
+                  setState(() {
+                    _statusChangedFromDetails = true;
+                  });
                   _loadFieldConfiguration();
                   context
                       .read<DealByIdBloc>()

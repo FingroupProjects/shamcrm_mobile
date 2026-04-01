@@ -220,6 +220,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
   bool _isRejectingLead = false;
   late final int _initialStatusId;
   int? _currentStatusId;
+  bool _statusChangedFromDetails = false;
 
   String _getLeadErrorMessage(String error) {
     if (error.toLowerCase().contains('интернет')) {
@@ -349,6 +350,20 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
         });
       }
     });
+  }
+
+  Map<String, dynamic> _buildNavigationResult() {
+    return {
+      'refresh': _statusChangedFromDetails,
+      'statusId': _initialStatusId,
+      'newStatusId': _currentStatusId ?? _initialStatusId,
+    };
+  }
+
+  Future<bool> _handleBackNavigation() async {
+    if (!mounted) return false;
+    Navigator.pop(context, _buildNavigationResult());
+    return false;
   }
 
   Future<void> _loadLeadActionSettings() async {
@@ -967,12 +982,18 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
         });
       });
     }
-    return Scaffold(
-      appBar: _buildAppBar(context,
-          AppLocalizations.of(context)!.translate('view_lead') + widget.leadId),
-      backgroundColor: Colors.white,
-      body: MultiBlocListener(
-        listeners: [
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+        await _handleBackNavigation();
+      },
+      child: Scaffold(
+        appBar: _buildAppBar(context,
+            AppLocalizations.of(context)!.translate('view_lead') + widget.leadId),
+        backgroundColor: Colors.white,
+        body: MultiBlocListener(
+          listeners: [
           BlocListener<LeadByIdBloc, LeadByIdState>(
             listener: (context, state) {
               if (state is LeadByIdLoaded || state is LeadByIdError) {
@@ -1015,9 +1036,9 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
               }
             },
           ),
-        ],
-        child: BlocBuilder<LeadByIdBloc, LeadByIdState>(
-          builder: (context, state) {
+          ],
+          child: BlocBuilder<LeadByIdBloc, LeadByIdState>(
+            builder: (context, state) {
             if (_showCombinedLoader || state is LeadByIdLoading) {
               return Center(
                 child: CircularProgressIndicator(color: Color(0xff1E2E52)),
@@ -1106,7 +1127,8 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
               );
             }
             return Center(child: Text(''));
-          },
+            },
+          ),
         ),
       ),
     );
@@ -1129,9 +1151,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
               width: 24,
               height: 24,
             ),
-            onPressed: () async {
-              Navigator.pop(context, widget.statusId);
-            },
+            onPressed: () => _handleBackNavigation(),
           ),
         ),
       ),
@@ -1233,6 +1253,9 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                         ),
                       );
                       if (shouldUpdate == true) {
+                        setState(() {
+                          _statusChangedFromDetails = true;
+                        });
                         _loadFieldConfiguration(); // ✅ Обновляем конфигурацию полей
                         context.read<LeadByIdBloc>().add(FetchLeadByIdEvent(
                             leadId: int.parse(widget.leadId)));
@@ -2004,6 +2027,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       (String _, int newStatusId) {
         if (!mounted) return;
         setState(() {
+          _statusChangedFromDetails = true;
           _currentStatusId = newStatusId;
         });
         _refreshLeadView(currentLead!.id);

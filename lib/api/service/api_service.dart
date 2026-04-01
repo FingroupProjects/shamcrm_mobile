@@ -5405,6 +5405,7 @@ class ApiService {
     String? department,
     List<int>? reasonForRefusalIds,
     List<Map<String, dynamic>>? directoryValues,
+    bool bypassCache = false,
   }) async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
     final organizationId = await getSelectedOrganization();
@@ -5483,7 +5484,7 @@ class ApiService {
         debugPrint('📤 getTaskStatuses WITH FILTERS - Final path: $path');
       }
 
-      final response = await _analyticsRequest(path);
+      final response = await _analyticsRequest(path, bypassCache: bypassCache);
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);

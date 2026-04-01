@@ -216,20 +216,23 @@ class _OrderScreenState extends State<OrderScreen>
     }
   }
 
-  void _onStatusUpdated(int newStatusId) {
+  void _onStatusUpdated(int oldStatusId, int newStatusId) {
+    final previousTabIndex = _currentTabIndex;
     final newTabIndex =
         _statuses.indexWhere((status) => status.id == newStatusId);
-    if (newTabIndex != -1 && newTabIndex != _currentTabIndex) {
+
+    if (newTabIndex != -1 && newTabIndex != previousTabIndex) {
       setState(() {
-        _currentTabIndex = newTabIndex;
+        _navigateToNewStatus = true;
+        _newStatusId = newStatusId;
       });
       _tabController.animateTo(newTabIndex);
       _scrollToActiveTab();
     }
-    // Обновляем заказы для текущего и нового статуса
+
     if (_statuses.isNotEmpty) {
       _orderBloc.add(FetchOrders(
-        statusId: _statuses[_currentTabIndex].id,
+        statusId: oldStatusId,
         page: 1,
         perPage: 20,
         forceRefresh: true,
@@ -247,29 +250,8 @@ class _OrderScreenState extends State<OrderScreen>
             ?.map((key, value) =>
                 MapEntry(key.toString(), List<String>.from(value as List))),
       ));
-      if (newTabIndex != _currentTabIndex) {
-        _orderBloc.add(FetchOrders(
-          statusId: newStatusId,
-          page: 1,
-          perPage: 20,
-          forceRefresh: true,
-          query: _isSearching ? _searchController.text : null,
-          managerIds: _currentFilters['managers'],
-          regionsIds: _currentFilters['regions'],
-          leadIds: _currentFilters['leads'],
-          fromDate: _currentFilters['fromDate'],
-          toDate: _currentFilters['toDate'],
-          status: _currentFilters['status'],
-          paymentMethod: _currentFilters['paymentMethod'],
-          deliveryType: _currentFilters['deliveryType'],
-          reasonForRefusalIds: _currentReasonForRefusalIds(),
-          customFieldFilters: (_currentFilters['custom_field_filters'] as Map?)
-              ?.map((key, value) => MapEntry(
-                    key.toString(),
-                    List<String>.from(value as List),
-                  )),
-        ));
-      }
+
+      _orderBloc.add(FetchOrderStatuses(forceRefresh: true));
     }
   }
 
@@ -851,10 +833,14 @@ class _OrderScreenState extends State<OrderScreen>
                                             ? _searchController.text
                                             : null,
                                         organizationId: widget.organizationId,
-                                        onStatusUpdated: () =>
-                                            _onStatusUpdated(status.id),
-                                        onStatusId: (newStatusId) =>
-                                            _onStatusUpdated(newStatusId),
+                                        onStatusUpdated: _onStatusUpdated,
+                                        onStatusId: (newStatusId) {
+                                          final oldStatusId = status.id;
+                                          _onStatusUpdated(
+                                            oldStatusId,
+                                            newStatusId,
+                                          );
+                                        },
                                         onTabChange: (newTabIndex) {
                                           setState(() {
                                             _currentTabIndex = newTabIndex;
@@ -1174,8 +1160,7 @@ class _OrderScreenState extends State<OrderScreen>
                         const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
                     child: OrderCard(
                       order: order,
-                      onStatusUpdated: () =>
-                          _onStatusUpdated(order.orderStatus.id),
+                      onStatusUpdated: _onStatusUpdated,
                       onStatusId: (newStatusId) {
                         final index = _statuses
                             .indexWhere((status) => status.id == newStatusId);
