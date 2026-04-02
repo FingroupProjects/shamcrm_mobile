@@ -96,6 +96,13 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
   List<FieldConfiguration> _fieldConfiguration = [];
   bool _isConfigurationLoaded = false;
 
+  String _getDealErrorMessage(String error) {
+    if (error.toLowerCase().contains('интернет')) {
+      return error;
+    }
+    return 'Сделка была удалена';
+  }
+
   Future<void> _refreshDealDetails() async {
     if (!mounted) return;
 
@@ -827,8 +834,16 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
             return Scaffold(
               backgroundColor: Colors.white,
               body: Center(
-                  child: Text(
-                      AppLocalizations.of(context)!.translate('error_text'))),
+                child: Text(
+                  _getDealErrorMessage(state.message),
+                  style: const TextStyle(
+                    fontFamily: 'Gilroy',
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.black,
+                  ),
+                ),
+              ),
             );
           }
           return Scaffold(
@@ -1016,229 +1031,229 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Container(
-          width: double.infinity,
-          decoration: TaskCardStyles.taskCardDecoration,
-          padding: const EdgeInsets.all(14),
-          child: Column(
-            children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Icon(
-                    isComment
-                        ? Icons.mode_comment_outlined
-                        : (note.isFinished
-                            ? Icons.check_circle_rounded
-                            : Icons.radio_button_unchecked_rounded),
-                    size: 22,
-                    color: isComment
-                        ? const Color(0xff1E2E52)
-                        : (note.isFinished
-                            ? const Color(0xff34C759)
-                            : const Color(0xff99A4BA)),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          note.title,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontFamily: 'Gilroy',
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xff1E2E52),
-                          ),
+        width: double.infinity,
+        decoration: TaskCardStyles.taskCardDecoration,
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(
+                  isComment
+                      ? Icons.mode_comment_outlined
+                      : (note.isFinished
+                          ? Icons.check_circle_rounded
+                          : Icons.radio_button_unchecked_rounded),
+                  size: 22,
+                  color: isComment
+                      ? const Color(0xff1E2E52)
+                      : (note.isFinished
+                          ? const Color(0xff34C759)
+                          : const Color(0xff99A4BA)),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        note.title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontFamily: 'Gilroy',
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xff1E2E52),
                         ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        note.body,
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontFamily: 'Gilroy',
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: Color(0xff1E2E52),
+                        ),
+                      ),
+                      if (formattedDate.isNotEmpty) ...[
                         const SizedBox(height: 4),
                         Text(
-                          note.body,
-                          maxLines: 3,
-                          overflow: TextOverflow.ellipsis,
+                          formattedDate,
                           style: const TextStyle(
                             fontFamily: 'Gilroy',
-                            fontSize: 14,
+                            fontSize: 13,
                             fontWeight: FontWeight.w500,
-                            color: Color(0xff1E2E52),
+                            color: Color(0xff99A4BA),
                           ),
                         ),
-                        if (formattedDate.isNotEmpty) ...[
-                          const SizedBox(height: 4),
+                      ],
+                    ],
+                  ),
+                ),
+                PopupMenuButton<String>(
+                  color: Colors.white,
+                  surfaceTintColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  onSelected: (value) async {
+                    if (value == 'edit') {
+                      await _showEditDealNoticeDialog(note);
+                    } else if (value == 'delete') {
+                      await _showDeleteDealNoticeDialog(note);
+                    }
+                  },
+                  itemBuilder: (context) => const [
+                    PopupMenuItem<String>(
+                      value: 'edit',
+                      child: Row(
+                        children: [
+                          Icon(Icons.edit_outlined,
+                              size: 18, color: Color(0xff1E2E52)),
+                          SizedBox(width: 8),
                           Text(
-                            formattedDate,
-                            style: const TextStyle(
+                            'Редактировать',
+                            style: TextStyle(
                               fontFamily: 'Gilroy',
-                              fontSize: 13,
+                              fontSize: 14,
                               fontWeight: FontWeight.w500,
-                              color: Color(0xff99A4BA),
+                              color: Color(0xff1E2E52),
                             ),
                           ),
                         ],
-                      ],
+                      ),
+                    ),
+                    PopupMenuItem<String>(
+                      value: 'delete',
+                      child: Row(
+                        children: [
+                          Icon(Icons.delete_outline,
+                              size: 18, color: Color(0xff1E2E52)),
+                          SizedBox(width: 8),
+                          Text(
+                            'Удалить',
+                            style: TextStyle(
+                              fontFamily: 'Gilroy',
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                              color: Color(0xff1E2E52),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                  child: const Padding(
+                    padding: EdgeInsets.only(left: 4),
+                    child: Icon(
+                      Icons.more_vert,
+                      size: 20,
+                      color: Color(0xff1E2E52),
                     ),
                   ),
-                  PopupMenuButton<String>(
-                    color: Colors.white,
-                    surfaceTintColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                ),
+              ],
+            ),
+            if (!isComment && note.canFinish && !note.isFinished) ...[
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  Expanded(
+                    child: SizedBox(
+                      height: 38,
+                      child: TextField(
+                        controller: controller,
+                        onTap: () {},
+                        style: const TextStyle(
+                          fontFamily: 'Gilroy',
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: Color(0xff1E2E52),
+                        ),
+                        decoration: InputDecoration(
+                          hintText: 'Комментарий',
+                          hintStyle: const TextStyle(
+                            fontFamily: 'Gilroy',
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            color: Color(0xff99A4BA),
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 8),
+                          filled: true,
+                          fillColor: Colors.white,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide: const BorderSide(
+                              color: Color(0xff1E3A8A),
+                              width: 2,
+                            ),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide: const BorderSide(
+                              color: Color(0xff1E3A8A),
+                              width: 2,
+                            ),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide: const BorderSide(
+                              color: Color(0xff1E3A8A),
+                              width: 2,
+                            ),
+                          ),
+                        ),
+                      ),
                     ),
-                    onSelected: (value) async {
-                      if (value == 'edit') {
-                        await _showEditDealNoticeDialog(note);
-                      } else if (value == 'delete') {
-                        await _showDeleteDealNoticeDialog(note);
-                      }
-                    },
-                    itemBuilder: (context) => const [
-                      PopupMenuItem<String>(
-                        value: 'edit',
-                        child: Row(
-                          children: [
-                            Icon(Icons.edit_outlined,
-                                size: 18, color: Color(0xff1E2E52)),
-                            SizedBox(width: 8),
-                            Text(
-                              'Редактировать',
-                              style: TextStyle(
-                                fontFamily: 'Gilroy',
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
-                                color: Color(0xff1E2E52),
+                  ),
+                  const SizedBox(width: 8),
+                  SizedBox(
+                    height: 38,
+                    child: ElevatedButton(
+                      onPressed: isFinishing
+                          ? null
+                          : () => _finishDealNotice(
+                                noteId: note.id,
+                                conclusion: controller.text.trim(),
                               ),
-                            ),
-                          ],
+                      style: ElevatedButton.styleFrom(
+                        elevation: 0,
+                        backgroundColor: const Color(0xff4F40EC),
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
                         ),
                       ),
-                      PopupMenuItem<String>(
-                        value: 'delete',
-                        child: Row(
-                          children: [
-                            Icon(Icons.delete_outline,
-                                size: 18, color: Color(0xff1E2E52)),
-                            SizedBox(width: 8),
-                            Text(
-                              'Удалить',
+                      child: isFinishing
+                          ? const SizedBox(
+                              width: 14,
+                              height: 14,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Text(
+                              'Сделано',
                               style: TextStyle(
                                 fontFamily: 'Gilroy',
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
-                                color: Color(0xff1E2E52),
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
                               ),
                             ),
-                          ],
-                        ),
-                      ),
-                    ],
-                    child: const Padding(
-                      padding: EdgeInsets.only(left: 4),
-                      child: Icon(
-                        Icons.more_vert,
-                        size: 20,
-                        color: Color(0xff1E2E52),
-                      ),
                     ),
                   ),
                 ],
               ),
-              if (!isComment && note.canFinish && !note.isFinished) ...[
-                const SizedBox(height: 10),
-                Row(
-                  children: [
-                    Expanded(
-                      child: SizedBox(
-                        height: 38,
-                        child: TextField(
-                          controller: controller,
-                          onTap: () {},
-                          style: const TextStyle(
-                            fontFamily: 'Gilroy',
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                            color: Color(0xff1E2E52),
-                          ),
-                          decoration: InputDecoration(
-                            hintText: 'Комментарий',
-                            hintStyle: const TextStyle(
-                              fontFamily: 'Gilroy',
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
-                              color: Color(0xff99A4BA),
-                            ),
-                            contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 10, vertical: 8),
-                            filled: true,
-                            fillColor: Colors.white,
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(10),
-                              borderSide: const BorderSide(
-                                color: Color(0xff1E3A8A),
-                                width: 2,
-                              ),
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(10),
-                              borderSide: const BorderSide(
-                                color: Color(0xff1E3A8A),
-                                width: 2,
-                              ),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(10),
-                              borderSide: const BorderSide(
-                                color: Color(0xff1E3A8A),
-                                width: 2,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    SizedBox(
-                      height: 38,
-                      child: ElevatedButton(
-                        onPressed: isFinishing
-                            ? null
-                            : () => _finishDealNotice(
-                                  noteId: note.id,
-                                  conclusion: controller.text.trim(),
-                                ),
-                        style: ElevatedButton.styleFrom(
-                          elevation: 0,
-                          backgroundColor: const Color(0xff4F40EC),
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                        ),
-                        child: isFinishing
-                            ? const SizedBox(
-                                width: 14,
-                                height: 14,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Colors.white,
-                                ),
-                              )
-                            : const Text(
-                                'Сделано',
-                                style: TextStyle(
-                                  fontFamily: 'Gilroy',
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
             ],
-          ),
+          ],
+        ),
       ),
     );
   }
@@ -1408,7 +1423,8 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
       isScrollControlled: true,
       builder: (BuildContext context) {
         return Padding(
-          padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+          padding:
+              EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
           child: CreateNotesDialog(
             leadId: leadId,
             managerId: deal.manager?.id,

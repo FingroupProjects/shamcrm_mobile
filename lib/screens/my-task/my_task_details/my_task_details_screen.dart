@@ -155,6 +155,13 @@ class _MyTaskDetailsScreenState extends State<MyTaskDetailsScreen> {
   bool _isDownloading = false;
   Map<int, double> _downloadProgress = {};
 
+  String _getTaskErrorMessage(String error) {
+    if (error.toLowerCase().contains('интернет')) {
+      return error;
+    }
+    return 'Задача была удалена';
+  }
+
   @override
   void initState() {
     super.initState();
@@ -544,6 +551,20 @@ class _MyTaskDetailsScreenState extends State<MyTaskDetailsScreen> {
                           taskId: int.parse(widget.taskId)),
                     ],
                   )),
+            );
+          } else if (state is MyTaskByIdError) {
+            return Scaffold(
+              body: Center(
+                child: Text(
+                  _getTaskErrorMessage(state.message),
+                  style: const TextStyle(
+                    fontFamily: 'Gilroy',
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.black,
+                  ),
+                ),
+              ),
             );
           }
           return Scaffold(

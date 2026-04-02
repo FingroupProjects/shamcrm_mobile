@@ -415,6 +415,20 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
           'value': formatPaymentType(order.paymentStatus, context)
         },
       ];
+      final refusalReason = (order.refusalReasonText ?? '').trim();
+      final refusalComment = (order.reasonForRefusalComment ?? '').trim();
+      if (refusalReason.isNotEmpty || refusalComment.isNotEmpty) {
+        details.add({
+          'label': 'Причина отказа:',
+          'value': refusalReason.isNotEmpty ? refusalReason : refusalComment,
+        });
+        if (refusalReason.isNotEmpty && refusalComment.isNotEmpty) {
+          details.add({
+            'label': 'Комментарий отказа:',
+            'value': refusalComment,
+          });
+        }
+      }
       return;
     }
 
@@ -436,6 +450,21 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
             AppLocalizations.of(context)!.translate('creation_date_label')),
         'value': DateFormat('dd.MM.yyyy').format(order.createdAt!),
       });
+    }
+
+    final refusalReason = (order.refusalReasonText ?? '').trim();
+    final refusalComment = (order.reasonForRefusalComment ?? '').trim();
+    if (refusalReason.isNotEmpty || refusalComment.isNotEmpty) {
+      details.add({
+        'label': 'Причина отказа:',
+        'value': refusalReason.isNotEmpty ? refusalReason : refusalComment,
+      });
+      if (refusalReason.isNotEmpty && refusalComment.isNotEmpty) {
+        details.add({
+          'label': 'Комментарий отказа:',
+          'value': refusalComment,
+        });
+      }
     }
   }
 

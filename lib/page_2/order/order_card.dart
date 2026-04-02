@@ -416,11 +416,6 @@ class _OrderCardState extends State<OrderCard> {
                           });
                           widget.onStatusId(newStatusId);
                           widget.onStatusUpdated();
-                          context.read<OrderBloc>().add(ChangeOrderStatus(
-                                orderId: widget.order.id,
-                                statusId: newStatusId,
-                                organizationId: widget.organizationId,
-                              ));
                         },
                         widget.order,
                         onTabChange: widget.onTabChange,

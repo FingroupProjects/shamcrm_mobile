@@ -1,4 +1,3 @@
-
 import 'dart:async';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_bloc.dart';
@@ -42,15 +41,21 @@ class CustomAppBarPage2 extends StatefulWidget {
 
   final Function(Map<String, dynamic>)? onFilterGoodsSelected;
   final Function(Map<String, dynamic>)? onFilterIncomeSelected; // money income
-  final Function(Map<String, dynamic>)? onFilterIncomingSelected; // new filter for documents -> incoming screen
-  final Function(Map<String, dynamic>)? onFilterClientSaleSelected; // new filter for documents -> client sale screen
-  final Function(Map<String, dynamic>)? onFilterClientReturnSelected; // new filter for documents -> client return screen
+  final Function(Map<String, dynamic>)?
+      onFilterIncomingSelected; // new filter for documents -> incoming screen
+  final Function(Map<String, dynamic>)?
+      onFilterClientSaleSelected; // new filter for documents -> client sale screen
+  final Function(Map<String, dynamic>)?
+      onFilterClientReturnSelected; // new filter for documents -> client return screen
 
   final VoidCallback? onGoodsResetFilters;
   final VoidCallback? onIncomeResetFilters; // money income
-  final VoidCallback? onIncomingResetFilters; // new filter for documents -> incoming screen
-  final VoidCallback? onClientSaleResetFilters; // new filter for documents -> client sale screen
-  final VoidCallback? onClientReturnResetFilters; // new filter for documents -> client return screen
+  final VoidCallback?
+      onIncomingResetFilters; // new filter for documents -> incoming screen
+  final VoidCallback?
+      onClientSaleResetFilters; // new filter for documents -> client sale screen
+  final VoidCallback?
+      onClientReturnResetFilters; // new filter for documents -> client return screen
 
   final Map<String, dynamic> currentFilters;
   final List<String>? initialLabels;
@@ -71,19 +76,16 @@ class CustomAppBarPage2 extends StatefulWidget {
     this.showFilterIncomingIcon = false,
     this.showFilterClientSaleIcon = false,
     this.showFilterClientReturnIcon = false,
-
     this.onFilterGoodsSelected,
     this.onFilterIncomeSelected,
     this.onFilterIncomingSelected,
     this.onFilterClientSaleSelected,
     this.onFilterClientReturnSelected,
-
     this.onGoodsResetFilters,
     this.onIncomeResetFilters,
     this.onIncomingResetFilters,
     this.onClientSaleResetFilters,
     this.onClientReturnResetFilters,
-
     required this.currentFilters,
     this.initialLabels,
   });
@@ -118,9 +120,10 @@ class _CustomAppBarState extends State<CustomAppBarPage2>
   bool _isOrdersFiltering = false; // Новая переменная для фильтров заказов
   bool _isIncomeFiltering = false; // Новая переменная для фильтров доходов
   bool _isIncomingFiltering = false; //
-  bool _isClientSaleFiltering = false; // Новая переменная для фильтров продажи клиентам
-  bool _isClientReturnFiltering = false; // Новая переменная для фильтров возврата от клиентов
-  
+  bool _isClientSaleFiltering =
+      false; // Новая переменная для фильтров продажи клиентам
+  bool _isClientReturnFiltering =
+      false; // Новая переменная для фильтров возврата от клиентов
 
   @override
   void initState() {
@@ -169,7 +172,7 @@ class _CustomAppBarState extends State<CustomAppBarPage2>
         (widget.currentFilters['managers'] != null &&
             widget.currentFilters['managers'].isNotEmpty);
 
-            _isGoodsFiltering = widget.currentFilters.isNotEmpty ||
+    _isGoodsFiltering = widget.currentFilters.isNotEmpty ||
         (widget.currentFilters['managers'] != null &&
             widget.currentFilters['managers'].isNotEmpty);
     _isOrdersFiltering = widget.currentFilters.isNotEmpty ||
@@ -178,13 +181,19 @@ class _CustomAppBarState extends State<CustomAppBarPage2>
             widget.currentFilters['client'] != null ||
             widget.currentFilters['status'] != null ||
             widget.currentFilters['paymentMethod'] != null ||
+            widget.currentFilters['deliveryType'] != null ||
+            (widget.currentFilters['reason_for_refusal_ids'] != null &&
+                widget.currentFilters['reason_for_refusal_ids'].isNotEmpty) ||
+            (widget.currentFilters['custom_field_filters'] != null &&
+                (widget.currentFilters['custom_field_filters'] as Map)
+                    .isNotEmpty) ||
             (widget.currentFilters['managers'] != null &&
                 widget.currentFilters['managers'].isNotEmpty) ||
             (widget.currentFilters['regions'] != null &&
                 widget.currentFilters['regions'].isNotEmpty) ||
             (widget.currentFilters['leads'] != null &&
                 widget.currentFilters['leads'].isNotEmpty));
-    
+
     _isIncomeFiltering = widget.currentFilters.isNotEmpty ||
         (widget.currentFilters['date_from'] != null ||
             widget.currentFilters['date_to'] != null ||
@@ -200,13 +209,12 @@ class _CustomAppBarState extends State<CustomAppBarPage2>
             widget.currentFilters['status'] != null ||
             widget.currentFilters['author_id'] != null ||
             widget.currentFilters['deleted'] != null);
-
-
   }
 
   Future<void> _checkPermissions() async {
     try {
-      final canCreateProduct = await _apiService.hasPermission('product.create');
+      final canCreateProduct =
+          await _apiService.hasPermission('product.create');
       final canCreateOrder = await _apiService.hasPermission('order.create');
       final canReadNotice = await _apiService.hasPermission('notice.read');
       setState(() {
@@ -228,36 +236,37 @@ class _CustomAppBarState extends State<CustomAppBarPage2>
       });
     }
   }
-Future<void> _scanBarcode() async {
-  try {
-    // Открываем экран сканирования
-    final result = await Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => _BarcodeScannerScreen(),
-      ),
-    );
-    
-    if (result != null && result != '-1') {
-      if (kDebugMode) {
-        //print('CustomAppBarPage2: Отсканирован штрихкод: $result');
+
+  Future<void> _scanBarcode() async {
+    try {
+      // Открываем экран сканирования
+      final result = await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) => _BarcodeScannerScreen(),
+        ),
+      );
+
+      if (result != null && result != '-1') {
+        if (kDebugMode) {
+          //print('CustomAppBarPage2: Отсканирован штрихкод: $result');
+        }
+        context.read<GoodsBloc>().add(SearchGoodsByBarcode(result));
+      } else {
+        if (kDebugMode) {
+          //print('CustomAppBarPage2: Сканирование отменено');
+        }
       }
-      context.read<GoodsBloc>().add(SearchGoodsByBarcode(result));
-    } else {
+    } catch (e) {
       if (kDebugMode) {
-        //print('CustomAppBarPage2: Сканирование отменено');
+        //print('CustomAppBarPage2: Ошибка сканирования: $e');
       }
+      showCustomSnackBar(
+        context: context,
+        message: AppLocalizations.of(context)!.translate('barcode_scan_error'),
+        isSuccess: false,
+      );
     }
-  } catch (e) {
-    if (kDebugMode) {
-      //print('CustomAppBarPage2: Ошибка сканирования: $e');
-    }
-    showCustomSnackBar(
-      context: context,
-      message: AppLocalizations.of(context)!.translate('barcode_scan_error'),
-      isSuccess: false,
-    );
   }
-}
 
   Future<void> _checkOverdueTasks() async {
     try {
@@ -700,50 +709,50 @@ Future<void> _scanBarcode() async {
             },
           ),
         if (widget.showFilterIcon && _canCreateProduct)
-        IconButton(
-          icon: Padding(
-            padding: const EdgeInsets.only(left: 12),
-            child: Image.asset(
-              'assets/icons/AppBar/scanner.png',// Предполагается, что есть иконка для штрихкода
-              width: 24,
-              height: 24,
+          IconButton(
+            icon: Padding(
+              padding: const EdgeInsets.only(left: 12),
+              child: Image.asset(
+                'assets/icons/AppBar/scanner.png', // Предполагается, что есть иконка для штрихкода
+                width: 24,
+                height: 24,
+              ),
             ),
+            onPressed: _scanBarcode,
+            tooltip: AppLocalizations.of(context)!.translate('scan_barcode'),
           ),
-          onPressed: _scanBarcode,
-          tooltip: AppLocalizations.of(context)!.translate('scan_barcode'),
-        ),
-               if (widget.showFilterIcon && _canCreateProduct)
-
-        IconButton(
-          icon: Padding(
-            padding: const EdgeInsets.only(left: 0),
-            child: Image.asset(
-              'assets/icons/AppBar/filter.png',
-              width: 24,
-              height: 24,
-              color: _isGoodsFiltering ? _iconColor : null,
+        if (widget.showFilterIcon && _canCreateProduct)
+          IconButton(
+            icon: Padding(
+              padding: const EdgeInsets.only(left: 0),
+              child: Image.asset(
+                'assets/icons/AppBar/filter.png',
+                width: 24,
+                height: 24,
+                color: _isGoodsFiltering ? _iconColor : null,
+              ),
             ),
+            onPressed: () {
+              navigateToGoodsFilterScreen(context);
+            },
           ),
-          onPressed: () {
-            navigateToGoodsFilterScreen(context);
-          },
-        ),
-      if (widget.showFilterOrderIcon && _canCreateOrder)
-        IconButton(
-          icon: Padding(
-            padding: const EdgeInsets.only(left: 12),
-            child: Image.asset(
-              'assets/icons/AppBar/filter.png',
-              width: 24,
-              height: 24,
-              color: _isOrdersFiltering ? _iconColor : null, // Добавляем мигание
+        if (widget.showFilterOrderIcon && _canCreateOrder)
+          IconButton(
+            icon: Padding(
+              padding: const EdgeInsets.only(left: 12),
+              child: Image.asset(
+                'assets/icons/AppBar/filter.png',
+                width: 24,
+                height: 24,
+                color:
+                    _isOrdersFiltering ? _iconColor : null, // Добавляем мигание
+              ),
             ),
+            onPressed: () {
+              navigateToOrderFilterScreen(context);
+            },
           ),
-          onPressed: () {
-            navigateToOrderFilterScreen(context);
-          },
-        ),
-    ]),
+      ]),
     );
   }
 
@@ -767,9 +776,11 @@ Future<void> _scanBarcode() async {
     }
 
     if (widget.currentFilters.containsKey('discount_percent')) {
-      initialDiscountPercent = widget.currentFilters['discount_percent'] is double
-          ? widget.currentFilters['discount_percent']
-          : double.tryParse(widget.currentFilters['discount_percent'].toString());
+      initialDiscountPercent =
+          widget.currentFilters['discount_percent'] is double
+              ? widget.currentFilters['discount_percent']
+              : double.tryParse(
+                  widget.currentFilters['discount_percent'].toString());
     }
 
     if (widget.currentFilters.containsKey('label_id') &&
@@ -814,69 +825,88 @@ Future<void> _scanBarcode() async {
   }
 
   void navigateToOrderFilterScreen(BuildContext context) {
-  if (kDebugMode) {
-    //print('CustomAppBarPage2: Переход к экрану фильтров заказов');
-    //print('CustomAppBarPage2: Текущие фильтры: ${widget.currentFilters}');
-  }
+    if (kDebugMode) {
+      //print('CustomAppBarPage2: Переход к экрану фильтров заказов');
+      //print('CustomAppBarPage2: Текущие фильтры: ${widget.currentFilters}');
+    }
 
-  DateTime? initialFromDate = widget.currentFilters['fromDate'];
-  DateTime? initialToDate = widget.currentFilters['toDate'];
-  String? initialClient = widget.currentFilters['client'];
-  String? initialStatus = widget.currentFilters['status'];
-  String? initialPaymentMethod = widget.currentFilters['paymentMethod'];
-  List<String>? initialManagers = widget.currentFilters['managers'] != null
-      ? List<String>.from(widget.currentFilters['managers'])
-      : null;
-  List<String>? initialRegions = widget.currentFilters['regions'] != null
-      ? List<String>.from(widget.currentFilters['regions'])
-      : null;
-  List<String>? initialLeads = widget.currentFilters['leads'] != null
-      ? List<String>.from(widget.currentFilters['leads'])
-      : null;
+    DateTime? initialFromDate = widget.currentFilters['fromDate'];
+    DateTime? initialToDate = widget.currentFilters['toDate'];
+    String? initialClient = widget.currentFilters['client'];
+    String? initialStatus = widget.currentFilters['status'];
+    String? initialPaymentMethod = widget.currentFilters['paymentMethod'];
+    String? initialDeliveryType = widget.currentFilters['deliveryType'];
+    List<int>? initialReasonForRefusalIds =
+        (widget.currentFilters['reason_for_refusal_ids'] as List?)
+            ?.map((id) => int.parse(id.toString()))
+            .toList();
+    Map<String, List<String>>? initialCustomFieldSelections =
+        (widget.currentFilters['custom_field_filters'] as Map<String, dynamic>?)
+            ?.map((key, value) =>
+                MapEntry(key, List<String>.from(value as List<dynamic>)));
+    List<String>? initialManagers = widget.currentFilters['managers'] != null
+        ? List<String>.from(widget.currentFilters['managers'])
+        : null;
+    List<String>? initialRegions = widget.currentFilters['regions'] != null
+        ? List<String>.from(widget.currentFilters['regions'])
+        : null;
+    List<String>? initialLeads = widget.currentFilters['leads'] != null
+        ? List<String>.from(widget.currentFilters['leads'])
+        : null;
 
-  Navigator.push(
-    context,
-    MaterialPageRoute(
-      builder: (context) => OrdersFilterScreen(
-        onSelectedDataFilter: (filters) {
-          if (kDebugMode) {
-            ////print('CustomAppBarPage2: Получены фильтры из OrdersFilterScreen: $filters');
-          }
-          setState(() {
-            _isOrdersFiltering = filters.isNotEmpty ||
-                (filters['managers'] != null && filters['managers'].isNotEmpty) ||
-                (filters['regions'] != null && filters['regions'].isNotEmpty) ||
-                (filters['leads'] != null && filters['leads'].isNotEmpty) ||
-                filters['fromDate'] != null ||
-                filters['toDate'] != null ||
-                filters['client'] != null ||
-                filters['status'] != null ||
-                filters['paymentMethod'] != null;
-          });
-          widget.onFilterGoodsSelected?.call(filters);
-        },
-        onResetFilters: () {
-          if (kDebugMode) {
-            ////print('CustomAppBarPage2: Сброс фильтров из OrdersFilterScreen');
-          }
-          setState(() {
-            _isOrdersFiltering = false;
-            widget.currentFilters.clear(); // Очищаем фильтры
-          });
-          widget.onGoodsResetFilters?.call();
-        },
-        initialFromDate: initialFromDate,
-        initialToDate: initialToDate,
-        initialClient: initialClient,
-        initialStatus: initialStatus,
-        initialPaymentMethod: initialPaymentMethod,
-        initialManagers: initialManagers,
-        initialRegions: initialRegions,
-        initialLeads: initialLeads,
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => OrdersFilterScreen(
+          onSelectedDataFilter: (filters) {
+            if (kDebugMode) {
+              ////print('CustomAppBarPage2: Получены фильтры из OrdersFilterScreen: $filters');
+            }
+            setState(() {
+              _isOrdersFiltering = filters.isNotEmpty ||
+                  (filters['managers'] != null &&
+                      filters['managers'].isNotEmpty) ||
+                  (filters['regions'] != null &&
+                      filters['regions'].isNotEmpty) ||
+                  (filters['leads'] != null && filters['leads'].isNotEmpty) ||
+                  filters['fromDate'] != null ||
+                  filters['toDate'] != null ||
+                  filters['client'] != null ||
+                  filters['status'] != null ||
+                  filters['paymentMethod'] != null ||
+                  filters['deliveryType'] != null ||
+                  (filters['reason_for_refusal_ids'] != null &&
+                      filters['reason_for_refusal_ids'].isNotEmpty) ||
+                  (filters['custom_field_filters'] != null &&
+                      (filters['custom_field_filters'] as Map).isNotEmpty);
+            });
+            widget.onFilterGoodsSelected?.call(filters);
+          },
+          onResetFilters: () {
+            if (kDebugMode) {
+              ////print('CustomAppBarPage2: Сброс фильтров из OrdersFilterScreen');
+            }
+            setState(() {
+              _isOrdersFiltering = false;
+              widget.currentFilters.clear(); // Очищаем фильтры
+            });
+            widget.onGoodsResetFilters?.call();
+          },
+          initialFromDate: initialFromDate,
+          initialToDate: initialToDate,
+          initialClient: initialClient,
+          initialStatus: initialStatus,
+          initialPaymentMethod: initialPaymentMethod,
+          initialDeliveryType: initialDeliveryType,
+          initialReasonForRefusalIds: initialReasonForRefusalIds,
+          initialManagers: initialManagers,
+          initialRegions: initialRegions,
+          initialLeads: initialLeads,
+          initialCustomFieldSelections: initialCustomFieldSelections,
+        ),
       ),
-    ),
-  );
-}
+    );
+  }
 
   void navigateToIncomeFilterScreen(BuildContext context) {
     if (kDebugMode) {
@@ -894,11 +924,11 @@ Future<void> _scanBarcode() async {
     bool? initialIsDeleted;
 
     if (widget.currentFilters.containsKey('supplier_id')) {
-        initialSupplier = widget.currentFilters['supplier_id'];
+      initialSupplier = widget.currentFilters['supplier_id'];
     }
 
     if (widget.currentFilters.containsKey('cash_register_id')) {
-        initialCashRegister = widget.currentFilters['cash_register_id'];
+      initialCashRegister = widget.currentFilters['cash_register_id'];
     }
 
     if (widget.currentFilters.containsKey('lead_id')) {
@@ -916,7 +946,7 @@ Future<void> _scanBarcode() async {
     if (widget.currentFilters.containsKey('deleted')) {
       final deletedValue = widget.currentFilters['deleted'];
       if (deletedValue is String) {
-        initialIsDeleted = deletedValue  == '1';
+        initialIsDeleted = deletedValue == '1';
       }
     }
 
@@ -989,7 +1019,7 @@ Future<void> _scanBarcode() async {
     if (widget.currentFilters.containsKey('deleted')) {
       final deletedValue = widget.currentFilters['deleted'];
       if (deletedValue is String) {
-        initialIsDeleted = deletedValue  == '1';
+        initialIsDeleted = deletedValue == '1';
       }
     }
 
@@ -1054,7 +1084,7 @@ Future<void> _scanBarcode() async {
     if (widget.currentFilters.containsKey('deleted')) {
       final deletedValue = widget.currentFilters['deleted'];
       if (deletedValue is String) {
-        initialIsDeleted = deletedValue  == '1';
+        initialIsDeleted = deletedValue == '1';
       }
     }
 
@@ -1119,7 +1149,7 @@ Future<void> _scanBarcode() async {
     if (widget.currentFilters.containsKey('deleted')) {
       final deletedValue = widget.currentFilters['deleted'];
       if (deletedValue is String) {
-        initialIsDeleted = deletedValue  == '1';
+        initialIsDeleted = deletedValue == '1';
       }
     }
 
@@ -1160,7 +1190,6 @@ Future<void> _scanBarcode() async {
       ),
     );
   }
-
 }
 
 class _BarcodeScannerScreen extends StatefulWidget {
@@ -1173,7 +1202,7 @@ class _BarcodeScannerScreenState extends State<_BarcodeScannerScreen>
   MobileScannerController controller = MobileScannerController();
   bool isScanned = false;
   bool isFlashOn = false;
-  
+
   late AnimationController _scanLineController;
   late AnimationController _pulseController;
   late Animation<double> _scanLineAnimation;
@@ -1182,13 +1211,13 @@ class _BarcodeScannerScreenState extends State<_BarcodeScannerScreen>
   @override
   void initState() {
     super.initState();
-    
+
     // Анимация сканирующей линии
     _scanLineController = AnimationController(
       duration: Duration(seconds: 2),
       vsync: this,
     )..repeat();
-    
+
     _scanLineAnimation = Tween<double>(
       begin: 0.0,
       end: 1.0,
@@ -1196,13 +1225,13 @@ class _BarcodeScannerScreenState extends State<_BarcodeScannerScreen>
       parent: _scanLineController,
       curve: Curves.easeInOut,
     ));
-    
+
     // Анимация пульсации углов
     _pulseController = AnimationController(
       duration: Duration(milliseconds: 1500),
       vsync: this,
     )..repeat(reverse: true);
-    
+
     _pulseAnimation = Tween<double>(
       begin: 0.8,
       end: 1.0,
@@ -1217,7 +1246,7 @@ class _BarcodeScannerScreenState extends State<_BarcodeScannerScreen>
     try {
       final ImagePicker picker = ImagePicker();
       final XFile? image = await picker.pickImage(source: ImageSource.gallery);
-      
+
       if (image != null) {
         // Показываем индикатор загрузки
         showDialog(
@@ -1234,7 +1263,8 @@ class _BarcodeScannerScreenState extends State<_BarcodeScannerScreen>
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   CircularProgressIndicator(
-                    valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF00FF88)),
+                    valueColor:
+                        AlwaysStoppedAnimation<Color>(Color(0xFF00FF88)),
                   ),
                   // SizedBox(height: 16),
                   // Text(
@@ -1248,11 +1278,12 @@ class _BarcodeScannerScreenState extends State<_BarcodeScannerScreen>
         );
 
         // Сканируем штрих-код из выбранного изображения
-        final BarcodeCapture? barcodeCapture = await controller.analyzeImage(image.path);
-        
+        final BarcodeCapture? barcodeCapture =
+            await controller.analyzeImage(image.path);
+
         // Убираем индикатор загрузки
         Navigator.of(context).pop();
-        
+
         if (barcodeCapture != null && barcodeCapture.barcodes.isNotEmpty) {
           final String code = barcodeCapture.barcodes.first.rawValue ?? '';
           if (code.isNotEmpty) {
@@ -1333,13 +1364,13 @@ class _BarcodeScannerScreenState extends State<_BarcodeScannerScreen>
               }
             },
           ),
-          
+
           // Темный оверлей с вырезом для сканирования
           _buildScanOverlay(),
-          
+
           // Верхняя панель
           _buildTopBar(),
-          
+
           // Нижняя панель
           _buildBottomPanel(),
         ],
@@ -1369,7 +1400,7 @@ class _BarcodeScannerScreenState extends State<_BarcodeScannerScreen>
                     );
                   },
                 ),
-                
+
                 // Сканирующая линия
                 AnimatedBuilder(
                   animation: _scanLineAnimation,
@@ -1447,7 +1478,7 @@ class _BarcodeScannerScreenState extends State<_BarcodeScannerScreen>
                 onPressed: () => Navigator.of(context).pop('-1'),
               ),
             ),
-            
+
             Expanded(
               child: Text(
                 'Сканер штрих-кода',
@@ -1459,16 +1490,16 @@ class _BarcodeScannerScreenState extends State<_BarcodeScannerScreen>
                 textAlign: TextAlign.center,
               ),
             ),
-            
+
             // Кнопка фонарика
             Container(
               decoration: BoxDecoration(
-                color: isFlashOn 
+                color: isFlashOn
                     ? Color(0xFF00FF88).withOpacity(0.2)
                     : Colors.white.withOpacity(0.15),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: isFlashOn 
+                  color: isFlashOn
                       ? Color(0xFF00FF88)
                       : Colors.white.withOpacity(0.2),
                 ),
@@ -1547,9 +1578,9 @@ class _BarcodeScannerScreenState extends State<_BarcodeScannerScreen>
                 ],
               ),
             ),
-            
+
             SizedBox(height: 24),
-            
+
             // Кнопки действий
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -1560,7 +1591,7 @@ class _BarcodeScannerScreenState extends State<_BarcodeScannerScreen>
                   label: 'Галерея',
                   onPressed: _pickImageFromGallery,
                 ),
-                
+
                 // Центральная кнопка отмены
                 Container(
                   width: 80,
@@ -1582,7 +1613,7 @@ class _BarcodeScannerScreenState extends State<_BarcodeScannerScreen>
                     onPressed: () => Navigator.of(context).pop('-1'),
                   ),
                 ),
-                
+
                 // Пустое место для симметрии
                 SizedBox(width: 64),
               ],

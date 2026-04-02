@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:app_tracking_transparency/app_tracking_transparency.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/api/service/firebase_api.dart';
@@ -7,11 +9,13 @@ import 'package:crm_task_manager/bloc/My-Task_Status_Name/statusName_bloc.dart';
 import 'package:crm_task_manager/bloc/Task_Status_Name/statusName_bloc.dart';
 import 'package:crm_task_manager/bloc/auth_bloc_pin/forgot_auth_bloc.dart';
 import 'package:crm_task_manager/bloc/auth_domain/domain_bloc.dart';
+import 'package:crm_task_manager/bloc/advertising_campaign_list/advertising_campaign_bloc.dart';
 import 'package:crm_task_manager/bloc/author/get_all_author_bloc.dart';
 import 'package:crm_task_manager/bloc/calendar/calendar_bloc.dart';
 import 'package:crm_task_manager/bloc/call_bloc/call_center_bloc.dart';
 import 'package:crm_task_manager/bloc/call_bloc/operator_bloc/operator_bloc.dart';
 import 'package:crm_task_manager/bloc/cash_desk/cash_desk_bloc.dart';
+import 'package:crm_task_manager/bloc/city_list/city_bloc.dart';
 import 'package:crm_task_manager/bloc/chats/chat_profile/chats_profile_task_bloc.dart';
 import 'package:crm_task_manager/bloc/chats/delete_message/delete_message_bloc.dart';
 import 'package:crm_task_manager/bloc/chats/groupe_chat/group_chat_bloc.dart';
@@ -57,6 +61,7 @@ import 'package:crm_task_manager/bloc/history_deal/deal_history_bloc.dart';
 import 'package:crm_task_manager/bloc/history_lead/history_bloc.dart';
 import 'package:crm_task_manager/bloc/history_task/task_history_bloc.dart';
 import 'package:crm_task_manager/bloc/lead/lead_bloc.dart';
+import 'package:crm_task_manager/bloc/lead_channel_list/lead_channel_bloc.dart';
 import 'package:crm_task_manager/bloc/lead_by_id/leadById_bloc.dart';
 import 'package:crm_task_manager/bloc/lead_deal/lead_deal_bloc.dart';
 import 'package:crm_task_manager/bloc/login/login_bloc.dart';
@@ -121,6 +126,8 @@ import 'package:crm_task_manager/bloc/user/client/get_all_client_bloc.dart';
 import 'package:crm_task_manager/bloc/user/create_cleant/create_client_bloc.dart';
 import 'package:crm_task_manager/bloc/user/user_bloc.dart';
 import 'package:crm_task_manager/firebase_options.dart';
+import 'package:crm_task_manager/offline/core/core_outbox_executors.dart';
+import 'package:crm_task_manager/offline/core/offline_bootstrap.dart';
 import 'package:crm_task_manager/screens/auth/pin_screen.dart';
 import 'package:crm_task_manager/screens/chats/chats_screen.dart';
 import 'package:crm_task_manager/screens/auth/pin_setup_screen.dart';
@@ -139,7 +146,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:new_version_plus/new_version_plus.dart';
-import 'package:provider/provider.dart'; 
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'bloc/cash_register_list/cash_register_list_bloc.dart';
 import 'bloc/page_2_BLOC/document/incoming/incoming_document_history/incoming_document_history_bloc.dart';
@@ -155,9 +162,10 @@ final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
 void main() async {
   try {
     WidgetsFlutterBinding.ensureInitialized();
+    await OfflineBootstrap.initialize();
 
     await _initializeFirebase();
-    
+
     final apiService = ApiService();
     final authService = AuthService();
 
@@ -174,14 +182,11 @@ void main() async {
 
       if (isDomainChecked) {
         await apiService.initialize();
-        await apiService.ensureSelectedSalesFunnelInitialized();
+        CoreOutboxExecutors.register(apiService);
       }
     } else {
       await _clearAllApplicationData(apiService, authService);
     }
-
-    await AppTrackingTransparency.requestTrackingAuthorization();
-    await _initializeFirebaseMessaging(apiService);
 
     RemoteMessage? initialMessage;
     try {
@@ -269,7 +274,7 @@ Future<void> _initializeFirebaseMessaging(ApiService apiService) async {
 
     await Future.delayed(const Duration(milliseconds: 500));
 
-    final settings = await FirebaseMessaging.instance.requestPermission(
+    await FirebaseMessaging.instance.requestPermission(
       alert: true,
       badge: true,
       sound: true,
@@ -480,7 +485,7 @@ class MyApp extends StatefulWidget {
   final Locale initialLocale;
   final RemoteMessage? initialMessage;
   final bool sessionValid;
-  
+
   const MyApp({
     required this.apiService,
     required this.authService,
@@ -504,6 +509,7 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   Locale? _locale;
   bool _platformServicesInitialized = false;
+  bool _deferredStartupInitialized = false;
 
   @override
   void initState() {
@@ -522,7 +528,22 @@ class _MyAppState extends State<MyApp> {
 
     WidgetService.initialize();
     await NativeInternetMonitor().initialize();
+    _initializeDeferredStartup();
   }
+
+  Future<void> _initializeDeferredStartup() async {
+    if (_deferredStartupInitialized) {
+      return;
+    }
+    _deferredStartupInitialized = true;
+
+    unawaited(AppTrackingTransparency.requestTrackingAuthorization());
+    unawaited(_initializeFirebaseMessaging(widget.apiService));
+    if (widget.isDomainChecked && widget.sessionValid) {
+      unawaited(widget.apiService.ensureSelectedSalesFunnelInitialized());
+    }
+  }
+
 //1
   Future<void> checkForNewVersion(BuildContext context) async {
     // TODO remove on building ipa or apk files
@@ -581,8 +602,12 @@ class _MyAppState extends State<MyApp> {
         BlocProvider(create: (context) => NotesBloc(widget.apiService)),
         BlocProvider(create: (context) => GetAllManagerBloc()),
         BlocProvider(create: (context) => GetAllRegionBloc()),
+        BlocProvider(create: (context) => GetAllCityBloc()),
         BlocProvider(create: (context) => GetAllSourceBloc()),
-        BlocProvider(create: (context) => GetAllLeadBloc()),
+        BlocProvider(create: (context) => GetAllLeadChannelBloc()),
+        BlocProvider(create: (context) => GetAllAdvertisingCampaignBloc()),
+        BlocProvider(
+            create: (context) => GetAllLeadBloc(apiService: widget.apiService)),
         BlocProvider(create: (context) => GetAllCashRegisterBloc()),
         BlocProvider(create: (context) => GetAllIncomeCategoryBloc()),
         BlocProvider(create: (context) => GetAllSupplierBloc()),
@@ -622,14 +647,14 @@ class _MyAppState extends State<MyApp> {
         BlocProvider(create: (context) => ListenSenderVoiceCubit()),
         BlocProvider(create: (context) => ListenSenderFileCubit()),
         BlocProvider(
-          create: (context) => ChatsBloc(ApiService()),
+          create: (context) => ChatsBloc(widget.apiService),
         ),
         BlocProvider(create: (context) => TaskStatusBloc(ApiService())),
         BlocProvider(create: (context) => MyTaskStatusBloc(ApiService())),
         BlocProvider(create: (context) => OrganizationBloc(ApiService())),
         BlocProvider(create: (context) => NotificationBloc(ApiService())),
         BlocProvider(
-          create: (context) => ChatsBloc(ApiService()),
+          create: (context) => ChatsBloc(widget.apiService),
         ),
         BlocProvider(create: (context) => TaskStatusBloc(ApiService())),
         BlocProvider(create: (context) => DashboardChartBloc(ApiService())),

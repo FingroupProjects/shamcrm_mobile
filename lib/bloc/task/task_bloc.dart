@@ -3,6 +3,9 @@ import 'dart:io';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/models/api_exception_model.dart';
 import 'package:crm_task_manager/models/task_model.dart';
+import 'package:crm_task_manager/offline/core/offline_module.dart';
+import 'package:crm_task_manager/offline/core/offline_runtime.dart';
+import 'package:crm_task_manager/offline/core/request_priority.dart';
 import 'package:crm_task_manager/screens/task/task_cache.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -23,6 +26,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
   bool? _currentHasDeal;
   bool? _currentUrgent;
   List<int>? _currentProjectIds;
+  List<int>? _currentReasonForRefusalIds;
   List<String>? _currentAuthors;
   DateTime? _currentDeadlineFromDate;
   DateTime? _currentDeadlineToDate;
@@ -134,6 +138,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
         _currentHasDeal = null;
         _currentUrgent = null;
         _currentProjectIds = null;
+        _currentReasonForRefusalIds = null;
         _currentAuthors = null;
         _currentDeadlineFromDate = null;
         _currentDeadlineToDate = null;
@@ -320,6 +325,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
       _currentHasDeal = event.hasDeal;
       _currentUrgent = event.urgent;
       _currentProjectIds = event.projectIds;
+      _currentReasonForRefusalIds = event.reasonForRefusalIds;
       _currentAuthors = event.authors;
       _currentDeadlineFromDate = event.deadlinefromDate;
       _currentDeadlineToDate = event.deadlinetoDate;
@@ -381,6 +387,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
             hasDeal: event.hasDeal,
             urgent: event.urgent,
             projectIds: event.projectIds,
+            reasonForRefusalIds: event.reasonForRefusalIds,
             authors: event.authors,
             deadlinefromDate: event.deadlinefromDate,
             deadlinetoDate: event.deadlinetoDate,
@@ -500,14 +507,15 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
             hasDeal: event.hasDeal ?? _currentHasDeal,
             urgent: event.urgent ?? _currentUrgent,
             projectIds: event.projectIds ?? _currentProjectIds,
+            reasonForRefusalIds:
+                event.reasonForRefusalIds ?? _currentReasonForRefusalIds,
             authors: event.authors ?? _currentAuthors,
             deadlinefromDate:
                 event.deadlinefromDate ?? _currentDeadlineFromDate,
             deadlinetoDate: event.deadlinetoDate ?? _currentDeadlineToDate,
             completedFromDate:
                 event.completedFromDate ?? _currentCompletedFromDate,
-            completedToDate:
-                event.completedToDate ?? _currentCompletedToDate,
+            completedToDate: event.completedToDate ?? _currentCompletedToDate,
             department: event.department ?? _currentDepartment,
             directoryValues: event.directoryValues ?? _currentDirectoryValues,
           )
@@ -533,7 +541,35 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
   Future<void> _createTask(CreateTask event, Emitter<TaskState> emit) async {
     emit(TaskLoading());
     if (!await _checkInternetConnection()) {
-      emit(TaskError(event.localizations.translate('no_internet_connection')));
+      if (event.files != null && event.files!.isNotEmpty) {
+        emit(TaskError(
+            'Офлайн-очередь для вложений будет доведена в phase 2. Сейчас офлайн поддерживаются только текстовые операции.'));
+        return;
+      }
+      await OfflineRuntime.instance.outboxService.enqueue(
+        id: 'task_create_${DateTime.now().millisecondsSinceEpoch}',
+        module: OfflineModule.task,
+        entityType: 'task',
+        entityId: 'local_${DateTime.now().millisecondsSinceEpoch}',
+        operationType: 'create',
+        payload: {
+          'name': event.name,
+          'statusId': event.statusId,
+          'taskStatusId': event.taskStatusId,
+          'priority': event.priority,
+          'startDate': event.startDate?.toIso8601String(),
+          'endDate': event.endDate?.toIso8601String(),
+          'projectId': event.projectId,
+          'userId': event.userId,
+          'description': event.description,
+          'customFields': event.customFields,
+          'directoryValues': event.directoryValues,
+        },
+        idempotencyKey: 'task-create-${DateTime.now().millisecondsSinceEpoch}',
+        priority: RequestPriority.high,
+      );
+      emit(TaskSuccess(
+          'Задача принята локально и поставлена в очередь на синхронизацию.'));
       return;
     }
     try {
@@ -566,7 +602,34 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
     emit(TaskLoading());
 
     if (!await _checkInternetConnection()) {
-      emit(TaskError(event.localizations.translate('no_internet_connection')));
+      await OfflineRuntime.instance.outboxService.enqueue(
+        id: 'task_update_${event.taskId}_${DateTime.now().millisecondsSinceEpoch}',
+        module: OfflineModule.task,
+        entityType: 'task',
+        entityId: event.taskId.toString(),
+        operationType: 'update',
+        payload: {
+          'taskId': event.taskId,
+          'name': event.name,
+          'taskStatusId': event.taskStatusId,
+          'priority': event.priority,
+          'startDate': event.startDate?.toIso8601String(),
+          'endDate': event.endDate?.toIso8601String(),
+          'projectId': event.projectId,
+          'userId': event.userId,
+          'description': event.description,
+          'customFields': event.customFields,
+          'filePaths': event.filePaths,
+          'directoryValues': event.directoryValues,
+          'reasonForRefusalId': event.reasonForRefusalId,
+          'reasonForRefusal': event.reasonForRefusal,
+        },
+        idempotencyKey:
+            'task-update-${event.taskId}-${DateTime.now().millisecondsSinceEpoch}',
+        priority: RequestPriority.high,
+      );
+      emit(TaskSuccess(
+          'Изменения задачи приняты локально и поставлены в очередь.'));
       return;
     }
 
@@ -585,6 +648,8 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
         filePaths: event.filePaths,
         existingFiles: event.existingFiles,
         directoryValues: event.directoryValues, // Add for consistency
+        reasonForRefusalId: event.reasonForRefusalId,
+        reasonForRefusal: event.reasonForRefusal,
       );
 
       if (result['success']) {
@@ -611,6 +676,8 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
         (_currentHasDeal == true) ||
         (_currentUrgent == true) ||
         (_currentProjectIds != null && _currentProjectIds!.isNotEmpty) ||
+        (_currentReasonForRefusalIds != null &&
+            _currentReasonForRefusalIds!.isNotEmpty) ||
         (_currentAuthors != null && _currentAuthors!.isNotEmpty) ||
         (_currentDeadlineFromDate != null) ||
         (_currentDeadlineToDate != null) ||
@@ -788,6 +855,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
         urgent: event.urgent,
         deadlinefromDate: event.deadlinefromDate,
         deadlinetoDate: event.deadlinetoDate,
+        reasonForRefusalIds: event.reasonForRefusalIds,
         projectIds: event.projectIds,
         authors: event.authors,
         department: event.department,
@@ -845,6 +913,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
         _currentHasDeal = event.hasDeal;
         _currentUrgent = event.urgent;
         _currentProjectIds = event.projectIds;
+        _currentReasonForRefusalIds = event.reasonForRefusalIds;
         _currentAuthors = event.authors;
         _currentDeadlineFromDate = event.deadlinefromDate;
         _currentDeadlineToDate = event.deadlinetoDate;
@@ -880,6 +949,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
               event.completedFromDate,
               event.completedToDate,
               event.projectIds,
+              event.reasonForRefusalIds,
               event.authors,
               event.department,
               event.directoryValues,
@@ -928,6 +998,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
     DateTime? completedFromDate,
     DateTime? completedToDate,
     List<int>? projectIds,
+    List<int>? reasonForRefusalIds,
     List<String>? authors,
     String? department,
     List<Map<String, dynamic>>? directoryValues,
@@ -964,6 +1035,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
             completedFromDate: completedFromDate,
             completedToDate: completedToDate,
             projectIds: projectIds,
+            reasonForRefusalIds: reasonForRefusalIds,
             authors: authors,
             department: department,
             directoryValues: directoryValues,
@@ -1013,6 +1085,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
     _currentHasDeal = null;
     _currentUrgent = null;
     _currentProjectIds = null;
+    _currentReasonForRefusalIds = null;
     _currentAuthors = null;
     _currentDeadlineFromDate = null;
     _currentDeadlineToDate = null;
