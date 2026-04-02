@@ -315,7 +315,18 @@ class _EditWriteOffDocumentScreenState extends State<EditWriteOffDocumentScreen>
   }
 
   void _updateDocument() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (_isLoading) return;
+    setState(() => _isLoading = true);
+
+    void cancelLoading() {
+      if (!mounted || !_isLoading) return;
+      setState(() => _isLoading = false);
+    }
+
+    if (!_formKey.currentState!.validate()) {
+      cancelLoading();
+      return;
+    }
 
     if (_items.isEmpty) {
       _showSnackBar(
@@ -323,6 +334,7 @@ class _EditWriteOffDocumentScreenState extends State<EditWriteOffDocumentScreen>
             'Добавьте хотя бы один товар',
         false,
       );
+      cancelLoading();
       return;
     }
 
@@ -332,6 +344,7 @@ class _EditWriteOffDocumentScreenState extends State<EditWriteOffDocumentScreen>
             'Выберите склад',
         false,
       );
+      cancelLoading();
       return;
     }
 
@@ -341,6 +354,7 @@ class _EditWriteOffDocumentScreenState extends State<EditWriteOffDocumentScreen>
             'Выберите статью расхода',
         false,
       );
+      cancelLoading();
       return;
     }
 
@@ -373,10 +387,9 @@ class _EditWriteOffDocumentScreenState extends State<EditWriteOffDocumentScreen>
       );
       // Фокусируемся на первом товаре с ошибкой
       _focusFirstErrorItem();
+      cancelLoading();
       return;
     }
-
-    setState(() => _isLoading = true);
 
     try {
       DateTime parsedDate =
@@ -400,7 +413,7 @@ class _EditWriteOffDocumentScreenState extends State<EditWriteOffDocumentScreen>
             organizationId: widget.document.organizationId ?? 1,
           ));
     } catch (e) {
-      setState(() => _isLoading = false);
+      cancelLoading();
       _showSnackBar(
         AppLocalizations.of(context)?.translate('enter_valid_datetime') ??
             'Введите корректную дату и время',

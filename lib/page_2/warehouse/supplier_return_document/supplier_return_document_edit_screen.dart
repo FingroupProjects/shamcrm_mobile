@@ -455,13 +455,25 @@ class _SupplierReturnDocumentEditScreenState
   }
 
   void _updateDocument() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (_isLoading) return;
+    setState(() => _isLoading = true);
+
+    void cancelLoading() {
+      if (!mounted || !_isLoading) return;
+      setState(() => _isLoading = false);
+    }
+
+    if (!_formKey.currentState!.validate()) {
+      cancelLoading();
+      return;
+    }
     if (_items.isEmpty) {
       _showSnackBar(
         AppLocalizations.of(context)!.translate('add_at_least_one_good') ??
             'Добавьте хотя бы один товар',
         false,
       );
+      cancelLoading();
       return;
     }
     if (_selectedStorage == null) {
@@ -470,6 +482,7 @@ class _SupplierReturnDocumentEditScreenState
             'Выберите склад',
         false,
       );
+      cancelLoading();
       return;
     }
     if (_selectedSupplier == null) {
@@ -478,6 +491,7 @@ class _SupplierReturnDocumentEditScreenState
             'Выберите поставщика',
         false,
       );
+      cancelLoading();
       return;
     }
 
@@ -522,10 +536,9 @@ class _SupplierReturnDocumentEditScreenState
       );
       // Фокусируемся на первом товаре с ошибкой
       _focusFirstErrorItem();
+      cancelLoading();
       return;
     }
-
-    setState(() => _isLoading = true);
 
     try {
       DateTime parsedDate =
@@ -553,7 +566,7 @@ class _SupplierReturnDocumentEditScreenState
         exchangeRate: _exchangeRateValue,
       ));
     } catch (e) {
-      setState(() => _isLoading = false);
+      cancelLoading();
       _showSnackBar(
         AppLocalizations.of(context)!.translate('enter_valid_datetime') ??
             'Введите корректную дату и время',

@@ -414,31 +414,7 @@ class _ManufactureScreenState extends State<ManufactureScreen> {
                       });
                     }
                   } else if (state is ManufactureCreateError) {
-                    if (mounted) {
-                      // ✅ ИСПРАВЛЕНО: Обновляем данные после ошибки, чтобы избежать белого экрана
-                      _manufactureBloc.add(FetchManufactures(
-                          forceRefresh: true,
-                          filters: _currentFilters,
-                          search: _search));
-                      WidgetsBinding.instance.addPostFrameCallback((_) {
-                        if (mounted && context.mounted) {
-                          if (state.statusCode == 409) {
-                            showSimpleErrorDialog(
-                              context,
-                              localizations?.translate('error') ?? 'Ошибка',
-                              state.message,
-                              errorDialogEnum:
-                                  ErrorDialogEnum.goodsMovementUpdate,
-                            );
-                            return;
-                          }
-                          showCustomSnackBar(
-                              context: context,
-                              message: state.message,
-                              isSuccess: false);
-                        }
-                      });
-                    }
+                    // Ошибки создания обрабатываются на самом экране создания.
                   } else if (state is ManufactureUpdateSuccess) {
                     if (mounted) {
                       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -455,30 +431,7 @@ class _ManufactureScreenState extends State<ManufactureScreen> {
                       });
                     }
                   } else if (state is ManufactureUpdateError) {
-                    if (mounted) {
-                      // ✅ ИСПРАВЛЕНО: Обновляем данные после ошибки, чтобы избежать белого экрана
-                      _manufactureBloc.add(FetchManufactures(
-                          forceRefresh: true,
-                          filters: _currentFilters,
-                          search: _search));
-                      WidgetsBinding.instance.addPostFrameCallback((_) {
-                        if (mounted && context.mounted) {
-                          if (state.statusCode == 409) {
-                            showSimpleErrorDialog(
-                                context,
-                                localizations?.translate('error') ?? 'Ошибка',
-                                state.message,
-                                errorDialogEnum:
-                                    ErrorDialogEnum.goodsMovementUpdate);
-                            return;
-                          }
-                          showCustomSnackBar(
-                              context: context,
-                              message: state.message,
-                              isSuccess: false);
-                        }
-                      });
-                    }
+                    // Ошибки обновления обрабатываются на самом экране редактирования.
                   } else if (state is ManufactureDeleteSuccess) {
                     debugPrint(
                         "ManufactureScreen.Bloc.State.ManufactureDeleteSuccess: ${_manufactureBloc.state}");

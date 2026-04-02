@@ -333,6 +333,14 @@ class _EditMovementDocumentScreenState extends State<EditMovementDocumentScreen>
   }
 
   void _updateDocument() async {
+    if (_isLoading) return;
+    setState(() => _isLoading = true);
+
+    void cancelLoading() {
+      if (!mounted || !_isLoading) return;
+      setState(() => _isLoading = false);
+    }
+
     // ✅ СНАЧАЛА проверяем склады и устанавливаем флаги ошибок
     bool hasStorageErrors = false;
 
@@ -367,11 +375,15 @@ class _EditMovementDocumentScreenState extends State<EditMovementDocumentScreen>
             'Склад-отправитель и склад-получатель должны быть разными',
         false,
       );
+      cancelLoading();
       return;
     }
 
     // ✅ ПОТОМ вызываем validate() чтобы показать текст ошибки
-    if (!_formKey.currentState!.validate()) return;
+    if (!_formKey.currentState!.validate()) {
+      cancelLoading();
+      return;
+    }
 
     if (hasStorageErrors) {
       _showSnackBar(
@@ -379,6 +391,7 @@ class _EditMovementDocumentScreenState extends State<EditMovementDocumentScreen>
             'Заполните обязательные поля',
         false,
       );
+      cancelLoading();
       return;
     }
 
@@ -417,10 +430,9 @@ class _EditMovementDocumentScreenState extends State<EditMovementDocumentScreen>
       );
       // Фокусируемся на первом товаре с ошибкой
       _focusFirstErrorItem();
+      cancelLoading();
       return;
     }
-
-    setState(() => _isLoading = true);
 
     try {
       DateTime parsedDate =
@@ -445,7 +457,7 @@ class _EditMovementDocumentScreenState extends State<EditMovementDocumentScreen>
             organizationId: widget.document.organizationId ?? 1,
           ));
     } catch (e) {
-      setState(() => _isLoading = false);
+      cancelLoading();
       _showSnackBar(
         AppLocalizations.of(context)!.translate('enter_valid_datetime'),
         false,

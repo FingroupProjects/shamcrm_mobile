@@ -36,6 +36,17 @@ class MoneyIncomeCard extends StatelessWidget {
     return double.tryParse(value.toString().replaceAll(',', '.')) ?? 0;
   }
 
+  String? _formatDocumentDate() {
+    final rawDate = document.date ?? document.createdAt;
+    if (rawDate == null || rawDate.isEmpty) return null;
+
+    try {
+      return DateFormat('dd/MM/yyyy HH:mm').format(DateTime.parse(rawDate).toLocal());
+    } catch (_) {
+      return rawDate;
+    }
+  }
+
   String _getLocalizedStatus(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
 
@@ -49,6 +60,11 @@ class MoneyIncomeCard extends StatelessWidget {
     }
   }
 
+  String _getDateLabel(AppLocalizations localizations) {
+    final rawLabel = localizations.translate('date') ?? 'Дата';
+    return rawLabel.trim().replaceFirst(RegExp(r':\s*$'), '');
+  }
+
   Color _getStatusColor() {
     if (document.deletedAt != null) {
       return Colors.red;
@@ -59,6 +75,7 @@ class MoneyIncomeCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
+    final formattedDate = _formatDocumentDate();
 
     return GestureDetector(
       onTap: () => onClick(document),
@@ -133,6 +150,18 @@ class MoneyIncomeCard extends StatelessWidget {
                       color: Color(0xff1E2E52),
                     ),
                   ),
+                  if (formattedDate != null) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      '${_getDateLabel(localizations)}: $formattedDate',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontFamily: 'Gilroy',
+                        fontWeight: FontWeight.w400,
+                        color: Color(0xff99A4BA),
+                      ),
+                    ),
+                  ],
                   if ((document.exchangeRate?.value ?? '').isNotEmpty) ...[
                     const SizedBox(height: 8),
                     Text(

@@ -455,6 +455,14 @@ class CreateManufactureDocumentScreenState
   }
 
   void _createDocument({bool approve = false}) async {
+    if (_isLoading) return;
+    setState(() => _isLoading = true);
+
+    void cancelLoading() {
+      if (!mounted || !_isLoading) return;
+      setState(() => _isLoading = false);
+    }
+
     // ✅ СНАЧАЛА проверяем склады и устанавливаем флаги ошибок
     bool hasStorageErrors = false;
 
@@ -489,11 +497,15 @@ class CreateManufactureDocumentScreenState
             'Склад-отправитель и склад-получатель должны быть разными',
         false,
       );
+      cancelLoading();
       return;
     }
 
     // ✅ ПОТОМ вызываем validate() чтобы показать текст ошибки
-    if (!_formKey.currentState!.validate()) return;
+    if (!_formKey.currentState!.validate()) {
+      cancelLoading();
+      return;
+    }
 
     if (hasStorageErrors) {
       _showSnackBar(
@@ -501,6 +513,7 @@ class CreateManufactureDocumentScreenState
             'Заполните обязательные поля',
         false,
       );
+      cancelLoading();
       return;
     }
 
@@ -540,10 +553,9 @@ class CreateManufactureDocumentScreenState
       );
       // Фокусируемся на первом товаре с ошибкой
       _focusFirstErrorItem();
+      cancelLoading();
       return;
     }
-
-    setState(() => _isLoading = true);
 
     try {
       DateTime? parsedDate =
@@ -584,7 +596,7 @@ class CreateManufactureDocumentScreenState
         approve: approve,
       ));
     } catch (e) {
-      setState(() => _isLoading = false);
+      cancelLoading();
       _showSnackBar(
         AppLocalizations.of(context)!.translate('enter_valid_datetime') ??
             'Введите корректную дату и время',
@@ -635,9 +647,11 @@ class CreateManufactureDocumentScreenState
           appBar: _buildAppBar(localizations),
           body: BlocListener<ManufactureBloc, ManufactureState>(
             listener: (context, state) {
-              setState(() => _isLoading = false);
               if (state is ManufactureCreateSuccess && mounted) {
+                setState(() => _isLoading = false);
                 Navigator.pop(context, true);
+              } else if (state is ManufactureCreateError && mounted) {
+                setState(() => _isLoading = false);
               }
             },
             child: Form(

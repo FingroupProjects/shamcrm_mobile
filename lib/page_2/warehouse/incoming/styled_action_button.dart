@@ -1,18 +1,37 @@
 import 'package:flutter/material.dart';
 
-class StyledActionButton extends StatelessWidget {
+class StyledActionButton extends StatefulWidget {
   final String text;
   final IconData icon;
   final Color color;
   final VoidCallback onPressed;
 
   const StyledActionButton({
-    Key? key,
+    super.key,
     required this.text,
     required this.icon,
     required this.color,
     required this.onPressed,
-  }) : super(key: key);
+  });
+
+  @override
+  State<StyledActionButton> createState() => _StyledActionButtonState();
+}
+
+class _StyledActionButtonState extends State<StyledActionButton> {
+  bool _tapLocked = false;
+
+  void _handleTap() {
+    if (_tapLocked) return;
+
+    setState(() => _tapLocked = true);
+    widget.onPressed();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_tapLocked) return;
+      setState(() => _tapLocked = false);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -20,7 +39,7 @@ class StyledActionButton extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
-        onTap: onPressed,
+        onTap: _tapLocked ? null : _handleTap,
         child: IntrinsicWidth(
           child: Container(
             constraints: const BoxConstraints(
@@ -28,7 +47,7 @@ class StyledActionButton extends StatelessWidget {
             ),
             padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
             decoration: BoxDecoration(
-              border: Border.all(color: color, width: 1.5),
+              border: Border.all(color: widget.color, width: 1.5),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
@@ -36,18 +55,18 @@ class StyledActionButton extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Icon(
-                  icon,
+                  widget.icon,
                   size: 18,
-                  color: color,
+                  color: widget.color,
                 ),
                 const SizedBox(width: 6),
                 Text(
-                  text,
+                  widget.text,
                   style: TextStyle(
                     fontSize: 14,
                     fontFamily: 'Gilroy',
                     fontWeight: FontWeight.w600,
-                    color: color,
+                    color: widget.color,
                   ),
                   maxLines: 1,
                 ),

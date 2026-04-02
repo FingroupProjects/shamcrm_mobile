@@ -858,7 +858,7 @@ class _OrderScreenState extends State<OrderScreen>
                   },
                 ),
               ),
-        floatingActionButton: _canCreateOrderStatus
+        floatingActionButton: _canCreateOrderStatus && !isClickAvatarIcon
             ? FloatingActionButton(
                 onPressed: () async {
                   final result = await Navigator.push(

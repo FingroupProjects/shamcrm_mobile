@@ -511,6 +511,14 @@ class _EditManufactureDocumentScreenState
   }
 
   void _updateDocument() async {
+    if (_isLoading) return;
+    setState(() => _isLoading = true);
+
+    void cancelLoading() {
+      if (!mounted || !_isLoading) return;
+      setState(() => _isLoading = false);
+    }
+
     // ✅ СНАЧАЛА проверяем склады и устанавливаем флаги ошибок
     bool hasStorageErrors = false;
 
@@ -545,11 +553,15 @@ class _EditManufactureDocumentScreenState
             'Склад-отправитель и склад-получатель должны быть разными',
         false,
       );
+      cancelLoading();
       return;
     }
 
     // ✅ ПОТОМ вызываем validate() чтобы показать текст ошибки
-    if (!_formKey.currentState!.validate()) return;
+    if (!_formKey.currentState!.validate()) {
+      cancelLoading();
+      return;
+    }
 
     if (hasStorageErrors) {
       _showSnackBar(
@@ -557,6 +569,7 @@ class _EditManufactureDocumentScreenState
             'Заполните обязательные поля',
         false,
       );
+      cancelLoading();
       return;
     }
 
@@ -595,10 +608,9 @@ class _EditManufactureDocumentScreenState
       );
       // Фокусируемся на первом товаре с ошибкой
       _focusFirstErrorItem();
+      cancelLoading();
       return;
     }
-
-    setState(() => _isLoading = true);
 
     try {
       DateTime parsedDate =
@@ -638,7 +650,7 @@ class _EditManufactureDocumentScreenState
             organizationId: widget.document.organizationId ?? 1,
           ));
     } catch (e) {
-      setState(() => _isLoading = false);
+      cancelLoading();
       _showSnackBar(
         AppLocalizations.of(context)!.translate('enter_valid_datetime'),
         false,
@@ -689,14 +701,14 @@ class _EditManufactureDocumentScreenState
           appBar: _buildAppBar(localizations),
           body: BlocListener<ManufactureBloc, ManufactureState>(
             listener: (context, state) {
-              setState(() => _isLoading = false);
-
               if (state is ManufactureUpdateSuccess && mounted) {
+                setState(() => _isLoading = false);
                 Navigator.pop(context, true);
                 return;
               }
 
               if (state is ManufactureUpdateError && mounted) {
+                setState(() => _isLoading = false);
                 final localizations = AppLocalizations.of(context)!;
 
                 if ((state.statusCode == 409 || state.statusCode == 422) &&

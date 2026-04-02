@@ -13253,7 +13253,8 @@ class ApiService {
         throw ('Ошибка загрузки данных статистики звонков');
       }
     } catch (e) {
-      throw ('Ошибка получения данных статистики звонков');
+      debugPrint('ApiService: getCallStatistics error: $e');
+      throw Exception('Ошибка получения данных статистики звонков: $e');
     }
   }
 
@@ -13281,7 +13282,8 @@ class ApiService {
         throw ('Ошибка загрузки данных статистики звонков');
       }
     } catch (e) {
-      throw ('Ошибка получения данных статистики звонков');
+      debugPrint('ApiService: getCallAnalytics error: $e');
+      throw Exception('Ошибка получения данных статистики звонков: $e');
     }
   }
 
@@ -13414,7 +13416,8 @@ class ApiService {
         throw ('Ошибка загрузки данных операторов');
       }
     } catch (e) {
-      throw ('Ошибка получения данных операторов');
+      debugPrint('ApiService: getOperators error: $e');
+      throw Exception('Ошибка получения данных операторов: $e');
     }
   }
 

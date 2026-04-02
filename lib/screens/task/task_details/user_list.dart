@@ -189,7 +189,9 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
                   width: 1.5,
-                  color: widget.hasError ? Colors.red : Colors.transparent,
+                  color: (widget.hasError || field.hasError)
+                      ? Colors.red
+                      : Colors.transparent,
                 ),
               ),
               child: isLoading

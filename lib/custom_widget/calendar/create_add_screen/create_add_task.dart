@@ -59,6 +59,7 @@ class _CreateTaskFromCalendareState extends State<CreateTaskFromCalendare> {
   List<String>? selectedUsers;
   List<CustomField> customFields = [];
   bool isEndDateInvalid = false;
+  bool isStatusInvalid = false;
   bool _showAdditionalFields = false;
 
   @override
@@ -353,15 +354,20 @@ Widget _buildFileIcon(String fileName, String fileExtension) {
   }
 
   void _submitForm() {
-    if (_formKey.currentState!.validate()) {
-      if (selectedStatusId == null) {
-          showCustomSnackBar(
-             context: context,
-             message: AppLocalizations.of(context)!.translate('please_select_status_task'),
-             isSuccess: false,
-           );
-        return;
-      }
+    setState(() {
+      isStatusInvalid = false;
+    });
+
+    final isFormValid = _formKey.currentState!.validate();
+    final hasMissingStatus = selectedStatusId == null;
+
+    if (hasMissingStatus) {
+      setState(() {
+        isStatusInvalid = true;
+      });
+    }
+
+    if (isFormValid && !hasMissingStatus) {
 
       try {
 
@@ -414,11 +420,11 @@ Widget _buildFileIcon(String fileName, String fileExtension) {
              );
       }
     } else {
-          showCustomSnackBar(
-              context: context,
-              message: AppLocalizations.of(context)!.translate('fill_required_fields'),
-              isSuccess: false,
-            );
+      showCustomSnackBar(
+        context: context,
+        message: 'fill_required_fields',
+        isSuccess: false,
+      );
     }
   }
 
@@ -483,12 +489,27 @@ Widget _buildFileIcon(String fileName, String fileExtension) {
                     children: [
                       TaskStatusRadioGroupWidget(
                         selectedStatus: selectedStatusId?.toString(),
+                        hasError: isStatusInvalid,
                         onSelectStatus: (TaskStatus selectedStatusData) {
                           setState(() {
                             selectedStatusId = selectedStatusData.id;
+                            isStatusInvalid = false;
                           });
                         },
                       ),
+                      if (isStatusInvalid)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 4, left: 12),
+                          child: Text(
+                            AppLocalizations.of(context)!
+                                .translate('field_required'),
+                            style: const TextStyle(
+                              color: Colors.red,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w400,
+                            ),
+                          ),
+                        ),
                       const SizedBox(height: 8),
                       CustomTextFieldWithPriority(
                         controller: nameController,

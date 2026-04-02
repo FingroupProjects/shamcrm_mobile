@@ -5,9 +5,12 @@ class CallStatistics {
   CallStatistics({required this.result, this.errors});
 
   factory CallStatistics.fromJson(Map<String, dynamic> json) {
-    var resultList = json['result'] as List;
+    final resultList = (json['result'] as List?) ?? const [];
     return CallStatistics(
-      result: resultList.map((item) => CallStatMonth.fromJson(item)).toList(),
+      result: resultList
+          .whereType<Map<String, dynamic>>()
+          .map(CallStatMonth.fromJson)
+          .toList(),
       errors: json['errors'],
     );
   }
@@ -34,16 +37,28 @@ class CallStatMonth {
     required this.incoming,
   });
 
+  static num _toNum(dynamic value, {num defaultValue = 0}) {
+    if (value == null) return defaultValue;
+    if (value is num) return value;
+    return num.tryParse(value.toString()) ?? defaultValue;
+  }
+
   factory CallStatMonth.fromJson(Map<String, dynamic> json) {
+    final total = _toNum(json['total']);
+    final outgoing = _toNum(json['outgoing']);
+    final incoming = json.containsKey('incoming')
+        ? _toNum(json['incoming'])
+        : (total - outgoing).clamp(0, double.infinity);
+
     return CallStatMonth(
-      month: num.parse(json['month'].toString()),
-      total: num.parse(json['total'].toString()),
-      outgoing: num.parse(json['outgoing'].toString()),
-      missed: num.parse(json['missed'].toString()),
-      unanswered: num.parse(json['unanswered'].toString()),
-      averageAnswerTime: num.parse((json['average_answer_time'].toString())),
-      notCalledBackCount: num.parse(json['not_called_back_count'].toString()),
-      incoming: num.parse((json['total'].toString())) - num.parse(json['outgoing'].toString()),
+      month: _toNum(json['month']),
+      total: total,
+      outgoing: outgoing,
+      missed: _toNum(json['missed']),
+      unanswered: _toNum(json['unanswered'], defaultValue: incoming),
+      averageAnswerTime: _toNum(json['average_answer_time']),
+      notCalledBackCount: _toNum(json['not_called_back_count']),
+      incoming: incoming,
     );
   }
 }
