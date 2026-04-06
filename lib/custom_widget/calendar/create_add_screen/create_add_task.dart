@@ -21,7 +21,6 @@ import 'package:crm_task_manager/screens/profile/languages/app_localizations.dar
 import 'package:crm_task_manager/screens/task/task_details/project_list_task.dart';
 import 'package:crm_task_manager/screens/task/task_details/status_list.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
-import 'package:file_picker/file_picker.dart';
 import 'package:crm_task_manager/bloc/user/user_bloc.dart';
 import 'package:crm_task_manager/bloc/user/user_event.dart';
 import 'package:crm_task_manager/screens/task/task_details/user_list.dart';
@@ -30,7 +29,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:intl/intl.dart';
-
 class CreateTaskFromCalendare extends StatefulWidget {
   final DateTime? initialDate;
 
@@ -419,12 +417,6 @@ Widget _buildFileIcon(String fileName, String fileExtension) {
                isSuccess: false,
              );
       }
-    } else {
-      showCustomSnackBar(
-        context: context,
-        message: 'fill_required_fields',
-        isSuccess: false,
-      );
     }
   }
 

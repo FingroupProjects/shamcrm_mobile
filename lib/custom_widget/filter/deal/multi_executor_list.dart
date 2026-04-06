@@ -143,9 +143,6 @@ class _DealExecutorsMultiSelectWidgetState
                       child: Center(child: CircularProgressIndicator()),
                     )
                   : CustomDropdown<UserData>.multiSelectSearch(
-                      key: ValueKey(
-                        'deal-executors-${executorsList.length}-${selectedExecutorsData.length}',
-                      ),
                       items: executorsList,
                       initialItems: selectedExecutorsData,
                       searchHintText:

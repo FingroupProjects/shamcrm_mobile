@@ -50,7 +50,7 @@ class CreateGoods extends GoodsEvent {
   final String name;
   final String description;
   final int? unitId;
-  final int quantity;
+  final int? quantity;
   final int parentId;
   final List<Map<String, dynamic>> attributes;
   final List<Map<String, dynamic>> variants;
@@ -65,6 +65,7 @@ class CreateGoods extends GoodsEvent {
   final bool isService; // Добавляем поле для указания услуги
   final String? productionType;
   final List<Map<String, dynamic>> materialGoods;
+  final List<Map<String, dynamic>> relatedGoods;
 
   CreateGoods({
     required this.isService,
@@ -85,6 +86,7 @@ class CreateGoods extends GoodsEvent {
     this.labelId, // Добавляем в конструктор
     this.productionType,
     this.materialGoods = const [],
+    this.relatedGoods = const [],
   });
 }
 
@@ -93,8 +95,8 @@ class UpdateGoods extends GoodsEvent {
   final int goodId;
   final String name;
   final String description;
-  final int unitId;
-  final int quantity;
+  final int? unitId;
+  final int? quantity;
   final int parentId;
   final List<Map<String, dynamic>> attributes;
   final List<Map<String, dynamic>> variants;
@@ -108,6 +110,7 @@ class UpdateGoods extends GoodsEvent {
   final int? labelId; // Добавляем поле для ID метки
   final String? productionType;
   final List<Map<String, dynamic>> materialGoods;
+  final List<Map<String, dynamic>> relatedGoods;
 
   UpdateGoods({
     required this.isService,
@@ -129,6 +132,7 @@ class UpdateGoods extends GoodsEvent {
     this.labelId, // Добавляем в конструктор
     this.productionType,
     this.materialGoods = const [],
+    this.relatedGoods = const [],
   });
 }
 
