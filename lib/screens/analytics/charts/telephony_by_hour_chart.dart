@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:crm_task_manager/screens/analytics/widgets/chart_shimmer_loader.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:crm_task_manager/screens/analytics/utils/chart_request_policy.dart';
 import 'package:crm_task_manager/screens/analytics/utils/responsive_helper.dart';
 import 'package:crm_task_manager/screens/analytics/models/telephony_by_hour_model.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
@@ -77,6 +78,8 @@ class _TelephonyByHourChartState extends State<TelephonyByHourChart> {
   }
 
   Future<void> _loadData() async {
+    final chartId = AnalyticsChartRequestPolicy.chartIdForState(this);
+    AnalyticsChartRequestPolicy.cancelPendingRetry(chartId);
     setState(() {
       _isLoading = true;
       _error = null;
@@ -88,15 +91,25 @@ class _TelephonyByHourChartState extends State<TelephonyByHourChart> {
         date: _selectedDate,
       );
 
+      AnalyticsChartRequestPolicy.reset(chartId);
+      if (!mounted) return;
       setState(() {
         _data = response;
         _isLoading = false;
       });
-    } catch (e) {
-      setState(() {
-        _error = 'Не удалось загрузить данные. Попробуйте позже.';
-        _isLoading = false;
-      });
+    } catch (e, stackTrace) {
+      await AnalyticsChartRequestPolicy.handleLoadError(
+        state: this,
+        setStateCallback: setState,
+        chartId: chartId,
+        error: e,
+        stackTrace: stackTrace,
+        onFatalError: () {
+          _error = AnalyticsChartRequestPolicy.userFacingMessage(e);
+          _isLoading = false;
+        },
+        retry: _loadData,
+      );
     }
   }
 
@@ -515,7 +528,8 @@ class _TelephonyByHourChartState extends State<TelephonyByHourChart> {
                                       ),
                                       children: [
                                         TextSpan(
-                                          text: '● Входящие: ${item.incoming}\n',
+                                          text:
+                                              '● Входящие: ${item.incoming}\n',
                                           style: TextStyle(
                                             color: const Color(0xff10B981),
                                             fontWeight: FontWeight.w600,
@@ -524,7 +538,8 @@ class _TelephonyByHourChartState extends State<TelephonyByHourChart> {
                                           ),
                                         ),
                                         TextSpan(
-                                          text: '● Исходящие: ${item.outgoing}\n',
+                                          text:
+                                              '● Исходящие: ${item.outgoing}\n',
                                           style: TextStyle(
                                             color: const Color(0xff22B3D6),
                                             fontWeight: FontWeight.w600,
@@ -533,7 +548,8 @@ class _TelephonyByHourChartState extends State<TelephonyByHourChart> {
                                           ),
                                         ),
                                         TextSpan(
-                                          text: '● Пропущенные: ${item.missed}\n',
+                                          text:
+                                              '● Пропущенные: ${item.missed}\n',
                                           style: TextStyle(
                                             color: const Color(0xffEF4444),
                                             fontWeight: FontWeight.w600,

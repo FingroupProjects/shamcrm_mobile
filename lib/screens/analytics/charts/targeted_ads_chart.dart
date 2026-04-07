@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:crm_task_manager/screens/analytics/widgets/chart_shimmer_loader.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:crm_task_manager/screens/analytics/utils/chart_request_policy.dart';
 import 'package:crm_task_manager/screens/analytics/utils/responsive_helper.dart';
 import 'package:crm_task_manager/screens/analytics/models/targeted_ads_model.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
@@ -97,6 +98,8 @@ class _TargetedAdsChartState extends State<TargetedAdsChart> {
   }
 
   Future<void> _loadData() async {
+    final chartId = AnalyticsChartRequestPolicy.chartIdForState(this);
+    AnalyticsChartRequestPolicy.cancelPendingRetry(chartId);
     setState(() {
       _isLoading = true;
       _error = null;
@@ -110,16 +113,26 @@ class _TargetedAdsChartState extends State<TargetedAdsChart> {
       final sorted = List<TargetedAdCampaign>.from(response.topCampaigns)
         ..sort((a, b) => b.totalReaches.compareTo(a.totalReaches));
 
+      AnalyticsChartRequestPolicy.reset(chartId);
+      if (!mounted) return;
       setState(() {
         _data = response;
         _campaigns = sorted.where((c) => c.totalReaches > 0).take(8).toList();
         _isLoading = false;
       });
-    } catch (e) {
-      setState(() {
-        _error = 'Не удалось загрузить данные. Попробуйте позже.';
-        _isLoading = false;
-      });
+    } catch (e, stackTrace) {
+      await AnalyticsChartRequestPolicy.handleLoadError(
+        state: this,
+        setStateCallback: setState,
+        chartId: chartId,
+        error: e,
+        stackTrace: stackTrace,
+        onFatalError: () {
+          _error = AnalyticsChartRequestPolicy.userFacingMessage(e);
+          _isLoading = false;
+        },
+        retry: _loadData,
+      );
     }
   }
 
@@ -711,8 +724,7 @@ class _TargetedAdsChartState extends State<TargetedAdsChart> {
                                           style: TextStyle(
                                             color: _kReachesColor,
                                             fontWeight: FontWeight.w600,
-                                            fontSize:
-                                                responsive.xSmallFontSize,
+                                            fontSize: responsive.xSmallFontSize,
                                             fontFamily: 'Golos',
                                           ),
                                         ),
@@ -722,8 +734,7 @@ class _TargetedAdsChartState extends State<TargetedAdsChart> {
                                           style: TextStyle(
                                             color: _kSuccessfulColor,
                                             fontWeight: FontWeight.w600,
-                                            fontSize:
-                                                responsive.xSmallFontSize,
+                                            fontSize: responsive.xSmallFontSize,
                                             fontFamily: 'Golos',
                                           ),
                                         ),
@@ -732,8 +743,7 @@ class _TargetedAdsChartState extends State<TargetedAdsChart> {
                                           style: TextStyle(
                                             color: _kColdColor,
                                             fontWeight: FontWeight.w600,
-                                            fontSize:
-                                                responsive.xSmallFontSize,
+                                            fontSize: responsive.xSmallFontSize,
                                             fontFamily: 'Golos',
                                           ),
                                         ),
@@ -743,8 +753,7 @@ class _TargetedAdsChartState extends State<TargetedAdsChart> {
                                           style: TextStyle(
                                             color: _kInProgressColor,
                                             fontWeight: FontWeight.w600,
-                                            fontSize:
-                                                responsive.xSmallFontSize,
+                                            fontSize: responsive.xSmallFontSize,
                                             fontFamily: 'Golos',
                                           ),
                                         ),
@@ -754,8 +763,7 @@ class _TargetedAdsChartState extends State<TargetedAdsChart> {
                                           style: TextStyle(
                                             color: const Color(0xff0F172A),
                                             fontWeight: FontWeight.w600,
-                                            fontSize:
-                                                responsive.xSmallFontSize,
+                                            fontSize: responsive.xSmallFontSize,
                                             fontFamily: 'Golos',
                                           ),
                                         ),

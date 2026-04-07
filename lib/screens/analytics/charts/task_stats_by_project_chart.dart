@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:crm_task_manager/screens/analytics/widgets/chart_shimmer_loader.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:crm_task_manager/screens/analytics/utils/chart_request_policy.dart';
 import 'package:crm_task_manager/screens/analytics/utils/responsive_helper.dart';
 import 'package:crm_task_manager/screens/analytics/models/task_stats_by_project_model.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
@@ -67,6 +68,8 @@ class _TaskStatsByProjectChartState extends State<TaskStatsByProjectChart> {
   }
 
   Future<void> _loadData() async {
+    final chartId = AnalyticsChartRequestPolicy.chartIdForState(this);
+    AnalyticsChartRequestPolicy.cancelPendingRetry(chartId);
     setState(() {
       _isLoading = true;
       _error = null;
@@ -78,15 +81,25 @@ class _TaskStatsByProjectChartState extends State<TaskStatsByProjectChart> {
       final sorted = List<ProjectTaskStats>.from(response.projects)
         ..sort((a, b) => b.totalTasks.compareTo(a.totalTasks));
 
+      AnalyticsChartRequestPolicy.reset(chartId);
+      if (!mounted) return;
       setState(() {
         _projects = sorted.take(10).toList();
         _isLoading = false;
       });
-    } catch (e) {
-      setState(() {
-        _error = 'Не удалось загрузить данные. Попробуйте позже.';
-        _isLoading = false;
-      });
+    } catch (e, stackTrace) {
+      await AnalyticsChartRequestPolicy.handleLoadError(
+        state: this,
+        setStateCallback: setState,
+        chartId: chartId,
+        error: e,
+        stackTrace: stackTrace,
+        onFatalError: () {
+          _error = AnalyticsChartRequestPolicy.userFacingMessage(e);
+          _isLoading = false;
+        },
+        retry: _loadData,
+      );
     }
   }
 
@@ -263,7 +276,8 @@ class _TaskStatsByProjectChartState extends State<TaskStatsByProjectChart> {
   }
 
   Color _fallbackBrightColor(String seed) {
-    final hash = seed.runes.fold<int>(0, (acc, ch) => (acc * 31 + ch) & 0x7fffffff);
+    final hash =
+        seed.runes.fold<int>(0, (acc, ch) => (acc * 31 + ch) & 0x7fffffff);
     return _brightStatusPalette[hash % _brightStatusPalette.length];
   }
 
@@ -411,8 +425,7 @@ class _TaskStatsByProjectChartState extends State<TaskStatsByProjectChart> {
                                           style: TextStyle(
                                             color: const Color(0xffEF4444),
                                             fontWeight: FontWeight.w700,
-                                            fontSize:
-                                                responsive.smallFontSize,
+                                            fontSize: responsive.smallFontSize,
                                             fontFamily: 'Golos',
                                           ),
                                         ),

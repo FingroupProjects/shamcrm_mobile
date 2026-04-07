@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:crm_task_manager/screens/analytics/widgets/chart_shimmer_loader.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:crm_task_manager/screens/analytics/utils/chart_request_policy.dart';
 import 'package:crm_task_manager/screens/analytics/utils/responsive_helper.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/screens/analytics/widgets/chart_empty_overlay.dart';
@@ -75,6 +76,8 @@ class _ConversionChartState extends State<ConversionChart> {
   }
 
   Future<void> _loadData() async {
+    final chartId = AnalyticsChartRequestPolicy.chartIdForState(this);
+    AnalyticsChartRequestPolicy.cancelPendingRetry(chartId);
     setState(() {
       _isLoading = true;
       _error = null;
@@ -84,15 +87,25 @@ class _ConversionChartState extends State<ConversionChart> {
       final apiService = ApiService();
       final response = await apiService.getLeadConversionDataV2();
 
+      AnalyticsChartRequestPolicy.reset(chartId);
+      if (!mounted) return;
       setState(() {
         _conversionData = response.monthlyData;
         _isLoading = false;
       });
-    } catch (e) {
-      setState(() {
-        _error = 'Не удалось загрузить данные. Попробуйте позже.';
-        _isLoading = false;
-      });
+    } catch (e, stackTrace) {
+      await AnalyticsChartRequestPolicy.handleLoadError(
+        state: this,
+        setStateCallback: setState,
+        chartId: chartId,
+        error: e,
+        stackTrace: stackTrace,
+        onFatalError: () {
+          _error = AnalyticsChartRequestPolicy.userFacingMessage(e);
+          _isLoading = false;
+        },
+        retry: _loadData,
+      );
     }
   }
 

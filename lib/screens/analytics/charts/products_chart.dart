@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:crm_task_manager/screens/analytics/widgets/chart_shimmer_loader.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:crm_task_manager/screens/analytics/utils/chart_request_policy.dart';
 import 'package:crm_task_manager/screens/analytics/utils/responsive_helper.dart';
 import 'package:crm_task_manager/screens/analytics/models/top_selling_products_model.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
@@ -72,6 +73,8 @@ class _ProductsChartState extends State<ProductsChart> {
   }
 
   Future<void> _loadData() async {
+    final chartId = AnalyticsChartRequestPolicy.chartIdForState(this);
+    AnalyticsChartRequestPolicy.cancelPendingRetry(chartId);
     setState(() {
       _isLoading = true;
       _error = null;
@@ -81,15 +84,25 @@ class _ProductsChartState extends State<ProductsChart> {
       final apiService = ApiService();
       final response = await apiService.getTopSellingProductsChartV2();
 
+      AnalyticsChartRequestPolicy.reset(chartId);
+      if (!mounted) return;
       setState(() {
         _data = response;
         _isLoading = false;
       });
-    } catch (e) {
-      setState(() {
-        _error = 'Не удалось загрузить данные. Попробуйте позже.';
-        _isLoading = false;
-      });
+    } catch (e, stackTrace) {
+      await AnalyticsChartRequestPolicy.handleLoadError(
+        state: this,
+        setStateCallback: setState,
+        chartId: chartId,
+        error: e,
+        stackTrace: stackTrace,
+        onFatalError: () {
+          _error = AnalyticsChartRequestPolicy.userFacingMessage(e);
+          _isLoading = false;
+        },
+        retry: _loadData,
+      );
     }
   }
 
@@ -342,11 +355,10 @@ class _ProductsChartState extends State<ProductsChart> {
                                           (group, groupIndex, rod, rodIndex) {
                                         final item =
                                             displayItems[group.x.toInt()];
-                                        final revenueText =
-                                            item.revenueFormatted.isNotEmpty
-                                                ? item.revenueFormatted
-                                                : item.revenue
-                                                    .toStringAsFixed(0);
+                                        final revenueText = item
+                                                .revenueFormatted.isNotEmpty
+                                            ? item.revenueFormatted
+                                            : item.revenue.toStringAsFixed(0);
                                         return BarTooltipItem(
                                           '${item.name}\n',
                                           TextStyle(
@@ -360,8 +372,7 @@ class _ProductsChartState extends State<ProductsChart> {
                                               text:
                                                   'Продано: ${item.totalSold}\n',
                                               style: TextStyle(
-                                                color:
-                                                    const Color(0xffF97316),
+                                                color: const Color(0xffF97316),
                                                 fontWeight: FontWeight.w600,
                                                 fontSize:
                                                     responsive.smallFontSize,
@@ -372,8 +383,7 @@ class _ProductsChartState extends State<ProductsChart> {
                                               text:
                                                   'Успешные: ${item.successful}\n',
                                               style: TextStyle(
-                                                color:
-                                                    const Color(0xff10B981),
+                                                color: const Color(0xff10B981),
                                                 fontWeight: FontWeight.w600,
                                                 fontSize:
                                                     responsive.smallFontSize,
@@ -384,8 +394,7 @@ class _ProductsChartState extends State<ProductsChart> {
                                               text:
                                                   'Отменённые: ${item.cancelled}\n',
                                               style: TextStyle(
-                                                color:
-                                                    const Color(0xffEF4444),
+                                                color: const Color(0xffEF4444),
                                                 fontWeight: FontWeight.w600,
                                                 fontSize:
                                                     responsive.smallFontSize,
@@ -395,8 +404,7 @@ class _ProductsChartState extends State<ProductsChart> {
                                             TextSpan(
                                               text: 'Выручка: $revenueText',
                                               style: TextStyle(
-                                                color:
-                                                    const Color(0xff64748B),
+                                                color: const Color(0xff64748B),
                                                 fontWeight: FontWeight.w600,
                                                 fontSize:
                                                     responsive.smallFontSize,
@@ -444,8 +452,7 @@ class _ProductsChartState extends State<ProductsChart> {
                                       axisNameWidget: Text(
                                         'Количество',
                                         style: TextStyle(
-                                          fontSize:
-                                              responsive.smallFontSize,
+                                          fontSize: responsive.smallFontSize,
                                           color: Color(0xff94A3B8),
                                           fontFamily: 'Golos',
                                         ),

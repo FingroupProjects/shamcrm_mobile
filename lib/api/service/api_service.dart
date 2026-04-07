@@ -1006,6 +1006,43 @@ class ApiService {
     return response;
   }
 
+  Never _throwAnalyticsChartApiError(
+    http.Response response,
+    String fallbackMessage,
+  ) {
+    final message = _extractErrorMessageFromResponse(response);
+    throw ApiException(message ?? fallbackMessage, response.statusCode);
+  }
+
+  Future<Map<String, dynamic>> _getAnalyticsChartJsonMap(
+    String path, {
+    required String debugLabel,
+    required String fallbackMessage,
+  }) async {
+    try {
+      final response = await _analyticsRequest(path);
+
+      if (response.statusCode != 200) {
+        _throwAnalyticsChartApiError(response, fallbackMessage);
+      }
+
+      final decoded = json.decode(response.body);
+      if (decoded is Map<String, dynamic>) {
+        return decoded;
+      }
+      if (decoded is Map) {
+        return Map<String, dynamic>.from(decoded);
+      }
+
+      throw Exception('Неожиданный формат ответа API');
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('ApiService: $debugLabel error: $e');
+      }
+      rethrow;
+    }
+  }
+
   /// Новый метод для обработки MultipartRequest
   Future<http.Response> _multipartPostRequest(
       String path, http.MultipartRequest request) async {
@@ -1244,7 +1281,7 @@ class ApiService {
         requestBody: json.encode(body),
       ));
     }
-    
+
     final startTime = DateTime.now();
     try {
       final response = await http.patch(
@@ -7058,20 +7095,12 @@ class ApiService {
       //debugPrint('ApiService: getDealStatsData - Generated path: $path');
     }
 
-    try {
-      final response = await _analyticsRequest(path);
-      if (response.statusCode == 200) {
-        final jsonData = json.decode(response.body);
-        return DealStatsResponse.fromJson(jsonData);
-      } else if (response.statusCode == 500) {
-        throw Exception('Ошибка сервера!');
-      } else {
-        throw Exception('Ошибка загрузки данных!');
-      }
-    } catch (e) {
-      ////debugPrint('Ошибка запроса!');
-      throw ('');
-    }
+    final jsonData = await _getAnalyticsChartJsonMap(
+      path,
+      debugLabel: 'getDealStatsData',
+      fallbackMessage: 'Ошибка загрузки данных графика сделок!',
+    );
+    return DealStatsResponse.fromJson(jsonData);
   }
 
 // Метод для получения графика Задачи
@@ -7205,19 +7234,12 @@ class ApiService {
       debugPrint('ApiService: getLeadChartWithDates - Generated path: $path');
     }
 
-    try {
-      final response = await _analyticsRequest(path);
-
-      if (response.statusCode == 200) {
-        final jsonData = json.decode(response.body);
-        return LeadChartResponse.fromJson(jsonData);
-      } else {
-        throw Exception('Ошибка загрузки данных графика лидов!');
-      }
-    } catch (e) {
-      debugPrint('ApiService: getLeadChartWithDates error: $e');
-      throw Exception('Ошибка получения данных графика лидов: $e');
-    }
+    final jsonData = await _getAnalyticsChartJsonMap(
+      path,
+      debugLabel: 'getLeadChartWithDates',
+      fallbackMessage: 'Ошибка загрузки данных графика лидов!',
+    );
+    return LeadChartResponse.fromJson(jsonData);
   }
 
   /// Получение конверсии по статусам
@@ -7231,19 +7253,12 @@ class ApiService {
           'ApiService: getLeadConversionByStatuses - Generated path: $path');
     }
 
-    try {
-      final response = await _analyticsRequest(path);
-
-      if (response.statusCode == 200) {
-        final jsonData = json.decode(response.body);
-        return LeadConversionByStatusesResponse.fromJson(jsonData);
-      } else {
-        throw Exception('Ошибка загрузки данных конверсии по статусам!');
-      }
-    } catch (e) {
-      debugPrint('ApiService: getLeadConversionByStatuses error: $e');
-      throw Exception('Ошибка получения данных конверсии: $e');
-    }
+    final jsonData = await _getAnalyticsChartJsonMap(
+      path,
+      debugLabel: 'getLeadConversionByStatuses',
+      fallbackMessage: 'Ошибка загрузки данных конверсии по статусам!',
+    );
+    return LeadConversionByStatusesResponse.fromJson(jsonData);
   }
 
   /// Получение скорости обработки лидов (V2)
@@ -7255,19 +7270,12 @@ class ApiService {
       debugPrint('ApiService: getLeadProcessSpeedV2 - Generated path: $path');
     }
 
-    try {
-      final response = await _analyticsRequest(path);
-
-      if (response.statusCode == 200) {
-        final jsonData = json.decode(response.body);
-        return LeadProcessSpeedResponse.fromJson(jsonData);
-      } else {
-        throw Exception('Ошибка загрузки данных скорости обработки!');
-      }
-    } catch (e) {
-      debugPrint('ApiService: getLeadProcessSpeedV2 error: $e');
-      throw Exception('Ошибка получения данных скорости обработки: $e');
-    }
+    final jsonData = await _getAnalyticsChartJsonMap(
+      path,
+      debugLabel: 'getLeadProcessSpeedV2',
+      fallbackMessage: 'Ошибка загрузки данных скорости обработки!',
+    );
+    return LeadProcessSpeedResponse.fromJson(jsonData);
   }
 
   Future<List<OrderInternetStore>> getOrderInternetStores() async {
@@ -7322,19 +7330,12 @@ class ApiService {
       debugPrint('ApiService: getLeadChannels - Generated path: $path');
     }
 
-    try {
-      final response = await _analyticsRequest(path);
-
-      if (response.statusCode == 200) {
-        final jsonData = json.decode(response.body);
-        return LeadChannelsResponse.fromJson(jsonData);
-      } else {
-        throw Exception('Ошибка загрузки данных каналов!');
-      }
-    } catch (e) {
-      debugPrint('ApiService: getLeadChannels error: $e');
-      throw Exception('Ошибка получения данных каналов: $e');
-    }
+    final jsonData = await _getAnalyticsChartJsonMap(
+      path,
+      debugLabel: 'getLeadChannels',
+      fallbackMessage: 'Ошибка загрузки данных каналов!',
+    );
+    return LeadChannelsResponse.fromJson(jsonData);
   }
 
   /// Получение статистики сообщений
@@ -7346,19 +7347,12 @@ class ApiService {
       debugPrint('ApiService: getMessageStats - Generated path: $path');
     }
 
-    try {
-      final response = await _analyticsRequest(path);
-
-      if (response.statusCode == 200) {
-        final jsonData = json.decode(response.body);
-        return MessageStatsResponse.fromJson(jsonData);
-      } else {
-        throw Exception('Ошибка загрузки статистики сообщений!');
-      }
-    } catch (e) {
-      debugPrint('ApiService: getMessageStats error: $e');
-      throw Exception('Ошибка получения статистики сообщений: $e');
-    }
+    final jsonData = await _getAnalyticsChartJsonMap(
+      path,
+      debugLabel: 'getMessageStats',
+      fallbackMessage: 'Ошибка загрузки статистики сообщений!',
+    );
+    return MessageStatsResponse.fromJson(jsonData);
   }
 
   /// Получение графика пользователей (V2)
@@ -7370,19 +7364,12 @@ class ApiService {
       debugPrint('ApiService: getUsersChartV2 - Generated path: $path');
     }
 
-    try {
-      final response = await _analyticsRequest(path);
-
-      if (response.statusCode == 200) {
-        final jsonData = json.decode(response.body);
-        return UsersChartResponse.fromJson(jsonData);
-      } else {
-        throw Exception('Ошибка загрузки данных пользователей!');
-      }
-    } catch (e) {
-      debugPrint('ApiService: getUsersChartV2 error: $e');
-      throw Exception('Ошибка получения данных пользователей: $e');
-    }
+    final jsonData = await _getAnalyticsChartJsonMap(
+      path,
+      debugLabel: 'getUsersChartV2',
+      fallbackMessage: 'Ошибка загрузки данных пользователей!',
+    );
+    return UsersChartResponse.fromJson(jsonData);
   }
 
   /// Получение статистики для 4 карточек (V2)
@@ -7478,21 +7465,17 @@ class ApiService {
       debugPrint('ApiService: getLeadConversionDataV2 - Generated path: $path');
     }
 
-    final response = await _analyticsRequest(path);
+    final jsonData = await _getAnalyticsChartJsonMap(
+      path,
+      debugLabel: 'getLeadConversionDataV2',
+      fallbackMessage: 'Ошибка загрузки данных конверсии лидов!',
+    );
 
-    if (response.statusCode == 200) {
-      final Map<String, dynamic> data = json.decode(response.body);
-
-      if (data.isNotEmpty) {
-        return LeadConversion.fromJson(data);
-      } else {
-        throw ('Нет данных графика в ответе "Конверсия лидов"');
-      }
-    } else if (response.statusCode == 500) {
-      throw ('Ошибка сервера: 500');
-    } else {
-      throw ('');
+    if (jsonData.isEmpty) {
+      throw Exception('Нет данных графика в ответе "Конверсия лидов"');
     }
+
+    return LeadConversion.fromJson(jsonData);
   }
 
   /// Задачи (V2)
@@ -7504,20 +7487,12 @@ class ApiService {
       debugPrint('ApiService: getTaskChartDataV2 - Generated path: $path');
     }
 
-    try {
-      final response = await _analyticsRequest(path);
-
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> jsonMap = json.decode(response.body);
-        return TaskChartV2Response.fromJson(jsonMap);
-      } else if (response.statusCode == 500) {
-        throw ('Ошибка сервера!');
-      } else {
-        throw ('Ошибка загрузки данных графика!');
-      }
-    } catch (e) {
-      throw ('Ошибка получения данных!');
-    }
+    final jsonData = await _getAnalyticsChartJsonMap(
+      path,
+      debugLabel: 'getTaskChartDataV2',
+      fallbackMessage: 'Ошибка загрузки данных графика задач!',
+    );
+    return TaskChartV2Response.fromJson(jsonData);
   }
 
   /// Источники лидов (V2)
@@ -7530,18 +7505,12 @@ class ApiService {
       debugPrint('ApiService: getSourceOfLeadsChartV2 - Generated path: $path');
     }
 
-    try {
-      final response = await _analyticsRequest(path);
-      if (response.statusCode == 200) {
-        final jsonData = json.decode(response.body);
-        return SourceOfLeadsChartResponse.fromJson(jsonData);
-      } else {
-        throw Exception('Ошибка загрузки источников лидов!');
-      }
-    } catch (e) {
-      debugPrint('ApiService: getSourceOfLeadsChartV2 error: $e');
-      throw Exception('Ошибка получения источников лидов: $e');
-    }
+    final jsonData = await _getAnalyticsChartJsonMap(
+      path,
+      debugLabel: 'getSourceOfLeadsChartV2',
+      fallbackMessage: 'Ошибка загрузки источников лидов!',
+    );
+    return SourceOfLeadsChartResponse.fromJson(jsonData);
   }
 
   /// Сделки по менеджерам (V2)
@@ -7553,18 +7522,12 @@ class ApiService {
       debugPrint('ApiService: getDealsByManagersV2 - Generated path: $path');
     }
 
-    try {
-      final response = await _analyticsRequest(path);
-      if (response.statusCode == 200) {
-        final jsonData = json.decode(response.body);
-        return DealsByManagersResponse.fromJson(jsonData);
-      } else {
-        throw Exception('Ошибка загрузки данных менеджеров!');
-      }
-    } catch (e) {
-      debugPrint('ApiService: getDealsByManagersV2 error: $e');
-      throw Exception('Ошибка получения данных менеджеров: $e');
-    }
+    final jsonData = await _getAnalyticsChartJsonMap(
+      path,
+      debugLabel: 'getDealsByManagersV2',
+      fallbackMessage: 'Ошибка загрузки данных менеджеров!',
+    );
+    return DealsByManagersResponse.fromJson(jsonData);
   }
 
   /// Заказы интернет-магазина (V2)
@@ -7578,18 +7541,12 @@ class ApiService {
           'ApiService: getOnlineStoreOrdersChartV2 - Generated path: $path');
     }
 
-    try {
-      final response = await _analyticsRequest(path);
-      if (response.statusCode == 200) {
-        final jsonData = json.decode(response.body);
-        return OnlineStoreOrdersResponse.fromJson(jsonData);
-      } else {
-        throw Exception('Ошибка загрузки заказов интернет-магазина!');
-      }
-    } catch (e) {
-      debugPrint('ApiService: getOnlineStoreOrdersChartV2 error: $e');
-      throw Exception('Ошибка получения заказов интернет-магазина: $e');
-    }
+    final jsonData = await _getAnalyticsChartJsonMap(
+      path,
+      debugLabel: 'getOnlineStoreOrdersChartV2',
+      fallbackMessage: 'Ошибка загрузки заказов интернет-магазина!',
+    );
+    return OnlineStoreOrdersResponse.fromJson(jsonData);
   }
 
   /// Выполненные задачи (график)
@@ -7602,18 +7559,12 @@ class ApiService {
           'ApiService: getCompletedTasksChartV2 - Generated path: $path');
     }
 
-    try {
-      final response = await _analyticsRequest(path);
-      if (response.statusCode == 200) {
-        final jsonData = json.decode(response.body);
-        return CompletedTasksChartResponse.fromJson(jsonData);
-      } else {
-        throw Exception('Ошибка загрузки выполненных задач!');
-      }
-    } catch (e) {
-      debugPrint('ApiService: getCompletedTasksChartV2 error: $e');
-      throw Exception('Ошибка получения выполненных задач: $e');
-    }
+    final jsonData = await _getAnalyticsChartJsonMap(
+      path,
+      debugLabel: 'getCompletedTasksChartV2',
+      fallbackMessage: 'Ошибка загрузки выполненных задач!',
+    );
+    return CompletedTasksChartResponse.fromJson(jsonData);
   }
 
   /// Телефония и события (график)
@@ -7627,18 +7578,12 @@ class ApiService {
           'ApiService: getTelephonyAndEventsChartV2 - Generated path: $path');
     }
 
-    try {
-      final response = await _analyticsRequest(path);
-      if (response.statusCode == 200) {
-        final jsonData = json.decode(response.body);
-        return TelephonyEventsResponse.fromJson(jsonData);
-      } else {
-        throw Exception('Ошибка загрузки телефонии и событий!');
-      }
-    } catch (e) {
-      debugPrint('ApiService: getTelephonyAndEventsChartV2 error: $e');
-      throw Exception('Ошибка получения телефонии и событий: $e');
-    }
+    final jsonData = await _getAnalyticsChartJsonMap(
+      path,
+      debugLabel: 'getTelephonyAndEventsChartV2',
+      fallbackMessage: 'Ошибка загрузки телефонии и событий!',
+    );
+    return TelephonyEventsResponse.fromJson(jsonData);
   }
 
   /// Ответы на сообщения (график)
@@ -7652,18 +7597,12 @@ class ApiService {
           'ApiService: getRepliesToMessagesChartV2 - Generated path: $path');
     }
 
-    try {
-      final response = await _analyticsRequest(path);
-      if (response.statusCode == 200) {
-        final jsonData = json.decode(response.body);
-        return RepliesToMessagesResponse.fromJson(jsonData);
-      } else {
-        throw Exception('Ошибка загрузки ответов на сообщения!');
-      }
-    } catch (e) {
-      debugPrint('ApiService: getRepliesToMessagesChartV2 error: $e');
-      throw Exception('Ошибка получения ответов на сообщения: $e');
-    }
+    final jsonData = await _getAnalyticsChartJsonMap(
+      path,
+      debugLabel: 'getRepliesToMessagesChartV2',
+      fallbackMessage: 'Ошибка загрузки ответов на сообщения!',
+    );
+    return RepliesToMessagesResponse.fromJson(jsonData);
   }
 
   /// Статистика задач по проектам
@@ -7677,18 +7616,12 @@ class ApiService {
           'ApiService: getTaskStatsByProjectChartV2 - Generated path: $path');
     }
 
-    try {
-      final response = await _analyticsRequest(path);
-      if (response.statusCode == 200) {
-        final jsonData = json.decode(response.body);
-        return TaskStatsByProjectResponse.fromJson(jsonData);
-      } else {
-        throw Exception('Ошибка загрузки статистики задач по проектам!');
-      }
-    } catch (e) {
-      debugPrint('ApiService: getTaskStatsByProjectChartV2 error: $e');
-      throw Exception('Ошибка получения статистики задач по проектам: $e');
-    }
+    final jsonData = await _getAnalyticsChartJsonMap(
+      path,
+      debugLabel: 'getTaskStatsByProjectChartV2',
+      fallbackMessage: 'Ошибка загрузки статистики задач по проектам!',
+    );
+    return TaskStatsByProjectResponse.fromJson(jsonData);
   }
 
   /// Подключенные аккаунты
@@ -7706,18 +7639,12 @@ class ApiService {
           'ApiService: getConnectedAccountsChartV2 - Generated path: $path');
     }
 
-    try {
-      final response = await _analyticsRequest(path);
-      if (response.statusCode == 200) {
-        final jsonData = json.decode(response.body);
-        return ConnectedAccountsResponse.fromJson(jsonData);
-      } else {
-        throw Exception('Ошибка загрузки подключенных аккаунтов!');
-      }
-    } catch (e) {
-      debugPrint('ApiService: getConnectedAccountsChartV2 error: $e');
-      throw Exception('Ошибка получения подключенных аккаунтов: $e');
-    }
+    final jsonData = await _getAnalyticsChartJsonMap(
+      path,
+      debugLabel: 'getConnectedAccountsChartV2',
+      fallbackMessage: 'Ошибка загрузки подключенных аккаунтов!',
+    );
+    return ConnectedAccountsResponse.fromJson(jsonData);
   }
 
   /// ROI рекламы (график)
@@ -7731,18 +7658,12 @@ class ApiService {
           'ApiService: getAdvertisingRoiChartV2 - Generated path: $path');
     }
 
-    try {
-      final response = await _analyticsRequest(path);
-      if (response.statusCode == 200) {
-        final jsonData = json.decode(response.body);
-        return AdvertisingRoiResponse.fromJson(jsonData);
-      } else {
-        throw Exception('Ошибка загрузки ROI рекламы!');
-      }
-    } catch (e) {
-      debugPrint('ApiService: getAdvertisingRoiChartV2 error: $e');
-      throw Exception('Ошибка получения ROI рекламы: $e');
-    }
+    final jsonData = await _getAnalyticsChartJsonMap(
+      path,
+      debugLabel: 'getAdvertisingRoiChartV2',
+      fallbackMessage: 'Ошибка загрузки ROI рекламы!',
+    );
+    return AdvertisingRoiResponse.fromJson(jsonData);
   }
 
   /// Аналитика звонков по часам
@@ -7764,18 +7685,12 @@ class ApiService {
           'ApiService: getTelephonyByHourChartV2 - Generated path: $path');
     }
 
-    try {
-      final response = await _analyticsRequest(path);
-      if (response.statusCode == 200) {
-        final jsonData = json.decode(response.body);
-        return TelephonyByHourResponse.fromJson(jsonData);
-      } else {
-        throw Exception('Ошибка загрузки аналитики звонков по часам!');
-      }
-    } catch (e) {
-      debugPrint('ApiService: getTelephonyByHourChartV2 error: $e');
-      throw Exception('Ошибка получения аналитики звонков по часам: $e');
-    }
+    final jsonData = await _getAnalyticsChartJsonMap(
+      path,
+      debugLabel: 'getTelephonyByHourChartV2',
+      fallbackMessage: 'Ошибка загрузки аналитики звонков по часам!',
+    );
+    return TelephonyByHourResponse.fromJson(jsonData);
   }
 
   /// Таргетированная реклама (Meta Ads)
@@ -7793,18 +7708,12 @@ class ApiService {
           'ApiService: getTargetedAdvertisingChartV2 - Generated path: $path');
     }
 
-    try {
-      final response = await _analyticsRequest(path);
-      if (response.statusCode == 200) {
-        final jsonData = json.decode(response.body);
-        return TargetedAdsResponse.fromJson(jsonData);
-      } else {
-        throw Exception('Ошибка загрузки таргетированной рекламы!');
-      }
-    } catch (e) {
-      debugPrint('ApiService: getTargetedAdvertisingChartV2 error: $e');
-      throw Exception('Ошибка получения таргетированной рекламы: $e');
-    }
+    final jsonData = await _getAnalyticsChartJsonMap(
+      path,
+      debugLabel: 'getTargetedAdvertisingChartV2',
+      fallbackMessage: 'Ошибка загрузки таргетированной рекламы!',
+    );
+    return TargetedAdsResponse.fromJson(jsonData);
   }
 
   /// ТОП продаваемых товаров (V2)
@@ -7818,18 +7727,12 @@ class ApiService {
           'ApiService: getTopSellingProductsChartV2 - Generated path: $path');
     }
 
-    try {
-      final response = await _analyticsRequest(path);
-      if (response.statusCode == 200) {
-        final jsonData = json.decode(response.body);
-        return TopSellingProductsResponse.fromJson(jsonData);
-      } else {
-        throw Exception('Ошибка загрузки данных товаров!');
-      }
-    } catch (e) {
-      debugPrint('ApiService: getTopSellingProductsChartV2 error: $e');
-      throw Exception('Ошибка получения данных товаров: $e');
-    }
+    final jsonData = await _getAnalyticsChartJsonMap(
+      path,
+      debugLabel: 'getTopSellingProductsChartV2',
+      fallbackMessage: 'Ошибка загрузки данных товаров!',
+    );
+    return TopSellingProductsResponse.fromJson(jsonData);
   }
 
 //_________________________________ END_____API_SCREEN__DASHBOARD____________________________________________//

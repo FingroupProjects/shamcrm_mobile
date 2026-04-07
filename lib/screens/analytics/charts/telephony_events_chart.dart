@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/screens/analytics/models/telephony_events_model.dart';
+import 'package:crm_task_manager/screens/analytics/utils/chart_request_policy.dart';
 import 'package:crm_task_manager/screens/analytics/widgets/chart_empty_overlay.dart';
 import 'package:crm_task_manager/screens/analytics/widgets/chart_shimmer_loader.dart';
 import 'package:fl_chart/fl_chart.dart';
@@ -113,6 +114,8 @@ class _TelephonyEventsChartState extends State<TelephonyEventsChart> {
   }
 
   Future<void> _loadData() async {
+    final chartId = AnalyticsChartRequestPolicy.chartIdForState(this);
+    AnalyticsChartRequestPolicy.cancelPendingRetry(chartId);
     setState(() {
       _isLoading = true;
       _error = null;
@@ -122,17 +125,25 @@ class _TelephonyEventsChartState extends State<TelephonyEventsChart> {
       final apiService = ApiService();
       final response = await apiService.getTelephonyAndEventsChartV2();
 
+      AnalyticsChartRequestPolicy.reset(chartId);
       if (!mounted) return;
       setState(() {
         _data = response;
         _isLoading = false;
       });
-    } catch (_) {
-      if (!mounted) return;
-      setState(() {
-        _error = 'Не удалось загрузить данные. Попробуйте позже.';
-        _isLoading = false;
-      });
+    } catch (e, stackTrace) {
+      await AnalyticsChartRequestPolicy.handleLoadError(
+        state: this,
+        setStateCallback: setState,
+        chartId: chartId,
+        error: e,
+        stackTrace: stackTrace,
+        onFatalError: () {
+          _error = AnalyticsChartRequestPolicy.userFacingMessage(e);
+          _isLoading = false;
+        },
+        retry: _loadData,
+      );
     }
   }
 

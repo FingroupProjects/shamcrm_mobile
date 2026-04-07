@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:crm_task_manager/screens/analytics/widgets/chart_shimmer_loader.dart';
+import 'package:crm_task_manager/screens/analytics/utils/chart_request_policy.dart';
 import 'package:crm_task_manager/screens/analytics/utils/responsive_helper.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/screens/analytics/widgets/chart_empty_overlay.dart';
@@ -43,11 +44,16 @@ class _SpeedGaugeState extends State<SpeedGauge>
 
   @override
   void dispose() {
+    AnalyticsChartRequestPolicy.reset(
+      AnalyticsChartRequestPolicy.chartIdForState(this),
+    );
     _needleController.dispose();
     super.dispose();
   }
 
   Future<void> _loadData() async {
+    final chartId = AnalyticsChartRequestPolicy.chartIdForState(this);
+    AnalyticsChartRequestPolicy.cancelPendingRetry(chartId);
     setState(() {
       _isLoading = true;
       _error = null;
@@ -62,6 +68,8 @@ class _SpeedGaugeState extends State<SpeedGauge>
         to: response.speedTimeFormat,
       );
 
+      AnalyticsChartRequestPolicy.reset(chartId);
+      if (!mounted) return;
       setState(() {
         _speedHours = normalizedSpeed;
         _serverMaxScale = response.badTo;
@@ -70,11 +78,19 @@ class _SpeedGaugeState extends State<SpeedGauge>
         _isLoading = false;
       });
       _animateNeedle();
-    } catch (e) {
-      setState(() {
-        _error = 'Не удалось загрузить данные. Попробуйте позже.';
-        _isLoading = false;
-      });
+    } catch (e, stackTrace) {
+      await AnalyticsChartRequestPolicy.handleLoadError(
+        state: this,
+        setStateCallback: setState,
+        chartId: chartId,
+        error: e,
+        stackTrace: stackTrace,
+        onFatalError: () {
+          _error = AnalyticsChartRequestPolicy.userFacingMessage(e);
+          _isLoading = false;
+        },
+        retry: _loadData,
+      );
     }
   }
 

@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:crm_task_manager/screens/analytics/widgets/chart_shimmer_loader.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:crm_task_manager/screens/analytics/utils/chart_request_policy.dart';
 import 'package:crm_task_manager/screens/analytics/utils/responsive_helper.dart';
 import 'package:crm_task_manager/screens/analytics/models/advertising_roi_model.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
@@ -116,6 +117,8 @@ class _AdvertisingRoiChartState extends State<AdvertisingRoiChart> {
   }
 
   Future<void> _loadData() async {
+    final chartId = AnalyticsChartRequestPolicy.chartIdForState(this);
+    AnalyticsChartRequestPolicy.cancelPendingRetry(chartId);
     setState(() {
       _isLoading = true;
       _error = null;
@@ -127,18 +130,26 @@ class _AdvertisingRoiChartState extends State<AdvertisingRoiChart> {
       final sorted = List<AdvertisingRoiCampaign>.from(response.campaigns)
         ..sort((a, b) => b.totalLeads.compareTo(a.totalLeads));
 
+      AnalyticsChartRequestPolicy.reset(chartId);
       if (!mounted) return;
       setState(() {
         _data = response;
         _campaigns = sorted.take(8).toList();
         _isLoading = false;
       });
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _error = 'Не удалось загрузить данные. Попробуйте позже.';
-        _isLoading = false;
-      });
+    } catch (e, stackTrace) {
+      await AnalyticsChartRequestPolicy.handleLoadError(
+        state: this,
+        setStateCallback: setState,
+        chartId: chartId,
+        error: e,
+        stackTrace: stackTrace,
+        onFatalError: () {
+          _error = AnalyticsChartRequestPolicy.userFacingMessage(e);
+          _isLoading = false;
+        },
+        retry: _loadData,
+      );
     }
   }
 
