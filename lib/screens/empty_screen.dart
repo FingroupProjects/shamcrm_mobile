@@ -5,8 +5,10 @@ import 'package:crm_task_manager/screens/profile/profile_screen.dart';
 import 'package:flutter/material.dart';
 
 class EmptyScreen extends StatefulWidget {
+  const EmptyScreen({super.key});
+
   @override
-  _EmptyScreenState createState() => _EmptyScreenState();
+  State<EmptyScreen> createState() => _EmptyScreenState();
 }
 
 class _EmptyScreenState extends State<EmptyScreen> {
@@ -22,7 +24,7 @@ class _EmptyScreenState extends State<EmptyScreen> {
         title: CustomAppBar(
           title: isClickAvatarIcon
               ? localizations!.translate('appbar_settings')
-              : "",
+              : localizations!.translate('appbar_dashboard'),
           onClickProfileAvatar: () {
             setState(() {
               isClickAvatarIcon = !isClickAvatarIcon;
@@ -38,10 +40,10 @@ class _EmptyScreenState extends State<EmptyScreen> {
           showMyTaskIcon: true,
           showCallCenter: true,
           showEvent: false,
-          showSeparateMyTasks: true,
-          showMenuIcon: false,
-          showCalendarDashboard: true,
-          clearButtonClickFiltr: (bool) {},
+          showSeparateMyTasks: false,
+          showMenuIcon: true,
+          showCalendarDashboard: false,
+          clearButtonClickFiltr: (_) {},
         ),
       ),
       body: isClickAvatarIcon
@@ -52,7 +54,7 @@ class _EmptyScreenState extends State<EmptyScreen> {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   AutoSizeText(
-            AppLocalizations.of(context)!.translate('welcome'),
+                    AppLocalizations.of(context)!.translate('welcome'),
                     style: TextStyle(
                       fontSize: 30,
                       fontWeight: FontWeight.w600,
