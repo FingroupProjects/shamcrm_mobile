@@ -273,6 +273,7 @@ class LeadStatus {
   final bool isSuccess;
   final int position;
   final bool isFailure;
+  final bool isUnassembled;
 
   LeadStatus({
     required this.id,
@@ -284,24 +285,28 @@ class LeadStatus {
     required this.isSuccess,
     required this.position,
     required this.isFailure,
+    required this.isUnassembled,
   });
 
-factory LeadStatus.fromJson(Map<String, dynamic> json) {
-  return LeadStatus(
-    id: json['id'],
-    title: json['title'] ?? json['name'] ?? '',
-    color: json['color'],
-    lead_status_id: json['lead_status_id'] ?? null,
-    leadsCount: json['leads_count'] ?? 0, // Убедимся, что leads_count читается
-    isSuccess: json['is_success'] == true || json['is_success'] == 1,
-    position: json['position'] ?? 0,
-    isFailure: json['is_failure'] == true || json['is_failure'] == 1,
-    leads: (json['leads'] as List<dynamic>?)
-            ?.map((lead) => Lead.fromJson(lead, json['id']))
-            .toList() ??
-        [],
-  );
-}
+  factory LeadStatus.fromJson(Map<String, dynamic> json) {
+    return LeadStatus(
+      id: json['id'],
+      title: json['title'] ?? json['name'] ?? '',
+      color: json['color'],
+      lead_status_id: json['lead_status_id'] ?? null,
+      leadsCount:
+          json['leads_count'] ?? 0, // Убедимся, что leads_count читается
+      isSuccess: json['is_success'] == true || json['is_success'] == 1,
+      position: json['position'] ?? 0,
+      isFailure: json['is_failure'] == true || json['is_failure'] == 1,
+      isUnassembled:
+          json['is_unassembled'] == true || json['is_unassembled'] == 1,
+      leads: (json['leads'] as List<dynamic>?)
+              ?.map((lead) => Lead.fromJson(lead, json['id']))
+              .toList() ??
+          [],
+    );
+  }
 
   Map<String, dynamic> toJson() {
     return {
@@ -313,6 +318,7 @@ factory LeadStatus.fromJson(Map<String, dynamic> json) {
       'is_success': isSuccess,
       'position': position,
       'is_failure': isFailure,
+      'is_unassembled': isUnassembled,
     };
   }
 }

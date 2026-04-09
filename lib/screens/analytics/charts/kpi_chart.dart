@@ -1,8 +1,10 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:crm_task_manager/screens/analytics/utils/analytics_localization.dart';
 import 'package:crm_task_manager/screens/analytics/widgets/chart_shimmer_loader.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:crm_task_manager/screens/analytics/utils/chart_request_policy.dart';
 import 'package:crm_task_manager/screens/analytics/utils/responsive_helper.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/screens/analytics/widgets/chart_empty_overlay.dart';
@@ -40,6 +42,8 @@ class _KpiChartState extends State<KpiChart> {
   }
 
   Future<void> _loadData() async {
+    final chartId = AnalyticsChartRequestPolicy.chartIdForState(this);
+    AnalyticsChartRequestPolicy.cancelPendingRetry(chartId);
     setState(() {
       _isLoading = true;
       _error = null;
@@ -49,17 +53,27 @@ class _KpiChartState extends State<KpiChart> {
       final apiService = ApiService();
       final response = await apiService.getTaskChartDataV2();
 
+      AnalyticsChartRequestPolicy.reset(chartId);
+      if (!mounted) return;
       setState(() {
         _taskData = response.data;
         _completionRate = response.completionRate;
         _totalTasks = response.total;
         _isLoading = false;
       });
-    } catch (e) {
-      setState(() {
-        _error = 'Не удалось загрузить данные. Попробуйте позже.';
-        _isLoading = false;
-      });
+    } catch (e, stackTrace) {
+      await AnalyticsChartRequestPolicy.handleLoadError(
+        state: this,
+        setStateCallback: setState,
+        chartId: chartId,
+        error: e,
+        stackTrace: stackTrace,
+        onFatalError: () {
+          _error = AnalyticsChartRequestPolicy.userFacingMessage(e);
+          _isLoading = false;
+        },
+        retry: _loadData,
+      );
     }
   }
 
@@ -102,7 +116,7 @@ class _KpiChartState extends State<KpiChart> {
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 title: Text(
-                  'Выполнено',
+                  analyticsText(context, 'completed', fallback: 'Completed'),
                   style: TextStyle(
                     fontSize: ResponsiveHelper(context).bodyFontSize,
                     fontWeight: FontWeight.w600,
@@ -123,7 +137,11 @@ class _KpiChartState extends State<KpiChart> {
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 title: Text(
-                  'В работе',
+                  analyticsText(
+                    context,
+                    'in_progress',
+                    fallback: 'In progress',
+                  ),
                   style: TextStyle(
                     fontSize: ResponsiveHelper(context).bodyFontSize,
                     fontWeight: FontWeight.w600,
@@ -144,7 +162,7 @@ class _KpiChartState extends State<KpiChart> {
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 title: Text(
-                  'Просрочено',
+                  analyticsText(context, 'overdue', fallback: 'Overdue'),
                   style: TextStyle(
                     fontSize: ResponsiveHelper(context).bodyFontSize,
                     fontWeight: FontWeight.w600,
@@ -166,7 +184,11 @@ class _KpiChartState extends State<KpiChart> {
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 title: Text(
-                  'Всего задач',
+                  analyticsText(
+                    context,
+                    'total_tasks',
+                    fallback: 'Total tasks',
+                  ),
                   style: TextStyle(
                     fontSize: ResponsiveHelper(context).bodyFontSize,
                     fontWeight: FontWeight.w600,
@@ -196,8 +218,7 @@ class _KpiChartState extends State<KpiChart> {
       : (_taskData.isEmpty ? 0 : _taskData.reduce((a, b) => a + b));
   int get _completed =>
       _taskData.isNotEmpty && _taskData.length > 2 ? _taskData[2] : 0;
-  int get _inProgress =>
-      _taskData.isNotEmpty ? _taskData[0] : 0;
+  int get _inProgress => _taskData.isNotEmpty ? _taskData[0] : 0;
   int get _overdue =>
       _taskData.isNotEmpty && _taskData.length > 1 ? _taskData[1] : 0;
 
@@ -354,19 +375,23 @@ class _KpiChartState extends State<KpiChart> {
     final allSlices = <_KpiSlice>[
       if (_showCompleted)
         _KpiSlice(
-          label: 'Выполнено',
+          label: analyticsText(context, 'completed', fallback: 'Completed'),
           value: displayCompleted.toDouble(),
           color: const Color(0xff10B981),
         ),
       if (_showInProgress)
         _KpiSlice(
-          label: 'В работе',
+          label: analyticsText(
+            context,
+            'in_progress',
+            fallback: 'In progress',
+          ),
           value: displayInProgress.toDouble(),
           color: const Color(0xff6366F1),
         ),
       if (_showOverdue)
         _KpiSlice(
-          label: 'Просрочено',
+          label: analyticsText(context, 'overdue', fallback: 'Overdue'),
           value: displayOverdue.toDouble(),
           color: const Color(0xffEF4444),
         ),
@@ -460,7 +485,8 @@ class _KpiChartState extends State<KpiChart> {
                 children: [
                   _buildSliceToggle(
                     color: const Color(0xff10B981),
-                    label: 'Выполнено',
+                    label: analyticsText(context, 'completed',
+                        fallback: 'Completed'),
                     isActive: _showCompleted,
                     onTap: () => setState(() {
                       _showCompleted = !_showCompleted;
@@ -469,7 +495,11 @@ class _KpiChartState extends State<KpiChart> {
                   ),
                   _buildSliceToggle(
                     color: const Color(0xff6366F1),
-                    label: 'В работе',
+                    label: analyticsText(
+                      context,
+                      'in_progress',
+                      fallback: 'In progress',
+                    ),
                     isActive: _showInProgress,
                     onTap: () => setState(() {
                       _showInProgress = !_showInProgress;
@@ -478,7 +508,8 @@ class _KpiChartState extends State<KpiChart> {
                   ),
                   _buildSliceToggle(
                     color: const Color(0xffEF4444),
-                    label: 'Просрочено',
+                    label:
+                        analyticsText(context, 'overdue', fallback: 'Overdue'),
                     isActive: _showOverdue,
                     onTap: () => setState(() {
                       _showOverdue = !_showOverdue;
@@ -504,7 +535,11 @@ class _KpiChartState extends State<KpiChart> {
                             SizedBox(
                                 height: ResponsiveHelper(context).smallSpacing),
                             Text(
-                              _error!,
+                              analyticsText(
+                                context,
+                                _error!,
+                                fallback: _error!,
+                              ),
                               style: TextStyle(
                                 color: Color(0xff64748B),
                                 fontSize: responsive.bodyFontSize,
@@ -516,7 +551,13 @@ class _KpiChartState extends State<KpiChart> {
                                 height: ResponsiveHelper(context).smallSpacing),
                             TextButton(
                               onPressed: _loadData,
-                              child: Text('Повторить'),
+                              child: Text(
+                                analyticsText(
+                                  context,
+                                  'retry',
+                                  fallback: 'Retry',
+                                ),
+                              ),
                             ),
                           ],
                         ),
@@ -601,7 +642,11 @@ class _KpiChartState extends State<KpiChart> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Общий KPI',
+                        analyticsText(
+                          context,
+                          'analytics_overall_kpi',
+                          fallback: 'Overall KPI',
+                        ),
                         style: TextStyle(
                           fontSize: responsive.smallFontSize,
                           color: Color(0xff64748B),
@@ -624,7 +669,11 @@ class _KpiChartState extends State<KpiChart> {
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       Text(
-                        'Завершено задач',
+                        analyticsText(
+                          context,
+                          'analytics_completed_tasks_count',
+                          fallback: 'Completed tasks',
+                        ),
                         style: TextStyle(
                           fontSize: responsive.smallFontSize,
                           color: Color(0xff64748B),

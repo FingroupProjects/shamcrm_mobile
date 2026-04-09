@@ -35,10 +35,12 @@ class WriteOffDocumentDetailsScreen extends StatefulWidget {
   });
 
   @override
-  _WriteOffDocumentDetailsScreenState createState() => _WriteOffDocumentDetailsScreenState();
+  _WriteOffDocumentDetailsScreenState createState() =>
+      _WriteOffDocumentDetailsScreenState();
 }
 
-class _WriteOffDocumentDetailsScreenState extends State<WriteOffDocumentDetailsScreen> {
+class _WriteOffDocumentDetailsScreenState
+    extends State<WriteOffDocumentDetailsScreen> {
   final ApiService _apiService = ApiService();
   IncomingDocument? currentDocument;
   List<Map<String, dynamic>> details = [];
@@ -63,7 +65,8 @@ class _WriteOffDocumentDetailsScreenState extends State<WriteOffDocumentDetailsS
   // ✅ НОВОЕ: Проверка разрешения на проведение документа
   Future<void> _checkApprovePermission() async {
     try {
-      final hasPermission = await _apiService.hasPermission('write_off_document.approve');
+      final hasPermission =
+          await _apiService.hasPermission('write_off_document.approve');
       if (mounted) {
         setState(() {
           _hasApprovePermission = hasPermission;
@@ -104,7 +107,8 @@ class _WriteOffDocumentDetailsScreenState extends State<WriteOffDocumentDetailsS
       _isLoading = true;
     });
     try {
-      final document = await _apiService.getWriteOffDocumentById(widget.documentId);
+      final document =
+          await _apiService.getWriteOffDocumentById(widget.documentId);
       setState(() {
         currentDocument = document;
         _updateDetails(document);
@@ -125,7 +129,9 @@ class _WriteOffDocumentDetailsScreenState extends State<WriteOffDocumentDetailsS
         return;
       }
       final localizations = AppLocalizations.of(context)!;
-      _showSnackBar('${localizations.translate('error_loading_document') ?? 'Ошибка загрузки документа'}: $e', false);
+      _showSnackBar(
+          '${localizations.translate('error_loading_document') ?? 'Ошибка загрузки документа'}: $e',
+          false);
     }
   }
 
@@ -137,36 +143,45 @@ class _WriteOffDocumentDetailsScreenState extends State<WriteOffDocumentDetailsS
 
     details = [
       {
-        'label': '${AppLocalizations.of(context)!.translate('document_number') ?? 'Номер документа'}:',
-        'value': document.docNumber ?? '',
+        'label':
+            '${AppLocalizations.of(context)!.translate('document_number') ?? 'Документ'}:',
+        'value': "№${document.docNumber ?? ''}",
       },
       {
         'label': '${AppLocalizations.of(context)!.translate('date') ?? 'Дата'}',
-        'value': document.date != null ? DateFormat('dd.MM.yyyy HH:mm').format(document.date!) : '',
+        'value': document.date != null
+            ? DateFormat('dd.MM.yyyy HH:mm').format(document.date!)
+            : '',
       },
       {
-        'label': '${AppLocalizations.of(context)!.translate('storage') ?? 'Склад'}:',
+        'label':
+            '${AppLocalizations.of(context)!.translate('storage') ?? 'Склад'}:',
         'value': document.storage?.name ?? '',
       },
       {
-        'label': '${AppLocalizations.of(context)!.translate('article') ?? 'Статья'}:',
+        'label':
+            '${AppLocalizations.of(context)!.translate('article') ?? 'Статья'}:',
         'value': document.article?.name ?? '',
       },
       {
-        'label': AppLocalizations.of(context)!.translate('comment') ?? 'Комментарий',
+        'label':
+            AppLocalizations.of(context)!.translate('comment') ?? 'Комментарий',
         'value': document.comment ?? '',
       },
       {
-        'label': '${AppLocalizations.of(context)!.translate('total_quantity') ?? 'Общее количество'}:',
+        'label':
+            '${AppLocalizations.of(context)!.translate('total_quantity') ?? 'Общее количество'}:',
         'value': document.totalQuantity.toString(),
       },
       {
-        'label': '${AppLocalizations.of(context)!.translate('status') ?? 'Статус'}:',
+        'label':
+            '${AppLocalizations.of(context)!.translate('status') ?? 'Статус'}:',
         'value': _getLocalizedStatus(document),
       },
       if (document.deletedAt != null)
         {
-          'label': '${AppLocalizations.of(context)!.translate('deleted_at') ?? 'Дата удаления'}:',
+          'label':
+              '${AppLocalizations.of(context)!.translate('deleted_at') ?? 'Дата удаления'}:',
           'value': DateFormat('dd.MM.yyyy HH:mm').format(document.deletedAt!),
         },
     ];
@@ -220,7 +235,10 @@ class _WriteOffDocumentDetailsScreenState extends State<WriteOffDocumentDetailsS
     // ИЗМЕНЕНО: Проверяем update-право
     if (!widget.hasUpdatePermission) {
       final localizations = AppLocalizations.of(context)!;
-      _showSnackBar(localizations.translate('no_permission_to_approve') ?? 'Нет прав на проведение документа', false);
+      _showSnackBar(
+          localizations.translate('no_permission_to_approve') ??
+              'Нет прав на проведение документа',
+          false);
       return;
     }
 
@@ -235,7 +253,9 @@ class _WriteOffDocumentDetailsScreenState extends State<WriteOffDocumentDetailsS
       });
       _updateStatusOnly();
       final localizations = AppLocalizations.of(context)!;
-      _showSnackBar(localizations.translate('document_approved') ?? 'Документ проведен', true);
+      _showSnackBar(
+          localizations.translate('document_approved') ?? 'Документ проведен',
+          true);
     } catch (e) {
       if (e is ApiException && e.statusCode == 409) {
         final localizations = AppLocalizations.of(context)!;
@@ -259,7 +279,10 @@ class _WriteOffDocumentDetailsScreenState extends State<WriteOffDocumentDetailsS
     // ИЗМЕНЕНО: Проверяем update-право
     if (!widget.hasUpdatePermission) {
       final localizations = AppLocalizations.of(context)!;
-      _showSnackBar(localizations.translate('no_permission_to_unapprove') ?? 'Нет прав на отмену проведения', false);
+      _showSnackBar(
+          localizations.translate('no_permission_to_unapprove') ??
+              'Нет прав на отмену проведения',
+          false);
       return;
     }
 
@@ -274,7 +297,10 @@ class _WriteOffDocumentDetailsScreenState extends State<WriteOffDocumentDetailsS
       });
       _updateStatusOnly();
       final localizations = AppLocalizations.of(context)!;
-      _showSnackBar(localizations.translate('document_approval_canceled') ?? 'Проведение документа отменено', true);
+      _showSnackBar(
+          localizations.translate('document_approval_canceled') ??
+              'Проведение документа отменено',
+          true);
     } catch (e) {
       if (e is ApiException && e.statusCode == 409) {
         final localizations = AppLocalizations.of(context)!;
@@ -298,7 +324,10 @@ class _WriteOffDocumentDetailsScreenState extends State<WriteOffDocumentDetailsS
     // ИЗМЕНЕНО: Привязываем к update или delete (здесь — update, как approve)
     if (!widget.hasUpdatePermission) {
       final localizations = AppLocalizations.of(context)!;
-      _showSnackBar(localizations.translate('no_permission_to_restore') ?? 'Нет прав на восстановление', false);
+      _showSnackBar(
+          localizations.translate('no_permission_to_restore') ??
+              'Нет прав на восстановление',
+          false);
       return;
     }
 
@@ -308,14 +337,20 @@ class _WriteOffDocumentDetailsScreenState extends State<WriteOffDocumentDetailsS
     try {
       await _apiService.restoreWriteOffDocument(widget.documentId);
       setState(() {
-        currentDocument = currentDocument!.copyWith(deletedAt: null); // clearDeletedAt
+        currentDocument =
+            currentDocument!.copyWith(deletedAt: null); // clearDeletedAt
         _documentUpdated = true;
       });
       _updateStatusOnly();
       final localizations = AppLocalizations.of(context)!;
-      _showSnackBar(localizations.translate('document_restored') ?? 'Документ восстановлен', true);
+      _showSnackBar(
+          localizations.translate('document_restored') ??
+              'Документ восстановлен',
+          true);
       // ИЗМЕНЕНО: Reload через BLoC
-      context.read<WriteOffBloc>().add(const FetchWriteOffs(forceRefresh: true));
+      context
+          .read<WriteOffBloc>()
+          .add(const FetchWriteOffs(forceRefresh: true));
     } catch (e) {
       if (e is ApiException && e.statusCode == 409) {
         final localizations = AppLocalizations.of(context)!;
@@ -363,7 +398,8 @@ class _WriteOffDocumentDetailsScreenState extends State<WriteOffDocumentDetailsS
     if (currentDocument!.deletedAt != null) {
       if (!widget.hasUpdatePermission) return const SizedBox.shrink();
       return StyledActionButton(
-        text: AppLocalizations.of(context)!.translate('restore_document') ?? 'Восстановить',
+        text: AppLocalizations.of(context)!.translate('restore_document') ??
+            'Восстановить',
         icon: Icons.restore,
         color: const Color(0xFF2196F3),
         onPressed: _restoreDocument,
@@ -382,7 +418,8 @@ class _WriteOffDocumentDetailsScreenState extends State<WriteOffDocumentDetailsS
 
     if (currentDocument!.approved == 0) {
       return StyledActionButton(
-        text: AppLocalizations.of(context)!.translate('approve_document') ?? 'Провести',
+        text: AppLocalizations.of(context)!.translate('approve_document') ??
+            'Провести',
         icon: Icons.check_circle_outline,
         color: const Color(0xFF4CAF50),
         onPressed: _approveDocument,
@@ -390,7 +427,8 @@ class _WriteOffDocumentDetailsScreenState extends State<WriteOffDocumentDetailsS
     }
 
     return StyledActionButton(
-      text: AppLocalizations.of(context)!.translate('unapprove_document') ?? 'Отменить проведение',
+      text: AppLocalizations.of(context)!.translate('unapprove_document') ??
+          'Отменить проведение',
       icon: Icons.cancel_outlined,
       color: const Color(0xFFFFA500),
       onPressed: _unApproveDocument,
@@ -440,7 +478,8 @@ class _WriteOffDocumentDetailsScreenState extends State<WriteOffDocumentDetailsS
               Padding(
                 padding: const EdgeInsets.all(16),
                 child: StyledActionButton(
-                  text: AppLocalizations.of(context)!.translate('close') ?? 'Закрыть',
+                  text: AppLocalizations.of(context)!.translate('close') ??
+                      'Закрыть',
                   icon: Icons.close,
                   color: const Color(0xff1E2E52),
                   onPressed: () => Navigator.pop(context),
@@ -474,7 +513,9 @@ class _WriteOffDocumentDetailsScreenState extends State<WriteOffDocumentDetailsS
             : currentDocument == null
                 ? Center(
                     child: Text(
-                      AppLocalizations.of(context)!.translate('document_data_unavailable') ?? 'Данные документа недоступны',
+                      AppLocalizations.of(context)!
+                              .translate('document_data_unavailable') ??
+                          'Данные документа недоступны',
                       style: const TextStyle(
                         fontSize: 18,
                         fontFamily: 'Gilroy',
@@ -484,7 +525,8 @@ class _WriteOffDocumentDetailsScreenState extends State<WriteOffDocumentDetailsS
                     ),
                   )
                 : Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16.0, vertical: 8.0),
                     child: ListView(
                       children: [
                         Padding(
@@ -493,7 +535,8 @@ class _WriteOffDocumentDetailsScreenState extends State<WriteOffDocumentDetailsS
                         ),
                         _buildDetailsList(),
                         const SizedBox(height: 16),
-                        if (currentDocument!.documentGoods != null && currentDocument!.documentGoods!.isNotEmpty) ...[
+                        if (currentDocument!.documentGoods != null &&
+                            currentDocument!.documentGoods!.isNotEmpty) ...[
                           _buildGoodsList(currentDocument!.documentGoods!),
                           const SizedBox(height: 16),
                         ],
@@ -506,8 +549,8 @@ class _WriteOffDocumentDetailsScreenState extends State<WriteOffDocumentDetailsS
 
   AppBar _buildAppBar(BuildContext context) {
     // ИЗМЕНЕНО: showActions с правами
-    final showActions = currentDocument?.deletedAt == null && 
-                        (widget.hasUpdatePermission || widget.hasDeletePermission);
+    final showActions = currentDocument?.deletedAt == null &&
+        (widget.hasUpdatePermission || widget.hasDeletePermission);
 
     return AppBar(
       backgroundColor: Colors.white,
@@ -532,7 +575,7 @@ class _WriteOffDocumentDetailsScreenState extends State<WriteOffDocumentDetailsS
       title: Transform.translate(
         offset: const Offset(-10, 0),
         child: Text(
-          "${AppLocalizations.of(context)!.translate('view_document') ?? 'Просмотр документа'} №${widget.docNumber}",
+          "${AppLocalizations.of(context)!.translate('write_off') ?? 'Списание'} №${widget.docNumber}",
           style: const TextStyle(
             fontSize: 20,
             fontFamily: 'Gilroy',
@@ -592,7 +635,8 @@ class _WriteOffDocumentDetailsScreenState extends State<WriteOffDocumentDetailsS
                           builder: (BuildContext context) {
                             return BlocProvider.value(
                               value: BlocProvider.of<WriteOffBloc>(context),
-                              child: WriteOffDeleteDocumentDialog(documentId: widget.documentId),
+                              child: WriteOffDeleteDocumentDialog(
+                                  documentId: widget.documentId),
                             );
                           },
                         );
@@ -603,7 +647,8 @@ class _WriteOffDocumentDetailsScreenState extends State<WriteOffDocumentDetailsS
             ]
           : [],
     );
-  } 
+  }
+
   Widget _buildDetailsList() {
     return ListView.builder(
       shrinkWrap: true,
@@ -645,7 +690,8 @@ class _WriteOffDocumentDetailsScreenState extends State<WriteOffDocumentDetailsS
                   fontFamily: 'Gilroy',
                   fontWeight: FontWeight.w500,
                   color: const Color(0xff1E2E52),
-                  decoration: value.isNotEmpty ? TextDecoration.underline : null,
+                  decoration:
+                      value.isNotEmpty ? TextDecoration.underline : null,
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -669,7 +715,8 @@ class _WriteOffDocumentDetailsScreenState extends State<WriteOffDocumentDetailsS
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildTitleRow(AppLocalizations.of(context)!.translate('goods') ?? 'Товары'),
+        _buildTitleRow(
+            AppLocalizations.of(context)!.translate('goods') ?? 'Товары'),
         const SizedBox(height: 8),
         if (goods.isEmpty)
           Padding(
@@ -680,7 +727,8 @@ class _WriteOffDocumentDetailsScreenState extends State<WriteOffDocumentDetailsS
                 child: Padding(
                   padding: const EdgeInsets.all(16),
                   child: Text(
-                    AppLocalizations.of(context)!.translate('empty') ?? 'Нет товаров',
+                    AppLocalizations.of(context)!.translate('empty') ??
+                        'Нет товаров',
                     style: const TextStyle(
                       fontSize: 16,
                       fontFamily: 'Gilroy',
@@ -707,7 +755,8 @@ class _WriteOffDocumentDetailsScreenState extends State<WriteOffDocumentDetailsS
   }
 
   Widget _buildGoodsItem(DocumentGood good) {
-    final selectedUnit = good.good?.unit ?? Unit(id: null, name: '', shortName: '');
+    final selectedUnit =
+        good.good?.unit ?? Unit(id: null, name: '', shortName: '');
     final amount = selectedUnit.amount ?? 1.0;
     final unitShortName = selectedUnit.shortName ?? selectedUnit.name ?? '';
 
@@ -722,7 +771,8 @@ class _WriteOffDocumentDetailsScreenState extends State<WriteOffDocumentDetailsS
         child: Container(
           decoration: TaskCardStyles.taskCardDecoration,
           child: Padding(
-            padding: const EdgeInsets.only(left: 16, right: 16, top: 12, bottom: 12),
+            padding:
+                const EdgeInsets.only(left: 16, right: 16, top: 12, bottom: 12),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -748,7 +798,9 @@ class _WriteOffDocumentDetailsScreenState extends State<WriteOffDocumentDetailsS
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    AppLocalizations.of(context)!.translate('unit') ?? 'Ед.',
+                                    AppLocalizations.of(context)!
+                                            .translate('unit') ??
+                                        'Ед.',
                                     style: const TextStyle(
                                       fontSize: 10,
                                       fontFamily: 'Gilroy',
@@ -775,7 +827,9 @@ class _WriteOffDocumentDetailsScreenState extends State<WriteOffDocumentDetailsS
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  AppLocalizations.of(context)!.translate('quantity') ?? 'Кол-во',
+                                  AppLocalizations.of(context)!
+                                          .translate('quantity') ??
+                                      'Кол-во',
                                   style: const TextStyle(
                                     fontSize: 10,
                                     fontFamily: 'Gilroy',
@@ -870,7 +924,10 @@ class _WriteOffDocumentDetailsScreenState extends State<WriteOffDocumentDetailsS
   }
 
   Widget _buildImageWidget(DocumentGood good) {
-    if (baseUrl == null || good.good == null || good.good!.files == null || good.good!.files!.isEmpty) {
+    if (baseUrl == null ||
+        good.good == null ||
+        good.good!.files == null ||
+        good.good!.files!.isEmpty) {
       return _buildPlaceholderImage();
     }
 
@@ -901,7 +958,8 @@ class _WriteOffDocumentDetailsScreenState extends State<WriteOffDocumentDetailsS
         borderRadius: BorderRadius.circular(8),
       ),
       child: const Center(
-        child: Icon(Icons.image_not_supported, size: 40, color: Color(0xff99A4BA)),
+        child:
+            Icon(Icons.image_not_supported, size: 40, color: Color(0xff99A4BA)),
       ),
     );
   }
@@ -910,7 +968,9 @@ class _WriteOffDocumentDetailsScreenState extends State<WriteOffDocumentDetailsS
     final goodId = good.good?.id;
     if (goodId == null || goodId == 0) {
       _showSnackBar(
-          AppLocalizations.of(context)!.translate('error_no_good_id') ?? 'Ошибка: Не удалось определить ID товара', false);
+          AppLocalizations.of(context)!.translate('error_no_good_id') ??
+              'Ошибка: Не удалось определить ID товара',
+          false);
       return;
     }
 

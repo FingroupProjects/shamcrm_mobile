@@ -3,6 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 class AppLocalizations {
+  static const String _defaultLanguageCode = 'ru';
+  static final Map<String, Map<String, String>> _localeCache = {};
+  static final Map<String, String> _russianValueToKey = {};
+
   final Locale locale;
 
   AppLocalizations(this.locale);
@@ -11,27 +15,66 @@ class AppLocalizations {
     return Localizations.of<AppLocalizations>(context, AppLocalizations);
   }
 
-  static const LocalizationsDelegate<AppLocalizations> delegate = _AppLocalizationsDelegate();
+  static const LocalizationsDelegate<AppLocalizations> delegate =
+      _AppLocalizationsDelegate();
 
   Map<String, String> _localizedStrings = {};
 
   Future<bool> load() async {
-  try {
-    String jsonString = await rootBundle.loadString('assets/langs/${locale.languageCode}.json');
-    Map<String, dynamic> jsonMap = json.decode(jsonString);
+    try {
+      _localizedStrings = await _loadLocaleMap(locale.languageCode);
 
-    _localizedStrings = jsonMap.map((key, value) {
-      return MapEntry(key, value.toString());
-    });
+      if (_russianValueToKey.isEmpty) {
+        final russianStrings = await _loadLocaleMap(_defaultLanguageCode);
+        for (final entry in russianStrings.entries) {
+          final normalizedValue = _normalizeLookup(entry.value);
+          if (normalizedValue.isEmpty) continue;
+          _russianValueToKey.putIfAbsent(normalizedValue, () => entry.key);
+        }
+      }
 
-    return true;
-  } catch (e) {
-    debugPrint("Ошибка загрузки локализации: $e");
-    return false;
+      return true;
+    } catch (e) {
+      debugPrint('Ошибка загрузки локализации: $e');
+      return false;
+    }
   }
-}
-  String translate(String key) {
-    return _localizedStrings[key] ?? key;
+
+  static Future<Map<String, String>> _loadLocaleMap(String languageCode) async {
+    final cached = _localeCache[languageCode];
+    if (cached != null) return cached;
+
+    final jsonString =
+        await rootBundle.loadString('assets/langs/$languageCode.json');
+    final Map<String, dynamic> jsonMap = json.decode(jsonString);
+    final localizedStrings = jsonMap.map(
+      (key, value) => MapEntry(key, value.toString()),
+    );
+
+    _localeCache[languageCode] = localizedStrings;
+    return localizedStrings;
+  }
+
+  static String _normalizeLookup(String value) {
+    return value.replaceAll(RegExp(r'\s+'), ' ').trim();
+  }
+
+  String translate(String keyOrRussianSource) {
+    final directValue = _localizedStrings[keyOrRussianSource];
+    if (directValue != null && directValue.isNotEmpty) {
+      return directValue;
+    }
+
+    final normalizedSource = _normalizeLookup(keyOrRussianSource);
+    final mappedKey = _russianValueToKey[normalizedSource];
+    if (mappedKey != null) {
+      final translatedValue = _localizedStrings[mappedKey];
+      if (translatedValue != null && translatedValue.isNotEmpty) {
+        return translatedValue;
+      }
+    }
+
+    return keyOrRussianSource;
   }
 
   String get dashboard => translate('dashboard');
@@ -51,7 +94,8 @@ class AppLocalizations {
   String get normal => translate('normal');
 }
 
-class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {
+class _AppLocalizationsDelegate
+    extends LocalizationsDelegate<AppLocalizations> {
   const _AppLocalizationsDelegate();
 
   @override

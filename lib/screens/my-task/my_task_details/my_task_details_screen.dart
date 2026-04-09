@@ -16,8 +16,11 @@ import 'package:crm_task_manager/bloc/my-task_by_id/taskById_state.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/custom_widget/file_utils.dart';
 import 'package:crm_task_manager/models/field_configuration.dart';
+import 'package:crm_task_manager/models/my-task_model.dart';
 import 'package:crm_task_manager/models/my-taskbyId_model.dart';
 import 'package:crm_task_manager/screens/my-task/my_task_details/my_task_delete.dart';
+import 'package:crm_task_manager/screens/my-task/my_task_details/my_task_dropdown_bottom_dialog.dart'
+    as my_task_status_sheet;
 import 'package:crm_task_manager/screens/my-task/my_task_details/my_task_edit_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:dio/dio.dart';
@@ -145,6 +148,9 @@ class FileCacheManager {
 class _MyTaskDetailsScreenState extends State<MyTaskDetailsScreen> {
   List<Map<String, String>> details = [];
   MyTaskById? currentMyTask;
+  late final int _initialStatusId;
+  int? _currentStatusId;
+  bool _statusChangedFromDetails = false;
 
   // Конфигурация полей
   List<FieldConfiguration> fieldConfigurations = [];
@@ -155,9 +161,18 @@ class _MyTaskDetailsScreenState extends State<MyTaskDetailsScreen> {
   bool _isDownloading = false;
   Map<int, double> _downloadProgress = {};
 
+  String _getTaskErrorMessage(String error) {
+    if (error.toLowerCase().contains('интернет')) {
+      return error;
+    }
+    return 'Задача была удалена';
+  }
+
   @override
   void initState() {
     super.initState();
+    _initialStatusId = widget.statusId;
+    _currentStatusId = widget.statusId;
 
     // Загружаем конфигурацию после того как виджет построен
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -169,6 +184,71 @@ class _MyTaskDetailsScreenState extends State<MyTaskDetailsScreen> {
     context
         .read<MyTaskByIdBloc>()
         .add(FetchMyTaskByIdEvent(taskId: int.parse(widget.taskId)));
+  }
+
+  Map<String, dynamic> _buildNavigationResult() {
+    return {
+      'refresh': _statusChangedFromDetails,
+      'statusId': _initialStatusId,
+      'newStatusId': _currentStatusId ?? _initialStatusId,
+    };
+  }
+
+  Future<bool> _handleBackNavigation() async {
+    if (!mounted) return false;
+    context.read<CalendarBloc>().add(FetchCalendarEvents(
+        widget.initialDate?.month ?? DateTime.now().month,
+        widget.initialDate?.year ?? DateTime.now().year));
+    Navigator.pop(context, _buildNavigationResult());
+    return false;
+  }
+
+  void _refreshMyTaskView() {
+    if (currentMyTask == null) return;
+    final taskId = currentMyTask!.id;
+    setState(() {
+      currentMyTask = null;
+      details.clear();
+      isConfigurationLoaded = false;
+    });
+    _loadFieldConfiguration();
+    context
+        .read<MyTaskByIdBloc>()
+        .add(FetchMyTaskByIdEvent(taskId: taskId));
+    context.read<MyTaskBloc>().add(FetchMyTaskStatuses());
+    context.read<CalendarBloc>().add(FetchCalendarEvents(
+        widget.initialDate?.month ?? DateTime.now().month,
+        widget.initialDate?.year ?? DateTime.now().year));
+  }
+
+  void _openStatusChangeSheet() {
+    if (currentMyTask == null) return;
+
+    final task = MyTask(
+      id: currentMyTask!.id,
+      name: currentMyTask!.name,
+      taskNumber: currentMyTask!.taskNumber,
+      startDate: currentMyTask!.startDate,
+      endDate: currentMyTask!.endDate,
+      description: currentMyTask!.description,
+      statusId:
+          currentMyTask!.taskStatus?.id ?? _currentStatusId ?? _initialStatusId,
+      taskCustomFields: const [],
+    );
+
+    my_task_status_sheet.DropdownBottomSheet(
+      context,
+      currentMyTask!.taskStatus?.title ?? widget.taskStatus,
+      (String _, int newStatusId) {
+        if (!mounted) return;
+        setState(() {
+          _statusChangedFromDetails = true;
+          _currentStatusId = newStatusId;
+        });
+        _refreshMyTaskView();
+      },
+      task,
+    );
   }
 
   Future<void> _loadFieldConfiguration() async {
@@ -505,8 +585,14 @@ class _MyTaskDetailsScreenState extends State<MyTaskDetailsScreen> {
           },
         ),
       ],
-      child: BlocBuilder<MyTaskByIdBloc, MyTaskByIdState>(
-        builder: (context, state) {
+      child: PopScope(
+        canPop: false,
+        onPopInvokedWithResult: (didPop, result) async {
+          if (didPop) return;
+          await _handleBackNavigation();
+        },
+        child: BlocBuilder<MyTaskByIdBloc, MyTaskByIdState>(
+          builder: (context, state) {
           if (state is MyTaskByIdLoading) {
             return Scaffold(
               body: Center(
@@ -545,11 +631,26 @@ class _MyTaskDetailsScreenState extends State<MyTaskDetailsScreen> {
                     ],
                   )),
             );
+          } else if (state is MyTaskByIdError) {
+            return Scaffold(
+              body: Center(
+                child: Text(
+                  _getTaskErrorMessage(state.message),
+                  style: const TextStyle(
+                    fontFamily: 'Gilroy',
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.black,
+                  ),
+                ),
+              ),
+            );
           }
           return Scaffold(
             body: Center(child: Text('')),
           );
-        },
+          },
+        ),
       ),
     );
   }
@@ -572,12 +673,7 @@ class _MyTaskDetailsScreenState extends State<MyTaskDetailsScreen> {
               width: 24,
               height: 24,
             ),
-            onPressed: () {
-              context.read<CalendarBloc>().add(FetchCalendarEvents(
-                  widget.initialDate?.month ?? DateTime.now().month,
-                  widget.initialDate?.year ?? DateTime.now().year));
-              Navigator.pop(context, widget.statusId);
-            },
+            onPressed: () => _handleBackNavigation(),
           ),
         ),
       ),
@@ -628,6 +724,9 @@ class _MyTaskDetailsScreenState extends State<MyTaskDetailsScreen> {
                   );
 
                   if (shouldUpdate == true) {
+                    setState(() {
+                      _statusChangedFromDetails = true;
+                    });
                     context
                         .read<MyTaskByIdBloc>()
                         .add(FetchMyTaskByIdEvent(taskId: currentMyTask!.id));
@@ -681,6 +780,46 @@ class _MyTaskDetailsScreenState extends State<MyTaskDetailsScreen> {
   }
 
   Widget _buildDetailItem(String label, String value) {
+    if (label == AppLocalizations.of(context)!.translate('status_details')) {
+      return GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: _openStatusChangeSheet,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildLabel(label),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Flexible(
+                    child: Text(
+                      value,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontFamily: 'Gilroy',
+                        fontWeight: FontWeight.w500,
+                        color: Color(0xff1E2E52),
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  const Icon(
+                    Icons.keyboard_arrow_down_rounded,
+                    color: Color(0xff1E2E52),
+                    size: 16,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
     // Специальная обработка для названия и описания
     if (label == AppLocalizations.of(context)!.translate('task_name') ||
         label ==

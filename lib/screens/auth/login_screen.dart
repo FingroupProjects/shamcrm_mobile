@@ -36,7 +36,8 @@ class LoginScreen extends StatelessWidget {
 
               if (state.user.role != null && state.user.role!.isNotEmpty) {
                 await prefs.setString('userRoleName', state.user.role![0].name);
-                String allRoles = state.user.role!.map((r) => r.name).join(', ');
+                String allRoles =
+                    state.user.role!.map((r) => r.name).join(', ');
                 await prefs.setString('userAllRoles', allRoles);
               }
 
@@ -74,16 +75,34 @@ class LoginScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   SizedBox(height: 75),
-                  Text(localizations!.translate('login_title'), style: TextStyle(fontSize: 38, fontWeight: FontWeight.w600, fontFamily: 'Gilroy')),
+                  Text(localizations!.translate('login_title'),
+                      style: TextStyle(
+                          fontSize: 38,
+                          fontWeight: FontWeight.w600,
+                          fontFamily: 'Gilroy')),
                   SizedBox(height: 8),
-                  Text(localizations.translate('login_subtitle'), style: TextStyle(fontSize: 14, color: Color(0xff99A4BA), fontWeight: FontWeight.w500, fontFamily: 'Gilroy')),
+                  Text(localizations.translate('login_subtitle'),
+                      style: TextStyle(
+                          fontSize: 14,
+                          color: Color(0xff99A4BA),
+                          fontWeight: FontWeight.w500,
+                          fontFamily: 'Gilroy')),
                   SizedBox(height: 16),
-                  CustomTextField(controller: loginController, hintText: localizations.translate('login_username_hint'), label: localizations.translate('login_username_label')),
+                  CustomTextField(
+                      controller: loginController,
+                      hintText: localizations.translate('login_username_hint'),
+                      label: localizations.translate('login_username_label')),
                   SizedBox(height: 16),
-                  CustomTextField(controller: passwordController, hintText: localizations.translate('login_password_hint'), label: localizations.translate('login_password_label'), isPassword: true),
+                  CustomTextField(
+                      controller: passwordController,
+                      hintText: localizations.translate('login_password_hint'),
+                      label: localizations.translate('login_password_label'),
+                      isPassword: true),
                   SizedBox(height: 16),
                   if (state is LoginLoading)
-                    Center(child: CircularProgressIndicator(color: Color(0xff1E2E52)))
+                    Center(
+                        child:
+                            CircularProgressIndicator(color: Color(0xff1E2E52)))
                   else
                     CustomButton(
                       buttonText: localizations.translate('login_button'),
@@ -93,10 +112,18 @@ class LoginScreen extends StatelessWidget {
                         final login = loginController.text.trim();
                         final password = passwordController.text.trim();
                         if (login.isEmpty || password.isEmpty) {
-                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Заполните все поля')));
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                localizations.translate('fill_all_fields'),
+                              ),
+                            ),
+                          );
                           return;
                         }
-                        context.read<LoginBloc>().add(CheckLogin(login, password));
+                        context
+                            .read<LoginBloc>()
+                            .add(CheckLogin(login, password));
                       },
                     ),
                   SizedBox(height: 16),

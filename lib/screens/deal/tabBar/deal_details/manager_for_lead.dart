@@ -1,4 +1,5 @@
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
+import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/manager_list/manager_bloc.dart';
 import 'package:crm_task_manager/models/manager_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
@@ -13,18 +14,20 @@ class ManagerForLead extends StatefulWidget {
   final bool hasError;
 
   const ManagerForLead({
-    Key? key,
+    super.key,
     required this.onSelectManager,
     this.selectedManager,
     this.currentUserId,
     this.hasError = false,
-  }) : super(key: key);
+  });
 
   @override
   State<ManagerForLead> createState() => _ManagerForLeadState();
 }
 
 class _ManagerForLeadState extends State<ManagerForLead> {
+  static const int _pageSize = 20;
+  final ApiService _apiService = ApiService();
   List<ManagerData> managersList = [];
   ManagerData? selectedManagerData;
   String? currentUserId;
@@ -47,7 +50,8 @@ class _ManagerForLeadState extends State<ManagerForLead> {
   @override
   void didUpdateWidget(covariant ManagerForLead oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.selectedManager != oldWidget.selectedManager && widget.selectedManager != null) {
+    if (widget.selectedManager != oldWidget.selectedManager &&
+        widget.selectedManager != null) {
       //print('ManagerForLead: selectedManager changed to ${widget.selectedManager}');
       _updateSelectedManagerData();
     }
@@ -99,6 +103,23 @@ class _ManagerForLeadState extends State<ManagerForLead> {
     }
   }
 
+  Future<CustomDropdownPaginatedResponse<ManagerData>> _searchManagers(
+    String query,
+    int page,
+  ) async {
+    final response = await _apiService.getAllManager(
+      search: query,
+      page: page,
+      perPage: _pageSize,
+    );
+    final items = response.result ?? <ManagerData>[];
+
+    return CustomDropdownPaginatedResponse<ManagerData>(
+      items: items,
+      hasMore: items.length >= _pageSize,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     //print('ManagerForLead: Building with selectedManager: ${widget.selectedManager}, selectedManagerData: ${selectedManagerData?.id}');
@@ -123,11 +144,14 @@ class _ManagerForLeadState extends State<ManagerForLead> {
                       ),
                     ),
                     behavior: SnackBarBehavior.floating,
-                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    margin:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
                     backgroundColor: Colors.red,
                     elevation: 3,
-                    padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                    padding: const EdgeInsets.symmetric(
+                        vertical: 12, horizontal: 16),
                     duration: const Duration(seconds: 3),
                   ),
                 );
@@ -156,10 +180,13 @@ class _ManagerForLeadState extends State<ManagerForLead> {
                   ),
                 ),
                 const SizedBox(height: 4),
-                CustomDropdown<ManagerData>.search(
+                CustomDropdown<ManagerData>.searchRequestPaginated(
+                  paginatedRequest: _searchManagers,
+                  futureRequestDelay: const Duration(milliseconds: 350),
                   closeDropDownOnClearFilterSearch: true,
                   items: managersList,
-                  searchHintText: AppLocalizations.of(context)!.translate('search'),
+                  searchHintText:
+                      AppLocalizations.of(context)!.translate('search'),
                   overlayHeight: 400,
                   enabled: true,
                   decoration: CustomDropdownDecoration(
@@ -178,22 +205,23 @@ class _ManagerForLeadState extends State<ManagerForLead> {
                   ),
                   listItemBuilder: (context, item, isSelected, onItemSelect) {
                     return Text(
-                      '${item.name!} ${item.lastname ?? ''}'.trim(),
+                      '${item.name} ${item.lastname ?? ''}'.trim(),
                       style: const TextStyle(
                         color: Color(0xff1E2E52),
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
                         fontFamily: 'Gilroy',
                       ),
-                          maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     );
                   },
                   headerBuilder: (context, selectedItem, enabled) {
                     if (state is GetAllManagerLoading) {
                       //print('ManagerForLead: Displaying loading state');
                       return Text(
-                        AppLocalizations.of(context)!.translate('select_manager'),
+                        AppLocalizations.of(context)!
+                            .translate('select_manager'),
                         style: const TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w500,
@@ -204,9 +232,8 @@ class _ManagerForLeadState extends State<ManagerForLead> {
                     }
                     //print('ManagerForLead: Displaying selected item: ${selectedItem?.id} (${selectedItem?.name})');
                     return Text(
-                      selectedItem != null
-                          ? '${selectedItem.name ?? ''} ${selectedItem.lastname ?? ''}'.trim()
-                          : AppLocalizations.of(context)!.translate('select_manager'),
+                      '${selectedItem.name} ${selectedItem.lastname ?? ''}'
+                          .trim(),
                       style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
@@ -239,7 +266,8 @@ class _ManagerForLeadState extends State<ManagerForLead> {
                 if (widget.hasError) ...[
                   Text(
                     ' ${AppLocalizations.of(context)!.translate('field_required_project')}',
-                    style: const TextStyle(color: Color.fromARGB(255, 241, 50, 36)),
+                    style: const TextStyle(
+                        color: Color.fromARGB(255, 241, 50, 36)),
                   ),
                 ],
               ],

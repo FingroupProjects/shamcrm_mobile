@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:app_tracking_transparency/app_tracking_transparency.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/api/service/firebase_api.dart';
@@ -7,11 +9,13 @@ import 'package:crm_task_manager/bloc/My-Task_Status_Name/statusName_bloc.dart';
 import 'package:crm_task_manager/bloc/Task_Status_Name/statusName_bloc.dart';
 import 'package:crm_task_manager/bloc/auth_bloc_pin/forgot_auth_bloc.dart';
 import 'package:crm_task_manager/bloc/auth_domain/domain_bloc.dart';
+import 'package:crm_task_manager/bloc/advertising_campaign_list/advertising_campaign_bloc.dart';
 import 'package:crm_task_manager/bloc/author/get_all_author_bloc.dart';
 import 'package:crm_task_manager/bloc/calendar/calendar_bloc.dart';
 import 'package:crm_task_manager/bloc/call_bloc/call_center_bloc.dart';
 import 'package:crm_task_manager/bloc/call_bloc/operator_bloc/operator_bloc.dart';
 import 'package:crm_task_manager/bloc/cash_desk/cash_desk_bloc.dart';
+import 'package:crm_task_manager/bloc/city_list/city_bloc.dart';
 import 'package:crm_task_manager/bloc/chats/chat_profile/chats_profile_task_bloc.dart';
 import 'package:crm_task_manager/bloc/chats/delete_message/delete_message_bloc.dart';
 import 'package:crm_task_manager/bloc/chats/groupe_chat/group_chat_bloc.dart';
@@ -57,6 +61,7 @@ import 'package:crm_task_manager/bloc/history_deal/deal_history_bloc.dart';
 import 'package:crm_task_manager/bloc/history_lead/history_bloc.dart';
 import 'package:crm_task_manager/bloc/history_task/task_history_bloc.dart';
 import 'package:crm_task_manager/bloc/lead/lead_bloc.dart';
+import 'package:crm_task_manager/bloc/lead_channel_list/lead_channel_bloc.dart';
 import 'package:crm_task_manager/bloc/lead_by_id/leadById_bloc.dart';
 import 'package:crm_task_manager/bloc/lead_deal/lead_deal_bloc.dart';
 import 'package:crm_task_manager/bloc/login/login_bloc.dart';
@@ -88,6 +93,7 @@ import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/storage_bloc
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/units_bloc/units_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/measure_units/measure_units_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/movement/movement_bloc.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/document/manufacture/manufacture_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/price_type/bloc/price_type_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/storage/bloc/storage_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/supplier_return/supplier_return_bloc.dart';
@@ -121,6 +127,8 @@ import 'package:crm_task_manager/bloc/user/client/get_all_client_bloc.dart';
 import 'package:crm_task_manager/bloc/user/create_cleant/create_client_bloc.dart';
 import 'package:crm_task_manager/bloc/user/user_bloc.dart';
 import 'package:crm_task_manager/firebase_options.dart';
+import 'package:crm_task_manager/offline/core/core_outbox_executors.dart';
+import 'package:crm_task_manager/offline/core/offline_bootstrap.dart';
 import 'package:crm_task_manager/screens/auth/pin_screen.dart';
 import 'package:crm_task_manager/screens/chats/chats_screen.dart';
 import 'package:crm_task_manager/screens/auth/pin_setup_screen.dart';
@@ -132,6 +140,7 @@ import 'package:crm_task_manager/update_dialog.dart';
 import 'package:crm_task_manager/widgets/native_internet_aware_wrapper_WITH_GAME.dart';
 import 'package:crm_task_manager/widgets/native_internet_monitor_simple.dart';
 import 'package:crm_task_manager/widgets/http_inspector_fab.dart';
+import 'package:crm_task_manager/widgets/in_app_update_corner_indicator.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
@@ -156,13 +165,11 @@ void main() async {
   try {
     WidgetsFlutterBinding.ensureInitialized();
 
-    WidgetService.initialize();
-    await NativeInternetMonitor().initialize();
-
-    await _initializeFirebase();
-
     final apiService = ApiService();
     final authService = AuthService();
+
+    await _safeInitializeOfflineRuntime();
+    await _safeInitializeFirebase();
 
     final sessionValidation = await _validateApplicationSession(apiService);
 
@@ -176,37 +183,16 @@ void main() async {
       isDomainChecked = await apiService.isDomainChecked();
 
       if (isDomainChecked) {
-        await apiService.initialize();
-        await apiService.ensureSelectedSalesFunnelInitialized();
+        await _safeInitializeApiService(apiService);
+        _safeRegisterOutboxExecutors(apiService);
       }
     } else {
       await _clearAllApplicationData(apiService, authService);
     }
 
-    await AppTrackingTransparency.requestTrackingAuthorization();
-    await _initializeFirebaseMessaging(apiService);
-
-    RemoteMessage? initialMessage;
-    try {
-      if (Firebase.apps.isNotEmpty) {
-        initialMessage = await FirebaseMessaging.instance.getInitialMessage();
-      }
-    } catch (e) {
-      //print('main: Ошибка получения initial message: $e');
-    }
-
-    SystemChrome.setSystemUIOverlayStyle(
-      const SystemUiOverlayStyle(
-        statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.dark,
-        systemNavigationBarColor: Colors.white,
-      ),
-    );
-
-    final String? savedLanguageCode = await LanguageManager.getLanguage();
-    final Locale savedLocale = savedLanguageCode != null
-        ? Locale(savedLanguageCode)
-        : const Locale('ru');
+    final initialMessage = await _safeLoadInitialMessage();
+    _safeConfigureSystemUi();
+    final savedLocale = await _safeLoadLocale();
 
     runApp(MyApp(
       apiService: apiService,
@@ -223,6 +209,84 @@ void main() async {
     debugPrint('main: startup stackTrace: $stackTrace');
     runApp(ErrorApp(error: e.toString()));
   }
+}
+
+Future<void> _safeInitializeOfflineRuntime() async {
+  try {
+    await OfflineBootstrap.initialize();
+  } catch (e, stackTrace) {
+    debugPrint('main: OfflineBootstrap initialize error: $e');
+    debugPrint('main: OfflineBootstrap stackTrace: $stackTrace');
+  }
+}
+
+Future<void> _safeInitializeFirebase() async {
+  try {
+    await _initializeFirebase();
+  } catch (e, stackTrace) {
+    debugPrint('main: Firebase initialize error: $e');
+    debugPrint('main: Firebase initialize stackTrace: $stackTrace');
+  }
+}
+
+Future<void> _safeInitializeApiService(ApiService apiService) async {
+  try {
+    await apiService.initialize();
+  } catch (e, stackTrace) {
+    debugPrint('main: ApiService initialize error: $e');
+    debugPrint('main: ApiService initialize stackTrace: $stackTrace');
+  }
+}
+
+void _safeRegisterOutboxExecutors(ApiService apiService) {
+  try {
+    CoreOutboxExecutors.register(apiService);
+  } catch (e, stackTrace) {
+    debugPrint('main: CoreOutboxExecutors register error: $e');
+    debugPrint('main: CoreOutboxExecutors register stackTrace: $stackTrace');
+  }
+}
+
+Future<RemoteMessage?> _safeLoadInitialMessage() async {
+  try {
+    if (Firebase.apps.isNotEmpty) {
+      return await FirebaseMessaging.instance.getInitialMessage();
+    }
+  } catch (e, stackTrace) {
+    debugPrint('main: initial message error: $e');
+    debugPrint('main: initial message stackTrace: $stackTrace');
+  }
+
+  return null;
+}
+
+void _safeConfigureSystemUi() {
+  try {
+    SystemChrome.setSystemUIOverlayStyle(
+      const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.dark,
+        systemNavigationBarColor: Colors.white,
+      ),
+    );
+  } catch (e, stackTrace) {
+    debugPrint('main: System UI configuration error: $e');
+    debugPrint('main: System UI configuration stackTrace: $stackTrace');
+  }
+}
+
+Future<Locale> _safeLoadLocale() async {
+  try {
+    final String? savedLanguageCode = await LanguageManager.getLanguage();
+    if (savedLanguageCode != null && savedLanguageCode.isNotEmpty) {
+      return Locale(savedLanguageCode);
+    }
+  } catch (e, stackTrace) {
+    debugPrint('main: locale load error: $e');
+    debugPrint('main: locale load stackTrace: $stackTrace');
+  }
+
+  return const Locale('ru');
 }
 
 Future<void> _initializeFirebase() async {
@@ -272,7 +336,7 @@ Future<void> _initializeFirebaseMessaging(ApiService apiService) async {
 
     await Future.delayed(const Duration(milliseconds: 500));
 
-    final settings = await FirebaseMessaging.instance.requestPermission(
+    await FirebaseMessaging.instance.requestPermission(
       alert: true,
       badge: true,
       sound: true,
@@ -483,7 +547,7 @@ class MyApp extends StatefulWidget {
   final Locale initialLocale;
   final RemoteMessage? initialMessage;
   final bool sessionValid;
-  
+
   const MyApp({
     required this.apiService,
     required this.authService,
@@ -506,17 +570,44 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   Locale? _locale;
+  bool _platformServicesInitialized = false;
+  bool _deferredStartupInitialized = false;
 
   @override
   void initState() {
     super.initState();
     _locale = widget.initialLocale;
-    // ✅ УБРАНА ИНИЦИАЛИЗАЦИЯ - не нужна!
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initializePlatformServices();
+    });
   }
+
+  Future<void> _initializePlatformServices() async {
+    if (_platformServicesInitialized) {
+      return;
+    }
+    _platformServicesInitialized = true;
+
+    WidgetService.initialize();
+    await NativeInternetMonitor().initialize();
+    _initializeDeferredStartup();
+  }
+
+  Future<void> _initializeDeferredStartup() async {
+    if (_deferredStartupInitialized) {
+      return;
+    }
+    _deferredStartupInitialized = true;
+
+    unawaited(AppTrackingTransparency.requestTrackingAuthorization());
+    unawaited(_initializeFirebaseMessaging(widget.apiService));
+    if (widget.isDomainChecked && widget.sessionValid) {
+      unawaited(widget.apiService.ensureSelectedSalesFunnelInitialized());
+    }
+  }
+
 //1
   Future<void> checkForNewVersion(BuildContext context) async {
-    // TODO remove on building ipa or apk files
-    return;
     try {
       final newVersionPlus = NewVersionPlus();
       final status = await newVersionPlus.getVersionStatus();
@@ -526,7 +617,9 @@ class _MyAppState extends State<MyApp> {
       if (!mounted ||
           !context.mounted ||
           status == null ||
-          status.canUpdate == false) return;
+          status.canUpdate == false) {
+        return;
+      }
 
       final localizations = AppLocalizations.of(context);
 
@@ -571,8 +664,12 @@ class _MyAppState extends State<MyApp> {
         BlocProvider(create: (context) => NotesBloc(widget.apiService)),
         BlocProvider(create: (context) => GetAllManagerBloc()),
         BlocProvider(create: (context) => GetAllRegionBloc()),
+        BlocProvider(create: (context) => GetAllCityBloc()),
         BlocProvider(create: (context) => GetAllSourceBloc()),
-        BlocProvider(create: (context) => GetAllLeadBloc()),
+        BlocProvider(create: (context) => GetAllLeadChannelBloc()),
+        BlocProvider(create: (context) => GetAllAdvertisingCampaignBloc()),
+        BlocProvider(
+            create: (context) => GetAllLeadBloc(apiService: widget.apiService)),
         BlocProvider(create: (context) => GetAllCashRegisterBloc()),
         BlocProvider(create: (context) => GetAllIncomeCategoryBloc()),
         BlocProvider(create: (context) => GetAllSupplierBloc()),
@@ -612,14 +709,14 @@ class _MyAppState extends State<MyApp> {
         BlocProvider(create: (context) => ListenSenderVoiceCubit()),
         BlocProvider(create: (context) => ListenSenderFileCubit()),
         BlocProvider(
-          create: (context) => ChatsBloc(ApiService()),
+          create: (context) => ChatsBloc(widget.apiService),
         ),
         BlocProvider(create: (context) => TaskStatusBloc(ApiService())),
         BlocProvider(create: (context) => MyTaskStatusBloc(ApiService())),
         BlocProvider(create: (context) => OrganizationBloc(ApiService())),
         BlocProvider(create: (context) => NotificationBloc(ApiService())),
         BlocProvider(
-          create: (context) => ChatsBloc(ApiService()),
+          create: (context) => ChatsBloc(widget.apiService),
         ),
         BlocProvider(create: (context) => TaskStatusBloc(ApiService())),
         BlocProvider(create: (context) => DashboardChartBloc(ApiService())),
@@ -721,6 +818,7 @@ class _MyAppState extends State<MyApp> {
             create: (context) => SupplierReturnBloc(widget.apiService)),
         BlocProvider(create: (context) => WriteOffBloc(widget.apiService)),
         BlocProvider(create: (context) => MovementBloc(widget.apiService)),
+        BlocProvider(create: (context) => ManufactureBloc(widget.apiService)),
         BlocProvider(create: (context) => CashDeskBloc()),
         BlocProvider(create: (context) => ExpenseBloc()),
         BlocProvider(create: (context) => IncomeBloc()),
@@ -776,6 +874,7 @@ class _MyAppState extends State<MyApp> {
                 // ← НОВОЕ ИМЯ
                 child: child ?? const SizedBox.shrink(),
               ),
+              const InAppUpdateCornerIndicator(),
               // HTTP Inspector FAB (только в DEBUG режиме)
               if (kDebugMode) const HttpInspectorFab(),
             ],

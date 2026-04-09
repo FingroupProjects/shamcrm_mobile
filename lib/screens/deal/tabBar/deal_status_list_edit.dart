@@ -76,9 +76,9 @@ class _DealStatusEditWidgetState extends State<DealStatusEditWidget> {
 
   Future<void> _loadMultiSelectSetting() async {
     final prefs = await SharedPreferences.getInstance();
-    final value = prefs.getBool('managing_deal_status_visibility') ?? false;
+    final value = prefs.getBool('change_deal_to_multiple_statuses') ?? false;
 
-    //print('DealStatusEditWidget: managing_deal_status_visibility = $value');
+    //print('DealStatusEditWidget: change_deal_to_multiple_statuses = $value');
     //print('DealStatusEditWidget: Режим = ${value ? "МУЛЬТИВЫБОР" : "ОДИНОЧНЫЙ"}');
 
     if (mounted) {
@@ -104,7 +104,7 @@ class _DealStatusEditWidgetState extends State<DealStatusEditWidget> {
       // ✅ Получаем salesFunnelId из DealBloc
       final dealBloc = context.read<DealBloc>();
       final salesFunnelId = dealBloc.currentSalesFunnelId;
-      
+
       // Используем правильный эндпоинт в зависимости от настройки
       final statuses = await ApiService().getDealStatuses(
         includeAll: isMultiSelectEnabled,
@@ -159,10 +159,13 @@ class _DealStatusEditWidgetState extends State<DealStatusEditWidget> {
     // ✅ ПРИОРИТЕТ 1: Используем dealStatuses (массив от бэкенда)
     if (widget.dealStatuses != null && widget.dealStatuses!.isNotEmpty) {
       //print('✅ Используем dealStatuses от бэкенда');
-      targetIds = widget.dealStatuses!.map((s) => s.id).toList();
+      targetIds = isMultiSelectEnabled
+          ? widget.dealStatuses!.map((s) => s.id).toList()
+          : [widget.dealStatuses!.first.id];
     }
     // ✅ ПРИОРИТЕТ 2: Парсим selectedStatus (строка с ID через запятую)
-    else if (widget.selectedStatus != null && widget.selectedStatus!.isNotEmpty) {
+    else if (widget.selectedStatus != null &&
+        widget.selectedStatus!.isNotEmpty) {
       //print('✅ Используем selectedStatus');
       targetIds = widget.selectedStatus!
           .split(',')
@@ -186,9 +189,8 @@ class _DealStatusEditWidgetState extends State<DealStatusEditWidget> {
     }
 
     if (targetIds.isNotEmpty) {
-      final newSelectedList = statusList
-          .where((status) => targetIds.contains(status.id))
-          .toList();
+      final newSelectedList =
+          statusList.where((status) => targetIds.contains(status.id)).toList();
 
       if (newSelectedList.isNotEmpty) {
         setState(() {
@@ -203,8 +205,10 @@ class _DealStatusEditWidgetState extends State<DealStatusEditWidget> {
 
         // ✅ ВАЖНО: Уведомляем родителя о выборе
         widget.onSelectStatus(newSelectedList.first);
-        if (widget.onSelectMultipleStatuses != null && isMultiSelectEnabled) {
-          widget.onSelectMultipleStatuses!(targetIds);
+        if (widget.onSelectMultipleStatuses != null) {
+          widget.onSelectMultipleStatuses!(
+            isMultiSelectEnabled ? targetIds : [newSelectedList.first.id],
+          );
         }
       } else {
         //print('❌ Не найдены статусы с ID: $targetIds');
@@ -228,8 +232,7 @@ class _DealStatusEditWidgetState extends State<DealStatusEditWidget> {
         widget.onSelectStatus(selectedStatusesList.first);
         if (widget.onSelectMultipleStatuses != null) {
           widget.onSelectMultipleStatuses!(
-              selectedStatusesList.map((s) => s.id).toList()
-          );
+              selectedStatusesList.map((s) => s.id).toList());
         }
       }
     });
@@ -438,10 +441,10 @@ class _DealStatusEditWidgetState extends State<DealStatusEditWidget> {
                         ),
                         child: allSelected
                             ? const Icon(
-                          Icons.check,
-                          color: Colors.white,
-                          size: 14,
-                        )
+                                Icons.check,
+                                color: Colors.white,
+                                size: 14,
+                              )
                             : null,
                       ),
                       const SizedBox(width: 12),
@@ -570,7 +573,8 @@ class _DealStatusEditWidgetState extends State<DealStatusEditWidget> {
     );
   }
 
-  Widget _buildListItem(DealStatus item, bool isSelected, Function() onItemSelect) {
+  Widget _buildListItem(
+      DealStatus item, bool isSelected, Function() onItemSelect) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: GestureDetector(
@@ -586,14 +590,15 @@ class _DealStatusEditWidgetState extends State<DealStatusEditWidget> {
                   width: 1,
                 ),
                 borderRadius: BorderRadius.circular(4),
-                color: isSelected ? const Color(0xff1E2E52) : Colors.transparent,
+                color:
+                    isSelected ? const Color(0xff1E2E52) : Colors.transparent,
               ),
               child: isSelected
                   ? const Icon(
-                Icons.check,
-                color: Colors.white,
-                size: 14,
-              )
+                      Icons.check,
+                      color: Colors.white,
+                      size: 14,
+                    )
                   : null,
             ),
             const SizedBox(width: 12),

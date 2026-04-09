@@ -2,10 +2,10 @@ import 'dart:convert';
 import 'package:crm_task_manager/bloc/user/client/get_all_client_bloc.dart';
 import 'package:crm_task_manager/custom_widget/custom_chat_styles.dart';
 import 'package:crm_task_manager/custom_widget/filter/chat/task/ProjectMultiSelectWidget.dart';
-import 'package:crm_task_manager/custom_widget/filter/task/author_multi_list.dart';
 import 'package:crm_task_manager/custom_widget/filter/task/multi_user_list.dart';
 import 'package:crm_task_manager/models/author_data_response.dart';
 import 'package:crm_task_manager/models/project_task_model.dart';
+import 'package:crm_task_manager/page_2/money/widgets/author_multi_select_widget.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/task/task_cache.dart';
 import 'package:crm_task_manager/screens/task/task_details/department_list.dart';
@@ -26,7 +26,7 @@ class ChatTaskFilterScreen extends StatefulWidget {
   final Function(int?)? onStatusSelected;
   final Function(DateTime?, DateTime?)? onDateRangeSelected;
   final Function(int?, DateTime?, DateTime?)? onStatusAndDateRangeSelected;
-   final List? initialUsers;
+  final List? initialUsers;
   final int? initialStatuses;
   final DateTime? initialFromDate;
   final DateTime? initialToDate;
@@ -37,7 +37,7 @@ class ChatTaskFilterScreen extends StatefulWidget {
   final DateTime? initialDeadlineFromDate;
   final DateTime? initialDeadlineToDate;
   final VoidCallback? onResetFilters;
-   final List? initialAuthors; // Изменено на List<dynamic>
+  final List? initialAuthors; // Изменено на List<dynamic>
   final String? initialDepartment;
   final List? initialDirectoryValues;
   final List? initialProjects; // Изменено на List<dynamic>
@@ -123,7 +123,8 @@ class _ChatTaskFilterScreenState extends State<ChatTaskFilterScreen> {
           _selectedUsers = widget.initialUsers as List<UserData>;
         });
       } else if (widget.initialUsers is List<int>) {
-        final userDataList = await _convertIdsToUsers(widget.initialUsers as List<int>);
+        final userDataList =
+            await _convertIdsToUsers(widget.initialUsers as List<int>);
         setState(() {
           _selectedUsers = userDataList;
         });
@@ -131,7 +132,8 @@ class _ChatTaskFilterScreenState extends State<ChatTaskFilterScreen> {
         setState(() {
           _selectedUsers = [];
         });
-        debugPrint('Warning: initialUsers is not List<UserData> or List<int>, received: ${widget.initialUsers.runtimeType}');
+        debugPrint(
+            'Warning: initialUsers is not List<UserData> or List<int>, received: ${widget.initialUsers.runtimeType}');
       }
     } else {
       setState(() {
@@ -147,13 +149,16 @@ class _ChatTaskFilterScreenState extends State<ChatTaskFilterScreen> {
         });
       } else if (widget.initialAuthors is List<int>) {
         setState(() {
-          _selectedAuthors = (widget.initialAuthors as List<int>).map((id) => id.toString()).toList();
+          _selectedAuthors = (widget.initialAuthors as List<int>)
+              .map((id) => id.toString())
+              .toList();
         });
       } else {
         setState(() {
           _selectedAuthors = [];
         });
-        debugPrint('Warning: initialAuthors is not List<String> or List<int>, received: ${widget.initialAuthors.runtimeType}');
+        debugPrint(
+            'Warning: initialAuthors is not List<String> or List<int>, received: ${widget.initialAuthors.runtimeType}');
       }
     } else {
       setState(() {
@@ -169,13 +174,16 @@ class _ChatTaskFilterScreenState extends State<ChatTaskFilterScreen> {
         });
       } else if (widget.initialProjects is List<int>) {
         setState(() {
-          _selectedProjects = (widget.initialProjects as List<int>).map((id) => id.toString()).toList();
+          _selectedProjects = (widget.initialProjects as List<int>)
+              .map((id) => id.toString())
+              .toList();
         });
       } else {
         setState(() {
           _selectedProjects = [];
         });
-        debugPrint('Warning: initialProjects is not List<String> or List<int>, received: ${widget.initialProjects.runtimeType}');
+        debugPrint(
+            'Warning: initialProjects is not List<String> or List<int>, received: ${widget.initialProjects.runtimeType}');
       }
     } else {
       setState(() {
@@ -189,7 +197,9 @@ class _ChatTaskFilterScreenState extends State<ChatTaskFilterScreen> {
       final apiService = context.read<ApiService>();
       final response = await apiService.getAllUser();
       if (response.result != null) {
-        return response.result!.where((user) => userIds.contains(user.id)).toList();
+        return response.result!
+            .where((user) => userIds.contains(user.id))
+            .toList();
       }
       return [];
     } catch (e) {
@@ -208,8 +218,10 @@ class _ChatTaskFilterScreenState extends State<ChatTaskFilterScreen> {
   Future<void> _loadFilterState() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
-      _selectedDirectoryFields = (jsonDecode(prefs.getString('task_selected_directory_fields') ?? '{}') as Map)
-          .map((key, value) => MapEntry(int.parse(key), value != null ? MainField.fromJson(jsonDecode(value)) : null));
+      _selectedDirectoryFields = (jsonDecode(
+              prefs.getString('task_selected_directory_fields') ?? '{}') as Map)
+          .map((key, value) => MapEntry(int.parse(key),
+              value != null ? MainField.fromJson(jsonDecode(value)) : null));
     });
   }
 
@@ -217,7 +229,8 @@ class _ChatTaskFilterScreenState extends State<ChatTaskFilterScreen> {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(
         'task_selected_directory_fields',
-        jsonEncode(_selectedDirectoryFields.map((key, value) => MapEntry(key.toString(), value?.toJson()))));
+        jsonEncode(_selectedDirectoryFields
+            .map((key, value) => MapEntry(key.toString(), value?.toJson()))));
   }
 
   Future<void> _fetchDirectoryLinks() async {
@@ -227,7 +240,8 @@ class _ChatTaskFilterScreenState extends State<ChatTaskFilterScreen> {
         setState(() {
           _directoryLinks = response.data!;
           for (var link in _directoryLinks) {
-            _selectedDirectoryFields[link.id] = _selectedDirectoryFields[link.id] ?? null;
+            _selectedDirectoryFields[link.id] =
+                _selectedDirectoryFields[link.id] ?? null;
           }
         });
       }
@@ -325,7 +339,8 @@ class _ChatTaskFilterScreenState extends State<ChatTaskFilterScreen> {
       value: value,
       onChanged: onChanged,
       activeColor: const Color.fromARGB(255, 255, 255, 255),
-      inactiveTrackColor: const Color.fromARGB(255, 179, 179, 179).withOpacity(0.5),
+      inactiveTrackColor:
+          const Color.fromARGB(255, 179, 179, 179).withOpacity(0.5),
       activeTrackColor: ChatSmsStyles.messageBubbleSenderColor,
       inactiveThumbColor: const Color.fromARGB(255, 255, 255, 255),
     );
@@ -403,25 +418,32 @@ class _ChatTaskFilterScreenState extends State<ChatTaskFilterScreen> {
                 filters['department_id'] = int.tryParse(_selectedDepartment!);
               }
               if (_fromDate != null) {
-                filters['task_created_from'] = _fromDate!.toIso8601String().split('T')[0];
+                filters['task_created_from'] =
+                    _fromDate!.toIso8601String().split('T')[0];
               }
               if (_toDate != null) {
-                filters['task_created_to'] = _toDate!.toIso8601String().split('T')[0];
+                filters['task_created_to'] =
+                    _toDate!.toIso8601String().split('T')[0];
               }
               if (_deadlinefromDate != null) {
-                filters['deadline_from'] = _deadlinefromDate!.toIso8601String().split('T')[0];
+                filters['deadline_from'] =
+                    _deadlinefromDate!.toIso8601String().split('T')[0];
               }
               if (_deadlinetoDate != null) {
-                filters['deadline_to'] = _deadlinetoDate!.toIso8601String().split('T')[0];
+                filters['deadline_to'] =
+                    _deadlinetoDate!.toIso8601String().split('T')[0];
               }
               if (_selectedUsers.isNotEmpty) {
-                filters['executor_ids'] = _selectedUsers.map((user) => user.id).toList();
+                filters['executor_ids'] =
+                    _selectedUsers.map((user) => user.id).toList();
               }
               if (_selectedAuthors.isNotEmpty) {
-                filters['author_ids'] = _selectedAuthors.map((id) => int.parse(id)).toList();
+                filters['author_ids'] =
+                    _selectedAuthors.map((id) => int.parse(id)).toList();
               }
               if (_selectedProjects.isNotEmpty) {
-                filters['project_ids'] = _selectedProjects.map((id) => int.parse(id)).toList();
+                filters['project_ids'] =
+                    _selectedProjects.map((id) => int.parse(id)).toList();
               }
               if (_selectedStatuses != null) {
                 filters['task_status_ids'] = [_selectedStatuses!];
@@ -478,8 +500,10 @@ class _ChatTaskFilterScreenState extends State<ChatTaskFilterScreen> {
                       Text(
                         _fromDate != null && _toDate != null
                             ? "${_fromDate!.day.toString().padLeft(2, '0')}.${_fromDate!.month.toString().padLeft(2, '0')}.${_fromDate!.year} - ${_toDate!.day.toString().padLeft(2, '0')}.${_toDate!.month.toString().padLeft(2, '0')}.${_toDate!.year}"
-                            : AppLocalizations.of(context)!.translate('select_date_range'),
-                        style: const TextStyle(color: Colors.black54, fontSize: 14),
+                            : AppLocalizations.of(context)!
+                                .translate('select_date_range'),
+                        style: const TextStyle(
+                            color: Colors.black54, fontSize: 14),
                       ),
                       const Icon(Icons.calendar_today, color: Colors.black54),
                     ],
@@ -506,8 +530,10 @@ class _ChatTaskFilterScreenState extends State<ChatTaskFilterScreen> {
                       Text(
                         _deadlinefromDate != null && _deadlinetoDate != null
                             ? "${_deadlinefromDate!.day.toString().padLeft(2, '0')}.${_deadlinefromDate!.month.toString().padLeft(2, '0')}.${_deadlinefromDate!.year} - ${_deadlinetoDate!.day.toString().padLeft(2, '0')}.${_deadlinetoDate!.month.toString().padLeft(2, '0')}.${_deadlinetoDate!.year}"
-                            : AppLocalizations.of(context)!.translate('select_deadline_range'),
-                        style: const TextStyle(color: Colors.black54, fontSize: 14),
+                            : AppLocalizations.of(context)!
+                                .translate('select_deadline_range'),
+                        style: const TextStyle(
+                            color: Colors.black54, fontSize: 14),
                       ),
                       const Icon(Icons.calendar_today, color: Colors.black54),
                     ],
@@ -527,7 +553,9 @@ class _ChatTaskFilterScreenState extends State<ChatTaskFilterScreen> {
                       child: Padding(
                         padding: const EdgeInsets.all(8),
                         child: UserMultiSelectWidget(
-                          selectedUsers: _selectedUsers.map((user) => user.id.toString()).toList(),
+                          selectedUsers: _selectedUsers
+                              .map((user) => user.id.toString())
+                              .toList(),
                           onSelectUsers: (List<UserData> selectedUsersData) {
                             setState(() {
                               _selectedUsers = selectedUsersData;
@@ -562,7 +590,8 @@ class _ChatTaskFilterScreenState extends State<ChatTaskFilterScreen> {
                         padding: const EdgeInsets.all(8),
                         child: ProjectMultiSelectWidget(
                           selectedProjects: _selectedProjects,
-                          onSelectProjects: (List<ProjectTask> selectedProjectsData) {
+                          onSelectProjects:
+                              (List<ProjectTask> selectedProjectsData) {
                             setState(() {
                               _selectedProjects = selectedProjectsData
                                   .map((project) => project.id.toString())
@@ -581,7 +610,8 @@ class _ChatTaskFilterScreenState extends State<ChatTaskFilterScreen> {
                         padding: const EdgeInsets.all(8),
                         child: AuthorMultiSelectWidget(
                           selectedAuthors: _selectedAuthors,
-                          onSelectAuthors: (List<AuthorData> selectedAuthorsData) {
+                          onSelectAuthors:
+                              (List<AuthorData> selectedAuthorsData) {
                             setState(() {
                               _selectedAuthors = selectedAuthorsData
                                   .map((author) => author.id.toString())
@@ -612,12 +642,14 @@ class _ChatTaskFilterScreenState extends State<ChatTaskFilterScreen> {
                         ),
                       ),
                     Card(
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
                       color: Colors.white,
                       child: Column(
                         children: [
                           _buildSwitchTile(
-                            AppLocalizations.of(context)!.translate('unread_only'),
+                            AppLocalizations.of(context)!
+                                .translate('unread_only'),
                             _unreadOnly ?? false,
                             (value) => setState(() => _unreadOnly = value),
                           ),

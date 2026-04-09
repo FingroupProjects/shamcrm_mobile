@@ -8,9 +8,11 @@ import 'package:crm_task_manager/main.dart';
 import 'package:crm_task_manager/models/field_configuration.dart';
 import 'package:crm_task_manager/models/page_2/order_card.dart';
 import 'package:crm_task_manager/page_2/order/order_details/order_edits.dart';
+import 'package:crm_task_manager/page_2/order/order_details/order_dropdown_bottom_dialog.dart';
 import 'package:crm_task_manager/page_2/order/order_details/order_field_config_utils.dart';
 import 'package:crm_task_manager/page_2/order/order_details/order_good_screen.dart';
 import 'package:crm_task_manager/page_2/order/order_details/order_history_widget.dart';
+import 'package:crm_task_manager/screens/deal/tabBar/deal_details_screen.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/foundation.dart';
@@ -41,6 +43,9 @@ class OrderDetailsScreen extends StatefulWidget {
 class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
   List<Map<String, String>> details = [];
   final ApiService _apiService = ApiService();
+  late final int _initialStatusId;
+  int? _currentStatusId;
+  bool _statusChangedFromDetails = false;
   bool _canEditOrder = false;
   int? currencyId; // Поле для хранения currency_id
   Map<String, dynamic>? _editResult; // Сохраняем результат редактирования
@@ -51,10 +56,52 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
   @override
   void initState() {
     super.initState();
+    _initialStatusId = widget.order.orderStatus.id;
+    _currentStatusId = widget.order.orderStatus.id;
     _checkPermissions();
     _loadCurrencyId(); // Загружаем currencyId
     _loadFieldConfiguration();
     context.read<OrderBloc>().add(FetchOrderDetails(widget.orderId));
+  }
+
+  Map<String, dynamic> _buildNavigationResult() {
+    return {
+      'success': _editResult?['success'] == true || _statusChangedFromDetails,
+      'refresh': _statusChangedFromDetails,
+      'statusId': _initialStatusId,
+      'newStatusId': _currentStatusId ?? _initialStatusId,
+    };
+  }
+
+  void _refreshOrderView() {
+    setState(() {
+      _currentOrderDetails = null;
+      details.clear();
+      _isConfigurationLoaded = false;
+    });
+    _loadFieldConfiguration();
+    context.read<OrderBloc>().add(FetchOrderStatuses(forceRefresh: true));
+    context.read<OrderBloc>().add(FetchOrderDetails(widget.orderId));
+  }
+
+  void _openStatusChangeSheet() {
+    final currentOrder = _currentOrderDetails ?? widget.order;
+
+    OrderDropdownBottomSheet(
+      context,
+      currentOrder.orderStatus.name,
+      (String _, int newStatusId) {
+        if (!mounted) return;
+        setState(() {
+          _statusChangedFromDetails = true;
+          _currentStatusId = newStatusId;
+          _editResult = _buildNavigationResult();
+        });
+        _refreshOrderView();
+      },
+      currentOrder,
+      onTabChange: (_) {},
+    );
   }
 
   // Метод загрузки currencyId из SharedPreferences
@@ -300,6 +347,8 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
     switch (fc.fieldName) {
       case 'lead_id':
         return order.lead.name;
+      case 'deal_id':
+        return order.deal?.name ?? '';
       case 'manager_id':
         return order.manager?.name ?? 'become_manager';
       case 'author' || 'author_id':
@@ -347,10 +396,16 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
 
     if (!_isConfigurationLoaded) {
       details = [
-        {
-          'label': AppLocalizations.of(context)!.translate('client'),
-          'value': order.lead.name
-        },
+        if (order.lead.name.isNotEmpty)
+          {
+            'label': AppLocalizations.of(context)!.translate('client'),
+            'value': order.lead.name
+          },
+        if ((order.deal?.name ?? '').isNotEmpty)
+          {
+            'label': AppLocalizations.of(context)!.translate('deal_label'),
+            'value': order.deal!.name
+          },
         {
           'label': AppLocalizations.of(context)!.translate('manager_details'),
           'value': order.manager?.name ?? 'become_manager'
@@ -406,6 +461,20 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
           'value': formatPaymentType(order.paymentStatus, context)
         },
       ];
+      final refusalReason = (order.refusalReasonText ?? '').trim();
+      final refusalComment = (order.reasonForRefusalComment ?? '').trim();
+      if (refusalReason.isNotEmpty || refusalComment.isNotEmpty) {
+        details.add({
+          'label': 'Причина отказа:',
+          'value': refusalReason.isNotEmpty ? refusalReason : refusalComment,
+        });
+        if (refusalReason.isNotEmpty && refusalComment.isNotEmpty) {
+          details.add({
+            'label': 'Комментарий отказа:',
+            'value': refusalComment,
+          });
+        }
+      }
       return;
     }
 
@@ -427,6 +496,21 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
             AppLocalizations.of(context)!.translate('creation_date_label')),
         'value': DateFormat('dd.MM.yyyy').format(order.createdAt!),
       });
+    }
+
+    final refusalReason = (order.refusalReasonText ?? '').trim();
+    final refusalComment = (order.reasonForRefusalComment ?? '').trim();
+    if (refusalReason.isNotEmpty || refusalComment.isNotEmpty) {
+      details.add({
+        'label': 'Причина отказа:',
+        'value': refusalReason.isNotEmpty ? refusalReason : refusalComment,
+      });
+      if (refusalReason.isNotEmpty && refusalComment.isNotEmpty) {
+        details.add({
+          'label': 'Комментарий отказа:',
+          'value': refusalComment,
+        });
+      }
     }
   }
 
@@ -529,11 +613,11 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
           create: (context) => OrderHistoryBloc(context.read<ApiService>()),
         ),
       ],
-      child: WillPopScope(
-        onWillPop: () async {
-          // Передаем результат редактирования при закрытии экрана
-          Navigator.pop(context, _editResult);
-          return false;
+      child: PopScope(
+        canPop: false,
+        onPopInvokedWithResult: (didPop, result) {
+          if (didPop) return;
+          Navigator.pop(context, _buildNavigationResult());
         },
         child: BlocBuilder<OrderBloc, OrderState>(
           builder: (context, state) {
@@ -559,7 +643,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
   }
 
   Widget _buildBody(OrderState state) {
-    if (state is OrderLoading) {
+    if (state is OrderLoading || !_isConfigurationLoaded) {
       return const Center(child: CircularProgressIndicator());
     } else if (state is OrderLoaded && state.orderDetails != null) {
       return Padding(
@@ -592,7 +676,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
         icon: const Icon(Icons.arrow_back, color: Color(0xff1E2E52)),
         onPressed: () {
           // Передаем результат редактирования при закрытии экрана
-          Navigator.pop(context, _editResult);
+          Navigator.pop(context, _buildNavigationResult());
         },
       ),
       title: Text(
@@ -659,21 +743,68 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
   Widget _buildDetailItem(String label, String value) {
     final String clientLabel =
         AppLocalizations.of(context)!.translate('client');
+    final String dealLabel =
+        AppLocalizations.of(context)!.translate('deal_label');
     final String phoneLabel =
         AppLocalizations.of(context)!.translate('client_phone');
     final String addressLabel =
         AppLocalizations.of(context)!.translate('order_address');
     final String commentLabel =
         AppLocalizations.of(context)!.translate('comment_client');
+    final String statusLabel =
+        AppLocalizations.of(context)!.translate('order_status_label');
+    final String statusFallbackLabel =
+        AppLocalizations.of(context)!.translate('order_status');
+
+    if (label == statusLabel || label == statusFallbackLabel) {
+      return GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: _openStatusChangeSheet,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildLabel(label),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Flexible(
+                    child: Text(
+                      value,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontFamily: 'Gilroy',
+                        fontWeight: FontWeight.w500,
+                        color: Color(0xff1E2E52),
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  const Icon(
+                    Icons.keyboard_arrow_down_rounded,
+                    color: Color(0xff1E2E52),
+                    size: 16,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
 
     if (label == clientLabel && value.isNotEmpty) {
       return GestureDetector(
         onTap: () {
-          if (widget.order.lead?.id != null) {
+          final currentOrder = _currentOrderDetails ?? widget.order;
+          if (currentOrder.lead.id != 0) {
             navigatorKey.currentState?.push(
               MaterialPageRoute(
                 builder: (context) => LeadDetailsScreen(
-                  leadId: widget.order.lead!.id.toString(),
+                  leadId: currentOrder.lead.id.toString(),
                   leadName: value,
                   leadStatus: "",
                   statusId: 0,
@@ -685,6 +816,48 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
               SnackBar(
                   content: Text(AppLocalizations.of(context)!
                       .translate('lead_not_found'))),
+            );
+          }
+        },
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildLabel(label),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                value,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontFamily: 'Gilroy',
+                  fontWeight: FontWeight.w500,
+                  color: Color(0xff1E2E52),
+                  decoration: TextDecoration.underline,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (label == dealLabel && value.isNotEmpty) {
+      return GestureDetector(
+        onTap: () {
+          final currentOrder = _currentOrderDetails ?? widget.order;
+          if (currentOrder.deal?.id != null) {
+            navigatorKey.currentState?.push(
+              MaterialPageRoute(
+                builder: (context) => DealDetailsScreen(
+                  dealId: currentOrder.deal!.id.toString(),
+                  dealName: currentOrder.deal!.name,
+                  sum: '',
+                  dealStatus: '',
+                  statusId: 0,
+                ),
+              ),
             );
           }
         },

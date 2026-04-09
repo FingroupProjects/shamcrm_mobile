@@ -166,19 +166,18 @@ class DealCache {
   /// РАДИКАЛЬНАЯ очистка ВСЕХ данных
   static Future<void> clearEverything() async {
     final prefs = await SharedPreferences.getInstance();
-    
-    // Очищаем статусы
-    await prefs.remove(_cachedDealStatusesKey);
-    
-    // Очищаем все сделки
+
+    // Очищаем все ключи, связанные со сделками и статусами сделок.
     final keys = prefs.getKeys();
-    final dealKeys = keys.where((key) => key.startsWith('cachedDeals_')).toList();
+    final dealKeys = keys.where((key) =>
+        key == _cachedDealStatusesKey ||
+        key == _persistentDealCountsKey ||
+        key.startsWith('cachedDeals_') ||
+        key.startsWith('cachedDealStatuses_')).toList();
+
     for (var key in dealKeys) {
       await prefs.remove(key);
     }
-    
-    // Очищаем persistent counts
-    await prefs.remove(_persistentDealCountsKey);
   }
   
   /// Очистить все данные с сохранением persistent counts

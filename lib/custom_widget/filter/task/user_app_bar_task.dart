@@ -4,9 +4,9 @@ import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/department/department_bloc.dart';
 import 'package:crm_task_manager/custom_widget/custom_chat_styles.dart';
 import 'package:crm_task_manager/custom_widget/custom_field_multi_select.dart';
+import 'package:crm_task_manager/custom_widget/filter/common/multi_reason_for_refusal_list.dart';
 import 'package:crm_task_manager/custom_widget/filter/chat/task/ProjectMultiSelectWidget.dart';
 import 'package:crm_task_manager/custom_widget/filter/lead/multi_directory_dropdown_widget.dart';
-import 'package:crm_task_manager/custom_widget/filter/task/author_multi_list.dart';
 import 'package:crm_task_manager/custom_widget/filter/task/multi_task_status_list.dart';
 import 'package:crm_task_manager/custom_widget/filter/task/multi_user_list.dart';
 import 'package:crm_task_manager/models/author_data_response.dart';
@@ -14,8 +14,10 @@ import 'package:crm_task_manager/models/directory_link_model.dart';
 import 'package:crm_task_manager/models/field_configuration.dart';
 import 'package:crm_task_manager/models/main_field_model.dart';
 import 'package:crm_task_manager/models/project_task_model.dart';
+import 'package:crm_task_manager/models/reason_for_refusal_model.dart';
 import 'package:crm_task_manager/models/task_model.dart';
 import 'package:crm_task_manager/models/user_data_response.dart';
+import 'package:crm_task_manager/page_2/money/widgets/author_multi_select_widget.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/task/task_cache.dart';
 import 'package:crm_task_manager/screens/task/task_details/department_list.dart';
@@ -39,6 +41,9 @@ class UserFilterScreen extends StatefulWidget {
   final bool? initialUnreadOnly;
   final DateTime? initialDeadlineFromDate;
   final DateTime? initialDeadlineToDate;
+  final DateTime? initialCompletedFromDate;
+  final DateTime? initialCompletedToDate;
+  final List<int>? initialReasonForRefusalIds;
   final VoidCallback? onResetFilters;
   final List<String>? initialAuthors;
   final String? initialDepartment;
@@ -65,6 +70,9 @@ class UserFilterScreen extends StatefulWidget {
     this.initialIsUrgent,
     this.initialDeadlineFromDate,
     this.initialDeadlineToDate,
+    this.initialCompletedFromDate,
+    this.initialCompletedToDate,
+    this.initialReasonForRefusalIds,
     this.onResetFilters,
     this.initialAuthors,
     this.initialDepartment,
@@ -88,6 +96,9 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
   DateTime? _toDate;
   DateTime? _deadlinefromDate;
   DateTime? _deadlinetoDate;
+  DateTime? _completedFromDate;
+  DateTime? _completedToDate;
+  List<ReasonForRefusalData> _selectedReasonForRefusals = [];
   bool _isOverdue = false;
   bool _hasFile = false;
   bool _hasDeal = false;
@@ -107,25 +118,52 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
   // Field configuration
   List<FieldConfiguration> _fieldConfigurations = [];
   bool _isConfigurationLoaded = false;
+  bool _askReasonForRefusal = false;
 
-  void _initializeCustomFieldSelections(Map<String, List<String>> initialSelections) {
+  bool get _hasAuthorFieldInConfiguration => _fieldConfigurations.any(
+        (config) =>
+            config.fieldName == 'author' || config.fieldName == 'author_id',
+      );
+
+  Widget _buildAuthorFilterCard() {
+    return Card(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      color: Colors.white,
+      child: Padding(
+        padding: const EdgeInsets.all(8),
+        child: AuthorMultiSelectWidget(
+          selectedAuthors: _selectedAuthors,
+          onSelectAuthors: (List<AuthorData> selectedAuthorsData) {
+            setState(() {
+              _selectedAuthors = selectedAuthorsData
+                  .map((author) => author.id.toString())
+                  .toList();
+            });
+          },
+        ),
+      ),
+    );
+  }
+
+  void _initializeCustomFieldSelections(
+      Map<String, List<String>> initialSelections) {
     final titles = _customFieldTitles;
     _selectedCustomFieldValues = {};
     for (final title in titles) {
       final initial = initialSelections[title];
       _selectedCustomFieldValues[title] =
-      initial != null ? List<String>.from(initial) : <String>[];
+          initial != null ? List<String>.from(initial) : <String>[];
     }
   }
 
   @override
   void initState() {
     super.initState();
-    
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadFieldConfiguration();
     });
-    
+
     _selectedUsers = widget.initialUsers ?? [];
     _selectedStatuses = widget.initialStatuses;
     _fromDate = widget.initialFromDate;
@@ -136,7 +174,9 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
       if (widget.initialProjects is List<String>) {
         _selectedProjects = widget.initialProjects as List<String>;
       } else if (widget.initialProjects is List<int>) {
-        _selectedProjects = (widget.initialProjects as List<int>).map((id) => id.toString()).toList();
+        _selectedProjects = (widget.initialProjects as List<int>)
+            .map((id) => id.toString())
+            .toList();
       } else {
         _selectedProjects = [];
       }
@@ -149,7 +189,15 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
     _isUrgent = widget.initialIsUrgent ?? false;
     _deadlinefromDate = widget.initialDeadlineFromDate;
     _deadlinetoDate = widget.initialDeadlineToDate;
+    _completedFromDate = widget.initialCompletedFromDate;
+    _completedToDate = widget.initialCompletedToDate;
+    if (widget.initialReasonForRefusalIds != null) {
+      _selectedReasonForRefusals = widget.initialReasonForRefusalIds!
+          .map((id) => ReasonForRefusalData(id: id, text: '', type: 'task'))
+          .toList();
+    }
     _selectedDepartment = widget.initialDepartment;
+    _loadAskReasonForRefusal();
     _loadDepartmentStatus();
     _fetchDirectoryLinks();
     _initializeCustomFieldSelections(
@@ -157,6 +205,13 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
     _loadTaskCustomFields();
   }
 
+  Future<void> _loadAskReasonForRefusal() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
+    setState(() {
+      _askReasonForRefusal = prefs.getBool('ask_reason_for_refusal') ?? false;
+    });
+  }
 
   Future<void> _loadTaskCustomFields() async {
     try {
@@ -166,8 +221,8 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
         _customFieldTitles = titles;
       });
       // Инициализируем выбранные значения на основе входящих selection'ов, когда появились заголовки
-      _initializeCustomFieldSelections(
-          widget.initialCustomFieldSelections ?? const <String, List<String>>{});
+      _initializeCustomFieldSelections(widget.initialCustomFieldSelections ??
+          const <String, List<String>>{});
       for (final title in titles) {
         unawaited(_loadSingleCustomField(title));
       }
@@ -181,7 +236,7 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
     setState(() {
       _customFieldLoadingStates[title] = true;
     });
-    
+
     try {
       final values = await _apiService.getTaskCustomFieldValues(title);
       if (!mounted) return;
@@ -203,13 +258,13 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
     try {
       final response = await _apiService.getFieldPositions(tableName: 'tasks');
       if (!mounted) return;
-      
+
       // Фильтруем только активные поля и сортируем по position
       final activeFields = response.result
           // .where((field) => field.isActive)
           .toList()
         ..sort((a, b) => a.position.compareTo(b.position));
-      
+
       print("activeFields: $activeFields");
 
       setState(() {
@@ -239,14 +294,17 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
       if (response.data != null) {
         setState(() {
           _directoryLinks = response.data!;
-          final initialDirectoryValues = widget.initialDirectoryValues ?? const [];
+          final initialDirectoryValues =
+              widget.initialDirectoryValues ?? const [];
           final Map<int, List<MainField>> updatedSelections = {};
 
           for (var link in _directoryLinks) {
-            final existingSelection = _selectedDirectoryFields[link.id] ?? const <MainField>[];
+            final existingSelection =
+                _selectedDirectoryFields[link.id] ?? const <MainField>[];
 
             if (existingSelection.isNotEmpty) {
-              updatedSelections[link.id] = List<MainField>.from(existingSelection);
+              updatedSelections[link.id] =
+                  List<MainField>.from(existingSelection);
               continue;
             }
 
@@ -356,26 +414,70 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
     }
   }
 
+  void _selectCompletedDateRange() async {
+    final DateTimeRange? pickedRange = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2101),
+      initialDateRange: _completedFromDate != null && _completedToDate != null
+          ? DateTimeRange(
+              start: _completedFromDate!,
+              end: _completedToDate!,
+            )
+          : null,
+      builder: (BuildContext context, Widget? child) {
+        return Theme(
+          data: ThemeData.light().copyWith(
+            scaffoldBackgroundColor: Colors.white,
+            dialogBackgroundColor: Colors.white,
+            colorScheme: ColorScheme.light(
+              primary: Colors.blue,
+              onPrimary: Colors.white,
+              onSurface: Colors.black,
+              secondary: Colors.blue.withValues(alpha: 0.1),
+            ),
+            textButtonTheme: TextButtonThemeData(
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.blue,
+              ),
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+    if (pickedRange != null) {
+      setState(() {
+        _completedFromDate = pickedRange.start;
+        _completedToDate = pickedRange.end;
+      });
+    }
+  }
+
   Widget? _buildFieldWidgetByConfig(FieldConfiguration config) {
     switch (config.fieldName) {
       case 'executor':
         return Card(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           color: Colors.white,
           child: Padding(
             padding: const EdgeInsets.all(8),
             child: UserMultiSelectWidget(
-              selectedUsers: _selectedUsers.map((user) => user.id.toString()).toList(),
+              selectedUsers:
+                  _selectedUsers.map((user) => user.id.toString()).toList(),
               onSelectUsers: (List<UserData> selectedUsersData) {
                 setState(() => _selectedUsers = selectedUsersData);
               },
             ),
           ),
         );
-        
+
       case 'author_id':
+      case 'author':
         return Card(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           color: Colors.white,
           child: Padding(
             padding: const EdgeInsets.all(8),
@@ -411,8 +513,8 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
 
       case 'project':
         return Card(
-          shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           color: Colors.white,
           child: Padding(
             padding: const EdgeInsets.all(8),
@@ -428,40 +530,68 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
             ),
           ),
         );
+      case 'reason_for_refusal':
+      case 'reason_for_refusal_id':
+        if (!_askReasonForRefusal) return null;
+        return Card(
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          color: Colors.white,
+          child: Padding(
+            padding: const EdgeInsets.all(8),
+            child: ReasonForRefusalMultiSelectWidget(
+              type: 'task',
+              selectedReasonIds: _selectedReasonForRefusals
+                  .map((reason) => reason.id)
+                  .toList(),
+              onSelectReasons: (selectedReasons) {
+                setState(() {
+                  _selectedReasonForRefusals = selectedReasons;
+                });
+              },
+            ),
+          ),
+        );
       default:
         // Проверяем custom field
-        if (config.isCustomField && _customFieldTitles.contains(config.fieldName)) {
+        if (config.isCustomField &&
+            _customFieldTitles.contains(config.fieldName)) {
           final isLoading = _customFieldLoadingStates[config.fieldName] == true;
-          
+
           return Card(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             color: Colors.white,
             child: Padding(
               padding: const EdgeInsets.all(8),
               child: CustomFieldMultiSelect(
                 title: config.fieldName,
-                items: List<String>.from(_customFieldValues[config.fieldName] ?? const []),
-                initialSelectedValues: _selectedCustomFieldValues[config.fieldName],
+                items: List<String>.from(
+                    _customFieldValues[config.fieldName] ?? const []),
+                initialSelectedValues:
+                    _selectedCustomFieldValues[config.fieldName],
                 isLoading: isLoading,
                 onChanged: (values) {
                   setState(() {
-                    _selectedCustomFieldValues[config.fieldName] = List<String>.from(values);
+                    _selectedCustomFieldValues[config.fieldName] =
+                        List<String>.from(values);
                   });
                 },
               ),
             ),
           );
         }
-        
+
         // Проверяем directory
         if (config.isDirectory && config.directoryId != null) {
           try {
             final link = _directoryLinks.firstWhere(
               (l) => l.directory.id == config.directoryId,
             );
-            
+
             return Card(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
               color: Colors.white,
               child: Padding(
                 padding: const EdgeInsets.all(8),
@@ -470,7 +600,8 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
                   directoryName: link.directory.name,
                   onSelectField: (List<MainField> fields) {
                     setState(() {
-                      _selectedDirectoryFields[link.id] = List<MainField>.from(fields);
+                      _selectedDirectoryFields[link.id] =
+                          List<MainField>.from(fields);
                     });
                   },
                   initialFields: _selectedDirectoryFields[link.id],
@@ -482,7 +613,7 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
             return null;
           }
         }
-        
+
         return null;
     }
   }
@@ -500,7 +631,8 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
       value: value,
       onChanged: onChanged,
       activeColor: const Color.fromARGB(255, 255, 255, 255),
-      inactiveTrackColor: const Color.fromARGB(255, 179, 179, 179).withOpacity(0.5),
+      inactiveTrackColor:
+          const Color.fromARGB(255, 179, 179, 179).withOpacity(0.5),
       activeTrackColor: ChatSmsStyles.messageBubbleSenderColor,
       inactiveThumbColor: const Color.fromARGB(255, 255, 255, 255),
     );
@@ -540,12 +672,16 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
                 _isUrgent = false;
                 _deadlinefromDate = null;
                 _deadlinetoDate = null;
+                _completedFromDate = null;
+                _completedToDate = null;
+                _selectedReasonForRefusals.clear();
                 _selectedDepartment = null;
                 _selectedDirectoryFields.clear();
                 for (var link in _directoryLinks) {
                   _selectedDirectoryFields[link.id] = <MainField>[];
                 }
-                _initializeCustomFieldSelections(const <String, List<String>>{});
+                _initializeCustomFieldSelections(
+                    const <String, List<String>>{});
               });
             },
             style: TextButton.styleFrom(
@@ -570,7 +706,7 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
           TextButton(
             onPressed: () async {
               await TaskCache.clearAllTasks();
-              
+
               final directoryIdByLinkId = {
                 for (var link in _directoryLinks) link.id: link.directory.id,
               };
@@ -586,25 +722,29 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
                 'urgent': _isUrgent,
                 'deadlinefromDate': _deadlinefromDate,
                 'deadlinetoDate': _deadlinetoDate,
+                'completedFromDate': _completedFromDate,
+                'completedToDate': _completedToDate,
+                'reason_for_refusal_ids': _selectedReasonForRefusals
+                    .map((reason) => reason.id)
+                    .toList(),
                 'authors': _selectedAuthors,
                 'project_ids': _selectedProjects.isNotEmpty
                     ? _selectedProjects.map((id) => int.parse(id)).toList()
                     : null,
                 'department': _selectedDepartment,
-                'directory_values': _selectedDirectoryFields.entries
-                    .expand((entry) {
-                      final directoryId = directoryIdByLinkId[entry.key];
-                      if (directoryId == null || entry.value.isEmpty) {
-                        return const Iterable<Map<String, dynamic>>.empty();
-                      }
-                      return entry.value.map((field) => {
-                            'directory_id': directoryId,
-                            'entry_id': field.id,
-                          });
-                    })
-                    .toList(),
+                'directory_values':
+                    _selectedDirectoryFields.entries.expand((entry) {
+                  final directoryId = directoryIdByLinkId[entry.key];
+                  if (directoryId == null || entry.value.isEmpty) {
+                    return const Iterable<Map<String, dynamic>>.empty();
+                  }
+                  return entry.value.map((field) => {
+                        'directory_id': directoryId,
+                        'entry_id': field.id,
+                      });
+                }).toList(),
               };
-              
+
               final customFieldFilters = <String, List<String>>{};
               _selectedCustomFieldValues.forEach((key, values) {
                 if (values.isNotEmpty) {
@@ -623,10 +763,13 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
                   _hasDeal ||
                   _isUrgent ||
                   (_deadlinefromDate != null && _deadlinetoDate != null) ||
+                  (_completedFromDate != null && _completedToDate != null) ||
+                  _selectedReasonForRefusals.isNotEmpty ||
                   _selectedAuthors.isNotEmpty ||
                   _selectedProjects.isNotEmpty ||
                   _selectedDepartment != null ||
-                  _selectedDirectoryFields.values.any((fields) => fields.isNotEmpty) ||
+                  _selectedDirectoryFields.values
+                      .any((fields) => fields.isNotEmpty) ||
                   customFieldFilters.isNotEmpty;
 
               if (hasFilters) {
@@ -721,12 +864,42 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
               ),
             ),
             const SizedBox(height: 8),
+            Card(
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+              color: Colors.white,
+              child: GestureDetector(
+                onTap: _selectCompletedDateRange,
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        _completedFromDate != null && _completedToDate != null
+                            ? "${_completedFromDate!.day.toString().padLeft(2, '0')}.${_completedFromDate!.month.toString().padLeft(2, '0')}.${_completedFromDate!.year} - ${_completedToDate!.day.toString().padLeft(2, '0')}.${_completedToDate!.month.toString().padLeft(2, '0')}.${_completedToDate!.year}"
+                            : AppLocalizations.of(context)!
+                                .translate('select_completed_date_range'),
+                        style: TextStyle(color: Colors.black54, fontSize: 14),
+                      ),
+                      Icon(Icons.calendar_today, color: Colors.black54),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
             Expanded(
               child: SingleChildScrollView(
                 child: Column(
                   children: [
                     // Поля по position из field configuration
-                    if (_isConfigurationLoaded && _fieldConfigurations.isNotEmpty)
+                    if (_isConfigurationLoaded &&
+                        _fieldConfigurations.isNotEmpty)
                       ..._fieldConfigurations.map((config) {
                         final widget = _buildFieldWidgetByConfig(config);
                         if (widget == null) return SizedBox.shrink();
@@ -734,7 +907,42 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
                           padding: const EdgeInsets.only(bottom: 8),
                           child: widget,
                         );
-                      })
+                      }),
+                    if (_isConfigurationLoaded &&
+                        _fieldConfigurations.isNotEmpty &&
+                        _askReasonForRefusal &&
+                        !_fieldConfigurations.any(
+                          (config) =>
+                              config.fieldName == 'reason_for_refusal' ||
+                              config.fieldName == 'reason_for_refusal_id',
+                        ))
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: Card(
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12)),
+                          color: Colors.white,
+                          child: Padding(
+                            padding: const EdgeInsets.all(8),
+                            child: ReasonForRefusalMultiSelectWidget(
+                              type: 'task',
+                              selectedReasonIds: _selectedReasonForRefusals
+                                  .map((reason) => reason.id)
+                                  .toList(),
+                              onSelectReasons: (selectedReasons) {
+                                setState(() {
+                                  _selectedReasonForRefusals = selectedReasons;
+                                });
+                              },
+                            ),
+                          ),
+                        ),
+                      ),
+                    if (!_hasAuthorFieldInConfiguration)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: _buildAuthorFilterCard(),
+                      )
                     else if (!_isConfigurationLoaded)
                       // Показываем loader пока грузится конфигурация
                       Center(
@@ -746,63 +954,45 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
                     else
                       // Fallback: показываем поля в стандартном порядке если конфигурация пуста
                       ...[
-                        Card(
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12)),
-                          color: Colors.white,
-                          child: Padding(
-                            padding: const EdgeInsets.all(8),
-                            child: UserMultiSelectWidget(
-                              selectedUsers: _selectedUsers
-                                  .map((user) => user.id.toString())
-                                  .toList(),
-                              onSelectUsers: (List<UserData> selectedUsersData) {
-                                setState(() {
-                                  _selectedUsers = selectedUsersData;
-                                });
-                              },
-                            ),
+                      Card(
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                        color: Colors.white,
+                        child: Padding(
+                          padding: const EdgeInsets.all(8),
+                          child: UserMultiSelectWidget(
+                            selectedUsers: _selectedUsers
+                                .map((user) => user.id.toString())
+                                .toList(),
+                            onSelectUsers: (List<UserData> selectedUsersData) {
+                              setState(() {
+                                _selectedUsers = selectedUsersData;
+                              });
+                            },
                           ),
                         ),
-                        // const SizedBox(height: 8),
-                        // Card(
-                        //   shape: RoundedRectangleBorder(
-                        //       borderRadius: BorderRadius.circular(12)),
-                        //   color: Colors.white,
-                        //   child: Padding(
-                        //     padding: const EdgeInsets.all(8),
-                        //     child: TaskStatusRadioGroupWidget(
-                        //       selectedStatus: _selectedStatuses?.toString(),
-                        //       onSelectStatus: (TaskStatus selectedStatusData) {
-                        //         setState(() {
-                        //           _selectedStatuses = selectedStatusData.id;
-                        //         });
-                        //       },
-                        //     ),
-                        //   ),
-                        // ),
-                        const SizedBox(height: 8),
-                        Card(
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12)),
-                          color: Colors.white,
-                          child: Padding(
-                            padding: const EdgeInsets.all(8),
-                            child: AuthorMultiSelectWidget(
-                              selectedAuthors: _selectedAuthors,
-                              onSelectAuthors:
-                                  (List<AuthorData> selectedAuthorsData) {
-                                setState(() {
-                                  _selectedAuthors = selectedAuthorsData
-                                      .map((author) => author.id.toString())
-                                      .toList();
-                                });
-                              },
-                            ),
-                          ),
-                        ),
-                      ],
-                    
+                      ),
+                      // const SizedBox(height: 8),
+                      // Card(
+                      //   shape: RoundedRectangleBorder(
+                      //       borderRadius: BorderRadius.circular(12)),
+                      //   color: Colors.white,
+                      //   child: Padding(
+                      //     padding: const EdgeInsets.all(8),
+                      //     child: TaskStatusRadioGroupWidget(
+                      //       selectedStatus: _selectedStatuses?.toString(),
+                      //       onSelectStatus: (TaskStatus selectedStatusData) {
+                      //         setState(() {
+                      //           _selectedStatuses = selectedStatusData.id;
+                      //         });
+                      //       },
+                      //     ),
+                      //   ),
+                      // ),
+                      const SizedBox(height: 8),
+                      _buildAuthorFilterCard(),
+                    ],
+
                     // Department widget если включен
                     if (_isDepartmentEnabled) ...[
                       const SizedBox(height: 8),
@@ -826,7 +1016,7 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
                         ),
                       ),
                     ],
-                    
+
                     // Switches - всегда в конце
                     const SizedBox(height: 8),
                     Card(

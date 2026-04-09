@@ -1,4 +1,3 @@
-
 import 'dart:io';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/units_bloc/units_bloc.dart';
@@ -11,6 +10,7 @@ import 'package:crm_task_manager/custom_widget/simple_switch.dart';
 import 'package:crm_task_manager/models/page_2/subCategoryAttribute_model.dart';
 import 'package:crm_task_manager/page_2/goods/goods_details/image_list_poput.dart';
 import 'package:crm_task_manager/page_2/goods/goods_details/label_list.dart';
+import 'package:crm_task_manager/page_2/warehouse/incoming/variant_selection_bottom_sheet.dart';
 import 'package:crm_task_manager/page_2/warehouse/incoming/units_widget.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:crm_task_manager/custom_widget/price_input_formatter.dart';
@@ -24,6 +24,7 @@ import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/page_2/goods/category_list.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:reorderables/reorderables.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class GoodsAddScreen extends StatefulWidget {
   @override
@@ -33,7 +34,8 @@ class GoodsAddScreen extends StatefulWidget {
 class _GoodsAddScreenState extends State<GoodsAddScreen> {
   final GlobalKey<FormState> formKey = GlobalKey<FormState>();
   final TextEditingController goodsNameController = TextEditingController();
-  final TextEditingController goodsDescriptionController = TextEditingController();
+  final TextEditingController goodsDescriptionController =
+      TextEditingController();
   final TextEditingController discountPriceController = TextEditingController();
   final TextEditingController priceController = TextEditingController();
   final TextEditingController stockQuantityController = TextEditingController();
@@ -41,6 +43,12 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
   SubCategoryAttributesData? selectedCategory;
   bool isActive = true;
   bool isService = false;
+  bool _hasManufacture = false;
+  bool _manufactureLoaded = false;
+  String _productionType = 'raw';
+  final List<Map<String, dynamic>> _materialGoods = [];
+  final List<Map<String, dynamic>> _relatedGoods = [];
+  final Map<int, TextEditingController> _materialNormControllers = {};
 
   List<SubCategoryAttributesData> subCategories = [];
   bool isCategoryValid = true;
@@ -61,6 +69,118 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
     fetchSubCategories();
     context.read<UnitsBloc>().add(FetchUnits());
     mainImageIndex = 0;
+    _loadManufactureSettings();
+  }
+
+  Future<void> _loadManufactureSettings() async {
+    try {
+      final settings = await _apiService.getSettings(null);
+      final result = settings['result'] as Map<String, dynamic>?;
+      final hasManufacture =
+          result?['has_manufacture'] == true || result?['has_manufacture'] == 1;
+      if (!mounted) return;
+      setState(() {
+        _hasManufacture = hasManufacture;
+        _manufactureLoaded = true;
+      });
+    } catch (_) {
+      final prefs = await SharedPreferences.getInstance();
+      if (!mounted) return;
+      setState(() {
+        _hasManufacture = prefs.getBool('has_manufacture') ?? false;
+        _manufactureLoaded = true;
+      });
+    }
+  }
+
+  void _setProductionType(String type) {
+    setState(() {
+      _productionType = type;
+      if (type != 'produced') {
+        _materialGoods.clear();
+      }
+    });
+  }
+
+  Future<void> _selectMaterialGood() async {
+    final selected = await showModalBottomSheet<Map<String, dynamic>>(
+      context: context,
+      backgroundColor: Colors.white,
+      isScrollControlled: true,
+      builder: (context) => VariantSelectionBottomSheet(
+        existingItems: _materialGoods
+            .map((item) => {'variantId': item['variant_id']})
+            .toList(),
+        isService: false,
+      ),
+    );
+
+    if (selected == null || selected['id'] == null) return;
+
+    setState(() {
+      _materialGoods.add({
+        'good_id': selected['id'],
+        'variant_id': selected['variantId'],
+        'name': selected['name'],
+        'unit_name': selected['selectedUnit'] ?? '',
+        'norm': 1,
+      });
+      _materialNormControllers[selected['id'] as int] =
+          TextEditingController(text: '1');
+    });
+  }
+
+  void _removeMaterialGood(int index) {
+    setState(() {
+      final material = _materialGoods.removeAt(index);
+      final goodId = material['good_id'] as int?;
+      if (goodId != null) {
+        _materialNormControllers.remove(goodId)?.dispose();
+      }
+    });
+  }
+
+  void _updateMaterialNorm(int index, String value) {
+    final norm = num.tryParse(value.replaceAll(',', '.'));
+    setState(() {
+      _materialGoods[index]['norm'] = norm ?? 0;
+    });
+  }
+
+  Future<void> _selectRelatedGood() async {
+    final selected = await showModalBottomSheet<Map<String, dynamic>>(
+      context: context,
+      backgroundColor: Colors.white,
+      isScrollControlled: true,
+      builder: (context) => VariantSelectionBottomSheet(
+        existingItems: _relatedGoods
+            .map((item) => {'variantId': item['variant_id']})
+            .toList(),
+        isService: false,
+      ),
+    );
+
+    if (selected == null || selected['variantId'] == null) return;
+
+    setState(() {
+      _relatedGoods.add({
+        'variant_id': selected['variantId'],
+        'name': selected['name'],
+        'is_required': false,
+      });
+    });
+  }
+
+  void _removeRelatedGood(int index) {
+    setState(() {
+      _relatedGoods.removeAt(index);
+    });
+  }
+
+  void _toggleRelatedGoodRequired(int index, bool value) {
+    setState(() {
+      _relatedGoods[index]['is_required'] = value;
+    });
   }
 
   Future<void> fetchSubCategories() async {
@@ -89,7 +209,8 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
       Map<String, dynamic> newRow = {
         'is_active': true,
       };
-      for (var attr in selectedCategory!.attributes.where((a) => a.isIndividual)) {
+      for (var attr
+          in selectedCategory!.attributes.where((a) => a.isIndividual)) {
         newRow[attr.name] = TextEditingController();
       }
       if (selectedCategory!.hasPriceCharacteristics) {
@@ -142,7 +263,8 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
               ListTile(
                 leading: Icon(Icons.photo_library),
                 title: Text(
-                  AppLocalizations.of(context)!.translate('select_from_gallery'),
+                  AppLocalizations.of(context)!
+                      .translate('select_from_gallery'),
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
@@ -177,10 +299,565 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
     final pickedFiles = await _picker.pickMultiImage();
     if (pickedFiles != null) {
       setState(() {
-        tableAttributes[rowIndex]['images'].addAll(pickedFiles.map((file) => file.path));
+        tableAttributes[rowIndex]['images']
+            .addAll(pickedFiles.map((file) => file.path));
       });
       _showImageListPopup(tableAttributes[rowIndex]['images']);
     }
+  }
+
+  Widget _buildProductionTypeSection() {
+    if (!_manufactureLoaded || !_hasManufacture) {
+      return const SizedBox.shrink();
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 12),
+        Text(
+          'Тип товара',
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            fontFamily: 'Gilroy',
+            color: Color(0xff1E2E52),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: _buildProductionTypeOption(
+                label: 'Сырье',
+                value: 'raw',
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildProductionTypeOption(
+                label: 'Производимый',
+                value: 'produced',
+              ),
+            ),
+          ],
+        ),
+        if (_productionType == 'produced') ...[
+          const SizedBox(height: 16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Сырье',
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  fontFamily: 'Gilroy',
+                  color: Color(0xff1E2E52),
+                ),
+              ),
+              ElevatedButton.icon(
+                onPressed: _selectMaterialGood,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xff4759FF),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                icon: const Icon(Icons.add, color: Colors.white, size: 18),
+                label: const Text(
+                  'Добавить',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    fontFamily: 'Gilroy',
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          _buildMaterialGoodsTable(),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildProductionTypeOption({
+    required String label,
+    required String value,
+  }) {
+    final isSelected = _productionType == value;
+    return InkWell(
+      onTap: () => _setProductionType(value),
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color:
+                isSelected ? const Color(0xff4759FF) : const Color(0xFFDCE4F2),
+            width: 1.5,
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              isSelected ? Icons.radio_button_checked : Icons.radio_button_off,
+              color: isSelected
+                  ? const Color(0xff4759FF)
+                  : const Color(0xff99A4BA),
+              size: 20,
+            ),
+            const SizedBox(width: 10),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                fontFamily: 'Gilroy',
+                color: isSelected
+                    ? const Color(0xff4759FF)
+                    : const Color(0xff1E2E52),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMaterialGoodsTable() {
+    if (_materialGoods.isEmpty) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 18),
+        decoration: BoxDecoration(
+          color: const Color(0xFFE9F1FF),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: const Text(
+          'Пусто',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 16,
+            fontFamily: 'Gilroy',
+            color: Color(0xff5C6F91),
+          ),
+        ),
+      );
+    }
+
+    return Column(
+      children: [
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          decoration: BoxDecoration(
+            color: const Color(0xFFE9F1FF),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: const Row(
+            children: [
+              Expanded(
+                flex: 1,
+                child: Text(
+                  '#',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontFamily: 'Gilroy',
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xff5C6F91),
+                  ),
+                ),
+              ),
+              Expanded(
+                flex: 5,
+                child: Text(
+                  'Название',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontFamily: 'Gilroy',
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xff5C6F91),
+                  ),
+                ),
+              ),
+              Expanded(
+                flex: 3,
+                child: Text(
+                  'Ед.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontFamily: 'Gilroy',
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xff5C6F91),
+                  ),
+                ),
+              ),
+              Expanded(
+                flex: 3,
+                child: Text(
+                  'Норма',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontFamily: 'Gilroy',
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xff5C6F91),
+                  ),
+                ),
+              ),
+              Expanded(
+                flex: 2,
+                child: Text(
+                  '',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontFamily: 'Gilroy',
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xff5C6F91),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
+        ..._materialGoods.asMap().entries.map((entry) {
+          final index = entry.key;
+          final item = entry.value;
+          final goodId = item['good_id'] as int;
+          final controller = _materialNormControllers.putIfAbsent(
+            goodId,
+            () => TextEditingController(
+              text: item['norm']?.toString() ?? '0',
+            ),
+          );
+          return Container(
+            margin: const EdgeInsets.only(bottom: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFFE5E7EB)),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  flex: 1,
+                  child: Text(
+                    '${index + 1}',
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xff1E2E52),
+                    ),
+                  ),
+                ),
+                Expanded(
+                  flex: 5,
+                  child: Text(
+                    item['name']?.toString() ?? '',
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w500,
+                      color: Color(0xff1E2E52),
+                    ),
+                  ),
+                ),
+                Expanded(
+                  flex: 3,
+                  child: Text(
+                    item['unit_name']?.toString() ?? '',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontFamily: 'Gilroy',
+                      color: Color(0xff5C6F91),
+                    ),
+                  ),
+                ),
+                Expanded(
+                  flex: 3,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    child: TextField(
+                      controller: controller,
+                      onChanged: (value) => _updateMaterialNorm(index, value),
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      inputFormatters: [PriceInputFormatter()],
+                      textAlign: TextAlign.center,
+                      decoration: InputDecoration(
+                        filled: true,
+                        fillColor: const Color(0xFFF4F7FD),
+                        isDense: true,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 10,
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: BorderSide.none,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                Expanded(
+                  flex: 2,
+                  child: IconButton(
+                    onPressed: () => _removeMaterialGood(index),
+                    icon: const Icon(
+                      Icons.delete_outline,
+                      color: Color(0xff1E2E52),
+                      size: 20,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        }),
+      ],
+    );
+  }
+
+  Widget _buildRelatedGoodsSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 16),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Expanded(
+              child: Text(
+                'Сопутствующие товары',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  fontFamily: 'Gilroy',
+                  color: Color(0xff1E2E52),
+                ),
+              ),
+            ),
+            ElevatedButton.icon(
+              onPressed: _selectRelatedGood,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xff4759FF),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              icon: const Icon(Icons.add, color: Colors.white, size: 18),
+              label: const Text(
+                'Добавить',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  fontFamily: 'Gilroy',
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        _buildRelatedGoodsTable(),
+      ],
+    );
+  }
+
+  Widget _buildRelatedGoodsTable() {
+    if (_relatedGoods.isEmpty) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 18),
+        decoration: BoxDecoration(
+          color: const Color(0xFFE9F1FF),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: const Text(
+          'Пусто',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 16,
+            fontFamily: 'Gilroy',
+            color: Color(0xff5C6F91),
+          ),
+        ),
+      );
+    }
+
+    return Column(
+      children: [
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          decoration: BoxDecoration(
+            color: const Color(0xFFE9F1FF),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: const Row(
+            children: [
+              Expanded(
+                flex: 1,
+                child: Text(
+                  '#',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontFamily: 'Gilroy',
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xff5C6F91),
+                  ),
+                ),
+              ),
+              Expanded(
+                flex: 5,
+                child: Text(
+                  'Название',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontFamily: 'Gilroy',
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xff5C6F91),
+                  ),
+                ),
+              ),
+              Expanded(
+                flex: 3,
+                child: Text(
+                  'Обязательный',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontFamily: 'Gilroy',
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xff5C6F91),
+                  ),
+                ),
+              ),
+              Expanded(
+                flex: 2,
+                child: Text(
+                  '',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontFamily: 'Gilroy',
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xff5C6F91),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
+        ..._relatedGoods.asMap().entries.map((entry) {
+          final index = entry.key;
+          final item = entry.value;
+          final isRequired = item['is_required'] == true;
+
+          return Container(
+            margin: const EdgeInsets.only(bottom: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFFE5E7EB)),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  flex: 1,
+                  child: Text(
+                    '${index + 1}',
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xff1E2E52),
+                    ),
+                  ),
+                ),
+                Expanded(
+                  flex: 5,
+                  child: Text(
+                    item['name']?.toString() ?? '',
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w500,
+                      color: Color(0xff1E2E52),
+                    ),
+                  ),
+                ),
+                Expanded(
+                  flex: 3,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Checkbox(
+                        value: isRequired,
+                        onChanged: (value) =>
+                            _toggleRelatedGoodRequired(index, value ?? false),
+                        fillColor: WidgetStateProperty.resolveWith<Color>(
+                          (states) => states.contains(WidgetState.selected)
+                              ? const Color(0xff4759FF)
+                              : Colors.white,
+                        ),
+                        checkColor: Colors.white,
+                        side: const BorderSide(
+                          color: Color(0xff99A4BA),
+                          width: 1.4,
+                        ),
+                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        visualDensity: VisualDensity.compact,
+                      ),
+                      const SizedBox(width: 4),
+                      const Text(
+                        'Да',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontFamily: 'Gilroy',
+                          color: Color(0xff1E2E52),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  flex: 2,
+                  child: IconButton(
+                    onPressed: () => _removeRelatedGood(index),
+                    icon: const Icon(
+                      Icons.delete_outline,
+                      color: Color(0xff1E2E52),
+                      size: 20,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        }),
+      ],
+    );
   }
 
   @override
@@ -238,7 +915,8 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
           ),
         ],
         child: Padding(
-          padding: const EdgeInsets.only(left: 16, right: 16, top: 8, bottom: 80),
+          padding:
+              const EdgeInsets.only(left: 16, right: 16, top: 8, bottom: 80),
           child: GestureDetector(
             onTap: () {
               FocusScope.of(context).unfocus();
@@ -251,10 +929,13 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                   children: [
                     CustomTextField(
                       controller: goodsNameController,
-                      hintText: AppLocalizations.of(context)!.translate('enter_goods_name'),
-                      label: AppLocalizations.of(context)!.translate('goods_name'),
+                      hintText: AppLocalizations.of(context)!
+                          .translate('enter_goods_name'),
+                      label:
+                          AppLocalizations.of(context)!.translate('goods_name'),
                       validator: (value) => value == null || value.isEmpty
-                          ? AppLocalizations.of(context)!.translate('field_required')
+                          ? AppLocalizations.of(context)!
+                              .translate('field_required')
                           : null,
                     ),
                     const SizedBox(height: 8),
@@ -265,9 +946,12 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                           selectedCategory = category;
                           attributeControllers.clear();
                           tableAttributes.clear();
-                          if (category != null && category.attributes.isNotEmpty) {
-                            for (var attribute in category.attributes.where((a) => !a.isIndividual)) {
-                              attributeControllers[attribute.name] = TextEditingController();
+                          if (category != null &&
+                              category.attributes.isNotEmpty) {
+                            for (var attribute in category.attributes
+                                .where((a) => !a.isIndividual)) {
+                              attributeControllers[attribute.name] =
+                                  TextEditingController();
                             }
                           }
                         });
@@ -278,30 +962,35 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                     const SizedBox(height: 8),
                     CustomTextField(
                       controller: goodsDescriptionController,
-                      hintText: AppLocalizations.of(context)!.translate('enter_goods_description'),
-                      label: AppLocalizations.of(context)!.translate('goods_description'),
+                      hintText: AppLocalizations.of(context)!
+                          .translate('enter_goods_description'),
+                      label: AppLocalizations.of(context)!
+                          .translate('goods_description'),
                       maxLines: 5,
                       keyboardType: TextInputType.multiline,
                     ),
                     const SizedBox(height: 8),
                     CustomTextField(
-                              controller: priceController,
-                              label: AppLocalizations.of(context)!.translate('price'),
-                              hintText: AppLocalizations.of(context)!.translate('enter_price'),
-                              keyboardType: TextInputType.number,
-                              inputFormatters: [
-                                PriceInputFormatter(),
-                              ],
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return AppLocalizations.of(context)!.translate('field_required');
-                                }
-                                if (double.tryParse(value) == null) {
-                                  return AppLocalizations.of(context)!.translate('enter_correct_number');
-                                }
-                                return null;
-                              },
-                            ),
+                      controller: priceController,
+                      label: AppLocalizations.of(context)!.translate('price'),
+                      hintText: AppLocalizations.of(context)!
+                          .translate('enter_price'),
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [
+                        PriceInputFormatter(),
+                      ],
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return AppLocalizations.of(context)!
+                              .translate('field_required');
+                        }
+                        if (double.tryParse(value) == null) {
+                          return AppLocalizations.of(context)!
+                              .translate('enter_correct_number');
+                        }
+                        return null;
+                      },
+                    ),
                     // if (selectedCategory != null && !selectedCategory!.hasPriceCharacteristics)
                     //   Column(
                     //     crossAxisAlignment: CrossAxisAlignment.start,
@@ -352,24 +1041,30 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                         });
                       },
                     ),
-                    
+                    _buildProductionTypeSection(),
+                    _buildRelatedGoodsSection(),
                     const SizedBox(height: 16),
-                    if (selectedCategory != null && selectedCategory!.attributes.isNotEmpty)
+                    if (selectedCategory != null &&
+                        selectedCategory!.attributes.isNotEmpty)
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 0.0),
+                            padding:
+                                const EdgeInsets.symmetric(horizontal: 0.0),
                             child: Container(
                               decoration: BoxDecoration(
-                                border: Border.all(color: Color(0xff1E2E52), width: 1.0),
+                                border: Border.all(
+                                    color: Color(0xff1E2E52), width: 1.0),
                                 borderRadius: BorderRadius.circular(14.0),
                               ),
                               child: Center(
                                 child: Padding(
-                                  padding: const EdgeInsets.symmetric(vertical: 8.0),
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 8.0),
                                   child: Text(
-                                    AppLocalizations.of(context)!.translate('characteristic'),
+                                    AppLocalizations.of(context)!
+                                        .translate('characteristic'),
                                     style: TextStyle(
                                       fontSize: 18,
                                       fontWeight: FontWeight.w600,
@@ -381,7 +1076,9 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                               ),
                             ),
                           ),
-                          ...selectedCategory!.attributes.where((attr) => !attr.isIndividual).map((attribute) {
+                          ...selectedCategory!.attributes
+                              .where((attr) => !attr.isIndividual)
+                              .map((attribute) {
                             return Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
@@ -397,13 +1094,16 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                                 ),
                                 const SizedBox(height: 4),
                                 CustomCharacteristicField(
-                                  controller: attributeControllers[attribute.name]!,
-                                  hintText: '${AppLocalizations.of(context)!.translate('please_enter')} ${attribute.name.toLowerCase()}',
+                                  controller:
+                                      attributeControllers[attribute.name]!,
+                                  hintText:
+                                      '${AppLocalizations.of(context)!.translate('please_enter')} ${attribute.name.toLowerCase()}',
                                 ),
                               ],
                             );
                           }).toList(),
-                          if (selectedCategory!.attributes.any((attr) => attr.isIndividual))
+                          if (selectedCategory!.attributes
+                              .any((attr) => attr.isIndividual))
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
@@ -420,7 +1120,8 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                                         columns: [
                                           DataColumn(
                                             label: Text(
-                                              AppLocalizations.of(context)!.translate('image_message'),
+                                              AppLocalizations.of(context)!
+                                                  .translate('image_message'),
                                               style: TextStyle(
                                                 fontSize: 16,
                                                 fontWeight: FontWeight.w500,
@@ -429,21 +1130,29 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                                               ),
                                             ),
                                           ),
-                                          ...selectedCategory!.attributes.where((attr) => attr.isIndividual).map((attr) => DataColumn(
-                                                label: Text(
-                                                  attr.name,
-                                                  style: TextStyle(
-                                                    fontSize: 16,
-                                                    fontWeight: FontWeight.w500,
-                                                    fontFamily: 'Gilroy',
-                                                    color: Color(0xff1E2E52),
-                                                  ),
-                                                ),
-                                              )).toList(),
-                                          if (selectedCategory!.hasPriceCharacteristics)
+                                          ...selectedCategory!.attributes
+                                              .where(
+                                                  (attr) => attr.isIndividual)
+                                              .map((attr) => DataColumn(
+                                                    label: Text(
+                                                      attr.name,
+                                                      style: TextStyle(
+                                                        fontSize: 16,
+                                                        fontWeight:
+                                                            FontWeight.w500,
+                                                        fontFamily: 'Gilroy',
+                                                        color:
+                                                            Color(0xff1E2E52),
+                                                      ),
+                                                    ),
+                                                  ))
+                                              .toList(),
+                                          if (selectedCategory!
+                                              .hasPriceCharacteristics)
                                             DataColumn(
                                               label: Text(
-                                                AppLocalizations.of(context)!.translate('price'),
+                                                AppLocalizations.of(context)!
+                                                    .translate('price'),
                                                 style: TextStyle(
                                                   fontSize: 16,
                                                   fontWeight: FontWeight.w500,
@@ -454,7 +1163,8 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                                             ),
                                           DataColumn(
                                             label: Text(
-                                              AppLocalizations.of(context)!.translate('status'),
+                                              AppLocalizations.of(context)!
+                                                  .translate('status'),
                                               style: TextStyle(
                                                 fontSize: 16,
                                                 fontWeight: FontWeight.w500,
@@ -475,22 +1185,34 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                                             ),
                                           ),
                                         ],
-                                        rows: tableAttributes.asMap().entries.map((entry) {
+                                        rows: tableAttributes
+                                            .asMap()
+                                            .entries
+                                            .map((entry) {
                                           int index = entry.key;
-                                          Map<String, dynamic> row = entry.value;
+                                          Map<String, dynamic> row =
+                                              entry.value;
                                           return DataRow(
                                             cells: [
                                               DataCell(
                                                 Row(
                                                   children: [
-                                                    if (row['images'].isNotEmpty)
+                                                    if (row['images']
+                                                        .isNotEmpty)
                                                       Container(
                                                         width: 40,
                                                         height: 40,
-                                                        decoration: BoxDecoration(
-                                                          borderRadius: BorderRadius.circular(8),
-                                                          image: DecorationImage(
-                                                            image: FileImage(File(row['images'].first)),
+                                                        decoration:
+                                                            BoxDecoration(
+                                                          borderRadius:
+                                                              BorderRadius
+                                                                  .circular(8),
+                                                          image:
+                                                              DecorationImage(
+                                                            image: FileImage(
+                                                                File(row[
+                                                                        'images']
+                                                                    .first)),
                                                             fit: BoxFit.cover,
                                                           ),
                                                         ),
@@ -499,25 +1221,41 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                                                     Stack(
                                                       children: [
                                                         IconButton(
-                                                          icon: Icon(Icons.add_circle, color: Colors.blue, size: 20),
-                                                          onPressed: () => _showImagePickerOptionsForRow(index),
+                                                          icon: Icon(
+                                                              Icons.add_circle,
+                                                              color:
+                                                                  Colors.blue,
+                                                              size: 20),
+                                                          onPressed: () =>
+                                                              _showImagePickerOptionsForRow(
+                                                                  index),
                                                         ),
-                                                        if (row['images'].isNotEmpty)
+                                                        if (row['images']
+                                                            .isNotEmpty)
                                                           Positioned(
                                                             top: 4,
                                                             right: 4,
                                                             child: Container(
-                                                              padding: EdgeInsets.all(4),
-                                                              decoration: BoxDecoration(
-                                                                color: Colors.red,
-                                                                shape: BoxShape.circle,
+                                                              padding:
+                                                                  EdgeInsets
+                                                                      .all(4),
+                                                              decoration:
+                                                                  BoxDecoration(
+                                                                color:
+                                                                    Colors.red,
+                                                                shape: BoxShape
+                                                                    .circle,
                                                               ),
                                                               child: Text(
                                                                 '${row['images'].length}',
-                                                                style: TextStyle(
-                                                                  color: Colors.white,
+                                                                style:
+                                                                    TextStyle(
+                                                                  color: Colors
+                                                                      .white,
                                                                   fontSize: 10,
-                                                                  fontWeight: FontWeight.bold,
+                                                                  fontWeight:
+                                                                      FontWeight
+                                                                          .bold,
                                                                 ),
                                                               ),
                                                             ),
@@ -525,53 +1263,99 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                                                       ],
                                                     ),
                                                     IconButton(
-                                                      icon: Icon(Icons.visibility, color: Colors.grey, size: 20),
-                                                      onPressed: row['images'].isNotEmpty ? () => _showImageListPopup(row['images']) : null,
+                                                      icon: Icon(
+                                                          Icons.visibility,
+                                                          color: Colors.grey,
+                                                          size: 20),
+                                                      onPressed: row['images']
+                                                              .isNotEmpty
+                                                          ? () =>
+                                                              _showImageListPopup(
+                                                                  row['images'])
+                                                          : null,
                                                     ),
                                                   ],
                                                 ),
                                               ),
-                                              ...selectedCategory!.attributes.where((attr) => attr.isIndividual).map((attr) => DataCell(
-                                                    SizedBox(
-                                                      width: 150,
-                                                      child: TextField(
-                                                        controller: row[attr.name],
-                                                        decoration: InputDecoration(
-                                                          hintText: '${AppLocalizations.of(context)!.translate('please_enter')} ${attr.name}',
-                                                          hintStyle: TextStyle(
-                                                            fontSize: 12,
-                                                            fontWeight: FontWeight.w500,
-                                                            fontFamily: 'Gilroy',
-                                                            color: Color(0xff99A4BA),
+                                              ...selectedCategory!.attributes
+                                                  .where((attr) =>
+                                                      attr.isIndividual)
+                                                  .map((attr) => DataCell(
+                                                        SizedBox(
+                                                          width: 150,
+                                                          child: TextField(
+                                                            controller:
+                                                                row[attr.name],
+                                                            decoration:
+                                                                InputDecoration(
+                                                              hintText:
+                                                                  '${AppLocalizations.of(context)!.translate('please_enter')} ${attr.name}',
+                                                              hintStyle:
+                                                                  TextStyle(
+                                                                fontSize: 12,
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .w500,
+                                                                fontFamily:
+                                                                    'Gilroy',
+                                                                color: Color(
+                                                                    0xff99A4BA),
+                                                              ),
+                                                              border:
+                                                                  OutlineInputBorder(
+                                                                borderRadius:
+                                                                    BorderRadius
+                                                                        .circular(
+                                                                            12),
+                                                              ),
+                                                              contentPadding:
+                                                                  EdgeInsets.symmetric(
+                                                                      horizontal:
+                                                                          12,
+                                                                      vertical:
+                                                                          16),
+                                                            ),
                                                           ),
-                                                          border: OutlineInputBorder(
-                                                            borderRadius: BorderRadius.circular(12),
-                                                          ),
-                                                          contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 16),
                                                         ),
-                                                      ),
-                                                    ),
-                                                  )).toList(),
-                                              if (selectedCategory!.hasPriceCharacteristics)
+                                                      ))
+                                                  .toList(),
+                                              if (selectedCategory!
+                                                  .hasPriceCharacteristics)
                                                 DataCell(
                                                   SizedBox(
                                                     width: 150,
                                                     child: TextField(
                                                       controller: row['price'],
-                                                      decoration: InputDecoration(
-                                                        hintText: AppLocalizations.of(context)!.translate('enter_price'),
+                                                      decoration:
+                                                          InputDecoration(
+                                                        hintText: AppLocalizations
+                                                                .of(context)!
+                                                            .translate(
+                                                                'enter_price'),
                                                         hintStyle: TextStyle(
                                                           fontSize: 12,
-                                                          fontWeight: FontWeight.w500,
+                                                          fontWeight:
+                                                              FontWeight.w500,
                                                           fontFamily: 'Gilroy',
-                                                          color: Color(0xff99A4BA),
+                                                          color:
+                                                              Color(0xff99A4BA),
                                                         ),
-                                                        border: OutlineInputBorder(
-                                                          borderRadius: BorderRadius.circular(12),
+                                                        border:
+                                                            OutlineInputBorder(
+                                                          borderRadius:
+                                                              BorderRadius
+                                                                  .circular(12),
                                                         ),
-                                                        contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                                                        contentPadding:
+                                                            EdgeInsets
+                                                                .symmetric(
+                                                                    horizontal:
+                                                                        12,
+                                                                    vertical:
+                                                                        16),
                                                       ),
-                                                      keyboardType: TextInputType.number,
+                                                      keyboardType:
+                                                          TextInputType.number,
                                                     ),
                                                   ),
                                                 ),
@@ -583,25 +1367,40 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                                                       row['is_active'] = value;
                                                     });
                                                   },
-                                                  activeColor: const Color.fromARGB(255, 255, 255, 255),
-                                                  inactiveTrackColor: const Color.fromARGB(255, 179, 179, 179).withOpacity(0.5),
-                                                  activeTrackColor: ChatSmsStyles.messageBubbleSenderColor,
-                                                  inactiveThumbColor: const Color.fromARGB(255, 255, 255, 255),
+                                                  activeColor:
+                                                      const Color.fromARGB(
+                                                          255, 255, 255, 255),
+                                                  inactiveTrackColor:
+                                                      const Color.fromARGB(255,
+                                                              179, 179, 179)
+                                                          .withOpacity(0.5),
+                                                  activeTrackColor: ChatSmsStyles
+                                                      .messageBubbleSenderColor,
+                                                  inactiveThumbColor:
+                                                      const Color.fromARGB(
+                                                          255, 255, 255, 255),
                                                 ),
                                               ),
                                               DataCell(
                                                 IconButton(
-                                                  icon: Icon(Icons.delete, color: Colors.red, size: 20),
-                                                  onPressed: () => removeTableRow(index),
+                                                  icon: Icon(Icons.delete,
+                                                      color: Colors.red,
+                                                      size: 20),
+                                                  onPressed: () =>
+                                                      removeTableRow(index),
                                                 ),
                                               ),
                                             ],
                                           );
                                         }).toList(),
                                       ),
-                                      ...tableAttributes.asMap().entries.map((entry) {
+                                      ...tableAttributes
+                                          .asMap()
+                                          .entries
+                                          .map((entry) {
                                         int index = entry.key;
-                                        if (index < tableAttributes.length - 1) {
+                                        if (index <
+                                            tableAttributes.length - 1) {
                                           return Divider(
                                             color: Color(0xffE0E6F5),
                                             thickness: 1,
@@ -647,10 +1446,12 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                                 child: Column(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    Icon(Icons.camera_alt, color: Color(0xff99A4BA), size: 40),
+                                    Icon(Icons.camera_alt,
+                                        color: Color(0xff99A4BA), size: 40),
                                     const SizedBox(height: 8),
                                     Text(
-                                      AppLocalizations.of(context)!.translate('pick_image'),
+                                      AppLocalizations.of(context)!
+                                          .translate('pick_image'),
                                       style: TextStyle(
                                         fontSize: 14,
                                         fontWeight: FontWeight.w500,
@@ -668,7 +1469,10 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                                     runSpacing: 10,
                                     padding: const EdgeInsets.all(8),
                                     children: [
-                                      ..._imagePaths.asMap().entries.map((entry) {
+                                      ..._imagePaths
+                                          .asMap()
+                                          .entries
+                                          .map((entry) {
                                         int index = entry.key;
                                         String imagePath = entry.value;
                                         return GestureDetector(
@@ -682,13 +1486,17 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                                             width: 100,
                                             height: 100,
                                             decoration: BoxDecoration(
-                                              borderRadius: BorderRadius.circular(12),
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
                                               image: DecorationImage(
-                                                image: FileImage(File(imagePath)),
+                                                image:
+                                                    FileImage(File(imagePath)),
                                                 fit: BoxFit.cover,
                                               ),
                                               border: mainImageIndex == index
-                                                  ? Border.all(color: Colors.blue, width: 2)
+                                                  ? Border.all(
+                                                      color: Colors.blue,
+                                                      width: 2)
                                                   : null,
                                             ),
                                             child: Stack(
@@ -697,11 +1505,15 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                                                   top: 4,
                                                   right: 4,
                                                   child: GestureDetector(
-                                                    onTap: () => _removeImage(imagePath),
+                                                    onTap: () =>
+                                                        _removeImage(imagePath),
                                                     child: Container(
-                                                      padding: const EdgeInsets.all(4),
+                                                      padding:
+                                                          const EdgeInsets.all(
+                                                              4),
                                                       decoration: BoxDecoration(
-                                                        color: Colors.black.withOpacity(0.5),
+                                                        color: Colors.black
+                                                            .withOpacity(0.5),
                                                         shape: BoxShape.circle,
                                                       ),
                                                       child: Icon(
@@ -717,7 +1529,9 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                                                     bottom: 4,
                                                     right: 4,
                                                     child: Container(
-                                                      padding: const EdgeInsets.all(4),
+                                                      padding:
+                                                          const EdgeInsets.all(
+                                                              4),
                                                       decoration: BoxDecoration(
                                                         color: Colors.blue,
                                                         shape: BoxShape.circle,
@@ -741,16 +1555,22 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                                           height: 100,
                                           decoration: BoxDecoration(
                                             color: Color(0xffF4F7FD),
-                                            borderRadius: BorderRadius.circular(12),
-                                            border: Border.all(color: Color(0xffF4F7FD)),
+                                            borderRadius:
+                                                BorderRadius.circular(12),
+                                            border: Border.all(
+                                                color: Color(0xffF4F7FD)),
                                           ),
                                           child: Column(
-                                            mainAxisAlignment: MainAxisAlignment.center,
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.center,
                                             children: [
-                                              Icon(Icons.add_a_photo, color: Color(0xff99A4BA), size: 40),
+                                              Icon(Icons.add_a_photo,
+                                                  color: Color(0xff99A4BA),
+                                                  size: 40),
                                               SizedBox(height: 4),
                                               Text(
-                                                AppLocalizations.of(context)!.translate('add'),
+                                                AppLocalizations.of(context)!
+                                                    .translate('add'),
                                                 style: TextStyle(
                                                   fontSize: 10,
                                                   color: Color(0xff99A4BA),
@@ -763,13 +1583,18 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                                     ],
                                     onReorder: (int oldIndex, int newIndex) {
                                       setState(() {
-                                        final item = _imagePaths.removeAt(oldIndex);
+                                        final item =
+                                            _imagePaths.removeAt(oldIndex);
                                         _imagePaths.insert(newIndex, item);
                                         if (mainImageIndex == oldIndex) {
                                           mainImageIndex = newIndex;
-                                        } else if (mainImageIndex != null && oldIndex < mainImageIndex! && newIndex >= mainImageIndex!) {
+                                        } else if (mainImageIndex != null &&
+                                            oldIndex < mainImageIndex! &&
+                                            newIndex >= mainImageIndex!) {
                                           mainImageIndex = mainImageIndex! - 1;
-                                        } else if (mainImageIndex != null && oldIndex > mainImageIndex! && newIndex <= mainImageIndex!) {
+                                        } else if (mainImageIndex != null &&
+                                            oldIndex > mainImageIndex! &&
+                                            newIndex <= mainImageIndex!) {
                                           mainImageIndex = mainImageIndex! + 1;
                                         }
                                       });
@@ -780,10 +1605,12 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                                     left: 8,
                                     child: IgnorePointer(
                                       child: Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 8, vertical: 4),
                                         decoration: BoxDecoration(
                                           color: Colors.black.withOpacity(0.5),
-                                          borderRadius: BorderRadius.circular(12),
+                                          borderRadius:
+                                              BorderRadius.circular(12),
                                         ),
                                         child: Text(
                                           '${_imagePaths.length} ${AppLocalizations.of(context)!.translate('image_message')}',
@@ -809,7 +1636,8 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                AppLocalizations.of(context)!.translate('status_goods'),
+                                AppLocalizations.of(context)!
+                                    .translate('status_goods'),
                                 style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w500,
@@ -825,7 +1653,8 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                                   });
                                 },
                                 child: Container(
-                                  padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 12),
+                                  padding: const EdgeInsets.symmetric(
+                                      vertical: 4, horizontal: 12),
                                   decoration: BoxDecoration(
                                     color: const Color(0xFFF4F7FD),
                                     borderRadius: BorderRadius.circular(12),
@@ -839,16 +1668,25 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                                             isActive = value;
                                           });
                                         },
-                                        activeColor: const Color.fromARGB(255, 255, 255, 255),
-                                        inactiveTrackColor: const Color.fromARGB(255, 179, 179, 179).withOpacity(0.5),
-                                        activeTrackColor: ChatSmsStyles.messageBubbleSenderColor,
-                                        inactiveThumbColor: const Color.fromARGB(255, 255, 255, 255),
+                                        activeColor: const Color.fromARGB(
+                                            255, 255, 255, 255),
+                                        inactiveTrackColor:
+                                            const Color.fromARGB(
+                                                    255, 179, 179, 179)
+                                                .withOpacity(0.5),
+                                        activeTrackColor: ChatSmsStyles
+                                            .messageBubbleSenderColor,
+                                        inactiveThumbColor:
+                                            const Color.fromARGB(
+                                                255, 255, 255, 255),
                                       ),
                                       const SizedBox(width: 10),
                                       Text(
                                         isActive
-                                            ? AppLocalizations.of(context)!.translate('active')
-                                            : AppLocalizations.of(context)!.translate('inactive'),
+                                            ? AppLocalizations.of(context)!
+                                                .translate('active')
+                                            : AppLocalizations.of(context)!
+                                                .translate('inactive'),
                                         style: const TextStyle(
                                           fontSize: 16,
                                           fontWeight: FontWeight.w500,
@@ -893,21 +1731,25 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                   ? const SizedBox(
                       height: 48,
                       child: Center(
-                        child: CircularProgressIndicator(color: Color(0xff4759FF)),
+                        child:
+                            CircularProgressIndicator(color: Color(0xff4759FF)),
                       ),
                     )
                   : CustomButton(
-                      buttonText: AppLocalizations.of(context)!.translate('add'),
+                      buttonText:
+                          AppLocalizations.of(context)!.translate('add'),
                       buttonColor: const Color(0xff4759FF),
                       textColor: Colors.white,
                       onPressed: () {
                         validateForm();
-                        if (formKey.currentState!.validate() && isCategoryValid) {
+                        if (formKey.currentState!.validate() &&
+                            isCategoryValid) {
                           _createProduct();
                         } else {
                           showCustomSnackBar(
                             context: context,
-                            message: AppLocalizations.of(context)!.translate('fill_all_required_fields'),
+                            message: AppLocalizations.of(context)!
+                                .translate('fill_all_required_fields'),
                             isSuccess: false,
                           );
                         }
@@ -949,7 +1791,8 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
               ListTile(
                 leading: Icon(Icons.photo_library),
                 title: Text(
-                  AppLocalizations.of(context)!.translate('select_from_gallery'),
+                  AppLocalizations.of(context)!
+                      .translate('select_from_gallery'),
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
@@ -1007,7 +1850,9 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
       if (selectedCategory!.hasPriceCharacteristics) {
         for (var row in tableAttributes) {
           final priceController = row['price'] as TextEditingController?;
-          if (priceController == null || priceController.text.trim().isEmpty || double.tryParse(priceController.text.trim()) == null) {
+          if (priceController == null ||
+              priceController.text.trim().isEmpty ||
+              double.tryParse(priceController.text.trim()) == null) {
             isPriceValid = false;
             break;
           }
@@ -1021,6 +1866,16 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
         );
         return;
       }
+      if (_hasManufacture &&
+          _productionType == 'produced' &&
+          _materialGoods.isEmpty) {
+        showCustomSnackBar(
+          context: context,
+          message: 'Добавьте сырье для производимого товара',
+          isSuccess: false,
+        );
+        return;
+      }
 
       setState(() => isLoading = true);
       //print('GoodsAddScreen: Starting product creation');
@@ -1029,7 +1884,8 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
         List<Map<String, dynamic>> attributes = [];
         List<Map<String, dynamic>> variants = [];
 
-        for (var attribute in selectedCategory!.attributes.where((a) => !a.isIndividual)) {
+        for (var attribute
+            in selectedCategory!.attributes.where((a) => !a.isIndividual)) {
           final controller = attributeControllers[attribute.name];
           if (controller != null && controller.text.trim().isNotEmpty) {
             attributes.add({
@@ -1045,7 +1901,8 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
             'variant_attributes': [],
           };
 
-          List<String> variantImagePaths = (row['images'] as List<dynamic>?)?.cast<String>() ?? [];
+          List<String> variantImagePaths =
+              (row['images'] as List<dynamic>?)?.cast<String>() ?? [];
           List<File> variantImages = [];
           for (var path in variantImagePaths) {
             File file = File(path);
@@ -1056,7 +1913,8 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
             }
           }
 
-          for (var attr in selectedCategory!.attributes.where((a) => a.isIndividual)) {
+          for (var attr
+              in selectedCategory!.attributes.where((a) => a.isIndividual)) {
             final controller = row[attr.name] as TextEditingController?;
             if (controller != null && controller.text.trim().isNotEmpty) {
               variant['variant_attributes'].add({
@@ -1068,7 +1926,8 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
 
           if (selectedCategory!.hasPriceCharacteristics) {
             final priceController = row['price'] as TextEditingController?;
-            if (priceController != null && priceController.text.trim().isNotEmpty) {
+            if (priceController != null &&
+                priceController.text.trim().isNotEmpty) {
               final price = double.tryParse(priceController.text.trim());
               variant['price'] = price ?? 0.0;
             } else {
@@ -1104,8 +1963,9 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                 name: goodsNameController.text.trim(),
                 parentId: selectedCategory!.id,
                 description: goodsDescriptionController.text.trim(),
-                quantity: int.tryParse(stockQuantityController.text) ?? 0,
-unitId: selectedUnit != null ? int.tryParse(selectedUnit!) : null,
+                quantity: int.tryParse(stockQuantityController.text),
+                unitId:
+                    selectedUnit != null ? int.tryParse(selectedUnit!) : null,
                 attributes: attributes,
                 variants: variants,
                 images: images,
@@ -1117,6 +1977,25 @@ unitId: selectedUnit != null ? int.tryParse(selectedUnit!) : null,
                 storageId: null,
                 mainImageIndex: mainImageIndex,
                 labelId: labelId,
+                productionType: _hasManufacture ? _productionType : null,
+                materialGoods: _productionType == 'produced'
+                    ? _materialGoods
+                        .where((item) =>
+                            item['good_id'] != null &&
+                            (item['norm'] as num? ?? 0) > 0)
+                        .map((item) => {
+                              'good_id': item['good_id'],
+                              'norm': item['norm'],
+                            })
+                        .toList()
+                    : const [],
+                relatedGoods: _relatedGoods
+                    .where((item) => item['variant_id'] != null)
+                    .map((item) => {
+                          'variant_id': item['variant_id'],
+                          'is_required': item['is_required'] == true ? 1 : 0,
+                        })
+                    .toList(),
               ),
             );
       } catch (e) {
@@ -1131,9 +2010,34 @@ unitId: selectedUnit != null ? int.tryParse(selectedUnit!) : null,
     } else {
       showCustomSnackBar(
         context: context,
-        message: AppLocalizations.of(context)!.translate('fill_all_required_fields'),
+        message:
+            AppLocalizations.of(context)!.translate('fill_all_required_fields'),
         isSuccess: false,
       );
     }
+  }
+
+  @override
+  void dispose() {
+    goodsNameController.dispose();
+    goodsDescriptionController.dispose();
+    discountPriceController.dispose();
+    priceController.dispose();
+    stockQuantityController.dispose();
+    unitIdController.dispose();
+    for (final controller in attributeControllers.values) {
+      controller.dispose();
+    }
+    for (final row in tableAttributes) {
+      for (final attr in row.values) {
+        if (attr is TextEditingController) {
+          attr.dispose();
+        }
+      }
+    }
+    for (final controller in _materialNormControllers.values) {
+      controller.dispose();
+    }
+    super.dispose();
   }
 }

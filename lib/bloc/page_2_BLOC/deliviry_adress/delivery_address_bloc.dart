@@ -18,7 +18,7 @@ class DeliveryAddressBloc
     try {
       final response = await apiService.getDeliveryAddresses(
         leadId: event.leadId,
-        // organizationId: event.organizationId,
+        dealId: event.dealId,
       );
       emit(DeliveryAddressLoaded(response.result ?? []));
     } catch (e) {

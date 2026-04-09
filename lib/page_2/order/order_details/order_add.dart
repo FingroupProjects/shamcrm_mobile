@@ -50,12 +50,14 @@ class OrderAddScreen extends StatefulWidget {
   final Order? order;
   final int? organizationId;
   final int? leadId;
+  final int? dealId;
   final String? clientPhone; // Телефон клиента для автозаполнения
 
   const OrderAddScreen(
       {this.order,
       this.organizationId,
       this.leadId,
+      this.dealId,
       this.clientPhone,
       super.key});
 
@@ -116,8 +118,8 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
     _orderBloc = OrderBloc(context.read<ApiService>());
     _branchBloc = BranchBloc(context.read<ApiService>());
     _deliveryAddressBloc = DeliveryAddressBloc(context.read<ApiService>());
-    if (widget.leadId != null) {
-      selectedLead = widget.leadId.toString();
+    if (widget.dealId != null || widget.leadId != null) {
+      selectedLead = (widget.dealId ?? widget.leadId).toString();
     }
 
     // Автозаполнение телефона: приоритет - заказ, затем телефон клиента, затем пусто
@@ -369,7 +371,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
   }
 
   Widget _buildLeadField() {
-    if (widget.leadId != null) {
+    if (widget.leadId != null || widget.dealId != null) {
       return const SizedBox.shrink();
     }
     return Column(
@@ -450,6 +452,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
       children: [
         DeliveryAddressDropdown(
           leadId: int.parse(selectedLead ?? '0'),
+          dealId: widget.dealId,
           organizationId: widget.organizationId ?? 1,
           selectedAddress: _selectedDeliveryAddress,
           preferredAddressText: _pendingManualAddressSelection,
@@ -1885,12 +1888,15 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                 return;
               }
 
-              final leadId = int.tryParse(selectedLead ?? '') ?? 0;
-              if (leadId <= 0) {
+              final relationId = int.tryParse(selectedLead ?? '') ?? 0;
+              if (relationId <= 0) {
                 showCustomSnackBar(
                   context: context,
                   message:
-                      AppLocalizations.of(context)!.translate('select_lead'),
+                      widget.dealId != null
+                          ? AppLocalizations.of(context)!
+                              .translate('fill_all_required_fields')
+                          : AppLocalizations.of(context)!.translate('select_lead'),
                   isSuccess: false,
                 );
                 return;
@@ -1907,7 +1913,8 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
               _orderBloc.add(
                 AddMiniAppAddress(
                   address: manualAddress,
-                  leadId: leadId,
+                  leadId: widget.dealId == null ? relationId : null,
+                  dealId: widget.dealId != null ? relationId : null,
                 ),
               );
             },
@@ -2029,7 +2036,12 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                   );
                   _deliveryAddressBloc.add(
                     FetchDeliveryAddresses(
-                      leadId: int.parse(selectedLead ?? '0'),
+                      leadId: widget.dealId == null
+                          ? int.parse(selectedLead ?? '0')
+                          : null,
+                      dealId: widget.dealId != null
+                          ? int.parse(selectedLead ?? '0')
+                          : null,
                     ),
                   );
                 } else if (state is OrderCreateAddressError) {
@@ -2065,7 +2077,10 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                       selectedDialCode = state.orderDetails!.phone;
                       _deliveryAddressController.text =
                           state.orderDetails!.deliveryAddress ?? '';
-                      selectedLead = state.orderDetails!.lead.id.toString();
+                      selectedLead = ((state.orderDetails!.deal?.id ?? 0) > 0
+                              ? state.orderDetails!.deal!.id
+                              : state.orderDetails!.lead.id)
+                          .toString();
                       _deliveryMethod = state.orderDetails!.delivery
                           ? AppLocalizations.of(context)!.translate('delivery')
                           : AppLocalizations.of(context)!
@@ -2670,7 +2685,13 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
 
                 orderBloc.add(CreateOrder(
                   phone: selectedDialCode!,
-                  leadId: widget.leadId ?? int.parse(selectedLead ?? '0'),
+                  leadId: widget.leadId ??
+                      (widget.dealId == null
+                          ? int.parse(selectedLead ?? '0')
+                          : null),
+                  dealId: widget.dealId != null
+                      ? (widget.dealId ?? int.parse(selectedLead ?? '0'))
+                      : null,
                   delivery: !isPickup,
                   deliveryAddress:
                       isPickup ? null : _selectedDeliveryAddress?.address,

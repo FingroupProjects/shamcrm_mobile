@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 class OperatorList {
   final List<Operator> result;
   final String? errors;
@@ -10,10 +8,13 @@ class OperatorList {
   });
 
   factory OperatorList.fromJson(Map<String, dynamic> json) {
-    var resultList = json['result'] as List;
-    List<Operator> operators = resultList.map((item) => Operator.fromJson(item)).toList();
+    final resultList = (json['result'] as List?) ?? const [];
+    final operators = resultList
+        .whereType<Map<String, dynamic>>()
+        .map(Operator.fromJson)
+        .toList();
 
-    return OperatorList(  
+    return OperatorList(
       result: operators,
       errors: json['errors'],
     );
@@ -60,24 +61,49 @@ class Operator {
     this.operatorAvgRating, // Теперь опционально
   });
 
+  static int _toInt(dynamic value, {int defaultValue = 0}) {
+    if (value == null) return defaultValue;
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    return int.tryParse(value.toString()) ?? defaultValue;
+  }
+
+  static String _toStringValue(dynamic value, {String defaultValue = ''}) {
+    if (value == null) return defaultValue;
+    return value.toString();
+  }
+
+  static double? _toDoubleOrNull(dynamic value) {
+    if (value == null) return null;
+    if (value is double) return value;
+    if (value is num) return value.toDouble();
+    return double.tryParse(value.toString());
+  }
+
   factory Operator.fromJson(Map<String, dynamic> json) {
+    final name = _toStringValue(json['name']);
+    final lastname = _toStringValue(json['lastname']);
+    final fullName = _toStringValue(
+      json['full_name'],
+      defaultValue: [name, lastname].where((part) => part.isNotEmpty).join(' ').trim(),
+    );
+
     return Operator(
-      id: json['id'],
-      name: json['name'],
-      lastname: json['lastname'],
-      login: json['login'],
-      email: json['email'],
-      phone: json['phone'],
-      image: json['image'],
-      telegramUserId: json['telegram_user_id'],
-      jobTitle: json['job_title'],
-      fullName: json['full_name'],
-      isFirstLogin: json['is_first_login'],
-      departmentId: json['department_id'],
-      uniqueId: json['unique_id'],
-      operatorAvgRating: json['operator_avg_rating'] != null
-          ? json['operator_avg_rating'].toDouble()
-          : null, // Обработка null
+      id: _toInt(json['id']),
+      name: name,
+      lastname: lastname,
+      login: _toStringValue(json['login']),
+      email: _toStringValue(json['email']),
+      phone: _toStringValue(json['phone']),
+      image: _toStringValue(json['image']),
+      telegramUserId: json['telegram_user_id']?.toString(),
+      jobTitle: _toStringValue(json['job_title']),
+      fullName: fullName,
+      isFirstLogin: _toInt(json['is_first_login']),
+      departmentId:
+          json['department_id'] == null ? null : _toInt(json['department_id']),
+      uniqueId: _toStringValue(json['unique_id']),
+      operatorAvgRating: _toDoubleOrNull(json['operator_avg_rating']),
     );
   }
 

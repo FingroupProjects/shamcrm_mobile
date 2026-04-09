@@ -20,7 +20,10 @@ class FetchTaskStatusesWithFilters extends TaskEvent {
   final bool? urgent;
   final DateTime? deadlinefromDate;
   final DateTime? deadlinetoDate;
+  final DateTime? completedFromDate;
+  final DateTime? completedToDate;
   final List<int>? projectIds;
+  final List<int>? reasonForRefusalIds;
   final List<String>? authors;
   final String? department;
   final List<Map<String, dynamic>>? directoryValues;
@@ -36,7 +39,10 @@ class FetchTaskStatusesWithFilters extends TaskEvent {
     this.urgent,
     this.deadlinefromDate,
     this.deadlinetoDate,
+    this.completedFromDate,
+    this.completedToDate,
     this.projectIds,
+    this.reasonForRefusalIds,
     this.authors,
     this.department,
     this.directoryValues,
@@ -56,10 +62,14 @@ class FetchTasks extends TaskEvent {
   final bool? urgent;
   final DateTime? deadlinefromDate;
   final DateTime? deadlinetoDate;
+  final DateTime? completedFromDate;
+  final DateTime? completedToDate;
   final List<int>? projectIds;
+  final List<int>? reasonForRefusalIds;
   final List<String>? authors;
   final String? department;
-  final List<Map<String, dynamic>>? directoryValues; // Добавляем directoryValues
+  final List<Map<String, dynamic>>?
+      directoryValues; // Добавляем directoryValues
 
   FetchTasks(
     this.statusId, {
@@ -70,11 +80,14 @@ class FetchTasks extends TaskEvent {
     this.toDate,
     this.deadlinefromDate,
     this.deadlinetoDate,
+    this.completedFromDate,
+    this.completedToDate,
     this.overdue,
     this.hasFile,
     this.hasDeal,
     this.urgent,
     this.projectIds,
+    this.reasonForRefusalIds,
     this.authors,
     this.department,
     this.directoryValues, // Добавляем в конструктор
@@ -100,10 +113,14 @@ class FetchMoreTasks extends TaskEvent {
   final bool? urgent;
   final DateTime? deadlinefromDate;
   final DateTime? deadlinetoDate;
+  final DateTime? completedFromDate;
+  final DateTime? completedToDate;
   final List<int>? projectIds;
+  final List<int>? reasonForRefusalIds;
   final List<String>? authors;
   final String? department;
-  final List<Map<String, dynamic>>? directoryValues; // Добавляем directoryValues
+  final List<Map<String, dynamic>>?
+      directoryValues; // Добавляем directoryValues
 
   FetchMoreTasks(
     this.statusId,
@@ -115,16 +132,20 @@ class FetchMoreTasks extends TaskEvent {
     this.toDate,
     this.deadlinefromDate,
     this.deadlinetoDate,
+    this.completedFromDate,
+    this.completedToDate,
     this.overdue,
     this.hasFile,
     this.hasDeal,
     this.urgent,
     this.projectIds,
+    this.reasonForRefusalIds,
     this.authors,
     this.department,
     this.directoryValues, // Добавляем в конструктор
   });
 }
+
 class CreateTask extends TaskEvent {
   final String name;
   final int statusId;
@@ -155,7 +176,8 @@ class CreateTask extends TaskEvent {
     this.directoryValues,
     required this.localizations,
   });
-} 
+}
+
 class UpdateTask extends TaskEvent {
   final int taskId;
   final String name;
@@ -167,12 +189,14 @@ class UpdateTask extends TaskEvent {
   final int? projectId;
   final List<int>? userId;
   final String? description;
-    final List<Map<String, dynamic>>? customFields; // Изменяем тип
+  final List<Map<String, dynamic>>? customFields; // Изменяем тип
 
   final List<String>? filePaths;
   final List<TaskFiles>? existingFiles;
   final List<Map<String, int>>? directoryValues; // Add for consistency
   final AppLocalizations localizations;
+  final int? reasonForRefusalId;
+  final String? reasonForRefusal;
 
   UpdateTask({
     required this.taskId,
@@ -190,6 +214,8 @@ class UpdateTask extends TaskEvent {
     this.existingFiles,
     this.directoryValues,
     required this.localizations,
+    this.reasonForRefusalId,
+    this.reasonForRefusal,
   });
 }
 
@@ -238,6 +264,7 @@ class UpdateTaskStatusEdit extends TaskEvent {
   final bool needsPermission;
   final bool finalStep;
   final bool checkingStep;
+  final bool isUnassembled;
   final List<int> roleIds;
   final AppLocalizations localizations;
 
@@ -247,6 +274,7 @@ class UpdateTaskStatusEdit extends TaskEvent {
     required this.needsPermission,
     required this.finalStep,
     required this.checkingStep,
+    this.isUnassembled = false,
     required this.roleIds,
     required this.localizations,
   });

@@ -12,13 +12,13 @@ class CashRegisterCard extends StatelessWidget {
   final bool isSelected;
 
   const CashRegisterCard({
-    Key? key,
+    super.key,
     required this.cashRegister,
     required this.onClick,
     required this.onLongPress,
     required this.isSelectionMode,
     required this.isSelected,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -42,7 +42,17 @@ class CashRegisterCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '${localizations.translate('cash_register_name') ?? 'Название кассы'}: ${cashRegister.name ?? 'Не указано'}',
+                    '${localizations.translate('cash_register_name')}: ${cashRegister.name ?? 'Не указано'}',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w400,
+                      color: Color(0xff1E2E52),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '${localizations.translate('currency_label')}: ${cashRegister.currencyName ?? 'Не указана'}',
                     style: const TextStyle(
                       fontSize: 14,
                       fontFamily: 'Gilroy',
@@ -54,12 +64,12 @@ class CashRegisterCard extends StatelessWidget {
                   Row(
                     children: [
                       Text(
-                        '${localizations.translate('cash_balance') ?? 'Остаток кассы'}:',
+                        '${localizations.translate('cash_balance')}:',
                         style: TextStyle(
                           fontSize: 14,
                           fontFamily: 'Gilroy',
                           fontWeight: FontWeight.w600,
-                           color: Color(0xff1E2E52),
+                          color: Color(0xff1E2E52),
                         ),
                       ),
                       const SizedBox(width: 8),
@@ -83,7 +93,9 @@ class CashRegisterCard extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.only(left: 8),
                 child: Icon(
-                  isSelected ? Icons.check_circle : Icons.radio_button_unchecked,
+                  isSelected
+                      ? Icons.check_circle
+                      : Icons.radio_button_unchecked,
                   color: Color(0xff1E2E52),
                   size: 24,
                 ),

@@ -450,7 +450,18 @@ class _SupplierReturnDocumentCreateScreenState
   }
 
   void _createDocument({bool approve = false}) async {
-    if (!_formKey.currentState!.validate()) return;
+    if (_isLoading) return;
+    setState(() => _isLoading = true);
+
+    void cancelLoading() {
+      if (!mounted || !_isLoading) return;
+      setState(() => _isLoading = false);
+    }
+
+    if (!_formKey.currentState!.validate()) {
+      cancelLoading();
+      return;
+    }
 
     if (_items.isEmpty) {
       _showSnackBar(
@@ -458,6 +469,7 @@ class _SupplierReturnDocumentCreateScreenState
             'Добавьте хотя бы один товар',
         false,
       );
+      cancelLoading();
       return;
     }
 
@@ -467,6 +479,7 @@ class _SupplierReturnDocumentCreateScreenState
             'Выберите склад',
         false,
       );
+      cancelLoading();
       return;
     }
 
@@ -476,10 +489,11 @@ class _SupplierReturnDocumentCreateScreenState
             'Выберите поставщика',
         false,
       );
+      cancelLoading();
       return;
     }
 
-    if (_isExchangeRateRequired) {
+    if (approve && _isExchangeRateRequired) {
       final rate = _exchangeRateValue;
       if (rate == null || rate <= 0) {
         setState(() {
@@ -495,6 +509,7 @@ class _SupplierReturnDocumentCreateScreenState
               'Заполните корректный курс валюты',
           false,
         );
+        cancelLoading();
         return;
       }
     }
@@ -546,10 +561,9 @@ class _SupplierReturnDocumentCreateScreenState
       );
       // Фокусируемся на первом товаре с ошибкой
       _focusFirstErrorItem();
+      cancelLoading();
       return;
     }
-
-    setState(() => _isLoading = true);
 
     try {
       DateTime? parsedDate = DateFormat('dd/MM/yyyy HH:mm')
@@ -575,10 +589,10 @@ class _SupplierReturnDocumentCreateScreenState
         organizationId: widget.organizationId ?? 1,
         salesFunnelId: 1,
         approve: approve, // Передаем параметр approve
-        exchangeRate: _isExchangeRateRequired ? _exchangeRateValue : null,
+        exchangeRate: _exchangeRateValue,
       ));
     } catch (e) {
-      setState(() => _isLoading = false);
+      cancelLoading();
       _showSnackBar(
         AppLocalizations.of(context)!.translate('enter_valid_datetime') ??
             'Введите корректную дату и время',

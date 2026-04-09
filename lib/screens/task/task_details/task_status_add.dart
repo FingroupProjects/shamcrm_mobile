@@ -32,6 +32,7 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
   List<int> selectedRoleIds = [];
   bool needsPermission = false;
   bool isFinalStage = false;
+  bool isUnassembled = false;
   String? _statusNameError;
   String? _projectError;
 
@@ -141,6 +142,38 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
                           onChanged: (value) {
                             setState(() {
                               isFinalStage = value;
+                            });
+                          },
+                          activeColor: const Color.fromARGB(255, 255, 255, 255),
+                          inactiveTrackColor:
+                              const Color.fromARGB(255, 179, 179, 179)
+                                  .withOpacity(0.5),
+                          activeTrackColor:
+                              ChatSmsStyles.messageBubbleSenderColor,
+                          inactiveThumbColor:
+                              const Color.fromARGB(255, 255, 255, 255),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    padding: EdgeInsets.symmetric(vertical: 0),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Неразобранные',
+                          style: TextStyle(
+                            fontFamily: 'Gilroy',
+                            fontSize: 14,
+                            fontWeight: FontWeight.w400,
+                          ),
+                        ),
+                        Switch(
+                          value: isUnassembled,
+                          onChanged: (value) {
+                            setState(() {
+                              isUnassembled = value;
                             });
                           },
                           activeColor: const Color.fromARGB(255, 255, 255, 255),
@@ -265,6 +298,7 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
             needsPermission: needsPermission,
             roleIds: needsPermission ? selectedRoleIds : null,
             finalStep: isFinalStage,
+            isUnassembled: isUnassembled,
           ),
         );
 

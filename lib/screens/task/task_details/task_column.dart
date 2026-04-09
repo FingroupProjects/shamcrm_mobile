@@ -18,6 +18,7 @@ class TaskColumn extends StatefulWidget {
   final Function(int) onStatusId;
   final int? userId; // Добавляем параметр managerId
   final bool isTaskScreenTutorialCompleted;
+  final bool isActive;
 
   TaskColumn({
     required this.statusId,
@@ -25,6 +26,7 @@ class TaskColumn extends StatefulWidget {
     required this.onStatusId,
     this.userId,
     required this.isTaskScreenTutorialCompleted,
+    required this.isActive,
   });
 
   @override
@@ -62,24 +64,18 @@ class _TaskColumnState extends State<TaskColumn> {
         _checkPermission();
         _loadFeatureState();
 
-        // КРИТИЧНО: Проверяем есть ли уже данные для этого статуса
+        // Если данные для активного статуса уже есть, не показываем начальный loader.
         final taskBloc = context.read<TaskBloc>();
         if (taskBloc.state is TaskDataLoaded) {
           final currentState = taskBloc.state as TaskDataLoaded;
           final hasTasksForStatus = currentState.tasks
               .any((task) => task.statusId == widget.statusId);
-          if (hasTasksForStatus) {
+          if (widget.isActive && hasTasksForStatus) {
             // Если данные уже есть, сбрасываем флаг загрузки
             setState(() {
               _isInitialLoad = false;
             });
-          } else {
-            // Если данных нет, загружаем их
-            taskBloc.add(FetchTasks(widget.statusId));
           }
-        } else if (taskBloc.state is! TaskLoading) {
-          // Если состояние не загрузка и не данные, загружаем задачи
-          taskBloc.add(FetchTasks(widget.statusId));
         }
       }
     });
@@ -248,10 +244,17 @@ class _TaskColumnState extends State<TaskColumn> {
     if (oldWidget.statusId != widget.statusId) {
       _scrollListenerAdded = false;
       _isInitialLoad = true; // Сбрасываем флаг при смене статуса
-      // ОПТИМИЗАЦИЯ: Используем блок из контекста вместо локального
-      if (mounted) {
-        context.read<TaskBloc>().add(FetchTasks(widget.statusId));
-      }
+    }
+
+    if (oldWidget.isActive != widget.isActive && mounted) {
+      final taskBloc = context.read<TaskBloc>();
+      final currentState = taskBloc.state;
+      final hasTasksForStatus = currentState is TaskDataLoaded &&
+          currentState.tasks.any((task) => task.statusId == widget.statusId);
+
+      setState(() {
+        _isInitialLoad = widget.isActive && !hasTasksForStatus;
+      });
     }
   }
 
@@ -293,8 +296,9 @@ class _TaskColumnState extends State<TaskColumn> {
     // ОПТИМИЗАЦИЯ: При обновлении заново загружаем задачи и статусы из единого блока
     if (mounted) {
       final taskBloc = context.read<TaskBloc>();
-      taskBloc.add(FetchTaskStatuses());
-      taskBloc.add(FetchTasks(widget.statusId));
+      await taskBloc.clearAllCountsAndCache();
+      ApiService.clearAnalyticsResponseCache();
+      taskBloc.add(FetchTaskStatuses(forceRefresh: true));
     }
     return Future.delayed(Duration(milliseconds: 100));
   }
@@ -317,7 +321,10 @@ class _TaskColumnState extends State<TaskColumn> {
           }
 
           // ОПТИМИЗАЦИЯ: Показываем лоадер только при реальной загрузке БЕЗ данных
-          if (state is TaskLoading && _isInitialLoad && !hasDataForStatus) {
+          if (state is TaskLoading &&
+              widget.isActive &&
+              _isInitialLoad &&
+              !hasDataForStatus) {
             return const Center(
               child: PlayStoreImageLoading(
                 size: 80.0,
@@ -401,7 +408,10 @@ class _TaskColumnState extends State<TaskColumn> {
                 ),
               );
             } else {
-              // ✅ ИСПРАВЛЕНО: Показываем анимацию загрузки во время переключения статусов
+              if (!widget.isActive) {
+                return const SizedBox.shrink();
+              }
+
               if (_isInitialLoad) {
                 // Сбрасываем флаг с небольшой задержкой для пустых статусов
                 Future.delayed(Duration(milliseconds: 300), () {
@@ -449,15 +459,10 @@ class _TaskColumnState extends State<TaskColumn> {
               );
             }
           } else if (state is TaskLoaded) {
-            // Когда загружены статусы, но еще не задачи - загружаем задачи для текущего статуса
-            if (_isInitialLoad) {
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                if (mounted) {
-                  context.read<TaskBloc>().add(FetchTasks(widget.statusId));
-                }
-              });
+            if (!widget.isActive) {
+              return const SizedBox.shrink();
             }
-            // Показываем лоадер пока загружаем задачи
+
             return const Center(
               child: PlayStoreImageLoading(
                 size: 80.0,
@@ -465,6 +470,10 @@ class _TaskColumnState extends State<TaskColumn> {
               ),
             );
           } else if (state is TaskError) {
+            if (!widget.isActive) {
+              return const SizedBox.shrink();
+            }
+
             // Сбрасываем флаг загрузки при ошибке
             if (_isInitialLoad) {
               WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -524,7 +533,7 @@ class _TaskColumnState extends State<TaskColumn> {
           }
 
           // Для всех остальных состояний показываем лоадер только при первой загрузке
-          if (_isInitialLoad) {
+          if (_isInitialLoad && widget.isActive) {
             return const Center(
               child: PlayStoreImageLoading(
                 size: 80.0,
@@ -533,7 +542,7 @@ class _TaskColumnState extends State<TaskColumn> {
             );
           }
 
-          return Container();
+          return const SizedBox.shrink();
         },
       ),
       floatingActionButton: _hasPermissionToAddTask

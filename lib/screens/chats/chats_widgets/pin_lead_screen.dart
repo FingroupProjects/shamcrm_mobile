@@ -20,6 +20,7 @@ class PinnedLeadMessageWidget extends StatelessWidget {
     'telegram_bot': 'assets/icons/leads/telegram.png',
     'telegram_account': 'assets/icons/leads/telegram.png',
     'whatsapp': 'assets/icons/leads/whatsapp.png',
+    'green_api': 'assets/icons/leads/whatsapp.png',
     'instagram': 'assets/icons/leads/instagram.png',
     'instagram_comment': 'assets/icons/leads/instagram.png',
     'facebook': 'assets/icons/leads/messenger.png',
@@ -30,8 +31,7 @@ class PinnedLeadMessageWidget extends StatelessWidget {
   String _getChannelIcon(String? channelType) {
     debugPrint('Channel type received: $channelType');
     final normalized = (channelType ?? '').replaceAll('channel-', '');
-    final icon =
-        channelIconMap[normalized] ?? 'assets/icons/leads/default.png';
+    final icon = channelIconMap[normalized] ?? 'assets/icons/leads/default.png';
     debugPrint('Selected icon: $icon');
     return icon;
   }
@@ -67,18 +67,18 @@ class PinnedLeadMessageWidget extends StatelessWidget {
                     color: Color(0xff1E2E52),
                   )
                 : Image.asset(
-              _getChannelIcon(channelType),
-              width: 28,
-              height: 28,
-              errorBuilder: (context, error, stackTrace) {
-                debugPrint('Error loading icon: $error');
-                return Image.asset(
-                  'assets/icons/leads/default.png',
-                  width: 28,
-                  height: 28,
-                );
-              },
-            ),
+                    _getChannelIcon(channelType),
+                    width: 28,
+                    height: 28,
+                    errorBuilder: (context, error, stackTrace) {
+                      debugPrint('Error loading icon: $error');
+                      return Image.asset(
+                        'assets/icons/leads/default.png',
+                        width: 28,
+                        height: 28,
+                      );
+                    },
+                  ),
             const SizedBox(width: 10),
             Expanded(
               child: Column(

@@ -1,4 +1,5 @@
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
+import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/region_list/region_bloc.dart';
 import 'package:crm_task_manager/models/region_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
@@ -9,14 +10,18 @@ class RegionRadioGroupWidget extends StatefulWidget {
   final String? selectedRegion;
   final Function(RegionData) onSelectRegion;
 
-  RegionRadioGroupWidget(
-      {super.key, required this.onSelectRegion, this.selectedRegion});
+  const RegionRadioGroupWidget({
+    super.key,
+    required this.onSelectRegion,
+    this.selectedRegion,
+  });
 
   @override
   State<RegionRadioGroupWidget> createState() => _RegionRadioGroupWidgetState();
 }
 
 class _RegionRadioGroupWidgetState extends State<RegionRadioGroupWidget> {
+  final ApiService _apiService = ApiService();
   List<RegionData> regionsList = [];
   RegionData? selectedRegionData;
 
@@ -24,6 +29,11 @@ class _RegionRadioGroupWidgetState extends State<RegionRadioGroupWidget> {
   void initState() {
     super.initState();
     context.read<GetAllRegionBloc>().add(GetAllRegionEv());
+  }
+
+  Future<List<RegionData>> _searchRegions(String query) async {
+    final response = await _apiService.getAllRegion(search: query);
+    return response.result ?? <RegionData>[];
   }
 
   @override
@@ -48,7 +58,8 @@ class _RegionRadioGroupWidgetState extends State<RegionRadioGroupWidget> {
                     ),
                     behavior: SnackBarBehavior.floating,
                     margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
                     backgroundColor: Colors.red,
                     elevation: 3,
                     padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
@@ -87,10 +98,13 @@ class _RegionRadioGroupWidgetState extends State<RegionRadioGroupWidget> {
                 ),
                 const SizedBox(height: 4),
                 Container(
-                  child: CustomDropdown<RegionData>.search(
+                  child: CustomDropdown<RegionData>.searchRequest(
+                    futureRequest: _searchRegions,
+                    futureRequestDelay: const Duration(milliseconds: 350),
                     closeDropDownOnClearFilterSearch: true,
                     items: regionsList,
-                    searchHintText: AppLocalizations.of(context)!.translate('search'),
+                    searchHintText:
+                        AppLocalizations.of(context)!.translate('search'),
                     overlayHeight: 400,
                     enabled: true, // Всегда enabled
                     decoration: CustomDropdownDecoration(
@@ -109,15 +123,15 @@ class _RegionRadioGroupWidgetState extends State<RegionRadioGroupWidget> {
                     ),
                     listItemBuilder: (context, item, isSelected, onItemSelect) {
                       return Text(
-                        item.name!,
+                        item.name,
                         style: TextStyle(
                           color: Color(0xff1E2E52),
                           fontSize: 14,
                           fontWeight: FontWeight.w500,
                           fontFamily: 'Gilroy',
                         ),
-                            maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       );
                     },
                     headerBuilder: (context, selectedItem, enabled) {
@@ -134,7 +148,8 @@ class _RegionRadioGroupWidgetState extends State<RegionRadioGroupWidget> {
                             // ),
                             SizedBox(width: 8),
                             Text(
-                              AppLocalizations.of(context)!.translate('select_region'),
+                              AppLocalizations.of(context)!
+                                  .translate('select_region'),
                               style: TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w500,
@@ -146,7 +161,7 @@ class _RegionRadioGroupWidgetState extends State<RegionRadioGroupWidget> {
                         );
                       }
                       return Text(
-                        selectedItem.name ?? AppLocalizations.of(context)!.translate('select_region'),
+                        selectedItem.name,
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w500,

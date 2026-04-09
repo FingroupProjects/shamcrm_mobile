@@ -1,15 +1,17 @@
 import 'package:flutter/material.dart';
 
+import 'package:crm_task_manager/screens/analytics/utils/analytics_localization.dart';
+
 class ChartEmptyOverlay extends StatelessWidget {
   final bool show;
   final Widget child;
-  final String label;
+  final String? label;
 
   const ChartEmptyOverlay({
     super.key,
     required this.show,
     required this.child,
-    this.label = 'Нет данных',
+    this.label,
   });
 
   @override
@@ -36,7 +38,12 @@ class ChartEmptyOverlay extends StatelessWidget {
                   ],
                 ),
                 child: Text(
-                  label,
+                  label ??
+                      analyticsText(
+                        context,
+                        'no_data_to_display',
+                        fallback: 'No data',
+                      ),
                   style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,

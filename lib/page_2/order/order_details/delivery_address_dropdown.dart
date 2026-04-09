@@ -9,6 +9,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 class DeliveryAddressDropdown extends StatefulWidget {
   final int leadId;
+  final int? dealId;
   final int organizationId;
   final DeliveryAddress? selectedAddress;
   final String? preferredAddressText;
@@ -18,6 +19,7 @@ class DeliveryAddressDropdown extends StatefulWidget {
   const DeliveryAddressDropdown({
     super.key,
     required this.leadId,
+    this.dealId,
     required this.organizationId,
     this.selectedAddress,
     this.preferredAddressText,
@@ -45,6 +47,7 @@ class _DeliveryAddressDropdownState extends State<DeliveryAddressDropdown> {
     super.didUpdateWidget(oldWidget);
     // Fetch addresses when leadId changes
     if (oldWidget.leadId != widget.leadId ||
+        oldWidget.dealId != widget.dealId ||
         oldWidget.refreshTrigger != widget.refreshTrigger) {
       _autoSelectedAddressId = null;
       _fetchAddresses();
@@ -53,7 +56,10 @@ class _DeliveryAddressDropdownState extends State<DeliveryAddressDropdown> {
 
   void _fetchAddresses() {
     context.read<DeliveryAddressBloc>().add(
-          FetchDeliveryAddresses(leadId: widget.leadId),
+          FetchDeliveryAddresses(
+            leadId: widget.dealId == null ? widget.leadId : null,
+            dealId: widget.dealId,
+          ),
         );
   }
 
@@ -197,7 +203,8 @@ class _DeliveryAddressDropdownState extends State<DeliveryAddressDropdown> {
             ),
             const SizedBox(height: 4),
             CustomDropdown<DeliveryAddress>.search(
-              key: ValueKey('${widget.leadId}_${widget.refreshTrigger}'),
+              key: ValueKey(
+                  '${widget.leadId}_${widget.dealId}_${widget.refreshTrigger}'),
               closeDropDownOnClearFilterSearch: true,
               items: addresses,
               searchHintText: AppLocalizations.of(context)!.translate('search'),

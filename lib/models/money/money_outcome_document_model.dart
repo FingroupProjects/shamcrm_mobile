@@ -188,8 +188,11 @@ class Document extends Equatable {
   final Article? article;
   final String? amount;
   final Model? model;
+  final int? employeeId;
+  final Employee? employee;
   final String? comment;
   final String? operationType;
+  final String? month;
   final Author? author;
   final bool? approved;
   final String? createdAt;
@@ -206,8 +209,11 @@ class Document extends Equatable {
     this.article,
     this.amount,
     this.model,
+    this.employeeId,
+    this.employee,
     this.comment,
     this.operationType,
+    this.month,
     this.author,
     this.approved,
     this.createdAt,
@@ -238,8 +244,13 @@ class Document extends Equatable {
             json['article'] != null ? Article.fromJson(json['article']) : null,
         amount: _parseString(json['amount']),
         model: json['model'] != null ? Model.fromJson(json['model']) : null,
+        employeeId: json['employee_id'],
+        employee: json['employee'] != null
+            ? Employee.fromJson(json['employee'])
+            : null,
         comment: _parseString(json['comment']),
         operationType: _parseString(json['operation_type']),
+        month: _parseString(json['month']),
         author: json['author'] != null ? Author.fromJson(json['author']) : null,
         approved: json['approved'],
         createdAt: _parseString(json['created_at']),
@@ -269,8 +280,11 @@ class Document extends Equatable {
         "article": article?.toJson(),
         "amount": amount,
         "model": model?.toJson(),
+        "employee_id": employeeId,
+        "employee": employee?.toJson(),
         "comment": comment,
         "operation_type": operationType,
+        "month": month,
         "author": author?.toJson(),
         "approved": approved,
         "created_at": createdAt,
@@ -288,8 +302,11 @@ class Document extends Equatable {
     Article? article,
     String? amount,
     Model? model,
+    int? employeeId,
+    Employee? employee,
     String? comment,
     String? operationType,
+    String? month,
     Author? author,
     bool? approved,
     String? createdAt,
@@ -306,8 +323,11 @@ class Document extends Equatable {
       article: article ?? this.article,
       amount: amount ?? this.amount,
       model: model ?? this.model,
+      employeeId: employeeId ?? this.employeeId,
+      employee: employee ?? this.employee,
       comment: comment ?? this.comment,
       operationType: operationType ?? this.operationType,
+      month: month ?? this.month,
       author: author ?? this.author,
       approved: approved ?? this.approved,
       createdAt: createdAt ?? this.createdAt,
@@ -327,8 +347,11 @@ class Document extends Equatable {
         article,
         amount,
         model,
+        employeeId,
+        employee,
         comment,
         operationType,
+        month,
         author,
         approved,
         createdAt,
@@ -826,6 +849,45 @@ class Author extends Equatable {
         isFirstLogin,
         uniqueId,
       ];
+}
+
+class Employee extends Equatable {
+  final int? id;
+  final String? fullName;
+  final String? phone;
+  final String? salary;
+
+  const Employee({
+    this.id,
+    this.fullName,
+    this.phone,
+    this.salary,
+  });
+
+  factory Employee.fromJson(Map<String, dynamic> json) {
+    return Employee(
+      id: json['id'],
+      fullName: _parseValue(json['full_name']),
+      phone: _parseValue(json['phone']),
+      salary: _parseValue(json['salary']),
+    );
+  }
+
+  static String? _parseValue(dynamic value) {
+    if (value == null) return null;
+    if (value is String) return value;
+    return value.toString();
+  }
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'full_name': fullName,
+        'phone': phone,
+        'salary': salary,
+      };
+
+  @override
+  List<Object?> get props => [id, fullName, phone, salary];
 }
 
 class Pagination extends Equatable {

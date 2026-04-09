@@ -14,11 +14,19 @@ class _SlidingGradientTransform extends GradientTransform {
 class ShimmerWave extends StatefulWidget {
   final Widget child;
   final Duration duration;
+  final List<Color> colors;
+  final List<double> stops;
 
   const ShimmerWave({
     super.key,
     required this.child,
     this.duration = const Duration(milliseconds: 1200),
+    this.colors = const [
+      Color(0xffE5E7EB),
+      Color(0xffF3F4F6),
+      Color(0xffE5E7EB),
+    ],
+    this.stops = const [0.25, 0.5, 0.75],
   });
 
   @override
@@ -57,12 +65,8 @@ class _ShimmerWaveState extends State<ShimmerWave>
             return LinearGradient(
               begin: Alignment.centerLeft,
               end: Alignment.centerRight,
-              colors: const [
-                Color(0xffE5E7EB),
-                Color(0xffF3F4F6),
-                Color(0xffE5E7EB),
-              ],
-              stops: const [0.25, 0.5, 0.75],
+              colors: widget.colors,
+              stops: widget.stops,
               transform: _SlidingGradientTransform(dx),
             ).createShader(bounds);
           },

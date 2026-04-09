@@ -1,4 +1,5 @@
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
+import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/openings/goods/goods_list_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/openings/goods/goods_list_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/openings/goods/goods_list_state.dart';
@@ -25,6 +26,8 @@ class GoodsRadioGroupWidget extends StatefulWidget {
 }
 
 class _GoodsRadioGroupWidgetState extends State<GoodsRadioGroupWidget> {
+  static const int _pageSize = 20;
+  final ApiService _apiService = ApiService();
   List<GoodVariantItem> goodsList = [];
   GoodVariantItem? selectedGoodData;
   String? _autoSelectedGoodId;
@@ -71,15 +74,37 @@ class _GoodsRadioGroupWidgetState extends State<GoodsRadioGroupWidget> {
           (good) => good.id.toString() == widget.selectedGood,
         );
         if (kDebugMode) {
-          debugPrint('🟢 GoodsWidget: Selected good found - ${selectedGoodData?.fullName ?? selectedGoodData?.good?.name}');
+          debugPrint(
+              '🟢 GoodsWidget: Selected good found - ${selectedGoodData?.fullName ?? selectedGoodData?.good?.name}');
         }
       } catch (e) {
         selectedGoodData = null; // ИСПРАВЛЕНО: обнуляем если не найден
         if (kDebugMode) {
-          debugPrint('🔴 GoodsWidget: Selected good NOT found - searching for ${widget.selectedGood}');
+          debugPrint(
+              '🔴 GoodsWidget: Selected good NOT found - searching for ${widget.selectedGood}');
         }
       }
     }
+  }
+
+  Future<CustomDropdownPaginatedResponse<GoodVariantItem>> _searchGoods(
+    String query,
+    int page,
+  ) async {
+    final response = await _apiService.getGoodVariantsForDropdown(
+      page: page,
+      perPage: _pageSize,
+      search: query,
+    );
+    final items = response.result?.data ?? <GoodVariantItem>[];
+    final pagination = response.result?.pagination;
+
+    return CustomDropdownPaginatedResponse<GoodVariantItem>(
+      items: items,
+      hasMore: (pagination?.currentPage ?? page) <
+          (pagination?.totalPages ??
+              (items.length >= _pageSize ? page + 1 : page)),
+    );
   }
 
   @override
@@ -147,20 +172,28 @@ class _GoodsRadioGroupWidgetState extends State<GoodsRadioGroupWidget> {
             }
 
             // ИСПРАВЛЕНО: Проверяем что selectedGoodData действительно в списке
-            final actualInitialItem = (selectedGoodData != null && goodsList.contains(selectedGoodData))
+            final actualInitialItem = (selectedGoodData != null &&
+                    goodsList.contains(selectedGoodData))
                 ? selectedGoodData
                 : null;
 
-            if (kDebugMode && selectedGoodData != null && !goodsList.contains(selectedGoodData)) {
+            if (kDebugMode &&
+                selectedGoodData != null &&
+                !goodsList.contains(selectedGoodData)) {
               //debugPrint('⚠️ GoodsWidget: selectedGoodData not in list, resetting to null');
             }
 
             debugPrint("GoodsWidget dropdown items count: ${goodsList.length}");
-            debugPrint("goodsList ids : ${goodsList.map((e) => e.id).toList()}");
-            debugPrint("GoodsWidget selectedGoodData: ${selectedGoodData?.toString()}");
-            debugPrint("goodsList contains selectedGoodData: ${goodsList.contains(selectedGoodData)}");
+            debugPrint(
+                "goodsList ids : ${goodsList.map((e) => e.id).toList()}");
+            debugPrint(
+                "GoodsWidget selectedGoodData: ${selectedGoodData?.toString()}");
+            debugPrint(
+                "goodsList contains selectedGoodData: ${goodsList.contains(selectedGoodData)}");
 
-            return CustomDropdown<GoodVariantItem>.search(
+            return CustomDropdown<GoodVariantItem>.searchRequestPaginated(
+              paginatedRequest: _searchGoods,
+              futureRequestDelay: const Duration(milliseconds: 350),
               closeDropDownOnClearFilterSearch: true,
               items: isLoading ? [] : goodsList,
               searchHintText: AppLocalizations.of(context)!.translate('search'),
@@ -197,7 +230,9 @@ class _GoodsRadioGroupWidgetState extends State<GoodsRadioGroupWidget> {
                         fontFamily: 'Gilroy',
                       ),
                     ),
-                    if (widget.showPrice && item.price?.price != null && item.price!.price != '0')
+                    if (widget.showPrice &&
+                        item.price?.price != null &&
+                        item.price!.price != '0')
                       Padding(
                         padding: const EdgeInsets.only(top: 2),
                         child: Text(
@@ -225,7 +260,8 @@ class _GoodsRadioGroupWidgetState extends State<GoodsRadioGroupWidget> {
                       height: 20,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
+                        valueColor:
+                            AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
                       ),
                     ),
                   );
@@ -235,7 +271,9 @@ class _GoodsRadioGroupWidgetState extends State<GoodsRadioGroupWidget> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      selectedItem.fullName ?? selectedItem.good?.name ?? 'Без имени',
+                      selectedItem.fullName ??
+                          selectedItem.good?.name ??
+                          'Без имени',
                       style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
@@ -270,7 +308,8 @@ class _GoodsRadioGroupWidgetState extends State<GoodsRadioGroupWidget> {
                       height: 20,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
+                        valueColor:
+                            AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
                       ),
                     ),
                   );
@@ -297,7 +336,8 @@ class _GoodsRadioGroupWidgetState extends State<GoodsRadioGroupWidget> {
                       padding: EdgeInsets.all(20.0),
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
+                        valueColor:
+                            AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
                       ),
                     ),
                   );
@@ -321,7 +361,8 @@ class _GoodsRadioGroupWidgetState extends State<GoodsRadioGroupWidget> {
               initialItem: actualInitialItem,
               validator: (value) {
                 if (value == null) {
-                  return AppLocalizations.of(context)!.translate('field_required_project');
+                  return AppLocalizations.of(context)!
+                      .translate('field_required_project');
                 }
                 return null;
               },

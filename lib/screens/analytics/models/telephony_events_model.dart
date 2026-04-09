@@ -60,8 +60,10 @@ class TelephonyEventsResponse {
         totalIncoming: SafeConverters.toInt(result['total_incoming']),
         totalOutgoing: SafeConverters.toInt(result['total_outgoing']),
         totalMissed: SafeConverters.toInt(result['total_missed']),
-        totalNoticesCreated: SafeConverters.toInt(result['total_notices_created']),
-        totalNoticesFinished: SafeConverters.toInt(result['total_notices_finished']),
+        totalNoticesCreated:
+            SafeConverters.toInt(result['total_notices_created']),
+        totalNoticesFinished:
+            SafeConverters.toInt(result['total_notices_finished']),
       );
     }
 

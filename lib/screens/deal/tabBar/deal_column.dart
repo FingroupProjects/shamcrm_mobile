@@ -16,19 +16,22 @@ import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 class DealColumn extends StatefulWidget {
   final int statusId;
   final String title;
-  final Function(int) onStatusId;
+  final void Function(int oldStatusId, int newStatusId) onStatusId;
   final int? managerId;
   final bool isDealScreenTutorialCompleted;
   final int? salesFunnelId; // Добавляем этот параметр
+  final int refreshVersion;
 
   DealColumn({
+    Key? key,
     required this.statusId,
     required this.title,
     required this.onStatusId,
     this.managerId,
     required this.isDealScreenTutorialCompleted,
     this.salesFunnelId, // Добавляем в конструктор
-  });
+    required this.refreshVersion,
+  }) : super(key: key);
 
   @override
   _DealColumnState createState() => _DealColumnState();
@@ -54,7 +57,8 @@ class _DealColumnState extends State<DealColumn> {
   void initState() {
     super.initState();
     //print('DealColumn: initState started for statusId: ${widget.statusId}');
-    _dealBloc = DealBloc(_apiService)..add(FetchDeals(widget.statusId));
+    _dealBloc = DealBloc(_apiService)
+      ..add(FetchDeals(widget.statusId, salesFunnelId: widget.salesFunnelId));
     _scrollController = ScrollController();
     _scrollController.addListener(_onScroll);
 
@@ -342,11 +346,16 @@ Widget build(BuildContext context) {
                         deal: deals[index],
                         title: widget.title,
                         statusId: widget.statusId,
-                        onStatusUpdated: () {
-                          _dealBloc.add(FetchDeals(widget.statusId));
+                        onStatusUpdated: (oldStatusId, newStatusId) {
+                          if (oldStatusId == widget.statusId) {
+                            _dealBloc.add(FetchDeals(
+                              widget.statusId,
+                              salesFunnelId: widget.salesFunnelId,
+                            ));
+                          }
                         },
-                        onStatusId: (StatusDealId) {
-                          widget.onStatusId(StatusDealId);
+                        onStatusId: (oldStatusId, newStatusId) {
+                          widget.onStatusId(oldStatusId, newStatusId);
                         },
                       ),
                     );
@@ -395,7 +404,10 @@ Widget build(BuildContext context) {
                       builder: (context) => DealAddScreen(statusId: widget.statusId),
                     ),
                   ).then((_) {
-                    _dealBloc.add(FetchDeals(widget.statusId));
+                    _dealBloc.add(FetchDeals(
+                      widget.statusId,
+                      salesFunnelId: widget.salesFunnelId,
+                    ));
                   });
                 }
               },

@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/api/service/localization_service.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/supplier_bloc/supplier_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/supplier_bloc/supplier_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/supplier_bloc/supplier_state.dart';
@@ -43,9 +44,22 @@ class _AddSupplierScreenState extends State<AddSupplierScreen> {
     setState(() => _isCurrenciesLoading = true);
     try {
       final currencies = await _apiService.getCurrencies();
+      final localizationCurrencyId = await LocalizationService.getCurrencyId();
       if (!mounted) return;
+
+      SupplierCurrency? autoSelectedCurrency;
+      if (_selectedCurrency == null && localizationCurrencyId != null) {
+        for (final currency in currencies) {
+          if (currency.id == localizationCurrencyId) {
+            autoSelectedCurrency = currency;
+            break;
+          }
+        }
+      }
+
       setState(() {
         _currencies = currencies;
+        _selectedCurrency ??= autoSelectedCurrency;
       });
     } catch (_) {
       // keep optional field silent if endpoint is unavailable

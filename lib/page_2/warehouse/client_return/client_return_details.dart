@@ -145,11 +145,14 @@ class _ClientReturnDocumentDetailsScreenState
       return;
     }
 
+    final clientCurrencyName =
+        document.model?.currency?.name ?? document.currency?.name;
+
     details = [
       {
         'label':
-            '${AppLocalizations.of(context)!.translate('document_number') ?? 'Номер документа'}:',
-        'value': document.docNumber ?? '',
+            '${AppLocalizations.of(context)!.translate('document_number') ?? 'Документ'}:',
+        'value': "№${document.docNumber ?? ''}",
       },
       {
         'label': '${AppLocalizations.of(context)!.translate('date') ?? 'Дата'}',
@@ -167,6 +170,11 @@ class _ClientReturnDocumentDetailsScreenState
             '${AppLocalizations.of(context)!.translate('client') ?? 'Клиент'}',
         'value': document.model?.name ?? '',
       },
+      if ((clientCurrencyName ?? '').isNotEmpty)
+        {
+          'label': 'Валюта клиента:',
+          'value': clientCurrencyName!,
+        },
       {
         'label':
             '${AppLocalizations.of(context)!.translate('client_phone') ?? 'Телефон клиента'}',
@@ -598,7 +606,7 @@ class _ClientReturnDocumentDetailsScreenState
       title: Transform.translate(
         offset: const Offset(-10, 0),
         child: Text(
-          "${AppLocalizations.of(context)!.translate('view_return_document') ?? 'Просмотр возврата'} №${widget.docNumber}",
+          "${AppLocalizations.of(context)!.translate('client_return') ?? 'Возврат от клиента'} №${widget.docNumber}",
           style: const TextStyle(
             fontSize: 20,
             fontFamily: 'Gilroy',

@@ -74,8 +74,10 @@ class _ActFilterScreenState extends State<ActFilterScreen> {
       final toDateMillis = prefs.getInt('act_to_date');
       _isLeadSelected = prefs.getBool('act_filter_is_lead') ?? true;
 
-      if (fromDateMillis != null) _fromDate = DateTime.fromMillisecondsSinceEpoch(fromDateMillis);
-      if (toDateMillis != null) _toDate = DateTime.fromMillisecondsSinceEpoch(toDateMillis);
+      if (fromDateMillis != null)
+        _fromDate = DateTime.fromMillisecondsSinceEpoch(fromDateMillis);
+      if (toDateMillis != null)
+        _toDate = DateTime.fromMillisecondsSinceEpoch(toDateMillis);
       // _amountFromController.text = prefs.getString('act_amount_from') ?? widget.initialAmountFrom ?? '';
       // _amountToController.text = prefs.getString('act_amount_to') ?? widget.initialAmountTo ?? '';
 
@@ -155,7 +157,9 @@ class _ActFilterScreenState extends State<ActFilterScreen> {
       context: context,
       firstDate: DateTime(2000),
       lastDate: DateTime(2101),
-      initialDateRange: _fromDate != null && _toDate != null ? DateTimeRange(start: _fromDate!, end: _toDate!) : null,
+      initialDateRange: _fromDate != null && _toDate != null
+          ? DateTimeRange(start: _fromDate!, end: _toDate!)
+          : null,
       builder: (context, child) {
         return Theme(
           data: ThemeData.light().copyWith(
@@ -194,15 +198,17 @@ class _ActFilterScreenState extends State<ActFilterScreen> {
   void _applyFilters() async {
     await _saveFilterState();
 
-    debugPrint("selectedLead: $_selectedLead, selectedSupplier: $_selectedSupplier");
+    debugPrint(
+        "selectedLead: $_selectedLead, selectedSupplier: $_selectedSupplier");
 
     // Проверка: выбран ли клиент или поставщик
     if (_selectedLead == null && _selectedSupplier == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            AppLocalizations.of(context)!.translate('select_client_or_supplier_required') ?? 
-            'Необходимо выбрать клиента или поставщика',
+            AppLocalizations.of(context)!
+                    .translate('select_client_or_supplier_required') ??
+                'Необходимо выбрать клиента или поставщика',
             style: const TextStyle(
               fontFamily: 'Gilroy',
               fontSize: 14,
@@ -227,10 +233,12 @@ class _ActFilterScreenState extends State<ActFilterScreen> {
       DateTime? toDateWithTime = _toDate;
 
       if (fromDateWithTime != null) {
-        fromDateWithTime = DateTime(fromDateWithTime.year, fromDateWithTime.month, fromDateWithTime.day, 0, 0, 0);
+        fromDateWithTime = DateTime(fromDateWithTime.year,
+            fromDateWithTime.month, fromDateWithTime.day, 0, 0, 0);
       }
       if (toDateWithTime != null) {
-        toDateWithTime = DateTime(toDateWithTime.year, toDateWithTime.month, toDateWithTime.day, 23, 59, 59);
+        toDateWithTime = DateTime(toDateWithTime.year, toDateWithTime.month,
+            toDateWithTime.day, 23, 59, 59);
       }
 
       Map<String, dynamic> filters = {
@@ -262,7 +270,8 @@ class _ActFilterScreenState extends State<ActFilterScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              AppLocalizations.of(context)!.translate('filter_type') ?? 'Тип фильтра',
+              AppLocalizations.of(context)!.translate('filter_type') ??
+                  'Тип фильтра',
               style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
@@ -288,21 +297,29 @@ class _ActFilterScreenState extends State<ActFilterScreen> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(vertical: 8),
                       decoration: BoxDecoration(
-                        color: _isLeadSelected ? Colors.blueAccent : const Color(0xFFF4F7FD),
+                        color: _isLeadSelected
+                            ? Colors.blueAccent
+                            : const Color(0xFFF4F7FD),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: _isLeadSelected ? Colors.blueAccent : Colors.transparent,
+                          color: _isLeadSelected
+                              ? Colors.blueAccent
+                              : Colors.transparent,
                           width: 1.5,
                         ),
                       ),
                       child: Center(
                         child: Text(
-                          AppLocalizations.of(context)!.translate('filter_by_client') ?? 'По клиенту',
+                          AppLocalizations.of(context)!
+                                  .translate('filter_by_client') ??
+                              'По клиенту',
                           style: TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w600,
                             fontFamily: 'Gilroy',
-                            color: _isLeadSelected ? Colors.white : const Color(0xFF1E2E52),
+                            color: _isLeadSelected
+                                ? Colors.white
+                                : const Color(0xFF1E2E52),
                           ),
                         ),
                       ),
@@ -325,21 +342,29 @@ class _ActFilterScreenState extends State<ActFilterScreen> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(vertical: 8),
                       decoration: BoxDecoration(
-                        color: !_isLeadSelected ? Colors.blueAccent : const Color(0xFFF4F7FD),
+                        color: !_isLeadSelected
+                            ? Colors.blueAccent
+                            : const Color(0xFFF4F7FD),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: !_isLeadSelected ? Colors.blueAccent : Colors.transparent,
+                          color: !_isLeadSelected
+                              ? Colors.blueAccent
+                              : Colors.transparent,
                           width: 1.5,
                         ),
                       ),
                       child: Center(
                         child: Text(
-                          AppLocalizations.of(context)!.translate('filter_by_supplier') ?? 'По поставщику',
+                          AppLocalizations.of(context)!
+                                  .translate('filter_by_supplier') ??
+                              'По поставщику',
                           style: TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w600,
                             fontFamily: 'Gilroy',
-                            color: !_isLeadSelected ? Colors.white : const Color(0xFF1E2E52),
+                            color: !_isLeadSelected
+                                ? Colors.white
+                                : const Color(0xFF1E2E52),
                           ),
                         ),
                       ),
@@ -376,7 +401,8 @@ class _ActFilterScreenState extends State<ActFilterScreen> {
             onPressed: _resetFilters,
             style: TextButton.styleFrom(
               backgroundColor: Colors.blueAccent.withOpacity(0.1),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8)),
               side: const BorderSide(color: Colors.blueAccent, width: 0.5),
             ),
             child: Text(
@@ -393,7 +419,8 @@ class _ActFilterScreenState extends State<ActFilterScreen> {
             onPressed: _applyFilters,
             style: TextButton.styleFrom(
               backgroundColor: Colors.blueAccent.withOpacity(0.1),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8)),
               side: const BorderSide(color: Colors.blueAccent, width: 0.5),
             ),
             child: Text(
@@ -415,7 +442,8 @@ class _ActFilterScreenState extends State<ActFilterScreen> {
             children: [
               // Date Range Card
               Card(
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
                 color: Colors.white,
                 child: GestureDetector(
                   onTap: _selectDateRange,
@@ -431,14 +459,18 @@ class _ActFilterScreenState extends State<ActFilterScreen> {
                         Text(
                           _fromDate != null && _toDate != null
                               ? "${_fromDate!.day.toString().padLeft(2, '0')}.${_fromDate!.month.toString().padLeft(2, '0')}.${_fromDate!.year} - ${_toDate!.day.toString().padLeft(2, '0')}.${_toDate!.month.toString().padLeft(2, '0')}.${_toDate!.year}"
-                              : AppLocalizations.of(context)!.translate('select_date_range'),
+                              : AppLocalizations.of(context)!
+                                  .translate('select_date_range'),
                           style: TextStyle(
                             fontFamily: 'Gilroy',
-                            color: _fromDate != null && _toDate != null ? Colors.black : const Color(0xff99A4BA),
+                            color: _fromDate != null && _toDate != null
+                                ? Colors.black
+                                : const Color(0xff99A4BA),
                             fontSize: 14,
                           ),
                         ),
-                        const Icon(Icons.calendar_today, color: Color(0xff99A4BA)),
+                        const Icon(Icons.calendar_today,
+                            color: Color(0xff99A4BA)),
                       ],
                     ),
                   ),
@@ -510,7 +542,8 @@ class _ActFilterScreenState extends State<ActFilterScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              AppLocalizations.of(context)!.translate('supplier') ?? 'Поставщик',
+              AppLocalizations.of(context)!.translate('supplier') ??
+                  'Поставщик',
               style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
@@ -528,7 +561,8 @@ class _ActFilterScreenState extends State<ActFilterScreen> {
                 }
               },
               builder: (context, state) {
-                if (state is GetAllSupplierInitial || (state is GetAllSupplierSuccess && suppliersList.isEmpty)) {
+                if (state is GetAllSupplierInitial ||
+                    (state is GetAllSupplierSuccess && suppliersList.isEmpty)) {
                   context.read<GetAllSupplierBloc>().add(GetAllSupplierEv());
                   return const DropdownLoadingState();
                 }
@@ -544,12 +578,20 @@ class _ActFilterScreenState extends State<ActFilterScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Text('Ошибка загрузки', style: TextStyle(color: Colors.red, fontSize: 12)),
+                        Text(
+                            AppLocalizations.of(context)!
+                                .translate('error_loading_dialog'),
+                            style: TextStyle(color: Colors.red, fontSize: 12)),
                         TextButton(
                           onPressed: () {
-                            context.read<GetAllSupplierBloc>().add(GetAllSupplierEv());
+                            context
+                                .read<GetAllSupplierBloc>()
+                                .add(GetAllSupplierEv());
                           },
-                          child: Text('Повторить', style: TextStyle(fontSize: 12)),
+                          child: Text(
+                              AppLocalizations.of(context)!
+                                  .translate('retry_dialog'),
+                              style: TextStyle(fontSize: 12)),
                         ),
                       ],
                     ),
@@ -565,7 +607,9 @@ class _ActFilterScreenState extends State<ActFilterScreen> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
-                      AppLocalizations.of(context)!.translate('select_supplier') ?? 'Выберите поставщика',
+                      AppLocalizations.of(context)!
+                              .translate('select_supplier') ??
+                          'Выберите поставщика',
                       style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
@@ -579,15 +623,19 @@ class _ActFilterScreenState extends State<ActFilterScreen> {
                 return CustomDropdown<SupplierData>.search(
                   key: _supplierDropdownKey,
                   items: suppliersList,
-                  searchHintText: AppLocalizations.of(context)!.translate('search') ?? 'Поиск',
+                  searchHintText:
+                      AppLocalizations.of(context)!.translate('search') ??
+                          'Поиск',
                   overlayHeight: 300,
                   enabled: true,
                   decoration: CustomDropdownDecoration(
                     closedFillColor: const Color(0xffF4F7FD),
                     expandedFillColor: Colors.white,
-                    closedBorder: Border.all(color: const Color(0xffF4F7FD), width: 1),
+                    closedBorder:
+                        Border.all(color: const Color(0xffF4F7FD), width: 1),
                     closedBorderRadius: BorderRadius.circular(12),
-                    expandedBorder: Border.all(color: const Color(0xffF4F7FD), width: 1),
+                    expandedBorder:
+                        Border.all(color: const Color(0xffF4F7FD), width: 1),
                     expandedBorderRadius: BorderRadius.circular(12),
                   ),
                   listItemBuilder: (context, item, isSelected, onItemSelect) {
@@ -603,7 +651,10 @@ class _ActFilterScreenState extends State<ActFilterScreen> {
                   },
                   headerBuilder: (context, selectedItem, enabled) {
                     return Text(
-                      selectedItem?.name ?? AppLocalizations.of(context)!.translate('select_supplier') ?? 'Выберите поставщика',
+                      selectedItem?.name ??
+                          AppLocalizations.of(context)!
+                              .translate('select_supplier') ??
+                          'Выберите поставщика',
                       style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
@@ -613,7 +664,9 @@ class _ActFilterScreenState extends State<ActFilterScreen> {
                     );
                   },
                   hintBuilder: (context, hint, enabled) => Text(
-                    AppLocalizations.of(context)!.translate('select_supplier') ?? 'Выберите поставщика',
+                    AppLocalizations.of(context)!
+                            .translate('select_supplier') ??
+                        'Выберите поставщика',
                     style: const TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
@@ -621,8 +674,11 @@ class _ActFilterScreenState extends State<ActFilterScreen> {
                       color: Color(0xff1E2E52),
                     ),
                   ),
-                  initialItem: _selectedSupplier != null && suppliersList.any((s) => s.id == _selectedSupplier!.id)
-                      ? suppliersList.firstWhere((s) => s.id == _selectedSupplier!.id)
+                  initialItem: _selectedSupplier != null &&
+                          suppliersList
+                              .any((s) => s.id == _selectedSupplier!.id)
+                      ? suppliersList
+                          .firstWhere((s) => s.id == _selectedSupplier!.id)
                       : null,
                   onChanged: (value) {
                     if (value != null && mounted) {
@@ -669,7 +725,8 @@ class _ActFilterScreenState extends State<ActFilterScreen> {
                 }
               },
               builder: (context, state) {
-                if (state is GetAllLeadInitial || (state is GetAllLeadSuccess && leadsList.isEmpty)) {
+                if (state is GetAllLeadInitial ||
+                    (state is GetAllLeadSuccess && leadsList.isEmpty)) {
                   context.read<GetAllLeadBloc>().add(GetAllLeadEv());
                   return const DropdownLoadingState();
                 }
@@ -685,12 +742,18 @@ class _ActFilterScreenState extends State<ActFilterScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Text('Ошибка загрузки', style: TextStyle(color: Colors.red, fontSize: 12)),
+                        Text(
+                            AppLocalizations.of(context)!
+                                .translate('error_loading_dialog'),
+                            style: TextStyle(color: Colors.red, fontSize: 12)),
                         TextButton(
                           onPressed: () {
                             context.read<GetAllLeadBloc>().add(GetAllLeadEv());
                           },
-                          child: Text('Повторить', style: TextStyle(fontSize: 12)),
+                          child: Text(
+                              AppLocalizations.of(context)!
+                                  .translate('retry_dialog'),
+                              style: TextStyle(fontSize: 12)),
                         ),
                       ],
                     ),
@@ -706,7 +769,9 @@ class _ActFilterScreenState extends State<ActFilterScreen> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
-                      AppLocalizations.of(context)!.translate('select_client') ?? 'Выберите клиента',
+                      AppLocalizations.of(context)!
+                              .translate('select_client') ??
+                          'Выберите клиента',
                       style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
@@ -720,15 +785,19 @@ class _ActFilterScreenState extends State<ActFilterScreen> {
                 return CustomDropdown<LeadData>.search(
                   key: _leadDropdownKey,
                   items: leadsList,
-                  searchHintText: AppLocalizations.of(context)!.translate('search') ?? 'Поиск',
+                  searchHintText:
+                      AppLocalizations.of(context)!.translate('search') ??
+                          'Поиск',
                   overlayHeight: 300,
                   enabled: true,
                   decoration: CustomDropdownDecoration(
                     closedFillColor: const Color(0xffF4F7FD),
                     expandedFillColor: Colors.white,
-                    closedBorder: Border.all(color: const Color(0xffF4F7FD), width: 1),
+                    closedBorder:
+                        Border.all(color: const Color(0xffF4F7FD), width: 1),
                     closedBorderRadius: BorderRadius.circular(12),
-                    expandedBorder: Border.all(color: const Color(0xffF4F7FD), width: 1),
+                    expandedBorder:
+                        Border.all(color: const Color(0xffF4F7FD), width: 1),
                     expandedBorderRadius: BorderRadius.circular(12),
                   ),
                   listItemBuilder: (context, item, isSelected, onItemSelect) {
@@ -744,7 +813,10 @@ class _ActFilterScreenState extends State<ActFilterScreen> {
                   },
                   headerBuilder: (context, selectedItem, enabled) {
                     return Text(
-                      selectedItem?.name ?? AppLocalizations.of(context)!.translate('select_client') ?? 'Выберите клиента',
+                      selectedItem?.name ??
+                          AppLocalizations.of(context)!
+                              .translate('select_client') ??
+                          'Выберите клиента',
                       style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
@@ -754,7 +826,8 @@ class _ActFilterScreenState extends State<ActFilterScreen> {
                     );
                   },
                   hintBuilder: (context, hint, enabled) => Text(
-                    AppLocalizations.of(context)!.translate('select_client') ?? 'Выберите клиента',
+                    AppLocalizations.of(context)!.translate('select_client') ??
+                        'Выберите клиента',
                     style: const TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
@@ -762,7 +835,8 @@ class _ActFilterScreenState extends State<ActFilterScreen> {
                       color: Color(0xff1E2E52),
                     ),
                   ),
-                  initialItem: _selectedLead != null && leadsList.any((c) => c.id == _selectedLead!.id)
+                  initialItem: _selectedLead != null &&
+                          leadsList.any((c) => c.id == _selectedLead!.id)
                       ? leadsList.firstWhere((c) => c.id == _selectedLead!.id)
                       : null,
                   onChanged: (value) {

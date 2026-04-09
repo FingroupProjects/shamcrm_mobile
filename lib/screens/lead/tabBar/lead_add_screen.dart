@@ -89,9 +89,9 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
   // Режим настроек
   bool isSettingsMode = false;
   bool isSavingFieldOrder = false;
-  List<FieldConfiguration>? originalFieldConfigurations; // Для отслеживания изменений
+  List<FieldConfiguration>?
+      originalFieldConfigurations; // Для отслеживания изменений
   final GlobalKey _addFieldButtonKey = GlobalKey();
-
 
   @override
   void initState() {
@@ -111,9 +111,9 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
     if (kDebugMode) {
       print('LeadAddScreen: Loading field configuration for leads');
     }
-    context.read<FieldConfigurationBloc>().add(
-        FetchFieldConfiguration('leads')
-    );
+    context
+        .read<FieldConfigurationBloc>()
+        .add(FetchFieldConfiguration('leads'));
   }
 
   // Метод для отправки позиций полей на бэкенд
@@ -126,7 +126,8 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
           'id': config.id,
           'position': config.position,
           'is_active': config.isActive ? 1 : 0,
-          'is_required': config.originalRequired ? 1 : 0, // Используем originalRequired
+          'is_required':
+              config.originalRequired ? 1 : 0, // Используем originalRequired
           'show_on_table': config.showOnTable ? 1 : 0,
         });
       }
@@ -175,7 +176,7 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
   // Вспомогательный метод для создания/получения кастомного поля
   CustomField _getOrCreateCustomField(FieldConfiguration config) {
     final existingField = customFields.firstWhere(
-          (field) => field.fieldName == config.fieldName && field.isCustomField,
+      (field) => field.fieldName == config.fieldName && field.isCustomField,
       orElse: () {
         final newField = CustomField(
           fieldName: config.fieldName,
@@ -195,7 +196,7 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
   // Вспомогательный метод для создания/получения поля-справочника
   CustomField _getOrCreateDirectoryField(FieldConfiguration config) {
     final existingField = customFields.firstWhere(
-          (field) => field.directoryId == config.directoryId,
+      (field) => field.directoryId == config.directoryId,
       orElse: () {
         final newField = CustomField(
           fieldName: config.fieldName,
@@ -287,21 +288,24 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
       case 'tg_nick':
         return CustomTextField(
           controller: tgNickController,
-          hintText: AppLocalizations.of(context)!.translate('enter_telegram_username'),
+          hintText: AppLocalizations.of(context)!
+              .translate('enter_telegram_username'),
           label: AppLocalizations.of(context)!.translate('telegram'),
         );
 
       case 'insta_login':
         return CustomTextField(
           controller: instaLoginController,
-          hintText: AppLocalizations.of(context)!.translate('enter_instagram_username'),
+          hintText: AppLocalizations.of(context)!
+              .translate('enter_instagram_username'),
           label: AppLocalizations.of(context)!.translate('instagram'),
         );
 
       case 'facebook_login':
         return CustomTextField(
           controller: facebookLoginController,
-          hintText: AppLocalizations.of(context)!.translate('enter_facebook_username'),
+          hintText: AppLocalizations.of(context)!
+              .translate('enter_facebook_username'),
           label: AppLocalizations.of(context)!.translate('Facebook'),
         );
 
@@ -329,8 +333,10 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
 
       case 'lead_status_id':
         return LeadStatusEditpWidget(
-          selectedStatus: _selectedStatuses?.toString(), // Проверяем, что это не null
-          salesFunnelId: selectedSalesFunnel, // Убеждаемся, что передаем salesFunnelId
+          selectedStatus:
+              _selectedStatuses?.toString(), // Проверяем, что это не null
+          salesFunnelId:
+              selectedSalesFunnel, // Убеждаемся, что передаем salesFunnelId
           onSelectStatus: (LeadStatus selectedStatusData) {
             setState(() {
               _selectedStatuses = selectedStatusData.id;
@@ -367,9 +373,8 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
         selectedField: null,
         onSelectField: (MainField selectedField) {
           setState(() {
-            final index = customFields.indexWhere(
-                    (f) => f.directoryId == config.directoryId
-            );
+            final index = customFields
+                .indexWhere((f) => f.directoryId == config.directoryId);
             if (index != -1) {
               customFields[index] = directoryField.copyWith(
                 entryId: selectedField.id,
@@ -381,9 +386,8 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
         controller: directoryField.controller,
         onSelectEntryId: (int entryId) {
           setState(() {
-            final index = customFields.indexWhere(
-                    (f) => f.directoryId == config.directoryId
-            );
+            final index = customFields
+                .indexWhere((f) => f.directoryId == config.directoryId);
             if (index != -1) {
               customFields[index] = directoryField.copyWith(
                 entryId: entryId,
@@ -424,8 +428,10 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
       galleryLabel: AppLocalizations.of(context)!.translate('gallery'),
       cameraLabel: AppLocalizations.of(context)!.translate('camera'),
       cancelLabel: AppLocalizations.of(context)!.translate('cancel'),
-      fileSizeTooLargeMessage: AppLocalizations.of(context)!.translate('file_size_too_large'),
-      errorPickingFileMessage: AppLocalizations.of(context)!.translate('error_picking_file'),
+      fileSizeTooLargeMessage:
+          AppLocalizations.of(context)!.translate('file_size_too_large'),
+      errorPickingFileMessage:
+          AppLocalizations.of(context)!.translate('error_picking_file'),
     );
 
     // Если файлы выбраны, добавляем их
@@ -436,17 +442,23 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
           // fileNames.add(file.name);
           // fileSizes.add(file.sizeKB);
 
-          files.add(FileHelper(id: 0, name: file.name, path: file.path, size: file.sizeKB));
+          files.add(FileHelper(
+              id: 0, name: file.name, path: file.path, size: file.sizeKB));
         }
       });
     }
   }
 
-  Future<void> _addCustomField(String fieldName, {bool isDirectory = false, int? directoryId, String? type}) async {
+  Future<void> _addCustomField(String fieldName,
+      {bool isDirectory = false, int? directoryId, String? type}) async {
     if (isDirectory && directoryId != null) {
-      bool directoryExists = customFields.any((field) => field.isDirectoryField && field.directoryId == directoryId);
+      bool directoryExists = customFields.any((field) =>
+          field.isDirectoryField && field.directoryId == directoryId);
       if (directoryExists) {
-        showCustomSnackBar(context: context, message: 'Справочник уже добавлен', isSuccess: true);
+        showCustomSnackBar(
+            context: context,
+            message: 'Справочник уже добавлен',
+            isSuccess: true);
         debugPrint("Directory with ID $directoryId already exists.");
         return;
       }
@@ -458,7 +470,10 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
           organizationId: _apiService.getSelectedOrganization().toString(),
         );
 
-        showCustomSnackBar(context: context, message: 'Справочник успешно добавлен', isSuccess: true);
+        showCustomSnackBar(
+            context: context,
+            message: 'Справочник успешно добавлен',
+            isSuccess: true);
 
         // Добавляем справочник локально сразу после успешного связывания
         if (mounted) {
@@ -478,9 +493,9 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
         // После успешного добавления справочника перезагружаем конфигурацию полей
         // Конфигурация с сервера уже будет содержать этот справочник
         if (mounted) {
-          context.read<FieldConfigurationBloc>().add(
-              FetchFieldConfiguration('leads')
-          );
+          context
+              .read<FieldConfigurationBloc>()
+              .add(FetchFieldConfiguration('leads'));
         }
 
         if (kDebugMode) {
@@ -526,9 +541,9 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
 
       // После успешного добавления перезагружаем конфигурацию полей
       if (mounted) {
-        context.read<FieldConfigurationBloc>().add(
-            FetchFieldConfiguration('leads')
-        );
+        context
+            .read<FieldConfigurationBloc>()
+            .add(FetchFieldConfiguration('leads'));
       }
 
       // Добавляем поле локально только после успешного добавления на backend
@@ -575,7 +590,8 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
   }
 
   void _showAddFieldMenu() {
-    final RenderBox? renderBox = _addFieldButtonKey.currentContext?.findRenderObject() as RenderBox?;
+    final RenderBox? renderBox =
+        _addFieldButtonKey.currentContext?.findRenderObject() as RenderBox?;
     if (renderBox == null) return;
 
     final Offset offset = renderBox.localToGlobal(Offset.zero);
@@ -619,7 +635,9 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
         offset.dx,
         showAbove ? offset.dy + verticalOffset : offset.dy + verticalOffset,
         MediaQuery.of(context).size.width - offset.dx - size.width,
-        showAbove ? MediaQuery.of(context).size.height - offset.dy + verticalOffset : MediaQuery.of(context).size.height - offset.dy - size.height - 8,
+        showAbove
+            ? MediaQuery.of(context).size.height - offset.dy + verticalOffset
+            : MediaQuery.of(context).size.height - offset.dy - size.height - 8,
       ),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
@@ -664,12 +682,13 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
   // Проверка, были ли изменения в конфигурации полей
   bool _hasFieldChanges() {
     if (originalFieldConfigurations == null) return false;
-    if (originalFieldConfigurations!.length != fieldConfigurations.length) return true;
+    if (originalFieldConfigurations!.length != fieldConfigurations.length)
+      return true;
 
     for (int i = 0; i < fieldConfigurations.length; i++) {
       final current = fieldConfigurations[i];
       final original = originalFieldConfigurations!.firstWhere(
-            (f) => f.id == current.id,
+        (f) => f.id == current.id,
         orElse: () => current,
       );
 
@@ -686,55 +705,59 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
   // Диалог подтверждения выхода из режима настроек без сохранения
   Future<bool> _showExitSettingsDialog() async {
     return await showDialog<bool>(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          backgroundColor: Colors.white,
-          title: Text(
-            AppLocalizations.of(context)!.translate('warning'),
-            style: TextStyle(
-              fontFamily: 'Gilroy',
-              fontSize: 20,
-              fontWeight: FontWeight.w600,
-              color: Color(0xff1E2E52),
-            ),
-          ),
-          content: Text(
-            AppLocalizations.of(context)!.translate('position_changes_will_not_be_saved'),
-            style: TextStyle(
-              fontFamily: 'Gilroy',
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-              color: Color(0xff1E2E52),
-            ),
-          ),
-          actions: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                Expanded(
-                  child: CustomButton(
-                    buttonText: AppLocalizations.of(context)!.translate('cancel'),
-                    onPressed: () => Navigator.of(context).pop(false),
-                    buttonColor: Color(0xff1E2E52),
-                    textColor: Colors.white,
-                  ),
+          context: context,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              backgroundColor: Colors.white,
+              title: Text(
+                AppLocalizations.of(context)!.translate('warning'),
+                style: TextStyle(
+                  fontFamily: 'Gilroy',
+                  fontSize: 20,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xff1E2E52),
                 ),
-                SizedBox(width: 8),
-                Expanded(
-                  child: CustomButton(
-                    buttonText: AppLocalizations.of(context)!.translate('dont_save'),
-                    onPressed: () => Navigator.of(context).pop(true),
-                    buttonColor: Colors.red,
-                    textColor: Colors.white,
-                  ),
+              ),
+              content: Text(
+                AppLocalizations.of(context)!
+                    .translate('position_changes_will_not_be_saved'),
+                style: TextStyle(
+                  fontFamily: 'Gilroy',
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: Color(0xff1E2E52),
+                ),
+              ),
+              actions: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    Expanded(
+                      child: CustomButton(
+                        buttonText:
+                            AppLocalizations.of(context)!.translate('cancel'),
+                        onPressed: () => Navigator.of(context).pop(false),
+                        buttonColor: Color(0xff1E2E52),
+                        textColor: Colors.white,
+                      ),
+                    ),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: CustomButton(
+                        buttonText: AppLocalizations.of(context)!
+                            .translate('dont_save'),
+                        onPressed: () => Navigator.of(context).pop(true),
+                        buttonColor: Colors.red,
+                        textColor: Colors.white,
+                      ),
+                    ),
+                  ],
                 ),
               ],
-            ),
-          ],
-        );
-      },
-    ) ?? false;
+            );
+          },
+        ) ??
+        false;
   }
 
   // Получение отображаемого названия поля
@@ -767,8 +790,8 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
         return localizations!.translate('oblast');
       case 'lead_status_id':
         return localizations!.translate('lead_status');
-        case 'description':  // <-- ДОБАВЛЯЕМ ЭТУ СТРОКУ
-      return localizations!.translate('additional_client_info');  // <-- И ЭТУ
+      case 'description': // <-- ДОБАВЛЯЕМ ЭТУ СТРОКУ
+        return localizations!.translate('additional_client_info'); // <-- И ЭТУ
       default:
         return config.fieldName;
     }
@@ -787,7 +810,8 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
 
   // Режим настроек - отображение списка полей с возможностью изменения порядка
   Widget _buildSettingsMode() {
-    final sortedFields = [...fieldConfigurations]..sort((a, b) => a.position.compareTo(b.position));
+    final sortedFields = [...fieldConfigurations]
+      ..sort((a, b) => a.position.compareTo(b.position));
 
     return Column(
       children: [
@@ -799,7 +823,8 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
               return AnimatedBuilder(
                 animation: animation,
                 builder: (BuildContext context, Widget? child) {
-                  final double animValue = Curves.easeInOut.transform(animation.value);
+                  final double animValue =
+                      Curves.easeInOut.transform(animation.value);
                   final double scale = 1.0 + (animValue * 0.05);
                   final double elevation = animValue * 12.0;
 
@@ -818,7 +843,8 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
               );
             },
             onReorder: (oldIndex, newIndex) {
-              if (oldIndex == sortedFields.length || newIndex == sortedFields.length + 1) {
+              if (oldIndex == sortedFields.length ||
+                  newIndex == sortedFields.length + 1) {
                 return;
               }
 
@@ -852,7 +878,8 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
                     type: config.type,
                     isDirectory: config.isDirectory,
                     showOnTable: config.showOnTable,
-                    originalRequired: config.originalRequired, // Сохраняем оригинальное значение
+                    originalRequired: config
+                        .originalRequired, // Сохраняем оригинальное значение
                   ));
                 }
 
@@ -865,7 +892,8 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
                   key: _addFieldButtonKey,
                   margin: const EdgeInsets.only(bottom: 12),
                   child: CustomButton(
-                    buttonText: AppLocalizations.of(context)!.translate('add_field'),
+                    buttonText:
+                        AppLocalizations.of(context)!.translate('add_field'),
                     buttonColor: Color(0xff1E2E52),
                     textColor: Colors.white,
                     onPressed: _showAddFieldMenu,
@@ -886,7 +914,8 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
               return Container(
                 key: ValueKey('field_${config.id}'),
                 margin: const EdgeInsets.only(bottom: 12),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(12),
@@ -939,10 +968,10 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
                             ],
                           ),
                           SizedBox(height: 12),
-                          if (config.fieldName != 'name' && 
-    config.fieldName != 'phone' && 
-    config.fieldName != 'manager_id')
-                          GestureDetector(
+                          if (config.fieldName != 'name' &&
+                              config.fieldName != 'phone' &&
+                              config.fieldName != 'manager_id')
+                            GestureDetector(
                               behavior: HitTestBehavior.opaque,
                               onTap: () {
                                 setState(() {
@@ -961,17 +990,20 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
                                     type: config.type,
                                     isDirectory: config.isDirectory,
                                     showOnTable: config.showOnTable,
-                                    originalRequired: config.originalRequired, // Сохраняем оригинальное значение
+                                    originalRequired: config
+                                        .originalRequired, // Сохраняем оригинальное значение
                                   );
 
-                                  final idx = fieldConfigurations.indexWhere((f) => f.id == config.id);
+                                  final idx = fieldConfigurations
+                                      .indexWhere((f) => f.id == config.id);
                                   if (idx != -1) {
                                     fieldConfigurations[idx] = updatedConfig;
                                   }
                                 });
                               },
                               child: Padding(
-                                padding: const EdgeInsets.symmetric(vertical: 4),
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 4),
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
@@ -981,9 +1013,13 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
                                       width: 24,
                                       height: 24,
                                       decoration: BoxDecoration(
-                                        color: config.isActive ? Color(0xff4759FF) : Colors.white,
+                                        color: config.isActive
+                                            ? Color(0xff4759FF)
+                                            : Colors.white,
                                         border: Border.all(
-                                          color: config.isActive ? Color(0xff4759FF) : Color(0xffCCD5E0),
+                                          color: config.isActive
+                                              ? Color(0xff4759FF)
+                                              : Color(0xffCCD5E0),
                                           width: 2,
                                         ),
                                         borderRadius: BorderRadius.circular(6),
@@ -1000,12 +1036,15 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
                                     ),
                                     SizedBox(width: 12),
                                     Text(
-                                      AppLocalizations.of(context)!.translate('show_field'),
+                                      AppLocalizations.of(context)!
+                                          .translate('show_field'),
                                       style: TextStyle(
                                         fontSize: 14,
                                         fontFamily: 'Gilroy',
                                         fontWeight: FontWeight.w500,
-                                        color: config.isActive ? Color(0xff1E2E52) : Color(0xff6B7A99),
+                                        color: config.isActive
+                                            ? Color(0xff1E2E52)
+                                            : Color(0xff6B7A99),
                                       ),
                                     ),
                                   ],
@@ -1035,91 +1074,94 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
           ),
           child: isSavingFieldOrder
               ? Container(
-            height: 50,
-            decoration: BoxDecoration(
-              color: Color(0xff4759FF).withOpacity(0.7),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Center(
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                    ),
+                  height: 50,
+                  decoration: BoxDecoration(
+                    color: Color(0xff4759FF).withOpacity(0.7),
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  SizedBox(width: 12),
-                  Text(
-                    AppLocalizations.of(context)!.translate('saving'),
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          )
-              : CustomButton(
-            buttonText: AppLocalizations.of(context)!.translate('save'),
-            buttonColor: Color(0xff4759FF),
-            textColor: Colors.white,
-            onPressed: () async {
-              setState(() {
-                isSavingFieldOrder = true;
-              });
-
-              try {
-                await _saveFieldOrderToBackend();
-
-                if (mounted) {
-                  setState(() {
-                    originalFieldConfigurations = null;
-                    isSettingsMode = false;
-                  });
-
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        'Настройки полей сохранены',
-                        style: TextStyle(
-                          fontFamily: 'Gilroy',
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.white,
+                  child: Center(
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor:
+                                AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
                         ),
-                      ),
-                      behavior: SnackBarBehavior.floating,
-                      margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      backgroundColor: Colors.green,
-                      elevation: 3,
-                      padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                      duration: Duration(seconds: 2),
+                        SizedBox(width: 12),
+                        Text(
+                          AppLocalizations.of(context)!.translate('saving'),
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontFamily: 'Gilroy',
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
                     ),
-                  );
-                }
-              } catch (e) {
-                if (kDebugMode) {
-                  print('LeadAddScreen: Error in save button: $e');
-                }
-              } finally {
-                if (mounted) {
-                  setState(() {
-                    isSavingFieldOrder = false;
-                  });
-                }
-              }
-            },
-          ),
+                  ),
+                )
+              : CustomButton(
+                  buttonText: AppLocalizations.of(context)!.translate('save'),
+                  buttonColor: Color(0xff4759FF),
+                  textColor: Colors.white,
+                  onPressed: () async {
+                    setState(() {
+                      isSavingFieldOrder = true;
+                    });
+
+                    try {
+                      await _saveFieldOrderToBackend();
+
+                      if (mounted) {
+                        setState(() {
+                          originalFieldConfigurations = null;
+                          isSettingsMode = false;
+                        });
+
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              'Настройки полей сохранены',
+                              style: TextStyle(
+                                fontFamily: 'Gilroy',
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.white,
+                              ),
+                            ),
+                            behavior: SnackBarBehavior.floating,
+                            margin: EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 8),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            backgroundColor: Colors.green,
+                            elevation: 3,
+                            padding: EdgeInsets.symmetric(
+                                vertical: 12, horizontal: 16),
+                            duration: Duration(seconds: 2),
+                          ),
+                        );
+                      }
+                    } catch (e) {
+                      if (kDebugMode) {
+                        print('LeadAddScreen: Error in save button: $e');
+                      }
+                    } finally {
+                      if (mounted) {
+                        setState(() {
+                          isSavingFieldOrder = false;
+                        });
+                      }
+                    }
+                  },
+                ),
         ),
       ],
     );
@@ -1155,7 +1197,8 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
                       width: 100,
                       child: Column(
                         children: [
-                          Image.asset('assets/icons/files/add.png', width: 60, height: 60),
+                          Image.asset('assets/icons/files/add.png',
+                              width: 60, height: 60),
                           SizedBox(height: 8),
                           Text(
                             AppLocalizations.of(context)!.translate('add_file'),
@@ -1226,7 +1269,8 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
                               ),
                             ],
                           ),
-                          child: Icon(Icons.close, size: 16, color: Color(0xff1E2E52)),
+                          child: Icon(Icons.close,
+                              size: 16, color: Color(0xff1E2E52)),
                         ),
                       ),
                     ),
@@ -1296,7 +1340,8 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
                     setState(() {
                       // Находим новые поля (которые есть в текущей конфигурации, но нет в оригинальной)
                       final newFields = fieldConfigurations.where((current) {
-                        return !originalFieldConfigurations!.any((original) => original.id == current.id);
+                        return !originalFieldConfigurations!
+                            .any((original) => original.id == current.id);
                       }).toList();
 
                       // Восстанавливаем оригинальную конфигурацию
@@ -1304,7 +1349,11 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
 
                       // Добавляем новые поля в конец списка
                       if (newFields.isNotEmpty) {
-                        int maxPosition = fieldConfigurations.isEmpty ? 0 : fieldConfigurations.map((e) => e.position).reduce((a, b) => a > b ? a : b);
+                        int maxPosition = fieldConfigurations.isEmpty
+                            ? 0
+                            : fieldConfigurations
+                                .map((e) => e.position)
+                                .reduce((a, b) => a > b ? a : b);
                         for (int i = 0; i < newFields.length; i++) {
                           fieldConfigurations.add(FieldConfiguration(
                             id: newFields[i].id,
@@ -1321,7 +1370,8 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
                             type: newFields[i].type,
                             isDirectory: newFields[i].isDirectory,
                             showOnTable: newFields[i].showOnTable,
-                            originalRequired: newFields[i].originalRequired, // Сохраняем оригинальное значение
+                            originalRequired: newFields[i]
+                                .originalRequired, // Сохраняем оригинальное значение
                           ));
                         }
                       }
@@ -1340,7 +1390,8 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
               } else {
                 // Входим в режим настроек - сохраняем снимок конфигурации
                 setState(() {
-                  originalFieldConfigurations = fieldConfigurations.map((config) {
+                  originalFieldConfigurations =
+                      fieldConfigurations.map((config) {
                     return FieldConfiguration(
                       id: config.id,
                       tableName: config.tableName,
@@ -1356,7 +1407,8 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
                       type: config.type,
                       isDirectory: config.isDirectory,
                       showOnTable: config.showOnTable,
-                      originalRequired: config.originalRequired, // Сохраняем оригинальное значение
+                      originalRequired: config
+                          .originalRequired, // Сохраняем оригинальное значение
                     );
                   }).toList();
                   isSettingsMode = true;
@@ -1394,12 +1446,14 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
       body: BlocConsumer<FieldConfigurationBloc, FieldConfigurationState>(
         listener: (context, configState) {
           if (kDebugMode) {
-            print('LeadAddScreen: FieldConfigurationBloc state changed: ${configState.runtimeType}');
+            print(
+                'LeadAddScreen: FieldConfigurationBloc state changed: ${configState.runtimeType}');
           }
 
           if (configState is FieldConfigurationLoaded) {
             if (kDebugMode) {
-              print('LeadAddScreen: Configuration loaded with ${configState.fields.length} fields');
+              print(
+                  'LeadAddScreen: Configuration loaded with ${configState.fields.length} fields');
             }
             // Используем порядок с сервера
             setState(() {
@@ -1408,7 +1462,8 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
             });
           } else if (configState is FieldConfigurationError) {
             if (kDebugMode) {
-              print('LeadAddScreen: Configuration error: ${configState.message}');
+              print(
+                  'LeadAddScreen: Configuration error: ${configState.message}');
             }
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
@@ -1428,7 +1483,8 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
         },
         builder: (context, configState) {
           if (kDebugMode) {
-            print('LeadAddScreen: Building with state: ${configState.runtimeType}, isLoaded: $isConfigurationLoaded');
+            print(
+                'LeadAddScreen: Building with state: ${configState.runtimeType}, isLoaded: $isConfigurationLoaded');
           }
 
           if (configState is FieldConfigurationLoading) {
@@ -1474,7 +1530,8 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
                       ),
                     ),
                     behavior: SnackBarBehavior.floating,
-                    margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    margin:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     backgroundColor: Colors.red,
                     elevation: 0,
                     duration: Duration(seconds: 3),
@@ -1525,9 +1582,12 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
                             // Фильтруем только активные поля и сортируем по позициям
                             ...(() {
                               final sorted = fieldConfigurations
-                                  .where((config) => config.isActive && config.fieldName != 'lead_status_id')
+                                  .where((config) =>
+                                      config.isActive &&
+                                      config.fieldName != 'lead_status_id')
                                   .toList()
-                                ..sort((a, b) => a.position.compareTo(b.position));
+                                ..sort(
+                                    (a, b) => a.position.compareTo(b.position));
 
                               return sorted.map((config) {
                                 return Column(
@@ -1543,43 +1603,51 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
                             ...customFields.where((field) {
                               // Исключаем поля, которые уже есть в серверной конфигурации
                               return !fieldConfigurations.any((config) =>
-                              (config.isCustomField && config.fieldName == field.fieldName) ||
-                                  (config.isDirectory && config.directoryId == field.directoryId)
-                              );
+                                  (config.isCustomField &&
+                                      config.fieldName == field.fieldName) ||
+                                  (config.isDirectory &&
+                                      config.directoryId == field.directoryId));
                             }).map((field) {
                               return Column(
                                 children: [
-                                  field.isDirectoryField && field.directoryId != null
+                                  field.isDirectoryField &&
+                                          field.directoryId != null
                                       ? MainFieldDropdownWidget(
-                                      directoryId: field.directoryId!,
-                                      directoryName: field.fieldName,
-                                      selectedField: null,
-                                      onSelectField: (MainField selectedField) {
-                                        setState(() {
-                                          final idx = customFields.indexOf(field);
-                                          customFields[idx] = field.copyWith(
-                                            entryId: selectedField.id,
-                                            controller: TextEditingController(
-                                                text: selectedField.value),
-                                          );
-                                        });
-                                      },
-                                      controller: field.controller,
-                                      onSelectEntryId: (int entryId) {
-                                        setState(() {
-                                          final idx = customFields.indexOf(field);
-                                          customFields[idx] = field.copyWith(
-                                            entryId: entryId,
-                                          );
-                                        });
-                                      }
-                                  )
+                                          directoryId: field.directoryId!,
+                                          directoryName: field.fieldName,
+                                          selectedField: null,
+                                          onSelectField:
+                                              (MainField selectedField) {
+                                            setState(() {
+                                              final idx =
+                                                  customFields.indexOf(field);
+                                              customFields[idx] =
+                                                  field.copyWith(
+                                                entryId: selectedField.id,
+                                                controller:
+                                                    TextEditingController(
+                                                        text: selectedField
+                                                            .value),
+                                              );
+                                            });
+                                          },
+                                          controller: field.controller,
+                                          onSelectEntryId: (int entryId) {
+                                            setState(() {
+                                              final idx =
+                                                  customFields.indexOf(field);
+                                              customFields[idx] =
+                                                  field.copyWith(
+                                                entryId: entryId,
+                                              );
+                                            });
+                                          })
                                       : CustomFieldWidget(
-                                    fieldName: field.fieldName,
-                                    valueController: field.controller,
-                                    type: field.type,
-                                    isDirectory: false,
-                                  ),
+                                          fieldName: field.fieldName,
+                                          valueController: field.controller,
+                                          type: field.type,
+                                          isDirectory: false,
+                                        ),
                                   const SizedBox(height: 16),
                                 ],
                               );
@@ -1594,12 +1662,14 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
                     ),
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 10),
                     child: Row(
                       children: [
                         Expanded(
                           child: CustomButton(
-                            buttonText: AppLocalizations.of(context)!.translate('cancel'),
+                            buttonText: AppLocalizations.of(context)!
+                                .translate('cancel'),
                             buttonColor: Color(0xffF4F7FD),
                             textColor: Colors.black,
                             onPressed: () {
@@ -1620,7 +1690,8 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
                                 );
                               } else {
                                 return CustomButton(
-                                  buttonText: AppLocalizations.of(context)!.translate('add'),
+                                  buttonText: AppLocalizations.of(context)!
+                                      .translate('add'),
                                   buttonColor: Color(0xff4759FF),
                                   textColor: Colors.white,
                                   onPressed: _submitForm,
@@ -1694,20 +1765,21 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
       final String name = titleController.text;
       final String phone = selectedDialCode;
       final String? instaLogin =
-      instaLoginController.text.isEmpty ? null : instaLoginController.text;
+          instaLoginController.text.isEmpty ? null : instaLoginController.text;
       final String? facebookLogin = facebookLoginController.text.isEmpty
           ? null
           : facebookLoginController.text;
       final String? tgNick =
-      tgNickController.text.isEmpty ? null : tgNickController.text;
+          tgNickController.text.isEmpty ? null : tgNickController.text;
       final String? whatsapp =
-      whatsappController.text.isEmpty || selectedDialCodeWhatsapp.isEmpty
-          ? null
-          : selectedDialCodeWhatsapp;
+          whatsappController.text.isEmpty || selectedDialCodeWhatsapp.isEmpty
+              ? null
+              : selectedDialCodeWhatsapp;
       final String? email =
-      emailController.text.isEmpty ? null : emailController.text;
-      final String? description =
-      descriptionController.text.isEmpty ? null : descriptionController.text;
+          emailController.text.isEmpty ? null : emailController.text;
+      final String? description = descriptionController.text.isEmpty
+          ? null
+          : descriptionController.text;
 
       // Собираем кастомные поля и справочники
       List<Map<String, dynamic>> customFieldMap = [];
@@ -1731,8 +1803,7 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(
-                  AppLocalizations.of(context)!
-                      .translate('enter_valid_number'),
+                  AppLocalizations.of(context)!.translate('enter_valid_number'),
                   style: TextStyle(
                     fontFamily: 'Gilroy',
                     fontSize: 16,
@@ -1787,7 +1858,8 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
           customFieldMap.add({
             'key': fieldName,
             'value': fieldValue,
-            'type': fieldType, // Теперь гарантированно один из: string, number, date, datetime
+            'type':
+                fieldType, // Теперь гарантированно один из: string, number, date, datetime
           });
         }
       }
@@ -1803,38 +1875,38 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
       bool isSystemManager = selectedManager == "-1";
 
       context.read<LeadBloc>().add(CreateLead(
-        priceTypeId: _selectedPriceType,
-        name: name,
-        leadStatusId: _selectedStatuses ?? widget.statusId,
-        phone: phone,
-        regionId: selectedRegion != null ? int.parse(selectedRegion!) : null,
-        managerId: !isSystemManager && selectedManager != null
-            ? int.parse(selectedManager!)
-            : null,
-        sourceId: selectedSourceLead != null
-            ? int.parse(selectedSourceLead!)
-            : null,
-        instaLogin: instaLogin,
-        facebookLogin: facebookLogin,
-        tgNick: tgNick,
-        waPhone: whatsapp,
-        birthday: parsedBirthday,
-        cityId: cityController.text.trim().isEmpty
-            ? null
-            : cityController.text.trim(),
-        email: email,
-        description: description,
-        customFields: customFieldMap,
-        directoryValues: directoryValues,
-        localizations: localizations,
-        files: files,
-        isSystemManager: isSystemManager,
-      ));
+            priceTypeId: _selectedPriceType,
+            name: name,
+            leadStatusId: _selectedStatuses ?? widget.statusId,
+            phone: phone,
+            regionId:
+                selectedRegion != null ? int.parse(selectedRegion!) : null,
+            managerId: !isSystemManager && selectedManager != null
+                ? int.parse(selectedManager!)
+                : null,
+            sourceId: selectedSourceLead != null
+                ? int.parse(selectedSourceLead!)
+                : null,
+            instaLogin: instaLogin,
+            facebookLogin: facebookLogin,
+            tgNick: tgNick,
+            waPhone: whatsapp,
+            birthday: parsedBirthday,
+            cityId: cityController.text.trim().isEmpty
+                ? null
+                : cityController.text.trim(),
+            email: email,
+            description: description,
+            customFields: customFieldMap,
+            directoryValues: directoryValues,
+            localizations: localizations,
+            files: files,
+            isSystemManager: isSystemManager,
+          ));
     }
   }
 
   void showDeleteFileDialog({required int fileId, required int index}) {
-
     bool isDeleting = false;
 
     showDialog<bool>(
@@ -1864,7 +1936,8 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(
-                    AppLocalizations.of(context)!.translate('error_delete_file'),
+                    AppLocalizations.of(context)!
+                        .translate('error_delete_file'),
                     style: TextStyle(
                       fontFamily: 'Gilroy',
                       fontSize: 16,

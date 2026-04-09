@@ -210,7 +210,8 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
     );
   }
 
-  void _openImageGallery(BuildContext context, List<GoodsFile> files, int initialIndex) {
+  void _openImageGallery(
+      BuildContext context, List<GoodsFile> files, int initialIndex) {
     final List<String> imageUrls = files
         .where((file) => file.path.isNotEmpty)
         .map((file) => '${file.path}')
@@ -232,84 +233,93 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
     );
   }
 
-AppBar _buildAppBar(BuildContext context, String title) {
-  return AppBar(
-    backgroundColor: Colors.white,
-    forceMaterialTransparency: true,
-    elevation: 0,
-    centerTitle: false,
-    leadingWidth: 40,
-    leading: Padding(
-      padding: const EdgeInsets.only(left: 0),
-      child: Transform.translate(
-        offset: const Offset(0, -2),
-        child: IconButton(
-          icon: Image.asset('assets/icons/arrow-left.png', width: 24, height: 24),
-          onPressed: () {
-            Navigator.pop(context);
-            if (widget.isFromBarcodeSearch) {
-              // Это обработается в GoodsScreen через .then()
-            }
-          },
+  AppBar _buildAppBar(BuildContext context, String title) {
+    return AppBar(
+      backgroundColor: Colors.white,
+      forceMaterialTransparency: true,
+      elevation: 0,
+      centerTitle: false,
+      leadingWidth: 40,
+      leading: Padding(
+        padding: const EdgeInsets.only(left: 0),
+        child: Transform.translate(
+          offset: const Offset(0, -2),
+          child: IconButton(
+            icon: Image.asset('assets/icons/arrow-left.png',
+                width: 24, height: 24),
+            onPressed: () {
+              Navigator.pop(context);
+              if (widget.isFromBarcodeSearch) {
+                // Это обработается в GoodsScreen через .then()
+              }
+            },
+          ),
         ),
       ),
-    ),
-    title: Transform.translate(
-      offset: const Offset(-10, 0),
-      child: Text(
-        title,
-        style: const TextStyle(
-          fontSize: 20,
-          fontFamily: 'Gilroy',
-          fontWeight: FontWeight.w600,
-          color: Color(0xff1E2E52),
+      title: Transform.translate(
+        offset: const Offset(-10, 0),
+        child: Text(
+          title,
+          style: const TextStyle(
+            fontSize: 20,
+            fontFamily: 'Gilroy',
+            fontWeight: FontWeight.w600,
+            color: Color(0xff1E2E52),
+          ),
         ),
       ),
-    ),
-    actions: widget.showActions && _canUpdateProduct && widget.showEditButton // Добавляем проверку showEditButton
-        ? [
-            BlocBuilder<GoodsByIdBloc, GoodsByIdState>(
-              builder: (context, state) {
-                return Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    IconButton(
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                      icon: Image.asset('assets/icons/edit.png', width: 24, height: 24),
-                      onPressed: state is GoodsByIdLoaded
-                          ? () async {
-                              final sortedFiles = List<GoodsFile>.from(state.goods.files);
-                              final mainImageIndex = sortedFiles.indexWhere((file) => file.isMain);
-                              if (mainImageIndex != -1) {
-                                final mainImage = sortedFiles.removeAt(mainImageIndex);
-                                sortedFiles.insert(0, mainImage);
-                              }
-                              final result = await Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => GoodsEditScreen(
-                                    goods: state.goods,
-                                    sortedFiles: sortedFiles,
-                                    initialMainImageIndex: mainImageIndex != -1 ? 0 : null,
+      actions: widget.showActions &&
+              _canUpdateProduct &&
+              widget.showEditButton // Добавляем проверку showEditButton
+          ? [
+              BlocBuilder<GoodsByIdBloc, GoodsByIdState>(
+                builder: (context, state) {
+                  return Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                        icon: Image.asset('assets/icons/edit.png',
+                            width: 24, height: 24),
+                        onPressed: state is GoodsByIdLoaded
+                            ? () async {
+                                final sortedFiles =
+                                    List<GoodsFile>.from(state.goods.files);
+                                final mainImageIndex = sortedFiles
+                                    .indexWhere((file) => file.isMain);
+                                if (mainImageIndex != -1) {
+                                  final mainImage =
+                                      sortedFiles.removeAt(mainImageIndex);
+                                  sortedFiles.insert(0, mainImage);
+                                }
+                                final result = await Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => GoodsEditScreen(
+                                      goods: state.goods,
+                                      sortedFiles: sortedFiles,
+                                      initialMainImageIndex:
+                                          mainImageIndex != -1 ? 0 : null,
+                                    ),
                                   ),
-                                ),
-                              );
-                              if (result == true) {
-                                context.read<GoodsByIdBloc>().add(FetchGoodsById(widget.id));
+                                );
+                                if (result == true) {
+                                  context
+                                      .read<GoodsByIdBloc>()
+                                      .add(FetchGoodsById(widget.id));
+                                }
                               }
-                            }
-                          : null,
-                    ),
-                  ],
-                );
-              },
-            ),
-          ]
-        : null,
-  );
-}
-
+                            : null,
+                      ),
+                    ],
+                  );
+                },
+              ),
+            ]
+          : null,
+    );
+  }
 
   Widget _buildDetailsList(Goods goods) {
     List<String> labels = [];
@@ -342,6 +352,11 @@ AppBar _buildAppBar(BuildContext context, String title) {
         'label': AppLocalizations.of(context)!.translate('unit'),
         'value': goods.unit?.name ?? '',
       },
+      if (goods.productionType != null && goods.productionType!.isNotEmpty)
+        {
+          'label': 'Тип товара',
+          'value': _productionTypeLabel(goods.productionType),
+        },
       if (goods.discountPrice != null && goods.discountPrice != 0)
         {
           'label':
@@ -354,7 +369,12 @@ AppBar _buildAppBar(BuildContext context, String title) {
           'value': '${goods.discountPercent}%'
         },
       ...goods.attributes
-          .where((attr) => attr.name.isNotEmpty && attr.name != (AppLocalizations.of(context)!.translate('unknown_characteristic') ?? 'Неизвестная характеристика'))
+          .where((attr) =>
+              attr.name.isNotEmpty &&
+              attr.name !=
+                  (AppLocalizations.of(context)!
+                          .translate('unknown_characteristic') ??
+                      'Неизвестная характеристика'))
           .map((attr) => {'label': attr.name, 'value': attr.value}),
       {
         'label': AppLocalizations.of(context)!.translate('goods_finished'),
@@ -428,10 +448,367 @@ AppBar _buildAppBar(BuildContext context, String title) {
               ],
             ),
           ),
+        const SizedBox(height: 16),
+        _buildGoodsRelationsSection(goods),
         if (goods.variants != null && goods.variants!.isNotEmpty)
           _buildVariantsSection(goods),
       ],
     );
+  }
+
+  Widget _buildGoodsRelationsSection(Goods goods) {
+    final materialGoods = goods.materialGoods ?? const <MaterialGood>[];
+    final relatedGoods = goods.relatedGoods ?? const <RelatedGood>[];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildMaterialGoodsSection(materialGoods),
+        const SizedBox(height: 16),
+        _buildRelatedGoodsSection(relatedGoods),
+      ],
+    );
+  }
+
+  Widget _buildMaterialGoodsSection(List<MaterialGood> materialGoods) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildRelationSectionHeader(
+          title: 'Сырье',
+          count: materialGoods.length,
+          icon: Icons.inventory_2_outlined,
+        ),
+        const SizedBox(height: 8),
+        if (materialGoods.isEmpty)
+          _buildRelationEmptyState(
+            title: 'Сырье не добавлено',
+            subtitle: 'Для этого товара нет списка сырья.',
+            icon: Icons.inventory_2_outlined,
+          )
+        else
+          ...materialGoods.asMap().entries.map((entry) {
+            final index = entry.key;
+            final item = entry.value;
+            final norm = item.pivot?.norm?.toString() ?? '-';
+            final unit = item.displayUnit?.name ?? '';
+            final price = item.price?.price;
+
+            return _buildRelationCard(
+              index: index + 1,
+              title: item.displayName,
+              icon: Icons.inventory_2_outlined,
+              meta: [
+                if (unit.isNotEmpty) 'Ед.: $unit',
+                'Норма: $norm',
+                if (price != null) 'Цена: ${price.toStringAsFixed(0)}',
+              ],
+            );
+          }),
+      ],
+    );
+  }
+
+  Widget _buildRelatedGoodsSection(List<RelatedGood> relatedGoods) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildRelationSectionHeader(
+          title: 'Сопутствующие товары',
+          count: relatedGoods.length,
+          icon: Icons.link_outlined,
+        ),
+        const SizedBox(height: 8),
+        if (relatedGoods.isEmpty)
+          _buildRelationEmptyState(
+            title: 'Сопутствующие товары не добавлены',
+            subtitle: 'У этого товара пока нет сопутствующих товаров.',
+            icon: Icons.link_off_outlined,
+          )
+        else
+          ...relatedGoods.asMap().entries.map((entry) {
+            final index = entry.key;
+            final item = entry.value;
+
+            return _buildRelationCard(
+              index: index + 1,
+              title: item.displayName,
+              icon: Icons.link_outlined,
+              meta: [
+                if (item.price != null) 'Цена: ${_formatRelationPrice(item.price!)}',
+              ],
+              badgeText: item.isRequired ? 'Обязательный' : 'Необязательный',
+              badgeColor: item.isRequired
+                  ? const Color(0xff4759FF)
+                  : const Color(0xff99A4BA),
+            );
+          }),
+      ],
+    );
+  }
+
+  Widget _buildRelationSectionHeader({
+    required String title,
+    required int count,
+    required IconData icon,
+  }) {
+    return Row(
+      children: [
+        Container(
+          width: 36,
+          height: 36,
+          decoration: BoxDecoration(
+            color: const Color(0xff4759FF).withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(
+            icon,
+            color: const Color(0xff4759FF),
+            size: 18,
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text(
+            title,
+            style: const TextStyle(
+              fontSize: 18,
+              fontFamily: 'Gilroy',
+              fontWeight: FontWeight.w700,
+              color: Color(0xff1E2E52),
+            ),
+          ),
+        ),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          decoration: BoxDecoration(
+            color: const Color(0xffE9F1FF),
+            borderRadius: BorderRadius.circular(999),
+          ),
+          child: Text(
+            count.toString(),
+            style: const TextStyle(
+              fontSize: 12,
+              fontFamily: 'Gilroy',
+              fontWeight: FontWeight.w700,
+              color: Color(0xff4759FF),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildRelationEmptyState({
+    required String title,
+    required String subtitle,
+    required IconData icon,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFF),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFDCE4F2)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: const Color(0xffE9F1FF),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              icon,
+              color: const Color(0xff5C6F91),
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontFamily: 'Gilroy',
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xff1E2E52),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  subtitle,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontFamily: 'Gilroy',
+                    fontWeight: FontWeight.w500,
+                    color: Color(0xff5C6F91),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRelationCard({
+    required int index,
+    required String title,
+    required IconData icon,
+    required List<String> meta,
+    String? badgeText,
+    Color? badgeColor,
+  }) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE5E7EB)),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0A1E2E52),
+            blurRadius: 12,
+            offset: Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 34,
+            height: 34,
+            decoration: BoxDecoration(
+              color: const Color(0xffE9F1FF),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            alignment: Alignment.center,
+            child: Text(
+              index.toString(),
+              style: const TextStyle(
+                fontSize: 13,
+                fontFamily: 'Gilroy',
+                fontWeight: FontWeight.w700,
+                color: Color(0xff4759FF),
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      icon,
+                      size: 16,
+                      color: const Color(0xff4759FF),
+                    ),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        title,
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontFamily: 'Gilroy',
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xff1E2E52),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                if (meta.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: meta
+                        .where((item) => item.trim().isNotEmpty)
+                        .map(
+                          (item) => Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF4F7FD),
+                              borderRadius: BorderRadius.circular(999),
+                            ),
+                            child: Text(
+                              item,
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontFamily: 'Gilroy',
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xff5C6F91),
+                              ),
+                            ),
+                          ),
+                        )
+                        .toList(),
+                  ),
+                ],
+                if (badgeText != null && badgeText.isNotEmpty) ...[
+                  const SizedBox(height: 10),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: (badgeColor ?? const Color(0xff99A4BA))
+                          .withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Text(
+                      badgeText,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontFamily: 'Gilroy',
+                        fontWeight: FontWeight.w700,
+                        color: badgeColor ?? const Color(0xff99A4BA),
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _productionTypeLabel(String? productionType) {
+    switch (productionType) {
+      case 'produced':
+        return 'Производимый товар';
+      case 'raw':
+        return 'Сырье';
+      default:
+        return productionType?.trim().isNotEmpty == true
+            ? productionType!
+            : 'Тип не указан';
+    }
+  }
+
+  String _formatRelationPrice(double price) {
+    if (price == price.roundToDouble()) {
+      return price.toStringAsFixed(0);
+    }
+    return price.toStringAsFixed(2);
   }
 
   Widget _buildVariantsSection(Goods goods) {
@@ -815,8 +1192,7 @@ AppBar _buildAppBar(BuildContext context, String title) {
                 'value': goods.category.name ?? ''
               },
               {
-                'label':
-                    AppLocalizations.of(context)!.translate('unit'),
+                'label': AppLocalizations.of(context)!.translate('unit'),
                 'value': goods.unit?.name ?? '',
               },
               ...goods.attributes
@@ -927,11 +1303,13 @@ class _ImageGalleryViewerState extends State<ImageGalleryViewer> {
           scrollPhysics: const BouncingScrollPhysics(),
           builder: (BuildContext context, int index) {
             return PhotoViewGalleryPageOptions(
-              imageProvider: CachedNetworkImageProvider(widget.imageUrls[index]),
+              imageProvider:
+                  CachedNetworkImageProvider(widget.imageUrls[index]),
               initialScale: PhotoViewComputedScale.contained,
               minScale: PhotoViewComputedScale.contained * 0.8,
               maxScale: PhotoViewComputedScale.covered * 2.0,
-              heroAttributes: PhotoViewHeroAttributes(tag: widget.imageUrls[index]),
+              heroAttributes:
+                  PhotoViewHeroAttributes(tag: widget.imageUrls[index]),
               onTapUp: (context, details, controllerValue) {
                 Navigator.pop(context);
               },
@@ -957,7 +1335,8 @@ class _ImageGalleryViewerState extends State<ImageGalleryViewer> {
               child: CircularProgressIndicator(
                 value: event == null
                     ? 0
-                    : event.cumulativeBytesLoaded / (event.expectedTotalBytes ?? 1),
+                    : event.cumulativeBytesLoaded /
+                        (event.expectedTotalBytes ?? 1),
                 color: Colors.white,
               ),
             ),

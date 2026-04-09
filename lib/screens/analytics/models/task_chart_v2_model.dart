@@ -42,7 +42,8 @@ class TaskChartV2Response {
   int get inProgress => data.length > 1 ? data[1] : 0;
   int get completed => data.length > 2 ? data[2] : 0;
 
-  int get total => totalTasks > 0 ? totalTasks : overdue + inProgress + completed;
+  int get total =>
+      totalTasks > 0 ? totalTasks : overdue + inProgress + completed;
 
   double get completionRate {
     if (overallKpi > 0) return overallKpi.toDouble();

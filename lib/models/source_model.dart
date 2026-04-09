@@ -1,4 +1,10 @@
-import 'dart:convert';
+String normalizeSourceName(String? sourceName) {
+  final normalized = sourceName?.trim().toLowerCase();
+  if (normalized == 'green_api') {
+    return 'WhatsApp';
+  }
+  return sourceName ?? '';
+}
 
 class SourceLead {
   final int id;
@@ -16,7 +22,7 @@ class SourceLead {
   factory SourceLead.fromJson(Map<String, dynamic> json) {
     return SourceLead(
       id: json['id'] ?? 0,
-      name: json['name'] ?? '',
+      name: normalizeSourceName(json['name']?.toString()),
       createdAt: json['created_at'] is String ? json['created_at'] : null,
       updatedAt: json['update_at'] is String ? json['update_at'] : null,
     );

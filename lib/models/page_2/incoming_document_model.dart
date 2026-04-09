@@ -93,6 +93,18 @@ class IncomingDocument extends Equatable {
   List<Object?> get props => [id, deletedAt, approved, updatedAt];
 
   factory IncomingDocument.fromJson(Map<String, dynamic> json) {
+    final senderStorageJson = json['sender_storage_id'] is Map<String, dynamic>
+        ? json['sender_storage_id'] as Map<String, dynamic>
+        : (json['sender_storage'] is Map<String, dynamic>
+            ? json['sender_storage'] as Map<String, dynamic>
+            : null);
+    final recipientStorageJson =
+        json['recipient_storage_id'] is Map<String, dynamic>
+            ? json['recipient_storage_id'] as Map<String, dynamic>
+            : (json['recipient_storage'] is Map<String, dynamic>
+                ? json['recipient_storage'] as Map<String, dynamic>
+                : null);
+
     return IncomingDocument(
       id: parseInt(json['id']),
       date: parseDate(json['date']),
@@ -105,11 +117,11 @@ class IncomingDocument extends Equatable {
       article: json['article'] != null
           ? ArticleGood.fromJson(json['article'])
           : null,
-      sender_storage_id: json['sender_storage_id'] != null
-          ? WareHouse.fromJson(json['sender_storage_id'])
+      sender_storage_id: senderStorageJson != null
+          ? WareHouse.fromJson(senderStorageJson)
           : null,
-      recipient_storage_id: json['recipient_storage_id'] != null
-          ? WareHouse.fromJson(json['recipient_storage_id'])
+      recipient_storage_id: recipientStorageJson != null
+          ? WareHouse.fromJson(recipientStorageJson)
           : null,
       comment: json['comment'],
       currency:
@@ -536,8 +548,10 @@ class DocumentGood {
   final int? unitId; // ИЗМЕНЕНО: int? вместо Unit?
   final int? goodVariantId;
   final String? sum;
+  final String? costPrice;
   final Unit? unit;
   final GoodVariant? goodVariant;
+  final List<DocumentGoodMaterial>? materials;
 
   Unit get selectedUnit {
     if (unit?.id != null && good?.units != null) {
@@ -569,8 +583,10 @@ class DocumentGood {
     this.unitId,
     this.goodVariantId,
     this.sum,
+    this.costPrice,
     this.unit,
     this.goodVariant,
+    this.materials,
   });
 
   factory DocumentGood.fromJson(Map<String, dynamic> json) {
@@ -599,7 +615,14 @@ class DocumentGood {
           : null,
       goodVariantId: parseInt(json['good_variant_id']),
       sum: json['sum'] as String?,
+      costPrice: json['cost_price']?.toString() ??
+          json['cost_price_per_unit']?.toString(),
       unit: unitObj,
+      materials: json['materials'] != null
+          ? (json['materials'] as List)
+              .map((i) => DocumentGoodMaterial.fromJson(i))
+              .toList()
+          : null,
     );
   }
 
@@ -616,6 +639,58 @@ class DocumentGood {
       'attributes': attributes?.map((e) => e.toJson()).toList(),
       'full_name': fullName,
       'unit_id': unitId,
+      'cost_price': costPrice,
+      'materials': materials?.map((e) => e.toJson()).toList(),
+    };
+  }
+}
+
+class DocumentGoodMaterial {
+  final int? id;
+  final int? documentGoodId;
+  final int? goodVariantId;
+  final int? unitId;
+  final num? norm;
+  final num? quantity;
+  final Unit? unit;
+  final GoodVariant? goodVariant;
+
+  const DocumentGoodMaterial({
+    this.id,
+    this.documentGoodId,
+    this.goodVariantId,
+    this.unitId,
+    this.norm,
+    this.quantity,
+    this.unit,
+    this.goodVariant,
+  });
+
+  factory DocumentGoodMaterial.fromJson(Map<String, dynamic> json) {
+    return DocumentGoodMaterial(
+      id: parseInt(json['id']),
+      documentGoodId: parseInt(json['document_good_id']),
+      goodVariantId: parseInt(json['good_variant_id']),
+      unitId: parseInt(json['unit_id']),
+      norm: parseNum(json['norm']),
+      quantity: parseNum(json['quantity']),
+      unit: json['unit'] != null ? Unit.fromJson(json['unit']) : null,
+      goodVariant: json['good_variant'] != null
+          ? GoodVariant.fromJson(json['good_variant'])
+          : null,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'document_good_id': documentGoodId,
+      'good_variant_id': goodVariantId,
+      'unit_id': unitId,
+      'norm': norm,
+      'quantity': quantity,
+      'unit': unit?.toJson(),
+      'good_variant': goodVariant?.toJson(),
     };
   }
 }
@@ -1027,6 +1102,7 @@ class Model {
   final int? inn;
   final String? note;
   final int? currencyId;
+  final Currency? currency;
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
@@ -1037,6 +1113,7 @@ class Model {
     this.inn,
     this.note,
     this.currencyId,
+    this.currency,
     this.createdAt,
     this.updatedAt,
   });
@@ -1049,6 +1126,8 @@ class Model {
       inn: parseInt(json['inn']),
       note: json['note'],
       currencyId: parseInt(json['currency_id']),
+      currency:
+          json['currency'] != null ? Currency.fromJson(json['currency']) : null,
       createdAt: json['created_at'] != null
           ? DateTime.parse(json['created_at'])
           : null,
@@ -1066,6 +1145,7 @@ class Model {
       'inn': inn,
       'note': note,
       'currency_id': currencyId,
+      'currency': currency?.toJson(),
       'created_at': createdAt?.toIso8601String(),
       'updated_at': updatedAt?.toIso8601String(),
     };

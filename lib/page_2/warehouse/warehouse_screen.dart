@@ -7,6 +7,7 @@ import 'package:crm_task_manager/page_2/order/order_screen.dart';
 import 'package:crm_task_manager/page_2/warehouse/client_return/client_return_screen.dart';
 import 'package:crm_task_manager/page_2/warehouse/client_sale/client_sales_screen.dart';
 import 'package:crm_task_manager/page_2/warehouse/incoming/incoming_screen.dart';
+import 'package:crm_task_manager/page_2/warehouse/manufacture/manufacture_screen.dart';
 import 'package:crm_task_manager/page_2/warehouse/movement/movement_screen.dart';
 import 'package:crm_task_manager/page_2/warehouse/references_screen.dart';
 import 'package:crm_task_manager/page_2/warehouse/supplier_return_document/supplier_return_document_screen.dart';
@@ -31,6 +32,8 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
   // Флаги прав доступа для каждого документа
   bool _hasIncomeDocument = false;
   bool _hasMovementDocument = false;
+  bool _hasManufactureDocument = false;
+  bool _hasManufactureEnabled = false;
   bool _hasWriteOffDocument = false;
   bool _hasExpenseDocument = false;
   bool _hasClientReturnDocument = false;
@@ -60,28 +63,49 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
     });
 
     try {
+      final settings = await _apiService.getSettings(null);
+      final settingsResult = settings['result'];
+      _hasManufactureEnabled = settingsResult is Map<String, dynamic> &&
+          (settingsResult['has_manufacture'] == true ||
+              settingsResult['has_manufacture'] == 1);
+
       // Проверяем права для каждого документа отдельно
-      _hasIncomeDocument = await _apiService.hasPermission('income_document.read');
-      _hasMovementDocument = await _apiService.hasPermission('movement_document.read');
-      _hasWriteOffDocument = await _apiService.hasPermission('write_off_document.read');
-      _hasExpenseDocument = await _apiService.hasPermission('expense_document.read');
-      _hasClientReturnDocument = await _apiService.hasPermission('client_return_document.read');
-      _hasSupplierReturnDocument = await _apiService.hasPermission('supplier_return_document.read');
-      _hasMoneyIncome = await _apiService.hasPermission('checking_account_pko.read');
-      _hasMoneyOutcome = await _apiService.hasPermission('checking_account_rko.read');
+      _hasIncomeDocument =
+          await _apiService.hasPermission('income_document.read');
+      _hasMovementDocument =
+          await _apiService.hasPermission('movement_document.read');
+      _hasManufactureDocument =
+          await _apiService.hasPermission('manufacture.read') ||
+              await _apiService.hasPermission('manufacture_document.read');
+      _hasManufactureDocument =
+          _hasManufactureDocument && _hasManufactureEnabled;
+      _hasWriteOffDocument =
+          await _apiService.hasPermission('write_off_document.read');
+      _hasExpenseDocument =
+          await _apiService.hasPermission('expense_document.read');
+      _hasClientReturnDocument =
+          await _apiService.hasPermission('client_return_document.read');
+      _hasSupplierReturnDocument =
+          await _apiService.hasPermission('supplier_return_document.read');
+      _hasMoneyIncome =
+          await _apiService.hasPermission('checking_account_pko.read');
+      _hasMoneyOutcome =
+          await _apiService.hasPermission('checking_account_rko.read');
       // _hasOrder = await _apiService.hasPermission('order.read'); // Проверка права для заказов
 
       // Проверяем права для справочников
       final hasStorage = await _apiService.hasPermission('storage.read');
       final hasUnit = await _apiService.hasPermission('unit.read');
       final hasSupplier = await _apiService.hasPermission('supplier.read');
-      final hasCashRegister = await _apiService.hasPermission('cash_register.read');
+      final hasCashRegister =
+          await _apiService.hasPermission('cash_register.read');
       final hasRkoArticle = await _apiService.hasPermission('rko_article.read');
       final hasPkoArticle = await _apiService.hasPermission('pko_article.read');
 
       // Справочники показываются если есть хотя бы одно право из документов или справочников
       _showReferences = _hasIncomeDocument ||
           _hasMovementDocument ||
+          _hasManufactureDocument ||
           _hasWriteOffDocument ||
           _hasExpenseDocument ||
           _hasClientReturnDocument ||
@@ -95,11 +119,12 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
           hasCashRegister ||
           hasRkoArticle ||
           hasPkoArticle;
-
     } catch (e) {
       debugPrint('Ошибка при проверке прав доступа: $e');
       _hasIncomeDocument = false;
       _hasMovementDocument = false;
+      _hasManufactureDocument = false;
+      _hasManufactureEnabled = false;
       _hasWriteOffDocument = false;
       _hasExpenseDocument = false;
       _hasClientReturnDocument = false;
@@ -122,11 +147,11 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
 
     // Добавляем заказы первыми
 
-
     if (_hasExpenseDocument) {
       allDocuments.add(
         WarehouseDocument(
-          title: AppLocalizations.of(context)!.translate('client_sale') ?? 'Продажа',
+          title: AppLocalizations.of(context)!.translate('client_sale') ??
+              'Продажа',
           icon: Icons.shopping_cart_outlined,
           color: docColor,
         ),
@@ -136,7 +161,8 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
     if (_hasClientReturnDocument) {
       allDocuments.add(
         WarehouseDocument(
-          title: AppLocalizations.of(context)!.translate('client_return') ?? 'Возврат от клиента',
+          title: AppLocalizations.of(context)!.translate('client_return') ??
+              'Возврат от клиента',
           icon: Icons.keyboard_return,
           color: docColor,
         ),
@@ -147,7 +173,8 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
     if (_hasIncomeDocument) {
       allDocuments.add(
         WarehouseDocument(
-          title: AppLocalizations.of(context)!.translate('income_goods') ?? 'Приход',
+          title: AppLocalizations.of(context)!.translate('income_goods') ??
+              'Приход',
           icon: Icons.add_box_outlined,
           color: docColor,
         ),
@@ -157,7 +184,8 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
     if (_hasMovementDocument) {
       allDocuments.add(
         WarehouseDocument(
-          title: AppLocalizations.of(context)!.translate('transfer') ?? 'Перемещение',
+          title: AppLocalizations.of(context)!.translate('transfer') ??
+              'Перемещение',
           icon: Icons.swap_horiz,
           color: docColor,
         ),
@@ -167,7 +195,8 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
     if (_hasWriteOffDocument) {
       allDocuments.add(
         WarehouseDocument(
-          title: AppLocalizations.of(context)!.translate('write_off') ?? 'Списание',
+          title: AppLocalizations.of(context)!.translate('write_off') ??
+              'Списание',
           icon: Icons.remove_circle_outline,
           color: docColor,
         ),
@@ -177,7 +206,8 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
     if (_hasSupplierReturnDocument) {
       allDocuments.add(
         WarehouseDocument(
-          title: AppLocalizations.of(context)!.translate('supplier_return') ?? 'Возврат поставщику',
+          title: AppLocalizations.of(context)!.translate('supplier_return') ??
+              'Возврат поставщику',
           icon: Icons.undo,
           color: docColor,
         ),
@@ -187,7 +217,8 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
     if (_hasMoneyIncome) {
       allDocuments.add(
         WarehouseDocument(
-          title: AppLocalizations.of(context)!.translate('money_income') ?? 'Приход денег',
+          title: AppLocalizations.of(context)!.translate('money_income') ??
+              'Приход денег',
           icon: Icons.add_circle_outline,
           color: docColor,
         ),
@@ -197,8 +228,20 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
     if (_hasMoneyOutcome) {
       allDocuments.add(
         WarehouseDocument(
-          title: AppLocalizations.of(context)!.translate('money_outcome') ?? 'Расход денег',
+          title: AppLocalizations.of(context)!.translate('money_outcome') ??
+              'Расход денег',
           icon: Icons.remove_circle_outline,
+          color: docColor,
+        ),
+      );
+    }
+
+    if (_hasManufactureDocument) {
+      allDocuments.add(
+        WarehouseDocument(
+          title: AppLocalizations.of(context)!.translate('manufacture') ??
+              'Производство',
+          icon: Icons.precision_manufacturing_outlined,
           color: docColor,
         ),
       );
@@ -220,55 +263,73 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
   }
 
   void _navigateToDocument(WarehouseDocument document) {
-    if (document.title == AppLocalizations.of(context)!.translate('income_goods') ||
+    if (document.title ==
+            AppLocalizations.of(context)!.translate('income_goods') ||
         document.title == 'Приход') {
       Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => IncomingScreen()),
       );
-    } else if (document.title == AppLocalizations.of(context)!.translate('client_sale') ||
+    } else if (document.title ==
+            AppLocalizations.of(context)!.translate('client_sale') ||
         document.title == 'Реализация клиент') {
       Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => ClientSaleScreen()),
       );
-    } else if (document.title == AppLocalizations.of(context)!.translate('supplier_return') ||
+    } else if (document.title ==
+            AppLocalizations.of(context)!.translate('supplier_return') ||
         document.title == 'Возврат поставщику') {
       Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => SupplierReturnScreen()),
       );
-    } else if (document.title == AppLocalizations.of(context)!.translate('client_return') ||
+    } else if (document.title ==
+            AppLocalizations.of(context)!.translate('client_return') ||
         document.title == 'Возврат от клиента') {
       Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => ClientReturnScreen()),
       );
-    } else if (document.title == AppLocalizations.of(context)!.translate('write_off') ||
+    } else if (document.title ==
+            AppLocalizations.of(context)!.translate('write_off') ||
         document.title == 'Списание') {
       Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => WriteOffScreen()),
       );
-    } else if (document.title == AppLocalizations.of(context)!.translate('transfer') ||
+    } else if (document.title ==
+            AppLocalizations.of(context)!.translate('transfer') ||
         document.title == 'Перемещение') {
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => MovementScreen(organizationId: 1)),
+        MaterialPageRoute(
+            builder: (context) => MovementScreen(organizationId: 1)),
       );
-    } else if (document.title == AppLocalizations.of(context)!.translate('money_income') ||
+    } else if (document.title ==
+            AppLocalizations.of(context)!.translate('manufacture') ||
+        document.title == 'Производство') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+            builder: (context) => ManufactureScreen(organizationId: 1)),
+      );
+    } else if (document.title ==
+            AppLocalizations.of(context)!.translate('money_income') ||
         document.title == 'Приход денег') {
       Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => MoneyIncomeScreen()),
       );
-    } else if (document.title == AppLocalizations.of(context)!.translate('money_outcome') ||
+    } else if (document.title ==
+            AppLocalizations.of(context)!.translate('money_outcome') ||
         document.title == 'Расход денег') {
       Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => MoneyOutcomeScreen()),
       );
-    } else if (document.title == AppLocalizations.of(context)!.translate('references') ||
+    } else if (document.title ==
+            AppLocalizations.of(context)!.translate('references') ||
         document.title == 'Справочники') {
       Navigator.push(
         context,
@@ -402,7 +463,8 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
             ),
             const SizedBox(height: 24),
             Text(
-              AppLocalizations.of(context)!.translate('no_permissions') ?? 'Нет доступа',
+              AppLocalizations.of(context)!.translate('no_permissions') ??
+                  'Нет доступа',
               style: const TextStyle(
                 fontSize: 20,
                 fontFamily: 'Gilroy',
@@ -412,7 +474,8 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
             ),
             const SizedBox(height: 12),
             Text(
-              AppLocalizations.of(context)!.translate('no_permissions_description') ??
+              AppLocalizations.of(context)!
+                      .translate('no_permissions_description') ??
                   'У вас нет прав доступа к данному разделу. Обратитесь к администратору.',
               textAlign: TextAlign.center,
               style: const TextStyle(
@@ -438,7 +501,8 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
         title: CustomAppBarPage2(
           title: isClickAvatarIcon
               ? localizations.translate('appbar_settings') ?? 'Настройки'
-              : localizations.translate('warehouse_accounting') ?? 'Учет склада',
+              : localizations.translate('warehouse_accounting') ??
+                  'Учет склада',
           onClickProfileAvatar: () {
             setState(() {
               isClickAvatarIcon = !isClickAvatarIcon;
@@ -458,30 +522,31 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
       body: isClickAvatarIcon
           ? ProfileScreen()
           : _isLoading
-          ? const Center(
-        child: PlayStoreImageLoading(
-          size: 80.0,
-          duration: Duration(milliseconds: 1000),
-        ),
-      )
-          : _documents.isEmpty
-          ? _buildNoPermissionsWidget()
-          : Container(
-        color: const Color(0xffF8F9FB),
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (_documents.isNotEmpty) _buildDocumentGrid(),
-              if (_showReferences) ...[
-                const SizedBox(height: 16),
-                _buildReferencesButton(),
-              ],const SizedBox(height: 20),
-            ],
-          ),
-        ),
-      ),
+              ? const Center(
+                  child: PlayStoreImageLoading(
+                    size: 80.0,
+                    duration: Duration(milliseconds: 1000),
+                  ),
+                )
+              : _documents.isEmpty
+                  ? _buildNoPermissionsWidget()
+                  : Container(
+                      color: const Color(0xffF8F9FB),
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            if (_documents.isNotEmpty) _buildDocumentGrid(),
+                            if (_showReferences) ...[
+                              const SizedBox(height: 16),
+                              _buildReferencesButton(),
+                            ],
+                            const SizedBox(height: 20),
+                          ],
+                        ),
+                      ),
+                    ),
     );
   }
 
@@ -534,7 +599,8 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
               ),
               const SizedBox(width: 16),
               Text(
-                AppLocalizations.of(context)!.translate('references') ?? 'Справочники',
+                AppLocalizations.of(context)!.translate('references') ??
+                    'Справочники',
                 style: const TextStyle(
                   fontSize: 16,
                   fontFamily: 'Gilroy',
