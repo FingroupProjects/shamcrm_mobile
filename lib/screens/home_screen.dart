@@ -33,6 +33,7 @@ import 'package:crm_task_manager/screens/empty_screen.dart';
 import 'package:crm_task_manager/screens/no_access_screen.dart';
 import 'package:crm_task_manager/screens/lead/lead_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/screens/sip/sip_screen.dart';
 import 'package:crm_task_manager/screens/task/task_screen.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -774,6 +775,19 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       navBarTitleKeysGroup1.add('appbar_chats');
       activeIconsGroup1.add('assets/icons/MyNavBar/chats_ON.png');
       inactiveIconsGroup1.add('assets/icons/MyNavBar/chats_OFF.png');
+    }
+
+    // SIP
+    // Fallback for current rollout: if backend does not send any sip.* permissions yet,
+    // keep the tab visible for integration/testing.
+    final bool showSipTab =
+        hasPermission('sip.read') || !hasAnyPermissionWithPrefix('sip.');
+    if (showSipTab) {
+      widgetsGroup1.add(const SipScreen());
+      titleKeysGroup1.add('appbar_sip');
+      navBarTitleKeysGroup1.add('appbar_sip');
+      activeIconsGroup1.add('assets/icons/MyNavBar/sip_ON.png');
+      inactiveIconsGroup1.add('assets/icons/MyNavBar/sip_OFF.png');
     }
 
     // ========== КЛЮЧЕВАЯ ЛОГИКА ==========

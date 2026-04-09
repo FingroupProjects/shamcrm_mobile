@@ -84,6 +84,9 @@ dependencies:
   json_annotation: ^4.9.0
   json_serializable: ^6.11.1
   build_runner: ^2.8.0
+  sip_ua:
+    path: third_party/sip_ua
+  flutter_webrtc: ^0.12.12+hotfix.1
   # home_widget: ^0.8.1
 
 
