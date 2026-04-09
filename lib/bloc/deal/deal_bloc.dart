@@ -1,6 +1,9 @@
 import 'dart:io';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/models/deal_model.dart';
+import 'package:crm_task_manager/offline/core/offline_module.dart';
+import 'package:crm_task_manager/offline/core/offline_runtime.dart';
+import 'package:crm_task_manager/offline/core/request_priority.dart';
 import 'package:crm_task_manager/screens/deal/deal_cache.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -15,11 +18,19 @@ class DealBloc extends Bloc<DealEvent, DealState> {
   String? _currentQuery;
   List<int>? _currentManagerIds;
   List<int>? _currentRegionsIds;
+  int? _currentRegionId;
+  List<int>? _currentCityIds;
+  List<int>? _currentExecutorIds;
+  List<int>? _currentSources;
   int? _currentStatusId;
   DateTime? _currentFromDate;
   DateTime? _currentToDate;
   List<int>? _currentLeadIds;
   bool? _currentHasTasks;
+  bool? _currentWithoutNotices;
+  bool? _currentOverdueNotices;
+  List<int>? _currentLeadStatuses;
+  List<int>? _currentReasonForRefusalIds;
   int? _currentDaysWithoutActivity;
   List<Map<String, dynamic>>? _currentDirectoryValues;
   List<String>? _currentNames;
@@ -41,21 +52,30 @@ class DealBloc extends Bloc<DealEvent, DealState> {
   }
 
   bool get _hasActiveFilters {
-    final bool listsOrQuery =
-        (_currentQuery != null && _currentQuery!.isNotEmpty) ||
-            (_currentManagerIds != null && _currentManagerIds!.isNotEmpty) ||
-            (_currentRegionsIds != null && _currentRegionsIds!.isNotEmpty) ||
-            (_currentLeadIds != null && _currentLeadIds!.isNotEmpty) ||
-            (_currentDirectoryValues != null &&
-                _currentDirectoryValues!.isNotEmpty) ||
-            (_currentCustomFieldFilters != null &&
-                _currentCustomFieldFilters!.isNotEmpty) ||
-            (_currentNames != null && _currentNames!.isNotEmpty);
+    final bool listsOrQuery = (_currentQuery != null &&
+            _currentQuery!.isNotEmpty) ||
+        (_currentManagerIds != null && _currentManagerIds!.isNotEmpty) ||
+        (_currentRegionsIds != null && _currentRegionsIds!.isNotEmpty) ||
+        (_currentRegionId != null) ||
+        (_currentCityIds != null && _currentCityIds!.isNotEmpty) ||
+        (_currentExecutorIds != null && _currentExecutorIds!.isNotEmpty) ||
+        (_currentSources != null && _currentSources!.isNotEmpty) ||
+        (_currentLeadIds != null && _currentLeadIds!.isNotEmpty) ||
+        (_currentLeadStatuses != null && _currentLeadStatuses!.isNotEmpty) ||
+        (_currentReasonForRefusalIds != null &&
+            _currentReasonForRefusalIds!.isNotEmpty) ||
+        (_currentDirectoryValues != null &&
+            _currentDirectoryValues!.isNotEmpty) ||
+        (_currentCustomFieldFilters != null &&
+            _currentCustomFieldFilters!.isNotEmpty) ||
+        (_currentNames != null && _currentNames!.isNotEmpty);
 
     final bool flagsOrDates = (_currentStatusId != null) ||
         (_currentFromDate != null) ||
         (_currentToDate != null) ||
         (_currentHasTasks == true) ||
+        (_currentWithoutNotices == true) ||
+        (_currentOverdueNotices == true) ||
         (_currentDaysWithoutActivity != null);
 
     return listsOrQuery || flagsOrDates;
@@ -93,11 +113,19 @@ class DealBloc extends Bloc<DealEvent, DealState> {
       _currentQuery = event.query;
       _currentManagerIds = event.managerIds;
       _currentRegionsIds = event.regionsIds;
+      _currentRegionId = event.regionId;
+      _currentCityIds = event.cityIds;
+      _currentExecutorIds = event.executorIds;
+      _currentSources = event.sources;
       _currentStatusId = event.statusIds;
       _currentFromDate = event.fromDate;
       _currentToDate = event.toDate;
       _currentLeadIds = event.leadIds;
       _currentHasTasks = event.hasTasks;
+      _currentWithoutNotices = event.withoutNotices;
+      _currentOverdueNotices = event.overdueNotices;
+      _currentLeadStatuses = event.leadStatuses;
+      _currentReasonForRefusalIds = event.reasonForRefusalIds;
       _currentDaysWithoutActivity = event.daysWithoutActivity;
       _currentDirectoryValues = event.directoryValues;
       _currentNames = event.names;
@@ -134,11 +162,19 @@ class DealBloc extends Bloc<DealEvent, DealState> {
           search: event.query,
           managers: event.managerIds,
           regions: event.regionsIds,
+          regionId: event.regionId,
+          cityIds: event.cityIds,
+          executorIds: event.executorIds,
+          sources: event.sources,
           statuses: event.statusIds,
           fromDate: event.fromDate,
           toDate: event.toDate,
           leads: event.leadIds,
           hasTasks: event.hasTasks,
+          withoutNotices: event.withoutNotices,
+          overdueNotices: event.overdueNotices,
+          leadStatuses: event.leadStatuses,
+          reasonForRefusalIds: event.reasonForRefusalIds,
           daysWithoutActivity: event.daysWithoutActivity,
           directoryValues: event.directoryValues,
           names: event.names,
@@ -208,11 +244,20 @@ class DealBloc extends Bloc<DealEvent, DealState> {
         // Сбрасываем все параметры фильтрации
         _currentQuery = null;
         _currentManagerIds = null;
+        _currentRegionsIds = null;
+        _currentRegionId = null;
+        _currentCityIds = null;
+        _currentExecutorIds = null;
+        _currentSources = null;
         _currentStatusId = null;
         _currentFromDate = null;
         _currentToDate = null;
         _currentLeadIds = null;
         _currentHasTasks = null;
+        _currentWithoutNotices = null;
+        _currentOverdueNotices = null;
+        _currentLeadStatuses = null;
+        _currentReasonForRefusalIds = null;
         _currentDaysWithoutActivity = null;
         _currentDirectoryValues = null;
         _currentNames = null;
@@ -237,6 +282,7 @@ class DealBloc extends Bloc<DealEvent, DealState> {
                   'id': status.id,
                   'title': status.title,
                   'deals_count': status.dealsCount ?? 0,
+                  'is_unassembled': status.isUnassembled,
                 })
             .toList());
 
@@ -273,6 +319,7 @@ class DealBloc extends Bloc<DealEvent, DealState> {
                 dealsCount: count,
                 isSuccess: false,
                 isFailure: false,
+                isUnassembled: status['is_unassembled'] == true,
                 showOnMainPage: false,
               );
             }).toList();
@@ -309,6 +356,7 @@ class DealBloc extends Bloc<DealEvent, DealState> {
                   'id': status.id,
                   'title': status.title,
                   'deals_count': status.dealsCount ?? 0,
+                  'is_unassembled': status.isUnassembled,
                 })
             .toList());
 
@@ -351,11 +399,18 @@ class DealBloc extends Bloc<DealEvent, DealState> {
         search: _currentQuery,
         managers: _currentManagerIds,
         regions: _currentRegionsIds,
+        regionId: _currentRegionId,
+        cityIds: _currentCityIds,
+        executorIds: _currentExecutorIds,
+        sources: _currentSources,
         statuses: _currentStatusId,
         fromDate: _currentFromDate,
         toDate: _currentToDate,
         leads: _currentLeadIds,
         hasTasks: _currentHasTasks,
+        withoutNotices: _currentWithoutNotices,
+        overdueNotices: _currentOverdueNotices,
+        leadStatuses: _currentLeadStatuses,
         daysWithoutActivity: _currentDaysWithoutActivity,
         directoryValues: _currentDirectoryValues,
         customFieldFilters: _currentCustomFieldFilters,
@@ -393,6 +448,7 @@ class DealBloc extends Bloc<DealEvent, DealState> {
         event.showOnMainPage,
         event.isSuccess,
         event.isFailure,
+        event.isUnassembled,
         event.userIds,
         event.changeStatusUserIds, // ✅ НОВОЕ
       );
@@ -412,7 +468,36 @@ class DealBloc extends Bloc<DealEvent, DealState> {
   Future<void> _createDeal(CreateDeal event, Emitter<DealState> emit) async {
     emit(DealLoading());
     if (!await _checkInternetConnection()) {
-      emit(DealError(event.localizations.translate('no_internet_connection')));
+      if (event.files != null && event.files!.isNotEmpty) {
+        emit(DealError(
+            'Офлайн-очередь для вложений будет доведена в phase 2. Сейчас офлайн поддерживаются только текстовые операции.'));
+        return;
+      }
+      await OfflineRuntime.instance.outboxService.enqueue(
+        id: 'deal_create_${DateTime.now().millisecondsSinceEpoch}',
+        module: OfflineModule.deal,
+        entityType: 'deal',
+        entityId: 'local_${DateTime.now().millisecondsSinceEpoch}',
+        operationType: 'create',
+        payload: {
+          'name': event.name,
+          'dealStatusId': event.dealStatusId,
+          'managerId': event.managerId,
+          'startDate': event.startDate?.toIso8601String(),
+          'endDate': event.endDate?.toIso8601String(),
+          'sum': event.sum,
+          'description': event.description,
+          'dealtypeId': event.dealtypeId,
+          'leadId': event.leadId,
+          'customFields': event.customFields,
+          'directoryValues': event.directoryValues,
+          'userIds': event.userIds,
+        },
+        idempotencyKey: 'deal-create-${DateTime.now().millisecondsSinceEpoch}',
+        priority: RequestPriority.high,
+      );
+      emit(DealSuccess(
+          'Сделка принята локально и поставлена в outbox для синхронизации.'));
       return;
     }
     try {
@@ -447,7 +532,42 @@ class DealBloc extends Bloc<DealEvent, DealState> {
     emit(DealLoading());
 
     if (!await _checkInternetConnection()) {
-      emit(DealError(event.localizations.translate('no_internet_connection')));
+      if (event.files != null && event.files!.isNotEmpty) {
+        emit(DealError(
+            'Офлайн-очередь для вложений будет доведена в phase 2. Сейчас офлайн поддерживаются только текстовые операции.'));
+        return;
+      }
+      await OfflineRuntime.instance.outboxService.enqueue(
+        id: 'deal_update_${event.dealId}_${DateTime.now().millisecondsSinceEpoch}',
+        module: OfflineModule.deal,
+        entityType: 'deal',
+        entityId: event.dealId.toString(),
+        operationType: 'update',
+        payload: {
+          'dealId': event.dealId,
+          'name': event.name,
+          'dealStatusId': event.dealStatusId,
+          'managerId': event.managerId,
+          'startDate': event.startDate?.toIso8601String(),
+          'endDate': event.endDate?.toIso8601String(),
+          'sum': event.sum,
+          'description': event.description,
+          'dealtypeId': event.dealtypeId,
+          'leadId': event.leadId,
+          'customFields': event.customFields,
+          'directoryValues': event.directoryValues,
+          'dealStatusIds': event.dealStatusIds,
+          'existingFiles': event.existingFiles,
+          'userIds': event.userIds,
+          'reasonForRefusalId': event.reasonForRefusalId,
+          'reasonForRefusal': event.reasonForRefusal,
+        },
+        idempotencyKey:
+            'deal-update-${event.dealId}-${DateTime.now().millisecondsSinceEpoch}',
+        priority: RequestPriority.high,
+      );
+      emit(DealSuccess(
+          'Изменения сделки приняты локально и поставлены в очередь.'));
       return;
     }
 
@@ -469,6 +589,8 @@ class DealBloc extends Bloc<DealEvent, DealState> {
         dealStatusIds: event.dealStatusIds,
         existingFiles: event.existingFiles,
         userIds: event.userIds, // ✅ НОВОЕ: передаем userIds
+        reasonForRefusalId: event.reasonForRefusalId,
+        reasonForRefusal: event.reasonForRefusal,
       );
 
       if (result['success']) {
@@ -542,6 +664,7 @@ class DealBloc extends Bloc<DealEvent, DealState> {
         event.day,
         event.isSuccess,
         event.isFailure,
+        event.isUnassembled,
         event.notificationMessage,
         event.showOnMainPage,
         event.userIds,
@@ -574,6 +697,7 @@ class DealBloc extends Bloc<DealEvent, DealState> {
       // Фильтры применяются только при загрузке сделок
       final statuses = await apiService.getDealStatuses(
         salesFunnelId: event.salesFunnelId,
+        reasonForRefusalIds: event.reasonForRefusalIds,
       );
 
       // КРИТИЧНО: Проверяем, не переключил ли пользователь воронку, пока мы ждали ответа
@@ -599,6 +723,7 @@ class DealBloc extends Bloc<DealEvent, DealState> {
                 'id': status.id,
                 'title': status.title,
                 'deals_count': status.dealsCount ?? 0,
+                'is_unassembled': status.isUnassembled,
               })
           .toList());
 
@@ -613,11 +738,20 @@ class DealBloc extends Bloc<DealEvent, DealState> {
         // Сохраняем фильтры для последующих запросов
         _currentQuery = null;
         _currentManagerIds = event.managerIds;
+        _currentRegionsIds = event.regionsIds;
+        _currentRegionId = event.regionId;
+        _currentCityIds = event.cityIds;
+        _currentExecutorIds = event.executorIds;
+        _currentSources = event.sources;
         _currentLeadIds = event.leadIds;
         _currentStatusId = event.statusIds;
         _currentFromDate = event.fromDate;
         _currentToDate = event.toDate;
         _currentHasTasks = event.hasTasks;
+        _currentWithoutNotices = event.withoutNotices;
+        _currentOverdueNotices = event.overdueNotices;
+        _currentLeadStatuses = event.leadStatuses;
+        _currentReasonForRefusalIds = event.reasonForRefusalIds;
         _currentDaysWithoutActivity = event.daysWithoutActivity;
         _currentDirectoryValues = event.directoryValues;
         _currentNames = event.names;
@@ -631,12 +765,20 @@ class DealBloc extends Bloc<DealEvent, DealState> {
             status.id,
             event.managerIds,
             event.regionsIds,
+            event.regionId,
+            event.cityIds,
+            event.executorIds,
+            event.sources,
             event.leadIds,
             event.statusIds,
             event.fromDate,
             event.toDate,
             event.hasTasks,
+            event.withoutNotices,
+            event.overdueNotices,
             event.daysWithoutActivity,
+            event.leadStatuses,
+            event.reasonForRefusalIds,
             event.directoryValues,
             event.names,
             event.salesFunnelId,
@@ -670,12 +812,20 @@ class DealBloc extends Bloc<DealEvent, DealState> {
     int statusId,
     List<int>? managerIds,
     List<int>? regionsIds,
+    int? regionId,
+    List<int>? cityIds,
+    List<int>? executorIds,
+    List<int>? sources,
     List<int>? leadIds,
     int? statusIds,
     DateTime? fromDate,
     DateTime? toDate,
     bool? hasTasks,
+    bool? withoutNotices,
+    bool? overdueNotices,
     int? daysWithoutActivity,
+    List<int>? leadStatuses,
+    List<int>? reasonForRefusalIds,
     List<Map<String, dynamic>>? directoryValues,
     List<String>? names,
     int? salesFunnelId,
@@ -696,11 +846,19 @@ class DealBloc extends Bloc<DealEvent, DealState> {
         perPage: 20,
         managers: managerIds,
         regions: regionsIds,
+        regionId: regionId,
+        cityIds: cityIds,
+        executorIds: executorIds,
+        sources: sources,
         leads: leadIds,
         statuses: statusId, // ID статуса через параметр statuses
         fromDate: fromDate,
         toDate: toDate,
         hasTasks: hasTasks,
+        withoutNotices: withoutNotices,
+        overdueNotices: overdueNotices,
+        leadStatuses: leadStatuses,
+        reasonForRefusalIds: reasonForRefusalIds,
         daysWithoutActivity: daysWithoutActivity,
         directoryValues: directoryValues,
         names: names,
@@ -737,11 +895,15 @@ class DealBloc extends Bloc<DealEvent, DealState> {
     _currentQuery = null;
     _currentManagerIds = null;
     _currentRegionsIds = null;
+    _currentSources = null;
     _currentStatusId = null;
     _currentFromDate = null;
     _currentToDate = null;
     _currentLeadIds = null;
     _currentHasTasks = null;
+    _currentWithoutNotices = null;
+    _currentOverdueNotices = null;
+    _currentLeadStatuses = null;
     _currentDaysWithoutActivity = null;
     _currentDirectoryValues = null;
     _currentNames = null;

@@ -24,7 +24,8 @@ if (flutterVersionName == null) {
 
 android {
     namespace "com.softtech.crm_task_manager"
-    compileSdk 36
+    compileSdk 35
+    buildToolsVersion "35.0.1"
     ndkVersion "26.1.10909125"
 
     compileOptions {
@@ -44,7 +45,7 @@ android {
     defaultConfig {
         applicationId "com.softtech.crm_task_manager"
         minSdkVersion flutter.minSdkVersion
-        targetSdkVersion 36
+        targetSdkVersion 35
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
         ndk {
@@ -79,4 +80,7 @@ flutter {
 dependencies {
     coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.0.4'
     implementation 'com.google.zxing:core:3.5.2'  // Явно добавить ZXing для qr_code_scanner
+    implementation 'com.google.android.play:app-update:2.1.0'
+    implementation 'com.google.android.play:app-update-ktx:2.1.0'
+    implementation 'org.linphone:linphone-sdk-android:5.4.106'
 }

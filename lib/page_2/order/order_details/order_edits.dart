@@ -119,10 +119,12 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
         'imagePath': imagePath,
       };
     }).toList();
-    _selectedLead = LeadData(
-      id: widget.order.lead.id,
-      name: widget.order.lead.name,
-    );
+    _selectedLead = widget.order.lead.id != 0 || widget.order.lead.name.isNotEmpty
+        ? LeadData(
+            id: widget.order.lead.id,
+            name: widget.order.lead.name,
+          )
+        : null;
     selectedManager = widget.order.manager?.id.toString();
     _selectedIntegrationId = widget.order.integrationId;
     _selectedDeliveryAddress = widget.order.deliveryAddress != null
@@ -182,7 +184,10 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
       _loadInternetStores();
       _branchBloc.add(FetchBranches());
       _deliveryAddressBloc
-          .add(FetchDeliveryAddresses(leadId: widget.order.lead.id));
+          .add(FetchDeliveryAddresses(
+        leadId: widget.order.deal == null ? widget.order.lead.id : null,
+        dealId: widget.order.deal?.id,
+      ));
       context.read<GetAllManagerBloc>().add(GetAllManagerEv());
     });
   }
@@ -607,6 +612,9 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
   }
 
   Widget _buildLeadField() {
+    if (widget.order.deal != null) {
+      return const SizedBox.shrink();
+    }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -665,6 +673,7 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
       children: [
         DeliveryAddressDropdown(
           leadId: _selectedLead?.id ?? 0,
+          dealId: widget.order.deal?.id,
           organizationId: widget.order.organizationId ?? 1,
           selectedAddress: _selectedDeliveryAddress,
           preferredAddressText: _pendingManualAddressSelection,
@@ -1898,7 +1907,8 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
               _orderBloc.add(
                 AddMiniAppAddress(
                   address: manualAddress,
-                  leadId: leadId,
+                  leadId: widget.order.deal == null ? leadId : null,
+                  dealId: widget.order.deal?.id,
                 ),
               );
             },
@@ -2021,7 +2031,10 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
                   );
                   _deliveryAddressBloc.add(
                     FetchDeliveryAddresses(
-                      leadId: _selectedLead?.id ?? 0,
+                      leadId: widget.order.deal == null
+                          ? _selectedLead?.id ?? 0
+                          : null,
+                      dealId: widget.order.deal?.id,
                     ),
                   );
                 } else if (state is OrderCreateAddressError) {
@@ -2633,7 +2646,9 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
                   context.read<OrderBloc>().add(UpdateOrder(
                         orderId: widget.order.id,
                         phone: _fullPhoneNumber ?? widget.order.phone,
-                        leadId: _selectedLead?.id ?? 0,
+                        leadId:
+                            widget.order.deal == null ? _selectedLead?.id : null,
+                        dealId: widget.order.deal?.id,
                         delivery: !isPickup,
                         deliveryAddress:
                             isPickup ? null : _selectedDeliveryAddress?.address,

@@ -1,9 +1,12 @@
+import 'dart:async';
+import 'dart:math' as math;
+
+import 'package:audioplayers/audioplayers.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
-import 'dart:math' as math;
 
 import 'sip_service.dart';
 import 'sip_state.dart';
@@ -15,7 +18,8 @@ class SipScreen extends StatefulWidget {
   State<SipScreen> createState() => _SipScreenState();
 }
 
-class _SipScreenState extends State<SipScreen> {
+class _SipScreenState extends State<SipScreen>
+    with SingleTickerProviderStateMixin {
   static final SipService _sipService = SipService();
 
   final TextEditingController _serverController = TextEditingController();
@@ -23,10 +27,17 @@ class _SipScreenState extends State<SipScreen> {
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _sipIdController = TextEditingController();
   final TextEditingController _portController = TextEditingController();
+  final AudioPlayer _callFeedbackPlayer = AudioPlayer();
 
   SipTransportUi _selectedTransport = SipTransportUi.ws;
 
   int _bottomTabIndex = 0;
+  late final AnimationController _pulseController;
+  Timer? _callDurationTimer;
+  SipCallUiStatus? _lastObservedCallStatus;
+  String? _activeFeedbackAsset;
+  DateTime? _connectedAt;
+  Duration _connectedDuration = Duration.zero;
 
   static const List<Map<String, String>> _dialPadItems = [
     {'key': '1', 'letters': ''},
@@ -46,7 +57,20 @@ class _SipScreenState extends State<SipScreen> {
   @override
   void initState() {
     super.initState();
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1600),
+    )..repeat();
+    _configureCallFeedbackPlayer();
     _initializeSip();
+  }
+
+  Future<void> _configureCallFeedbackPlayer() async {
+    try {
+      await _callFeedbackPlayer.setReleaseMode(ReleaseMode.loop);
+      await _callFeedbackPlayer.setPlayerMode(PlayerMode.mediaPlayer);
+      await _callFeedbackPlayer.setVolume(1);
+    } catch (_) {}
   }
 
   Future<void> _initializeSip() async {
@@ -67,6 +91,10 @@ class _SipScreenState extends State<SipScreen> {
 
   @override
   void dispose() {
+    _callDurationTimer?.cancel();
+    _pulseController.dispose();
+    unawaited(_callFeedbackPlayer.stop());
+    _callFeedbackPlayer.dispose();
     _serverController.dispose();
     _loginController.dispose();
     _passwordController.dispose();
@@ -168,6 +196,75 @@ class _SipScreenState extends State<SipScreen> {
     await _sipService.makeCall();
   }
 
+  void _syncCallEffects(SipUiState state) {
+    final status = state.callStatus;
+    if (_lastObservedCallStatus == status) return;
+
+    _lastObservedCallStatus = status;
+
+    switch (status) {
+      case SipCallUiStatus.incoming:
+        _stopCallDurationTicker();
+        unawaited(_playFeedbackLoop('audio/get.mp3'));
+        break;
+      case SipCallUiStatus.calling:
+      case SipCallUiStatus.ringing:
+        _stopCallDurationTicker();
+        unawaited(_playFeedbackLoop('audio/send.mp3'));
+        break;
+      case SipCallUiStatus.inCall:
+        _startCallDurationTicker();
+        unawaited(_stopFeedbackLoop());
+        break;
+      case SipCallUiStatus.idle:
+      case SipCallUiStatus.ended:
+      case SipCallUiStatus.failed:
+        _stopCallDurationTicker(reset: true);
+        unawaited(_stopFeedbackLoop());
+        break;
+    }
+  }
+
+  Future<void> _playFeedbackLoop(String assetPath) async {
+    if (_activeFeedbackAsset == assetPath) return;
+    _activeFeedbackAsset = assetPath;
+
+    try {
+      await _callFeedbackPlayer.stop();
+      await _callFeedbackPlayer.setReleaseMode(ReleaseMode.loop);
+      await _callFeedbackPlayer.play(AssetSource(assetPath));
+    } catch (_) {}
+  }
+
+  Future<void> _stopFeedbackLoop() async {
+    _activeFeedbackAsset = null;
+    try {
+      await _callFeedbackPlayer.stop();
+    } catch (_) {}
+  }
+
+  void _startCallDurationTicker() {
+    _connectedAt ??= DateTime.now();
+    _callDurationTimer?.cancel();
+    _callDurationTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      final connectedAt = _connectedAt;
+      if (!mounted || connectedAt == null) return;
+      setState(() {
+        _connectedDuration = DateTime.now().difference(connectedAt);
+      });
+    });
+  }
+
+  void _stopCallDurationTicker({bool reset = false}) {
+    _callDurationTimer?.cancel();
+    _callDurationTimer = null;
+
+    if (reset) {
+      _connectedAt = null;
+      _connectedDuration = Duration.zero;
+    }
+  }
+
   String _callLabel(BuildContext context, SipCallUiStatus status) {
     final l10n = AppLocalizations.of(context)!;
     switch (status) {
@@ -199,6 +296,67 @@ class _SipScreenState extends State<SipScreen> {
     final minutes = duration.inMinutes.toString().padLeft(2, '0');
     final seconds = (duration.inSeconds % 60).toString().padLeft(2, '0');
     return '$minutes:$seconds';
+  }
+
+  bool _isActiveCallState(SipCallUiStatus status) {
+    return status == SipCallUiStatus.incoming ||
+        status == SipCallUiStatus.calling ||
+        status == SipCallUiStatus.ringing ||
+        status == SipCallUiStatus.inCall;
+  }
+
+  String _displayIdentity(SipUiState state) {
+    final raw = (state.remoteIdentity?.trim().isNotEmpty == true
+            ? state.remoteIdentity!.trim()
+            : _sipIdController.text.trim())
+        .trim();
+
+    if (raw.isEmpty) return 'Неизвестно';
+
+    var value = raw;
+    if (value.startsWith('sip:')) {
+      value = value.substring(4);
+    }
+    if (value.contains('@')) {
+      value = value.split('@').first;
+    }
+    return value;
+  }
+
+  Color _callAccent(SipCallUiStatus status) {
+    switch (status) {
+      case SipCallUiStatus.incoming:
+        return const Color(0xFFF59E0B);
+      case SipCallUiStatus.calling:
+      case SipCallUiStatus.ringing:
+        return const Color(0xFF2563EB);
+      case SipCallUiStatus.inCall:
+        return const Color(0xFF10B981);
+      case SipCallUiStatus.failed:
+        return const Color(0xFFEF4444);
+      case SipCallUiStatus.idle:
+      case SipCallUiStatus.ended:
+        return const Color(0xFF64748B);
+    }
+  }
+
+  String _callHint(SipCallUiStatus status) {
+    switch (status) {
+      case SipCallUiStatus.incoming:
+        return 'Входящий вызов. Звучит сигнал вызова.';
+      case SipCallUiStatus.calling:
+        return 'Исходящий вызов. Включен сигнал ожидания ответа.';
+      case SipCallUiStatus.ringing:
+        return 'Абонент уведомлен. Ожидаем ответ.';
+      case SipCallUiStatus.inCall:
+        return 'Соединение активно.';
+      case SipCallUiStatus.failed:
+        return 'Не удалось завершить вызов успешно.';
+      case SipCallUiStatus.ended:
+        return 'Вызов завершен.';
+      case SipCallUiStatus.idle:
+        return 'Готов к новому вызову.';
+    }
   }
 
   Future<void> _showSettingsSheet() async {
@@ -373,6 +531,9 @@ class _SipScreenState extends State<SipScreen> {
         final state = _sipService.state;
         final isRegistered =
             state.registrationStatus == SipRegistrationUiStatus.registered;
+        final isActiveCall = _isActiveCallState(state.callStatus);
+
+        _syncCallEffects(state);
 
         if (!_hasCredentials(state) || !isRegistered) {
           return _buildAuthorizationView(context, state);
@@ -392,25 +553,36 @@ class _SipScreenState extends State<SipScreen> {
               child: Center(
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 560),
-                  child: Column(
-                    children: [
-                      _buildTopBar(context, state),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: _statusBanner(context, state),
-                      ),
-                      const SizedBox(height: 8),
-                      Expanded(
-                        child: AnimatedSwitcher(
-                          duration: const Duration(milliseconds: 220),
-                          child: _bottomTabIndex == 0
-                              ? _dialPadView(context, state)
-                              : _journalView(context, state),
+                  child: isActiveCall
+                      ? _activeCallView(context, state)
+                      : Column(
+                          children: [
+                            _buildTopBar(context, state),
+                            Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 16),
+                              child: _statusBanner(context, state),
+                            ),
+                            if (state.transport != SipTransportUi.ws ||
+                                (state.errorMessage != null &&
+                                    state.errorMessage!.trim().isNotEmpty))
+                              Padding(
+                                padding:
+                                    const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                                child: _compatibilityBanner(state),
+                              ),
+                            const SizedBox(height: 8),
+                            Expanded(
+                              child: AnimatedSwitcher(
+                                duration: const Duration(milliseconds: 220),
+                                child: _bottomTabIndex == 0
+                                    ? _dialPadView(context, state)
+                                    : _journalView(context, state),
+                              ),
+                            ),
+                            _bottomSwitcher(context),
+                          ],
                         ),
-                      ),
-                      _bottomSwitcher(context),
-                    ],
-                  ),
                 ),
               ),
             ),
@@ -729,6 +901,70 @@ class _SipScreenState extends State<SipScreen> {
     );
   }
 
+  Widget _compatibilityBanner(SipUiState state) {
+    final hasMessage =
+        state.errorMessage != null && state.errorMessage!.trim().isNotEmpty;
+    final isFailure = state.callStatus == SipCallUiStatus.failed ||
+        state.registrationStatus == SipRegistrationUiStatus.failed;
+
+    final title = hasMessage
+        ? (isFailure ? 'Диагностика SIP' : 'Режим вызова')
+        : 'Встроенный SIP';
+    final body = hasMessage
+        ? state.errorMessage!.trim()
+        : state.transport == SipTransportUi.ws
+            ? 'WS/WSS использует текущий Flutter SIP/WebRTC стек.'
+            : 'UDP/TCP на Android теперь идут через встроенный native SIP-движок внутри CRM. Внешние SIP-приложения не требуются.';
+    final color = isFailure ? const Color(0xFFDC2626) : const Color(0xFF2563EB);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: color.withValues(alpha: 0.18)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            isFailure
+                ? CupertinoIcons.exclamationmark_triangle_fill
+                : CupertinoIcons.arrow_up_right_circle_fill,
+            color: color,
+            size: 18,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    color: color,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  body,
+                  style: const TextStyle(
+                    color: Color(0xFF334155),
+                    height: 1.35,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _dialPadView(BuildContext context, SipUiState state) {
     return LayoutBuilder(
       key: const ValueKey('dial'),
@@ -869,17 +1105,501 @@ class _SipScreenState extends State<SipScreen> {
                 ],
               ),
               const SizedBox(height: 6),
-              if (state.callStatus == SipCallUiStatus.inCall ||
-                  state.callStatus == SipCallUiStatus.ringing ||
-                  state.callStatus == SipCallUiStatus.calling)
-                _inCallActions(context, state),
-              if (state.callStatus == SipCallUiStatus.inCall)
-                Padding(
-                  padding: const EdgeInsets.only(top: 8),
-                  child: _videoPreview(context),
-                ),
             ],
           ),
+        );
+      },
+    );
+  }
+
+  Widget _activeCallView(BuildContext context, SipUiState state) {
+    final accent = _callAccent(state.callStatus);
+    final target = _displayIdentity(state);
+    final showVideo = state.transport == SipTransportUi.ws &&
+        _sipService.remoteRenderer.srcObject != null;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 10),
+      child: Column(
+        children: [
+          _buildTopBar(context, state),
+          Expanded(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                return SingleChildScrollView(
+                  padding: const EdgeInsets.only(top: 10, bottom: 8),
+                  physics: const BouncingScrollPhysics(),
+                  child: ConstrainedBox(
+                    constraints:
+                        BoxConstraints(minHeight: constraints.maxHeight),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        _callHeroCard(
+                          context: context,
+                          state: state,
+                          target: target,
+                          accent: accent,
+                        ),
+                        const SizedBox(height: 20),
+                        if (state.callStatus == SipCallUiStatus.inCall &&
+                            showVideo)
+                          _callVideoCard(context)
+                        else
+                          _soundIndicatorCard(state, accent),
+                        const SizedBox(height: 20),
+                        _callControlPanel(context, state, accent),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _callHeroCard({
+    required BuildContext context,
+    required SipUiState state,
+    required String target,
+    required Color accent,
+  }) {
+    final l10n = AppLocalizations.of(context)!;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 22),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Colors.white,
+            accent.withValues(alpha: 0.14),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(28),
+        boxShadow: [
+          BoxShadow(
+            color: accent.withValues(alpha: 0.14),
+            blurRadius: 26,
+            offset: const Offset(0, 14),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: accent.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _waveBars(accent),
+                    const SizedBox(width: 10),
+                    Text(
+                      _callLabel(context, state.callStatus),
+                      style: TextStyle(
+                        color: accent,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 18),
+          _pulseOrb(accent, state.callStatus),
+          const SizedBox(height: 18),
+          Text(
+            target,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontSize: 38,
+              height: 1,
+              fontWeight: FontWeight.w300,
+              letterSpacing: 1.2,
+              color: Color(0xFF0F172A),
+            ),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            _callHint(state.callStatus),
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontSize: 15,
+              height: 1.35,
+              color: Color(0xFF475569),
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 14),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.86),
+              borderRadius: BorderRadius.circular(18),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  CupertinoIcons.clock_fill,
+                  color: accent,
+                  size: 18,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    state.callStatus == SipCallUiStatus.inCall
+                        ? _formatDuration(_connectedDuration)
+                        : l10n.translate('sip_call_state'),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF0F172A),
+                    ),
+                  ),
+                ),
+                Text(
+                  state.callStatus == SipCallUiStatus.inCall
+                      ? 'В разговоре'
+                      : _callLabel(context, state.callStatus),
+                  style: TextStyle(
+                    color: accent,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _pulseOrb(Color accent, SipCallUiStatus status) {
+    final icon = status == SipCallUiStatus.incoming
+        ? CupertinoIcons.phone_down_fill
+        : CupertinoIcons.phone_fill;
+
+    return AnimatedBuilder(
+      animation: _pulseController,
+      builder: (context, child) {
+        final firstWave = 1 + (_pulseController.value * 0.34);
+        final secondWave = 1 + (((_pulseController.value + 0.45) % 1) * 0.26);
+
+        return SizedBox(
+          width: 180,
+          height: 180,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              Transform.scale(
+                scale: firstWave,
+                child: Container(
+                  width: 92,
+                  height: 92,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: accent.withValues(
+                      alpha: (0.16 * (1 - _pulseController.value))
+                          .clamp(0.02, 0.16),
+                    ),
+                  ),
+                ),
+              ),
+              Transform.scale(
+                scale: secondWave,
+                child: Container(
+                  width: 116,
+                  height: 116,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: accent.withValues(
+                      alpha:
+                          (0.11 * (1 - ((_pulseController.value + 0.45) % 1)))
+                              .clamp(0.01, 0.11),
+                    ),
+                  ),
+                ),
+              ),
+              Container(
+                width: 88,
+                height: 88,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      accent.withValues(alpha: 0.84),
+                      accent,
+                    ],
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: accent.withValues(alpha: 0.35),
+                      blurRadius: 26,
+                      offset: const Offset(0, 12),
+                    ),
+                  ],
+                ),
+                child: Icon(icon, color: Colors.white, size: 36),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _soundIndicatorCard(SipUiState state, Color accent) {
+    final isSoundActive = state.callStatus == SipCallUiStatus.incoming ||
+        state.callStatus == SipCallUiStatus.calling ||
+        state.callStatus == SipCallUiStatus.ringing;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF0F172A).withValues(alpha: 0.06),
+            blurRadius: 18,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 54,
+            height: 54,
+            decoration: BoxDecoration(
+              color: accent.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(18),
+            ),
+            child: Icon(
+              isSoundActive
+                  ? CupertinoIcons.waveform_path_ecg
+                  : CupertinoIcons.speaker_slash_fill,
+              color: accent,
+              size: 24,
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  isSoundActive
+                      ? 'Звуковой сигнал активен'
+                      : 'Ожидание без звука',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF0F172A),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  _callHint(state.callStatus),
+                  style: const TextStyle(
+                    color: Color(0xFF64748B),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          _waveBars(accent),
+        ],
+      ),
+    );
+  }
+
+  Widget _callVideoCard(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF0F172A).withValues(alpha: 0.06),
+            blurRadius: 18,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: _videoPreview(context),
+    );
+  }
+
+  Widget _callControlPanel(
+    BuildContext context,
+    SipUiState state,
+    Color accent,
+  ) {
+    final l10n = AppLocalizations.of(context)!;
+
+    if (state.callStatus == SipCallUiStatus.incoming) {
+      return _incomingActionPanel(context);
+    }
+
+    return Wrap(
+      spacing: 12,
+      runSpacing: 12,
+      alignment: WrapAlignment.center,
+      children: [
+        _callControlTile(
+          icon: state.isMuted
+              ? CupertinoIcons.mic_slash_fill
+              : CupertinoIcons.mic_fill,
+          label: state.isMuted
+              ? l10n.translate('sip_unmute')
+              : l10n.translate('sip_mute'),
+          onTap: _sipService.toggleMute,
+          background: Colors.white,
+          foreground: const Color(0xFF0F172A),
+        ),
+        _callControlTile(
+          icon: state.isSpeakerOn
+              ? CupertinoIcons.speaker_slash_fill
+              : CupertinoIcons.speaker_2_fill,
+          label: state.isSpeakerOn
+              ? l10n.translate('sip_speaker_off')
+              : l10n.translate('sip_speaker_on'),
+          onTap: _sipService.toggleSpeaker,
+          background: accent.withValues(alpha: 0.10),
+          foreground: accent,
+        ),
+        _callControlTile(
+          icon: CupertinoIcons.phone_down_fill,
+          label: l10n.translate('sip_hangup'),
+          onTap: _sipService.hangup,
+          background: const Color(0xFFEF4444),
+          foreground: Colors.white,
+          emphasized: true,
+        ),
+      ],
+    );
+  }
+
+  Widget _incomingActionPanel(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
+    return Row(
+      children: [
+        Expanded(
+          child: _callControlTile(
+            icon: CupertinoIcons.phone_down_fill,
+            label: l10n.translate('sip_decline'),
+            onTap: _sipService.decline,
+            background: const Color(0xFFEF4444),
+            foreground: Colors.white,
+            emphasized: true,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: _callControlTile(
+            icon: CupertinoIcons.phone_fill,
+            label: l10n.translate('sip_accept'),
+            onTap: _sipService.acceptCall,
+            background: const Color(0xFF22C55E),
+            foreground: Colors.white,
+            emphasized: true,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _callControlTile({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+    required Color background,
+    required Color foreground,
+    bool emphasized = false,
+  }) {
+    return CupertinoButton(
+      padding: EdgeInsets.zero,
+      onPressed: onTap,
+      child: Container(
+        constraints: BoxConstraints(
+          minWidth: emphasized ? 146 : 116,
+          minHeight: 116,
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+        decoration: BoxDecoration(
+          color: background,
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color: background.withValues(alpha: emphasized ? 0.28 : 0.10),
+              blurRadius: emphasized ? 18 : 12,
+              offset: const Offset(0, 10),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: foreground, size: 30),
+            const SizedBox(height: 12),
+            Text(
+              label,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: foreground,
+                fontWeight: FontWeight.w700,
+                fontSize: 15,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _waveBars(Color color) {
+    return AnimatedBuilder(
+      animation: _pulseController,
+      builder: (context, child) {
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: List.generate(4, (index) {
+            final phase =
+                ((_pulseController.value + index * 0.16) % 1) * math.pi * 2;
+            final height = 8 + math.sin(phase).abs() * 14;
+            return Container(
+              width: 4,
+              height: height,
+              margin: EdgeInsets.only(right: index == 3 ? 0 : 3),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.45 + index * 0.1),
+                borderRadius: BorderRadius.circular(999),
+              ),
+            );
+          }),
         );
       },
     );
@@ -936,70 +1656,6 @@ class _SipScreenState extends State<SipScreen> {
               ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _inCallActions(BuildContext context, SipUiState state) {
-    final l10n = AppLocalizations.of(context)!;
-
-    return Padding(
-      padding: const EdgeInsets.only(top: 8),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          CupertinoButton(
-            padding: EdgeInsets.zero,
-            onPressed: _sipService.toggleMute,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Text(
-                state.isMuted
-                    ? l10n.translate('sip_unmute')
-                    : l10n.translate('sip_mute'),
-                style: const TextStyle(color: Color(0xFF0F172A)),
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-          CupertinoButton(
-            padding: EdgeInsets.zero,
-            onPressed: _sipService.toggleSpeaker,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Text(
-                state.isSpeakerOn
-                    ? l10n.translate('sip_speaker_off')
-                    : l10n.translate('sip_speaker_on'),
-                style: const TextStyle(color: Color(0xFF0F172A)),
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-          CupertinoButton(
-            padding: EdgeInsets.zero,
-            onPressed: _sipService.hangup,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-              decoration: BoxDecoration(
-                color: const Color(0xFFEF4444),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Text(
-                l10n.translate('sip_hangup'),
-                style: const TextStyle(color: Colors.white),
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }

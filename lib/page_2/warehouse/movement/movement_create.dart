@@ -308,6 +308,14 @@ class CreateMovementDocumentScreenState
   }
 
   void _createDocument({bool approve = false}) async {
+    if (_isLoading) return;
+    setState(() => _isLoading = true);
+
+    void cancelLoading() {
+      if (!mounted || !_isLoading) return;
+      setState(() => _isLoading = false);
+    }
+
     // ✅ СНАЧАЛА проверяем склады и устанавливаем флаги ошибок
     bool hasStorageErrors = false;
 
@@ -342,11 +350,15 @@ class CreateMovementDocumentScreenState
             'Склад-отправитель и склад-получатель должны быть разными',
         false,
       );
+      cancelLoading();
       return;
     }
 
     // ✅ ПОТОМ вызываем validate() чтобы показать текст ошибки
-    if (!_formKey.currentState!.validate()) return;
+    if (!_formKey.currentState!.validate()) {
+      cancelLoading();
+      return;
+    }
 
     if (hasStorageErrors) {
       _showSnackBar(
@@ -354,6 +366,7 @@ class CreateMovementDocumentScreenState
             'Заполните обязательные поля',
         false,
       );
+      cancelLoading();
       return;
     }
 
@@ -393,10 +406,9 @@ class CreateMovementDocumentScreenState
       );
       // Фокусируемся на первом товаре с ошибкой
       _focusFirstErrorItem();
+      cancelLoading();
       return;
     }
-
-    setState(() => _isLoading = true);
 
     try {
       DateTime? parsedDate =
@@ -422,7 +434,7 @@ class CreateMovementDocumentScreenState
         approve: approve,
       ));
     } catch (e) {
-      setState(() => _isLoading = false);
+      cancelLoading();
       _showSnackBar(
         AppLocalizations.of(context)!.translate('enter_valid_datetime') ??
             'Введите корректную дату и время',

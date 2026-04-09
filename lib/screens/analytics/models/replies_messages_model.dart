@@ -15,7 +15,8 @@ class ReplyChannelStats {
 
   factory ReplyChannelStats.fromJson(Map<String, dynamic> json) {
     return ReplyChannelStats(
-      channelName: SafeConverters.toSafeString(json['channel_name'], defaultValue: 'Unknown'),
+      channelName: SafeConverters.toSafeString(json['channel_name'],
+          defaultValue: 'Unknown'),
       sentMessages: SafeConverters.toInt(json['sent_messages']),
       receivedMessages: SafeConverters.toInt(json['received_messages']),
       unansweredChats: SafeConverters.toInt(json['unanswered_chats']),
@@ -70,7 +71,8 @@ class RepliesToMessagesResponse {
 
     return RepliesToMessagesResponse(
       byChannel: [],
-      totals: RepliesMessagesTotals(sentMessages: 0, receivedMessages: 0, unansweredChats: 0),
+      totals: RepliesMessagesTotals(
+          sentMessages: 0, receivedMessages: 0, unansweredChats: 0),
     );
   }
 }

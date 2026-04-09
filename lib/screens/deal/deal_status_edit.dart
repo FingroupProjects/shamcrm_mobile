@@ -29,6 +29,7 @@ class _EditDealStatusScreenState extends State<EditDealStatusScreen> {
   late TextEditingController _notificationMessageController;
   bool _isSuccess = false;
   bool _isFailure = false;
+  bool _isUnassembled = false;
   bool _showOnMainPage = false;
   late DealBloc _dealBloc;
   bool _dataLoaded = false;
@@ -60,22 +61,26 @@ class _EditDealStatusScreenState extends State<EditDealStatusScreen> {
   }
 
   // ✅ НОВОЕ: Загрузка настройки
- Future<void> _loadMultiSelectSetting() async {
+  Future<void> _loadMultiSelectSetting() async {
     final prefs = await SharedPreferences.getInstance();
-    final managingVisibility = prefs.getBool('managing_deal_status_visibility') ?? false;
-    final changeMultiple = prefs.getBool('change_deal_to_multiple_statuses') ?? false;
-    
+    final managingVisibility =
+        prefs.getBool('managing_deal_status_visibility') ?? false;
+    final changeMultiple =
+        prefs.getBool('change_deal_to_multiple_statuses') ?? false;
+
     // Если хотя бы один флаг true, включаем мультивыбор
     final value = managingVisibility || changeMultiple;
-    
+
     if (mounted) {
       setState(() {
         _isMultiSelectEnabled = value;
       });
     }
-    
-    debugPrint('EditDealStatusScreen: managing_deal_status_visibility = $managingVisibility');
-    debugPrint('EditDealStatusScreen: change_deal_to_multiple_statuses = $changeMultiple');
+
+    debugPrint(
+        'EditDealStatusScreen: managing_deal_status_visibility = $managingVisibility');
+    debugPrint(
+        'EditDealStatusScreen: change_deal_to_multiple_statuses = $changeMultiple');
     debugPrint('EditDealStatusScreen: _isMultiSelectEnabled = $value');
   }
 
@@ -114,6 +119,7 @@ class _EditDealStatusScreenState extends State<EditDealStatusScreen> {
               : 0,
           _isSuccess,
           _isFailure,
+          _isUnassembled,
           _notificationMessageController.text,
           _showOnMainPage,
           localizations,
@@ -194,6 +200,7 @@ class _EditDealStatusScreenState extends State<EditDealStatusScreen> {
             _daysController.text = state.dealStatus.day?.toString() ?? '';
             _isSuccess = state.dealStatus.isSuccess;
             _isFailure = state.dealStatus.isFailure;
+            _isUnassembled = state.dealStatus.isUnassembled;
             _notificationMessageController.text =
                 state.dealStatus.notificationMessage ?? '';
             _showOnMainPage = state.dealStatus.showOnMainPage;
@@ -560,6 +567,18 @@ class _EditDealStatusScreenState extends State<EditDealStatusScreen> {
                                       ),
                                     ),
                                   ],
+                                ),
+                                const SizedBox(height: 12),
+                                _buildCheckbox(
+                                  'Неразобранные',
+                                  _isUnassembled,
+                                  (v) {
+                                    if (v != null) {
+                                      setState(() {
+                                        _isUnassembled = v;
+                                      });
+                                    }
+                                  },
                                 ),
                                 const SizedBox(height: 12),
                                 _buildCheckbox(

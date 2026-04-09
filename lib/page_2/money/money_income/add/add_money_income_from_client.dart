@@ -130,7 +130,7 @@ class _AddMoneyIncomeFromClientState extends State<AddMoneyIncomeFromClient> {
       return;
     }
 
-    if (_isExchangeRateRequired) {
+    if (approve && _isExchangeRateRequired) {
       final rate = _exchangeRateValue;
       if (rate == null || rate <= 0) {
         setState(() {
@@ -185,7 +185,7 @@ class _AddMoneyIncomeFromClientState extends State<AddMoneyIncomeFromClient> {
         comment: _commentController.text.trim(),
         operationType: MoneyIncomeOperationType.client_payment.name,
         cashRegisterId: selectedCashRegister?.id,
-        exchangeRate: _isExchangeRateRequired ? _exchangeRateValue : null,
+        exchangeRate: _exchangeRateValue,
         approve: approve, // Передаем параметр approve
       ));
     } catch (e) {

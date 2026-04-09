@@ -36,12 +36,14 @@ import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_details/deal_name_list.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 import 'package:crm_task_manager/models/directory_model.dart'
     as directory_model;
 import 'package:crm_task_manager/bloc/user/client/get_all_client_bloc.dart';
+import 'package:crm_task_manager/screens/common/reason_for_refusal_modal.dart';
 
 class DealEditScreen extends StatefulWidget {
   final int dealId;
@@ -113,11 +115,16 @@ class _DealEditScreenState extends State<DealEditScreen> {
   List<FieldConfiguration>? originalFieldConfigurations;
   final GlobalKey _addFieldButtonKey = GlobalKey();
   List<String>? _initialUserIds; // Для хранения начальных ID пользователей
+  List<int> _initialStatusIds = [];
+  bool _askReasonForRefusal = false;
+  DealStatus? _selectedDealStatusData;
+  bool _isSubmittingSave = false;
 
   @override
   void initState() {
     super.initState();
     _initializeControllers();
+    _loadAskReasonForRefusal();
     _loadInitialData();
     _fetchAndAddDirectoryFields();
     // Загружаем конфигурацию после первого кадра
@@ -194,6 +201,7 @@ class _DealEditScreenState extends State<DealEditScreen> {
     } else {
       _selectedStatusIds = [widget.statusId];
     }
+    _initialStatusIds = List<int>.from(_selectedStatusIds);
     if (widget.directoryValues != null && widget.directoryValues!.isNotEmpty) {
       final seen = <String>{};
       final uniqueDirectoryValues = widget.directoryValues!.where((dirValue) {
@@ -224,6 +232,52 @@ class _DealEditScreenState extends State<DealEditScreen> {
         ));
       }
     }
+  }
+
+  Future<void> _loadAskReasonForRefusal() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
+    setState(() {
+      _askReasonForRefusal = prefs.getBool('ask_reason_for_refusal') ?? false;
+    });
+  }
+
+  Future<DealStatus?> _resolveSelectedDealStatusData() async {
+    if (_selectedStatuses == null) return null;
+    if (_selectedDealStatusData?.id == _selectedStatuses) {
+      return _selectedDealStatusData;
+    }
+
+    try {
+      final status = await _apiService.getDealStatus(_selectedStatuses!);
+      if (!mounted) return status;
+      setState(() {
+        _selectedDealStatusData = status;
+      });
+      return status;
+    } catch (_) {
+      return _selectedDealStatusData;
+    }
+  }
+
+  Future<ReasonForRefusalSubmitData?> _collectReasonForRefusalIfNeeded() async {
+    final bool statusChanged =
+        _selectedStatusIds.length != _initialStatusIds.length ||
+            !_selectedStatusIds.toSet().containsAll(_initialStatusIds) ||
+            !_initialStatusIds.toSet().containsAll(_selectedStatusIds);
+    final targetStatus = await _resolveSelectedDealStatusData();
+    final bool requiresReason = _askReasonForRefusal &&
+        _selectedStatusIds.length == 1 &&
+        targetStatus?.isFailure == true;
+
+    if (!statusChanged || !requiresReason) {
+      return null;
+    }
+
+    return showReasonForRefusalDialog(
+      context: context,
+      type: 'deal',
+    );
   }
 
   void _fetchAndAddDirectoryFields() async {
@@ -564,6 +618,7 @@ class _DealEditScreenState extends State<DealEditScreen> {
             if (_selectedStatuses != selectedStatusData.id) {
               setState(() {
                 _selectedStatuses = selectedStatusData.id;
+                _selectedDealStatusData = selectedStatusData;
               });
             }
           },
@@ -1720,15 +1775,24 @@ class _DealEditScreenState extends State<DealEditScreen> {
                                     child: CircularProgressIndicator(
                                         color: Color(0xff1E2E52)),
                                   );
+                                } else if (_isSubmittingSave) {
+                                  return const Center(
+                                    child: CircularProgressIndicator(
+                                        color: Color(0xff1E2E52)),
+                                  );
                                 } else {
                                   return CustomButton(
                                     buttonText: AppLocalizations.of(context)!
                                         .translate('save'),
                                     buttonColor: const Color(0xff4759FF),
                                     textColor: Colors.white,
-                                    onPressed: () {
+                                    onPressed: () async {
+                                      if (_isSubmittingSave) return;
                                       if (_formKey.currentState!.validate() &&
                                           selectedManager != null) {
+                                        setState(() {
+                                          _isSubmittingSave = true;
+                                        });
                                         DateTime? parsedStartDate;
                                         DateTime? parsedEndDate;
 
@@ -1744,6 +1808,9 @@ class _DealEditScreenState extends State<DealEditScreen> {
                                                 AppLocalizations.of(context)!
                                                     .translate(
                                                         'error_parsing_date'));
+                                            setState(() {
+                                              _isSubmittingSave = false;
+                                            });
                                             return;
                                           }
                                         }
@@ -1758,6 +1825,9 @@ class _DealEditScreenState extends State<DealEditScreen> {
                                                 AppLocalizations.of(context)!
                                                     .translate(
                                                         'error_parsing_date'));
+                                            setState(() {
+                                              _isSubmittingSave = false;
+                                            });
                                             return;
                                           }
                                         }
@@ -1879,6 +1949,33 @@ class _DealEditScreenState extends State<DealEditScreen> {
                                         final parsedLeadId = int.tryParse(
                                                 (selectedLead ?? '').trim()) ??
                                             widget.dealById?.lead?.id;
+                                        final refusalData =
+                                            await _collectReasonForRefusalIfNeeded();
+
+                                        if (!mounted) return;
+                                        final bool statusChanged =
+                                            _selectedStatusIds.length !=
+                                                    _initialStatusIds.length ||
+                                                !_selectedStatusIds
+                                                    .toSet()
+                                                    .containsAll(
+                                                        _initialStatusIds) ||
+                                                !_initialStatusIds
+                                                    .toSet()
+                                                    .containsAll(
+                                                        _selectedStatusIds);
+                                        if (statusChanged &&
+                                            _askReasonForRefusal &&
+                                            _selectedStatusIds.length == 1 &&
+                                            (await _resolveSelectedDealStatusData())
+                                                    ?.isFailure ==
+                                                true &&
+                                            refusalData == null) {
+                                          setState(() {
+                                            _isSubmittingSave = false;
+                                          });
+                                          return;
+                                        }
 
                                         context.read<DealBloc>().add(UpdateDeal(
                                               dealId: widget.dealId,
@@ -1912,8 +2009,22 @@ class _DealEditScreenState extends State<DealEditScreen> {
                                               dealStatusIds: _selectedStatusIds,
                                               userIds:
                                                   userIds, // ✅ НОВОЕ: передаем выбранных пользователей
+                                              reasonForRefusalId:
+                                                  refusalData?.reasonId,
+                                              reasonForRefusal:
+                                                  refusalData?.comment,
                                             ));
+                                        if (mounted) {
+                                          setState(() {
+                                            _isSubmittingSave = false;
+                                          });
+                                        }
                                       } else {
+                                        if (mounted) {
+                                          setState(() {
+                                            _isSubmittingSave = false;
+                                          });
+                                        }
                                         _showErrorSnackBar(AppLocalizations.of(
                                                 context)!
                                             .translate('fill_required_fields'));

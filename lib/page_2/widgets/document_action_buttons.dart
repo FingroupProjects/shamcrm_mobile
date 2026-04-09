@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 /// Два режима:
 /// 1. CREATE - "Сохранить и провести" + "Сохранить" (две кнопки в одном ряду)
 /// 2. EDIT - "Обновить" (одна кнопка)
-class DocumentActionButtons extends StatelessWidget {
+class DocumentActionButtons extends StatefulWidget {
   final DocumentActionMode mode;
   final bool isLoading;
   final VoidCallback? onSave;
@@ -18,6 +18,36 @@ class DocumentActionButtons extends StatelessWidget {
     this.onSaveAndApprove,
     Key? key,
   }) : super(key: key);
+
+  @override
+  State<DocumentActionButtons> createState() => _DocumentActionButtonsState();
+}
+
+class _DocumentActionButtonsState extends State<DocumentActionButtons> {
+  bool _tapLocked = false;
+
+  @override
+  void didUpdateWidget(covariant DocumentActionButtons oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!widget.isLoading && _tapLocked) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || widget.isLoading || !_tapLocked) return;
+        setState(() => _tapLocked = false);
+      });
+    }
+  }
+
+  void _handleTap(VoidCallback? callback) {
+    if (_tapLocked || widget.isLoading || callback == null) return;
+
+    setState(() => _tapLocked = true);
+    callback();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || widget.isLoading || !_tapLocked) return;
+      setState(() => _tapLocked = false);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -34,7 +64,7 @@ class DocumentActionButtons extends StatelessWidget {
           ),
         ],
       ),
-      child: mode == DocumentActionMode.create
+      child: widget.mode == DocumentActionMode.create
           ? _buildCreateButtons(context)
           : _buildEditButton(context),
     );
@@ -59,7 +89,9 @@ class DocumentActionButtons extends StatelessWidget {
               color: Colors.transparent,
               child: InkWell(
                 borderRadius: BorderRadius.circular(12),
-                onTap: isLoading ? null : onSaveAndApprove,
+                onTap: widget.isLoading || _tapLocked
+                    ? null
+                    : () => _handleTap(widget.onSaveAndApprove),
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8), // Уменьшено с 16 до 8
                   child: Row(
@@ -68,7 +100,7 @@ class DocumentActionButtons extends StatelessWidget {
                       Icon(
                         Icons.check_circle_outline,
                         size: 18, // Уменьшено с 20 до 18
-                        color: isLoading
+                        color: widget.isLoading
                             ? const Color(0xff99A4BA)
                             : const Color(0xff4CAF50),
                       ),
@@ -80,7 +112,7 @@ class DocumentActionButtons extends StatelessWidget {
                           fontSize: 14, // Уменьшено с 16 до 14
                           fontFamily: 'Gilroy',
                           fontWeight: FontWeight.w600,
-                          color: isLoading
+                          color: widget.isLoading
                               ? const Color(0xff99A4BA)
                               : const Color(0xff4CAF50),
                         ),
@@ -99,7 +131,9 @@ class DocumentActionButtons extends StatelessWidget {
           child: SizedBox(
             height: 48, // Уменьшено с 48 до 40 для компактности
             child: ElevatedButton(
-              onPressed: isLoading ? null : onSave,
+              onPressed: widget.isLoading || _tapLocked
+                  ? null
+                  : () => _handleTap(widget.onSave),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xff4759FF),
                 disabledBackgroundColor: const Color(0xffE5E7EB),
@@ -108,7 +142,7 @@ class DocumentActionButtons extends StatelessWidget {
                 ),
                 elevation: 0,
               ),
-              child: isLoading
+              child: widget.isLoading
                   ? const SizedBox(
                       width: 18, // Уменьшено с 20 до 18
                       height: 18,
@@ -150,7 +184,9 @@ class DocumentActionButtons extends StatelessWidget {
       width: double.infinity,
       height: 48,
       child: ElevatedButton(
-        onPressed: isLoading ? null : onSave,
+        onPressed: widget.isLoading || _tapLocked
+            ? null
+            : () => _handleTap(widget.onSave),
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xff4759FF),
           disabledBackgroundColor: const Color(0xffE5E7EB),
@@ -159,7 +195,7 @@ class DocumentActionButtons extends StatelessWidget {
           ),
           elevation: 0,
         ),
-        child: isLoading
+        child: widget.isLoading
             ? const SizedBox(
                 width: 20,
                 height: 20,

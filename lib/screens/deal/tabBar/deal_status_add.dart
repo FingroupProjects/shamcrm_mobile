@@ -30,6 +30,7 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
   bool _showOnMainPage = false;
   bool _isSuccess = false;
   bool _isFailure = false;
+  bool _isUnassembled = false;
   bool _isMultiSelectEnabled = false; // ✅ НОВОЕ: флаг мультивыбора
   List<UserData> _selectedUsers = []; // ✅ НОВОЕ: выбранные пользователи
   List<UserData> _selectedChangeStatusUsers =
@@ -472,6 +473,18 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
                         ),
                         const SizedBox(height: 12),
                         _buildCheckbox(
+                          'Неразобранные',
+                          _isUnassembled,
+                          (v) {
+                            if (v != null) {
+                              setState(() {
+                                _isUnassembled = v;
+                              });
+                            }
+                          },
+                        ),
+                        const SizedBox(height: 12),
+                        _buildCheckbox(
                           localizations.translate('show_on_main_page'),
                           _showOnMainPage,
                           (v) {
@@ -544,6 +557,7 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
                                       showOnMainPage: _showOnMainPage,
                                       isSuccess: _isSuccess,
                                       isFailure: _isFailure,
+                                      isUnassembled: _isUnassembled,
                                       userIds: userIds.isNotEmpty
                                           ? userIds
                                           : null, // ✅ НОВОЕ

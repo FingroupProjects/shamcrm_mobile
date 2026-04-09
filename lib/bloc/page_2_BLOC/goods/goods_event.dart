@@ -43,13 +43,14 @@ class FilterGoods extends GoodsEvent {
 
 class FetchSubCategories extends GoodsEvent {}
 
-class ResetSubCategories extends GoodsEvent {} // Новое событие для сброса подкатегорий
+class ResetSubCategories
+    extends GoodsEvent {} // Новое событие для сброса подкатегорий
 
 class CreateGoods extends GoodsEvent {
   final String name;
   final String description;
   final int? unitId;
-  final int quantity;
+  final int? quantity;
   final int parentId;
   final List<Map<String, dynamic>> attributes;
   final List<Map<String, dynamic>> variants;
@@ -62,6 +63,9 @@ class CreateGoods extends GoodsEvent {
   final int? labelId; // Добавляем поле для ID метки
   final double? price; // Добавляем поле для цены
   final bool isService; // Добавляем поле для указания услуги
+  final String? productionType;
+  final List<Map<String, dynamic>> materialGoods;
+  final List<Map<String, dynamic>> relatedGoods;
 
   CreateGoods({
     required this.isService,
@@ -80,8 +84,9 @@ class CreateGoods extends GoodsEvent {
     required this.storageId,
     this.mainImageIndex,
     this.labelId, // Добавляем в конструктор
-
-
+    this.productionType,
+    this.materialGoods = const [],
+    this.relatedGoods = const [],
   });
 }
 
@@ -90,8 +95,8 @@ class UpdateGoods extends GoodsEvent {
   final int goodId;
   final String name;
   final String description;
-  final int unitId;
-  final int quantity;
+  final int? unitId;
+  final int? quantity;
   final int parentId;
   final List<Map<String, dynamic>> attributes;
   final List<Map<String, dynamic>> variants;
@@ -102,7 +107,10 @@ class UpdateGoods extends GoodsEvent {
   final int? storageId; // Добавляем поле storageId
   final String? comments; // Добавляем поле comments
   final int? mainImageIndex; // Добавляем поле mainImageIndex
-final int? labelId; // Добавляем поле для ID метки
+  final int? labelId; // Добавляем поле для ID метки
+  final String? productionType;
+  final List<Map<String, dynamic>> materialGoods;
+  final List<Map<String, dynamic>> relatedGoods;
 
   UpdateGoods({
     required this.isService,
@@ -121,7 +129,10 @@ final int? labelId; // Добавляем поле для ID метки
     required this.storageId,
     this.comments,
     this.mainImageIndex,
-  this.labelId, // Добавляем в конструктор
+    this.labelId, // Добавляем в конструктор
+    this.productionType,
+    this.materialGoods = const [],
+    this.relatedGoods = const [],
   });
 }
 

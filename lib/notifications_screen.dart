@@ -14,6 +14,7 @@ import 'package:crm_task_manager/models/deal_model.dart';
 import 'package:crm_task_manager/models/lead_model.dart';
 import 'package:crm_task_manager/screens/chats/chat_sms_screen.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_details_screen.dart';
+import 'package:crm_task_manager/screens/home_screen.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details_screen.dart';
 import 'package:crm_task_manager/screens/my-task/my_task_details/my_task_details_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
@@ -29,7 +30,7 @@ String _stripHtmlTags(String html) {
   if (!html.contains('<') || !html.contains('>')) {
     return html; // Если нет HTML тегов, возвращаем как есть
   }
-  
+
   try {
     final document = parse(html);
     return document.body?.text ?? html.replaceAll(RegExp(r'<[^>]*>'), '');
@@ -79,11 +80,13 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   }
 
 // ✅ НОВЫЙ МЕТОД: Получаем имя из socket presence
-  Future<String?> _getChatNameFromSocket(int chatId, {String? chatUniqueId}) async {
+  Future<String?> _getChatNameFromSocket(int chatId,
+      {String? chatUniqueId}) async {
     try {
       // Используем uniqueId если доступен, иначе chatId
       final chatIdentifier = chatUniqueId ?? chatId.toString();
-      debugPrint('🔌 Getting chat name from socket for chatIdentifier: $chatIdentifier (uniqueId: $chatUniqueId, chatId: $chatId)');
+      debugPrint(
+          '🔌 Getting chat name from socket for chatIdentifier: $chatIdentifier (uniqueId: $chatUniqueId, chatId: $chatId)');
 
       final prefs = await SharedPreferences.getInstance();
       String? token = prefs.getString('token');
@@ -245,135 +248,144 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     return Future.delayed(Duration(milliseconds: 1500));
   }
 
-void _clearAllNotifications() async {
-  debugPrint('🗑️ [DELETE ALL] Запрос на удаление всех уведомлений');
+  void _navigateToHomeScreen() {
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => HomeScreen()),
+      (route) => false,
+    );
+  }
 
-  // Проверяем, есть ли уведомления
-  if (notificationBloc.state is NotificationDataLoaded) {
-    final currentState = notificationBloc.state as NotificationDataLoaded;
-    if (currentState.notifications.isEmpty) {
-      debugPrint('⚠️ Нет уведомлений для удаления');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              AppLocalizations.of(context)!.translate('no_notifications_to_delete') ?? 
-              'Нет уведомлений для удаления',
-              style: TextStyle(
-                fontFamily: 'Gilroy',
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                color: Colors.white,
+  void _clearAllNotifications() async {
+    debugPrint('🗑️ [DELETE ALL] Запрос на удаление всех уведомлений');
+
+    // Проверяем, есть ли уведомления
+    if (notificationBloc.state is NotificationDataLoaded) {
+      final currentState = notificationBloc.state as NotificationDataLoaded;
+      if (currentState.notifications.isEmpty) {
+        debugPrint('⚠️ Нет уведомлений для удаления');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                AppLocalizations.of(context)!
+                        .translate('no_notifications_to_delete') ??
+                    'Нет уведомлений для удаления',
+                style: TextStyle(
+                  fontFamily: 'Gilroy',
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white,
+                ),
+              ),
+              behavior: SnackBarBehavior.floating,
+              margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              backgroundColor: Color(0xff5A6B87),
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
+        return;
+      }
+    }
+    final bool? confirmed = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: Row(
+            children: [
+              Icon(
+                Icons.warning_amber_rounded,
+                color: Colors.orange,
+                size: 28,
+              ),
+              SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  AppLocalizations.of(context)!.translate('confirm_delete') ??
+                      'Подтверждение',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xff1E2E52),
+                    fontFamily: 'Gilroy',
+                  ),
+                ),
+              ),
+            ],
+          ),
+          content: Text(
+            AppLocalizations.of(context)!
+                    .translate('delete_all_notifications_message') ??
+                'Вы уверены, что хотите удалить все уведомления? Это действие нельзя отменить.',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w400,
+              color: Color(0xff5A6B87),
+              fontFamily: 'Gilroy',
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(dialogContext).pop(false);
+              },
+              child: Text(
+                AppLocalizations.of(context)!.translate('cancel') ?? 'Отмена',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xff5A6B87),
+                  fontFamily: 'Gilroy',
+                ),
               ),
             ),
-            behavior: SnackBarBehavior.floating,
-            margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            backgroundColor: Color(0xff5A6B87),
-            duration: Duration(seconds: 2),
-          ),
-        );
-      }
-      return;
-    }
-  }
-final bool? confirmed = await showDialog<bool>(
-    context: context,
-    barrierDismissible: false,
-    builder: (BuildContext dialogContext) {
-      return AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-        title: Row(
-          children: [
-            Icon(
-              Icons.warning_amber_rounded,
-              color: Colors.orange,
-              size: 28,
-            ),
-            SizedBox(width: 12),
-            Expanded(
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(dialogContext).pop(true);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              ),
               child: Text(
-                AppLocalizations.of(context)!.translate('confirm_delete') ?? 
-                'Подтверждение',
+                AppLocalizations.of(context)!.translate('delete') ?? 'Удалить',
                 style: TextStyle(
-                  fontSize: 18,
+                  fontSize: 16,
                   fontWeight: FontWeight.w600,
-                  color: Color(0xff1E2E52),
+                  color: Colors.white,
                   fontFamily: 'Gilroy',
                 ),
               ),
             ),
           ],
-        ),
-        content: Text(
-          AppLocalizations.of(context)!.translate('delete_all_notifications_message') ?? 
-          'Вы уверены, что хотите удалить все уведомления? Это действие нельзя отменить.',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w400,
-            color: Color(0xff5A6B87),
-            fontFamily: 'Gilroy',
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.of(dialogContext).pop(false);
-            },
-            child: Text(
-              AppLocalizations.of(context)!.translate('cancel') ?? 'Отмена',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: Color(0xff5A6B87),
-                fontFamily: 'Gilroy',
-              ),
-            ),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.of(dialogContext).pop(true);
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-            ),
-            child: Text(
-              AppLocalizations.of(context)!.translate('delete') ?? 'Удалить',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: Colors.white,
-                fontFamily: 'Gilroy',
-              ),
-            ),
-          ),
-        ],
-      );
-    },
-  );
+        );
+      },
+    );
 
-  // ✅ ЕСЛИ ПОЛЬЗОВАТЕЛЬ ПОДТВЕРДИЛ - УДАЛЯЕМ
-  if (confirmed == true) {
-    debugPrint('✅ Пользователь подтвердил удаление');
-    
-    notificationBloc.add(DeleteAllNotification());
+    // ✅ ЕСЛИ ПОЛЬЗОВАТЕЛЬ ПОДТВЕРДИЛ - УДАЛЯЕМ
+    if (confirmed == true) {
+      debugPrint('✅ Пользователь подтвердил удаление');
 
-    // Обновляем флаг в SharedPreferences
-    SharedPreferences.getInstance().then((prefs) {
-      prefs.setBool('hasNewNotification', false);
-    });
-  } else {
-    debugPrint('❌ Пользователь отменил удаление');
+      notificationBloc.add(DeleteAllNotification());
+
+      // Обновляем флаг в SharedPreferences
+      SharedPreferences.getInstance().then((prefs) {
+        prefs.setBool('hasNewNotification', false);
+      });
+    } else {
+      debugPrint('❌ Пользователь отменил удаление');
+    }
   }
-}
 
   @override
   Widget build(BuildContext context) {
@@ -393,25 +405,58 @@ final bool? confirmed = await showDialog<bool>(
           ),
         ),
         iconTheme: const IconThemeData(color: Color(0xff1E2E52)),
-        leading: IconButton(
-          icon: Image.asset(
-            'assets/icons/arrow-left.png',
-            width: 24,
-            height: 24,
-          ),
-          onPressed: () {
-            Navigator.of(context).pop();
-          },
+        leadingWidth: 96,
+        leading: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              icon: Image.asset(
+                'assets/icons/arrow-left.png',
+                width: 24,
+                height: 24,
+              ),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
         ),
         actions: [
           Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: IconButton(
-              icon: const Icon(
-                Icons.delete,
-                color: Color(0xff1E2E52),
-              ),
-              onPressed: _clearAllNotifications,
+            padding: const EdgeInsets.only(right: 16),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SizedBox(
+                  width: 28,
+                  height: 28,
+                  child: IconButton(
+                    padding: EdgeInsets.zero,
+                    splashRadius: 16,
+                    icon: const Icon(
+                      Icons.delete,
+                      color: Color(0xff1E2E52),
+                      size: 24,
+                    ),
+                    onPressed: _clearAllNotifications,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                SizedBox(
+                  width: 28,
+                  height: 28,
+                  child: IconButton(
+                    padding: EdgeInsets.zero,
+                    splashRadius: 16,
+                    icon: Image.asset(
+                      'assets/icons/home_appBar.png',
+                      width: 20,
+                      height: 20,
+                    ),
+                    onPressed: _navigateToHomeScreen,
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -750,9 +795,9 @@ final bool? confirmed = await showDialog<bool>(
       case 'lead':
         return localizations.translate('task_deadline_reminder');
       case 'myTaskOutDated':
-        return localizations.translate('Напоминание о просрочке мои задачи');
+        return localizations.translate('my_task_overdue_reminder');
       case 'updateLeadStatus':
-        return localizations.translate('Статус лида изменен!');
+        return localizations.translate('lead_status_changed');
       default:
         return type;
     }
@@ -785,236 +830,240 @@ final bool? confirmed = await showDialog<bool>(
     }
 
     try {
-     if (type == 'message') {
-  debugPrint('📱 Processing MESSAGE type notification');
+      if (type == 'message') {
+        debugPrint('📱 Processing MESSAGE type notification');
 
-  // ✅ ПОКАЗЫВАЕМ LOADER
-  showDialog(
-    context: context,
-    barrierDismissible: false,
-    barrierColor: Colors.black26,
-    builder: (context) {
-      return Center(
-        child: Container(
-          padding: EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: CircularProgressIndicator(
-            color: Color(0xff1E2E52),
-          ),
-        ),
-      );
-    },
-  );
-
-  try {
-    debugPrint('📡 Calling getChatById($chatId)...');
-    debugPrint('📡 Using ApiService with baseUrl: ${_apiService.baseUrl}');
-
-    final getChatById = await _apiService.getChatById(chatId);
-    debugPrint('✅ getChatById completed: type=${getChatById.type}');
-
-    // ✅ НЕ ЗАКРЫВАЕМ LOADER ЗДЕСЬ, если это corporate без данных
-    bool shouldCloseLoader = true;
-
-    Widget? chatScreen;
-    String chatName = '';
-    String endPointInTab = '';
-
-    if (getChatById.type == "lead") {
-      debugPrint('🎯 Creating LEAD chat screen');
-      endPointInTab = 'lead';
-      chatName = getChatById.name.isNotEmpty
-          ? getChatById.name
-          : 'Лид #$chatId';
-
-      chatScreen = ChatSmsScreen(
-        chatItem: Chats(
-          id: chatId,
-          uniqueId: getChatById.uniqueId,
-          name: chatName,
-          image: '',
-          channel: "",
-          lastMessage: "",
-          messageType: "",
-          createDate: "",
-          unreadCount: 0,
-          canSendMessage: getChatById.canSendMessage,
-          chatUsers: [],
-        ).toChatItem(),
-        chatId: chatId,
-        chatUniqueId: getChatById.uniqueId,
-        endPointInTab: endPointInTab,
-        canSendMessage: getChatById.canSendMessage,
-      );
-    } else if (getChatById.type == "task") {
-      debugPrint('🎯 Creating TASK chat screen');
-      debugPrint('📡 Calling getTaskProfile($chatId)...');
-      endPointInTab = 'task';
-
-      final chatProfileTask = await _apiService.getTaskProfile(chatId);
-      debugPrint('✅ getTaskProfile completed: name=${chatProfileTask.name}');
-
-      chatName = chatProfileTask.name.isNotEmpty
-          ? chatProfileTask.name
-          : 'Задача #$chatId';
-
-      chatScreen = ChatSmsScreen(
-        chatItem: Chats(
-          id: chatId,
-          uniqueId: getChatById.uniqueId,
-          name: chatName,
-          image: '',
-          channel: "",
-          lastMessage: "",
-          messageType: "",
-          createDate: "",
-          unreadCount: 0,
-          canSendMessage: getChatById.canSendMessage,
-          chatUsers: [],
-        ).toChatItem(),
-        chatId: chatId,
-        chatUniqueId: getChatById.uniqueId,
-        endPointInTab: endPointInTab,
-        canSendMessage: getChatById.canSendMessage,
-      );
-    } else if (getChatById.type == "corporate") {
-      debugPrint('🎯 Creating CORPORATE chat screen');
-      endPointInTab = 'corporate';
-
-      final prefs = await SharedPreferences.getInstance();
-      String userId = prefs.getString('userID').toString();
-
-      debugPrint('📊 Server data: name="${getChatById.name}", chatUsers.length=${getChatById.chatUsers.length}, group=${getChatById.group?.name}');
-
-      if (getChatById.group != null) {
-        chatName = getChatById.group!.name;
-        debugPrint('✅ [1] Using GROUP name: $chatName');
-      }
-      else if (getChatById.name.isNotEmpty && getChatById.name != 'null') {
-        chatName = getChatById.name;
-        debugPrint('✅ [2] Using server name: $chatName');
-      }
-      else if (getChatById.chatUsers.isNotEmpty && getChatById.chatUsers.length >= 2) {
-        int userIndex = getChatById.chatUsers.indexWhere(
-          (user) => user.participant.id.toString() == userId
+        // ✅ ПОКАЗЫВАЕМ LOADER
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          barrierColor: Colors.black26,
+          builder: (context) {
+            return Center(
+              child: Container(
+                padding: EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: CircularProgressIndicator(
+                  color: Color(0xff1E2E52),
+                ),
+              ),
+            );
+          },
         );
-
-        if (userIndex != -1) {
-          int otherUserIndex = (userIndex == 0) ? 1 : 0;
-          chatName = getChatById.chatUsers[otherUserIndex].participant.name;
-          debugPrint('✅ [3] Using OTHER user from chatUsers: $chatName');
-        } else {
-          chatName = getChatById.chatUsers[0].participant.name;
-          debugPrint('✅ [4] Using first chatUser: $chatName');
-        }
-      }
-      else {
-        // ✅ НЕ ЗАКРЫВАЕМ LOADER - продолжаем крутить, пока грузим из socket
-        debugPrint('⚠️ Server returned NO data, getting from socket...');
-        shouldCloseLoader = false; // ✅ Оставляем loader крутиться
 
         try {
-          final socketName = await _getChatNameFromSocket(chatId, chatUniqueId: getChatById.uniqueId);
+          debugPrint('📡 Calling getChatById($chatId)...');
+          debugPrint(
+              '📡 Using ApiService with baseUrl: ${_apiService.baseUrl}');
 
-          if (socketName != null && socketName.isNotEmpty) {
-            chatName = socketName;
-            debugPrint('✅ [5] Got name from socket: $chatName');
-          } else {
-            chatName = 'Корпоративный чат';
-            debugPrint('⚠️ [6] Socket returned nothing, using fallback');
+          final getChatById = await _apiService.getChatById(chatId);
+          debugPrint('✅ getChatById completed: type=${getChatById.type}');
+
+          // ✅ НЕ ЗАКРЫВАЕМ LOADER ЗДЕСЬ, если это corporate без данных
+          bool shouldCloseLoader = true;
+
+          Widget? chatScreen;
+          String chatName = '';
+          String endPointInTab = '';
+
+          if (getChatById.type == "lead") {
+            debugPrint('🎯 Creating LEAD chat screen');
+            endPointInTab = 'lead';
+            chatName =
+                getChatById.name.isNotEmpty ? getChatById.name : 'Лид #$chatId';
+
+            chatScreen = ChatSmsScreen(
+              chatItem: Chats(
+                id: chatId,
+                uniqueId: getChatById.uniqueId,
+                name: chatName,
+                image: '',
+                channel: "",
+                lastMessage: "",
+                messageType: "",
+                createDate: "",
+                unreadCount: 0,
+                canSendMessage: getChatById.canSendMessage,
+                chatUsers: [],
+              ).toChatItem(),
+              chatId: chatId,
+              chatUniqueId: getChatById.uniqueId,
+              endPointInTab: endPointInTab,
+              canSendMessage: getChatById.canSendMessage,
+            );
+          } else if (getChatById.type == "task") {
+            debugPrint('🎯 Creating TASK chat screen');
+            debugPrint('📡 Calling getTaskProfile($chatId)...');
+            endPointInTab = 'task';
+
+            final chatProfileTask = await _apiService.getTaskProfile(chatId);
+            debugPrint(
+                '✅ getTaskProfile completed: name=${chatProfileTask.name}');
+
+            chatName = chatProfileTask.name.isNotEmpty
+                ? chatProfileTask.name
+                : 'Задача #$chatId';
+
+            chatScreen = ChatSmsScreen(
+              chatItem: Chats(
+                id: chatId,
+                uniqueId: getChatById.uniqueId,
+                name: chatName,
+                image: '',
+                channel: "",
+                lastMessage: "",
+                messageType: "",
+                createDate: "",
+                unreadCount: 0,
+                canSendMessage: getChatById.canSendMessage,
+                chatUsers: [],
+              ).toChatItem(),
+              chatId: chatId,
+              chatUniqueId: getChatById.uniqueId,
+              endPointInTab: endPointInTab,
+              canSendMessage: getChatById.canSendMessage,
+            );
+          } else if (getChatById.type == "corporate") {
+            debugPrint('🎯 Creating CORPORATE chat screen');
+            endPointInTab = 'corporate';
+
+            final prefs = await SharedPreferences.getInstance();
+            String userId = prefs.getString('userID').toString();
+
+            debugPrint(
+                '📊 Server data: name="${getChatById.name}", chatUsers.length=${getChatById.chatUsers.length}, group=${getChatById.group?.name}');
+
+            if (getChatById.group != null) {
+              chatName = getChatById.group!.name;
+              debugPrint('✅ [1] Using GROUP name: $chatName');
+            } else if (getChatById.name.isNotEmpty &&
+                getChatById.name != 'null') {
+              chatName = getChatById.name;
+              debugPrint('✅ [2] Using server name: $chatName');
+            } else if (getChatById.chatUsers.isNotEmpty &&
+                getChatById.chatUsers.length >= 2) {
+              int userIndex = getChatById.chatUsers.indexWhere(
+                  (user) => user.participant.id.toString() == userId);
+
+              if (userIndex != -1) {
+                int otherUserIndex = (userIndex == 0) ? 1 : 0;
+                chatName =
+                    getChatById.chatUsers[otherUserIndex].participant.name;
+                debugPrint('✅ [3] Using OTHER user from chatUsers: $chatName');
+              } else {
+                chatName = getChatById.chatUsers[0].participant.name;
+                debugPrint('✅ [4] Using first chatUser: $chatName');
+              }
+            } else {
+              // ✅ НЕ ЗАКРЫВАЕМ LOADER - продолжаем крутить, пока грузим из socket
+              debugPrint('⚠️ Server returned NO data, getting from socket...');
+              shouldCloseLoader = false; // ✅ Оставляем loader крутиться
+
+              try {
+                final socketName = await _getChatNameFromSocket(chatId,
+                    chatUniqueId: getChatById.uniqueId);
+
+                if (socketName != null && socketName.isNotEmpty) {
+                  chatName = socketName;
+                  debugPrint('✅ [5] Got name from socket: $chatName');
+                } else {
+                  chatName = 'Корпоративный чат';
+                  debugPrint('⚠️ [6] Socket returned nothing, using fallback');
+                }
+              } catch (e) {
+                debugPrint('❌ Error getting socket name: $e');
+                chatName = 'Корпоративный чат';
+              }
+
+              // ✅ ТЕПЕРЬ можно закрыть loader
+              shouldCloseLoader = true;
+            }
+
+            debugPrint('🎯 FINAL chatName: "$chatName"');
+
+            chatScreen = ChatSmsScreen(
+              chatItem: Chats(
+                id: chatId,
+                uniqueId: getChatById.uniqueId,
+                image: '',
+                name: chatName,
+                channel: "",
+                lastMessage: "",
+                messageType: "",
+                createDate: "",
+                unreadCount: 0,
+                canSendMessage: getChatById.canSendMessage,
+                chatUsers: [],
+              ).toChatItem(),
+              chatId: chatId,
+              chatUniqueId: getChatById.uniqueId,
+              endPointInTab: endPointInTab,
+              canSendMessage: getChatById.canSendMessage,
+            );
           }
-        } catch (e) {
-          debugPrint('❌ Error getting socket name: $e');
-          chatName = 'Корпоративный чат';
+
+          // ✅ ЗАКРЫВАЕМ LOADER только если нужно
+          if (shouldCloseLoader && mounted) {
+            Navigator.of(context).pop();
+            debugPrint('✅ Loader closed');
+          }
+
+          if (chatScreen != null) {
+            debugPrint('🚀 Pushing chat screen to navigator...');
+            debugPrint(
+                '📋 Chat details: name="$chatName", endPoint="$endPointInTab"');
+
+            await navigatorKey.currentState?.push(
+              MaterialPageRoute(
+                builder: (context) => BlocProvider(
+                  create: (context) => MessagingCubit(ApiService()),
+                  child: chatScreen!,
+                ),
+              ),
+            );
+
+            debugPrint('✅ Navigation completed successfully');
+
+            if (mounted) {
+              debugPrint('🗑️ Removing notification from list');
+              setState(() {
+                (notificationBloc.state as NotificationDataLoaded)
+                    .notifications
+                    .removeWhere(
+                        (notification) => notification.id == notificationId);
+              });
+              notificationBloc.add(DeleteNotification(notificationId));
+              debugPrint('✅ Notification removed');
+            }
+          } else {
+            debugPrint(
+                '❌ chatScreen is NULL - unknown chat type: ${getChatById.type}');
+          }
+        } catch (e, stackTrace) {
+          debugPrint('❌ ERROR in message navigation: $e');
+          debugPrint('StackTrace: $stackTrace');
+
+          if (mounted) {
+            try {
+              Navigator.of(context).pop(); // Закрываем loader при ошибке
+            } catch (_) {}
+          }
+
+          if (e.toString().contains('404')) {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Ресурс не найден.'),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            }
+          }
         }
-
-        // ✅ ТЕПЕРЬ можно закрыть loader
-        shouldCloseLoader = true;
-      }
-
-      debugPrint('🎯 FINAL chatName: "$chatName"');
-
-      chatScreen = ChatSmsScreen(
-        chatItem: Chats(
-          id: chatId,
-          uniqueId: getChatById.uniqueId,
-          image: '',
-          name: chatName,
-          channel: "",
-          lastMessage: "",
-          messageType: "",
-          createDate: "",
-          unreadCount: 0,
-          canSendMessage: getChatById.canSendMessage,
-          chatUsers: [],
-        ).toChatItem(),
-        chatId: chatId,
-        chatUniqueId: getChatById.uniqueId,
-        endPointInTab: endPointInTab,
-        canSendMessage: getChatById.canSendMessage,
-      );
-    }
-
-    // ✅ ЗАКРЫВАЕМ LOADER только если нужно
-    if (shouldCloseLoader && mounted) {
-      Navigator.of(context).pop();
-      debugPrint('✅ Loader closed');
-    }
-
-    if (chatScreen != null) {
-      debugPrint('🚀 Pushing chat screen to navigator...');
-      debugPrint('📋 Chat details: name="$chatName", endPoint="$endPointInTab"');
-
-      await navigatorKey.currentState?.push(
-        MaterialPageRoute(
-          builder: (context) => BlocProvider(
-            create: (context) => MessagingCubit(ApiService()),
-            child: chatScreen!,
-          ),
-        ),
-      );
-
-      debugPrint('✅ Navigation completed successfully');
-
-      if (mounted) {
-        debugPrint('🗑️ Removing notification from list');
-        setState(() {
-          (notificationBloc.state as NotificationDataLoaded)
-              .notifications
-              .removeWhere((notification) => notification.id == notificationId);
-        });
-        notificationBloc.add(DeleteNotification(notificationId));
-        debugPrint('✅ Notification removed');
-      }
-    } else {
-      debugPrint('❌ chatScreen is NULL - unknown chat type: ${getChatById.type}');
-    }
-
-  } catch (e, stackTrace) {
-    debugPrint('❌ ERROR in message navigation: $e');
-    debugPrint('StackTrace: $stackTrace');
-
-    if (mounted) {
-      try {
-        Navigator.of(context).pop(); // Закрываем loader при ошибке
-      } catch (_) {}
-    }
-
-    if (e.toString().contains('404')) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Ресурс не найден.'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
-  }
-}else if (type == 'task' ||
+      } else if (type == 'task' ||
           type == 'taskFinished' ||
           type == 'taskOutDated') {
         debugPrint('📋 Processing TASK type notification');

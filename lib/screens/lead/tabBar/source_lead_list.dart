@@ -1,4 +1,5 @@
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
+import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/source_lead/source_lead_bloc.dart';
 import 'package:crm_task_manager/bloc/source_lead/source_lead_event.dart';
 import 'package:crm_task_manager/bloc/source_lead/source_lead_state.dart';
@@ -11,18 +12,28 @@ class SourceLeadWidget extends StatefulWidget {
   final String? selectedSourceLead;
   final ValueChanged<String?> onChanged;
 
-  SourceLeadWidget({required this.selectedSourceLead, required this.onChanged});
+  const SourceLeadWidget({
+    super.key,
+    required this.selectedSourceLead,
+    required this.onChanged,
+  });
 
   @override
-  _SourceLeadWidgetState createState() => _SourceLeadWidgetState();
+  State<SourceLeadWidget> createState() => _SourceLeadWidgetState();
 }
+
 class _SourceLeadWidgetState extends State<SourceLeadWidget> {
+  final ApiService _apiService = ApiService();
   SourceLead? selectedSourceData;
 
   @override
   void initState() {
     super.initState();
     context.read<SourceLeadBloc>().add(FetchSourceLead());
+  }
+
+  Future<List<SourceLead>> _searchSources(String query) async {
+    return _apiService.getSourceLead(search: query);
   }
 
   @override
@@ -59,7 +70,7 @@ class _SourceLeadWidgetState extends State<SourceLeadWidget> {
           // Обновляем данные при успешной загрузке
           if (state is SourceLeadLoaded) {
             List<SourceLead> sourcesList = state.sourceLead;
-            
+
             if (widget.selectedSourceLead != null && sourcesList.isNotEmpty) {
               try {
                 selectedSourceData = sourcesList.firstWhere(
@@ -86,10 +97,13 @@ class _SourceLeadWidgetState extends State<SourceLeadWidget> {
               ),
               const SizedBox(height: 4),
               Container(
-                child: CustomDropdown<SourceLead>.search(
+                child: CustomDropdown<SourceLead>.searchRequest(
+                  futureRequest: _searchSources,
+                  futureRequestDelay: const Duration(milliseconds: 350),
                   closeDropDownOnClearFilterSearch: true,
                   items: state is SourceLeadLoaded ? state.sourceLead : [],
-                  searchHintText: AppLocalizations.of(context)!.translate('search'),
+                  searchHintText:
+                      AppLocalizations.of(context)!.translate('search'),
                   overlayHeight: 400,
                   enabled: true, // Всегда enabled
                   decoration: CustomDropdownDecoration(
@@ -115,8 +129,8 @@ class _SourceLeadWidgetState extends State<SourceLeadWidget> {
                         fontWeight: FontWeight.w500,
                         fontFamily: 'Gilroy',
                       ),
-                          maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     );
                   },
                   headerBuilder: (context, selectedItem, enabled) {
@@ -132,7 +146,8 @@ class _SourceLeadWidgetState extends State<SourceLeadWidget> {
                           //   ),
                           // ),
                           Text(
-                            AppLocalizations.of(context)!.translate('select_source'),
+                            AppLocalizations.of(context)!
+                                .translate('select_source'),
                             style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w500,
@@ -144,7 +159,7 @@ class _SourceLeadWidgetState extends State<SourceLeadWidget> {
                       );
                     }
                     return Text(
-                      selectedItem.name ?? AppLocalizations.of(context)!.translate('select_source'),
+                      selectedItem.name,
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
@@ -163,9 +178,10 @@ class _SourceLeadWidgetState extends State<SourceLeadWidget> {
                     ),
                   ),
                   excludeSelected: false,
-initialItem: (state is SourceLeadLoaded && state.sourceLead.contains(selectedSourceData))
-    ? selectedSourceData
-    : null,
+                  initialItem: (state is SourceLeadLoaded &&
+                          state.sourceLead.contains(selectedSourceData))
+                      ? selectedSourceData
+                      : null,
                   // validator: (value) {
                   //   if (value == null) {
                   //     return AppLocalizations.of(context)!.translate('field_required_source');

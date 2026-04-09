@@ -12,7 +12,7 @@ class OrderColumn extends StatefulWidget {
   final String name;
   final String? searchQuery;
   final int? organizationId;
-  final VoidCallback onStatusUpdated;
+  final void Function(int oldStatusId, int newStatusId) onStatusUpdated;
   final void Function(int newStatusId) onStatusId;
   final Function(int) onTabChange;
 

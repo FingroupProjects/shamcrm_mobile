@@ -81,6 +81,7 @@ class EmojiData {
     'telegram_bot': _telegramReactionIds,
     'mini_app': _defaultReactionIds,
     'whatsapp': _defaultReactionIds,
+    'green_api': _defaultReactionIds,
     'instagram': _defaultReactionIds,
     'instagram_comment': _defaultReactionIds,
     'facebook': _defaultReactionIds,

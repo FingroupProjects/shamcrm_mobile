@@ -3,14 +3,16 @@ enum MoneyOutcomeOperationType {
   other_expenses,
   supplier_payment,
   client_return,
+  salary_payment,
 }
 
-MoneyOutcomeOperationType? getOperationTypeFromString(String? operationTypeString) {
+MoneyOutcomeOperationType? getOperationTypeFromString(
+    String? operationTypeString) {
   if (operationTypeString == null) return null;
 
   try {
     return MoneyOutcomeOperationType.values.firstWhere(
-          (e) => e.name == operationTypeString,
+      (e) => e.name == operationTypeString,
     );
   } catch (e) {
     return null;

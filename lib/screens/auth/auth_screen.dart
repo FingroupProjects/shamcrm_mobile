@@ -5,6 +5,7 @@ import 'package:crm_task_manager/screens/profile/languages/app_localizations.dar
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../bloc/auth_domain/domain_bloc.dart';
 import '../../bloc/auth_domain/domain_event.dart';
 import '../../bloc/auth_domain/domain_state.dart';
@@ -17,15 +18,15 @@ class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});
 
   @override
-  _AuthScreenState createState() => _AuthScreenState();
+  State<AuthScreen> createState() => _AuthScreenState();
 }
 
 class _AuthScreenState extends State<AuthScreen> {
+  static final Uri _demoUri = Uri.parse('https://shamcrm.com/');
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
-  bool _isDomainChecked = false;
   bool _showManualInput = false;
-  bool _showPasswordField = false;  
+  bool _showPasswordField = false;
   String _verifiedLogin = '';
   bool _isLoading = true;
 
@@ -54,10 +55,9 @@ class _AuthScreenState extends State<AuthScreen> {
   // Асинхронная проверка домена
   Future<void> _checkDomainAsync() async {
     try {
-      final isChecked = await context.read<ApiService>().isDomainChecked();
+      await context.read<ApiService>().isDomainChecked();
       if (mounted) {
         setState(() {
-          _isDomainChecked = isChecked;
           _isLoading = false;
         });
       }
@@ -65,10 +65,27 @@ class _AuthScreenState extends State<AuthScreen> {
       //print('AuthScreen: Error checking domain: $e');
       if (mounted) {
         setState(() {
-          _isDomainChecked = false;
           _isLoading = false;
         });
       }
+    }
+  }
+
+  Future<void> _openDemoRequest() async {
+    final launched = await launchUrl(
+      _demoUri,
+      mode: LaunchMode.externalApplication,
+    );
+
+    if (!launched && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            AppLocalizations.of(context)?.translate('site_open_failed') ??
+                'Не удалось открыть сайт',
+          ),
+        ),
+      );
     }
   }
 
@@ -94,7 +111,7 @@ class _AuthScreenState extends State<AuthScreen> {
               ),
               SizedBox(height: 20),
               Text(
-                'Проверка конфигурации...',
+                localizations.translate('configuration_check'),
                 style: TextStyle(
                   fontSize: 16,
                   fontFamily: 'Gilroy',
@@ -136,7 +153,7 @@ class _AuthScreenState extends State<AuthScreen> {
                     child: Column(
                       children: [
                         Text(
-                          localizations.translate('Сканируйте QR-код'),
+                          localizations.translate('scan_qr_prompt'),
                           style: const TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
@@ -161,7 +178,9 @@ class _AuthScreenState extends State<AuthScreen> {
                                 MaterialPageRoute(
                                     builder: (context) => QrScannerScreen()),
                               );
-                              if (scanResult != null && scanResult is String && mounted) {
+                              if (scanResult != null &&
+                                  scanResult is String &&
+                                  mounted) {
                                 if (_isValidEmail(scanResult)) {
                                   setState(() {
                                     _showManualInput = true;
@@ -174,8 +193,12 @@ class _AuthScreenState extends State<AuthScreen> {
                                       .add(CheckEmail(scanResult));
                                 } else {
                                   ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                        content: Text('Неверный адрес электронной почты в QR-коде')),
+                                    SnackBar(
+                                      content: Text(
+                                        localizations
+                                            .translate('invalid_email_in_qr'),
+                                      ),
+                                    ),
                                   );
                                 }
                               }
@@ -183,8 +206,11 @@ class _AuthScreenState extends State<AuthScreen> {
                               //print('AuthScreen: Error with QR scan: $e');
                               if (mounted) {
                                 ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                      content: Text('Ошибка сканирования QR-кода')),
+                                  SnackBar(
+                                    content: Text(
+                                      localizations.translate('qr_scan_error'),
+                                    ),
+                                  ),
                                 );
                               }
                             }
@@ -205,21 +231,24 @@ class _AuthScreenState extends State<AuthScreen> {
                                   horizontal: 16, vertical: 8),
                               decoration: BoxDecoration(
                                 color: Colors.transparent,
-                                border:
-                                    Border.all(color: const Color(0xff4F40EC), width: 2),
+                                border: Border.all(
+                                    color: const Color(0xff4F40EC), width: 2),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Text(
-                                localizations.translate('Ручной ввод'),
+                                localizations.translate('manual_input'),
                                 style: const TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
+                                  fontFamily: 'Gilroy',
                                   color: Color(0xff4F40EC),
                                 ),
                               ),
                             ),
                           ),
                         ),
+                        const SizedBox(height: 28),
+                        _buildDemoCard(localizations),
                       ],
                     ),
                   ),
@@ -259,9 +288,10 @@ class _AuthScreenState extends State<AuthScreen> {
                                     children: [
                                       CustomTextField(
                                         controller: passwordController,
-                                        hintText:
-                                            localizations.translate('Введите пароль'),
-                                        label: localizations.translate('Пароль'),
+                                        hintText: localizations
+                                            .translate('login_password_hint'),
+                                        label: localizations
+                                            .translate('login_password_label'),
                                         isPassword: true,
                                       ),
                                       const SizedBox(height: 16),
@@ -276,7 +306,8 @@ class _AuthScreenState extends State<AuthScreen> {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(
                                       content: Text(
-                                        AppLocalizations.of(context)!.translate(state.message),
+                                        AppLocalizations.of(context)!
+                                            .translate(state.message),
                                         style: TextStyle(
                                           fontFamily: 'Gilroy',
                                           fontSize: 16,
@@ -285,13 +316,15 @@ class _AuthScreenState extends State<AuthScreen> {
                                         ),
                                       ),
                                       behavior: SnackBarBehavior.floating,
-                                      margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                      margin: EdgeInsets.symmetric(
+                                          horizontal: 16, vertical: 8),
                                       shape: RoundedRectangleBorder(
                                         borderRadius: BorderRadius.circular(12),
                                       ),
                                       backgroundColor: Colors.red,
                                       elevation: 3,
-                                      padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                                      padding: EdgeInsets.symmetric(
+                                          vertical: 12, horizontal: 16),
                                       duration: Duration(seconds: 3),
                                     ),
                                   );
@@ -311,8 +344,11 @@ class _AuthScreenState extends State<AuthScreen> {
                                             const Icon(Icons.check_circle,
                                                 color: Colors.white, size: 20),
                                             const SizedBox(width: 8),
-                                            Text(localizations
-                                                .translate('Email успешно подтверждена')),
+                                            Text(
+                                              localizations.translate(
+                                                'email_verified_success',
+                                              ),
+                                            ),
                                           ],
                                         ),
                                         backgroundColor: Colors.green,
@@ -325,7 +361,13 @@ class _AuthScreenState extends State<AuthScreen> {
                                 //print('AuthScreen: Error in domain listener: $e');
                                 if (mounted) {
                                   ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(content: Text('Произошла ошибка при проверке email')),
+                                    SnackBar(
+                                      content: Text(
+                                        localizations.translate(
+                                          'email_verification_error',
+                                        ),
+                                      ),
+                                    ),
                                   );
                                 }
                               }
@@ -341,22 +383,25 @@ class _AuthScreenState extends State<AuthScreen> {
                                   );
                                 }
                                 return CustomButton(
-                                  buttonText: localizations.translate('Продолжить'),
+                                  buttonText: localizations
+                                      .translate('continue_button'),
                                   buttonColor: const Color(0xff4F40EC),
                                   textColor: Colors.white,
                                   onPressed: () {
                                     final email = emailController.text.trim();
                                     if (email.isEmpty) {
-                                      ScaffoldMessenger.of(context).showSnackBar(
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
                                         SnackBar(
                                             content: Text(localizations
-                                                .translate('Введите email'))),
+                                                .translate('enter_email'))),
                                       );
                                     } else if (!_isValidEmail(email)) {
-                                      ScaffoldMessenger.of(context).showSnackBar(
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
                                         SnackBar(
                                             content: Text(localizations
-                                                .translate('Неверный email'))),
+                                                .translate('invalid_email'))),
                                       );
                                     } else {
                                       context
@@ -370,28 +415,39 @@ class _AuthScreenState extends State<AuthScreen> {
                                 listener: (context, loginState) async {
                                   try {
                                     if (loginState is LoginLoaded) {
-                                      SharedPreferences prefs = await SharedPreferences.getInstance();
-                                      await prefs.setString('userName', loginState.user.name.toString());
-                                      await prefs.setString('userID', loginState.user.id.toString());
-                                      await prefs.setString('userLogin', loginState.user.login.toString());
+                                      SharedPreferences prefs =
+                                          await SharedPreferences.getInstance();
+                                      await prefs.setString('userName',
+                                          loginState.user.name.toString());
+                                      await prefs.setString('userID',
+                                          loginState.user.id.toString());
+                                      await prefs.setString('userLogin',
+                                          loginState.user.login.toString());
 
                                       // НОВОЕ: Сохраняем информацию о hasMiniApp из ответа сервера
-                                      bool hasMiniApp = loginState.hasMiniApp; // Теперь это поле есть в LoginLoaded
-                                      
-                                      await prefs.setBool('hasMiniApp', hasMiniApp);
+                                      bool hasMiniApp = loginState
+                                          .hasMiniApp; // Теперь это поле есть в LoginLoaded
+
+                                      await prefs.setBool(
+                                          'hasMiniApp', hasMiniApp);
                                       //print('AuthScreen: Saved hasMiniApp: $hasMiniApp');
 
-                                      final organizationId = await context.read<ApiService>().getSelectedOrganization();
+                                      await context
+                                          .read<ApiService>()
+                                          .getSelectedOrganization();
                                       //print('AuthScreen: Login successful, organization_id: $organizationId');
-                                      await Future.delayed(const Duration(seconds: 2));
+                                      await Future.delayed(
+                                          const Duration(seconds: 2));
                                       if (mounted) {
                                         await _checkPinSetupStatus(context);
                                       }
                                     } else if (loginState is LoginError) {
-                                      ScaffoldMessenger.of(context).showSnackBar(
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
                                         SnackBar(
                                           content: Text(
-                                            AppLocalizations.of(context)!.translate(loginState.message),
+                                            AppLocalizations.of(context)!
+                                                .translate(loginState.message),
                                             style: TextStyle(
                                               fontFamily: 'Gilroy',
                                               fontSize: 16,
@@ -400,13 +456,16 @@ class _AuthScreenState extends State<AuthScreen> {
                                             ),
                                           ),
                                           behavior: SnackBarBehavior.floating,
-                                          margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                          margin: EdgeInsets.symmetric(
+                                              horizontal: 16, vertical: 8),
                                           shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(12),
+                                            borderRadius:
+                                                BorderRadius.circular(12),
                                           ),
                                           backgroundColor: Colors.red,
                                           elevation: 3,
-                                          padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                                          padding: EdgeInsets.symmetric(
+                                              vertical: 12, horizontal: 16),
                                           duration: Duration(seconds: 3),
                                         ),
                                       );
@@ -414,8 +473,15 @@ class _AuthScreenState extends State<AuthScreen> {
                                   } catch (e) {
                                     //print('AuthScreen: Error in login listener: $e');
                                     if (mounted) {
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        SnackBar(content: Text('Ошибка входа в систему')),
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
+                                        SnackBar(
+                                          content: Text(
+                                            localizations.translate(
+                                              'login_error_system',
+                                            ),
+                                          ),
+                                        ),
                                       );
                                     }
                                   }
@@ -425,26 +491,32 @@ class _AuthScreenState extends State<AuthScreen> {
                                       loginState is LoginLoaded) {
                                     return const Center(
                                       child: CircularProgressIndicator(
-                                        valueColor: AlwaysStoppedAnimation<Color>(
-                                            Color(0xff1E2E52)),
+                                        valueColor:
+                                            AlwaysStoppedAnimation<Color>(
+                                                Color(0xff1E2E52)),
                                       ),
                                     );
                                   }
                                   return CustomButton(
-                                    buttonText: localizations.translate('Войти'),
+                                    buttonText:
+                                        localizations.translate('login_button'),
                                     buttonColor: const Color(0xff4F40EC),
                                     textColor: Colors.white,
                                     onPressed: () {
-                                      final password = passwordController.text.trim();
+                                      final password =
+                                          passwordController.text.trim();
                                       if (password.isNotEmpty) {
                                         context.read<LoginBloc>().add(
-                                              CheckLogin(_verifiedLogin, password),
+                                              CheckLogin(
+                                                  _verifiedLogin, password),
                                             );
                                       } else {
-                                        ScaffoldMessenger.of(context).showSnackBar(
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(
                                           SnackBar(
-                                              content: Text(localizations
-                                                  .translate('Введите пароль'))),
+                                              content: Text(
+                                                  localizations.translate(
+                                                      'login_password_hint'))),
                                         );
                                       }
                                     },
@@ -472,21 +544,24 @@ class _AuthScreenState extends State<AuthScreen> {
                                     horizontal: 16, vertical: 8),
                                 decoration: BoxDecoration(
                                   color: Colors.transparent,
-                                  border:
-                                      Border.all(color: const Color(0xff4F40EC), width: 2),
+                                  border: Border.all(
+                                      color: const Color(0xff4F40EC), width: 2),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: Text(
-                                  localizations.translate('QR Code'),
+                                  localizations.translate('qr_code_label'),
                                   style: const TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.bold,
+                                    fontFamily: 'Gilroy',
                                     color: Color(0xff4F40EC),
                                   ),
                                 ),
                               ),
                             ),
                           ),
+                          const SizedBox(height: 28),
+                          _buildDemoCard(localizations),
                         ],
                       ),
                     ),
@@ -522,5 +597,41 @@ class _AuthScreenState extends State<AuthScreen> {
         Navigator.pushReplacementNamed(context, '/pin_setup');
       }
     }
+  }
+
+  Widget _buildDemoCard(AppLocalizations localizations) {
+    return Wrap(
+      alignment: WrapAlignment.center,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      spacing: 6,
+      children: [
+        Text(
+          localizations.translate('auth_signup_prompt'),
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w500,
+            fontFamily: 'Gilroy',
+            color: Color(0xff6E7B96),
+          ),
+        ),
+        InkWell(
+          onTap: _openDemoRequest,
+          borderRadius: BorderRadius.circular(8),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 4),
+            child: Text(
+              localizations.translate('auth_signup_cta'),
+              style: const TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+                fontFamily: 'Gilroy',
+                color: Color(0xff4F40EC),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
   }
 }

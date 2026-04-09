@@ -222,6 +222,8 @@ class MoneyOutcomeBloc extends Bloc<MoneyOutcomeEvent, MoneyOutcomeState> {
         cashRegisterId: event.cashRegisterId,
         comment: event.comment,
         supplierId: event.supplierId,
+        employeeId: event.employeeId,
+        month: event.month,
         approve: event.approve,
         exchangeRate: event.exchangeRate,
       );
@@ -253,6 +255,8 @@ class MoneyOutcomeBloc extends Bloc<MoneyOutcomeEvent, MoneyOutcomeState> {
         cashRegisterId: event.cashRegisterId,
         comment: event.comment,
         supplierId: event.supplierId,
+        employeeId: event.employeeId,
+        month: event.month,
         exchangeRate: event.exchangeRate,
       );
       emit(const MoneyOutcomeUpdateSuccess('document_updated_successfully'));
@@ -286,6 +290,8 @@ class MoneyOutcomeBloc extends Bloc<MoneyOutcomeEvent, MoneyOutcomeState> {
         cashRegisterId: event.cashRegisterId,
         comment: event.comment,
         supplierId: event.supplierId,
+        employeeId: event.employeeId,
+        month: event.month,
         exchangeRate: event.exchangeRate,
       );
     } catch (e) {

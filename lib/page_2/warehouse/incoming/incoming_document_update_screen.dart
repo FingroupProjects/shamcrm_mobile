@@ -470,7 +470,18 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
   }
 
   void _updateDocument() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (_isLoading) return;
+    setState(() => _isLoading = true);
+
+    void cancelLoading() {
+      if (!mounted || !_isLoading) return;
+      setState(() => _isLoading = false);
+    }
+
+    if (!_formKey.currentState!.validate()) {
+      cancelLoading();
+      return;
+    }
 
     if (_items.isEmpty) {
       _showSnackBar(
@@ -478,6 +489,7 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
             'Добавьте хотя бы один товар',
         false,
       );
+      cancelLoading();
       return;
     }
 
@@ -487,6 +499,7 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
             'Выберите склад',
         false,
       );
+      cancelLoading();
       return;
     }
 
@@ -496,27 +509,8 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
             'Выберите поставщика',
         false,
       );
+      cancelLoading();
       return;
-    }
-
-    if (_isExchangeRateRequired) {
-      final rate = _exchangeRateValue;
-      if (rate == null || rate <= 0) {
-        setState(() {
-          _exchangeRateErrorText = AppLocalizations.of(context)!
-                  .translate('field_required_project') ??
-              'Заполните курс валюты';
-        });
-        if (_tabController.index != 0) {
-          _tabController.animateTo(0);
-        }
-        _showSnackBar(
-          AppLocalizations.of(context)!.translate('fill_valid_exchange_rate') ??
-              'Заполните корректный курс валюты',
-          false,
-        );
-        return;
-      }
     }
 
     if (_exchangeRateErrorText != null) {
@@ -564,10 +558,9 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
       );
       // Фокусируемся на первом товаре с ошибкой
       _focusFirstErrorItem();
+      cancelLoading();
       return;
     }
-
-    setState(() => _isLoading = true);
 
     try {
       DateTime? parsedDate =
@@ -593,10 +586,10 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
         }).toList(),
         organizationId: widget.document.organizationId ?? 1,
         salesFunnelId: 1,
-        exchangeRate: _isExchangeRateRequired ? _exchangeRateValue : null,
+        exchangeRate: _exchangeRateValue,
       ));
     } catch (e) {
-      setState(() => _isLoading = false);
+      cancelLoading();
       _showSnackBar(
         AppLocalizations.of(context)!.translate('enter_valid_datetime') ??
             'Введите корректную дату и время',

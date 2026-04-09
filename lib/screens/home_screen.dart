@@ -42,8 +42,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class HomeScreen extends StatefulWidget {
+  const HomeScreen({super.key});
+
   @override
-  _HomeScreenState createState() => _HomeScreenState();
+  State<HomeScreen> createState() => _HomeScreenState();
 }
 
 class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
@@ -623,6 +625,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   Future<void> initializeScreensWithPermissions() async {
     if (!mounted) return;
 
+    final bool wasOnGroup2 = _selectedIndexGroup2 != -1 &&
+        _selectedIndexGroup2 < _widgetOptionsGroup2.length;
+    final int previousGroup2Index = _selectedIndexGroup2;
+    final int previousGroup1Index = _selectedIndexGroup1;
+
     // Ждем загрузки разрешений из PermissionsBloc
     final permissionsBloc = context.read<PermissionsBloc>();
 
@@ -849,13 +856,21 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             _selectedIndexGroup2 = 0;
           }
         } else if (widgetsGroup1.isNotEmpty) {
-          // ✅ Если выбранный индекс больше чем количество экранов, сбрасываем
-          if (_selectedIndexGroup1 < 0 ||
-              _selectedIndexGroup1 >= widgetsGroup1.length) {
-            _selectedIndexGroup1 = 0;
+          if (wasOnGroup2 && widgetsGroup2.isNotEmpty) {
+            _selectedIndexGroup2 = previousGroup2Index < widgetsGroup2.length
+                ? previousGroup2Index
+                : 0;
+            _selectedIndexGroup1 = -1;
+          } else {
+            if (previousGroup1Index >= 0 &&
+                previousGroup1Index < widgetsGroup1.length) {
+              _selectedIndexGroup1 = previousGroup1Index;
+            } else {
+              _selectedIndexGroup1 = 0;
+            }
           }
 
-          if (_selectedIndexGroup2 != -1 && widgetsGroup2.isEmpty) {
+          if (!wasOnGroup2 && widgetsGroup2.isEmpty) {
             _selectedIndexGroup2 = -1;
           }
         } else {
@@ -922,6 +937,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       child: BlocBuilder<PermissionsBloc, PermissionsState>(
         builder: (context, permissionsState) {
           Widget currentWidget;
+          final bool hasNavBarItems = _navBarTitleKeysGroup1.isNotEmpty ||
+              _navBarTitleKeysGroup2.isNotEmpty;
 
           // ✅ ИСПРАВЛЕНИЕ: Всегда показываем валидный виджет
           if (_selectedIndexGroup1 != -1 &&
@@ -946,49 +963,60 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           return Scaffold(
             body: safeBody,
             backgroundColor: Colors.white,
-            bottomNavigationBar: _isInitialized &&
-                    currentWidget is! NoAccessScreen
-                ? MyNavBar(
-                    currentIndexGroup1: _selectedIndexGroup1,
-                    currentIndexGroup2: _selectedIndexGroup2,
-                    onItemSelected: (groupIndex, itemIndex) {
-                      // Обновляем разрешения при переключении табов (с ограничением частоты)
-                      final now = DateTime.now();
-                      if (_lastPermissionUpdate == null ||
-                          now.difference(_lastPermissionUpdate!) >
-                              const Duration(seconds: 5)) {
-                        context
-                            .read<PermissionsBloc>()
-                            .add(FetchPermissionsEvent());
-                        _lastPermissionUpdate = now;
-                      }
+            bottomNavigationBar: currentWidget is NoAccessScreen
+                ? const SizedBox.shrink()
+                : AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 260),
+                    switchInCurve: Curves.easeOutCubic,
+                    switchOutCurve: Curves.easeInCubic,
+                    child: _isInitialized && hasNavBarItems
+                        ? MyNavBar(
+                            key: const ValueKey('main_nav_bar'),
+                            currentIndexGroup1: _selectedIndexGroup1,
+                            currentIndexGroup2: _selectedIndexGroup2,
+                            onItemSelected: (groupIndex, itemIndex) {
+                              // Обновляем разрешения при переключении табов (с ограничением частоты)
+                              final now = DateTime.now();
+                              if (_lastPermissionUpdate == null ||
+                                  now.difference(_lastPermissionUpdate!) >
+                                      const Duration(seconds: 5)) {
+                                context
+                                    .read<PermissionsBloc>()
+                                    .add(FetchPermissionsEvent());
+                                _lastPermissionUpdate = now;
+                              }
 
-                      setState(() {
-                        if (groupIndex == 1) {
-                          _selectedIndexGroup1 = itemIndex;
-                          _selectedIndexGroup2 = -1;
-                        } else if (groupIndex == 2) {
-                          _selectedIndexGroup2 = itemIndex;
-                          _selectedIndexGroup1 = -1;
-                        }
-                      });
-                    },
-                    navBarTitlesGroup1: _navBarTitleKeysGroup1
-                        .map((key) => key.isEmpty
-                            ? ''
-                            : AppLocalizations.of(context)!.translate(key))
-                        .toList(),
-                    navBarTitlesGroup2: _navBarTitleKeysGroup2
-                        .map((key) => key.isEmpty
-                            ? ''
-                            : AppLocalizations.of(context)!.translate(key))
-                        .toList(),
-                    activeIconsGroup1: _activeIconsGroup1,
-                    activeIconsGroup2: _activeIconsGroup2,
-                    inactiveIconsGroup1: _inactiveIconsGroup1,
-                    inactiveIconsGroup2: _inactiveIconsGroup2,
-                  )
-                : SizedBox.shrink(), // Скрываем навбар пока не инициализировано
+                              setState(() {
+                                if (groupIndex == 1) {
+                                  _selectedIndexGroup1 = itemIndex;
+                                  _selectedIndexGroup2 = -1;
+                                } else if (groupIndex == 2) {
+                                  _selectedIndexGroup2 = itemIndex;
+                                  _selectedIndexGroup1 = -1;
+                                }
+                              });
+                            },
+                            navBarTitlesGroup1: _navBarTitleKeysGroup1
+                                .map((key) => key.isEmpty
+                                    ? ''
+                                    : AppLocalizations.of(context)!
+                                        .translate(key))
+                                .toList(),
+                            navBarTitlesGroup2: _navBarTitleKeysGroup2
+                                .map((key) => key.isEmpty
+                                    ? ''
+                                    : AppLocalizations.of(context)!
+                                        .translate(key))
+                                .toList(),
+                            activeIconsGroup1: _activeIconsGroup1,
+                            activeIconsGroup2: _activeIconsGroup2,
+                            inactiveIconsGroup1: _inactiveIconsGroup1,
+                            inactiveIconsGroup2: _inactiveIconsGroup2,
+                          )
+                        : const NavBarShimmerSkeleton(
+                            key: ValueKey('nav_bar_skeleton'),
+                          ),
+                  ),
           );
         },
       ),

@@ -30,6 +30,7 @@ import 'package:crm_task_manager/screens/lead/tabBar/lead_details/add_custom_dir
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/lead_create_custom.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/main_field_dropdown_widget.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/screens/common/reason_for_refusal_modal.dart';
 import 'package:crm_task_manager/screens/task/task_details/project_list_task.dart';
 import 'package:crm_task_manager/screens/task/task_details/task_status_list_edit.dart';
 import 'package:crm_task_manager/screens/task/task_details/user_list.dart';
@@ -103,6 +104,9 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
   bool _canUpdateTask = false;
   bool _hasTaskCreateForMySelfPermission = false;
   int? _currentUserId;
+  bool _askReasonForRefusal = false;
+  TaskStatus? _selectedTaskStatusData;
+  bool _isSubmittingSave = false;
 
   // Конфигурация полей с сервера
   Map<String, Widget> fieldWidgets = {};
@@ -127,6 +131,7 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
     _checkPermissions();
     _initializeControllers();
     _loadInitialData();
+    _loadAskReasonForRefusal();
     selectedPriority ??= 1;
     if (widget.files != null) {
       files = widget.files!.map((file) {
@@ -212,6 +217,49 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
   void _loadInitialData() {
     context.read<GetTaskProjectBloc>().add(GetTaskProjectEv());
     context.read<UserTaskBloc>().add(FetchUsers());
+  }
+
+  Future<void> _loadAskReasonForRefusal() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
+    setState(() {
+      _askReasonForRefusal = prefs.getBool('ask_reason_for_refusal') ?? false;
+    });
+  }
+
+  Future<TaskStatus?> _resolveSelectedTaskStatusData() async {
+    if (_selectedStatuses == null) return null;
+    if (_selectedTaskStatusData?.id == _selectedStatuses) {
+      return _selectedTaskStatusData;
+    }
+
+    try {
+      final status = await _apiService.getTaskStatus(_selectedStatuses!);
+      if (!mounted) return status;
+      setState(() {
+        _selectedTaskStatusData = status;
+      });
+      return status;
+    } catch (_) {
+      return _selectedTaskStatusData;
+    }
+  }
+
+  Future<ReasonForRefusalSubmitData?> _collectReasonForRefusalIfNeeded() async {
+    final bool statusChanged = _selectedStatuses != null &&
+        _selectedStatuses != widget.statusId;
+    final targetStatus = await _resolveSelectedTaskStatusData();
+    final bool requiresReason =
+        _askReasonForRefusal && targetStatus?.isUnassembled == true;
+
+    if (!statusChanged || !requiresReason) {
+      return null;
+    }
+
+    return showReasonForRefusalDialog(
+      context: context,
+      type: 'task',
+    );
   }
 
   Widget _buildFileSelection() {
@@ -527,6 +575,7 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
           onSelectStatus: (TaskStatus selectedStatusData) {
             setState(() {
               _selectedStatuses = selectedStatusData.id;
+              _selectedTaskStatusData = selectedStatusData;
             });
           },
         );
@@ -1949,13 +1998,23 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                       color: Color(0xff1E2E52),
                     ),
                   );
+                } else if (_isSubmittingSave) {
+                  return Center(
+                    child: CircularProgressIndicator(
+                      color: Color(0xff1E2E52),
+                    ),
+                  );
                 } else {
                   return CustomButton(
                     buttonText: AppLocalizations.of(context)!.translate('save'),
                     buttonColor: const Color(0xff4759FF),
                     textColor: Colors.white,
-                    onPressed: () {
+                    onPressed: () async {
+                      if (_isSubmittingSave) return;
                       if (_formKey.currentState!.validate()) {
+                        setState(() {
+                          _isSubmittingSave = true;
+                        });
                         DateTime? startDate;
                         DateTime? endDate;
                         try {
@@ -1972,6 +2031,7 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                               startDate.isAfter(endDate)) {
                             setState(() {
                               isEndDateInvalid = true;
+                              _isSubmittingSave = false;
                             });
                             _showErrorSnackBar(
                               AppLocalizations.of(context)!
@@ -1986,6 +2046,7 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                                   selectedUsers!.isEmpty)) {
                             setState(() {
                               isExecutorInvalid = true;
+                              _isSubmittingSave = false;
                             });
                             _showErrorSnackBar(
                               '${AppLocalizations.of(context)!.translate('assignees_list')} - ${AppLocalizations.of(context)!.translate('field_required')}',
@@ -1998,6 +2059,7 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                               selectedProject!.isEmpty) {
                             setState(() {
                               isProjectInvalid = true;
+                              _isSubmittingSave = false;
                             });
                             _showErrorSnackBar(
                               '${AppLocalizations.of(context)!.translate('project')} - ${AppLocalizations.of(context)!.translate('field_required')}',
@@ -2022,6 +2084,9 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                             if (fieldType == 'number' &&
                                 fieldValue.isNotEmpty) {
                               if (!RegExp(r'^\d+$').hasMatch(fieldValue)) {
+                                setState(() {
+                                  _isSubmittingSave = false;
+                                });
                                 _showErrorSnackBar(AppLocalizations.of(context)!
                                     .translate('enter_valid_number'));
                                 return;
@@ -2054,6 +2119,9 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                                     backgroundColor: Colors.red,
                                   ),
                                 );
+                                setState(() {
+                                  _isSubmittingSave = false;
+                                });
                                 return;
                               }
                             }
@@ -2097,6 +2165,21 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                           }).toList();
 
                           final localizations = AppLocalizations.of(context)!;
+                          final refusalData =
+                              await _collectReasonForRefusalIfNeeded();
+
+                          if (!mounted) return;
+                          if (_selectedStatuses != widget.statusId &&
+                              _askReasonForRefusal &&
+                              (await _resolveSelectedTaskStatusData())
+                                      ?.isUnassembled ==
+                                  true &&
+                              refusalData == null) {
+                            setState(() {
+                              _isSubmittingSave = false;
+                            });
+                            return;
+                          }
 
                           context.read<TaskBloc>().add(
                                 UpdateTask(
@@ -2125,15 +2208,32 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                                   existingFiles: keptExistingFiles.isNotEmpty
                                       ? keptExistingFiles
                                       : null,
+                                  reasonForRefusalId: refusalData?.reasonId,
+                                  reasonForRefusal: refusalData?.comment,
                                 ),
                               );
+                          if (mounted) {
+                            setState(() {
+                              _isSubmittingSave = false;
+                            });
+                          }
                         } catch (e) {
+                          if (mounted) {
+                            setState(() {
+                              _isSubmittingSave = false;
+                            });
+                          }
                           _showErrorSnackBar(
                             AppLocalizations.of(context)!
                                 .translate('error_format_date'),
                           );
                         }
                       } else {
+                        if (mounted) {
+                          setState(() {
+                            _isSubmittingSave = false;
+                          });
+                        }
                         _showErrorSnackBar(
                           AppLocalizations.of(context)!
                               .translate('fill_required_fields'),

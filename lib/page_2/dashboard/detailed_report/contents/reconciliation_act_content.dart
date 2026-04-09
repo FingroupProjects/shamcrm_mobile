@@ -11,42 +11,47 @@ class ReconciliationActContent extends StatefulWidget {
   const ReconciliationActContent({super.key});
 
   @override
-  State<ReconciliationActContent> createState() => _ReconciliationActContentState();
+  State<ReconciliationActContent> createState() =>
+      _ReconciliationActContentState();
 }
 
 class _ReconciliationActContentState extends State<ReconciliationActContent> {
   Widget _buildReconciliationActList(ActOfReconciliationResponse data) {
     final localizations = AppLocalizations.of(context)!;
     final reconciliationItems = data.result ?? [];
-    
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
         children: [
           if (reconciliationItems.isNotEmpty) ...[
-            ...reconciliationItems.map((item) => Container(
-              margin: const EdgeInsets.only(bottom: 12),
-              child: ReconciliationActCard(
-                reconciliationItem: item,
-                onClick: (reconciliationItem) {
-                  // Навигация к экрану деталей акта сверки
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => ReconciliationActDetailsScreen(
-                        reconciliationItem: reconciliationItem,
+            ...reconciliationItems
+                .map((item) => Container(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      child: ReconciliationActCard(
+                        reconciliationItem: item,
+                        onClick: (reconciliationItem) {
+                          // Навигация к экрану деталей акта сверки
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  ReconciliationActDetailsScreen(
+                                reconciliationItem: reconciliationItem,
+                              ),
+                            ),
+                          );
+                        },
+                        onLongPress: (reconciliationItem) {
+                          // Обработка длительного нажатия
+                          debugPrint(
+                              '${localizations.translate('long_press_reconciliation_item')}: ${reconciliationItem.id}');
+                        },
+                        isSelectionMode: false,
+                        isSelected: false,
                       ),
-                    ),
-                  );
-                },
-                onLongPress: (reconciliationItem) {
-                  // Обработка длительного нажатия
-                  debugPrint('${localizations.translate('long_press_reconciliation_item')}: ${reconciliationItem.id}');
-                },
-                isSelectionMode: false,
-                isSelected: false,
-              ),
-            )).toList(),
+                    ))
+                .toList(),
           ],
         ],
       ),
@@ -55,7 +60,7 @@ class _ReconciliationActContentState extends State<ReconciliationActContent> {
 
   Widget _buildEmptyState() {
     final localizations = AppLocalizations.of(context)!;
-    
+
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -91,7 +96,7 @@ class _ReconciliationActContentState extends State<ReconciliationActContent> {
 
   Widget _buildLoadingState() {
     final localizations = AppLocalizations.of(context)!;
-    
+
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -115,7 +120,7 @@ class _ReconciliationActContentState extends State<ReconciliationActContent> {
 
   Widget _buildErrorState(String message) {
     final localizations = AppLocalizations.of(context)!;
-    
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
@@ -162,8 +167,8 @@ class _ReconciliationActContentState extends State<ReconciliationActContent> {
               ElevatedButton(
                 onPressed: () {
                   context.read<SalesDashboardReconciliationActBloc>().add(
-                    LoadReconciliationActReport(),
-                  );
+                        LoadReconciliationActReport(),
+                      );
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Color(0xff1E2E52),
@@ -191,7 +196,8 @@ class _ReconciliationActContentState extends State<ReconciliationActContent> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<SalesDashboardReconciliationActBloc, SalesDashboardReconciliationActState>(
+    return BlocBuilder<SalesDashboardReconciliationActBloc,
+        SalesDashboardReconciliationActState>(
       builder: (context, state) {
         if (state is SalesDashboardReconciliationActLoading) {
           return _buildLoadingState();

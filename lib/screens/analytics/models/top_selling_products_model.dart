@@ -18,8 +18,7 @@ class TopProductSummary {
       name: SafeConverters.toSafeString(json['name']),
       sales: SafeConverters.toInt(json['sales']),
       revenue: SafeConverters.toDouble(json['revenue']),
-      revenueFormatted:
-          SafeConverters.toSafeString(json['revenue_formatted']),
+      revenueFormatted: SafeConverters.toSafeString(json['revenue_formatted']),
     );
   }
 }
@@ -54,8 +53,7 @@ class TopSellingProductItem {
       cancelled: SafeConverters.toInt(json['cancelled']),
       conversion: SafeConverters.toDouble(json['conversion']),
       revenue: SafeConverters.toDouble(json['revenue']),
-      revenueFormatted:
-          SafeConverters.toSafeString(json['revenue_formatted']),
+      revenueFormatted: SafeConverters.toSafeString(json['revenue_formatted']),
     );
   }
 }

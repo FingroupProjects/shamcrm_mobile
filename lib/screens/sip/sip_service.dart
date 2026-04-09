@@ -1,7 +1,9 @@
+import 'dart:io' show Platform;
 import 'dart:async';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -22,6 +24,10 @@ class SipService extends ChangeNotifier
   static const String _sipIdKey = 'sip_target_sip_id';
   static const String _transportKey = 'sip_transport';
   static const String _portKey = 'sip_port';
+  static const MethodChannel _nativeSipMethodChannel =
+      MethodChannel('com.shamcrm/native_sip/methods');
+  static const EventChannel _nativeSipEventChannel =
+      EventChannel('com.shamcrm/native_sip/events');
 
   final SIPUAHelper _helper = SIPUAHelper();
   final Connectivity _connectivity = Connectivity();
@@ -43,6 +49,7 @@ class SipService extends ChangeNotifier
   Timer? _registrationWatchdogTimer;
   Timer? _keepAliveTimer;
   StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
+  StreamSubscription<dynamic>? _nativeSipEventsSubscription;
 
   Call? _activeCall;
   MediaStream? _localStream;
@@ -50,6 +57,7 @@ class SipService extends ChangeNotifier
   SipCallDirection _currentCallDirection = SipCallDirection.outgoing;
   DateTime? _currentCallStartedAt;
   String? _currentCallTarget;
+  String? _currentInviteUri;
 
   Future<void> initialize() async {
     if (_initialized) return;
@@ -66,9 +74,9 @@ class SipService extends ChangeNotifier
     final login = await _storage.read(key: _loginKey) ?? '';
     final password = await _storage.read(key: _passwordKey) ?? '';
     final sipId = await _storage.read(key: _sipIdKey) ?? '';
-    final transportRaw = await _storage.read(key: _transportKey) ?? 'ws';
-    final portRaw = await _storage.read(key: _portKey) ?? '7443';
-    final parsedPort = int.tryParse(portRaw) ?? 7443;
+    final transportRaw = await _storage.read(key: _transportKey) ?? 'udp';
+    final portRaw = await _storage.read(key: _portKey) ?? '5060';
+    final parsedPort = int.tryParse(portRaw) ?? 5060;
     final transport = switch (transportRaw) {
       'tcp' => SipTransportUi.tcp,
       'udp' => SipTransportUi.udp,
@@ -85,9 +93,33 @@ class SipService extends ChangeNotifier
       clearError: true,
       clearRemoteIdentity: true,
     );
+    await _initializeNativeSipBridge();
     _startConnectivityMonitoring();
     _startRegistrationWatchdog();
     notifyListeners();
+  }
+
+  bool _shouldUseNativeSip() {
+    return Platform.isAndroid &&
+        (_state.transport == SipTransportUi.udp ||
+            _state.transport == SipTransportUi.tcp);
+  }
+
+  Future<void> _initializeNativeSipBridge() async {
+    _nativeSipEventsSubscription?.cancel();
+    _nativeSipEventsSubscription =
+        _nativeSipEventChannel.receiveBroadcastStream().listen(
+      _handleNativeSipEvent,
+      onError: (Object error) {
+        debugPrint('SipService native SIP stream error: $error');
+      },
+    );
+
+    try {
+      await _nativeSipMethodChannel.invokeMethod('initialize');
+    } catch (error) {
+      debugPrint('SipService native SIP initialize failed: $error');
+    }
   }
 
   Future<void> saveDraft({
@@ -98,8 +130,10 @@ class SipService extends ChangeNotifier
     required SipTransportUi transport,
     required int port,
   }) async {
+    final normalizedServer = _normalizeServerInput(server, transport);
+
     _state = _state.copyWith(
-      server: server.trim(),
+      server: normalizedServer,
       login: login.trim(),
       password: password,
       sipId: sipId.trim(),
@@ -130,12 +164,19 @@ class SipService extends ChangeNotifier
       return;
     }
 
+    final validationError = _validateSipConfiguration();
+    if (validationError != null) {
+      _setError(validationError);
+      return;
+    }
+
     if (!_networkAvailable) {
       _setError('No internet connection. SIP registration paused.');
       return;
     }
 
     _shouldStayConnected = true;
+    _logSipConfig('connect');
     await _startSipRegistration();
   }
 
@@ -151,22 +192,47 @@ class SipService extends ChangeNotifier
     final domain = _extractDomain(_state.server);
     final authUser = _extractAuthUser(_state.login);
     final uri = _buildSipUri(_state.login, domain);
+    _logSipConfig(
+      '_startSipRegistration',
+      extra: <String, String>{
+        'domain': domain,
+        'authUser': authUser,
+        'uri': uri,
+      },
+    );
+
+    _lastReconnectAttemptAt = DateTime.now();
+
+    if (_shouldUseNativeSip()) {
+      final success = await _invokeNativeSipMethod<bool>(
+            'register',
+            <String, dynamic>{
+              'server': domain,
+              'login': _state.login.trim(),
+              'password': _state.password,
+              'port': _state.port,
+              'transport':
+                  _state.transport == SipTransportUi.tcp ? 'tcp' : 'udp',
+              'authUser': authUser,
+            },
+          ) ??
+          false;
+
+      if (!success) {
+        _state = _state.copyWith(
+          registrationStatus: SipRegistrationUiStatus.failed,
+          errorMessage: 'Native SIP registration failed',
+        );
+        notifyListeners();
+      }
+      return;
+    }
 
     final settings = UaSettings();
     if (_state.transport == SipTransportUi.ws) {
       settings.webSocketUrl = _toWebSocketUrl(_state.server, _state.port);
       settings.webSocketSettings.allowBadCertificate = true;
       settings.transportType = TransportType.WS;
-    } else if (_state.transport == SipTransportUi.tcp) {
-      settings.host = domain;
-      settings.port = _state.port.toString();
-      settings.transportType = TransportType.TCP;
-      settings.registrarServer = 'sip:$domain:${_state.port}';
-    } else {
-      settings.host = domain;
-      settings.port = _state.port.toString();
-      settings.transportType = TransportType.UDP;
-      settings.registrarServer = 'sip:$domain:${_state.port}';
     }
     settings.uri = uri;
     settings.authorizationUser = authUser;
@@ -177,8 +243,6 @@ class SipService extends ChangeNotifier
     settings.connectionRecoveryMinInterval = 2;
     settings.connectionRecoveryMaxInterval = 30;
     settings.register = true;
-
-    _lastReconnectAttemptAt = DateTime.now();
     await _helper.start(settings);
   }
 
@@ -187,15 +251,19 @@ class SipService extends ChangeNotifier
     _cancelReconnect();
     _stopKeepAlive();
 
-    try {
-      _activeCall?.hangup(<String, dynamic>{'status_code': 603});
-    } catch (_) {}
-
     _activeCall = null;
-    if (_helper.registered) {
-      _helper.unregister(true);
+    if (_shouldUseNativeSip()) {
+      await _invokeNativeSipMethod('unregister');
+    } else {
+      try {
+        _activeCall?.hangup(<String, dynamic>{'status_code': 603});
+      } catch (_) {}
+
+      if (_helper.registered) {
+        _helper.unregister(true);
+      }
+      _helper.stop();
     }
-    _helper.stop();
     _releaseStreams();
 
     _state = _state.copyWith(
@@ -225,7 +293,54 @@ class SipService extends ChangeNotifier
     _currentCallStartedAt = null;
 
     final target = _buildTargetUri(_state.sipId, _extractDomain(_state.server));
-    final success = await _helper.call(target, voiceOnly: false);
+    _currentInviteUri = target;
+
+    if (_shouldUseNativeSip()) {
+      final granted = await _ensureMediaPermissions(includeCamera: false);
+      if (!granted) {
+        _setError('Microphone permission is required for SIP calls.');
+        return;
+      }
+
+      _logSipConfig(
+        'nativeMakeCall',
+        extra: <String, String>{
+          'target': target,
+          'dialed': _state.sipId.trim(),
+        },
+      );
+      final success = await _invokeNativeSipMethod<bool>(
+            'makeCall',
+            <String, dynamic>{'target': target},
+          ) ??
+          false;
+      if (!success) {
+        _setError('Native SIP call failed to start.');
+        return;
+      }
+
+      _state = _state.copyWith(
+        callStatus: SipCallUiStatus.calling,
+        clearError: true,
+      );
+      notifyListeners();
+      return;
+    }
+
+    final granted = await _ensureMediaPermissions(includeCamera: false);
+    if (!granted) {
+      _setError('Microphone permission is required for SIP calls.');
+      return;
+    }
+
+    _logSipConfig(
+      'makeCall',
+      extra: <String, String>{
+        'target': target,
+        'dialed': _state.sipId.trim(),
+      },
+    );
+    final success = await _helper.call(target, voiceOnly: true);
 
     if (!success) {
       _setError('Failed to start outgoing call.');
@@ -240,16 +355,32 @@ class SipService extends ChangeNotifier
   }
 
   Future<void> acceptCall() async {
-    final call = _activeCall;
-    if (call == null) return;
+    if (_shouldUseNativeSip()) {
+      final granted = await _ensureMediaPermissions(includeCamera: false);
+      if (!granted) {
+        _setError('Microphone permission is required for SIP calls.');
+        return;
+      }
 
-    final granted = await _ensureMediaPermissions();
-    if (!granted) {
-      _setError('Camera and microphone permissions are required.');
+      final success = await _invokeNativeSipMethod<bool>('acceptCall') ?? false;
+      if (!success) {
+        _setError('Failed to accept native SIP call.');
+      }
       return;
     }
 
+    final call = _activeCall;
+    if (call == null) return;
+
     final remoteHasVideo = call.remote_has_video;
+    final granted =
+        await _ensureMediaPermissions(includeCamera: remoteHasVideo);
+    if (!granted) {
+      _setError(remoteHasVideo
+          ? 'Camera and microphone permissions are required.'
+          : 'Microphone permission is required.');
+      return;
+    }
 
     final mediaConstraints = <String, dynamic>{
       'audio': true,
@@ -276,39 +407,72 @@ class SipService extends ChangeNotifier
     notifyListeners();
   }
 
-  void hangup() {
+  Future<void> hangup() async {
+    if (_shouldUseNativeSip()) {
+      await _invokeNativeSipMethod('hangup');
+      return;
+    }
+
     if (_activeCall == null) return;
     _activeCall!.hangup(<String, dynamic>{'status_code': 603});
   }
 
-  void decline() {
+  Future<void> decline() async {
+    if (_shouldUseNativeSip()) {
+      await _invokeNativeSipMethod('declineCall');
+      return;
+    }
+
     if (_activeCall == null) return;
     _activeCall!.hangup(<String, dynamic>{'status_code': 486});
   }
 
-  void toggleMute() {
-    if (_activeCall == null) return;
-
+  Future<void> toggleMute() async {
     final targetMuted = !_state.isMuted;
-    if (targetMuted) {
-      _activeCall!.mute(true, false);
+    if (_shouldUseNativeSip()) {
+      final success = await _invokeNativeSipMethod<bool>(
+            'setMuted',
+            <String, dynamic>{'muted': targetMuted},
+          ) ??
+          false;
+      if (!success) {
+        _setError('Failed to change mute state.');
+        return;
+      }
     } else {
-      _activeCall!.unmute(true, false);
+      if (_activeCall == null) return;
+
+      if (targetMuted) {
+        _activeCall!.mute(true, false);
+      } else {
+        _activeCall!.unmute(true, false);
+      }
     }
 
     _state = _state.copyWith(isMuted: targetMuted);
     notifyListeners();
   }
 
-  void toggleSpeaker() {
-    final track = _localStream?.getAudioTracks().isNotEmpty == true
-        ? _localStream!.getAudioTracks().first
-        : null;
-
-    if (track == null) return;
-
+  Future<void> toggleSpeaker() async {
     final targetSpeaker = !_state.isSpeakerOn;
-    track.enableSpeakerphone(targetSpeaker);
+    if (_shouldUseNativeSip()) {
+      final success = await _invokeNativeSipMethod<bool>(
+            'setSpeaker',
+            <String, dynamic>{'speakerOn': targetSpeaker},
+          ) ??
+          false;
+      if (!success) {
+        _setError('Failed to change speaker state.');
+        return;
+      }
+    } else {
+      final track = _localStream?.getAudioTracks().isNotEmpty == true
+          ? _localStream!.getAudioTracks().first
+          : null;
+
+      if (track == null) return;
+      track.enableSpeakerphone(targetSpeaker);
+    }
 
     _state = _state.copyWith(isSpeakerOn: targetSpeaker);
     notifyListeners();
@@ -318,6 +482,232 @@ class SipService extends ChangeNotifier
     return _state.server.trim().isNotEmpty &&
         _state.login.trim().isNotEmpty &&
         _state.password.isNotEmpty;
+  }
+
+  String? _validateSipConfiguration() {
+    final server = _state.server.trim();
+    if (server.isEmpty) {
+      return 'SIP server is empty.';
+    }
+
+    final isWsAddress =
+        server.startsWith('ws://') || server.startsWith('wss://');
+
+    if (_state.transport == SipTransportUi.ws && !isWsAddress) {
+      return 'WS/WSS requires a full WebSocket URL. For classic SIP providers like TTL use UDP or TCP on port 5060 unless they gave you a ws:// or wss:// address.';
+    }
+
+    if (_state.transport != SipTransportUi.ws && isWsAddress) {
+      return 'This server looks like a WebSocket endpoint. Switch transport to WS/WSS.';
+    }
+
+    return null;
+  }
+
+  String _normalizeServerInput(String server, SipTransportUi transport) {
+    var value = server.trim();
+
+    if (transport == SipTransportUi.ws) {
+      if (value.startsWith('http://')) {
+        return 'ws://${value.substring('http://'.length)}';
+      }
+      if (value.startsWith('https://')) {
+        return 'wss://${value.substring('https://'.length)}';
+      }
+      return value;
+    }
+
+    value = value.replaceFirst(
+      RegExp(r'^(sip:|sips:)', caseSensitive: false),
+      '',
+    );
+    value = value.replaceFirst(
+      RegExp(r'^https?://', caseSensitive: false),
+      '',
+    );
+    value = value.replaceFirst(
+      RegExp(r'^wss?://', caseSensitive: false),
+      '',
+    );
+
+    return value.split('/').first;
+  }
+
+  Future<T?> _invokeNativeSipMethod<T>(
+    String method, [
+    Map<String, dynamic>? arguments,
+  ]) async {
+    try {
+      return await _nativeSipMethodChannel.invokeMethod<T>(method, arguments);
+    } on MissingPluginException catch (error) {
+      final message =
+          'Native SIP bridge is not loaded in this Android build. Stop the app completely and rebuild it. Hot reload/hot restart does not load new native Kotlin code. Details: $error';
+      debugPrint('SipService native SIP missing plugin [$method]: $message');
+      _state = _state.copyWith(
+        registrationStatus: SipRegistrationUiStatus.failed,
+        errorMessage: message,
+      );
+      notifyListeners();
+    } on PlatformException catch (error) {
+      debugPrint(
+        'SipService native SIP method error [$method]: ${error.code} ${error.message}',
+      );
+    } catch (error) {
+      debugPrint('SipService native SIP method error [$method]: $error');
+    }
+    return null;
+  }
+
+  void _handleNativeSipEvent(dynamic event) {
+    if (event is! Map) {
+      debugPrint('SipService native SIP ignored event: $event');
+      return;
+    }
+
+    final payload = Map<String, dynamic>.from(event);
+    final type = payload['type']?.toString();
+
+    if (type == 'registration') {
+      _handleNativeRegistrationEvent(payload);
+      return;
+    }
+
+    if (type == 'call') {
+      _handleNativeCallEvent(payload);
+    }
+  }
+
+  void _handleNativeRegistrationEvent(Map<String, dynamic> payload) {
+    final nativeState = payload['state']?.toString() ?? 'disconnected';
+    final message = payload['message']?.toString();
+    debugPrint(
+      'SipService native registration event -> state=$nativeState, message=$message',
+    );
+
+    switch (nativeState) {
+      case 'registering':
+        _state = _state.copyWith(
+          registrationStatus: SipRegistrationUiStatus.registering,
+          errorMessage: message,
+        );
+        break;
+      case 'registered':
+        _state = _state.copyWith(
+          registrationStatus: SipRegistrationUiStatus.registered,
+          clearError: true,
+        );
+        break;
+      case 'failed':
+        _state = _state.copyWith(
+          registrationStatus: SipRegistrationUiStatus.failed,
+          errorMessage: message ?? 'Native SIP registration failed',
+        );
+        if (_shouldStayConnected) {
+          _scheduleReconnect('native-registration-failed');
+        }
+        break;
+      case 'disconnected':
+      default:
+        _state = _state.copyWith(
+          registrationStatus: SipRegistrationUiStatus.disconnected,
+          callStatus: SipCallUiStatus.idle,
+          errorMessage: message,
+          clearRemoteIdentity: true,
+        );
+        if (_shouldStayConnected) {
+          _scheduleReconnect('native-disconnected');
+        }
+        break;
+    }
+
+    notifyListeners();
+  }
+
+  void _handleNativeCallEvent(Map<String, dynamic> payload) {
+    final nativeState = payload['state']?.toString() ?? 'idle';
+    final remoteIdentity = payload['remoteIdentity']?.toString();
+    final message = payload['message']?.toString();
+    final muted = payload['muted'] as bool?;
+    final speakerOn = payload['speakerOn'] as bool?;
+
+    debugPrint(
+      'SipService native call event -> state=$nativeState, remote=$remoteIdentity, message=$message, muted=$muted, speaker=$speakerOn',
+    );
+
+    switch (nativeState) {
+      case 'incoming':
+        _currentCallDirection = SipCallDirection.incoming;
+        _currentCallTarget = remoteIdentity ?? _state.sipId;
+        _currentCallStartedAt = null;
+        _state = _state.copyWith(
+          callStatus: SipCallUiStatus.incoming,
+          remoteIdentity: remoteIdentity,
+          errorMessage: message,
+          isMuted: muted ?? _state.isMuted,
+          isSpeakerOn: speakerOn ?? _state.isSpeakerOn,
+        );
+        break;
+      case 'calling':
+        _currentCallDirection = SipCallDirection.outgoing;
+        _state = _state.copyWith(
+          callStatus: SipCallUiStatus.calling,
+          remoteIdentity: remoteIdentity,
+          clearError: true,
+          isMuted: muted ?? _state.isMuted,
+          isSpeakerOn: speakerOn ?? _state.isSpeakerOn,
+        );
+        break;
+      case 'ringing':
+        _state = _state.copyWith(
+          callStatus: SipCallUiStatus.ringing,
+          remoteIdentity: remoteIdentity,
+          clearError: true,
+          isMuted: muted ?? _state.isMuted,
+          isSpeakerOn: speakerOn ?? _state.isSpeakerOn,
+        );
+        break;
+      case 'in_call':
+        _currentCallStartedAt ??= DateTime.now();
+        _state = _state.copyWith(
+          callStatus: SipCallUiStatus.inCall,
+          remoteIdentity: remoteIdentity,
+          clearError: true,
+          isMuted: muted ?? _state.isMuted,
+          isSpeakerOn: speakerOn ?? _state.isSpeakerOn,
+        );
+        break;
+      case 'failed':
+        _appendCallLog(SipCallUiStatus.failed);
+        _currentInviteUri = null;
+        _state = _state.copyWith(
+          callStatus: SipCallUiStatus.failed,
+          errorMessage: message ?? 'Native SIP call failed',
+          clearRemoteIdentity: true,
+          isMuted: false,
+          isSpeakerOn: false,
+        );
+        break;
+      case 'ended':
+        _appendCallLog(SipCallUiStatus.ended);
+        _currentInviteUri = null;
+        _state = _state.copyWith(
+          callStatus: SipCallUiStatus.ended,
+          clearRemoteIdentity: true,
+          clearError: true,
+          isMuted: false,
+          isSpeakerOn: false,
+        );
+        break;
+      case 'idle':
+      default:
+        _state = _state.copyWith(
+          isMuted: muted ?? _state.isMuted,
+          isSpeakerOn: speakerOn ?? _state.isSpeakerOn,
+        );
+        break;
+    }
+
+    notifyListeners();
   }
 
   void _startConnectivityMonitoring() {
@@ -362,6 +752,16 @@ class SipService extends ChangeNotifier
 
   void _checkAndRecoverRegistration(String reason) {
     if (!_shouldStayConnected || !_networkAvailable) return;
+
+    if (_shouldUseNativeSip()) {
+      if (_state.registrationStatus == SipRegistrationUiStatus.registered ||
+          _state.registrationStatus == SipRegistrationUiStatus.registering) {
+        return;
+      }
+
+      _scheduleReconnect(reason);
+      return;
+    }
 
     if (_state.registrationStatus == SipRegistrationUiStatus.registered) {
       if (!_helper.connected) {
@@ -408,6 +808,10 @@ class SipService extends ChangeNotifier
   }
 
   void _startKeepAlive() {
+    if (_shouldUseNativeSip()) {
+      return;
+    }
+
     _keepAliveTimer?.cancel();
     _keepAliveTimer = Timer.periodic(const Duration(seconds: 25), (_) {
       if (!_shouldStayConnected ||
@@ -419,8 +823,9 @@ class SipService extends ChangeNotifier
       }
 
       final domain = _extractDomain(_state.server);
-      final target = 'sip:$domain';
+      final target = _buildSipUri(_state.login, domain);
       try {
+        debugPrint('SipService: keepAlive OPTIONS -> $target');
         _helper.sendOptions(target, '', null);
       } catch (_) {}
     });
@@ -431,14 +836,27 @@ class SipService extends ChangeNotifier
     _keepAliveTimer = null;
   }
 
-  Future<bool> _ensureMediaPermissions() async {
+  Future<bool> _ensureMediaPermissions({required bool includeCamera}) async {
     final micStatus = await Permission.microphone.request();
+    if (!micStatus.isGranted) {
+      return false;
+    }
+    if (!includeCamera) {
+      return true;
+    }
+
     final camStatus = await Permission.camera.request();
-    return micStatus.isGranted && camStatus.isGranted;
+    return camStatus.isGranted;
   }
 
   String _toWebSocketUrl(String server, int port) {
     final value = server.trim();
+    if (value.startsWith('http://')) {
+      return 'ws://${value.substring('http://'.length)}';
+    }
+    if (value.startsWith('https://')) {
+      return 'wss://${value.substring('https://'.length)}';
+    }
     if (value.startsWith('ws://') || value.startsWith('wss://')) {
       return value;
     }
@@ -452,17 +870,22 @@ class SipService extends ChangeNotifier
   }
 
   String _extractDomain(String server) {
-    final normalized =
-        server.trim().startsWith('ws://') || server.trim().startsWith('wss://')
-            ? server.trim()
-            : 'wss://${server.trim()}';
+    final sanitized = server
+        .replaceFirst(RegExp(r'^https?://', caseSensitive: false), '')
+        .replaceFirst(RegExp(r'^wss?://', caseSensitive: false), '')
+        .replaceFirst(RegExp(r'^(sip:|sips:)', caseSensitive: false), '');
+
+    final normalized = sanitized.trim().startsWith('ws://') ||
+            sanitized.trim().startsWith('wss://')
+        ? sanitized.trim()
+        : 'wss://${sanitized.trim()}';
 
     final uri = Uri.tryParse(normalized);
     if (uri != null && uri.host.isNotEmpty) {
       return uri.host;
     }
 
-    final cleaned = server.replaceAll(RegExp(r'^wss?://'), '').split('/').first;
+    final cleaned = sanitized.split('/').first;
     return cleaned.split(':').first;
   }
 
@@ -510,6 +933,7 @@ class SipService extends ChangeNotifier
   }
 
   void _setError(String message) {
+    debugPrint('SipService ERROR: $message');
     _state = _state.copyWith(
       errorMessage: message,
       registrationStatus: _state.registrationStatus,
@@ -518,8 +942,44 @@ class SipService extends ChangeNotifier
     notifyListeners();
   }
 
+  void _logSipConfig(String stage, {Map<String, String>? extra}) {
+    final domain = _extractDomain(_state.server);
+    final transport = switch (_state.transport) {
+      SipTransportUi.ws => 'WS/WSS',
+      SipTransportUi.tcp => 'TCP',
+      SipTransportUi.udp => 'UDP',
+    };
+    final entries = <String, String>{
+      'server': _state.server,
+      'domain': domain,
+      'login': _state.login,
+      'transport': transport,
+      'port': _state.port.toString(),
+      if (extra != null) ...extra,
+    };
+
+    final details =
+        entries.entries.map((item) => '${item.key}=${item.value}').join(', ');
+    debugPrint('SipService [$stage]: $details');
+  }
+
+  String _timeoutDiagnosticMessage() {
+    final target = _currentInviteUri ?? _currentCallTarget ?? _state.sipId;
+    final transport = switch (_state.transport) {
+      SipTransportUi.ws => 'WS/WSS',
+      SipTransportUi.tcp => 'TCP',
+      SipTransportUi.udp => 'UDP',
+    };
+
+    return 'Call timeout for $target over $transport. REGISTER succeeded, but INVITE got no SIP response. If Zoiper works with the same account, this usually means the provider accepts classic SIP/RTP, while this app is sending WebRTC-style SDP (ICE/DTLS/SAVPF), or the INVITE is being lost over UDP.';
+  }
+
   @override
   void registrationStateChanged(RegistrationState state) {
+    if (_shouldUseNativeSip()) return;
+    debugPrint(
+      'SipService: registrationStateChanged -> state=${state.state}, cause=${state.cause}',
+    );
     switch (state.state) {
       case RegistrationStateEnum.REGISTERED:
         _state = _state.copyWith(
@@ -559,6 +1019,10 @@ class SipService extends ChangeNotifier
 
   @override
   void callStateChanged(Call call, CallState callState) {
+    if (_shouldUseNativeSip()) return;
+    debugPrint(
+      'SipService: callStateChanged -> state=${callState.state}, direction=${call.direction}, remote=${call.remote_identity}, cause=${callState.cause}',
+    );
     _activeCall = call;
 
     if (callState.state == CallStateEnum.STREAM) {
@@ -614,6 +1078,7 @@ class SipService extends ChangeNotifier
         _releaseStreams();
         _appendCallLog(SipCallUiStatus.ended);
         _activeCall = null;
+        _currentInviteUri = null;
         _state = _state.copyWith(
           callStatus: SipCallUiStatus.ended,
           clearRemoteIdentity: true,
@@ -625,9 +1090,17 @@ class SipService extends ChangeNotifier
         _releaseStreams();
         _appendCallLog(SipCallUiStatus.failed);
         _activeCall = null;
+        final rawError = callState.cause?.toString() ?? 'Call failed';
+        final errorMessage = rawError.contains('408')
+            ? '${_timeoutDiagnosticMessage()} Cause: $rawError'
+            : rawError;
+        if (rawError.contains('408')) {
+          debugPrint('SipService DIAGNOSTIC: ${_timeoutDiagnosticMessage()}');
+        }
+        _currentInviteUri = null;
         _state = _state.copyWith(
           callStatus: SipCallUiStatus.failed,
-          errorMessage: callState.cause?.toString() ?? 'Call failed',
+          errorMessage: errorMessage,
           clearRemoteIdentity: true,
           isMuted: false,
           isSpeakerOn: false,
@@ -645,6 +1118,10 @@ class SipService extends ChangeNotifier
 
   @override
   void transportStateChanged(TransportState state) {
+    if (_shouldUseNativeSip()) return;
+    debugPrint(
+      'SipService: transportStateChanged -> state=${state.state}, cause=${state.cause}',
+    );
     switch (state.state) {
       case TransportStateEnum.CONNECTED:
         if (_shouldStayConnected &&
@@ -682,6 +1159,8 @@ class SipService extends ChangeNotifier
     _stopKeepAlive();
     _registrationWatchdogTimer?.cancel();
     _connectivitySubscription?.cancel();
+    _nativeSipEventsSubscription?.cancel();
+    _nativeSipMethodChannel.invokeMethod('dispose').catchError((_) {});
     _releaseStreams();
 
     localRenderer.dispose();

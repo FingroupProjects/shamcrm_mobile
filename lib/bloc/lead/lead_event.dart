@@ -8,7 +8,7 @@ abstract class LeadEvent {}
 // ОБНОВЛЕННЫЙ класс с поддержкой forceRefresh
 class FetchLeadStatuses extends LeadEvent {
   final bool forceRefresh;
-  
+
   FetchLeadStatuses({this.forceRefresh = false});
 }
 
@@ -17,7 +17,12 @@ class FetchLeads extends LeadEvent {
   final String? query;
   final List<int>? managerIds;
   final List<int>? regionsIds;
+  final int? regionId;
+  final List<int>? cityIds;
   final List<int>? sourcesIds;
+  final List<int>? channelIds;
+  final List<int>? advertisingCampaignIds;
+  final List<int>? reasonForRefusalIds;
   final int? statusIds;
   final DateTime? fromDate;
   final DateTime? toDate;
@@ -32,6 +37,7 @@ class FetchLeads extends LeadEvent {
   final bool? hasDeal;
   final bool? hasOrders;
   final int? daysWithoutActivity;
+  final int? numberOfDaysDeal;
   final List<Map<String, dynamic>>? directoryValues;
   final Map<String, List<String>>? customFieldFilters;
   final int? salesFunnelId;
@@ -42,7 +48,12 @@ class FetchLeads extends LeadEvent {
     this.query,
     this.managerIds,
     this.regionsIds,
+    this.regionId,
+    this.cityIds,
     this.sourcesIds,
+    this.channelIds,
+    this.advertisingCampaignIds,
+    this.reasonForRefusalIds,
     this.statusIds,
     this.fromDate,
     this.toDate,
@@ -57,6 +68,7 @@ class FetchLeads extends LeadEvent {
     this.hasDeal,
     this.hasOrders,
     this.daysWithoutActivity,
+    this.numberOfDaysDeal,
     this.directoryValues,
     this.customFieldFilters,
     this.salesFunnelId,
@@ -91,6 +103,7 @@ class CreateLeadStatus extends LeadEvent {
   final AppLocalizations localizations;
   final bool? isSuccess;
   final bool? isFailure;
+  final bool isUnassembled;
 
   CreateLeadStatus({
     required this.title,
@@ -98,6 +111,7 @@ class CreateLeadStatus extends LeadEvent {
     required this.localizations,
     this.isSuccess,
     this.isFailure,
+    this.isUnassembled = false,
   });
 }
 
@@ -122,8 +136,6 @@ class CreateLead extends LeadEvent {
   final bool isSystemManager;
   final List<FileHelper>? files;
   final String? priceTypeId; // Новое поле
-
-
 
   CreateLead({
     required this.name,
@@ -157,6 +169,7 @@ class UpdateLeadStatus extends LeadEvent {
 
   UpdateLeadStatus(this.leadId, this.oldStatusId, this.newStatusId);
 }
+
 class UpdateLead extends LeadEvent {
   final int leadId;
   final String name;
@@ -179,9 +192,10 @@ class UpdateLead extends LeadEvent {
   final AppLocalizations localizations;
   final List<FileHelper>? files;
   final String? priceTypeId; // Новое поле
-    final String? salesFunnelId; // ДОБАВЛЕННОЕ ПОЛЕ
-    final String? duplicate; // Новое поле
-
+  final String? salesFunnelId; // ДОБАВЛЕННОЕ ПОЛЕ
+  final String? duplicate; // Новое поле
+  final int? reasonForRefusalId;
+  final String? reasonForRefusal;
 
   UpdateLead({
     required this.leadId,
@@ -205,12 +219,12 @@ class UpdateLead extends LeadEvent {
     this.isSystemManager = false,
     this.files,
     this.priceTypeId,
-        this.salesFunnelId, // ДОБАВЛЕННЫЙ ПАРАМЕТР
-    this.duplicate, // Новое поле]  
-
+    this.salesFunnelId, // ДОБАВЛЕННЫЙ ПАРАМЕТР
+    this.duplicate, // Новое поле]
+    this.reasonForRefusalId,
+    this.reasonForRefusal,
   });
 }
-
 
 class DeleteLead extends LeadEvent {
   final int leadId;
@@ -232,12 +246,12 @@ class DeleteLeadStatuses extends LeadEvent {
   );
 }
 
-
 class UpdateLeadStatusEdit extends LeadEvent {
   final int leadStatusId;
   final String title;
   final bool isSuccess;
   final bool isFailure;
+  final bool isUnassembled;
   final AppLocalizations localizations;
 
   UpdateLeadStatusEdit(
@@ -245,16 +259,18 @@ class UpdateLeadStatusEdit extends LeadEvent {
     this.title,
     this.isSuccess,
     this.isFailure,
+    this.isUnassembled,
     this.localizations,
   );
 }
+
 class UpdateLeadStatusCount extends LeadEvent {
   final int oldStatusId;
   final int newStatusId;
   UpdateLeadStatusCount(this.oldStatusId, this.newStatusId);
 }
-class RestoreCountsFromCache extends LeadEvent {}
 
+class RestoreCountsFromCache extends LeadEvent {}
 
 class RefreshCurrentStatus extends LeadEvent {
   final int statusId;
@@ -266,7 +282,12 @@ class RefreshCurrentStatus extends LeadEvent {
 class FetchLeadStatusesWithFilters extends LeadEvent {
   final List<int>? managerIds;
   final List<int>? regionsIds;
+  final int? regionId;
+  final List<int>? cityIds;
   final List<int>? sourcesIds;
+  final List<int>? channelIds;
+  final List<int>? advertisingCampaignIds;
+  final List<int>? reasonForRefusalIds;
   final DateTime? fromDate;
   final DateTime? toDate;
   final bool? hasSuccessDeals;
@@ -280,13 +301,19 @@ class FetchLeadStatusesWithFilters extends LeadEvent {
   final bool? hasDeal;
   final bool? hasOrders;
   final int? daysWithoutActivity;
+  final int? numberOfDaysDeal;
   final List<Map<String, dynamic>>? directoryValues;
   final int? salesFunnelId;
 
   FetchLeadStatusesWithFilters({
     this.managerIds,
     this.regionsIds,
+    this.regionId,
+    this.cityIds,
     this.sourcesIds,
+    this.channelIds,
+    this.advertisingCampaignIds,
+    this.reasonForRefusalIds,
     this.fromDate,
     this.toDate,
     this.hasSuccessDeals,
@@ -300,6 +327,7 @@ class FetchLeadStatusesWithFilters extends LeadEvent {
     this.hasDeal,
     this.hasOrders,
     this.daysWithoutActivity,
+    this.numberOfDaysDeal,
     this.directoryValues,
     this.salesFunnelId,
   });

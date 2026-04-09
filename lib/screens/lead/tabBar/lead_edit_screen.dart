@@ -28,6 +28,7 @@ import 'package:crm_task_manager/screens/lead/tabBar/lead_details/main_field_dro
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:crm_task_manager/bloc/lead/lead_bloc.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
@@ -45,6 +46,7 @@ import 'lead_details/lead_create_custom.dart' show AddCustomFieldDialog;
 import 'lead_details/lead_status_list_edit.dart';
 import 'lead_details/price_type_widget.dart';
 import 'lead_details/sales_funnel_list.dart';
+import 'package:crm_task_manager/screens/common/reason_for_refusal_modal.dart';
 
 class LeadEditScreen extends StatefulWidget {
   final int leadId;
@@ -143,6 +145,9 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
   String? selectedSalesFunnel;
   DuplicateOption? _duplicateOption;
   bool _showDuplicateOptions = false;
+  bool _askReasonForRefusal = false;
+  LeadStatus? _selectedLeadStatusData;
+  bool _isSubmittingSave = false;
 
   @override
   void initState() {
@@ -159,6 +164,7 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
     _selectedStatuses = widget.statusId;
     _selectedPriceType = widget.priceTypeId;
     selectedSalesFunnel = widget.salesFunnelId;
+    _loadAskReasonForRefusal();
 
     if (selectedSalesFunnel != null &&
         selectedSalesFunnel != widget.salesFunnelId) {
@@ -272,6 +278,55 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
           .read<FieldConfigurationBloc>()
           .add(FetchFieldConfiguration('leads'));
     }
+  }
+
+  Future<void> _loadAskReasonForRefusal() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
+    setState(() {
+      _askReasonForRefusal = prefs.getBool('ask_reason_for_refusal') ?? false;
+    });
+  }
+
+  bool _leadStatusRequiresRefusalReason(LeadStatus? status) {
+    if (status == null) return false;
+    return status.isFailure;
+  }
+
+  Future<LeadStatus?> _resolveSelectedLeadStatusData() async {
+    if (_selectedStatuses == null) return null;
+
+    try {
+      final status = await _apiService.getLeadStatus(_selectedStatuses!);
+      if (!mounted) return status;
+      setState(() {
+        _selectedLeadStatusData = status;
+      });
+      return status;
+    } catch (_) {
+      return _selectedLeadStatusData;
+    }
+  }
+
+  Future<ReasonForRefusalSubmitData?> _collectReasonForRefusalIfNeeded() async {
+    final prefs = await SharedPreferences.getInstance();
+    _askReasonForRefusal = prefs.getBool('ask_reason_for_refusal') ?? false;
+
+    final bool statusChanged = _selectedStatuses != null &&
+        _selectedStatuses != widget.statusId;
+    final targetStatus = await _resolveSelectedLeadStatusData();
+    final bool requiresReason =
+        _leadStatusRequiresRefusalReason(targetStatus) &&
+        _askReasonForRefusal;
+
+    if (!statusChanged || !requiresReason) {
+      return null;
+    }
+
+    return showReasonForRefusalDialog(
+      context: context,
+      type: 'lead',
+    );
   }
 
   // Метод для отправки позиций полей на бэкенд
@@ -732,6 +787,7 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
           onSelectStatus: (LeadStatus selectedStatusData) {
             setState(() {
               _selectedStatuses = selectedStatusData.id;
+              _selectedLeadStatusData = selectedStatusData;
             });
           },
         );
@@ -931,8 +987,8 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
         return localizations!.translate('lead_status');
       case 'sales_funnel_id':
         return localizations!.translate('sales_funnel');
-            case 'description':  // <-- ДОБАВЛЯЕМ ЭТУ СТРОКУ
-      return localizations!.translate('additional_client_info');  // <-- И ЭТУ
+      case 'description': // <-- ДОБАВЛЯЕМ ЭТУ СТРОКУ
+        return localizations!.translate('additional_client_info'); // <-- И ЭТУ
       default:
         return config.fieldName;
     }
@@ -1967,14 +2023,24 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                                     color: Color(0xff1E2E52),
                                   ),
                                 );
+                              } else if (_isSubmittingSave) {
+                                return Center(
+                                  child: CircularProgressIndicator(
+                                    color: Color(0xff1E2E52),
+                                  ),
+                                );
                               } else {
                                 return CustomButton(
                                   buttonText: AppLocalizations.of(context)!
                                       .translate('save'),
                                   buttonColor: const Color(0xff4759FF),
                                   textColor: Colors.white,
-                                  onPressed: () {
+                                  onPressed: () async {
+                                    if (_isSubmittingSave) return;
                                     if (_formKey.currentState!.validate()) {
+                                      setState(() {
+                                        _isSubmittingSave = true;
+                                      });
                                       print(
                                           'whatsAppToSend: $_fullWhatsAppNumber'); // Логирование для отладки
                                       final String phoneDigits =
@@ -2015,6 +2081,9 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                                               backgroundColor: Colors.red,
                                             ),
                                           );
+                                          setState(() {
+                                            _isSubmittingSave = false;
+                                          });
                                           return;
                                         }
                                       }
@@ -2144,6 +2213,22 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                                       final leadBloc = context.read<LeadBloc>();
                                       final localizations =
                                           AppLocalizations.of(context)!;
+                                      final refusalData =
+                                          await _collectReasonForRefusalIfNeeded();
+
+                                      if (!mounted) return;
+                                      final resolvedLeadStatus =
+                                          await _resolveSelectedLeadStatusData();
+                                      if (_selectedStatuses != widget.statusId &&
+                                          _leadStatusRequiresRefusalReason(
+                                              resolvedLeadStatus) &&
+                                          _askReasonForRefusal &&
+                                          refusalData == null) {
+                                        setState(() {
+                                          _isSubmittingSave = false;
+                                        });
+                                        return;
+                                      }
 
                                       leadBloc.add(UpdateLead(
                                         leadId: widget.leadId,
@@ -2172,9 +2257,10 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                                             ? null
                                             : telegramController.text,
                                         birthday: parsedBirthday,
-                                        cityId: cityController.text.trim().isEmpty
-                                            ? null
-                                            : cityController.text.trim(),
+                                        cityId:
+                                            cityController.text.trim().isEmpty
+                                                ? null
+                                                : cityController.text.trim(),
                                         email: emailController.text.isEmpty
                                             ? null
                                             : emailController.text,
@@ -2192,8 +2278,19 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                                         priceTypeId: _selectedPriceType,
                                         salesFunnelId: selectedSalesFunnel,
                                         duplicate: duplicateValue,
+                                        reasonForRefusalId:
+                                            refusalData?.reasonId,
+                                        reasonForRefusal: refusalData?.comment,
                                       ));
+                                      if (mounted) {
+                                        setState(() {
+                                          _isSubmittingSave = false;
+                                        });
+                                      }
                                     } else {
+                                      setState(() {
+                                        _isSubmittingSave = false;
+                                      });
                                       ScaffoldMessenger.of(context)
                                           .showSnackBar(
                                         SnackBar(

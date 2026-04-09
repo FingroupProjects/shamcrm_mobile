@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:crm_task_manager/screens/analytics/utils/analytics_localization.dart';
 import 'package:crm_task_manager/screens/analytics/widgets/chart_shimmer_loader.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:crm_task_manager/screens/analytics/utils/chart_request_policy.dart';
 import 'package:crm_task_manager/screens/analytics/utils/responsive_helper.dart';
 import 'package:crm_task_manager/screens/analytics/models/lead_conversion_by_statuses_model.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
@@ -26,31 +28,69 @@ class _LeadConversionStatusesChartState
 
   static final List<StatusConversion> _previewStatuses = [
     StatusConversion(
-        statusName: 'Неизвестный',
+        statusName: 'Unknown',
         totalLeads: 214,
         conversionFromPrevious: 214,
         conversionRate: '100%'),
     StatusConversion(
-        statusName: 'Звонок без ответа',
+        statusName: 'Missed call',
         totalLeads: 65,
         conversionFromPrevious: 65,
         conversionRate: '30%'),
     StatusConversion(
-        statusName: 'В работе',
+        statusName: 'In progress',
         totalLeads: 93,
         conversionFromPrevious: 93,
         conversionRate: '43%'),
     StatusConversion(
-        statusName: 'Холодное обращение',
+        statusName: 'Cold lead',
         totalLeads: 138,
         conversionFromPrevious: 138,
         conversionRate: '64%'),
     StatusConversion(
-        statusName: 'Клиент',
+        statusName: 'Client',
         totalLeads: 59,
         conversionFromPrevious: 59,
         conversionRate: '28%'),
   ];
+
+  String _localizedStatusName(String name) {
+    switch (name.trim().toLowerCase()) {
+      case 'неизвестный':
+      case 'unknown':
+        return analyticsText(
+          context,
+          'analytics_status_unknown',
+          fallback: 'Unknown',
+        );
+      case 'звонок без ответа':
+      case 'missed call':
+        return analyticsText(
+          context,
+          'analytics_status_missed_call',
+          fallback: 'Missed call',
+        );
+      case 'в работе':
+      case 'in progress':
+        return analyticsText(context, 'in_progress', fallback: 'In progress');
+      case 'холодное обращение':
+      case 'cold lead':
+        return analyticsText(
+          context,
+          'analytics_status_cold_lead',
+          fallback: 'Cold lead',
+        );
+      case 'клиент':
+      case 'client':
+        return analyticsText(
+          context,
+          'analytics_status_client',
+          fallback: 'Client',
+        );
+      default:
+        return name;
+    }
+  }
 
   @override
   void initState() {
@@ -59,6 +99,8 @@ class _LeadConversionStatusesChartState
   }
 
   Future<void> _loadData() async {
+    final chartId = AnalyticsChartRequestPolicy.chartIdForState(this);
+    AnalyticsChartRequestPolicy.cancelPendingRetry(chartId);
     setState(() {
       _isLoading = true;
       _error = null;
@@ -68,15 +110,25 @@ class _LeadConversionStatusesChartState
       final apiService = ApiService();
       final response = await apiService.getLeadConversionByStatuses();
 
+      AnalyticsChartRequestPolicy.reset(chartId);
+      if (!mounted) return;
       setState(() {
         _data = response;
         _isLoading = false;
       });
-    } catch (e) {
-      setState(() {
-        _error = 'Не удалось загрузить данные. Попробуйте позже.';
-        _isLoading = false;
-      });
+    } catch (e, stackTrace) {
+      await AnalyticsChartRequestPolicy.handleLoadError(
+        state: this,
+        setStateCallback: setState,
+        chartId: chartId,
+        error: e,
+        stackTrace: stackTrace,
+        onFatalError: () {
+          _error = AnalyticsChartRequestPolicy.userFacingMessage(e);
+          _isLoading = false;
+        },
+        retry: _loadData,
+      );
     }
   }
 
@@ -134,7 +186,7 @@ class _LeadConversionStatusesChartState
                     return ListTile(
                       contentPadding: EdgeInsets.zero,
                       title: Text(
-                        item.statusName,
+                        _localizedStatusName(item.statusName),
                         style: TextStyle(
                           fontSize: ResponsiveHelper(context).bodyFontSize,
                           fontWeight: FontWeight.w600,
@@ -143,7 +195,7 @@ class _LeadConversionStatusesChartState
                         ),
                       ),
                       subtitle: Text(
-                        'Лидов: ${item.totalLeads}',
+                        '${analyticsText(context, 'leads', fallback: 'Leads')}: ${item.totalLeads}',
                         style: TextStyle(
                           fontSize: ResponsiveHelper(context).smallFontSize,
                           color: Color(0xff64748B),
@@ -277,7 +329,11 @@ class _LeadConversionStatusesChartState
                 : _error != null
                     ? Center(
                         child: Text(
-                          _error!,
+                          analyticsText(
+                            context,
+                            _error!,
+                            fallback: _error!,
+                          ),
                           style: const TextStyle(
                             color: Color(0xffEF4444),
                             fontFamily: 'Golos',
@@ -306,7 +362,11 @@ class _LeadConversionStatusesChartState
                                 titlesData: FlTitlesData(
                                   leftTitles: AxisTitles(
                                     axisNameWidget: Text(
-                                      'Количество',
+                                      analyticsText(
+                                        context,
+                                        'quantity',
+                                        fallback: 'Quantity',
+                                      ),
                                       style: TextStyle(
                                         fontSize: responsive.xSmallFontSize,
                                         color: Color(0xff94A3B8),
@@ -355,7 +415,9 @@ class _LeadConversionStatusesChartState
                                             padding:
                                                 const EdgeInsets.only(top: 6),
                                             child: Text(
-                                              displayItems[index].statusName,
+                                              _localizedStatusName(
+                                                displayItems[index].statusName,
+                                              ),
                                               style: TextStyle(
                                                 fontSize:
                                                     responsive.xSmallFontSize,
@@ -397,7 +459,7 @@ class _LeadConversionStatusesChartState
                                       final item =
                                           displayItems[group.x.toInt()];
                                       return BarTooltipItem(
-                                        '${item.statusName}\n${item.totalLeads} (${item.conversionRate})',
+                                        '${_localizedStatusName(item.statusName)}\n${item.totalLeads} (${item.conversionRate})',
                                         TextStyle(
                                           color: Color(0xff0F172A),
                                           fontWeight: FontWeight.w700,
@@ -423,7 +485,7 @@ class _LeadConversionStatusesChartState
                 responsive.cardPadding,
               ),
               child: Text(
-                'Средняя конверсия: ${_data!.averageConversion}',
+                '${analyticsText(context, 'analytics_average_conversion', fallback: 'Average conversion')}: ${_data!.averageConversion}',
                 style: TextStyle(
                   fontSize: responsive.smallFontSize,
                   fontWeight: FontWeight.w600,

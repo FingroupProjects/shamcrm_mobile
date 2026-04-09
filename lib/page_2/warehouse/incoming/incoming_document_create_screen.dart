@@ -438,7 +438,18 @@ class _IncomingDocumentCreateScreenState
   }
 
   void _createDocument({bool approve = false}) async {
-    if (!_formKey.currentState!.validate()) return;
+    if (_isLoading) return;
+    setState(() => _isLoading = true);
+
+    void cancelLoading() {
+      if (!mounted || !_isLoading) return;
+      setState(() => _isLoading = false);
+    }
+
+    if (!_formKey.currentState!.validate()) {
+      cancelLoading();
+      return;
+    }
 
     if (_items.isEmpty) {
       _showSnackBar(
@@ -446,6 +457,7 @@ class _IncomingDocumentCreateScreenState
             'Добавьте хотя бы один товар',
         false,
       );
+      cancelLoading();
       return;
     }
 
@@ -455,6 +467,7 @@ class _IncomingDocumentCreateScreenState
             'Выберите склад',
         false,
       );
+      cancelLoading();
       return;
     }
 
@@ -464,10 +477,11 @@ class _IncomingDocumentCreateScreenState
             'Выберите поставщика',
         false,
       );
+      cancelLoading();
       return;
     }
 
-    if (_isExchangeRateRequired) {
+    if (approve && _isExchangeRateRequired) {
       final rate = _exchangeRateValue;
       if (rate == null || rate <= 0) {
         setState(() {
@@ -483,6 +497,7 @@ class _IncomingDocumentCreateScreenState
               'Заполните корректный курс валюты',
           false,
         );
+        cancelLoading();
         return;
       }
     }
@@ -523,10 +538,9 @@ class _IncomingDocumentCreateScreenState
       );
       // Фокусируемся на первом товаре с ошибкой
       _focusFirstErrorItem();
+      cancelLoading();
       return;
     }
-
-    setState(() => _isLoading = true);
 
     try {
       DateTime? parsedDate =
@@ -554,10 +568,10 @@ class _IncomingDocumentCreateScreenState
         organizationId: widget.organizationId ?? 1,
         salesFunnelId: 1,
         approve: approve,
-        exchangeRate: _isExchangeRateRequired ? _exchangeRateValue : null,
+        exchangeRate: _exchangeRateValue,
       ));
     } catch (e) {
-      setState(() => _isLoading = false);
+      cancelLoading();
       _showSnackBar(e.toString(), false);
     }
   }

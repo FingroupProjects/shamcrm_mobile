@@ -1,10 +1,13 @@
 import 'package:crm_task_manager/custom_widget/custom_card_my-tasks_tabBar.dart';
 import 'package:crm_task_manager/custom_widget/custom_card_tasks_tabBar.dart';
+import 'package:crm_task_manager/bloc/my-task/my-task_bloc.dart';
+import 'package:crm_task_manager/bloc/my-task/my-task_event.dart';
 import 'package:crm_task_manager/models/my-task_model.dart';
 import 'package:crm_task_manager/screens/my-task/my_task_details/my_task_details_screen.dart';
 import 'package:crm_task_manager/screens/my-task/my_task_details/my_task_dropdown_bottom_dialog.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
 class MyTaskCard extends StatefulWidget {
@@ -68,8 +71,8 @@ class _MyTaskCardState extends State<MyTaskCard> {
     int overdueDays = _getOverdueDays(widget.task.endDate);
 
     return GestureDetector(
-      onTap: () {
-        Navigator.push(
+      onTap: () async {
+        final result = await Navigator.push(
           context,
           MaterialPageRoute(
             builder: (context) => MyTaskDetailsScreen(
@@ -85,6 +88,13 @@ class _MyTaskCardState extends State<MyTaskCard> {
             ),
           ),
         );
+
+        if (result is Map<String, dynamic> && result['refresh'] == true) {
+          final newStatusId = result['newStatusId'] as int? ?? widget.statusId;
+          context.read<MyTaskBloc>().add(FetchMyTaskStatuses());
+          widget.onStatusUpdated();
+          widget.onStatusId(newStatusId);
+        }
       },
       child: Container(
         padding: const EdgeInsets.all(12),

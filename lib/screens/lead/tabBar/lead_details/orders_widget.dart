@@ -12,12 +12,22 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
 class OrdersWidget extends StatefulWidget {
-  final int leadId;
+  final int entityId;
+  final String relationType;
+  final int? leadId;
   final String? clientPhone; // Телефон клиента для автозаполнения
   final bool autoFetch;
-  final GlobalKey? key;
+  final Future<void> Function()? onOrdersChanged;
 
-  OrdersWidget({required this.leadId, this.clientPhone, this.autoFetch = true, this.key});
+  OrdersWidget({
+    required this.entityId,
+    this.relationType = 'lead',
+    this.leadId,
+    this.clientPhone,
+    this.autoFetch = true,
+    this.onOrdersChanged,
+    super.key,
+  });
 
   @override
   _OrdersWidgetState createState() => _OrdersWidgetState();
@@ -26,12 +36,25 @@ class OrdersWidget extends StatefulWidget {
 class _OrdersWidgetState extends State<OrdersWidget> {
   late ScrollController _scrollController;
 
+  Future<void> _refreshOrders() async {
+    if (!mounted) return;
+
+    context.read<OrderByLeadBloc>().add(
+          FetchOrdersByLead(
+            entityId: widget.entityId,
+            relationType: widget.relationType,
+          ),
+        );
+
+    await widget.onOrdersChanged?.call();
+  }
+
   @override
   void initState() {
     super.initState();
     _scrollController = ScrollController();
     if (widget.autoFetch) {
-      context.read<OrderByLeadBloc>().add(FetchOrdersByLead(leadId: widget.leadId));
+      _refreshOrders();
     }
   }
 
@@ -126,8 +149,8 @@ Widget _buildOrderItem(Order order) {
       : AppLocalizations.of(context)!.translate('');
 
   return GestureDetector(
-    onTap: () {
-      Navigator.push(
+    onTap: () async {
+      await Navigator.push(
         context,
         MaterialPageRoute(
           builder: (context) => OrderDetailsScreen(
@@ -137,6 +160,7 @@ Widget _buildOrderItem(Order order) {
           ),
         ),
       );
+      await _refreshOrders();
     },
     child: Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
@@ -214,18 +238,28 @@ Widget _buildOrderItem(Order order) {
           ),
         ),
         TextButton(
-          onPressed: () {
-            Navigator.push(
+          onPressed: () async {
+            final result = await Navigator.push(
               context,
               MaterialPageRoute(
                 builder: (context) => OrderAddScreen(
-                  leadId: widget.leadId,
+                  leadId: widget.relationType == 'lead'
+                      ? widget.entityId
+                      : widget.leadId,
+                  dealId: widget.relationType == 'deal' ? widget.entityId : null,
                   clientPhone: widget.clientPhone, // Передаем телефон клиента
                 ),
               ),
-            ).then((_) {
-              context.read<OrderByLeadBloc>().add(FetchOrdersByLead(leadId: widget.leadId));
-            });
+            );
+
+            if (!mounted) return;
+
+            if (result is Map<String, dynamic> && result['success'] == true) {
+              await _refreshOrders();
+              return;
+            }
+
+            await _refreshOrders();
           },
           style: TextButton.styleFrom(
             foregroundColor: Colors.white,
