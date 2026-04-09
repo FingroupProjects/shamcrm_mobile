@@ -98,7 +98,8 @@ class TargetedAdsResponse {
     }
 
     return TargetedAdsResponse(
-      summary: TargetedAdsSummary(totalReaches: 0, successful: 0, costPerLead: 0),
+      summary:
+          TargetedAdsSummary(totalReaches: 0, successful: 0, costPerLead: 0),
       topCampaigns: [],
     );
   }

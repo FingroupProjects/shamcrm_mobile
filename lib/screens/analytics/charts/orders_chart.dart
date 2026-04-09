@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:crm_task_manager/screens/analytics/utils/analytics_localization.dart';
 import 'package:crm_task_manager/screens/analytics/widgets/chart_shimmer_loader.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:crm_task_manager/screens/analytics/utils/chart_request_policy.dart';
@@ -22,22 +23,6 @@ class _OrdersChartState extends State<OrdersChart> {
   OnlineStoreOrdersResponse? _data;
 
   String get _title => widget.title;
-
-  static const List<String> _monthNames = [
-    '',
-    'Янв',
-    'Фев',
-    'Мар',
-    'Апр',
-    'Май',
-    'Июн',
-    'Июл',
-    'Авг',
-    'Сен',
-    'Окт',
-    'Ноя',
-    'Дек',
-  ];
 
   static final List<OrdersChartPoint> _previewPoints = [
     OrdersChartPoint(
@@ -158,10 +143,7 @@ class _OrdersChartState extends State<OrdersChart> {
                   separatorBuilder: (_, __) => const Divider(height: 1),
                   itemBuilder: (context, index) {
                     final point = _data!.chartData[index];
-                    final month =
-                        point.month >= 0 && point.month < _monthNames.length
-                            ? _monthNames[point.month]
-                            : point.month.toString();
+                    final month = analyticsMonthShort(context, point.month);
                     return ListTile(
                       contentPadding: EdgeInsets.zero,
                       title: Text(
@@ -174,7 +156,7 @@ class _OrdersChartState extends State<OrdersChart> {
                         ),
                       ),
                       subtitle: Text(
-                        'Успешные: ${point.successfulOrders} • Отменённые: ${point.canceledOrders}',
+                        '${analyticsText(context, 'successful', fallback: 'Successful')}: ${point.successfulOrders} • ${analyticsText(context, 'cancelled', fallback: 'Cancelled')}: ${point.canceledOrders}',
                         style: TextStyle(
                           fontSize: ResponsiveHelper(context).smallFontSize,
                           color: Color(0xff64748B),
@@ -304,7 +286,11 @@ class _OrdersChartState extends State<OrdersChart> {
                             SizedBox(
                                 height: ResponsiveHelper(context).smallSpacing),
                             Text(
-                              _error!,
+                              analyticsText(
+                                context,
+                                _error!,
+                                fallback: _error!,
+                              ),
                               style: TextStyle(
                                 color: Color(0xff64748B),
                                 fontSize: responsive.bodyFontSize,
@@ -316,7 +302,13 @@ class _OrdersChartState extends State<OrdersChart> {
                                 height: ResponsiveHelper(context).smallSpacing),
                             TextButton(
                               onPressed: _loadData,
-                              child: const Text('Повторить'),
+                              child: Text(
+                                analyticsText(
+                                  context,
+                                  'retry',
+                                  fallback: 'Retry',
+                                ),
+                              ),
                             ),
                           ],
                         ),
@@ -360,11 +352,11 @@ class _OrdersChartState extends State<OrdersChart> {
                                             return null;
                                           }
                                           final item = displayPoints[index];
-                                          final monthLabel = item.month >= 0 &&
-                                                  item.month <
-                                                      _monthNames.length
-                                              ? _monthNames[item.month]
-                                              : item.month.toString();
+                                          final monthLabel =
+                                              analyticsMonthShort(
+                                            context,
+                                            item.month,
+                                          );
                                           return BarTooltipItem(
                                             '$monthLabel\n',
                                             TextStyle(
@@ -377,7 +369,7 @@ class _OrdersChartState extends State<OrdersChart> {
                                             children: [
                                               TextSpan(
                                                 text:
-                                                    'Всего заказов: ${item.totalOrders}\n',
+                                                    '${analyticsText(context, 'analytics_total_orders', fallback: 'Total orders')}: ${item.totalOrders}\n',
                                                 style: TextStyle(
                                                   color:
                                                       const Color(0xff64748B),
@@ -389,7 +381,7 @@ class _OrdersChartState extends State<OrdersChart> {
                                               ),
                                               TextSpan(
                                                 text:
-                                                    'Успешные: ${item.successfulOrders}\n',
+                                                    '${analyticsText(context, 'successful', fallback: 'Successful')}: ${item.successfulOrders}\n',
                                                 style: TextStyle(
                                                   color:
                                                       const Color(0xff14B8A6),
@@ -401,7 +393,7 @@ class _OrdersChartState extends State<OrdersChart> {
                                               ),
                                               TextSpan(
                                                 text:
-                                                    'Отменённые: ${item.canceledOrders}',
+                                                    '${analyticsText(context, 'cancelled', fallback: 'Cancelled')}: ${item.canceledOrders}',
                                                 style: TextStyle(
                                                   color:
                                                       const Color(0xffEF4444),
@@ -428,10 +420,10 @@ class _OrdersChartState extends State<OrdersChart> {
                                                 index < displayPoints.length) {
                                               final month =
                                                   displayPoints[index].month;
-                                              final label = month >= 0 &&
-                                                      month < _monthNames.length
-                                                  ? _monthNames[month]
-                                                  : month.toString();
+                                              final label = analyticsMonthShort(
+                                                context,
+                                                month,
+                                              );
                                               return RotatedBox(
                                                 quarterTurns: 3,
                                                 child: Padding(
@@ -458,7 +450,11 @@ class _OrdersChartState extends State<OrdersChart> {
                                       ),
                                       leftTitles: AxisTitles(
                                         axisNameWidget: Text(
-                                          'Количество',
+                                          analyticsText(
+                                            context,
+                                            'quantity',
+                                            fallback: 'Quantity',
+                                          ),
                                           style: TextStyle(
                                             fontSize: responsive.smallFontSize,
                                             color: Color(0xff94A3B8),
@@ -545,7 +541,11 @@ class _OrdersChartState extends State<OrdersChart> {
                     children: [
                       Expanded(
                         child: _buildFooterStat(
-                          label: 'Всего заказов',
+                          label: analyticsText(
+                            context,
+                            'analytics_total_orders',
+                            fallback: 'Total orders',
+                          ),
                           value: '${_data?.totalOrders ?? 0}',
                           valueColor: const Color(0xff0F172A),
                           alignment: CrossAxisAlignment.start,
@@ -556,7 +556,11 @@ class _OrdersChartState extends State<OrdersChart> {
                       const SizedBox(width: 6),
                       Expanded(
                         child: _buildFooterStat(
-                          label: 'Успешных',
+                          label: analyticsText(
+                            context,
+                            'analytics_successful_orders',
+                            fallback: 'Successful',
+                          ),
                           value: successText,
                           valueColor: const Color(0xff10B981),
                           alignment: CrossAxisAlignment.center,
@@ -567,7 +571,11 @@ class _OrdersChartState extends State<OrdersChart> {
                       const SizedBox(width: 6),
                       Expanded(
                         child: _buildFooterStat(
-                          label: 'Средний чек',
+                          label: analyticsText(
+                            context,
+                            'analytics_average_check',
+                            fallback: 'Average check',
+                          ),
                           value: _data?.averageCheck.toStringAsFixed(1) ?? '0',
                           valueColor: const Color(0xff0F172A),
                           alignment: CrossAxisAlignment.center,
@@ -578,7 +586,11 @@ class _OrdersChartState extends State<OrdersChart> {
                       const SizedBox(width: 6),
                       Expanded(
                         child: _buildFooterStat(
-                          label: 'Выручка',
+                          label: analyticsText(
+                            context,
+                            'analytics_revenue',
+                            fallback: 'Revenue',
+                          ),
                           value: _data?.revenue.toStringAsFixed(0) ?? '0',
                           valueColor: const Color(0xff0F172A),
                           alignment: CrossAxisAlignment.end,

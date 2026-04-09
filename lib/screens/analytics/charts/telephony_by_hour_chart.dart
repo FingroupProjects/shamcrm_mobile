@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:crm_task_manager/screens/analytics/utils/analytics_localization.dart';
 import 'package:crm_task_manager/screens/analytics/widgets/chart_shimmer_loader.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:crm_task_manager/screens/analytics/utils/chart_request_policy.dart';
@@ -120,8 +121,12 @@ class _TelephonyByHourChartState extends State<TelephonyByHourChart> {
       initialDate: _selectedDate,
       firstDate: DateTime(now.year - 3),
       lastDate: DateTime(now.year + 2),
-      helpText: 'Выберите день',
-      cancelText: 'Отмена',
+      helpText: analyticsText(
+        context,
+        'analytics_select_day',
+        fallback: 'Select day',
+      ),
+      cancelText: analyticsText(context, 'cancel', fallback: 'Cancel'),
       confirmText: 'OK',
       builder: (context, child) {
         final base = Theme.of(context);
@@ -248,7 +253,7 @@ class _TelephonyByHourChartState extends State<TelephonyByHourChart> {
                         ),
                       ),
                       subtitle: Text(
-                        'Вход: ${item.incoming}, Исход: ${item.outgoing}, Пропущ: ${item.missed}',
+                        '${analyticsText(context, 'incoming', fallback: 'Incoming')}: ${item.incoming}, ${analyticsText(context, 'outgoing', fallback: 'Outgoing')}: ${item.outgoing}, ${analyticsText(context, 'missed', fallback: 'Missed')}: ${item.missed}',
                         style: TextStyle(
                           fontSize: ResponsiveHelper(context).smallFontSize,
                           color: Color(0xff64748B),
@@ -256,7 +261,7 @@ class _TelephonyByHourChartState extends State<TelephonyByHourChart> {
                         ),
                       ),
                       trailing: Text(
-                        'Всего: ${item.total}',
+                        '${analyticsText(context, 'total', fallback: 'Total')}: ${item.total}',
                         style: TextStyle(
                           fontSize: ResponsiveHelper(context).smallFontSize,
                           fontWeight: FontWeight.w600,
@@ -477,7 +482,11 @@ class _TelephonyByHourChartState extends State<TelephonyByHourChart> {
                 : _error != null
                     ? Center(
                         child: Text(
-                          _error!,
+                          analyticsText(
+                            context,
+                            _error!,
+                            fallback: _error!,
+                          ),
                           style: const TextStyle(
                             color: Color(0xffEF4444),
                             fontFamily: 'Golos',
@@ -529,7 +538,7 @@ class _TelephonyByHourChartState extends State<TelephonyByHourChart> {
                                       children: [
                                         TextSpan(
                                           text:
-                                              '● Входящие: ${item.incoming}\n',
+                                              '● ${analyticsText(context, 'incoming', fallback: 'Incoming')}: ${item.incoming}\n',
                                           style: TextStyle(
                                             color: const Color(0xff10B981),
                                             fontWeight: FontWeight.w600,
@@ -539,7 +548,7 @@ class _TelephonyByHourChartState extends State<TelephonyByHourChart> {
                                         ),
                                         TextSpan(
                                           text:
-                                              '● Исходящие: ${item.outgoing}\n',
+                                              '● ${analyticsText(context, 'outgoing', fallback: 'Outgoing')}: ${item.outgoing}\n',
                                           style: TextStyle(
                                             color: const Color(0xff22B3D6),
                                             fontWeight: FontWeight.w600,
@@ -549,7 +558,7 @@ class _TelephonyByHourChartState extends State<TelephonyByHourChart> {
                                         ),
                                         TextSpan(
                                           text:
-                                              '● Пропущенные: ${item.missed}\n',
+                                              '● ${analyticsText(context, 'missed', fallback: 'Missed')}: ${item.missed}\n',
                                           style: TextStyle(
                                             color: const Color(0xffEF4444),
                                             fontWeight: FontWeight.w600,
@@ -558,7 +567,8 @@ class _TelephonyByHourChartState extends State<TelephonyByHourChart> {
                                           ),
                                         ),
                                         TextSpan(
-                                          text: 'Всего: ${item.total}',
+                                          text:
+                                              '${analyticsText(context, 'total', fallback: 'Total')}: ${item.total}',
                                           style: TextStyle(
                                             color: const Color(0xff0F172A),
                                             fontWeight: FontWeight.w700,
@@ -583,7 +593,11 @@ class _TelephonyByHourChartState extends State<TelephonyByHourChart> {
                               titlesData: FlTitlesData(
                                 leftTitles: AxisTitles(
                                   axisNameWidget: Text(
-                                    'Количество',
+                                    analyticsText(
+                                      context,
+                                      'quantity',
+                                      fallback: 'Quantity',
+                                    ),
                                     style: TextStyle(
                                       fontSize: responsive.xSmallFontSize,
                                       color: Color(0xff94A3B8),
@@ -661,21 +675,33 @@ class _TelephonyByHourChartState extends State<TelephonyByHourChart> {
                     children: [
                       _LegendToggle(
                         color: const Color(0xff10B981),
-                        label: 'Входящие',
+                        label: analyticsText(
+                          context,
+                          'incoming',
+                          fallback: 'Incoming',
+                        ),
                         enabled: _showIncoming,
                         onTap: () =>
                             setState(() => _showIncoming = !_showIncoming),
                       ),
                       _LegendToggle(
                         color: const Color(0xff22B3D6),
-                        label: 'Исходящие',
+                        label: analyticsText(
+                          context,
+                          'outgoing',
+                          fallback: 'Outgoing',
+                        ),
                         enabled: _showOutgoing,
                         onTap: () =>
                             setState(() => _showOutgoing = !_showOutgoing),
                       ),
                       _LegendToggle(
                         color: const Color(0xffEF4444),
-                        label: 'Пропущенные',
+                        label: analyticsText(
+                          context,
+                          'missed',
+                          fallback: 'Missed',
+                        ),
                         enabled: _showMissed,
                         onTap: () => setState(() => _showMissed = !_showMissed),
                       ),
@@ -683,7 +709,7 @@ class _TelephonyByHourChartState extends State<TelephonyByHourChart> {
                   );
 
                   final peakText = Text(
-                    'Пик: ${_data!.peakHour ?? '-'}',
+                    '${analyticsText(context, 'analytics_peak', fallback: 'Peak')}: ${_data!.peakHour ?? '-'}',
                     style: TextStyle(
                       fontSize: responsive.smallFontSize,
                       fontWeight: FontWeight.w600,

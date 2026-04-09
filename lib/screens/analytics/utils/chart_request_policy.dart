@@ -80,7 +80,7 @@ class AnalyticsChartRequestPolicy {
       return normalized.trim();
     }
 
-    return 'Не удалось загрузить данные. Попробуйте позже.';
+    return 'analytics_chart_load_failed';
   }
 
   static bool _shouldShowUserFacingError(Object error) {

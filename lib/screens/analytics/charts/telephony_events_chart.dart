@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/screens/analytics/models/telephony_events_model.dart';
+import 'package:crm_task_manager/screens/analytics/utils/analytics_localization.dart';
 import 'package:crm_task_manager/screens/analytics/utils/chart_request_policy.dart';
 import 'package:crm_task_manager/screens/analytics/widgets/chart_empty_overlay.dart';
 import 'package:crm_task_manager/screens/analytics/widgets/chart_shimmer_loader.dart';
@@ -25,16 +26,6 @@ class _TelephonyEventsChartState extends State<TelephonyEventsChart> {
   static const Color _createdColor = Color(0xff7B4CE2);
   static const Color _closedColor = Color(0xffF59E0B);
   static const Color _labelColor = Color(0xff64748B);
-
-  static const List<String> _weekDays = [
-    'Пн',
-    'Вт',
-    'Ср',
-    'Чт',
-    'Пт',
-    'Сб',
-    'Вс'
-  ];
 
   bool _isLoading = true;
   String? _error;
@@ -199,9 +190,10 @@ class _TelephonyEventsChartState extends State<TelephonyEventsChart> {
                   separatorBuilder: (_, __) => const Divider(height: 1),
                   itemBuilder: (context, index) {
                     final item = items[index];
-                    final dayLabel = index < _weekDays.length
-                        ? _weekDays[index]
-                        : 'Д${item.day}';
+                    final shortDay = analyticsWeekdayShort(context, index);
+                    final dayLabel = shortDay.isNotEmpty
+                        ? shortDay
+                        : analyticsDayLabel(context, item.day);
 
                     return ListTile(
                       contentPadding: EdgeInsets.zero,
@@ -215,7 +207,7 @@ class _TelephonyEventsChartState extends State<TelephonyEventsChart> {
                         ),
                       ),
                       subtitle: Text(
-                        'Входящие: ${item.incoming}, Исходящие: ${item.outgoing}, Пропущенные: ${item.missed}',
+                        '${analyticsText(context, 'incoming', fallback: 'Incoming')}: ${item.incoming}, ${analyticsText(context, 'outgoing', fallback: 'Outgoing')}: ${item.outgoing}, ${analyticsText(context, 'missed', fallback: 'Missed')}: ${item.missed}',
                         style: TextStyle(
                           fontSize: ResponsiveHelper(context).captionFontSize,
                           color: _labelColor,
@@ -587,33 +579,53 @@ class _TelephonyEventsChartState extends State<TelephonyEventsChart> {
                   children: [
                     _LegendRect(
                       color: _incomingColor,
-                      label: 'Входящие',
+                      label: analyticsText(
+                        context,
+                        'incoming',
+                        fallback: 'Incoming',
+                      ),
                       enabled: _showIncoming,
                       onTap: () =>
                           setState(() => _showIncoming = !_showIncoming),
                     ),
                     _LegendRect(
                       color: _outgoingColor,
-                      label: 'Исходящие',
+                      label: analyticsText(
+                        context,
+                        'outgoing',
+                        fallback: 'Outgoing',
+                      ),
                       enabled: _showOutgoing,
                       onTap: () =>
                           setState(() => _showOutgoing = !_showOutgoing),
                     ),
                     _LegendRect(
                       color: _missedColor,
-                      label: 'Пропущенные',
+                      label: analyticsText(
+                        context,
+                        'missed',
+                        fallback: 'Missed',
+                      ),
                       enabled: _showMissed,
                       onTap: () => setState(() => _showMissed = !_showMissed),
                     ),
                     _LegendLine(
                       color: _createdColor,
-                      label: 'События создано',
+                      label: analyticsText(
+                        context,
+                        'analytics_events_created',
+                        fallback: 'Events created',
+                      ),
                       enabled: _showCreated,
                       onTap: () => setState(() => _showCreated = !_showCreated),
                     ),
                     _LegendLine(
                       color: _closedColor,
-                      label: 'События закрыто',
+                      label: analyticsText(
+                        context,
+                        'analytics_events_closed',
+                        fallback: 'Events closed',
+                      ),
                       enabled: _showClosed,
                       onTap: () => setState(() => _showClosed = !_showClosed),
                     ),
@@ -627,7 +639,11 @@ class _TelephonyEventsChartState extends State<TelephonyEventsChart> {
                       : _error != null
                           ? Center(
                               child: Text(
-                                _error!,
+                                analyticsText(
+                                  context,
+                                  _error!,
+                                  fallback: _error!,
+                                ),
                                 style: const TextStyle(
                                   color: _missedColor,
                                   fontFamily: 'Golos',
@@ -722,7 +738,11 @@ class _TelephonyEventsChartState extends State<TelephonyEventsChart> {
                                             ),
                                             leftTitles: AxisTitles(
                                               axisNameWidget: Text(
-                                                'Количество',
+                                                analyticsText(
+                                                  context,
+                                                  'quantity',
+                                                  fallback: 'Quantity',
+                                                ),
                                                 style: TextStyle(
                                                   fontSize:
                                                       isVeryCompact ? 10 : 11,
@@ -764,10 +784,19 @@ class _TelephonyEventsChartState extends State<TelephonyEventsChart> {
                                                     return const SizedBox
                                                         .shrink();
                                                   }
-                                                  final text = index <
-                                                          _weekDays.length
-                                                      ? _weekDays[index]
-                                                      : 'Д${displayItems[index].day}';
+                                                  final shortDay =
+                                                      analyticsWeekdayShort(
+                                                    context,
+                                                    index,
+                                                  );
+                                                  final text = shortDay
+                                                          .isNotEmpty
+                                                      ? shortDay
+                                                      : analyticsDayLabel(
+                                                          context,
+                                                          displayItems[index]
+                                                              .day,
+                                                        );
                                                   return Padding(
                                                     padding:
                                                         const EdgeInsets.only(
@@ -834,11 +863,17 @@ class _TelephonyEventsChartState extends State<TelephonyEventsChart> {
                                             builder: (context) {
                                               final item = displayItems[
                                                   _touchedGroupIndex!];
-                                              final day = _touchedGroupIndex! <
-                                                      _weekDays.length
-                                                  ? _weekDays[
-                                                      _touchedGroupIndex!]
-                                                  : 'Д${item.day}';
+                                              final shortDay =
+                                                  analyticsWeekdayShort(
+                                                context,
+                                                _touchedGroupIndex!,
+                                              );
+                                              final day = shortDay.isNotEmpty
+                                                  ? shortDay
+                                                  : analyticsDayLabel(
+                                                      context,
+                                                      item.day,
+                                                    );
                                               final metricFont =
                                                   ResponsiveHelper(context)
                                                       .captionFontSize;
@@ -864,28 +899,45 @@ class _TelephonyEventsChartState extends State<TelephonyEventsChart> {
                                                   ),
                                                   if (_showIncoming)
                                                     _buildTooltipRow(
-                                                      label: 'Входящие',
+                                                      label: analyticsText(
+                                                        context,
+                                                        'incoming',
+                                                        fallback: 'Incoming',
+                                                      ),
                                                       value: item.incoming,
                                                       color: _incomingColor,
                                                       fontSize: metricFont,
                                                     ),
                                                   if (_showOutgoing)
                                                     _buildTooltipRow(
-                                                      label: 'Исходящие',
+                                                      label: analyticsText(
+                                                        context,
+                                                        'outgoing',
+                                                        fallback: 'Outgoing',
+                                                      ),
                                                       value: item.outgoing,
                                                       color: _outgoingColor,
                                                       fontSize: metricFont,
                                                     ),
                                                   if (_showMissed)
                                                     _buildTooltipRow(
-                                                      label: 'Пропущенные',
+                                                      label: analyticsText(
+                                                        context,
+                                                        'missed',
+                                                        fallback: 'Missed',
+                                                      ),
                                                       value: item.missed,
                                                       color: _missedColor,
                                                       fontSize: metricFont,
                                                     ),
                                                   if (_showCreated)
                                                     _buildTooltipRow(
-                                                      label: 'События создано',
+                                                      label: analyticsText(
+                                                        context,
+                                                        'analytics_events_created',
+                                                        fallback:
+                                                            'Events created',
+                                                      ),
                                                       value:
                                                           item.noticesCreated,
                                                       color: _createdColor,
@@ -893,7 +945,12 @@ class _TelephonyEventsChartState extends State<TelephonyEventsChart> {
                                                     ),
                                                   if (_showClosed)
                                                     _buildTooltipRow(
-                                                      label: 'События закрыто',
+                                                      label: analyticsText(
+                                                        context,
+                                                        'analytics_events_closed',
+                                                        fallback:
+                                                            'Events closed',
+                                                      ),
                                                       value:
                                                           item.noticesFinished,
                                                       color: _closedColor,
@@ -920,7 +977,11 @@ class _TelephonyEventsChartState extends State<TelephonyEventsChart> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Всего звонков',
+                            analyticsText(
+                              context,
+                              'total_calls',
+                              fallback: 'Total calls',
+                            ),
                             style: TextStyle(
                               color: _labelColor,
                               fontSize: isVeryCompact
@@ -949,7 +1010,11 @@ class _TelephonyEventsChartState extends State<TelephonyEventsChart> {
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
                           Text(
-                            'Пропущенные',
+                            analyticsText(
+                              context,
+                              'missed',
+                              fallback: 'Missed',
+                            ),
                             style: TextStyle(
                               color: _labelColor,
                               fontSize: isVeryCompact

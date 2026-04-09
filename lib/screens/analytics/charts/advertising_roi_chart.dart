@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:crm_task_manager/screens/analytics/utils/analytics_localization.dart';
 import 'package:crm_task_manager/screens/analytics/widgets/chart_shimmer_loader.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:crm_task_manager/screens/analytics/utils/chart_request_policy.dart';
@@ -217,7 +218,7 @@ class _AdvertisingRoiChartState extends State<AdvertisingRoiChart> {
                         ),
                       ),
                       subtitle: Text(
-                        'Лидов: ${item.totalLeads}  Клиентов: ${item.clients}  Холодные: ${item.cold}',
+                        '${analyticsText(context, 'leads', fallback: 'Leads')}: ${item.totalLeads}  ${analyticsText(context, 'clients', fallback: 'Clients')}: ${item.clients}  ${analyticsText(context, 'analytics_cold', fallback: 'Cold')}: ${item.cold}',
                         style: TextStyle(
                           fontSize: r.smallFontSize,
                           color: _labelColor,
@@ -473,7 +474,11 @@ class _AdvertisingRoiChartState extends State<AdvertisingRoiChart> {
                 child: Row(
                   children: [
                     Text(
-                      'Количество',
+                      analyticsText(
+                        context,
+                        'quantity',
+                        fallback: 'Quantity',
+                      ),
                       style: TextStyle(
                         fontSize: axisLabelSize,
                         color: _labelColor,
@@ -504,7 +509,11 @@ class _AdvertisingRoiChartState extends State<AdvertisingRoiChart> {
                     : _error != null
                         ? Center(
                             child: Text(
-                              _error!,
+                              analyticsText(
+                                context,
+                                _error!,
+                                fallback: _error!,
+                              ),
                               style: const TextStyle(
                                 color: Color(0xffEF4444),
                                 fontFamily: 'Golos',
@@ -557,7 +566,7 @@ class _AdvertisingRoiChartState extends State<AdvertisingRoiChart> {
                                               children: [
                                                 TextSpan(
                                                   text:
-                                                      'Лидов: ${item.totalLeads}\n',
+                                                      '${analyticsText(context, 'leads', fallback: 'Leads')}: ${item.totalLeads}\n',
                                                   style: TextStyle(
                                                     fontSize: axisLabelSize,
                                                     fontWeight: FontWeight.w600,
@@ -567,7 +576,7 @@ class _AdvertisingRoiChartState extends State<AdvertisingRoiChart> {
                                                 ),
                                                 TextSpan(
                                                   text:
-                                                      'Клиентов: ${item.clients}\n',
+                                                      '${analyticsText(context, 'clients', fallback: 'Clients')}: ${item.clients}\n',
                                                   style: TextStyle(
                                                     fontSize: axisLabelSize,
                                                     fontWeight: FontWeight.w600,
@@ -577,7 +586,7 @@ class _AdvertisingRoiChartState extends State<AdvertisingRoiChart> {
                                                 ),
                                                 TextSpan(
                                                   text:
-                                                      'Холодные: ${item.cold}\n',
+                                                      '${analyticsText(context, 'analytics_cold', fallback: 'Cold')}: ${item.cold}\n',
                                                   style: TextStyle(
                                                     fontSize: axisLabelSize,
                                                     fontWeight: FontWeight.w600,
@@ -758,14 +767,22 @@ class _AdvertisingRoiChartState extends State<AdvertisingRoiChart> {
                     children: [
                       _LegendDot(
                         color: _leadsColor,
-                        label: 'Лидов',
+                        label: analyticsText(
+                          context,
+                          'leads',
+                          fallback: 'Leads',
+                        ),
                         enabled: _showLeads,
                         fontSize: legendFontSize,
                         onTap: () => setState(() => _showLeads = !_showLeads),
                       ),
                       _LegendDot(
                         color: _clientsColor,
-                        label: 'Клиентов',
+                        label: analyticsText(
+                          context,
+                          'clients',
+                          fallback: 'Clients',
+                        ),
                         enabled: _showClients,
                         fontSize: legendFontSize,
                         onTap: () =>
@@ -773,7 +790,11 @@ class _AdvertisingRoiChartState extends State<AdvertisingRoiChart> {
                       ),
                       _LegendDot(
                         color: _coldColor,
-                        label: 'Холодные',
+                        label: analyticsText(
+                          context,
+                          'analytics_cold',
+                          fallback: 'Cold',
+                        ),
                         enabled: _showCold,
                         fontSize: legendFontSize,
                         onTap: () => setState(() => _showCold = !_showCold),
@@ -809,13 +830,21 @@ class _AdvertisingRoiChartState extends State<AdvertisingRoiChart> {
                   child: Row(
                     children: [
                       _StatCell(
-                        label: 'Потрачено',
+                        label: analyticsText(
+                          context,
+                          'analytics_spent',
+                          fallback: 'Spent',
+                        ),
                         value: _data!.summary.totalSpent.toStringAsFixed(0),
                         labelSize: statLabelSize,
                         valueSize: statValueSize,
                       ),
                       _StatCell(
-                        label: 'Лидов',
+                        label: analyticsText(
+                          context,
+                          'leads',
+                          fallback: 'Leads',
+                        ),
                         value: _data!.summary.totalLeads.toString(),
                         labelSize: statLabelSize,
                         valueSize: statValueSize,

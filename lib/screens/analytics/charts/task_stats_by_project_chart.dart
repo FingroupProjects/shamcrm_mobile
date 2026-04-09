@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:crm_task_manager/screens/analytics/utils/analytics_localization.dart';
 import 'package:crm_task_manager/screens/analytics/widgets/chart_shimmer_loader.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:crm_task_manager/screens/analytics/utils/chart_request_policy.dart';
@@ -36,25 +37,25 @@ class _TaskStatsByProjectChartState extends State<TaskStatsByProjectChart> {
 
   static final List<ProjectTaskStats> _previewProjects = [
     ProjectTaskStats(
-      projectName: 'Веб-платформа CRM',
+      projectName: 'CRM Web Platform',
       projectId: 1,
       totalTasks: 47,
       statuses: const [],
     ),
     ProjectTaskStats(
-      projectName: 'Мобильное приложение',
+      projectName: 'Mobile App',
       projectId: 2,
       totalTasks: 38,
       statuses: const [],
     ),
     ProjectTaskStats(
-      projectName: 'Интеграция с Instagram',
+      projectName: 'Instagram Integration',
       projectId: 3,
       totalTasks: 24,
       statuses: const [],
     ),
     ProjectTaskStats(
-      projectName: 'Система аналитики',
+      projectName: 'Analytics System',
       projectId: 4,
       totalTasks: 31,
       statuses: const [],
@@ -374,7 +375,11 @@ class _TaskStatsByProjectChartState extends State<TaskStatsByProjectChart> {
                 : _error != null
                     ? Center(
                         child: Text(
-                          _error!,
+                          analyticsText(
+                            context,
+                            _error!,
+                            fallback: _error!,
+                          ),
                           style: const TextStyle(
                             color: Color(0xffEF4444),
                             fontFamily: 'Golos',
@@ -421,7 +426,7 @@ class _TaskStatsByProjectChartState extends State<TaskStatsByProjectChart> {
                                       final spans = <TextSpan>[
                                         TextSpan(
                                           text:
-                                              'Всего задач: ${item.totalTasks}',
+                                              '${analyticsText(context, 'total_tasks', fallback: 'Total tasks')}: ${item.totalTasks}',
                                           style: TextStyle(
                                             color: const Color(0xffEF4444),
                                             fontWeight: FontWeight.w700,
@@ -484,7 +489,11 @@ class _TaskStatsByProjectChartState extends State<TaskStatsByProjectChart> {
                                 titlesData: FlTitlesData(
                                   leftTitles: AxisTitles(
                                     axisNameWidget: Text(
-                                      'Количество',
+                                      analyticsText(
+                                        context,
+                                        'quantity',
+                                        fallback: 'Quantity',
+                                      ),
                                       style: TextStyle(
                                         fontSize: responsive.xSmallFontSize,
                                         color: Color(0xff94A3B8),

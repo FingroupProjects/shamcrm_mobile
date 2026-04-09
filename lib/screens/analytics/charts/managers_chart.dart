@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:crm_task_manager/screens/analytics/utils/analytics_localization.dart';
 import 'package:crm_task_manager/screens/analytics/widgets/chart_shimmer_loader.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:crm_task_manager/screens/analytics/utils/chart_request_policy.dart';
@@ -34,28 +35,28 @@ class _ManagersChartState extends State<ManagersChart> {
 
   static final List<ManagerDealsStats> _previewManagers = [
     ManagerDealsStats(
-      managerName: 'Анна Смирнова',
+      managerName: 'Anna Smirnova',
       totalDeals: 120,
       successfulDeals: 95,
       totalSum: 68000,
       successfulSum: 62000,
     ),
     ManagerDealsStats(
-      managerName: 'Иван Петров',
+      managerName: 'Ivan Petrov',
       totalDeals: 98,
       successfulDeals: 72,
       totalSum: 54000,
       successfulSum: 47000,
     ),
     ManagerDealsStats(
-      managerName: 'Дмитрий Козлов',
+      managerName: 'Dmitry Kozlov',
       totalDeals: 84,
       successfulDeals: 61,
       totalSum: 43000,
       successfulSum: 38000,
     ),
     ManagerDealsStats(
-      managerName: 'Елена Васильева',
+      managerName: 'Elena Vasilyeva',
       totalDeals: 76,
       successfulDeals: 58,
       totalSum: 39000,
@@ -163,7 +164,7 @@ class _ManagersChartState extends State<ManagersChart> {
                         ),
                       ),
                       subtitle: Text(
-                        'Сделки: ${m.totalDeals} • Успешные: ${m.successfulDeals}',
+                        '${analyticsText(context, 'analytics_total_deals', fallback: 'Total deals')}: ${m.totalDeals} • ${analyticsText(context, 'analytics_successful_deals', fallback: 'Successful deals')}: ${m.successfulDeals}',
                         style: TextStyle(
                           fontSize: ResponsiveHelper(context).smallFontSize,
                           color: Color(0xff64748B),
@@ -316,28 +317,44 @@ class _ManagersChartState extends State<ManagersChart> {
                 children: [
                   _buildBarToggleLegend(
                     color: const Color(0xff6366F1),
-                    label: 'Всего сделок',
+                    label: analyticsText(
+                      context,
+                      'analytics_total_deals',
+                      fallback: 'Total deals',
+                    ),
                     isActive: _showTotalDeals,
                     onTap: () =>
                         setState(() => _showTotalDeals = !_showTotalDeals),
                   ),
                   _buildBarToggleLegend(
                     color: const Color(0xff10B981),
-                    label: 'Успешные сделки',
+                    label: analyticsText(
+                      context,
+                      'analytics_successful_deals',
+                      fallback: 'Successful deals',
+                    ),
                     isActive: _showSuccessDeals,
                     onTap: () =>
                         setState(() => _showSuccessDeals = !_showSuccessDeals),
                   ),
                   _buildToggleLegend(
                     color: const Color(0xffF59E0B),
-                    label: 'Общая сумма',
+                    label: analyticsText(
+                      context,
+                      'total_amount',
+                      fallback: 'Total amount',
+                    ),
                     isActive: _showTotalSum,
                     onTap: () => setState(() => _showTotalSum = !_showTotalSum),
                     isDashed: false,
                   ),
                   _buildToggleLegend(
                     color: const Color(0xffEC4899),
-                    label: 'Сумма успешных',
+                    label: analyticsText(
+                      context,
+                      'analytics_successful_amount',
+                      fallback: 'Successful amount',
+                    ),
                     isActive: _showSuccessSum,
                     onTap: () =>
                         setState(() => _showSuccessSum = !_showSuccessSum),
@@ -362,7 +379,11 @@ class _ManagersChartState extends State<ManagersChart> {
                             SizedBox(
                                 height: ResponsiveHelper(context).smallSpacing),
                             Text(
-                              _error!,
+                              analyticsText(
+                                context,
+                                _error!,
+                                fallback: _error!,
+                              ),
                               style: TextStyle(
                                 color: Color(0xff64748B),
                                 fontSize: responsive.bodyFontSize,
@@ -374,7 +395,13 @@ class _ManagersChartState extends State<ManagersChart> {
                                 height: ResponsiveHelper(context).smallSpacing),
                             TextButton(
                               onPressed: _loadData,
-                              child: const Text('Повторить'),
+                              child: Text(
+                                analyticsText(
+                                  context,
+                                  'retry',
+                                  fallback: 'Retry',
+                                ),
+                              ),
                             ),
                           ],
                         ),
@@ -409,7 +436,11 @@ class _ManagersChartState extends State<ManagersChart> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Лучший менеджер',
+                          analyticsText(
+                            context,
+                            'analytics_best_manager',
+                            fallback: 'Best manager',
+                          ),
                           style: TextStyle(
                             fontSize: responsive.smallFontSize,
                             color: Color(0xff64748B),
@@ -441,7 +472,11 @@ class _ManagersChartState extends State<ManagersChart> {
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         Text(
-                          'Общая выручка',
+                          analyticsText(
+                            context,
+                            'stat_total_revenue',
+                            fallback: 'Total revenue',
+                          ),
                           style: TextStyle(
                             fontSize: responsive.smallFontSize,
                             color: Color(0xff64748B),
@@ -469,7 +504,11 @@ class _ManagersChartState extends State<ManagersChart> {
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
                         Text(
-                          'Менеджеров',
+                          analyticsText(
+                            context,
+                            'analytics_total_managers',
+                            fallback: 'Managers',
+                          ),
                           style: TextStyle(
                             fontSize: responsive.smallFontSize,
                             color: Color(0xff64748B),
@@ -539,7 +578,8 @@ class _ManagersChartState extends State<ManagersChart> {
                         ),
                         children: [
                           TextSpan(
-                            text: 'Всего сделок: ${m.totalDeals}\n',
+                            text:
+                                '${analyticsText(context, 'analytics_total_deals', fallback: 'Total deals')}: ${m.totalDeals}\n',
                             style: TextStyle(
                               color: const Color(0xff6366F1),
                               fontWeight: FontWeight.w600,
@@ -548,7 +588,8 @@ class _ManagersChartState extends State<ManagersChart> {
                             ),
                           ),
                           TextSpan(
-                            text: 'Успешные сделки: ${m.successfulDeals}\n',
+                            text:
+                                '${analyticsText(context, 'analytics_successful_deals', fallback: 'Successful deals')}: ${m.successfulDeals}\n',
                             style: TextStyle(
                               color: const Color(0xff10B981),
                               fontWeight: FontWeight.w600,
@@ -557,7 +598,8 @@ class _ManagersChartState extends State<ManagersChart> {
                             ),
                           ),
                           TextSpan(
-                            text: 'Сумма: ${_formatMoney(m.totalSum)}\n',
+                            text:
+                                '${analyticsText(context, 'analytics_amount', fallback: 'Amount')}: ${_formatMoney(m.totalSum)}\n',
                             style: TextStyle(
                               color: const Color(0xffF59E0B),
                               fontWeight: FontWeight.w600,
@@ -567,7 +609,7 @@ class _ManagersChartState extends State<ManagersChart> {
                           ),
                           TextSpan(
                             text:
-                                'Успешная сумма: ${_formatMoney(m.successfulSum)}',
+                                '${analyticsText(context, 'analytics_successful_amount', fallback: 'Successful amount')}: ${_formatMoney(m.successfulSum)}',
                             style: TextStyle(
                               color: const Color(0xffEC4899),
                               fontWeight: FontWeight.w600,
@@ -610,7 +652,11 @@ class _ManagersChartState extends State<ManagersChart> {
                   ),
                   leftTitles: AxisTitles(
                     axisNameWidget: Text(
-                      'Количество сделок',
+                      analyticsText(
+                        context,
+                        'analytics_deals_count',
+                        fallback: 'Deal count',
+                      ),
                       style: TextStyle(
                         fontSize: responsive.xSmallFontSize,
                         color: Color(0xff94A3B8),
@@ -686,7 +732,11 @@ class _ManagersChartState extends State<ManagersChart> {
                 top: -22,
                 right: 8,
                 child: Text(
-                  'Сумма',
+                  analyticsText(
+                    context,
+                    'analytics_amount',
+                    fallback: 'Amount',
+                  ),
                   style: TextStyle(
                     fontSize: responsive.xSmallFontSize,
                     color: Color(0xff94A3B8),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:crm_task_manager/screens/analytics/utils/analytics_localization.dart';
 import 'package:crm_task_manager/screens/analytics/widgets/chart_shimmer_loader.dart';
 import 'package:crm_task_manager/screens/analytics/utils/chart_request_policy.dart';
 import 'package:crm_task_manager/screens/analytics/utils/responsive_helper.dart';
@@ -22,15 +23,12 @@ class _SpeedGaugeState extends State<SpeedGauge>
   double _speedHours = 0.0;
   double? _serverMaxScale;
   String _scaleUnit = 'hours';
-  String _speedLabel = '0 ч';
   late final AnimationController _needleController;
   late Animation<double> _needleAnimation;
 
   String get _title => widget.title;
 
   static const double _previewSpeedHours = 0.41;
-  static const String _previewSpeedLabel = '0.41 часов';
-
   static const Duration _needleDuration = Duration(milliseconds: 1200);
 
   @override
@@ -74,7 +72,6 @@ class _SpeedGaugeState extends State<SpeedGauge>
         _speedHours = normalizedSpeed;
         _serverMaxScale = response.badTo;
         _scaleUnit = response.speedTimeFormat;
-        _speedLabel = response.displayText;
         _isLoading = false;
       });
       _animateNeedle();
@@ -139,7 +136,11 @@ class _SpeedGaugeState extends State<SpeedGauge>
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 title: Text(
-                  'Среднее время',
+                  analyticsText(
+                    context,
+                    'analytics_average_time',
+                    fallback: 'Average time',
+                  ),
                   style: TextStyle(
                     fontSize: ResponsiveHelper(context).bodyFontSize,
                     fontWeight: FontWeight.w600,
@@ -148,7 +149,7 @@ class _SpeedGaugeState extends State<SpeedGauge>
                   ),
                 ),
                 trailing: Text(
-                  _speedLabel,
+                  _formatHoursLabel(_speedHours),
                   style: TextStyle(
                     fontSize: ResponsiveHelper(context).bodyFontSize,
                     fontWeight: FontWeight.w600,
@@ -184,12 +185,48 @@ class _SpeedGaugeState extends State<SpeedGauge>
   String _unitLabel() {
     switch (_scaleUnit) {
       case 'minutes':
-        return 'минут';
+        return analyticsText(
+          context,
+          'analytics_minutes_label',
+          fallback: 'minutes',
+        );
       case 'days':
-        return 'дня';
+        return analyticsText(
+          context,
+          'analytics_days_label',
+          fallback: 'days',
+        );
       case 'hours':
       default:
-        return 'часа';
+        return analyticsText(
+          context,
+          'analytics_hours_label',
+          fallback: 'hours',
+        );
+    }
+  }
+
+  String _unitSuffix() {
+    switch (_scaleUnit) {
+      case 'minutes':
+        return analyticsText(
+          context,
+          'analytics_minutes_short_label',
+          fallback: ' min',
+        );
+      case 'days':
+        return analyticsText(
+          context,
+          'analytics_days_short_label',
+          fallback: ' d',
+        );
+      case 'hours':
+      default:
+        return analyticsText(
+          context,
+          'analytics_hours_short_label',
+          fallback: ' h',
+        );
     }
   }
 
@@ -213,8 +250,7 @@ class _SpeedGaugeState extends State<SpeedGauge>
     final responsive = ResponsiveHelper(context);
     final isEmpty = _speedHours <= 0;
     final displaySpeedHours = isEmpty ? _previewSpeedHours : _speedHours;
-    final displaySpeedLabel =
-        isEmpty ? _previewSpeedLabel : _formatHoursLabel(_speedHours);
+    final displaySpeedLabel = _formatHoursLabel(displaySpeedHours);
     final maxHours = _computeMaxHours(displaySpeedHours);
 
     return Container(
@@ -302,7 +338,11 @@ class _SpeedGaugeState extends State<SpeedGauge>
                             SizedBox(
                                 height: ResponsiveHelper(context).smallSpacing),
                             Text(
-                              _error!,
+                              analyticsText(
+                                context,
+                                _error!,
+                                fallback: _error!,
+                              ),
                               style: TextStyle(
                                 color: Color(0xff64748B),
                                 fontSize: responsive.bodyFontSize,
@@ -314,7 +354,13 @@ class _SpeedGaugeState extends State<SpeedGauge>
                                 height: ResponsiveHelper(context).smallSpacing),
                             TextButton(
                               onPressed: _loadData,
-                              child: Text('Повторить'),
+                              child: Text(
+                                analyticsText(
+                                  context,
+                                  'retry',
+                                  fallback: 'Retry',
+                                ),
+                              ),
                             ),
                           ],
                         ),
@@ -343,7 +389,7 @@ class _SpeedGaugeState extends State<SpeedGauge>
                                           painter: SpeedGaugePainter(
                                             speedHours: animatedSpeed,
                                             maxHours: maxHours,
-                                            scaleUnit: _scaleUnit,
+                                            unitSuffix: _unitSuffix(),
                                             labelFontSize:
                                                 responsive.smallFontSize,
                                           ),
@@ -385,13 +431,13 @@ class SpeedGaugePainter extends CustomPainter {
   final double speedHours;
   final double maxHours;
   final double labelFontSize;
-  final String scaleUnit;
+  final String unitSuffix;
 
   SpeedGaugePainter(
       {required this.speedHours,
       this.maxHours = 10,
       this.labelFontSize = 12,
-      this.scaleUnit = 'hours'});
+      this.unitSuffix = ' h'});
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -487,8 +533,7 @@ class SpeedGaugePainter extends CustomPainter {
     for (int i = 0; i <= divisions; i++) {
       final value = step * i;
       final angle = startAngle + totalSweep * (i / divisions);
-      final label =
-          i == 0 ? '0' : '${value.toStringAsFixed(0)}${_unitSuffix()}';
+      final label = i == 0 ? '0' : '${value.toStringAsFixed(0)}$unitSuffix';
       final textPainter = TextPainter(
         text: TextSpan(text: label, style: labelStyle),
         textDirection: TextDirection.ltr,
@@ -533,18 +578,6 @@ class SpeedGaugePainter extends CustomPainter {
   bool shouldRepaint(SpeedGaugePainter oldDelegate) {
     return oldDelegate.speedHours != speedHours ||
         oldDelegate.maxHours != maxHours ||
-        oldDelegate.scaleUnit != scaleUnit;
-  }
-
-  String _unitSuffix() {
-    switch (scaleUnit) {
-      case 'minutes':
-        return ' мин';
-      case 'days':
-        return ' д';
-      case 'hours':
-      default:
-        return ' ч';
-    }
+        oldDelegate.unitSuffix != unitSuffix;
   }
 }

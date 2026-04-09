@@ -109,15 +109,14 @@ class LanguageButtonWidget extends StatelessWidget {
     );
   }
 
-  Widget _languageOption(BuildContext context, String language, String iconPath, String languageCode, String currentLanguage) {
+  Widget _languageOption(BuildContext context, String language, String iconPath,
+      String languageCode, String currentLanguage) {
     final isSelected = currentLanguage == languageCode;
 
     return ListTile(
       leading: Image.asset(iconPath, width: 24, height: 24),
       title: Text(language),
-      trailing: isSelected
-          ? Icon(Icons.check, color: Color(0xff1E2E52))
-          : null,
+      trailing: isSelected ? Icon(Icons.check, color: Color(0xff1E2E52)) : null,
       onTap: () {
         _changeLanguage(context, languageCode);
         Navigator.pop(context); // Закрыть диалог сразу после выбора языка
@@ -143,34 +142,39 @@ class LanguageButtonWidget extends StatelessWidget {
       // ✅ Отправляем POST запрос на сервер для смены языка
       final apiService = context.read<ApiService>();
       final success = await apiService.changeLanguage(languageCode);
-      
+
       if (success) {
-        debugPrint('LanguageButtonWidget: Язык успешно изменён на сервере: $languageCode');
-        
+        debugPrint(
+            'LanguageButtonWidget: Язык успешно изменён на сервере: $languageCode');
+
         // Применяем язык локально
         Locale newLocale = Locale(languageCode);
         MyApp.setLocale(context, newLocale);
         await LanguageManager.saveLanguage(languageCode);
-        
+
         // Закрываем индикатор загрузки
         if (context.mounted) {
           Navigator.pop(context);
         }
-        
+
         debugPrint('LanguageButtonWidget: Язык применён локально');
       } else {
         debugPrint('LanguageButtonWidget: Не удалось изменить язык на сервере');
-        
+
         // Закрываем индикатор загрузки
         if (context.mounted) {
           Navigator.pop(context);
         }
-        
+
         // Показываем сообщение об ошибке
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Ошибка при изменении языка'),
+              content: Text(
+                AppLocalizations.of(context)
+                        ?.translate('language_change_error') ??
+                    'Ошибка при изменении языка',
+              ),
               backgroundColor: Colors.red,
             ),
           );
@@ -178,17 +182,21 @@ class LanguageButtonWidget extends StatelessWidget {
       }
     } catch (e) {
       debugPrint('LanguageButtonWidget: Ошибка при смене языка: $e');
-      
+
       // Закрываем индикатор загрузки
       if (context.mounted) {
         Navigator.pop(context);
       }
-      
+
       // Показываем сообщение об ошибке
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Ошибка при изменении языка'),
+            content: Text(
+              AppLocalizations.of(context)
+                      ?.translate('language_change_error') ??
+                  'Ошибка при изменении языка',
+            ),
             backgroundColor: Colors.red,
           ),
         );

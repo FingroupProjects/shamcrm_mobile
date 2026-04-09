@@ -1,6 +1,6 @@
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
-import 'package:flutter/material.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:flutter/material.dart';
 import 'package:crm_task_manager/custom_widget/filter/lead/multi_manager_list.dart';
 import 'package:crm_task_manager/custom_widget/filter/lead/multi_source_list.dart';
 import 'package:crm_task_manager/custom_widget/filter/lead/multi_sales_funnel_list.dart';
@@ -60,12 +60,12 @@ class _AnalyticsFilterSheetState extends State<AnalyticsFilterSheet> {
       'last_year',
     ];
     final periodLabels = <String>[
-      localizations?.translate('all_periods') ?? 'Все периоды',
-      localizations?.translate('period_7_days') ?? 'Последние 7 дней',
-      localizations?.translate('period_30_days') ?? 'Последние 30 дней',
-      localizations?.translate('period_90_days') ?? 'Последние 90 дней',
-      localizations?.translate('period_current_year') ?? 'Текущий год',
-      localizations?.translate('period_last_year') ?? 'Прошлый год',
+      localizations?.translate('all_periods') ?? 'All periods',
+      localizations?.translate('period_7_days') ?? 'Last 7 days',
+      localizations?.translate('period_30_days') ?? 'Last 30 days',
+      localizations?.translate('period_90_days') ?? 'Last 90 days',
+      localizations?.translate('period_current_year') ?? 'Current year',
+      localizations?.translate('period_last_year') ?? 'Last year',
     ];
     final periodIndex =
         _periodKey != null ? periodKeys.indexOf(_periodKey!) : -1;
@@ -100,7 +100,7 @@ class _AnalyticsFilterSheetState extends State<AnalyticsFilterSheet> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  localizations?.translate('analytics_filters') ?? 'Фильтры',
+                  localizations?.translate('analytics_filters') ?? 'Filters',
                   style: const TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w700,
@@ -126,7 +126,7 @@ class _AnalyticsFilterSheetState extends State<AnalyticsFilterSheet> {
                 children: [
                   _buildFilterSection(
                     label: localizations?.translate('analytics_period') ??
-                        'Период',
+                        'Period',
                     items: periodLabels,
                     selectedLabel: selectedPeriodLabel,
                     onChanged: (label) {
@@ -136,7 +136,7 @@ class _AnalyticsFilterSheetState extends State<AnalyticsFilterSheet> {
                       }
                     },
                     hint: localizations?.translate('analytics_period') ??
-                        'Период',
+                        'Period',
                   ),
                   const SizedBox(height: 20),
                   ManagerMultiSelectWidget(
@@ -182,8 +182,10 @@ class _AnalyticsFilterSheetState extends State<AnalyticsFilterSheet> {
               final buttonRadius = isSmall ? 10.0 : 12.0;
               final buttonGap = isSmall ? 8.0 : 10.0;
               final buttonFontSize = isSmall ? 15.0 : 16.0;
-              final resetWidth = (constraints.maxWidth * 0.30).clamp(110.0, 150.0);
-              final applyWidth = (constraints.maxWidth * 0.56).clamp(150.0, 230.0);
+              final resetWidth =
+                  (constraints.maxWidth * 0.30).clamp(110.0, 150.0);
+              final applyWidth =
+                  (constraints.maxWidth * 0.56).clamp(150.0, 230.0);
               final safeBottom = MediaQuery.of(context).viewPadding.bottom;
 
               return Container(
@@ -222,7 +224,7 @@ class _AnalyticsFilterSheetState extends State<AnalyticsFilterSheet> {
                           ),
                         ),
                         child: Text(
-                          localizations?.translate('reset') ?? 'Сбросить',
+                          localizations?.translate('reset') ?? 'Reset',
                           style: TextStyle(
                             fontSize: buttonFontSize,
                             fontWeight: FontWeight.w600,
@@ -257,7 +259,7 @@ class _AnalyticsFilterSheetState extends State<AnalyticsFilterSheet> {
                           elevation: 0,
                         ),
                         child: Text(
-                          localizations?.translate('apply') ?? 'Применить',
+                          localizations?.translate('apply') ?? 'Apply',
                           style: TextStyle(
                             fontSize: buttonFontSize,
                             fontWeight: FontWeight.w600,

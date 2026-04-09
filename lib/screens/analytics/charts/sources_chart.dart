@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:crm_task_manager/screens/analytics/utils/analytics_localization.dart';
 import 'package:crm_task_manager/screens/analytics/widgets/chart_shimmer_loader.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:crm_task_manager/screens/analytics/utils/chart_request_policy.dart';
@@ -35,9 +36,9 @@ class _SourcesChartState extends State<SourcesChart> {
     LeadSourceItem(name: 'WhatsApp', count: 420),
     LeadSourceItem(name: 'Instagram', count: 210),
     LeadSourceItem(name: 'Telegram', count: 160),
-    LeadSourceItem(name: 'Сайт', count: 120),
-    LeadSourceItem(name: 'Телефон', count: 80),
-    LeadSourceItem(name: 'Прочее', count: 45),
+    LeadSourceItem(name: 'Website', count: 120),
+    LeadSourceItem(name: 'Phone', count: 80),
+    LeadSourceItem(name: 'Other', count: 45),
   ];
 
   @override
@@ -96,13 +97,42 @@ class _SourcesChartState extends State<SourcesChart> {
       return const Color(0xff0088CC);
     }
     if (key.contains('messenger')) return const Color(0xff1877F2);
-    if (key.contains('телефон')) return const Color(0xff8BC34A);
+    if (key.contains('телефон') || key.contains('phone')) {
+      return const Color(0xff8BC34A);
+    }
     if (key.contains('демо')) return const Color(0xffBCAAA4);
     if (key.contains('личные')) return const Color(0xff5C6BC0);
     if (key.contains('маркет')) return const Color(0xff7E57C2);
     if (key.contains('радио')) return const Color(0xffF59E0B);
-    if (key.contains('сайт')) return const Color(0xff94A3B8);
+    if (key.contains('сайт') ||
+        key.contains('site') ||
+        key.contains('website')) {
+      return const Color(0xff94A3B8);
+    }
     return const Color(0xff64748B);
+  }
+
+  String _displaySourceName(String name) {
+    final normalized = name.trim().toLowerCase();
+    switch (normalized) {
+      case 'сайт':
+      case 'site':
+      case 'website':
+        return analyticsText(context, 'source_website', fallback: 'Website');
+      case 'телефон':
+      case 'phone':
+      case 'telephone':
+        return analyticsText(context, 'phone', fallback: 'Phone');
+      case 'прочее':
+      case 'other':
+        return analyticsText(
+          context,
+          'analytics_other_source',
+          fallback: 'Other',
+        );
+      default:
+        return name;
+    }
   }
 
   void _showDetails() {
@@ -162,7 +192,7 @@ class _SourcesChartState extends State<SourcesChart> {
                         ),
                       ),
                       title: Text(
-                        channel.name,
+                        _displaySourceName(channel.name),
                         style: TextStyle(
                           fontSize: ResponsiveHelper(context).bodyFontSize,
                           fontWeight: FontWeight.w600,
@@ -413,7 +443,7 @@ class _SourcesChartState extends State<SourcesChart> {
                   final isActive = !_hiddenSources.contains(ch.name);
                   return _buildSourceToggle(
                     color: _colorForSource(ch.name),
-                    label: ch.name,
+                    label: _displaySourceName(ch.name),
                     isActive: isActive,
                     onTap: () => setState(() {
                       if (_hiddenSources.contains(ch.name)) {
@@ -443,7 +473,11 @@ class _SourcesChartState extends State<SourcesChart> {
                             SizedBox(
                                 height: ResponsiveHelper(context).smallSpacing),
                             Text(
-                              _error!,
+                              analyticsText(
+                                context,
+                                _error!,
+                                fallback: _error!,
+                              ),
                               style: TextStyle(
                                 color: Color(0xff64748B),
                                 fontSize: responsive.bodyFontSize,
@@ -455,7 +489,13 @@ class _SourcesChartState extends State<SourcesChart> {
                                 height: ResponsiveHelper(context).smallSpacing),
                             TextButton(
                               onPressed: _loadData,
-                              child: Text('Повторить'),
+                              child: Text(
+                                analyticsText(
+                                  context,
+                                  'retry',
+                                  fallback: 'Retry',
+                                ),
+                              ),
                             ),
                           ],
                         ),
@@ -556,7 +596,11 @@ class _SourcesChartState extends State<SourcesChart> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Топ источник',
+                        analyticsText(
+                          context,
+                          'analytics_top_source',
+                          fallback: 'Top source',
+                        ),
                         style: TextStyle(
                           fontSize: responsive.smallFontSize,
                           color: Color(0xff64748B),
@@ -566,9 +610,9 @@ class _SourcesChartState extends State<SourcesChart> {
                       SizedBox(height: 4),
                       Text(
                         _bestSource.isNotEmpty
-                            ? _bestSource
+                            ? _displaySourceName(_bestSource)
                             : (_channels.isNotEmpty
-                                ? _channels.first.name
+                                ? _displaySourceName(_channels.first.name)
                                 : '-'),
                         style: TextStyle(
                           fontSize: responsive.largeFontSize,
@@ -583,7 +627,11 @@ class _SourcesChartState extends State<SourcesChart> {
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       Text(
-                        'Всего источников',
+                        analyticsText(
+                          context,
+                          'analytics_total_sources',
+                          fallback: 'Total sources',
+                        ),
                         style: TextStyle(
                           fontSize: responsive.smallFontSize,
                           color: Color(0xff64748B),

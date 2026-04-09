@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:crm_task_manager/screens/analytics/utils/analytics_localization.dart';
 import 'package:crm_task_manager/screens/analytics/widgets/chart_shimmer_loader.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:crm_task_manager/screens/analytics/utils/chart_request_policy.dart';
@@ -163,7 +164,11 @@ class _TargetedAdsChartState extends State<TargetedAdsChart> {
                   Row(
                     children: [
                       Text(
-                        'Выберите кампанию',
+                        analyticsText(
+                          context,
+                          'analytics_select_campaign',
+                          fallback: 'Select campaign',
+                        ),
                         style: TextStyle(
                           fontSize: ResponsiveHelper(context).titleFontSize,
                           fontWeight: FontWeight.w700,
@@ -180,7 +185,11 @@ class _TargetedAdsChartState extends State<TargetedAdsChart> {
                             _loadData();
                           },
                           child: Text(
-                            'Сбросить',
+                            analyticsText(
+                              context,
+                              'reset',
+                              fallback: 'Reset',
+                            ),
                             style: TextStyle(
                               color: Color(0xffEF4444),
                               fontFamily: 'Golos',
@@ -222,7 +231,7 @@ class _TargetedAdsChartState extends State<TargetedAdsChart> {
                             overflow: TextOverflow.ellipsis,
                           ),
                           subtitle: Text(
-                            '${camp.integrationName} • Охват: ${camp.totalReaches}',
+                            '${camp.integrationName} • ${analyticsText(context, 'analytics_reach', fallback: 'Reach')}: ${camp.totalReaches}',
                             style: TextStyle(
                               fontSize:
                                   ResponsiveHelper(context).xSmallFontSize,
@@ -327,7 +336,7 @@ class _TargetedAdsChartState extends State<TargetedAdsChart> {
                         overflow: TextOverflow.ellipsis,
                       ),
                       subtitle: Text(
-                        'Охват: ${item.totalReaches}, Успешные: ${item.successful}',
+                        '${analyticsText(context, 'analytics_reach', fallback: 'Reach')}: ${item.totalReaches}, ${analyticsText(context, 'successful', fallback: 'Successful')}: ${item.successful}',
                         style: TextStyle(
                           fontSize: ResponsiveHelper(context).smallFontSize,
                           color: Color(0xff64748B),
@@ -480,7 +489,11 @@ class _TargetedAdsChartState extends State<TargetedAdsChart> {
 
     final dropdownLabel = _selectedCampaign != null
         ? _shortLabel(_selectedCampaign!.campaignName)
-        : 'Все кампании';
+        : analyticsText(
+            context,
+            'analytics_all_campaigns',
+            fallback: 'All campaigns',
+          );
 
     return Container(
       decoration: BoxDecoration(
@@ -570,27 +583,43 @@ class _TargetedAdsChartState extends State<TargetedAdsChart> {
                         children: [
                           _buildToggle(
                             color: _kReachesColor,
-                            label: 'Охват',
+                            label: analyticsText(
+                              context,
+                              'analytics_reach',
+                              fallback: 'Reach',
+                            ),
                             isActive: _showReaches,
                             onTap: () =>
                                 setState(() => _showReaches = !_showReaches),
                           ),
                           _buildToggle(
                             color: _kSuccessfulColor,
-                            label: 'Успешные',
+                            label: analyticsText(
+                              context,
+                              'successful',
+                              fallback: 'Successful',
+                            ),
                             isActive: _showSuccessful,
                             onTap: () => setState(
                                 () => _showSuccessful = !_showSuccessful),
                           ),
                           _buildToggle(
                             color: _kColdColor,
-                            label: 'Холодные',
+                            label: analyticsText(
+                              context,
+                              'analytics_cold',
+                              fallback: 'Cold',
+                            ),
                             isActive: _showCold,
                             onTap: () => setState(() => _showCold = !_showCold),
                           ),
                           _buildToggle(
                             color: _kInProgressColor,
-                            label: 'В работе',
+                            label: analyticsText(
+                              context,
+                              'in_progress',
+                              fallback: 'In progress',
+                            ),
                             isActive: _showInProgress,
                             onTap: () => setState(
                                 () => _showInProgress = !_showInProgress),
@@ -664,7 +693,11 @@ class _TargetedAdsChartState extends State<TargetedAdsChart> {
                             SizedBox(
                                 height: ResponsiveHelper(context).smallSpacing),
                             Text(
-                              _error!,
+                              analyticsText(
+                                context,
+                                _error!,
+                                fallback: _error!,
+                              ),
                               style: TextStyle(
                                 color: Color(0xff64748B),
                                 fontSize: responsive.bodyFontSize,
@@ -676,7 +709,13 @@ class _TargetedAdsChartState extends State<TargetedAdsChart> {
                                 height: ResponsiveHelper(context).smallSpacing),
                             TextButton(
                               onPressed: _loadData,
-                              child: Text('Повторить'),
+                              child: Text(
+                                analyticsText(
+                                  context,
+                                  'retry',
+                                  fallback: 'Retry',
+                                ),
+                              ),
                             ),
                           ],
                         ),
@@ -720,7 +759,7 @@ class _TargetedAdsChartState extends State<TargetedAdsChart> {
                                       children: [
                                         TextSpan(
                                           text:
-                                              'Всего обращений: ${item.totalReaches}\n',
+                                              '${analyticsText(context, 'analytics_total_reach', fallback: 'Total reach')}: ${item.totalReaches}\n',
                                           style: TextStyle(
                                             color: _kReachesColor,
                                             fontWeight: FontWeight.w600,
@@ -730,7 +769,7 @@ class _TargetedAdsChartState extends State<TargetedAdsChart> {
                                         ),
                                         TextSpan(
                                           text:
-                                              'Успешные: ${item.successful}\n',
+                                              '${analyticsText(context, 'successful', fallback: 'Successful')}: ${item.successful}\n',
                                           style: TextStyle(
                                             color: _kSuccessfulColor,
                                             fontWeight: FontWeight.w600,
@@ -739,7 +778,8 @@ class _TargetedAdsChartState extends State<TargetedAdsChart> {
                                           ),
                                         ),
                                         TextSpan(
-                                          text: 'Холодные: ${item.cold}\n',
+                                          text:
+                                              '${analyticsText(context, 'analytics_cold', fallback: 'Cold')}: ${item.cold}\n',
                                           style: TextStyle(
                                             color: _kColdColor,
                                             fontWeight: FontWeight.w600,
@@ -749,7 +789,7 @@ class _TargetedAdsChartState extends State<TargetedAdsChart> {
                                         ),
                                         TextSpan(
                                           text:
-                                              'В работе: ${item.inProgress}\n',
+                                              '${analyticsText(context, 'in_progress', fallback: 'In progress')}: ${item.inProgress}\n',
                                           style: TextStyle(
                                             color: _kInProgressColor,
                                             fontWeight: FontWeight.w600,
@@ -759,7 +799,7 @@ class _TargetedAdsChartState extends State<TargetedAdsChart> {
                                         ),
                                         TextSpan(
                                           text:
-                                              'Стоимость лида: ${item.costPerLead.toStringAsFixed(2)}',
+                                              '${analyticsText(context, 'analytics_cost_per_lead', fallback: 'Cost per lead')}: ${item.costPerLead.toStringAsFixed(2)}',
                                           style: TextStyle(
                                             color: const Color(0xff0F172A),
                                             fontWeight: FontWeight.w600,
@@ -784,7 +824,11 @@ class _TargetedAdsChartState extends State<TargetedAdsChart> {
                               titlesData: FlTitlesData(
                                 leftTitles: AxisTitles(
                                   axisNameWidget: Text(
-                                    'Количество',
+                                    analyticsText(
+                                      context,
+                                      'quantity',
+                                      fallback: 'Quantity',
+                                    ),
                                     style: TextStyle(
                                       fontSize: responsive.xSmallFontSize,
                                       color: Color(0xff94A3B8),
@@ -866,12 +910,20 @@ class _TargetedAdsChartState extends State<TargetedAdsChart> {
                 children: [
                   _footerStat(
                     responsive,
-                    'Общий охват',
+                    analyticsText(
+                      context,
+                      'analytics_total_reach',
+                      fallback: 'Total reach',
+                    ),
                     '${_data!.summary.totalReaches}',
                   ),
                   _footerStat(
                     responsive,
-                    'Успешных',
+                    analyticsText(
+                      context,
+                      'analytics_successful_orders',
+                      fallback: 'Successful',
+                    ),
                     '${_data!.summary.successful}',
                     color: _kSuccessfulColor,
                   ),

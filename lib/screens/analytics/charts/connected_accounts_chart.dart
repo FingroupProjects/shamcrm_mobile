@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:crm_task_manager/screens/analytics/utils/analytics_localization.dart';
 import 'package:crm_task_manager/screens/analytics/widgets/chart_shimmer_loader.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:crm_task_manager/screens/analytics/utils/chart_request_policy.dart';
@@ -59,7 +60,7 @@ class _ConnectedAccountsChartState extends State<ConnectedAccountsChart> {
     ),
     ConnectedAccount(
       integrationId: 3,
-      displayName: 'Веб-студия',
+      displayName: 'Web Studio',
       channelType: 'messenger',
       username: 'fin_group',
       totalChats: 9,
@@ -146,7 +147,11 @@ class _ConnectedAccountsChartState extends State<ConnectedAccountsChart> {
                   Row(
                     children: [
                       Text(
-                        'Выберите канал',
+                        analyticsText(
+                          context,
+                          'analytics_select_channel',
+                          fallback: 'Select channel',
+                        ),
                         style: TextStyle(
                           fontSize: ResponsiveHelper(context).titleFontSize,
                           fontWeight: FontWeight.w700,
@@ -163,7 +168,11 @@ class _ConnectedAccountsChartState extends State<ConnectedAccountsChart> {
                             _loadData();
                           },
                           child: Text(
-                            'Сбросить',
+                            analyticsText(
+                              context,
+                              'reset',
+                              fallback: 'Reset',
+                            ),
                             style: TextStyle(
                               color: Color(0xffEF4444),
                               fontFamily: 'Golos',
@@ -205,7 +214,7 @@ class _ConnectedAccountsChartState extends State<ConnectedAccountsChart> {
                             overflow: TextOverflow.ellipsis,
                           ),
                           subtitle: Text(
-                            '${_channelLabel(ch.channelType)} • ${ch.totalChats} чатов',
+                            '${_channelLabel(ch.channelType)} • ${ch.totalChats} ${analyticsText(context, 'analytics_chats_suffix', fallback: 'chats')}',
                             style: TextStyle(
                               fontSize:
                                   ResponsiveHelper(context).xSmallFontSize,
@@ -254,13 +263,14 @@ class _ConnectedAccountsChartState extends State<ConnectedAccountsChart> {
     return switch (type) {
       'whatsapp' || 'green_api' => 'WhatsApp',
       'telegram' => 'Telegram',
-      'telephone' => 'Телефон',
+      'telephone' => analyticsText(context, 'phone', fallback: 'Phone'),
       'instagram' => 'Instagram',
       'messenger' => 'Messenger',
       'sms' => 'SMS',
-      'site' => 'Сайт',
+      'site' => analyticsText(context, 'source_website', fallback: 'Website'),
       'mini_app' => 'Mini App',
-      'telephony' => 'Телефония',
+      'telephony' =>
+        analyticsText(context, 'analytics_telephony', fallback: 'Telephony'),
       _ => type,
     };
   }
@@ -327,7 +337,7 @@ class _ConnectedAccountsChartState extends State<ConnectedAccountsChart> {
                         ),
                       ),
                       subtitle: Text(
-                        'Ответов: ${item.answered} / Без ответа: ${item.unanswered}',
+                        '${analyticsText(context, 'analytics_answered', fallback: 'Answered')}: ${item.answered} / ${analyticsText(context, 'unanswered', fallback: 'Unanswered')}: ${item.unanswered}',
                         style: TextStyle(
                           fontSize: ResponsiveHelper(context).smallFontSize,
                           color: Color(0xff64748B),
@@ -335,7 +345,7 @@ class _ConnectedAccountsChartState extends State<ConnectedAccountsChart> {
                         ),
                       ),
                       trailing: Text(
-                        'Чатов: ${item.totalChats}',
+                        '${analyticsText(context, 'analytics_total_chats', fallback: 'Chats')}: ${item.totalChats}',
                         style: TextStyle(
                           fontSize: ResponsiveHelper(context).smallFontSize,
                           fontWeight: FontWeight.w600,
@@ -471,7 +481,11 @@ class _ConnectedAccountsChartState extends State<ConnectedAccountsChart> {
 
     final dropdownLabel = _selectedChannel != null
         ? _shortLabel(_selectedChannel!.displayName)
-        : 'Все каналы';
+        : analyticsText(
+            context,
+            'analytics_all_channels',
+            fallback: 'All channels',
+          );
 
     return Container(
       decoration: BoxDecoration(
@@ -561,21 +575,33 @@ class _ConnectedAccountsChartState extends State<ConnectedAccountsChart> {
                         children: [
                           _buildToggle(
                             color: _kTotalChatsColor,
-                            label: 'Всего обращений',
+                            label: analyticsText(
+                              context,
+                              'analytics_total_requests',
+                              fallback: 'Total requests',
+                            ),
                             isActive: _showTotalChats,
                             onTap: () => setState(
                                 () => _showTotalChats = !_showTotalChats),
                           ),
                           _buildToggle(
                             color: _kAnsweredColor,
-                            label: 'Отвечено',
+                            label: analyticsText(
+                              context,
+                              'analytics_answered',
+                              fallback: 'Answered',
+                            ),
                             isActive: _showAnswered,
                             onTap: () =>
                                 setState(() => _showAnswered = !_showAnswered),
                           ),
                           _buildToggle(
                             color: _kSuccessfulColor,
-                            label: 'Успешные',
+                            label: analyticsText(
+                              context,
+                              'successful',
+                              fallback: 'Successful',
+                            ),
                             isActive: _showSuccessful,
                             onTap: () => setState(
                                 () => _showSuccessful = !_showSuccessful),
@@ -649,7 +675,11 @@ class _ConnectedAccountsChartState extends State<ConnectedAccountsChart> {
                             SizedBox(
                                 height: ResponsiveHelper(context).smallSpacing),
                             Text(
-                              _error!,
+                              analyticsText(
+                                context,
+                                _error!,
+                                fallback: _error!,
+                              ),
                               style: TextStyle(
                                 color: Color(0xff64748B),
                                 fontSize: responsive.bodyFontSize,
@@ -661,7 +691,13 @@ class _ConnectedAccountsChartState extends State<ConnectedAccountsChart> {
                                 height: ResponsiveHelper(context).smallSpacing),
                             TextButton(
                               onPressed: _loadData,
-                              child: Text('Повторить'),
+                              child: Text(
+                                analyticsText(
+                                  context,
+                                  'retry',
+                                  fallback: 'Retry',
+                                ),
+                              ),
                             ),
                           ],
                         ),
@@ -706,7 +742,7 @@ class _ConnectedAccountsChartState extends State<ConnectedAccountsChart> {
                                       children: [
                                         TextSpan(
                                           text:
-                                              'Всего обращений: ${item.totalChats}\n',
+                                              '${analyticsText(context, 'analytics_total_requests', fallback: 'Total requests')}: ${item.totalChats}\n',
                                           style: TextStyle(
                                             color: _kTotalChatsColor,
                                             fontWeight: FontWeight.w600,
@@ -715,7 +751,8 @@ class _ConnectedAccountsChartState extends State<ConnectedAccountsChart> {
                                           ),
                                         ),
                                         TextSpan(
-                                          text: 'Отвечено: ${item.answered}\n',
+                                          text:
+                                              '${analyticsText(context, 'analytics_answered', fallback: 'Answered')}: ${item.answered}\n',
                                           style: TextStyle(
                                             color: _kAnsweredColor,
                                             fontWeight: FontWeight.w600,
@@ -725,7 +762,7 @@ class _ConnectedAccountsChartState extends State<ConnectedAccountsChart> {
                                         ),
                                         TextSpan(
                                           text:
-                                              'Успешные лиды: ${item.successfulLeads}\n',
+                                              '${analyticsText(context, 'analytics_successful_leads', fallback: 'Successful leads')}: ${item.successfulLeads}\n',
                                           style: TextStyle(
                                             color: _kSuccessfulColor,
                                             fontWeight: FontWeight.w600,
@@ -734,7 +771,8 @@ class _ConnectedAccountsChartState extends State<ConnectedAccountsChart> {
                                           ),
                                         ),
                                         TextSpan(
-                                          text: 'Холодные: ${item.coldLeads}',
+                                          text:
+                                              '${analyticsText(context, 'analytics_cold_leads', fallback: 'Cold leads')}: ${item.coldLeads}',
                                           style: TextStyle(
                                             color: const Color(0xff64748B),
                                             fontWeight: FontWeight.w600,
@@ -759,7 +797,11 @@ class _ConnectedAccountsChartState extends State<ConnectedAccountsChart> {
                               titlesData: FlTitlesData(
                                 leftTitles: AxisTitles(
                                   axisNameWidget: Text(
-                                    'Количество',
+                                    analyticsText(
+                                      context,
+                                      'quantity',
+                                      fallback: 'Quantity',
+                                    ),
                                     style: TextStyle(
                                       fontSize: responsive.xSmallFontSize,
                                       color: Color(0xff94A3B8),
@@ -841,18 +883,30 @@ class _ConnectedAccountsChartState extends State<ConnectedAccountsChart> {
                 children: [
                   _footerStat(
                     responsive,
-                    'Всего чатов',
+                    analyticsText(
+                      context,
+                      'analytics_total_chats',
+                      fallback: 'Total chats',
+                    ),
                     '${_data!.totals.totalChats}',
                   ),
                   _footerStat(
                     responsive,
-                    'Отвечено',
+                    analyticsText(
+                      context,
+                      'analytics_answered',
+                      fallback: 'Answered',
+                    ),
                     '${_data!.totals.answered}',
                     color: _kAnsweredColor,
                   ),
                   _footerStat(
                     responsive,
-                    'Успешных',
+                    analyticsText(
+                      context,
+                      'analytics_successful_leads',
+                      fallback: 'Successful leads',
+                    ),
                     '${_data!.totals.successfulLeads}',
                     color: _kSuccessfulColor,
                   ),
