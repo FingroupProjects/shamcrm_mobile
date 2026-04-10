@@ -4,11 +4,9 @@ import android.content.Context
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
-import io.flutter.plugin.common.EventChannel
 import org.linphone.core.Account
 import org.linphone.core.AccountParams
 import org.linphone.core.AVPFMode
-import org.linphone.core.AudioDevice
 import org.linphone.core.Call
 import org.linphone.core.CallParams
 import org.linphone.core.Core
@@ -28,7 +26,7 @@ class NativeSipManager(
 
     private val mainHandler = Handler(Looper.getMainLooper())
 
-    private var eventSink: EventChannel.EventSink? = null
+    private var eventListener: ((HashMap<String, Any?>) -> Unit)? = null
     private var core: Core? = null
     private var coreListener: CoreListenerStub? = null
     private var currentAccount: Account? = null
@@ -36,8 +34,8 @@ class NativeSipManager(
     private var isSpeakerOn = false
     private var currentDomain: String = ""
 
-    fun setEventSink(eventSink: EventChannel.EventSink?) {
-        this.eventSink = eventSink
+    fun setEventListener(listener: ((HashMap<String, Any?>) -> Unit)?) {
+        eventListener = listener
     }
 
     fun initialize(): Boolean {
@@ -402,7 +400,7 @@ class NativeSipManager(
     private fun emit(type: String, payload: HashMap<String, Any?>) {
         payload["type"] = type
         mainHandler.post {
-            eventSink?.success(payload)
+            eventListener?.invoke(payload)
         }
     }
 

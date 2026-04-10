@@ -6,7 +6,6 @@ import 'package:crm_task_manager/screens/profile/languages/app_localizations.dar
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_webrtc/flutter_webrtc.dart';
 
 import 'sip_service.dart';
 import 'sip_state.dart';
@@ -57,6 +56,7 @@ class _SipScreenState extends State<SipScreen>
   @override
   void initState() {
     super.initState();
+    _sipService.setSipScreenVisible(true);
     _pulseController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1600),
@@ -75,6 +75,7 @@ class _SipScreenState extends State<SipScreen>
 
   Future<void> _initializeSip() async {
     await _sipService.initialize();
+    await _sipService.prepareSipRuntimePermissions();
     final state = _sipService.state;
 
     _serverController.text = state.server;
@@ -91,6 +92,7 @@ class _SipScreenState extends State<SipScreen>
 
   @override
   void dispose() {
+    _sipService.setSipScreenVisible(false);
     _callDurationTimer?.cancel();
     _pulseController.dispose();
     unawaited(_callFeedbackPlayer.stop());
@@ -1115,8 +1117,6 @@ class _SipScreenState extends State<SipScreen>
   Widget _activeCallView(BuildContext context, SipUiState state) {
     final accent = _callAccent(state.callStatus);
     final target = _displayIdentity(state);
-    final showVideo = state.transport == SipTransportUi.ws &&
-        _sipService.remoteRenderer.srcObject != null;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 10),
@@ -1142,11 +1142,7 @@ class _SipScreenState extends State<SipScreen>
                           accent: accent,
                         ),
                         const SizedBox(height: 20),
-                        if (state.callStatus == SipCallUiStatus.inCall &&
-                            showVideo)
-                          _callVideoCard(context)
-                        else
-                          _soundIndicatorCard(state, accent),
+                        _soundIndicatorCard(state, accent),
                         const SizedBox(height: 20),
                         _callControlPanel(context, state, accent),
                       ],
@@ -1432,25 +1428,6 @@ class _SipScreenState extends State<SipScreen>
     );
   }
 
-  Widget _callVideoCard(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF0F172A).withValues(alpha: 0.06),
-            blurRadius: 18,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
-      child: _videoPreview(context),
-    );
-  }
-
   Widget _callControlPanel(
     BuildContext context,
     SipUiState state,
@@ -1656,60 +1633,6 @@ class _SipScreenState extends State<SipScreen>
               ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _videoPreview(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-
-    return Container(
-      height: 150,
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: Colors.black,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: Stack(
-        children: [
-          Positioned.fill(
-            child: _sipService.renderersReady &&
-                    _sipService.remoteRenderer.srcObject != null
-                ? RTCVideoView(
-                    _sipService.remoteRenderer,
-                    objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
-                  )
-                : Center(
-                    child: Text(
-                      l10n.translate('sip_no_remote_video'),
-                      style: const TextStyle(color: Colors.white70),
-                    ),
-                  ),
-          ),
-          Positioned(
-            right: 10,
-            bottom: 10,
-            width: 76,
-            height: 102,
-            child: Container(
-              clipBehavior: Clip.antiAlias,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(10),
-                color: Colors.black54,
-              ),
-              child: _sipService.renderersReady &&
-                      _sipService.localRenderer.srcObject != null
-                  ? RTCVideoView(
-                      _sipService.localRenderer,
-                      mirror: true,
-                      objectFit:
-                          RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
-                    )
-                  : const SizedBox.shrink(),
-            ),
-          ),
-        ],
       ),
     );
   }

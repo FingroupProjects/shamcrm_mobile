@@ -12,7 +12,10 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.os.PowerManager
+import android.provider.Settings
 import android.util.Log
+import android.view.WindowManager
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.enableEdgeToEdge
 import androidx.core.content.FileProvider
@@ -52,7 +55,6 @@ class MainActivity : FlutterFragmentActivity() {
     private val connectivityManager by lazy {
         getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
     }
-    private lateinit var nativeSipManager: NativeSipManager
     private lateinit var appUpdateManager: AppUpdateManager
     private var updateListenerRegistered = false
     
@@ -155,13 +157,14 @@ class MainActivity : FlutterFragmentActivity() {
         
         Log.d("MainActivity", "=== onCreate ===")
         appUpdateManager = AppUpdateManagerFactory.create(this)
-        nativeSipManager = NativeSipManager(applicationContext)
+        NativeSipBridge.initialize(applicationContext)
 
         if (Build.VERSION.SDK_INT >= 35) {
             enableEdgeToEdge()
         }
         
         handleWidgetIntent(intent)
+        updateIncomingCallWindowMode(intent)
         
         val screenIdentifier = intent?.getStringExtra("screen_identifier")
         if (!screenIdentifier.isNullOrEmpty()) {
@@ -275,7 +278,7 @@ class MainActivity : FlutterFragmentActivity() {
         nativeSipMethodChannel?.setMethodCallHandler { call, result ->
             when (call.method) {
                 "initialize" -> {
-                    result.success(nativeSipManager.initialize())
+                    result.success(true)
                 }
                 "register" -> {
                     val server = call.argument<String>("server")
@@ -294,7 +297,7 @@ class MainActivity : FlutterFragmentActivity() {
                         result.error("INVALID_ARGS", "Missing native SIP registration args", null)
                     } else {
                         result.success(
-                            nativeSipManager.register(
+                            NativeSipBridge.register(
                                 server = server,
                                 login = login,
                                 password = password,
@@ -306,30 +309,38 @@ class MainActivity : FlutterFragmentActivity() {
                     }
                 }
                 "unregister" -> {
-                    nativeSipManager.unregister()
+                    NativeSipBridge.unregister()
                     result.success(true)
+                }
+                "getStateSnapshot" -> {
+                    result.success(NativeSipBridge.getStateSnapshot())
+                }
+                "restoreRegistrationIfNeeded" -> {
+                    result.success(NativeSipBridge.restoreRegistrationIfNeeded())
                 }
                 "makeCall" -> {
                     val target = call.argument<String>("target")
                     if (target.isNullOrBlank()) {
                         result.error("INVALID_TARGET", "Target is empty", null)
                     } else {
-                        result.success(nativeSipManager.makeCall(target))
+                        result.success(NativeSipBridge.makeCall(target))
                     }
                 }
-                "acceptCall" -> result.success(nativeSipManager.acceptCall())
-                "declineCall" -> result.success(nativeSipManager.declineCall())
-                "hangup" -> result.success(nativeSipManager.hangup())
+                "acceptCall" -> result.success(NativeSipBridge.acceptCall())
+                "declineCall" -> result.success(NativeSipBridge.declineCall())
+                "hangup" -> result.success(NativeSipBridge.hangup())
                 "setMuted" -> {
                     val muted = call.argument<Boolean>("muted") ?: false
-                    result.success(nativeSipManager.setMuted(muted))
+                    result.success(NativeSipBridge.setMuted(muted))
                 }
                 "setSpeaker" -> {
                     val speakerOn = call.argument<Boolean>("speakerOn") ?: false
-                    result.success(nativeSipManager.setSpeaker(speakerOn))
+                    result.success(NativeSipBridge.setSpeaker(speakerOn))
+                }
+                "requestBackgroundReliabilitySettings" -> {
+                    result.success(requestBackgroundReliabilitySettings())
                 }
                 "dispose" -> {
-                    nativeSipManager.dispose()
                     result.success(true)
                 }
                 else -> result.notImplemented()
@@ -344,7 +355,7 @@ class MainActivity : FlutterFragmentActivity() {
         nativeSipEventChannel?.setStreamHandler(object : EventChannel.StreamHandler {
             override fun onListen(arguments: Any?, events: EventChannel.EventSink?) {
                 nativeSipEventSink = events
-                nativeSipManager.setEventSink(object : EventChannel.EventSink {
+                NativeSipBridge.setFlutterEventSink(object : EventChannel.EventSink {
                     override fun success(event: Any?) {
                         handler.post {
                             nativeSipEventSink?.success(event)
@@ -367,7 +378,7 @@ class MainActivity : FlutterFragmentActivity() {
 
             override fun onCancel(arguments: Any?) {
                 nativeSipEventSink = null
-                nativeSipManager.setEventSink(null)
+                NativeSipBridge.setFlutterEventSink(null)
             }
         })
         
@@ -379,6 +390,7 @@ class MainActivity : FlutterFragmentActivity() {
         
         setIntent(intent)
         handleWidgetIntent(intent)
+        updateIncomingCallWindowMode(intent)
         
         val screenIdentifier = intent.getStringExtra("screen_identifier")
         if (!screenIdentifier.isNullOrEmpty()) {
@@ -390,18 +402,17 @@ class MainActivity : FlutterFragmentActivity() {
     
     override fun onDestroy() {
         unregisterInstallStateListener()
-        nativeSipManager.dispose()
         super.onDestroy()
         stopNetworkMonitoring()
     }
 
     override fun onResume() {
         super.onResume()
-        nativeSipManager.onAppForeground()
+        NativeSipBridge.onAppForeground()
     }
 
     override fun onPause() {
-        nativeSipManager.onAppBackground()
+        NativeSipBridge.onAppBackground()
         super.onPause()
     }
 
@@ -426,6 +437,62 @@ class MainActivity : FlutterFragmentActivity() {
             Log.d("MainActivity", "✅ Network monitoring stopped")
         } catch (e: Exception) {
             Log.e("MainActivity", "❌ Failed to stop network monitoring: ${e.message}")
+        }
+    }
+
+    private fun requestBackgroundReliabilitySettings(): Boolean {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
+            return false
+        }
+
+        val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
+        if (powerManager.isIgnoringBatteryOptimizations(packageName)) {
+            return false
+        }
+
+        return try {
+            startActivity(
+                Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS).apply {
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+            )
+            true
+        } catch (error: Throwable) {
+            Log.e(
+                "MainActivity",
+                "Failed to open background reliability settings: ${error.message}",
+                error,
+            )
+            false
+        }
+    }
+
+    private fun updateIncomingCallWindowMode(intent: Intent?) {
+        val shouldWakeForCall = intent?.getBooleanExtra("open_sip_call", false) == true
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
+            setShowWhenLocked(shouldWakeForCall)
+            setTurnScreenOn(shouldWakeForCall)
+        } else {
+            if (shouldWakeForCall) {
+                window.addFlags(
+                    WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or
+                        WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON or
+                        WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON,
+                )
+            } else {
+                window.clearFlags(
+                    WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or
+                        WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON or
+                        WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON,
+                )
+            }
+        }
+
+        if (shouldWakeForCall) {
+            window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        } else {
+            window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         }
     }
     

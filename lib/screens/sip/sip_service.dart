@@ -14,7 +14,9 @@ import 'sip_state.dart';
 class SipService extends ChangeNotifier
     with WidgetsBindingObserver
     implements SipUaHelperListener {
-  SipService();
+  SipService._internal();
+  static final SipService _instance = SipService._internal();
+  factory SipService() => _instance;
 
   static const FlutterSecureStorage _storage = FlutterSecureStorage();
 
@@ -24,6 +26,9 @@ class SipService extends ChangeNotifier
   static const String _sipIdKey = 'sip_target_sip_id';
   static const String _transportKey = 'sip_transport';
   static const String _portKey = 'sip_port';
+  static const String _enabledKey = 'sip_enabled';
+  static const String _backgroundReliabilityPromptedKey =
+      'sip_background_reliability_prompted';
   static const MethodChannel _nativeSipMethodChannel =
       MethodChannel('com.shamcrm/native_sip/methods');
   static const EventChannel _nativeSipEventChannel =
@@ -41,7 +46,10 @@ class SipService extends ChangeNotifier
   bool _initialized = false;
   bool _renderersReady = false;
   bool get renderersReady => _renderersReady;
+  bool _sipScreenVisible = false;
+  bool get isSipScreenVisible => _sipScreenVisible;
   bool _shouldStayConnected = false;
+  bool _persistentSipEnabled = false;
   bool _networkAvailable = true;
   bool _reconnectInProgress = false;
   DateTime? _lastReconnectAttemptAt;
@@ -76,7 +84,9 @@ class SipService extends ChangeNotifier
     final sipId = await _storage.read(key: _sipIdKey) ?? '';
     final transportRaw = await _storage.read(key: _transportKey) ?? 'udp';
     final portRaw = await _storage.read(key: _portKey) ?? '5060';
+    final enabledRaw = await _storage.read(key: _enabledKey) ?? 'false';
     final parsedPort = int.tryParse(portRaw) ?? 5060;
+    _persistentSipEnabled = enabledRaw == 'true';
     final transport = switch (transportRaw) {
       'tcp' => SipTransportUi.tcp,
       'udp' => SipTransportUi.udp,
@@ -94,8 +104,10 @@ class SipService extends ChangeNotifier
       clearRemoteIdentity: true,
     );
     await _initializeNativeSipBridge();
+    await _syncNativeSnapshot();
     _startConnectivityMonitoring();
     _startRegistrationWatchdog();
+    unawaited(_restorePersistentConnection());
     notifyListeners();
   }
 
@@ -103,6 +115,30 @@ class SipService extends ChangeNotifier
     return Platform.isAndroid &&
         (_state.transport == SipTransportUi.udp ||
             _state.transport == SipTransportUi.tcp);
+  }
+
+  void setSipScreenVisible(bool visible) {
+    if (_sipScreenVisible == visible) return;
+    _sipScreenVisible = visible;
+    notifyListeners();
+  }
+
+  Future<void> _restorePersistentConnection() async {
+    if (!_persistentSipEnabled || !_hasSipCredentials()) {
+      return;
+    }
+
+    if (_shouldUseNativeSip()) {
+      await _syncNativeSnapshot(restoreIfNeeded: true);
+      final registration = _state.registrationStatus;
+      if (registration == SipRegistrationUiStatus.registered ||
+          registration == SipRegistrationUiStatus.registering) {
+        _shouldStayConnected = true;
+        return;
+      }
+    }
+
+    await connect();
   }
 
   Future<void> _initializeNativeSipBridge() async {
@@ -120,6 +156,25 @@ class SipService extends ChangeNotifier
     } catch (error) {
       debugPrint('SipService native SIP initialize failed: $error');
     }
+  }
+
+  Future<void> _syncNativeSnapshot({bool restoreIfNeeded = false}) async {
+    if (!_shouldUseNativeSip()) {
+      return;
+    }
+
+    if (restoreIfNeeded) {
+      await _invokeNativeSipMethod<bool>('restoreRegistrationIfNeeded');
+    }
+
+    final snapshot = await _invokeNativeSipMethod<Map<dynamic, dynamic>>(
+      'getStateSnapshot',
+    );
+    if (snapshot == null) {
+      return;
+    }
+
+    _applyNativeSnapshot(Map<String, dynamic>.from(snapshot), notify: true);
   }
 
   Future<void> saveDraft({
@@ -158,6 +213,37 @@ class SipService extends ChangeNotifier
     notifyListeners();
   }
 
+  Future<void> prepareSipRuntimePermissions() async {
+    if (!Platform.isAndroid) {
+      return;
+    }
+
+    try {
+      await Permission.notification.request();
+    } catch (_) {}
+
+    try {
+      await Permission.microphone.request();
+    } catch (_) {}
+
+    if (_shouldUseNativeSip()) {
+      final prompted =
+          await _storage.read(key: _backgroundReliabilityPromptedKey);
+      if (prompted != 'true') {
+        final opened = await _invokeNativeSipMethod<bool>(
+              'requestBackgroundReliabilitySettings',
+            ) ??
+            false;
+        if (opened) {
+          await _storage.write(
+            key: _backgroundReliabilityPromptedKey,
+            value: 'true',
+          );
+        }
+      }
+    }
+  }
+
   Future<void> connect() async {
     if (!_hasSipCredentials()) {
       _setError('SIP config is incomplete. Fill server, login and password.');
@@ -175,7 +261,13 @@ class SipService extends ChangeNotifier
       return;
     }
 
+    if (_shouldUseNativeSip()) {
+      await Permission.notification.request();
+    }
+
     _shouldStayConnected = true;
+    _persistentSipEnabled = true;
+    await _storage.write(key: _enabledKey, value: 'true');
     _logSipConfig('connect');
     await _startSipRegistration();
   }
@@ -248,6 +340,8 @@ class SipService extends ChangeNotifier
 
   Future<void> disconnect() async {
     _shouldStayConnected = false;
+    _persistentSipEnabled = false;
+    await _storage.write(key: _enabledKey, value: 'false');
     _cancelReconnect();
     _stopKeepAlive();
 
@@ -372,33 +466,19 @@ class SipService extends ChangeNotifier
     final call = _activeCall;
     if (call == null) return;
 
-    final remoteHasVideo = call.remote_has_video;
-    final granted =
-        await _ensureMediaPermissions(includeCamera: remoteHasVideo);
+    final granted = await _ensureMediaPermissions(includeCamera: false);
     if (!granted) {
-      _setError(remoteHasVideo
-          ? 'Camera and microphone permissions are required.'
-          : 'Microphone permission is required.');
+      _setError('Microphone permission is required.');
       return;
     }
 
     final mediaConstraints = <String, dynamic>{
       'audio': true,
-      'video': remoteHasVideo
-          ? <String, dynamic>{
-              'mandatory': <String, dynamic>{
-                'minWidth': '640',
-                'minHeight': '480',
-                'minFrameRate': '30',
-              },
-              'facingMode': 'user',
-              'optional': <dynamic>[],
-            }
-          : false,
+      'video': false,
     };
 
     final stream = await navigator.mediaDevices.getUserMedia(mediaConstraints);
-    call.answer(_helper.buildCallOptions(!remoteHasVideo), mediaStream: stream);
+    call.answer(_helper.buildCallOptions(true), mediaStream: stream);
 
     _state = _state.copyWith(
       callStatus: SipCallUiStatus.inCall,
@@ -577,6 +657,67 @@ class SipService extends ChangeNotifier
     }
   }
 
+  void _applyNativeSnapshot(
+    Map<String, dynamic> snapshot, {
+    bool notify = false,
+  }) {
+    _persistentSipEnabled = snapshot['persistentEnabled'] == true;
+
+    final registrationState =
+        snapshot['registrationState']?.toString() ?? 'disconnected';
+    final callState = snapshot['callState']?.toString() ?? 'idle';
+    final remoteIdentity = snapshot['remoteIdentity']?.toString();
+    final message = snapshot['message']?.toString();
+    final muted = snapshot['muted'] as bool? ?? false;
+    final speakerOn = snapshot['speakerOn'] as bool? ?? false;
+
+    final mappedRegistration = switch (registrationState) {
+      'registering' => SipRegistrationUiStatus.registering,
+      'registered' => SipRegistrationUiStatus.registered,
+      'failed' => SipRegistrationUiStatus.failed,
+      _ => SipRegistrationUiStatus.disconnected,
+    };
+
+    final mappedCall = switch (callState) {
+      'incoming' => SipCallUiStatus.incoming,
+      'calling' => SipCallUiStatus.calling,
+      'ringing' => SipCallUiStatus.ringing,
+      'in_call' => SipCallUiStatus.inCall,
+      'ended' => SipCallUiStatus.ended,
+      'failed' => SipCallUiStatus.failed,
+      _ => SipCallUiStatus.idle,
+    };
+
+    if (mappedCall == SipCallUiStatus.inCall) {
+      _currentCallStartedAt ??= DateTime.now();
+    } else if (mappedCall == SipCallUiStatus.idle ||
+        mappedCall == SipCallUiStatus.ended ||
+        mappedCall == SipCallUiStatus.failed) {
+      _currentCallStartedAt = null;
+    }
+
+    if (_persistentSipEnabled &&
+        (mappedRegistration == SipRegistrationUiStatus.registered ||
+            mappedRegistration == SipRegistrationUiStatus.registering)) {
+      _shouldStayConnected = true;
+    }
+
+    _state = _state.copyWith(
+      registrationStatus: mappedRegistration,
+      callStatus: mappedCall,
+      errorMessage: message,
+      remoteIdentity: remoteIdentity,
+      isMuted: muted,
+      isSpeakerOn: speakerOn,
+      clearRemoteIdentity:
+          remoteIdentity == null || remoteIdentity.trim().isEmpty,
+    );
+
+    if (notify) {
+      notifyListeners();
+    }
+  }
+
   void _handleNativeRegistrationEvent(Map<String, dynamic> payload) {
     final nativeState = payload['state']?.toString() ?? 'disconnected';
     final message = payload['message']?.toString();
@@ -592,6 +733,9 @@ class SipService extends ChangeNotifier
         );
         break;
       case 'registered':
+        _persistentSipEnabled = true;
+        _shouldStayConnected = true;
+        unawaited(_storage.write(key: _enabledKey, value: 'true'));
         _state = _state.copyWith(
           registrationStatus: SipRegistrationUiStatus.registered,
           clearError: true,
@@ -1160,7 +1304,6 @@ class SipService extends ChangeNotifier
     _registrationWatchdogTimer?.cancel();
     _connectivitySubscription?.cancel();
     _nativeSipEventsSubscription?.cancel();
-    _nativeSipMethodChannel.invokeMethod('dispose').catchError((_) {});
     _releaseStreams();
 
     localRenderer.dispose();
@@ -1173,6 +1316,7 @@ class SipService extends ChangeNotifier
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (!_shouldStayConnected) return;
     if (state == AppLifecycleState.resumed) {
+      unawaited(_syncNativeSnapshot());
       _checkAndRecoverRegistration('app-resumed');
     }
   }

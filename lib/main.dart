@@ -136,6 +136,8 @@ import 'package:crm_task_manager/screens/auth/auth_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/profile/languages/local_manager_lang.dart';
 import 'package:crm_task_manager/screens/profile/profile_screen.dart';
+import 'package:crm_task_manager/screens/sip/sip_call_overlay_host.dart';
+import 'package:crm_task_manager/screens/sip/sip_service.dart';
 import 'package:crm_task_manager/update_dialog.dart';
 import 'package:crm_task_manager/widgets/native_internet_aware_wrapper_WITH_GAME.dart';
 import 'package:crm_task_manager/widgets/native_internet_monitor_simple.dart';
@@ -487,7 +489,7 @@ Future<void> _clearAllApplicationData(
 class ErrorApp extends StatelessWidget {
   final String error;
 
-  const ErrorApp({Key? key, required this.error}) : super(key: key);
+  const ErrorApp({super.key, required this.error});
 
   @override
   Widget build(BuildContext context) {
@@ -549,6 +551,7 @@ class MyApp extends StatefulWidget {
   final bool sessionValid;
 
   const MyApp({
+    super.key,
     required this.apiService,
     required this.authService,
     required this.isDomainChecked,
@@ -565,7 +568,7 @@ class MyApp extends StatefulWidget {
   }
 
   @override
-  _MyAppState createState() => _MyAppState();
+  State<MyApp> createState() => _MyAppState();
 }
 
 class _MyAppState extends State<MyApp> {
@@ -590,6 +593,9 @@ class _MyAppState extends State<MyApp> {
 
     WidgetService.initialize();
     await NativeInternetMonitor().initialize();
+    if (widget.sessionValid) {
+      unawaited(SipService().initialize());
+    }
     _initializeDeferredStartup();
   }
 
@@ -868,16 +874,17 @@ class _MyAppState extends State<MyApp> {
         },
         // ✅ ДОБАВЬТЕ/РАСКОММЕНТИРУЙТЕ builder
         builder: (context, child) {
-          return Stack(
-            children: [
-              NativeInternetAwareWrapper(
-                // ← НОВОЕ ИМЯ
-                child: child ?? const SizedBox.shrink(),
-              ),
-              const InAppUpdateCornerIndicator(),
-              // HTTP Inspector FAB (только в DEBUG режиме)
-              if (kDebugMode) const HttpInspectorFab(),
-            ],
+          return SipCallOverlayHost(
+            child: Stack(
+              children: [
+                NativeInternetAwareWrapper(
+                  // ← НОВОЕ ИМЯ
+                  child: child ?? const SizedBox.shrink(),
+                ),
+                const InAppUpdateCornerIndicator(),
+                if (kDebugMode) const HttpInspectorFab(),
+              ],
+            ),
           );
         },
         home: Builder(
