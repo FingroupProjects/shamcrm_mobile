@@ -14,6 +14,9 @@ class NativeSipBootReceiver : BroadcastReceiver() {
             Intent.ACTION_LOCKED_BOOT_COMPLETED -> {
                 if (NativeSipBridge.isPersistentEnabled()) {
                     NativeSipForegroundService.start(context.applicationContext)
+                    // WorkManager как резервный механизм — надёжнее AlarmManager
+                    // на Xiaomi/HyperOS. JobScheduler (под WorkManager) системный API.
+                    SipKeepAliveWorker.schedule(context.applicationContext)
                 }
             }
         }

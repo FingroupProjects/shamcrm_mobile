@@ -30,6 +30,14 @@ object NativeSipBridge {
     private const val KEY_AUTH_USER = "auth_user"
     private const val KEY_ENABLED = "enabled"
 
+    // Отдельный НЕЗАШИФРОВАННЫЙ файл только для флага enabled.
+    // isPersistentEnabled() ДОЛЖЕН читать отсюда, а не из PREFS_NAME!
+    // Причина: PREFS_NAME использует EncryptedSharedPreferences — ключи
+    // в нём зашифрованы и нечитаемы через обычный getSharedPreferences().
+    // Если читать из неправильного файла — всегда возвращается false,
+    // и сервис НИКОГДА не перезапускается после гибели процесса.
+    private const val PLAIN_FLAGS_PREFS = "native_sip_bridge_flags"
+
     private val bridgeObservers = linkedSetOf<(HashMap<String, Any?>) -> Unit>()
     private val mainHandler = Handler(Looper.getMainLooper())
 
@@ -59,7 +67,38 @@ object NativeSipBridge {
     fun initialize(context: Context) {
         if (appContext == null) {
             appContext = context.applicationContext
+            // Однократная миграция: если у пользователя уже был включён SIP
+            // до этого обновления — перенесём флаг в новый plain-файл.
+            migrateEnabledFlagIfNeeded()
             currentSnapshot["persistentEnabled"] = isPersistentEnabled()
+        }
+    }
+
+    /**
+     * Читает KEY_ENABLED из EncryptedSharedPreferences (старый способ хранения)
+     * и при необходимости зеркалит его в PLAIN_FLAGS_PREFS.
+     * Вызывается один раз при первой инициализации после обновления.
+     */
+    private fun migrateEnabledFlagIfNeeded() {
+        try {
+            val plainPrefs = appContext
+                ?.getSharedPreferences(PLAIN_FLAGS_PREFS, Context.MODE_PRIVATE)
+                ?: return
+
+            // Уже мигрировано — выходим
+            if (plainPrefs.contains(KEY_ENABLED)) return
+
+            // Пробуем прочитать из EncryptedSharedPreferences
+            val encryptedEnabled = getPrefs()?.getBoolean(KEY_ENABLED, false) ?: false
+            if (encryptedEnabled) {
+                plainPrefs.edit().putBoolean(KEY_ENABLED, true).apply()
+                Log.d(TAG, "Migrated SIP enabled=true flag to plain prefs")
+            } else {
+                // Записываем false чтобы пометить миграцию как выполненную
+                plainPrefs.edit().putBoolean(KEY_ENABLED, false).apply()
+            }
+        } catch (error: Throwable) {
+            Log.w(TAG, "SIP enabled flag migration failed (non-critical): ${error.message}")
         }
     }
 
@@ -113,6 +152,9 @@ object NativeSipBridge {
 
         if (success) {
             startRuntimeServiceIfPossible("register")
+            // Запускаем WorkManager как резервный механизм перезапуска.
+            // WorkManager (JobScheduler) надёжнее AlarmManager на Xiaomi HyperOS.
+            SipKeepAliveWorker.schedule(context)
         }
 
         return success
@@ -158,6 +200,7 @@ object NativeSipBridge {
         currentSnapshot["remoteIdentity"] = null
         currentSnapshot["muted"] = false
         currentSnapshot["speakerOn"] = false
+        SipKeepAliveWorker.cancel(context)
         NativeSipForegroundService.stop(context)
     }
 
@@ -201,7 +244,11 @@ object NativeSipBridge {
     }
 
     fun isPersistentEnabled(): Boolean {
-        val prefs = appContext?.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        // ✅ ИСПРАВЛЕНИЕ: читаем из PLAIN_FLAGS_PREFS (незашифрованный).
+        // Старый код читал из PREFS_NAME который является EncryptedSharedPreferences —
+        // там все ключи зашифрованы и через getSharedPreferences() не читаются.
+        // Из-за этого метод ВСЕГДА возвращал false → сервис никогда не перезапускался.
+        val prefs = appContext?.getSharedPreferences(PLAIN_FLAGS_PREFS, Context.MODE_PRIVATE)
         return prefs?.getBoolean(KEY_ENABLED, false) == true
     }
 
@@ -301,12 +348,32 @@ object NativeSipBridge {
             putBoolean(KEY_ENABLED, config.enabled)
         }?.apply()
 
+        // Зеркалим флаг в незашифрованные prefs для isPersistentEnabled().
+        // Encrypted prefs нечитаемы через обычный getSharedPreferences().
+        writePlainFlag(config.enabled)
         currentSnapshot["persistentEnabled"] = config.enabled
     }
 
     private fun updateEnabled(enabled: Boolean) {
         getPrefs()?.edit()?.putBoolean(KEY_ENABLED, enabled)?.apply()
+        writePlainFlag(enabled)
         currentSnapshot["persistentEnabled"] = enabled
+    }
+
+    /**
+     * Записывает флаг enabled в отдельный НЕЗАШИФРОВАННЫЙ файл.
+     * Это единственный способ надёжно прочитать его из boot receiver,
+     * alarm receiver и других мест где EncryptedSharedPreferences может
+     * быть недоступен (устройство заблокировано, холодный старт).
+     */
+    private fun writePlainFlag(enabled: Boolean) {
+        try {
+            appContext
+                ?.getSharedPreferences(PLAIN_FLAGS_PREFS, Context.MODE_PRIVATE)
+                ?.edit()
+                ?.putBoolean(KEY_ENABLED, enabled)
+                ?.apply()
+        } catch (_: Throwable) {}
     }
 
     private fun getPrefs(): SharedPreferences? {

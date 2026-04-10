@@ -241,7 +241,17 @@ class SipService extends ChangeNotifier
           );
         }
       }
+      // Дополнительно предлагаем Xiaomi AutoStart настройки
+      // (Poco X6 Pro HyperOS 2 без AutoStart убивает фоновые сервисы)
+      await openXiaomiSettings();
     }
+  }
+
+  /// Открывает настройки AutoStart для Xiaomi/HyperOS.
+  /// Возвращает true если экран был открыт, false если не Xiaomi устройство.
+  Future<bool> openXiaomiSettings() async {
+    if (!Platform.isAndroid) return false;
+    return await _invokeNativeSipMethod<bool>('openXiaomiSettings') ?? false;
   }
 
   Future<void> connect() async {

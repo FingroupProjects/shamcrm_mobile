@@ -10,6 +10,7 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.os.IBinder
+import android.os.PowerManager
 import android.os.SystemClock
 import android.util.Log
 import androidx.core.app.NotificationCompat
@@ -61,11 +62,34 @@ class NativeSipForegroundService : Service() {
                     context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
                 val pendingIntent = restartPendingIntent(context)
                 val triggerAt = SystemClock.elapsedRealtime() + delayMs
-                alarmManager.setAndAllowWhileIdle(
-                    AlarmManager.ELAPSED_REALTIME_WAKEUP,
-                    triggerAt,
-                    pendingIntent,
-                )
+
+                // На Android 12+ (API 31) нужен setExactAndAllowWhileIdle + разрешение
+                // SCHEDULE_EXACT_ALARM или USE_EXACT_ALARM. Без этого Xiaomi HyperOS
+                // полностью игнорирует setAndAllowWhileIdle при убитом приложении.
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    if (alarmManager.canScheduleExactAlarms()) {
+                        alarmManager.setExactAndAllowWhileIdle(
+                            AlarmManager.ELAPSED_REALTIME_WAKEUP,
+                            triggerAt,
+                            pendingIntent,
+                        )
+                        Log.d(TAG, "Scheduled exact SIP service restart in ${delayMs}ms")
+                    } else {
+                        // Нет точного разрешения — используем неточный но хотя бы что-то
+                        alarmManager.setAndAllowWhileIdle(
+                            AlarmManager.ELAPSED_REALTIME_WAKEUP,
+                            triggerAt,
+                            pendingIntent,
+                        )
+                        Log.w(TAG, "canScheduleExactAlarms=false, fallback to setAndAllowWhileIdle")
+                    }
+                } else {
+                    alarmManager.setExactAndAllowWhileIdle(
+                        AlarmManager.ELAPSED_REALTIME_WAKEUP,
+                        triggerAt,
+                        pendingIntent,
+                    )
+                }
             } catch (error: Throwable) {
                 Log.e(TAG, "Failed to schedule SIP service restart: ${error.message}", error)
             }
@@ -133,6 +157,9 @@ class NativeSipForegroundService : Service() {
                 explicitStopRequested = false
                 cancelScheduledRestart(applicationContext)
                 NativeSipBridge.restoreRegistrationIfNeeded(startService = false)
+                // Подтверждаем WorkManager задачу при каждом старте сервиса.
+                // Система иногда вычищает WorkManager задачи — переподтверждаем.
+                SipKeepAliveWorker.schedule(applicationContext)
             }
             NativeSipActionReceiver.ACTION_ANSWER -> NativeSipBridge.acceptCall()
             NativeSipActionReceiver.ACTION_DECLINE -> NativeSipBridge.declineCall()
@@ -145,6 +172,7 @@ class NativeSipForegroundService : Service() {
     }
 
     override fun onDestroy() {
+        releaseIncomingCallWakeLock()
         stopForeground(STOP_FOREGROUND_REMOVE)
         NativeSipBridge.removeObserver(bridgeObserver)
         notificationManager.cancel(NOTIFICATION_CALL_ID)
@@ -166,14 +194,50 @@ class NativeSipForegroundService : Service() {
     private fun handleBridgeEvent(event: HashMap<String, Any?>) {
         if (event["type"]?.toString() == "call") {
             when (event["state"]?.toString()) {
-                "incoming" -> showIncomingCallNotification(event)
+                "incoming" -> {
+                    acquireIncomingCallWakeLock()
+                    showIncomingCallNotification(event)
+                }
                 "calling", "ringing", "in_call", "ended", "failed", "idle" -> {
+                    releaseIncomingCallWakeLock()
                     notificationManager.cancel(NOTIFICATION_CALL_ID)
                 }
             }
         }
 
         updateServiceNotification()
+    }
+
+    // WakeLock — держим CPU/экран живым при входящем звонке в фоне
+    private var incomingCallWakeLock: PowerManager.WakeLock? = null
+
+    private fun acquireIncomingCallWakeLock() {
+        try {
+            if (incomingCallWakeLock?.isHeld == true) return
+            val pm = getSystemService(Context.POWER_SERVICE) as PowerManager
+            @Suppress("DEPRECATION")
+            incomingCallWakeLock = pm.newWakeLock(
+                PowerManager.FULL_WAKE_LOCK or
+                    PowerManager.ACQUIRE_CAUSES_WAKEUP or
+                    PowerManager.ON_AFTER_RELEASE,
+                "shamcrm:incoming_sip_call",
+            ).also {
+                it.acquire(60_000L) // 60 секунд максимум — после этого освобождается автоматически
+            }
+            Log.d(TAG, "WakeLock acquired for incoming SIP call")
+        } catch (error: Throwable) {
+            Log.e(TAG, "Failed to acquire WakeLock: ${error.message}", error)
+        }
+    }
+
+    private fun releaseIncomingCallWakeLock() {
+        try {
+            if (incomingCallWakeLock?.isHeld == true) {
+                incomingCallWakeLock?.release()
+                Log.d(TAG, "WakeLock released")
+            }
+            incomingCallWakeLock = null
+        } catch (_: Throwable) {}
     }
 
     private fun updateServiceNotification() {
@@ -246,8 +310,8 @@ class NativeSipForegroundService : Service() {
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setOngoing(true)
             .setAutoCancel(false)
-            .setFullScreenIntent(mainActivityPendingIntent(openCall = true), true)
-            .setContentIntent(mainActivityPendingIntent(openCall = true))
+            .setFullScreenIntent(incomingCallActivityPendingIntent(event), true)
+            .setContentIntent(incomingCallActivityPendingIntent(event))
             .addAction(
                 R.mipmap.ic_launcher,
                 "Отклонить",
@@ -262,6 +326,18 @@ class NativeSipForegroundService : Service() {
 
         try {
             notificationManager.notify(NOTIFICATION_CALL_ID, notification)
+            
+            // 🔥 ПРИНУДИТЕЛЬНЫЙ ЗАПУСК АКТИВНОСТИ 🔥
+            // FullScreenIntent полагается на решение системы (на Xiaomi часто игнорируется).
+            // Прямой вызов startActivity намного агрессивнее и срабатывает почти всегда,
+            // особенно если есть разрешение "Отображать всплывающие окна".
+            val intent = Intent(this, IncomingCallActivity::class.java).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                putExtra(IncomingCallActivity.EXTRA_CALLER_NAME, remoteIdentity)
+            }
+            startActivity(intent)
+            Log.d(TAG, "Forced startActivity for IncomingCallActivity")
+            
         } catch (error: Throwable) {
             Log.e(TAG, "showIncomingCallNotification failed: ${error.message}", error)
         }
@@ -276,6 +352,21 @@ class NativeSipForegroundService : Service() {
         return PendingIntent.getActivity(
             this,
             if (openCall) 1002 else 1001,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+    }
+
+    private fun incomingCallActivityPendingIntent(event: HashMap<String, Any?>): PendingIntent {
+        val remoteIdentity = formatIdentity(event["remoteIdentity"]?.toString())
+        val intent = Intent(this, IncomingCallActivity::class.java).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+            putExtra(IncomingCallActivity.EXTRA_CALLER_NAME, remoteIdentity)
+        }
+
+        return PendingIntent.getActivity(
+            this,
+            1003,
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
@@ -305,15 +396,27 @@ class NativeSipForegroundService : Service() {
             NotificationManager.IMPORTANCE_LOW,
         ).apply {
             description = "Постоянное SIP-подключение внутри CRM"
+            setShowBadge(false)
         }
 
+        // Канал для входящих звонков — максимальная важность со звуком, вибрацией
+        // и видимостью на экране блокировки. На Xiaomi HyperOS это критично.
         val callsChannel = NotificationChannel(
             CHANNEL_CALLS_ID,
-            "SHAMCRM SIP Calls",
+            "SHAMCRM SIP Звонки",
             NotificationManager.IMPORTANCE_HIGH,
         ).apply {
             description = "Входящие SIP звонки"
             lockscreenVisibility = Notification.VISIBILITY_PUBLIC
+            enableVibration(true)
+            vibrationPattern = longArrayOf(0, 400, 200, 400, 200, 400)
+            enableLights(true)
+            lightColor = 0xFF2196F3.toInt() // синий
+            setShowBadge(true)
+            setBypassDnd(true)   // Прорываться через режим «Не беспокоить»
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                setAllowBubbles(true)
+            }
         }
 
         notificationManager.createNotificationChannel(runtimeChannel)

@@ -11,6 +11,10 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_PHONE_CALL" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
+    <!-- Точные будильники для перезапуска SIP-сервиса на Android 12+ (Xiaomi HyperOS) -->
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <!-- USE_EXACT_ALARM (Android 13+) — не требует подтверждения пользователем -->
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
 
     <!-- Биометрия -->
     <uses-permission android:name="android.permission.USE_BIOMETRIC" />
@@ -74,10 +78,22 @@
             </intent-filter>
         </activity>
 
+        <activity
+            android:name=".IncomingCallActivity"
+            android:exported="false"
+            android:theme="@style/NormalTheme"
+            android:excludeFromRecents="true"
+            android:launchMode="singleTask"
+            android:showOnLockScreen="true"
+            android:showWhenLocked="true"
+            android:turnScreenOn="true"
+            android:taskAffinity="" />
+
         <service
             android:name=".NativeSipForegroundService"
             android:enabled="true"
             android:exported="false"
+            android:stopWithTask="false"
             android:foregroundServiceType="phoneCall|microphone" />
 
         <receiver

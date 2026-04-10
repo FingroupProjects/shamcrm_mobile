@@ -8,6 +8,7 @@ import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
 import android.net.NetworkRequest
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
@@ -340,6 +341,9 @@ class MainActivity : FlutterFragmentActivity() {
                 "requestBackgroundReliabilitySettings" -> {
                     result.success(requestBackgroundReliabilitySettings())
                 }
+                "openXiaomiSettings" -> {
+                    result.success(openXiaomiAutoStartSettings())
+                }
                 "dispose" -> {
                     result.success(true)
                 }
@@ -447,24 +451,76 @@ class MainActivity : FlutterFragmentActivity() {
 
         val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
         if (powerManager.isIgnoringBatteryOptimizations(packageName)) {
-            return false
+            // Уже исключено — открываем Xiaomi AutoStart настройки
+            return openXiaomiAutoStartSettings()
         }
 
         return try {
-            startActivity(
-                Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS).apply {
-                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                }
-            )
+            // Прямой запрос для нашего приложения — открывает диалог
+            // именно для нашего пакета, а не общий список
+            val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
+                data = Uri.parse("package:$packageName")
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            startActivity(intent)
             true
         } catch (error: Throwable) {
             Log.e(
                 "MainActivity",
-                "Failed to open background reliability settings: ${error.message}",
+                "Failed to open battery optimization request, fallback to list: ${error.message}",
                 error,
             )
-            false
+            // Если прямой запрос не сработал — открываем общий список
+            try {
+                startActivity(
+                    Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS).apply {
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    }
+                )
+                true
+            } catch (_: Throwable) {
+                false
+            }
         }
+    }
+
+    /**
+     * Открывает Xiaomi/MIUI/HyperOS специфичные настройки AutoStart.
+     * На Xiaomi с HyperOS 2 без AutoStart приложение убивается даже если ForegroundService
+     * правильно настроен. Возвращает true если настройки были открыты.
+     */
+    private fun openXiaomiAutoStartSettings(): Boolean {
+        // Список известных Xiaomi/HyperOS intent-ов для AutoStart (MIUI 8..HyperOS 2)
+        val xiaomiIntents = listOf(
+            // HyperOS 2 / MIUI 14+
+            Triple("com.miui.securitycenter", "com.miui.permcenter.autostart.AutoStartManagementActivity", "HyperOS AutoStart"),
+            // MIUI 12–13
+            Triple("com.miui.securitycenter", "com.miui.powercenter.PowerSettings", "MIUI PowerSettings"),
+            // Старые версии MIUI
+            Triple("com.miui.securitycenter", "com.miui.securitycenter.MainActivity", "MIUI SecurityCenter"),
+            // Xiaomi Security app
+            Triple("com.xiaomi.xmsf", "com.xiaomi.xmsf.push.service.PushServiceSettingsActivity", "Xiaomi Push Settings"),
+        )
+
+        for ((pkg, cls, label) in xiaomiIntents) {
+            try {
+                val intent = Intent().apply {
+                    setClassName(pkg, cls)
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                val resolveInfo = packageManager.resolveActivity(intent, 0)
+                if (resolveInfo != null) {
+                    startActivity(intent)
+                    Log.d("MainActivity", "Opened Xiaomi settings via $label")
+                    return true
+                }
+            } catch (error: Throwable) {
+                Log.d("MainActivity", "Xiaomi intent $label not available: ${error.message}")
+            }
+        }
+
+        Log.d("MainActivity", "Не Xiaomi устройство — Xiaomi настройки недоступны")
+        return false
     }
 
     private fun updateIncomingCallWindowMode(intent: Intent?) {

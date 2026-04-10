@@ -301,10 +301,11 @@ class NativeSipManager(
     }
 
     fun onAppBackground() {
-        try {
-            core?.enterBackground()
-        } catch (_: Throwable) {
-        }
+        // Намеренно NO-OP: у нас всегда работает ForegroundService который держит
+        // Linphone живым. Вызов core.enterBackground() уменьшает частоту iterate()
+        // (обработки SIP-пакетов) — это может привести к пропуску входящих INVITE.
+        // ForegroundService И ЕСТЬ наш "foreground контекст" для Linphone.
+        // core?.enterBackground()  ← УБРАНО намеренно
     }
 
     private fun ensureCore(): Core {
