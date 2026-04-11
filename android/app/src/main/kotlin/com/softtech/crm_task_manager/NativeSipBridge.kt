@@ -53,6 +53,7 @@ object NativeSipBridge {
         "muted" to false,
         "speakerOn" to false,
         "persistentEnabled" to false,
+        "systemAlertWindowGranted" to true,
     )
 
     private fun startRuntimeServiceIfPossible(reason: String) {
@@ -240,7 +241,17 @@ object NativeSipBridge {
 
     fun getStateSnapshot(): HashMap<String, Any?> {
         currentSnapshot["persistentEnabled"] = isPersistentEnabled()
+        currentSnapshot["systemAlertWindowGranted"] = checkSystemAlertWindowPermission()
         return HashMap(currentSnapshot)
+    }
+
+    private fun checkSystemAlertWindowPermission(): Boolean {
+        val context = appContext ?: return true
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            android.provider.Settings.canDrawOverlays(context)
+        } else {
+            true
+        }
     }
 
     fun isPersistentEnabled(): Boolean {

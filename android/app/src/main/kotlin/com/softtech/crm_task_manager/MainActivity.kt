@@ -344,6 +344,15 @@ class MainActivity : FlutterFragmentActivity() {
                 "openXiaomiSettings" -> {
                     result.success(openXiaomiAutoStartSettings())
                 }
+                "checkSystemAlertWindowPermission" -> {
+                    result.success(checkSystemAlertWindowPermission())
+                }
+                "requestSystemAlertWindowPermission" -> {
+                    result.success(requestSystemAlertWindowPermission())
+                }
+                "openXiaomiPopupPermissionSettings" -> {
+                    result.success(openXiaomiPopupPermissionSettings())
+                }
                 "dispose" -> {
                     result.success(true)
                 }
@@ -521,6 +530,70 @@ class MainActivity : FlutterFragmentActivity() {
 
         Log.d("MainActivity", "Не Xiaomi устройство — Xiaomi настройки недоступны")
         return false
+    }
+
+    private fun checkSystemAlertWindowPermission(): Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            Settings.canDrawOverlays(this)
+        } else {
+            true
+        }
+    }
+
+    private fun requestSystemAlertWindowPermission(): Boolean {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            return try {
+                val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION).apply {
+                    data = Uri.parse("package:$packageName")
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                startActivity(intent)
+                true
+            } catch (error: Throwable) {
+                Log.e("MainActivity", "Failed to open overlay settings: ${error.message}")
+                try {
+                    startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION).apply {
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    })
+                    true
+                } catch (_: Throwable) {
+                    false
+                }
+            }
+        }
+        return true
+    }
+
+    /**
+     * Пытается открыть настройки «Отображать всплывающие окна в фоновом режиме» для Xiaomi.
+     * Это КРИТИЧЕСКОЕ разрешение для того, чтобы IncomingCallActivity появлялось
+     * сразу при звонке, если приложение свернуто.
+     */
+    private fun openXiaomiPopupPermissionSettings(): Boolean {
+        try {
+            // Intent для открытия страницы всех разрешений конкретного приложения в MIUI/HyperOS
+            val intent = Intent("miui.intent.action.APP_PERM_EDITOR").apply {
+                setClassName("com.miui.securitycenter", "com.miui.permcenter.permissions.PermissionsEditorActivity")
+                putExtra("extra_pkgname", packageName)
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            startActivity(intent)
+            Log.d("MainActivity", "Opened Xiaomi app permissions editor")
+            return true
+        } catch (error: Throwable) {
+            Log.e("MainActivity", "Failed to open Xiaomi app permissions editor: ${error.message}")
+            // Fallback: пробуем открыть настройки приложения вообще
+            return try {
+                val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                    data = Uri.parse("package:$packageName")
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                startActivity(intent)
+                true
+            } catch (_: Throwable) {
+                false
+            }
+        }
     }
 
     private fun updateIncomingCallWindowMode(intent: Intent?) {

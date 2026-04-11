@@ -310,6 +310,7 @@ class NativeSipForegroundService : Service() {
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setOngoing(true)
             .setAutoCancel(false)
+            .setDefaults(Notification.DEFAULT_ALL) // Включает звук, свет и вибрацию по умолчанию
             .setFullScreenIntent(incomingCallActivityPendingIntent(event), true)
             .setContentIntent(incomingCallActivityPendingIntent(event))
             .addAction(
