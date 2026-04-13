@@ -3,7 +3,6 @@ import 'dart:typed_data';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/screens/auth/pin_setup_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
@@ -11,8 +10,10 @@ import 'package:file_picker/file_picker.dart';
 import 'dart:io';
 
 class QrScannerScreen extends StatefulWidget {
+  const QrScannerScreen({super.key});
+
   @override
-  _QrScannerScreenState createState() => _QrScannerScreenState();
+  State<QrScannerScreen> createState() => _QrScannerScreenState();
 }
 
 class _QrScannerScreenState extends State<QrScannerScreen> {

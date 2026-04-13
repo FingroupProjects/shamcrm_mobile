@@ -2149,7 +2149,7 @@
   "lead_status_changed": "Lid statusi o'zgardi!",
   "close_app": "Ilovani yopish",
   "initialization_error": "Ishga tushirish xatosi",
-  "qr_code_label": "QR Code"
+  "qr_code_label": "QR Code",
   "sip_welcome_title": "SHAMCRM SIP",
   "sip_welcome_subtitle": "SIP akkauntni ulang va CRM ichida zamonaviy qo'ng'iroq interfeysidan foydalaning.",
   "sip_enter_dialer": "SIP ga kirish",

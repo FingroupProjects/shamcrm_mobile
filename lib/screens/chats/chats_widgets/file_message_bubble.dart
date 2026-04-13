@@ -18,7 +18,7 @@ class FileMessageBubble extends StatelessWidget {
   final Function(String)? onReactionTap;
 
   const FileMessageBubble({
-    Key? key,
+    super.key,
     required this.time,
     required this.isSender,
     required this.filePath,
@@ -31,69 +31,66 @@ class FileMessageBubble extends StatelessWidget {
     this.isGroupChat,
     this.reactions = const [],
     this.onReactionTap,
-  }) : super(key: key);
+  });
+
+  String _extractFileExtension() {
+    String candidate = fileName.trim();
+
+    if (!candidate.contains('.') && filePath.trim().isNotEmpty) {
+      candidate = filePath.trim();
+    }
+
+    candidate = candidate.split('?').first.split('#').first;
+    final segments = candidate.split('/');
+    final lastSegment = segments.isNotEmpty ? segments.last : candidate;
+
+    if (!lastSegment.contains('.')) {
+      return 'file';
+    }
+
+    final rawExtension = lastSegment.split('.').last.toLowerCase();
+
+    switch (rawExtension) {
+      case 'jpeg':
+        return 'jpg';
+      case 'docx':
+        return 'docx';
+      case 'xlsx':
+        return 'xls';
+      default:
+        return rawExtension;
+    }
+  }
+
+  String _buildPrimaryIconPath(String fileExtension) {
+    return 'assets/icons/files/$fileExtension.png';
+  }
+
+  String _buildFallbackIconPath(String fileExtension) {
+    switch (fileExtension) {
+      case 'mp3':
+        return 'assets/icons/chats/mp3.png';
+      case 'mp4':
+        return 'assets/icons/chats/mp4.png';
+      case 'webp':
+        return 'assets/icons/chats/webp.png';
+      default:
+        return 'assets/icons/files/file.png';
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    String fileExtension = fileName.split('.').last.toLowerCase();
-    String iconPath;
-
-    switch (fileExtension) {
-      case 'pdf':
-        iconPath = 'assets/icons/chats/pdf.png';
-        break;
-      case 'jpg':
-        iconPath = 'assets/icons/files/jpg.png';
-        break;
-      case 'jpeg':
-        iconPath = 'assets/icons/files/jpg.png';
-        break;
-      case 'png':
-        iconPath = 'assets/icons/chats/jpg-file.png';
-        break;
-      case 'doc':
-        iconPath = 'assets/icons/files/doc.png';
-        break;
-      case 'docx':
-        iconPath = 'assets/icons/files/doc.png';
-        break;
-      case 'pptx':
-        iconPath = 'assets/icons/files/pptx.png';
-        break;
-      case 'ppt':
-        iconPath = 'assets/icons/files/ppt.png';
-        break;
-      case 'document':
-        iconPath = 'assets/icons/chats/doc.png';
-        break;
-      case 'xls':
-        iconPath = 'assets/icons/chats/xls.png';
-        break;
-      case 'xlsx':
-        iconPath = 'assets/icons/chats/xls.png';
-        break;
-      case 'webp':
-        iconPath = 'assets/icons/chats/webp.png';
-        break;
-      case 'svg':
-        iconPath = 'assets/icons/chats/svg-file.png';
-        break;
-      case 'mp4':
-        iconPath = 'assets/icons/chats/mp4.png';
-        break;
-      case 'mp3':
-        iconPath = 'assets/icons/chats/mp3.png';
-        break;
-      default:
-        iconPath = 'assets/icons/files/file.png';
-    }
+    final fileExtension = _extractFileExtension();
+    final iconPath = _buildPrimaryIconPath(fileExtension);
+    final fallbackIconPath = _buildFallbackIconPath(fileExtension);
 
     return DecoratedBox(
       decoration: BoxDecoration(
         boxShadow: isHighlighted
             ? [
                 BoxShadow(
-                  color: Colors.grey.withOpacity(0.3),
+                  color: Colors.grey.withValues(alpha: 0.3),
                   blurRadius: 5,
                   spreadRadius: 2,
                   offset: Offset(0, -4),
@@ -133,7 +130,7 @@ class FileMessageBubble extends StatelessWidget {
                   borderRadius: BorderRadius.circular(10),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
+                      color: Colors.black.withValues(alpha: 0.1),
                       offset: Offset(0, 4),
                       blurRadius: 6,
                     ),
@@ -144,7 +141,25 @@ class FileMessageBubble extends StatelessWidget {
                   crossAxisAlignment:
                       CrossAxisAlignment.center, // Центрируем по вертикали
                   children: [
-                    Image.asset(iconPath, width: 32, height: 32),
+                    Image.asset(
+                      iconPath,
+                      width: 32,
+                      height: 32,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Image.asset(
+                          fallbackIconPath,
+                          width: 32,
+                          height: 32,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Image.asset(
+                              'assets/icons/files/file.png',
+                              width: 32,
+                              height: 32,
+                            );
+                          },
+                        );
+                      },
+                    ),
                     const SizedBox(
                         width: 10), // Add this line to create spacing
 

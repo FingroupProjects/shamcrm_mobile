@@ -191,11 +191,11 @@ void main() async {
     } else {
       await _clearAllApplicationData(apiService, authService);
     }
-
+    
     final initialMessage = await _safeLoadInitialMessage();
     _safeConfigureSystemUi();
     final savedLocale = await _safeLoadLocale();
-
+    
     runApp(MyApp(
       apiService: apiService,
       authService: authService,

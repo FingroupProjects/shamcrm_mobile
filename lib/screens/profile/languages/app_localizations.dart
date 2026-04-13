@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 
 class AppLocalizations {
   static const String _defaultLanguageCode = 'ru';
+  static const List<String> _fallbackLanguageCodes = ['ru', 'en', 'uz'];
   static final Map<String, Map<String, String>> _localeCache = {};
   static final Map<String, String> _russianValueToKey = {};
 
@@ -23,6 +24,9 @@ class AppLocalizations {
   Future<bool> load() async {
     try {
       _localizedStrings = await _loadLocaleMap(locale.languageCode);
+      for (final languageCode in _fallbackLanguageCodes) {
+        await _loadLocaleMap(languageCode);
+      }
 
       if (_russianValueToKey.isEmpty) {
         final russianStrings = await _loadLocaleMap(_defaultLanguageCode);
@@ -60,21 +64,47 @@ class AppLocalizations {
   }
 
   String translate(String keyOrRussianSource) {
-    final directValue = _localizedStrings[keyOrRussianSource];
-    if (directValue != null && directValue.isNotEmpty) {
-      return directValue;
-    }
+    final directValue = _lookupByKey(keyOrRussianSource);
+    if (directValue != null) return directValue;
 
     final normalizedSource = _normalizeLookup(keyOrRussianSource);
     final mappedKey = _russianValueToKey[normalizedSource];
     if (mappedKey != null) {
-      final translatedValue = _localizedStrings[mappedKey];
-      if (translatedValue != null && translatedValue.isNotEmpty) {
-        return translatedValue;
+      final translatedValue = _lookupByKey(mappedKey);
+      if (translatedValue != null) return translatedValue;
+    }
+
+    return _humanizeKey(keyOrRussianSource);
+  }
+
+  String? _lookupByKey(String key) {
+    final directValue = _localizedStrings[key];
+    if (directValue != null && directValue.isNotEmpty) {
+      return directValue;
+    }
+
+    for (final languageCode in _fallbackLanguageCodes) {
+      final fallbackMap = _localeCache[languageCode];
+      if (fallbackMap == null) continue;
+      final fallbackValue = fallbackMap[key];
+      if (fallbackValue != null && fallbackValue.isNotEmpty) {
+        return fallbackValue;
       }
     }
 
-    return keyOrRussianSource;
+    return null;
+  }
+
+  String _humanizeKey(String value) {
+    if (!value.contains('_')) return value;
+
+    final words = value
+        .split('_')
+        .where((part) => part.isNotEmpty)
+        .map((part) => part[0].toUpperCase() + part.substring(1))
+        .join(' ');
+
+    return words.isEmpty ? value : words;
   }
 
   String get dashboard => translate('dashboard');
