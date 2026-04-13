@@ -7,38 +7,42 @@ class DealCache {
   static const String _persistentDealCountsKey = 'persistentDealCounts';
 
   // Save deal statuses to cache, including deals_count
-  static Future<void> cacheDealStatuses(List<Map<String, dynamic>> dealStatuses) async {
-  final SharedPreferences prefs = await SharedPreferences.getInstance();
-  final String encodedStatuses = json.encode(dealStatuses);
-  await prefs.setString(_cachedDealStatusesKey, encodedStatuses);
+  static Future<void> cacheDealStatuses(
+      List<Map<String, dynamic>> dealStatuses) async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    final String encodedStatuses = json.encode(dealStatuses);
+    await prefs.setString(_cachedDealStatusesKey, encodedStatuses);
   }
 
   // Get deal statuses from cache
- static Future<List<Map<String, dynamic>>> getDealStatuses() async {
-  final SharedPreferences prefs = await SharedPreferences.getInstance();
-  final String? cachedStatuses = prefs.getString(_cachedDealStatusesKey);
-  if (cachedStatuses != null) {
-    final List<dynamic> decodedData = json.decode(cachedStatuses);
-    final statuses = decodedData.map((status) => Map<String, dynamic>.from(status)).toList();
-    return statuses;
+  static Future<List<Map<String, dynamic>>> getDealStatuses() async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    final String? cachedStatuses = prefs.getString(_cachedDealStatusesKey);
+    if (cachedStatuses != null) {
+      final List<dynamic> decodedData = json.decode(cachedStatuses);
+      final statuses = decodedData
+          .map((status) => Map<String, dynamic>.from(status))
+          .toList();
+      return statuses;
+    }
+    return [];
   }
-  return [];
-}
 
   // Save deals for a specific status to cache
   static Future<void> cacheDealsForStatus(
-    int? statusId, 
+    int? statusId,
     List<Deal> deals, {
     bool updatePersistentCount = false,
     int? actualTotalCount,
   }) async {
     if (statusId == null) return;
-    
+
     final SharedPreferences prefs = await SharedPreferences.getInstance();
     final String key = 'cachedDeals_$statusId';
-    final String encodedDeals = json.encode(deals.map((deal) => deal.toJson()).toList());
+    final String encodedDeals =
+        json.encode(deals.map((deal) => deal.toJson()).toList());
     await prefs.setString(key, encodedDeals);
-    
+
     // КРИТИЧНО: Обновляем persistent count с РЕАЛЬНЫМ значением из API
     if (updatePersistentCount) {
       final countToSave = actualTotalCount ?? deals.length;
@@ -49,21 +53,22 @@ class DealCache {
   // Get deals for a specific status from cache
   static Future<List<Deal>> getDealsForStatus(int? statusId) async {
     if (statusId == null) return [];
-    
+
     final SharedPreferences prefs = await SharedPreferences.getInstance();
     final String key = 'cachedDeals_$statusId';
     final String? cachedDeals = prefs.getString(key);
 
     if (cachedDeals != null) {
       final List<dynamic> decodedData = json.decode(cachedDeals);
-      final deals = decodedData.map((deal) => Deal.fromJson(deal, statusId)).toList();
+      final deals =
+          decodedData.map((deal) => Deal.fromJson(deal, statusId)).toList();
       return deals;
     }
     return [];
   }
 
   // ======================== PERSISTENT COUNTS ========================
-  
+
   /// Установить постоянный счётчик сделок для статуса
   static Future<void> setPersistentDealCount(int statusId, int count) async {
     final prefs = await SharedPreferences.getInstance();
@@ -71,19 +76,20 @@ class DealCache {
     final Map<String, int> counts = countsJson != null
         ? Map<String, int>.from(json.decode(countsJson))
         : {};
-    
+
     counts[statusId.toString()] = count;
     await prefs.setString(_persistentDealCountsKey, json.encode(counts));
   }
-  
+
   /// Получить постоянный счётчик сделок для статуса
   static Future<int> getPersistentDealCount(int statusId) async {
     final prefs = await SharedPreferences.getInstance();
     final countsJson = prefs.getString(_persistentDealCountsKey);
-    
+
     if (countsJson != null) {
       try {
-        final Map<String, int> counts = Map<String, int>.from(json.decode(countsJson));
+        final Map<String, int> counts =
+            Map<String, int>.from(json.decode(countsJson));
         return counts[statusId.toString()] ?? 0;
       } catch (e) {
         return 0;
@@ -91,12 +97,12 @@ class DealCache {
     }
     return 0;
   }
-  
+
   /// Получить все постоянные счётчики
   static Future<Map<String, int>> getPersistentDealCounts() async {
     final prefs = await SharedPreferences.getInstance();
     final countsJson = prefs.getString(_persistentDealCountsKey);
-    
+
     if (countsJson != null) {
       try {
         return Map<String, int>.from(json.decode(countsJson));
@@ -106,20 +112,41 @@ class DealCache {
     }
     return {};
   }
-  
+
   /// Очистить все постоянные счётчики
   static Future<void> clearPersistentCounts() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_persistentDealCountsKey);
   }
-  
+
   /// Обновить счётчики при перемещении сделки
-  static Future<void> updateDealCountTemporary(int oldStatusId, int newStatusId) async {
+  static Future<void> updateDealCountTemporary(
+      int oldStatusId, int newStatusId) async {
     final oldCount = await getPersistentDealCount(oldStatusId);
     final newCount = await getPersistentDealCount(newStatusId);
-    
+
     await setPersistentDealCount(oldStatusId, oldCount > 0 ? oldCount - 1 : 0);
     await setPersistentDealCount(newStatusId, newCount + 1);
+  }
+
+  static Future<void> incrementDealCount(int statusId) async {
+    final currentCount = await getPersistentDealCount(statusId);
+    await setPersistentDealCount(statusId, currentCount + 1);
+  }
+
+  static Future<void> insertOrUpdateDealForStatus(
+      int statusId, Deal deal) async {
+    final prefs = await SharedPreferences.getInstance();
+    final key = 'cachedDeals_$statusId';
+    final existingDeals = await getDealsForStatus(statusId)
+      ..removeWhere((item) => item.id == deal.id);
+
+    existingDeals.insert(0, Deal.fromJson(deal.toJson(), statusId));
+
+    await prefs.setString(
+      key,
+      json.encode(existingDeals.map((item) => item.toJson()).toList()),
+    );
   }
 
   /// Очистить сделки для конкретного статуса
@@ -133,7 +160,8 @@ class DealCache {
   static Future<void> clearAllDeals() async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
     final keys = prefs.getKeys();
-    final dealKeys = keys.where((key) => key.startsWith('cachedDeals_')).toList();
+    final dealKeys =
+        keys.where((key) => key.startsWith('cachedDeals_')).toList();
     for (var key in dealKeys) {
       await prefs.remove(key);
     }
@@ -151,7 +179,8 @@ class DealCache {
 
     await prefs.remove(_cachedDealStatusesKey);
 
-    final Set<int> statusIds = decodedData.map<int>((status) => status['id']).toSet();
+    final Set<int> statusIds =
+        decodedData.map<int>((status) => status['id']).toSet();
     for (var statusId in statusIds) {
       await prefs.remove('cachedDeals_$statusId');
     }
@@ -162,24 +191,26 @@ class DealCache {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.remove(_cachedDealStatusesKey);
   }
-  
+
   /// РАДИКАЛЬНАЯ очистка ВСЕХ данных
   static Future<void> clearEverything() async {
     final prefs = await SharedPreferences.getInstance();
 
     // Очищаем все ключи, связанные со сделками и статусами сделок.
     final keys = prefs.getKeys();
-    final dealKeys = keys.where((key) =>
-        key == _cachedDealStatusesKey ||
-        key == _persistentDealCountsKey ||
-        key.startsWith('cachedDeals_') ||
-        key.startsWith('cachedDealStatuses_')).toList();
+    final dealKeys = keys
+        .where((key) =>
+            key == _cachedDealStatusesKey ||
+            key == _persistentDealCountsKey ||
+            key.startsWith('cachedDeals_') ||
+            key.startsWith('cachedDealStatuses_'))
+        .toList();
 
     for (var key in dealKeys) {
       await prefs.remove(key);
     }
   }
-  
+
   /// Очистить все данные с сохранением persistent counts
   static Future<void> clearAllData() async {
     await clearDealStatuses();

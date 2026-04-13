@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:crm_task_manager/api/service/api_service.dart';
@@ -26,6 +27,7 @@ import 'package:crm_task_manager/screens/deal/tabBar/deal_status_add.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/profile/profile_screen.dart';
 import 'package:crm_task_manager/utils/TutorialStyleWidget.dart';
+import 'package:dart_pusher_channels/dart_pusher_channels.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -122,6 +124,8 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
   bool _isDealScreenTutorialCompleted = false;
   Map<String, dynamic>? tutorialProgress;
   SalesFunnel? _selectedFunnel;
+  PusherChannelsClient? _dealSocketClient;
+  final List<StreamSubscription<dynamic>> _dealSocketSubscriptions = [];
 
   @override
   void initState() {
@@ -167,6 +171,8 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
             salesFunnelId: _selectedFunnel?.id, forceRefresh: true));
       }
     });
+
+    _setupDealSocket();
   }
 
   Future<void> _onRefresh(int currentStatusId) async {
@@ -536,8 +542,147 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
     }
   }
 
+  Future<void> _setupDealSocket() async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('token');
+    final userId = prefs.getString('unique_id');
+
+    if (token == null || token.isEmpty || userId == null || userId.isEmpty) {
+      debugPrint('DealScreen: socket init skipped, token or userId is missing');
+      return;
+    }
+
+    final enteredDomainMap = await _apiService.getEnteredDomain();
+    final enteredMainDomain = enteredDomainMap['enteredMainDomain'];
+    final enteredDomain = enteredDomainMap['enteredDomain'];
+
+    if (enteredMainDomain == null ||
+        enteredMainDomain.isEmpty ||
+        enteredDomain == null ||
+        enteredDomain.isEmpty) {
+      debugPrint('DealScreen: socket init skipped, domain is missing');
+      return;
+    }
+
+    final customOptions = PusherChannelsOptions.custom(
+      uriResolver: (metadata) =>
+          Uri.parse('wss://soketi.$enteredMainDomain/app/app-key'),
+      metadata: PusherChannelsOptionsMetadata.byDefault(),
+    );
+
+    final socketClient = PusherChannelsClient.websocket(
+      options: customOptions,
+      connectionErrorHandler: (exception, trace, refresh) {
+        debugPrint('DealScreen: socket connection error: $exception');
+        refresh();
+      },
+      minimumReconnectDelayDuration: const Duration(seconds: 1),
+    );
+
+    final presenceChannel = socketClient.presenceChannel(
+      'presence-user.$userId',
+      authorizationDelegate:
+          EndpointAuthorizableChannelTokenAuthorizationDelegate
+              .forPresenceChannel(
+        authorizationEndpoint: Uri.parse(
+          'https://$enteredDomain-back.$enteredMainDomain/broadcasting/auth',
+        ),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'X-Tenant': '$enteredDomain-back',
+        },
+        onAuthFailed: (exception, trace) {
+          debugPrint('DealScreen: socket auth failed: $exception');
+        },
+      ),
+    );
+
+    _dealSocketSubscriptions.add(
+      socketClient.onConnectionEstablished.listen((_) {
+        presenceChannel.subscribeIfNotUnsubscribed();
+      }),
+    );
+
+    _dealSocketSubscriptions.add(
+      presenceChannel.bind('deal.created').listen((event) async {
+        await _handleDealCreatedSocketEvent(event.data);
+      }),
+    );
+
+    _dealSocketClient = socketClient;
+
+    try {
+      await socketClient.connect();
+    } catch (e) {
+      debugPrint('DealScreen: socket connect failed: $e');
+    }
+  }
+
+  Future<void> _handleDealCreatedSocketEvent(dynamic rawData) async {
+    try {
+      final payload = _decodeSocketPayload(rawData);
+      final dealJson = payload['deal'];
+
+      if (dealJson is! Map<String, dynamic>) {
+        debugPrint('DealScreen: invalid deal.created payload: $rawData');
+        return;
+      }
+
+      final dealStatusRaw = dealJson['deal_status'];
+      final dealStatusId = dealStatusRaw is Map<String, dynamic>
+          ? int.tryParse(dealStatusRaw['id']?.toString() ?? '') ?? 0
+          : int.tryParse(dealJson['deal_status_id']?.toString() ?? '') ?? 0;
+
+      if (dealStatusId == 0 || !mounted) {
+        return;
+      }
+
+      final activeStatusId = _tabTitles.isNotEmpty &&
+              _currentTabIndex >= 0 &&
+              _currentTabIndex < _tabTitles.length
+          ? _tabTitles[_currentTabIndex]['id'] as int?
+          : null;
+
+      _dealBloc.add(
+        DealCreatedFromSocket(
+          deal: Deal.fromJson(dealJson, dealStatusId),
+          activeStatusId: activeStatusId,
+          hasActiveFilters: _hasActiveFilters(),
+        ),
+      );
+    } catch (e) {
+      debugPrint('DealScreen: failed to process deal.created: $e');
+    }
+  }
+
+  Map<String, dynamic> _decodeSocketPayload(dynamic rawData) {
+    dynamic decoded = rawData;
+
+    if (decoded is String) {
+      decoded = json.decode(decoded);
+    }
+
+    if (decoded is Map && decoded['data'] is String) {
+      decoded = json.decode(decoded['data'] as String);
+    }
+
+    if (decoded is Map<String, dynamic>) {
+      return decoded;
+    }
+
+    if (decoded is Map) {
+      return decoded.map((key, value) => MapEntry(key.toString(), value));
+    }
+
+    throw const FormatException('Unsupported socket payload');
+  }
+
   @override
   void dispose() {
+    for (final subscription in _dealSocketSubscriptions) {
+      subscription.cancel();
+    }
+    _dealSocketClient?.disconnect();
     _scrollController.dispose();
     _tabController.dispose();
     _searchController.dispose();

@@ -230,6 +230,26 @@ class LeadCache {
     //print('LeadCache: Updated leads_count for statusId: $statusId to $count');
   }
 
+  static Future<void> incrementLeadCount(int statusId) async {
+    final currentCount = await getPersistentLeadCount(statusId);
+    await updateLeadCount(statusId, currentCount + 1);
+  }
+
+  static Future<void> insertOrUpdateLeadForStatus(
+      int statusId, Lead lead) async {
+    final prefs = await SharedPreferences.getInstance();
+    final key = 'cachedLeads_$statusId';
+    final existingLeads = await getLeadsForStatus(statusId)
+      ..removeWhere((item) => item.id == lead.id);
+
+    existingLeads.insert(0, Lead.fromJson(lead.toJson(), statusId));
+
+    await prefs.setString(
+      key,
+      json.encode(existingLeads.map((item) => item.toJson()).toList()),
+    );
+  }
+
   // Кэширование статусов с сохранением постоянных счетчиков
   static Future<void> cacheLeadStatuses(List<LeadStatus> leadStatuses) async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
