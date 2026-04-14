@@ -279,7 +279,18 @@ class CreateWriteOffDocumentScreenState
   }
 
   void _createDocument({bool approve = false}) async {
-    if (!_formKey.currentState!.validate()) return;
+    if (_isLoading) return;
+    setState(() => _isLoading = true);
+
+    void cancelLoading() {
+      if (!mounted || !_isLoading) return;
+      setState(() => _isLoading = false);
+    }
+
+    if (!_formKey.currentState!.validate()) {
+      cancelLoading();
+      return;
+    }
 
     if (_items.isEmpty) {
       _showSnackBar(
@@ -287,6 +298,7 @@ class CreateWriteOffDocumentScreenState
             'Добавьте хотя бы один товар',
         false,
       );
+      cancelLoading();
       return;
     }
 
@@ -296,6 +308,7 @@ class CreateWriteOffDocumentScreenState
             'Выберите склад',
         false,
       );
+      cancelLoading();
       return;
     }
 
@@ -305,6 +318,7 @@ class CreateWriteOffDocumentScreenState
             'Выберите статью',
         false,
       );
+      cancelLoading();
       return;
     }
 
@@ -337,10 +351,9 @@ class CreateWriteOffDocumentScreenState
       );
       // Фокусируемся на первом товаре с ошибкой
       _focusFirstErrorItem();
+      cancelLoading();
       return;
     }
-
-    setState(() => _isLoading = true);
 
     try {
       DateTime? parsedDate = DateFormat('dd/MM/yyyy HH:mm')
@@ -366,7 +379,7 @@ class CreateWriteOffDocumentScreenState
         approve: approve,
       ));
     } catch (e) {
-      setState(() => _isLoading = false);
+      cancelLoading();
       _showSnackBar(
         AppLocalizations.of(context)!.translate('enter_valid_datetime') ??
             'Введите корректную дату и время',

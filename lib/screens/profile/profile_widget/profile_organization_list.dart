@@ -133,7 +133,10 @@ class _OrganizationWidgetState extends State<OrganizationWidget> {
               ),
               child: DropdownButtonFormField<String>(
                 value: selectedOrganization,
-                hint: Text( "",
+                isDense: true,
+                isExpanded: true,
+                hint: const Text(
+                  "",
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
@@ -144,30 +147,42 @@ class _OrganizationWidgetState extends State<OrganizationWidget> {
                 items: dropdownItems,
                 onChanged: widget.onChanged,
                 decoration: InputDecoration(
-                  labelStyle: TextStyle(color: Colors.grey),
+                  isDense: true,
+                  contentPadding: const EdgeInsets.only(
+                    left: 12,
+                    right: 12,
+                    top: 12,
+                    bottom: 12,
+                  ),
+                  labelStyle: const TextStyle(color: Colors.grey),
                   border: OutlineInputBorder(
-                    borderSide: BorderSide(color: Color(0xFFF4F7FD)),
+                    borderSide: const BorderSide(color: Color(0xFFF4F7FD)),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   enabledBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: Color(0xFFF4F7FD)),
+                    borderSide: const BorderSide(color: Color(0xFFF4F7FD)),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   focusedBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: Color(0xFFF4F7FD)),
+                    borderSide: const BorderSide(color: Color(0xFFF4F7FD)),
                     borderRadius: BorderRadius.circular(8),
                   ),
                 ),
                 dropdownColor: Colors.white,
                 icon: Transform.translate(
-                  offset: Offset(4, 0), // Смещение влево на 2 пикселя
-                  child: Transform.rotate(
-                    angle: 90 *
-                        (3.1415926535897932 / 180), // Поворот на 90 градусов
-                    child: Image.asset(
-                      'assets/icons/arrow-right.png',
-                      width: 16,
-                      height: 16,
+                  offset: const Offset(8, 0),
+                  child: SizedBox(
+                    width: 20,
+                    height: 16,
+                    child: Center(
+                      child: Transform.rotate(
+                        angle: 90 * (3.1415926535897932 / 180),
+                        child: Image.asset(
+                          'assets/icons/arrow-right.png',
+                          width: 16,
+                          height: 16,
+                        ),
+                      ),
                     ),
                   ),
                 ),

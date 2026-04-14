@@ -224,7 +224,7 @@ class _ConnectedAccountsChartState extends State<ConnectedAccountsChart> {
 
   Widget _channelIcon(String type) {
     final (IconData icon, Color color) = switch (type) {
-      'whatsapp' => (Icons.chat_bubble, Color(0xff25D366)),
+      'whatsapp' || 'green_api' => (Icons.chat_bubble, Color(0xff25D366)),
       'telegram' || 'telephone' => (Icons.send, Color(0xff0088CC)),
       'instagram' => (Icons.camera_alt, Color(0xffE1306C)),
       'messenger' => (Icons.message, Color(0xff1877F2)),
@@ -239,7 +239,7 @@ class _ConnectedAccountsChartState extends State<ConnectedAccountsChart> {
 
   String _channelLabel(String type) {
     return switch (type) {
-      'whatsapp' => 'WhatsApp',
+      'whatsapp' || 'green_api' => 'WhatsApp',
       'telegram' => 'Telegram',
       'telephone' => 'Телефон',
       'instagram' => 'Instagram',
@@ -697,8 +697,7 @@ class _ConnectedAccountsChartState extends State<ConnectedAccountsChart> {
                                           style: TextStyle(
                                             color: _kTotalChatsColor,
                                             fontWeight: FontWeight.w600,
-                                            fontSize:
-                                                responsive.xSmallFontSize,
+                                            fontSize: responsive.xSmallFontSize,
                                             fontFamily: 'Golos',
                                           ),
                                         ),
@@ -707,8 +706,7 @@ class _ConnectedAccountsChartState extends State<ConnectedAccountsChart> {
                                           style: TextStyle(
                                             color: _kAnsweredColor,
                                             fontWeight: FontWeight.w600,
-                                            fontSize:
-                                                responsive.xSmallFontSize,
+                                            fontSize: responsive.xSmallFontSize,
                                             fontFamily: 'Golos',
                                           ),
                                         ),
@@ -718,8 +716,7 @@ class _ConnectedAccountsChartState extends State<ConnectedAccountsChart> {
                                           style: TextStyle(
                                             color: _kSuccessfulColor,
                                             fontWeight: FontWeight.w600,
-                                            fontSize:
-                                                responsive.xSmallFontSize,
+                                            fontSize: responsive.xSmallFontSize,
                                             fontFamily: 'Golos',
                                           ),
                                         ),
@@ -728,8 +725,7 @@ class _ConnectedAccountsChartState extends State<ConnectedAccountsChart> {
                                           style: TextStyle(
                                             color: const Color(0xff64748B),
                                             fontWeight: FontWeight.w600,
-                                            fontSize:
-                                                responsive.xSmallFontSize,
+                                            fontSize: responsive.xSmallFontSize,
                                             fontFamily: 'Golos',
                                           ),
                                         ),

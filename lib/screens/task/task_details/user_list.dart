@@ -1,10 +1,8 @@
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
-import 'package:crm_task_manager/bloc/user/client/get_all_client_bloc.dart';
 import 'package:crm_task_manager/models/user_data_response.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter/foundation.dart';
 
 class UserMultiSelectWidget extends StatefulWidget {
@@ -32,8 +30,7 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
   final ApiService _apiService = ApiService();
   List<UserData> usersList = [];
   List<UserData> selectedUsersData = [];
-  List<UserData> displayUsersList =
-      []; // Список для отображения, включая "Выбрать всех"
+  bool isLoading = false;
 
   final TextStyle userTextStyle = const TextStyle(
     fontSize: 16,
@@ -52,8 +49,7 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
   @override
   void initState() {
     super.initState();
-    // Debug логи убраны для производительности
-    context.read<GetAllClientBloc>().add(GetAllClientEv());
+    _loadInitialUsers();
   }
 
   // Синхронизация selectedUsersData с widget.selectedUsers
@@ -107,20 +103,59 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
     }
   }
 
-  Future<CustomDropdownPaginatedResponse<UserData>> _searchUsers(
-    String query,
-    int page,
-  ) async {
+  Future<void> _loadInitialUsers() async {
+    setState(() {
+      isLoading = true;
+    });
+
+    try {
+      await _apiService.ensureInitialized();
+      final response = await _apiService.getAllUser(
+        page: 1,
+        perPage: _pageSize,
+      );
+
+      if (!mounted) return;
+
+      final initialUsers = response.result ?? <UserData>[];
+      final initialSelectedUsers = widget.selectedUsers == null
+          ? <UserData>[]
+          : initialUsers
+              .where(
+                (user) => widget.selectedUsers!.contains(user.id.toString()),
+              )
+              .toList();
+
+      setState(() {
+        usersList = initialUsers;
+        selectedUsersData = initialSelectedUsers;
+        isLoading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        usersList = [];
+        selectedUsersData = [];
+        isLoading = false;
+      });
+    }
+  }
+
+  Future<List<UserData>> _searchUsers(String query) async {
     final response = await _apiService.getAllUser(
       search: query,
-      page: page,
+      page: 1,
       perPage: _pageSize,
     );
     final result = response.result ?? <UserData>[];
-    return CustomDropdownPaginatedResponse<UserData>(
-      items: page == 1 ? [selectAllItem, ...result] : result,
-      hasMore: result.length >= _pageSize,
-    );
+
+    if (mounted) {
+      setState(() {
+        usersList = result;
+      });
+    }
+
+    return result;
   }
 
   @override
@@ -154,184 +189,159 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
                   width: 1.5,
-                  color: widget.hasError ? Colors.red : Colors.transparent,
+                  color: (widget.hasError || field.hasError)
+                      ? Colors.red
+                      : Colors.transparent,
                 ),
               ),
-              child: BlocConsumer<GetAllClientBloc, GetAllClientState>(
-                listener: (context, state) {
-                  // Обрабатываем изменения состояния в listener, а не в builder
-                  if (state is GetAllClientSuccess) {
-                    final newUsersList = state.dataUser.result ?? [];
-
-                    // Обновляем состояние только если список пользователей изменился
-                    if (!listEquals(
-                      usersList.map((u) => u.id).toList()..sort(),
-                      newUsersList.map((u) => u.id).toList()..sort(),
-                    )) {
-                      // Синхронизируем выбранных пользователей перед setState
-                      List<UserData> newSelectedUsersData = selectedUsersData;
-                      if (widget.selectedUsers != null &&
-                          newUsersList.isNotEmpty) {
-                        newSelectedUsersData = newUsersList
-                            .where((user) => widget.selectedUsers!
-                                .contains(user.id.toString()))
-                            .toList();
-                      } else if (widget.selectedUsers == null) {
-                        newSelectedUsersData = [];
-                      }
-
-                      setState(() {
-                        usersList = newUsersList;
-                        displayUsersList = [selectAllItem, ...usersList];
-                        selectedUsersData = newSelectedUsersData;
-                      });
-                    }
-                  }
-                },
-                builder: (context, state) {
-                  // В builder только читаем данные, не изменяем состояние
-                  final currentUsersList = usersList;
-
-                  final currentDisplayList = currentUsersList.isNotEmpty
-                      ? [selectAllItem, ...currentUsersList]
-                      : displayUsersList;
-
-                  // Используем selectedUsersData напрямую без синхронизации в build()
-                  // Синхронизация происходит только в listener при изменении данных
-                  return CustomDropdown<UserData>.multiSelectSearchRequestPaginated(
-                    paginatedRequest: _searchUsers,
-                    futureRequestDelay: const Duration(milliseconds: 350),
-                    items: currentDisplayList,
-                    initialItems: selectedUsersData,
-                    searchHintText:
-                        AppLocalizations.of(context)!.translate('search'),
-                    overlayHeight: 400,
-                    decoration: CustomDropdownDecoration(
-                      closedFillColor: const Color(0xffF4F7FD),
-                      expandedFillColor: Colors.white,
-                      closedBorder: Border.all(
-                        color: Colors.transparent,
-                        width: 1,
-                      ),
-                      closedBorderRadius: BorderRadius.circular(12),
-                      expandedBorder: Border.all(
-                        color: const Color(0xFFE5E7EB),
-                        width: 1,
-                      ),
-                      expandedBorderRadius: BorderRadius.circular(12),
-                    ),
-                    listItemBuilder: (context, item, isSelected, onItemSelect) {
-                      // Проверяем, является ли элемент "Выбрать всех"
-                      final isSelectAll = item.id == -1;
-                      final allSelected =
-                          selectedUsersData.length == currentUsersList.length &&
-                              currentUsersList.isNotEmpty;
-
-                      return ListTile(
-                        onTap: () {
-                          if (isSelectAll) {
-                            _toggleSelectAll();
-                          } else {
-                            onItemSelect();
-                          }
-                          WidgetsBinding.instance.addPostFrameCallback((_) {
-                            FocusScope.of(context).unfocus();
-                          });
-                        },
-                        minTileHeight: 1,
-                        minVerticalPadding: 2,
-                        contentPadding: EdgeInsets.zero,
-                        dense: true,
-                        title: Padding(
-                          padding: EdgeInsets.zero,
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Container(
-                                width: 18,
-                                height: 18,
-                                decoration: BoxDecoration(
-                                  border: Border.all(
-                                      color: const Color(0xff1E2E52), width: 1),
-                                  color: isSelectAll
-                                      ? (allSelected
-                                          ? const Color(0xff1E2E52)
-                                          : Colors.transparent)
-                                      : (isSelected
-                                          ? const Color(0xff1E2E52)
-                                          : Colors.transparent),
-                                ),
-                                child: (isSelectAll && allSelected) ||
-                                        (!isSelectAll && isSelected)
-                                    ? const Icon(Icons.check,
-                                        color: Colors.white, size: 16)
-                                    : null,
-                              ),
-                              const SizedBox(width: 10),
-                              Text(
-                                isSelectAll
-                                    ? AppLocalizations.of(context)!
-                                        .translate('select_all')
-                                    : '${item.name} ${item.lastname}',
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w500,
-                                  fontFamily: 'Gilroy',
-                                  color: Color(0xff1E2E52),
-                                ),
-                              ),
-                            ],
-                          ),
+              child: isLoading
+                  ? const Padding(
+                      padding: EdgeInsets.all(12),
+                      child: Center(
+                        child: SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(strokeWidth: 2),
                         ),
-                      );
-                    },
-                    headerListBuilder: (context, hint, enabled) {
-                      String selectedUsersNames = selectedUsersData.isEmpty
-                          ? AppLocalizations.of(context)!
-                              .translate('select_assignees_list')
-                          : selectedUsersData
-                              .map((e) => '${e.name} ${e.lastname}')
-                              .join(', ');
-
-                      return Text(
-                        selectedUsersNames,
-                        style: userTextStyle,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      );
-                    },
-                    hintBuilder: (context, hint, enabled) => Text(
-                      AppLocalizations.of(context)!
-                          .translate('select_assignees_list'),
-                      style: userTextStyle.copyWith(
-                        fontSize: 14,
-                        color: const Color(0xFF6B7280),
                       ),
+                    )
+                  : CustomDropdown<UserData>.multiSelectSearchRequest(
+                      key: ValueKey(
+                        'task-users-${usersList.length}-${selectedUsersData.length}',
+                      ),
+                      futureRequest: _searchUsers,
+                      futureRequestDelay: const Duration(milliseconds: 350),
+                      closeDropDownOnClearFilterSearch: true,
+                      items: usersList.isEmpty
+                          ? const []
+                          : [selectAllItem, ...usersList],
+                      initialItems: selectedUsersData,
+                      searchHintText:
+                          AppLocalizations.of(context)!.translate('search'),
+                      overlayHeight: 400,
+                      decoration: CustomDropdownDecoration(
+                        closedFillColor: const Color(0xffF4F7FD),
+                        expandedFillColor: Colors.white,
+                        closedBorder: Border.all(
+                          color: Colors.transparent,
+                          width: 1,
+                        ),
+                        closedBorderRadius: BorderRadius.circular(12),
+                        expandedBorder: Border.all(
+                          color: const Color(0xFFE5E7EB),
+                          width: 1,
+                        ),
+                        expandedBorderRadius: BorderRadius.circular(12),
+                      ),
+                      listItemBuilder: (context, item, isSelected, onItemSelect) {
+                        final isSelectAll = item.id == -1;
+                        final allSelected =
+                            selectedUsersData.length == usersList.length &&
+                                usersList.isNotEmpty;
+
+                        return ListTile(
+                          onTap: () {
+                            if (isSelectAll) {
+                              _toggleSelectAll();
+                            } else {
+                              onItemSelect();
+                            }
+                            WidgetsBinding.instance.addPostFrameCallback((_) {
+                              FocusScope.of(context).unfocus();
+                            });
+                          },
+                          minTileHeight: 1,
+                          minVerticalPadding: 2,
+                          contentPadding: EdgeInsets.zero,
+                          dense: true,
+                          title: Padding(
+                            padding: EdgeInsets.zero,
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Container(
+                                  width: 18,
+                                  height: 18,
+                                  decoration: BoxDecoration(
+                                    border: Border.all(
+                                      color: const Color(0xff1E2E52),
+                                      width: 1,
+                                    ),
+                                    color: isSelectAll
+                                        ? (allSelected
+                                            ? const Color(0xff1E2E52)
+                                            : Colors.transparent)
+                                        : (isSelected
+                                            ? const Color(0xff1E2E52)
+                                            : Colors.transparent),
+                                  ),
+                                  child: (isSelectAll && allSelected) ||
+                                          (!isSelectAll && isSelected)
+                                      ? const Icon(
+                                          Icons.check,
+                                          color: Colors.white,
+                                          size: 16,
+                                        )
+                                      : null,
+                                ),
+                                const SizedBox(width: 10),
+                                Text(
+                                  isSelectAll
+                                      ? AppLocalizations.of(context)!
+                                          .translate('select_all')
+                                      : '${item.name} ${item.lastname}',
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w500,
+                                    fontFamily: 'Gilroy',
+                                    color: Color(0xff1E2E52),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                      headerListBuilder: (context, hint, enabled) {
+                        final selectedUsersNames = selectedUsersData.isEmpty
+                            ? AppLocalizations.of(context)!
+                                .translate('select_assignees_list')
+                            : selectedUsersData
+                                .map((e) => '${e.name} ${e.lastname}')
+                                .join(', ');
+
+                        return Text(
+                          selectedUsersNames,
+                          style: userTextStyle,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        );
+                      },
+                      hintBuilder: (context, hint, enabled) => Text(
+                        AppLocalizations.of(context)!
+                            .translate('select_assignees_list'),
+                        style: userTextStyle.copyWith(
+                          fontSize: 14,
+                          color: const Color(0xFF6B7280),
+                        ),
+                      ),
+                      onListChanged: (values) {
+                        final filteredValues =
+                            values.where((user) => user.id != -1).toList();
+                        final currentIds =
+                            selectedUsersData.map((u) => u.id).toList()..sort();
+                        final newIds =
+                            filteredValues.map((u) => u.id).toList()..sort();
+
+                        if (!listEquals(currentIds, newIds)) {
+                          setState(() {
+                            selectedUsersData = filteredValues;
+                          });
+                          widget.onSelectUsers(filteredValues);
+                          field.didChange(filteredValues);
+                        }
+                      },
                     ),
-                    onListChanged: (values) {
-                      // Фильтруем фиктивный элемент "Выбрать всех" из выбранных
-                      final filteredValues =
-                          values.where((user) => user.id != -1).toList();
-
-                      // Проверяем, изменились ли выбранные пользователи
-                      final currentIds =
-                          selectedUsersData.map((u) => u.id).toList()..sort();
-                      final newIds = filteredValues.map((u) => u.id).toList()
-                        ..sort();
-
-                      // Вызываем callback ТОЛЬКО если данные реально изменились
-                      if (!listEquals(currentIds, newIds)) {
-                        setState(() {
-                          selectedUsersData = filteredValues;
-                        });
-                        // Вызываем callback только после обновления состояния
-                        widget.onSelectUsers(filteredValues);
-                        field.didChange(filteredValues);
-                      }
-                    },
-                  );
-                },
-              ),
             ),
             if (field.hasError)
               Padding(

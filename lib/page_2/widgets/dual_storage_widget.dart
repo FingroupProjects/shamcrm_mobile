@@ -14,6 +14,10 @@ class DualStorageWidget extends StatefulWidget {
   final Function(String?) onRecipientChanged;
   final bool hasSenderError;
   final bool hasRecipientError;
+  final String? senderLabel;
+  final String? senderHint;
+  final String? recipientLabel;
+  final String? recipientHint;
 
   const DualStorageWidget({
     Key? key,
@@ -23,6 +27,10 @@ class DualStorageWidget extends StatefulWidget {
     required this.onRecipientChanged,
     this.hasSenderError = false,
     this.hasRecipientError = false,
+    this.senderLabel,
+    this.senderHint,
+    this.recipientLabel,
+    this.recipientHint,
   }) : super(key: key);
 
   @override
@@ -141,9 +149,11 @@ class _DualStorageWidgetState extends State<DualStorageWidget> {
             children: [
               // Склад отправитель
               _buildStorageField(
-                label: localizations.translate('sender_storage') ??
+                label: widget.senderLabel ??
+                    localizations.translate('sender_storage') ??
                     'Склад отправитель',
-                hint: localizations.translate('select_sender_storage') ??
+                hint: widget.senderHint ??
+                    localizations.translate('select_sender_storage') ??
                     'Выберите склад отправитель',
                 selectedStorage: selectedSenderStorageData,
                 state: state,
@@ -164,9 +174,11 @@ class _DualStorageWidgetState extends State<DualStorageWidget> {
 
               // Склад получатель
               _buildStorageField(
-                label: localizations.translate('recipient_storage') ??
+                label: widget.recipientLabel ??
+                    localizations.translate('recipient_storage') ??
                     'Склад получатель',
-                hint: localizations.translate('select_recipient_storage') ??
+                hint: widget.recipientHint ??
+                    localizations.translate('select_recipient_storage') ??
                     'Выберите склад получатель',
                 selectedStorage: selectedRecipientStorageData,
                 state: state,

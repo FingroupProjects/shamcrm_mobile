@@ -43,17 +43,26 @@ class Deal {
                 (status) => DealStatus.fromJson(status as Map<String, dynamic>))
             .toList() ??
         [];
-    final primaryStatus = parsedDealStatuses.isNotEmpty
-        ? parsedDealStatuses.first
-        : (json['deal_status'] != null
-            ? DealStatus.fromJson(json['deal_status'] as Map<String, dynamic>)
-            : null);
+    final statusFromDealStatus = json['deal_status'] != null
+        ? DealStatus.fromJson(json['deal_status'] as Map<String, dynamic>)
+        : null;
+    final matchingStatuses = dealStatusId > 0
+        ? parsedDealStatuses.where((status) => status.id == dealStatusId).toList()
+        : const <DealStatus>[];
+    final statusMatchingRequestedColumn = dealStatusId > 0
+        ? (matchingStatuses.isNotEmpty ? matchingStatuses.first : null)
+        : null;
+    final primaryStatus = statusMatchingRequestedColumn ??
+        statusFromDealStatus ??
+        (parsedDealStatuses.isNotEmpty ? parsedDealStatuses.first : null);
     final parsedStatusId = json['deal_status_id'] is int
         ? json['deal_status_id'] as int
         : int.tryParse(json['deal_status_id']?.toString() ?? '') ??
             (json['status_id'] is int
                 ? json['status_id'] as int
                 : int.tryParse(json['status_id']?.toString() ?? '')) ??
+            statusMatchingRequestedColumn?.id ??
+            statusFromDealStatus?.id ??
             primaryStatus?.id ??
             dealStatusId;
 

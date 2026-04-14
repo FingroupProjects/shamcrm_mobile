@@ -23,6 +23,7 @@ class OperatorMultiSelectWidget extends StatefulWidget {
 }
 
 class _OperatorMultiSelectWidgetState extends State<OperatorMultiSelectWidget> {
+  late final OperatorBloc _operatorBloc;
   List<Operator> operatorsList = [];
   List<Operator> selectedOperatorsData = [];
   String? errorMessage;
@@ -30,13 +31,19 @@ class _OperatorMultiSelectWidgetState extends State<OperatorMultiSelectWidget> {
   @override
   void initState() {
     super.initState();
-    context.read<OperatorBloc>().add(FetchOperators());
+    _operatorBloc = OperatorBloc(ApiService())..add(FetchOperators());
+  }
+
+  @override
+  void dispose() {
+    _operatorBloc.close();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (context) => OperatorBloc(ApiService()),
+    return BlocProvider.value(
+      value: _operatorBloc,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

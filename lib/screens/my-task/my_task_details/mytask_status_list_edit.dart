@@ -161,6 +161,19 @@ class _MyTaskStatusEditWidgetState extends State<MyTaskStatusEditWidget> {
                       },
                     ),
                   ),
+                  if (widget.isSubmitted && selectedStatusData == null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4, left: 12),
+                      child: Text(
+                        AppLocalizations.of(context)!
+                            .translate('field_required'),
+                        style: const TextStyle(
+                          color: Colors.red,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w400,
+                        ),
+                      ),
+                    ),
                 ],
               );
             }

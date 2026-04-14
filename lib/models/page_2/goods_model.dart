@@ -168,7 +168,8 @@ class Measurement {
       id: json['id'] as int? ?? 0,
       goodId: json['good_id'] as int? ?? 0,
       unitId: json['unit_id'] as int? ?? 0,
-      amount: parsedAmount, // ИСПРАВЛЕНО: используем безопасно распарсенное значение
+      amount:
+          parsedAmount, // ИСПРАВЛЕНО: используем безопасно распарсенное значение
       unit: json['unit'] != null
           ? Unit.fromJson(json['unit'] as Map<String, dynamic>)
           : null,
@@ -203,6 +204,8 @@ class Goods {
   final List<Measurement>? measurements;
   final Unit? unit; // Добавляем поле unit для AddGoodsScreen и EditGoodsScreen
   final bool? isService;
+  final String? productionType;
+  final List<MaterialGood>? materialGoods;
 
   Goods({
     required this.id,
@@ -231,11 +234,14 @@ class Goods {
     this.measurements,
     this.unit,
     this.isService,
+    this.productionType,
+    this.materialGoods,
   });
 
   factory Goods.fromJson(Map<String, dynamic> json) {
     try {
-      final Map<String, dynamic> data = json.containsKey('good') ? json['good'] : json;
+      final Map<String, dynamic> data =
+          json.containsKey('good') ? json['good'] : json;
 
       int? quantity;
       if (data['quantity'] != null) {
@@ -271,7 +277,9 @@ class Goods {
 
       List<Discount>? discounts;
       if (json['discount'] != null && json['discount'] is List) {
-        discounts = (json['discount'] as List).map((d) => Discount.fromJson(d)).toList();
+        discounts = (json['discount'] as List)
+            .map((d) => Discount.fromJson(d))
+            .toList();
         if (discounts.isNotEmpty && discountPrice != null) {
           final now = DateTime.now();
           for (var discount in discounts) {
@@ -308,10 +316,11 @@ class Goods {
         }
       }
 
-
       List<Unit>? units;
       if (data['units'] != null && data['units'] is List) {
-        units = (data['units'] as List).map((u) => Unit.fromJson(u as Map<String, dynamic>)).toList();
+        units = (data['units'] as List)
+            .map((u) => Unit.fromJson(u as Map<String, dynamic>))
+            .toList();
       }
 
       List<Measurement>? measurements;
@@ -319,6 +328,13 @@ class Goods {
         measurements = (data['measurements'] as List)
             .where((m) => m['unit'] != null) // Фильтруем элементы с null unit
             .map((m) => Measurement.fromJson(m as Map<String, dynamic>))
+            .toList();
+      }
+
+      List<MaterialGood>? materialGoods;
+      if (data['material_goods'] != null && data['material_goods'] is List) {
+        materialGoods = (data['material_goods'] as List)
+            .map((m) => MaterialGood.fromJson(m as Map<String, dynamic>))
             .toList();
       }
 
@@ -332,7 +348,9 @@ class Goods {
         files = (data['files'] as List<dynamic>).map((f) {
           return GoodsFile.fromJson(f as Map<String, dynamic>);
         }).toList();
-      } else if (json.containsKey('good') && json['good'] is Map && (json['good'] as Map)['files'] != null) {
+      } else if (json.containsKey('good') &&
+          json['good'] is Map &&
+          (json['good'] as Map)['files'] != null) {
         final goodData = json['good'] as Map<String, dynamic>;
         if (goodData['files'] is List) {
           files = (goodData['files'] as List<dynamic>).map((f) {
@@ -357,10 +375,12 @@ class Goods {
         isActive: isActive,
         isService: isService,
         files: files,
-        attributes: (json['attribute_values'] as List<dynamic>?)?.map((attr) {
+        attributes: ((json['attribute_values'] as List<dynamic>?) ??
+                (data['attributes'] as List<dynamic>?) ??
+                const [])
+            .map((attr) {
           return GoodsAttribute.fromJson(attr as Map<String, dynamic>);
-        }).toList() ??
-            [],
+        }).toList(),
         variants: (json['variants'] as List<dynamic>?)?.map((v) {
           return GoodsVariant.fromJson(v as Map<String, dynamic>);
         }).toList(),
@@ -376,8 +396,11 @@ class Goods {
         article: data['article'] as String?,
         units: units,
         measurements: measurements,
-        unit: data['unit'] != null ? Unit.fromJson(data['unit']) : null, // Инициализируем поле unit
-
+        unit: data['unit'] != null
+            ? Unit.fromJson(data['unit'])
+            : null, // Инициализируем поле unit
+        productionType: data['production_type'] as String?,
+        materialGoods: materialGoods,
       );
     } catch (e, stackTrace) {
       //print('GoodsModel: Ошибка парсинга товара: $e');
@@ -391,12 +414,13 @@ class Goods {
     // Ищем главное изображение
     try {
       final mainFile = files.firstWhere(
-            (file) => file.isMain,
+        (file) => file.isMain,
         orElse: () => files.first,
       );
 
       // Проверяем, является ли путь уже полным URL
-      if (mainFile.path.startsWith('http://') || mainFile.path.startsWith('https://')) {
+      if (mainFile.path.startsWith('http://') ||
+          mainFile.path.startsWith('https://')) {
         return mainFile.path;
       }
 
@@ -409,6 +433,87 @@ class Goods {
   }
 }
 
+class MaterialGoodPivot {
+  final int? producedGoodId;
+  final int? materialGoodId;
+  final num? norm;
+
+  MaterialGoodPivot({
+    this.producedGoodId,
+    this.materialGoodId,
+    this.norm,
+  });
+
+  factory MaterialGoodPivot.fromJson(Map<String, dynamic> json) {
+    return MaterialGoodPivot(
+      producedGoodId: Unit._parseInt(json['produced_good_id']),
+      materialGoodId: Unit._parseInt(json['material_good_id']),
+      norm: Unit._parseNum(json['norm']),
+    );
+  }
+}
+
+class MaterialGood {
+  final int id;
+  final int? goodId;
+  final String? fullName;
+  final Goods? good;
+  final VariantPrice? price;
+  final MaterialGoodPivot? pivot;
+
+  MaterialGood({
+    required this.id,
+    this.goodId,
+    this.fullName,
+    this.good,
+    this.price,
+    this.pivot,
+  });
+
+  factory MaterialGood.fromJson(Map<String, dynamic> json) {
+    final parsedGood = json['good'] != null
+        ? Goods.fromJson(json['good'] as Map<String, dynamic>)
+        : null;
+    final variantId = Unit._parseInt(json['variant_id']);
+    final parsedPrice = json['price'] != null
+        ? (json['price'] is Map<String, dynamic>
+            ? VariantPrice.fromJson(json['price'] as Map<String, dynamic>)
+            : VariantPrice(
+                id: 0,
+                variantId: variantId ?? 0,
+                price: Unit._parseNum(json['price'])?.toDouble() ?? 0,
+              ))
+        : null;
+    final parsedPivot = json['pivot'] != null
+        ? MaterialGoodPivot.fromJson(json['pivot'] as Map<String, dynamic>)
+        : (json['norm'] != null
+            ? MaterialGoodPivot(
+                producedGoodId: Unit._parseInt(json['produced_good_id']),
+                materialGoodId: Unit._parseInt(json['material_good_id']) ??
+                    Unit._parseInt(json['good_id']) ??
+                    parsedGood?.id,
+                norm: Unit._parseNum(json['norm']),
+              )
+            : null);
+
+    return MaterialGood(
+      id: Unit._parseInt(json['id']) ?? variantId ?? 0,
+      goodId: Unit._parseInt(json['good_id']) ?? parsedGood?.id,
+      fullName: json['full_name'] as String? ?? json['name'] as String?,
+      good: parsedGood,
+      price: parsedPrice,
+      pivot: parsedPivot,
+    );
+  }
+
+  String get displayName => fullName ?? good?.name ?? '';
+
+  Unit? get displayUnit {
+    if (good?.unit != null) return good?.unit;
+    if (good?.units?.isNotEmpty == true) return good!.units!.first;
+    return null;
+  }
+}
 
 class GoodsFile {
   final int id;
@@ -455,16 +560,24 @@ class GoodsAttribute {
       attributeName =
           json['category_attribute']['attribute']['name'] as String? ??
               'Неизвестная характеристика';
+    } else if (json['attribute'] != null &&
+        json['attribute'] is Map<String, dynamic> &&
+        json['attribute']['attribute'] != null) {
+      attributeName = json['attribute']['attribute']['name'] as String? ??
+          'Неизвестная характеристика';
     } else {
       attributeName = 'Неизвестная характеристика';
     }
 
     return GoodsAttribute(
-      id: json['attribute_id'] as int? ?? 0,
+      id: json['attribute_id'] as int? ??
+          (json['attribute']?['attribute']?['id'] as int?) ??
+          0,
       name: attributeName,
       value: json['value'] as String? ?? '',
-      isIndividual:
-      json['category_attribute']?['is_individual'] as bool? ?? false,
+      isIndividual: json['category_attribute']?['is_individual'] as bool? ??
+          json['attribute']?['is_individual'] as bool? ??
+          false,
       images: (json['images'] as List<dynamic>?)?.cast<String>(),
     );
   }
@@ -490,11 +603,10 @@ class GoodsVariant {
   });
 
   factory GoodsVariant.fromJson(Map<String, dynamic> json) {
-    final attributeValues =
-        (json['attributes'] as List<dynamic>?)?.map((v) {
+    final attributeValues = (json['attributes'] as List<dynamic>?)?.map((v) {
           return AttributeValue.fromJson(v as Map<String, dynamic>);
         }).toList() ??
-            [];
+        [];
 
     return GoodsVariant(
       id: json['id'] as int? ?? 0,
@@ -505,14 +617,14 @@ class GoodsVariant {
       //     json['price'] != null ? VariantPrice.fromJson(json['price']) : null,
       price: json['price'] != null
           ? (json['price'] is String
-          ? json['price'] as String
-          : (json['price'] is num
-          ? (json['price'] as num).toString()
-          : '0'))
+              ? json['price'] as String
+              : (json['price'] is num
+                  ? (json['price'] as num).toString()
+                  : '0'))
           : '0',
       files: (json['files'] as List<dynamic>?)?.map((f) {
-        return GoodsFile.fromJson(f as Map<String, dynamic>);
-      }).toList() ??
+            return GoodsFile.fromJson(f as Map<String, dynamic>);
+          }).toList() ??
           [],
     );
   }
@@ -544,7 +656,7 @@ class AttributeValue {
       files: (json['files'] as List<dynamic>?)?.cast<String>(),
       categoryAttribute: json['category_attribute'] != null
           ? CategoryAttribute.fromJson(
-          json['category_attribute'] as Map<String, dynamic>)
+              json['category_attribute'] as Map<String, dynamic>)
           : null,
     );
   }

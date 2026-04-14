@@ -90,7 +90,7 @@ Future<void> showDealStatusBottomSheet(
   isInitializing = false;
 
   if (context.mounted) {
-    showModalBottomSheet(
+    await showModalBottomSheet(
       context: context,
       backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(

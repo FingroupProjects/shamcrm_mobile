@@ -13,8 +13,16 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.enableEdgeToEdge
 import androidx.core.content.FileProvider
+import com.google.android.play.core.appupdate.AppUpdateManager
+import com.google.android.play.core.appupdate.AppUpdateManagerFactory
+import com.google.android.play.core.appupdate.AppUpdateOptions
+import com.google.android.play.core.install.InstallStateUpdatedListener
+import com.google.android.play.core.install.model.AppUpdateType
+import com.google.android.play.core.install.model.InstallStatus
+import com.google.android.play.core.install.model.UpdateAvailability
 import io.flutter.embedding.android.FlutterFragmentActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.EventChannel
@@ -25,18 +33,60 @@ class MainActivity : FlutterFragmentActivity() {
     
     private val CHANNEL = "com.softtech.crm_task_manager/widget"
     private val NETWORK_EVENT_CHANNEL = "com.shamcrm/network_status"
+    private val IN_APP_UPDATE_METHOD_CHANNEL = "com.shamcrm/in_app_update/methods"
+    private val IN_APP_UPDATE_EVENT_CHANNEL = "com.shamcrm/in_app_update/events"
     
     private var methodChannel: MethodChannel? = null
     private var networkEventChannel: EventChannel? = null
+    private var inAppUpdateMethodChannel: MethodChannel? = null
+    private var inAppUpdateEventChannel: EventChannel? = null
     private val handler = Handler(Looper.getMainLooper())
     
     private var networkEventSink: EventChannel.EventSink? = null
+    private var inAppUpdateEventSink: EventChannel.EventSink? = null
     private val connectivityManager by lazy {
         getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
     }
+    private lateinit var appUpdateManager: AppUpdateManager
+    private var updateListenerRegistered = false
     
     // ✅ Отслеживаем есть ли ХОТЬ ОДНА сеть
     private var hasAnyNetwork = false
+
+    private val installStateUpdatedListener = InstallStateUpdatedListener { state ->
+        val downloadedBytes = state.bytesDownloaded()
+        val totalBytes = state.totalBytesToDownload()
+        val progress = if (totalBytes > 0) {
+            ((downloadedBytes * 100) / totalBytes).toInt()
+        } else {
+            0
+        }
+
+        when (state.installStatus()) {
+            InstallStatus.PENDING -> sendInAppUpdateEvent("pending", 0, downloadedBytes, totalBytes)
+            InstallStatus.DOWNLOADING -> sendInAppUpdateEvent("downloading", progress, downloadedBytes, totalBytes)
+            InstallStatus.DOWNLOADED -> sendInAppUpdateEvent("downloaded", 100, downloadedBytes, totalBytes)
+            InstallStatus.INSTALLING -> sendInAppUpdateEvent("installing", 100, downloadedBytes, totalBytes)
+            InstallStatus.INSTALLED -> sendInAppUpdateEvent("installed", 100, downloadedBytes, totalBytes)
+            InstallStatus.CANCELED -> sendInAppUpdateEvent("canceled", progress, downloadedBytes, totalBytes, "Обновление отменено.")
+            InstallStatus.FAILED -> sendInAppUpdateEvent("failed", progress, downloadedBytes, totalBytes, "Не удалось загрузить обновление.")
+            else -> Unit
+        }
+    }
+
+    private val updateFlowLauncher = registerForActivityResult(
+        ActivityResultContracts.StartIntentSenderForResult()
+    ) { result ->
+        if (result.resultCode != RESULT_OK) {
+            sendInAppUpdateEvent(
+                "canceled",
+                0,
+                null,
+                null,
+                "Пользователь отменил обновление."
+            )
+        }
+    }
     
     private val networkCallback = object : ConnectivityManager.NetworkCallback() {
         override fun onAvailable(network: Network) {
@@ -98,6 +148,7 @@ class MainActivity : FlutterFragmentActivity() {
         }
         
         Log.d("MainActivity", "=== onCreate ===")
+        appUpdateManager = AppUpdateManagerFactory.create(this)
 
         if (Build.VERSION.SDK_INT >= 35) {
             enableEdgeToEdge()
@@ -177,6 +228,37 @@ class MainActivity : FlutterFragmentActivity() {
                 networkEventSink = null
             }
         })
+
+        inAppUpdateMethodChannel = MethodChannel(
+            flutterEngine.dartExecutor.binaryMessenger,
+            IN_APP_UPDATE_METHOD_CHANNEL
+        )
+
+        inAppUpdateMethodChannel?.setMethodCallHandler { call, result ->
+            when (call.method) {
+                "isSupported" -> handleIsInAppUpdateSupported(result)
+                "startFlexibleUpdate" -> startFlexibleUpdate(result)
+                "completeFlexibleUpdate" -> completeFlexibleUpdate(result)
+                else -> result.notImplemented()
+            }
+        }
+
+        inAppUpdateEventChannel = EventChannel(
+            flutterEngine.dartExecutor.binaryMessenger,
+            IN_APP_UPDATE_EVENT_CHANNEL
+        )
+
+        inAppUpdateEventChannel?.setStreamHandler(object : EventChannel.StreamHandler {
+            override fun onListen(arguments: Any?, events: EventChannel.EventSink?) {
+                inAppUpdateEventSink = events
+                registerInstallStateListenerIfNeeded()
+                emitDownloadedStateIfNeeded()
+            }
+
+            override fun onCancel(arguments: Any?) {
+                inAppUpdateEventSink = null
+            }
+        })
         
         Log.d("MainActivity", "✅ Channels configured")
     }
@@ -196,6 +278,7 @@ class MainActivity : FlutterFragmentActivity() {
     }
     
     override fun onDestroy() {
+        unregisterInstallStateListener()
         super.onDestroy()
         stopNetworkMonitoring()
     }
@@ -254,6 +337,163 @@ class MainActivity : FlutterFragmentActivity() {
         handler.post {
             networkEventSink?.success(hasNetwork)
             Log.d("MainActivity", "📡 Sent to Flutter: $hasNetwork")
+        }
+    }
+
+    private fun handleIsInAppUpdateSupported(result: MethodChannel.Result) {
+        appUpdateManager.appUpdateInfo
+            .addOnSuccessListener {
+                result.success(true)
+            }
+            .addOnFailureListener { error ->
+                Log.e("MainActivity", "In-app update unsupported: ${error.message}", error)
+                result.success(false)
+            }
+    }
+
+    private fun startFlexibleUpdate(result: MethodChannel.Result) {
+        appUpdateManager.appUpdateInfo
+            .addOnSuccessListener { appUpdateInfo ->
+                val updateAvailable =
+                    appUpdateInfo.updateAvailability() == UpdateAvailability.UPDATE_AVAILABLE
+                val flexibleAllowed = appUpdateInfo.isUpdateTypeAllowed(AppUpdateType.FLEXIBLE)
+
+                if (!updateAvailable || !flexibleAllowed) {
+                    sendInAppUpdateEvent(
+                        "unavailable",
+                        0,
+                        null,
+                        null,
+                        "Встроенное обновление через Google Play недоступно."
+                    )
+                    result.success(false)
+                    return@addOnSuccessListener
+                }
+
+                registerInstallStateListenerIfNeeded()
+
+                try {
+                    val started = appUpdateManager.startUpdateFlowForResult(
+                        appUpdateInfo,
+                        updateFlowLauncher,
+                        AppUpdateOptions.newBuilder(AppUpdateType.FLEXIBLE).build()
+                    )
+
+                    if (started) {
+                        sendInAppUpdateEvent(
+                            "pending",
+                            0,
+                            null,
+                            null,
+                            "Подготавливаем загрузку обновления..."
+                        )
+                    }
+
+                    result.success(started)
+                } catch (error: Exception) {
+                    Log.e("MainActivity", "Failed to start flexible update: ${error.message}", error)
+                    sendInAppUpdateEvent(
+                        "failed",
+                        0,
+                        null,
+                        null,
+                        "Не удалось запустить обновление."
+                    )
+                    result.success(false)
+                }
+            }
+            .addOnFailureListener { error ->
+                Log.e("MainActivity", "Failed to check app update info: ${error.message}", error)
+                sendInAppUpdateEvent(
+                    "failed",
+                    0,
+                    null,
+                    null,
+                    "Не удалось проверить доступность обновления."
+                )
+                result.success(false)
+            }
+    }
+
+    private fun completeFlexibleUpdate(result: MethodChannel.Result) {
+        appUpdateManager.completeUpdate()
+            .addOnSuccessListener {
+                sendInAppUpdateEvent(
+                    "installing",
+                    100,
+                    null,
+                    null,
+                    "Устанавливаем обновление..."
+                )
+                result.success(true)
+            }
+            .addOnFailureListener { error ->
+                Log.e("MainActivity", "Failed to complete flexible update: ${error.message}", error)
+                sendInAppUpdateEvent(
+                    "failed",
+                    100,
+                    null,
+                    null,
+                    "Не удалось завершить установку обновления."
+                )
+                result.success(false)
+            }
+    }
+
+    private fun registerInstallStateListenerIfNeeded() {
+        if (updateListenerRegistered) {
+            return
+        }
+
+        appUpdateManager.registerListener(installStateUpdatedListener)
+        updateListenerRegistered = true
+    }
+
+    private fun unregisterInstallStateListener() {
+        if (!updateListenerRegistered) {
+            return
+        }
+
+        appUpdateManager.unregisterListener(installStateUpdatedListener)
+        updateListenerRegistered = false
+    }
+
+    private fun emitDownloadedStateIfNeeded() {
+        appUpdateManager.appUpdateInfo
+            .addOnSuccessListener { appUpdateInfo ->
+                if (appUpdateInfo.installStatus() == InstallStatus.DOWNLOADED) {
+                    sendInAppUpdateEvent(
+                        "downloaded",
+                        100,
+                        null,
+                        null,
+                        "Обновление загружено и готово к установке."
+                    )
+                }
+            }
+            .addOnFailureListener { error ->
+                Log.e("MainActivity", "Failed to emit downloaded state: ${error.message}", error)
+            }
+    }
+
+    private fun sendInAppUpdateEvent(
+        status: String,
+        progress: Int,
+        downloadedBytes: Long?,
+        totalBytes: Long?,
+        message: String? = null
+    ) {
+        handler.post {
+            val payload = hashMapOf<String, Any>(
+                "status" to status,
+                "progress" to progress
+            )
+
+            downloadedBytes?.let { payload["downloadedBytes"] = it.toInt() }
+            totalBytes?.let { payload["totalBytes"] = it.toInt() }
+            message?.let { payload["message"] = it }
+
+            inAppUpdateEventSink?.success(payload)
         }
     }
 

@@ -42,6 +42,7 @@ class _LeadNavigateToChatDialogState extends State<LeadNavigateToChat> {
     'telegram_bot': 'assets/icons/leads/telegram.png',
     'mini_app': 'assets/icons/leads/telegram.png',
     'whatsapp': 'assets/icons/leads/whatsapp.png',
+    'green_api': 'assets/icons/leads/whatsapp.png',
     'facebook': 'assets/icons/leads/messenger.png',
     'instagram': 'assets/icons/leads/instagram.png',
     'site': '', // Будет использоваться Flutter иконка
@@ -52,6 +53,7 @@ class _LeadNavigateToChatDialogState extends State<LeadNavigateToChat> {
     'telegram_bot': 'Telegram бот',
     'mini_app': 'Mini App',
     'whatsapp': 'WhatsApp',
+    'green_api': 'WhatsApp',
     'facebook': 'Facebook',
     'instagram': 'Instagram',
     'site': 'Интернет магазин',
@@ -179,21 +181,25 @@ class _LeadNavigateToChatDialogState extends State<LeadNavigateToChat> {
                         );
                       } else {
                         // Группируем чаты по каналам
-                        final channels = leadtochat.map((chat) => chat.channel.name).toSet().toList();
+                        final channels = leadtochat
+                            .map((chat) => chat.channel.name)
+                            .toSet()
+                            .toList();
                         return ListView.builder(
                           itemCount: channels.length,
                           itemBuilder: (context, index) {
                             final channelName = channels[index];
                             final iconPath = sourceIcons[channelName] ??
                                 'assets/icons/leads/default.png';
-                            final displayName = channelName.toLowerCase() == 'support'
-                                ? AppLocalizations.of(context)!
-                                    .translate('support_chat_name')
-                                : customChannelNames[channelName] ??
-                                    (channelName.isNotEmpty
-                                        ? channelName
-                                        : AppLocalizations.of(context)!
-                                            .translate('no_name_chat'));
+                            final displayName =
+                                channelName.toLowerCase() == 'support'
+                                    ? AppLocalizations.of(context)!
+                                        .translate('support_chat_name')
+                                    : customChannelNames[channelName] ??
+                                        (channelName.isNotEmpty
+                                            ? channelName
+                                            : AppLocalizations.of(context)!
+                                                .translate('no_name_chat'));
                             //print('LeadNavigateToChat: Building chat item $index - Channel: $channelName, DisplayName: $displayName');
                             return ListTile(
                               leading: channelName == 'site'
@@ -220,37 +226,43 @@ class _LeadNavigateToChatDialogState extends State<LeadNavigateToChat> {
                                 //print('LeadNavigateToChat: Channel tapped - Channel: $channelName');
                                 // Собираем чаты для выбранного канала
                                 final chatsForChannel = leadtochat
-                                    .where((chat) => chat.channel.name == channelName)
+                                    .where((chat) =>
+                                        chat.channel.name == channelName)
                                     .toList();
                                 //print('LeadNavigateToChat: Found ${chatsForChannel.length} chats for $channelName: $chatsForChannel');
-                                
+
                                 if (chatsForChannel.length == 1) {
                                   //print('LeadNavigateToChat: Single chat found, navigating to chat ID: ${chatsForChannel[0].id}');
                                   navigateToScreen(
-                                      context,
-                                      chatsForChannel[0].id,
-                                      chatsForChannel[0].canSendMessage);
+                                    context,
+                                    chatsForChannel[0].id,
+                                    chatsForChannel[0].canSendMessage,
+                                    chatsForChannel[0].channel.name,
+                                  );
                                 } else {
                                   //print('LeadNavigateToChat: Multiple chats found, opening IntegrationListDialog');
-                                  final integrations = chatsForChannel
-                                      .map((chat) {
-                                        // Ищем соответствующий чат в widget.chats
-                                        final chatData = widget.chats?.firstWhere(
-                                          (c) => c['id'] == chat.id,
-                                          orElse: () => <String, dynamic>{},
-                                        );
-                                        final username = chatData != null && chatData['integration'] != null
-                                            ? chatData['integration']['username'] ?? ''
-                                            : '';
-                                        //print('LeadNavigateToChat: Processing chat ID: ${chat.id}, Username: $username');
-                                        return {
-                                          'id': chat.id,
-                                          'username': username,
-                                        };
-                                      })
-                                      .toList();
+                                  final integrations =
+                                      chatsForChannel.map((chat) {
+                                    // Ищем соответствующий чат в widget.chats
+                                    final chatData = widget.chats?.firstWhere(
+                                      (c) => c['id'] == chat.id,
+                                      orElse: () => <String, dynamic>{},
+                                    );
+                                    final username = chatData != null &&
+                                            chatData['integration'] != null
+                                        ? chatData['integration']['username'] ??
+                                            ''
+                                        : '';
+                                    //print('LeadNavigateToChat: Processing chat ID: ${chat.id}, Username: $username');
+                                    return {
+                                      'id': chat.id,
+                                      'username': username,
+                                      'channel_name': chat.channel.name,
+                                    };
+                                  }).toList();
                                   //print('LeadNavigateToChat: Integrations for dialog: $integrations');
-                                  Navigator.pop(context); // Закрываем список чатов
+                                  Navigator.pop(
+                                      context); // Закрываем список чатов
                                   showDialog(
                                     context: context,
                                     builder: (BuildContext context) {
@@ -258,7 +270,9 @@ class _LeadNavigateToChatDialogState extends State<LeadNavigateToChat> {
                                         integrations: integrations,
                                         leadId: widget.leadId,
                                         leadName: widget.leadName,
-                                        canSendMessage: chatsForChannel[0].canSendMessage,
+                                        canSendMessage:
+                                            chatsForChannel[0].canSendMessage,
+                                        initialChannelName: channelName,
                                       );
                                     },
                                   );
@@ -305,7 +319,12 @@ class _LeadNavigateToChatDialogState extends State<LeadNavigateToChat> {
     );
   }
 
-  void navigateToScreen(BuildContext context, int id, bool canSendMessage) {
+  void navigateToScreen(
+    BuildContext context,
+    int id,
+    bool canSendMessage,
+    String initialChannelName,
+  ) {
     //print('LeadNavigateToChat: Navigating to chat screen with ID: $id, canSendMessage: $canSendMessage');
     Navigator.pop(context);
     navigatorKey.currentState?.push(
@@ -331,6 +350,7 @@ class _LeadNavigateToChatDialogState extends State<LeadNavigateToChat> {
             chatId: id,
             endPointInTab: 'lead',
             canSendMessage: canSendMessage,
+            initialChannelName: initialChannelName,
           ),
         ),
       ),

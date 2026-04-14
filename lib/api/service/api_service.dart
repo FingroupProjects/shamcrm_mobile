@@ -17,6 +17,7 @@ import 'package:crm_task_manager/models/money/add_expense_model.dart';
 import 'package:crm_task_manager/models/money/income_model.dart';
 import 'package:crm_task_manager/models/money/add_income_model.dart';
 import 'package:crm_task_manager/models/chatById_model.dart';
+import 'package:crm_task_manager/models/chat_messages_page.dart';
 import 'package:crm_task_manager/models/chatGetId_model.dart';
 import 'package:crm_task_manager/models/chatTaskProfile_model.dart';
 import 'package:crm_task_manager/models/city_model.dart';
@@ -107,6 +108,7 @@ import 'package:crm_task_manager/models/page_2/dashboard/dashboard_top.dart';
 import 'package:crm_task_manager/models/page_2/dashboard/debtors_model.dart';
 import 'package:crm_task_manager/models/page_2/dashboard/creditors_model.dart';
 import 'package:crm_task_manager/models/page_2/dashboard/illiquids_model.dart';
+import 'package:crm_task_manager/models/page_2/dashboard/manufacture_report_model.dart';
 import 'package:crm_task_manager/models/page_2/dashboard/salary_report_model.dart';
 import 'package:crm_task_manager/models/page_2/delivery_address_model.dart';
 import 'package:crm_task_manager/models/page_2/good_dashboard_warehouse_model.dart'
@@ -211,6 +213,8 @@ import 'dio_client.dart';
 // final String baseUrlSocket ='https://fingroup-back.shamcrm.com/broadcasting/auth';
 
 class ApiService {
+  static const Duration _defaultRequestTimeout = Duration(seconds: 20);
+
   String? baseUrl;
   String? baseUrlSocket;
   static final GlobalKey<NavigatorState> navigatorKey =
@@ -368,6 +372,11 @@ class ApiService {
     } catch (_) {
       return response.body.isEmpty ? null : response.body;
     }
+  }
+
+  String _getOrderStatusChangeErrorMessage(http.Response response) {
+    return _extractErrorMessageFromResponse(response) ??
+        'Вы не можете переместить заказ на этот статус';
   }
 
   // Также нужно обновить метод _initializeIfDomainExists
@@ -816,6 +825,12 @@ class ApiService {
           'Accept': 'application/json',
           'Device': 'mobile'
         },
+      ).timeout(
+        _defaultRequestTimeout,
+        onTimeout: () => throw TimeoutException(
+          'Превышено время ожидания ответа сервера',
+          _defaultRequestTimeout,
+        ),
       );
 
       // HTTP Inspector: Обновляем лог с ответом (только в DEBUG)
@@ -4077,7 +4092,8 @@ class ApiService {
         debugPrint('ApiService: getDealById - Generated path: $path');
       }
 
-      final response = await _analyticsRequest(path);
+      // Детали сделки должны приходить всегда актуальными, без in-memory analytics cache.
+      final response = await _analyticsRequest(path, bypassCache: true);
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> decodedJson = json.decode(response.body);
@@ -5154,10 +5170,10 @@ class ApiService {
       // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
       final path = await _appendQueryParams('/task/$taskId');
       if (kDebugMode) {
-        //debugPrint('ApiService: getTaskById - Generated path: $path');
+        debugPrint('ApiService: getTaskById - Generated path: $path');
       }
 
-      final response = await _analyticsRequest(path);
+      final response = await _getRequest(path);
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> decodedJson = json.decode(response.body);
@@ -5177,6 +5193,9 @@ class ApiService {
         throw Exception('Ошибка загрузки task ID!');
       }
     } catch (e) {
+      if (kDebugMode) {
+        debugPrint('ApiService: getTaskById error: $e');
+      }
       throw Exception('Ошибка загрузки task ID');
     }
   }
@@ -5386,6 +5405,7 @@ class ApiService {
     String? department,
     List<int>? reasonForRefusalIds,
     List<Map<String, dynamic>>? directoryValues,
+    bool bypassCache = false,
   }) async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
     final organizationId = await getSelectedOrganization();
@@ -5464,7 +5484,7 @@ class ApiService {
         debugPrint('📤 getTaskStatuses WITH FILTERS - Final path: $path');
       }
 
-      final response = await _analyticsRequest(path);
+      final response = await _analyticsRequest(path, bypassCache: bypassCache);
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -8153,8 +8173,9 @@ class ApiService {
   }
 
 // Метод для получения сообщений по chatId
-  Future<List<Message>> getMessages(
+  Future<ChatMessagesPage> getMessagesPage(
     int chatId, {
+    int page = 1,
     String? search,
     String? chatType, // Тип чата: 'lead', 'corporate', 'task'
   }) async {
@@ -8179,7 +8200,7 @@ class ApiService {
         }
       }
 
-      String path = '/v2/chat/getMessages/$chatId';
+      String path = '/v3/chat/getMessages/$chatId?page=$page';
       path = await _appendQueryParams(path);
 
       if (search != null && search.isNotEmpty) {
@@ -8197,41 +8218,10 @@ class ApiService {
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        if (data['result'] != null) {
-          final List<dynamic> messagesList = data['result'] as List<dynamic>;
-
-          // 🔍 ДИАГНОСТИКА: Логируем первое сообщение для проверки структуры
-          if (messagesList.isNotEmpty) {
-            debugPrint('🔍 API ДИАГНОСТИКА - Структура первого сообщения:');
-            final firstMsg = messagesList[0];
-            debugPrint('   Полное сообщение: $firstMsg');
-            debugPrint('   ---');
-          }
-
-          return messagesList.map((msgData) {
-            try {
-              // Передаём chatType при парсинге сообщения
-              return Message.fromJson(msgData as Map<String, dynamic>,
-                  chatType: chatType);
-            } catch (e) {
-              debugPrint('Error parsing message: $e, data: $msgData');
-              // Возвращаем пустое сообщение с базовыми полями
-              return Message(
-                id: msgData['id'] ?? -1,
-                text:
-                    msgData['text']?.toString() ?? 'Ошибка загрузки сообщения',
-                type: msgData['type']?.toString() ?? 'text',
-                createMessateTime: msgData['created_at']?.toString() ??
-                    DateTime.now().toIso8601String(),
-                isMyMessage: false,
-                senderName: msgData['sender']?['name']?.toString() ??
-                    'Неизвестный отправитель',
-              );
-            }
-          }).toList();
-        } else {
-          throw Exception('Результат отсутствует в ответе');
-        }
+        return ChatMessagesPage.fromJson(
+          Map<String, dynamic>.from(data as Map),
+          chatType: chatType,
+        );
       } else {
         throw Exception('Ошибка ${response.statusCode}: ${response.body}');
       }
@@ -8239,6 +8229,20 @@ class ApiService {
       debugPrint('ApiService.getMessages error: $e');
       rethrow;
     }
+  }
+
+  Future<List<Message>> getMessages(
+    int chatId, {
+    String? search,
+    String? chatType,
+  }) async {
+    final page = await getMessagesPage(
+      chatId,
+      page: 1,
+      search: search,
+      chatType: chatType,
+    );
+    return page.data;
   }
 
   Future<void> closeChatSocket(int chatId) async {
@@ -11501,6 +11505,8 @@ class ApiService {
     int? storageId,
     int? mainImageIndex,
     int? labelId, // Parameter for label ID
+    String? productionType,
+    List<Map<String, dynamic>> materialGoods = const [],
   }) async {
     try {
       final token = await getToken();
@@ -11526,6 +11532,9 @@ class ApiService {
       request.fields['unit_id'] = unitId.toString();
       request.fields['is_active'] = isActive ? '1' : '0';
       request.fields['is_service'] = isService ? '1' : '0';
+      if (productionType != null && productionType.isNotEmpty) {
+        request.fields['production_type'] = productionType;
+      }
 
       // Pass the actual labelId if it exists
       if (labelId != null) {
@@ -11543,6 +11552,13 @@ class ApiService {
       if (storageId != null) {
         request.fields['storage_id'] = storageId.toString();
         request.fields['branch_id'] = storageId.toString();
+      }
+
+      for (int i = 0; i < materialGoods.length; i++) {
+        final material = materialGoods[i];
+        request.fields['good_ids[$i][good_id]'] =
+            material['good_id'].toString();
+        request.fields['good_ids[$i][norm]'] = material['norm'].toString();
       }
 
       for (int i = 0; i < attributes.length; i++) {
@@ -11633,6 +11649,8 @@ class ApiService {
     String? comments,
     int? mainImageIndex,
     int? labelId, // Добавляем параметр для ID метки
+    String? productionType,
+    List<Map<String, dynamic>> materialGoods = const [],
   }) async {
     try {
       final token = await getToken();
@@ -11666,6 +11684,9 @@ class ApiService {
       request.fields['label_id'] =
           labelId != null ? labelId.toString() : ''; // Add label fields
       request.fields['is_service'] = isService ? '1' : '0';
+      if (productionType != null && productionType.isNotEmpty) {
+        request.fields['production_type'] = productionType;
+      }
 
       if (unitId != null) {
         request.fields['unit_id'] = unitId.toString();
@@ -11683,6 +11704,13 @@ class ApiService {
       if (discountPrice != null) {
         request.fields['price'] = discountPrice.toString();
         ////debugPrint('ApiService: Added discount_price: $discountPrice');
+      }
+
+      for (int i = 0; i < materialGoods.length; i++) {
+        final material = materialGoods[i];
+        request.fields['good_ids[$i][good_id]'] =
+            material['good_id'].toString();
+        request.fields['good_ids[$i][norm]'] = material['norm'].toString();
       }
 
       for (int i = 0; i < attributes.length; i++) {
@@ -12615,43 +12643,42 @@ class ApiService {
     String? reasonForRefusal,
   }) async {
     try {
-      final token = await getToken();
-      if (token == null) throw Exception('Токен не найден');
-
-      // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
       final path = await _appendQueryParams('/order/changeStatus/$orderId');
       if (kDebugMode) {
-        //debugPrint('ApiService: changeOrderStatus - Generated path: $path');
+        debugPrint('ApiService: changeOrderStatus - Generated path: $path');
       }
 
-      final uri = Uri.parse('$baseUrl$path');
-      final response = await http.post(
-        uri,
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-          'Device': 'mobile',
-        },
-        body: jsonEncode({
+      final response = await _postRequest(
+        '/order/changeStatus/$orderId',
+        {
           'status_id': statusId,
           if (reasonForRefusalId != null)
             'reason_for_refusal_id': reasonForRefusalId,
           if (reasonForRefusal != null && reasonForRefusal.trim().isNotEmpty)
             'reason_for_refusal': reasonForRefusal.trim(),
-        }),
+        },
       );
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         return true;
+      } else if (response.statusCode == 422) {
+        throw OrderStatusUpdateException(
+          response.statusCode,
+          _getOrderStatusChangeErrorMessage(response),
+        );
       } else {
-        final jsonResponse = jsonDecode(response.body);
         throw Exception(
-            jsonResponse['message'] ?? 'Ошибка при смене статуса заказа');
+          _extractErrorMessageFromResponse(response) ??
+              'Ошибка при смене статуса заказа',
+        );
       }
+    } on OrderStatusUpdateException {
+      rethrow;
     } catch (e) {
-      ////debugPrint('Ошибка смены статуса заказа: ');
-      return false;
+      if (kDebugMode) {
+        debugPrint('ApiService: changeOrderStatus error: $e');
+      }
+      rethrow;
     }
   }
 
@@ -13226,7 +13253,8 @@ class ApiService {
         throw ('Ошибка загрузки данных статистики звонков');
       }
     } catch (e) {
-      throw ('Ошибка получения данных статистики звонков');
+      debugPrint('ApiService: getCallStatistics error: $e');
+      throw Exception('Ошибка получения данных статистики звонков: $e');
     }
   }
 
@@ -13254,7 +13282,8 @@ class ApiService {
         throw ('Ошибка загрузки данных статистики звонков');
       }
     } catch (e) {
-      throw ('Ошибка получения данных статистики звонков');
+      debugPrint('ApiService: getCallAnalytics error: $e');
+      throw Exception('Ошибка получения данных статистики звонков: $e');
     }
   }
 
@@ -13387,7 +13416,8 @@ class ApiService {
         throw ('Ошибка загрузки данных операторов');
       }
     } catch (e) {
-      throw ('Ошибка получения данных операторов');
+      debugPrint('ApiService: getOperators error: $e');
+      throw Exception('Ошибка получения данных операторов: $e');
     }
   }
 
@@ -17676,6 +17706,289 @@ class ApiService {
 
 //______________________________end movement____________________________//
 
+//______________________________start manufacture____________________________//
+  Future<IncomingResponse> getManufactureDocuments({
+    int page = 1,
+    int perPage = 20,
+    String? query,
+    DateTime? fromDate,
+    DateTime? toDate,
+    int? senderStorageId,
+    int? recipientStorageId,
+    int? status,
+    int? authorId,
+    int? deleted,
+  }) async {
+    String url = '/manufacture-documents?page=$page&per_page=$perPage';
+    if (query != null && query.isNotEmpty) {
+      url += '&search=$query';
+    }
+    if (fromDate != null) {
+      url += '&date_from=${fromDate.toIso8601String()}';
+    }
+    if (toDate != null) {
+      url += '&date_to=${toDate.toIso8601String()}';
+    }
+    if (senderStorageId != null) {
+      url += '&storage_id=$senderStorageId';
+    }
+    if (recipientStorageId != null) {
+      url += '&recipient_storage_id=$recipientStorageId';
+    }
+    if (status != null) {
+      url += '&status=$status';
+    }
+    if (authorId != null) {
+      url += '&author_id=$authorId';
+    }
+    if (deleted != null) {
+      url += '&deleted=$deleted';
+    }
+
+    final path = await _appendQueryParams(url);
+
+    try {
+      final response = await _getRequest(path);
+      if (response.statusCode == 200) {
+        final rawData = json.decode(response.body)['result'];
+        return IncomingResponse.fromJson(rawData);
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(
+          message ?? 'Ошибка при получении данных производства!',
+          response.statusCode,
+        );
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<IncomingDocument> getManufactureDocumentById(int documentId) async {
+    final path = await _appendQueryParams('/manufacture-documents/$documentId');
+
+    try {
+      final response = await _getRequest(path);
+      if (response.statusCode == 200) {
+        final rawData = json.decode(response.body)['result'];
+        return IncomingDocument.fromJson(rawData);
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(
+          message ?? 'Ошибка при получении документа производства!',
+          response.statusCode,
+        );
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<void> createManufactureDocument({
+    required String date,
+    required int senderStorageId,
+    required int recipientStorageId,
+    required String comment,
+    required List<Map<String, dynamic>> documentGoods,
+    required int organizationId,
+    required bool approve,
+  }) async {
+    final path = await _appendQueryParams('/manufacture-documents');
+    final response = await _postRequest(path, {
+      'date': date,
+      'storage_id': senderStorageId,
+      'recipient_storage_id': recipientStorageId,
+      'comment': comment,
+      'document_goods': documentGoods,
+      'organization_id': organizationId,
+      'approve': approve,
+    });
+
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      final message = _extractErrorMessageFromResponse(response);
+      throw ApiException(message ?? 'Неизвестная ошибка', response.statusCode);
+    }
+  }
+
+  Future<Map<String, dynamic>> deleteManufactureDocument(int documentId) async {
+    try {
+      final pathWithParams = await _appendQueryParams('/manufacture-documents');
+      final uri = Uri.parse('$baseUrl$pathWithParams');
+      final organizationId = uri.queryParameters['organization_id'];
+      final salesFunnelId = uri.queryParameters['sales_funnel_id'];
+
+      final response = await _deleteRequestWithBody('/manufacture-documents', {
+        'ids': [documentId],
+        'organization_id': organizationId ?? '1',
+        'sales_funnel_id': salesFunnelId ?? '1',
+      });
+
+      if (response.statusCode == 200 || response.statusCode == 204) {
+        return {'result': 'Success'};
+      }
+
+      final message = _extractErrorMessageFromResponse(response);
+      throw ApiException(
+        message ?? 'Ошибка при удалении документа производства',
+        response.statusCode,
+      );
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<void> updateManufactureDocument({
+    required int documentId,
+    required String date,
+    required int senderStorageId,
+    required int recipientStorageId,
+    required String comment,
+    required List<Map<String, dynamic>> documentGoods,
+    required int organizationId,
+    required bool approve,
+  }) async {
+    final path = await _appendQueryParams('/manufacture-documents/$documentId');
+    final uri = Uri.parse('$baseUrl$path');
+
+    final body = jsonEncode({
+      'date': date,
+      'storage_id': senderStorageId,
+      'recipient_storage_id': recipientStorageId,
+      'comment': comment,
+      'document_goods': documentGoods,
+      'organization_id': organizationId,
+      'approve': approve,
+    });
+
+    final token = await getToken();
+    if (token == null) {
+      throw Exception('Токен не найден');
+    }
+
+    final response = await http.put(
+      uri,
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'Device': 'mobile',
+      },
+      body: body,
+    );
+
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      final message = _extractErrorMessageFromResponse(response);
+      throw ApiException(
+        message ?? 'Ошибка обновления документа производства',
+        response.statusCode,
+      );
+    }
+  }
+
+  Future<void> approveManufactureDocument(int documentId) async {
+    final path = await _appendQueryParams('/manufacture-documents/approve');
+    final response = await _postRequest(path, {
+      'ids': [documentId],
+    });
+
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      final message = _extractErrorMessageFromResponse(response);
+      throw ApiException(
+        message ?? 'Ошибка при проведении документа производства',
+        response.statusCode,
+      );
+    }
+  }
+
+  Future<void> unApproveManufactureDocument(int documentId) async {
+    final path = await _appendQueryParams('/manufacture-documents/unApprove');
+    final response = await _postRequest(path, {
+      'ids': [documentId],
+    });
+
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      final message = _extractErrorMessageFromResponse(response);
+      throw ApiException(
+        message ?? 'Ошибка при отмене проведения документа производства',
+        response.statusCode,
+      );
+    }
+  }
+
+  Future<Map<String, dynamic>> restoreManufactureDocument(
+      int documentId) async {
+    final path = await _appendQueryParams('/manufacture-documents/restore');
+    final response = await _postRequest(path, {
+      'ids': [documentId],
+    });
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return {'result': 'Success'};
+    }
+
+    final message = _extractErrorMessageFromResponse(response);
+    throw ApiException(
+      message ?? 'Ошибка при восстановлении документа производства',
+      response.statusCode,
+    );
+  }
+
+  Future<void> massApproveManufactureDocuments(List<int> ids) async {
+    final path = await _appendQueryParams('/manufacture-documents/approve');
+    final response = await _postRequest(path, {'ids': ids});
+
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      final message = _extractErrorMessageFromResponse(response);
+      throw ApiException(
+        message ?? 'Ошибка при массовом проведении документов производства!',
+        response.statusCode,
+      );
+    }
+  }
+
+  Future<void> massDisapproveManufactureDocuments(List<int> ids) async {
+    final path = await _appendQueryParams('/manufacture-documents/unApprove');
+    final response = await _postRequest(path, {'ids': ids});
+
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      final message = _extractErrorMessageFromResponse(response);
+      throw ApiException(
+        message ??
+            'Ошибка при массовом снятии проведения документов производства!',
+        response.statusCode,
+      );
+    }
+  }
+
+  Future<void> massDeleteManufactureDocuments(List<int> ids) async {
+    final path = await _appendQueryParams('/manufacture-documents/');
+    final response = await _deleteRequestWithBody(path, {'ids': ids});
+
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      final message = _extractErrorMessageFromResponse(response);
+      throw ApiException(
+        message ?? 'Ошибка при массовом удалении документов производства!',
+        response.statusCode,
+      );
+    }
+  }
+
+  Future<void> massRestoreManufactureDocuments(List<int> ids) async {
+    final path = await _appendQueryParams('/manufacture-documents/restore');
+    final response = await _postRequest(path, {'ids': ids});
+
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      final message = _extractErrorMessageFromResponse(response);
+      throw ApiException(
+        message ??
+            'Ошибка при массовом восстановлении документов производства!',
+        response.statusCode,
+      );
+    }
+  }
+
+//______________________________end manufacture____________________________//
+
 //====================================== SALES DASHBOARD ==================================//
 
   Future<ResultDashboardGoodsReport> getSalesDashboardGoodsReport({
@@ -17992,6 +18305,121 @@ class ApiService {
     } catch (e) {
       throw e;
     }
+  }
+
+  Future<ManufactureReportResponse> getManufactureGoodsReport({
+    int? page,
+    int? perPage,
+    Map<String, dynamic>? filters,
+    String? search,
+  }) async {
+    try {
+      final queryParams = _buildDetailedDashboardCommonParams(
+        page: page,
+        perPage: perPage,
+        filters: filters,
+        search: search,
+      );
+
+      var path =
+          await _appendQueryParams('/dashboard/manufacture-goods-report');
+      final separator = path.contains('?') ? '&' : '?';
+      final encodedParams = queryParams.entries
+          .map((e) =>
+              '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}')
+          .join('&');
+      path += '$separator$encodedParams';
+
+      final response = await _getRequest(path);
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final data = json.decode(response.body) as Map<String, dynamic>;
+        return ManufactureReportResponse.fromJson(data);
+      }
+
+      final message = _extractErrorMessageFromResponse(response);
+      throw ApiException(
+        message ?? 'Ошибка при получении отчета производства!',
+        response.statusCode,
+      );
+    } catch (e) {
+      throw e;
+    }
+  }
+
+  Future<ManufactureMaterialsReportResponse> getManufactureMaterialsReport({
+    int? page,
+    int? perPage,
+    Map<String, dynamic>? filters,
+    String? search,
+  }) async {
+    try {
+      final queryParams = _buildDetailedDashboardCommonParams(
+        page: page,
+        perPage: perPage,
+        filters: filters,
+        search: search,
+      );
+
+      var path =
+          await _appendQueryParams('/dashboard/manufacture-materials-report');
+      final separator = path.contains('?') ? '&' : '?';
+      final encodedParams = queryParams.entries
+          .map((e) =>
+              '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}')
+          .join('&');
+      path += '$separator$encodedParams';
+
+      final response = await _getRequest(path);
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final data = json.decode(response.body) as Map<String, dynamic>;
+        return ManufactureMaterialsReportResponse.fromJson(data);
+      }
+
+      final message = _extractErrorMessageFromResponse(response);
+      throw ApiException(
+        message ?? 'Ошибка при получении отчета расхода сырья!',
+        response.statusCode,
+      );
+    } catch (e) {
+      throw e;
+    }
+  }
+
+  Map<String, String> _buildDetailedDashboardCommonParams({
+    int? page,
+    int? perPage,
+    Map<String, dynamic>? filters,
+    String? search,
+  }) {
+    return <String, String>{
+      'page': (page ?? 1).toString(),
+      'per_page': (perPage ?? 20).toString(),
+      'limit': (perPage ?? 20).toString(),
+      'lead_id': filters?['lead_id']?.toString() ?? '',
+      'supplier_id': filters?['supplier_id']?.toString() ?? '',
+      'date_from': _formatDetailedReportDate(filters?['date_from']),
+      'date_to': _formatDetailedReportDate(filters?['date_to']),
+      'sum_from': filters?['sum_from']?.toString() ?? '',
+      'sum_to': filters?['sum_to']?.toString() ?? '',
+      'category_id': filters?['category_id']?.toString() ?? '',
+      'days_without_movement':
+          filters?['days_without_movement']?.toString() ?? '',
+      'article_id': filters?['article_id']?.toString() ?? '',
+      'good_id': filters?['good_id']?.toString() ?? '',
+      'status_id': filters?['status_id']?.toString() ?? '',
+      'search': search?.trim() ?? '',
+      'period': filters?['period']?.toString() ?? '',
+      'year': filters?['year']?.toString() ?? '',
+      'storage_id': filters?['storage_id']?.toString() ?? '',
+    };
+  }
+
+  String _formatDetailedReportDate(dynamic value) {
+    if (value == null) return '';
+    if (value is DateTime) return value.toIso8601String();
+    return value.toString();
   }
 
   /// Получение данных о неликвидных товарах
@@ -20591,4 +21019,14 @@ class ApiService {
       return false;
     }
   }
+}
+
+class OrderStatusUpdateException implements Exception {
+  final int statusCode;
+  final String message;
+
+  OrderStatusUpdateException(this.statusCode, this.message);
+
+  @override
+  String toString() => 'OrderStatusUpdateException($statusCode, $message)';
 }

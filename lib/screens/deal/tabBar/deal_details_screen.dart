@@ -14,10 +14,12 @@ import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/custom_widget/file_utils.dart';
 import 'package:crm_task_manager/main.dart';
 import 'package:crm_task_manager/models/dealById_model.dart';
+import 'package:crm_task_manager/models/deal_model.dart';
 import 'package:crm_task_manager/models/field_configuration.dart';
 import 'package:crm_task_manager/models/notes_model.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_delete.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_details/dropdown_history.dart';
+import 'package:crm_task_manager/screens/deal/tabBar/deal_dropdown_bottom_dialog.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_edit_screen.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/add_notes.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/lead_navigate_to_chat.dart';
@@ -67,6 +69,10 @@ class DealDetailsScreen extends StatefulWidget {
 class _DealDetailsScreenState extends State<DealDetailsScreen> {
   List<Map<String, String>> details = [];
   DealById? currentDeal;
+  late final int _initialStatusId;
+  int? _currentStatusId;
+  bool _statusChangedFromDetails = false;
+  bool _isStatusSheetOpen = false;
   bool _canEditDeal = false;
   bool _canDeleteDeal = false;
   bool _createTaskInDealEnabled = false;
@@ -121,12 +127,97 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
   @override
   void initState() {
     super.initState();
+    _initialStatusId = widget.statusId;
+    _currentStatusId = widget.statusId;
     _checkPermissions().then((_) {
       _refreshDealDetails();
       _fetchDealNotes();
     });
     _fetchTutorialProgress();
     _loadFieldConfiguration();
+  }
+
+  Map<String, dynamic> _buildNavigationResult() {
+    return {
+      'refresh': _statusChangedFromDetails,
+      'statusId': _initialStatusId,
+      'newStatusId': _currentStatusId ?? _initialStatusId,
+    };
+  }
+
+  Future<bool> _handleBackNavigation() async {
+    if (!mounted) return false;
+    Navigator.pop(context, _buildNavigationResult());
+    return false;
+  }
+
+  Future<void> _reloadDealView() async {
+    if (mounted) {
+      setState(() {
+        currentDeal = null;
+        details.clear();
+        _isConfigurationLoaded = false;
+      });
+    }
+    _loadFieldConfiguration();
+    await _refreshDealDetails();
+    await _fetchDealNotes();
+    if (!mounted) return;
+    context.read<DealBloc>().add(FetchDealStatuses());
+  }
+
+  Future<void> _openStatusChangeSheet() async {
+    if (currentDeal == null || _isStatusSheetOpen) return;
+
+    final deal = Deal(
+      id: currentDeal!.id,
+      name: currentDeal!.name,
+      startDate: currentDeal!.startDate,
+      endDate: currentDeal!.endDate,
+      description: currentDeal!.description,
+      sum: currentDeal!.sum ?? '0',
+      statusId: currentDeal!.statusId,
+      manager: currentDeal!.manager,
+      lead: currentDeal!.lead,
+      dealStatuses: const [],
+      dealCustomFields: const [],
+      outDated: false,
+      needsAttention: false,
+      createdAt: currentDeal!.createdAt,
+    );
+
+    setState(() {
+      _isStatusSheetOpen = true;
+    });
+
+    try {
+      await showDealStatusBottomSheet(
+        context,
+        currentDeal!.dealStatuses.isNotEmpty
+            ? currentDeal!.dealStatuses.map((s) => s.title).join(', ')
+            : (currentDeal!.dealStatus?.title ?? widget.dealStatus),
+        (String _, List<int> newStatusIds) {
+          if (!mounted) return;
+          setState(() {
+            _statusChangedFromDetails = true;
+            _currentStatusId = newStatusIds.isNotEmpty
+                ? newStatusIds.first
+                : _currentStatusId;
+          });
+          _reloadDealView();
+        },
+        deal,
+        _apiService,
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isStatusSheetOpen = false;
+        });
+      } else {
+        _isStatusSheetOpen = false;
+      }
+    }
   }
 
   void _initTargets() {
@@ -711,8 +802,14 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return MultiBlocListener(
-      listeners: [
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+        await _handleBackNavigation();
+      },
+      child: MultiBlocListener(
+        listeners: [
         BlocListener<DealByIdBloc, DealByIdState>(
           listener: (context, state) {
             if (state is DealByIdError) {
@@ -756,9 +853,9 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
             }
           },
         ),
-      ],
-      child: BlocBuilder<DealByIdBloc, DealByIdState>(
-        builder: (context, state) {
+        ],
+        child: BlocBuilder<DealByIdBloc, DealByIdState>(
+          builder: (context, state) {
           if (state is DealByIdLoading) {
             return Scaffold(
               backgroundColor: Colors.white,
@@ -850,7 +947,8 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
             backgroundColor: Colors.white,
             body: Center(child: Text('')),
           );
-        },
+          },
+        ),
       ),
     );
   }
@@ -1933,9 +2031,7 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
               width: 24,
               height: 24,
             ),
-            onPressed: () {
-              Navigator.pop(context, widget.statusId);
-            },
+            onPressed: () => _handleBackNavigation(),
           ),
         ),
       ),
@@ -2039,6 +2135,9 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
                 );
 
                 if (shouldUpdate == true) {
+                  setState(() {
+                    _statusChangedFromDetails = true;
+                  });
                   _loadFieldConfiguration();
                   context
                       .read<DealByIdBloc>()
@@ -2157,6 +2256,47 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
   Widget _buildDetailItem(String label, String value) {
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
+        if (label == AppLocalizations.of(context)!.translate('status_details') ||
+            label == AppLocalizations.of(context)!.translate('status_history')) {
+          return GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: _openStatusChangeSheet,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildLabel(label),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Flexible(
+                        child: Text(
+                          value,
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontFamily: 'Gilroy',
+                            fontWeight: FontWeight.w500,
+                            color: Color(0xff1E2E52),
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      const Icon(
+                        Icons.keyboard_arrow_down_rounded,
+                        color: Color(0xff1E2E52),
+                        size: 16,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
         // ✅ НОВОЕ: Обработка пользователей
         if (label == AppLocalizations.of(context)!.translate('assignee') ||
             label == AppLocalizations.of(context)!.translate('assignees') ||

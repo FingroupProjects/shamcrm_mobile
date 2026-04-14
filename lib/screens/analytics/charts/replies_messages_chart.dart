@@ -16,6 +16,12 @@ class RepliesMessagesChart extends StatefulWidget {
 }
 
 class _RepliesMessagesChartState extends State<RepliesMessagesChart> {
+  String _displayChannelName(String channelName) {
+    return channelName.trim().toLowerCase() == 'green_api'
+        ? 'WhatsApp'
+        : channelName;
+  }
+
   bool _isLoading = true;
   String? _error;
   RepliesToMessagesResponse? _data;
@@ -130,7 +136,7 @@ class _RepliesMessagesChartState extends State<RepliesMessagesChart> {
                     return ListTile(
                       contentPadding: EdgeInsets.zero,
                       title: Text(
-                        item.channelName,
+                        _displayChannelName(item.channelName),
                         style: TextStyle(
                           fontSize: ResponsiveHelper(context).bodyFontSize,
                           fontWeight: FontWeight.w600,
@@ -360,7 +366,7 @@ class _RepliesMessagesChartState extends State<RepliesMessagesChart> {
                                     final item = displayItems[group.x.toInt()];
 
                                     return BarTooltipItem(
-                                      '${item.channelName}\n',
+                                      '${_displayChannelName(item.channelName)}\n',
                                       TextStyle(
                                         color: const Color(0xff0F172A),
                                         fontWeight: FontWeight.w700,
@@ -374,8 +380,7 @@ class _RepliesMessagesChartState extends State<RepliesMessagesChart> {
                                           style: TextStyle(
                                             color: const Color(0xff6366F1),
                                             fontWeight: FontWeight.w600,
-                                            fontSize:
-                                                responsive.smallFontSize,
+                                            fontSize: responsive.smallFontSize,
                                             fontFamily: 'Golos',
                                           ),
                                         ),
@@ -385,8 +390,7 @@ class _RepliesMessagesChartState extends State<RepliesMessagesChart> {
                                           style: TextStyle(
                                             color: const Color(0xff10B981),
                                             fontWeight: FontWeight.w600,
-                                            fontSize:
-                                                responsive.smallFontSize,
+                                            fontSize: responsive.smallFontSize,
                                             fontFamily: 'Golos',
                                           ),
                                         ),
@@ -396,8 +400,7 @@ class _RepliesMessagesChartState extends State<RepliesMessagesChart> {
                                           style: TextStyle(
                                             color: const Color(0xffEF4444),
                                             fontWeight: FontWeight.w600,
-                                            fontSize:
-                                                responsive.smallFontSize,
+                                            fontSize: responsive.smallFontSize,
                                             fontFamily: 'Golos',
                                           ),
                                         ),

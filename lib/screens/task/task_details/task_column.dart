@@ -293,8 +293,9 @@ class _TaskColumnState extends State<TaskColumn> {
     // ОПТИМИЗАЦИЯ: При обновлении заново загружаем задачи и статусы из единого блока
     if (mounted) {
       final taskBloc = context.read<TaskBloc>();
-      taskBloc.add(FetchTaskStatuses());
-      taskBloc.add(FetchTasks(widget.statusId));
+      await taskBloc.clearAllCountsAndCache();
+      ApiService.clearAnalyticsResponseCache();
+      taskBloc.add(FetchTaskStatuses(forceRefresh: true));
     }
     return Future.delayed(Duration(milliseconds: 100));
   }

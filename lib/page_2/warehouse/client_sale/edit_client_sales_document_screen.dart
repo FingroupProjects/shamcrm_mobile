@@ -505,20 +505,34 @@ class _EditClientSalesDocumentScreenState
   }
 
   void _updateDocument() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (_isLoading) return;
+    setState(() => _isLoading = true);
+
+    void cancelLoading() {
+      if (!mounted || !_isLoading) return;
+      setState(() => _isLoading = false);
+    }
+
+    if (!_formKey.currentState!.validate()) {
+      cancelLoading();
+      return;
+    }
 
     if (_items.isEmpty) {
       _showSnackBar('Добавьте хотя бы один товар', false);
+      cancelLoading();
       return;
     }
 
     if (_selectedStorage == null) {
       _showSnackBar('Выберите склад', false);
+      cancelLoading();
       return;
     }
 
     if (_selectedLead == null) {
       _showSnackBar('Выберите лид', false);
+      cancelLoading();
       return;
     }
 
@@ -566,10 +580,9 @@ class _EditClientSalesDocumentScreenState
       );
       // Фокусируемся на первом товаре с ошибкой
       _focusFirstErrorItem();
+      cancelLoading();
       return;
     }
-
-    setState(() => _isLoading = true);
 
     try {
       DateTime? parsedDate =
@@ -598,7 +611,7 @@ class _EditClientSalesDocumentScreenState
         exchangeRate: _exchangeRateValue,
       ));
     } catch (e) {
-      setState(() => _isLoading = false);
+      cancelLoading();
     }
   }
 

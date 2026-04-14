@@ -15,7 +15,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 class OrderCard extends StatefulWidget {
   final Order order;
   final int? organizationId;
-  final VoidCallback onStatusUpdated;
+  final void Function(int oldStatusId, int newStatusId) onStatusUpdated;
   final void Function(int newStatusId) onStatusId;
   final Function(int) onTabChange;
 
@@ -318,17 +318,16 @@ class _OrderCardState extends State<OrderCard> {
         );
         
         // Обрабатываем результат редактирования заказа
-        if (result != null && result is Map<String, dynamic> && result['success'] == true && mounted) {
-          final statusId = result['statusId'];
-          if (statusId != null) {
-            // Обновляем список заказов для соответствующего статуса
-            context.read<OrderBloc>().add(FetchOrders(
-              statusId: statusId,
-              page: 1,
-              perPage: 20,
-              forceRefresh: true,
-            ));
-          }
+        if (result != null &&
+            result is Map<String, dynamic> &&
+            result['success'] == true &&
+            mounted) {
+          final oldStatusId =
+              result['statusId'] as int? ?? widget.order.orderStatus.id;
+          final newStatusId = result['newStatusId'] as int? ?? oldStatusId;
+
+          context.read<OrderBloc>().add(FetchOrderStatuses(forceRefresh: true));
+          widget.onStatusUpdated(oldStatusId, newStatusId);
         }
       },
       child: Container(
@@ -414,8 +413,10 @@ class _OrderCardState extends State<OrderCard> {
                             dropdownValue = newValue;
                             statusId = newStatusId;
                           });
-                          widget.onStatusId(newStatusId);
-                          widget.onStatusUpdated();
+                          widget.onStatusUpdated(
+                            widget.order.orderStatus.id,
+                            newStatusId,
+                          );
                         },
                         widget.order,
                         onTabChange: widget.onTabChange,

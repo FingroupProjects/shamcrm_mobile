@@ -1,6 +1,9 @@
+import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/dashboard/top_selling_goods/sales_dashboard_top_selling_goods_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/dashboard/goods_movement/sales_dashboard_goods_movement_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/dashboard/goods_movement/sales_dashboard_goods_movement_event.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/dashboard/manufacture_goods/sales_dashboard_manufacture_goods_bloc.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/dashboard/manufacture_materials/sales_dashboard_manufacture_materials_bloc.dart';
 import 'package:crm_task_manager/page_2/dashboard/detailed_report/contents/cash_balance_content.dart';
 import 'package:crm_task_manager/page_2/dashboard/detailed_report/contents/reconciliation_act_content.dart';
 import 'package:crm_task_manager/page_2/dashboard/detailed_report/contents/goods_movement_content.dart';
@@ -8,6 +11,8 @@ import 'package:crm_task_manager/page_2/dashboard/detailed_report/contents/sales
 import 'package:crm_task_manager/page_2/dashboard/detailed_report/contents/net_profit_content.dart';
 import 'package:crm_task_manager/page_2/dashboard/detailed_report/contents/profitability_content.dart';
 import 'package:crm_task_manager/page_2/dashboard/detailed_report/contents/expense_structure_content.dart';
+import 'package:crm_task_manager/page_2/dashboard/detailed_report/contents/manufacture_goods_content.dart';
+import 'package:crm_task_manager/page_2/dashboard/detailed_report/contents/manufacture_materials_content.dart';
 // import 'package:crm_task_manager/page_2/dashboard/detailed_report/contents/order_quantity_content.dart'; // ЗАКОММЕНТИРОВАНО: Вкладка "Количество заказов" отключена
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -73,9 +78,10 @@ class DetailedReportScreen extends StatefulWidget {
 
 class _DetailedReportScreenState extends State<DetailedReportScreen>
     with TickerProviderStateMixin {
+  final ApiService _apiService = ApiService();
   late TabController _tabController;
   late ScrollController _scrollController;
-  final List<Map<String, dynamic>> _tabTitles = [
+  static const List<Map<String, dynamic>> _baseTabTitles = [
     {'id': 0, 'titleKey': 'tab_goods_illiquid'},
     {'id': 1, 'titleKey': 'tab_reconciliation_act'},
     {'id': 11, 'titleKey': 'tab_goods_movement'},
@@ -87,9 +93,16 @@ class _DetailedReportScreenState extends State<DetailedReportScreen>
     {'id': 7, 'titleKey': 'tab_net_profit'},
     {'id': 8, 'titleKey': 'tab_profitability_sales'},
     {'id': 9, 'titleKey': 'tab_expense_structure'},
-    {'id': 12, 'titleKey': 'tab_salary_debt'},
-    // {'id': 10, 'titleKey': 'tab_order_quantity'}, // ЗАКОММЕНТИРОВАНО: Вкладка "Количество заказов" отключена
   ];
+  static const List<Map<String, dynamic>> _manufactureTabTitles = [
+    {'id': 13, 'titleKey': 'tab_manufacture_goods'},
+    {'id': 14, 'titleKey': 'tab_manufacture_materials'},
+  ];
+  static const Map<String, dynamic> _salaryTab = {
+    'id': 12,
+    'titleKey': 'tab_salary_debt',
+  };
+  List<Map<String, dynamic>> _tabTitles = [];
   late List<GlobalKey> _tabKeys;
   late int _currentTabIndex;
   final TextEditingController _searchController = TextEditingController();
@@ -110,9 +123,13 @@ class _DetailedReportScreenState extends State<DetailedReportScreen>
   late SalesDashboardProfitabilityBloc _profitabilityBloc;
   late SalesDashboardExpenseStructureBloc _expenseStructureBloc;
   late SalesDashboardSalaryReportBloc _salaryReportBloc;
+  late SalesDashboardManufactureGoodsBloc _manufactureGoodsBloc;
+  late SalesDashboardManufactureMaterialsBloc _manufactureMaterialsBloc;
   // late SalesDashboardOrderQuantityBloc _orderQuantityBloc; // ЗАКОММЕНТИРОВАНО: Вкладка "Количество заказов" отключена
   late SalesDashboardReconciliationActBloc _reconciliationActBloc;
   late SalesDashboardGoodsMovementBloc _goodsMovementBloc;
+  bool _hasManufacture = false;
+  bool _tabControllerInitialized = false;
 
   @override
   void initState() {
@@ -139,26 +156,16 @@ class _DetailedReportScreenState extends State<DetailedReportScreen>
           filter: {'year': DateTime.now().year.toString()},
         ),
       );
+    _manufactureGoodsBloc = SalesDashboardManufactureGoodsBloc();
+    _manufactureMaterialsBloc = SalesDashboardManufactureMaterialsBloc();
     // _orderQuantityBloc = SalesDashboardOrderQuantityBloc()..add(LoadOrderQuantityReport()); // ЗАКОММЕНТИРОВАНО: Вкладка "Количество заказов" отключена
     _reconciliationActBloc = SalesDashboardReconciliationActBloc();
     _goodsMovementBloc = SalesDashboardGoodsMovementBloc()
       ..add(LoadGoodsMovementReport());
 
-    _currentTabIndex = widget.currentTabIndex;
     _scrollController = ScrollController();
-    _tabKeys = List.generate(_tabTitles.length, (_) => GlobalKey());
-    _tabController = TabController(
-      length: _tabTitles.length,
-      vsync: this,
-      initialIndex: widget.currentTabIndex,
-    );
-    _tabController.addListener(() {
-      if (_tabController.indexIsChanging) return;
-      setState(() {
-        _currentTabIndex = _tabController.index;
-      });
-      _scrollToActiveTab();
-    });
+    _rebuildTabs(initialIndex: widget.currentTabIndex);
+    _loadManufactureSettings();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _scrollToActiveTab();
@@ -183,6 +190,8 @@ class _DetailedReportScreenState extends State<DetailedReportScreen>
     _profitabilityBloc.close();
     _expenseStructureBloc.close();
     _salaryReportBloc.close();
+    _manufactureGoodsBloc.close();
+    _manufactureMaterialsBloc.close();
     // _orderQuantityBloc.close(); // ЗАКОММЕНТИРОВАНО: Вкладка "Количество заказов" отключена
     _reconciliationActBloc.close();
     _goodsMovementBloc.close();
@@ -250,6 +259,12 @@ class _DetailedReportScreenState extends State<DetailedReportScreen>
       salaryFilter.putIfAbsent('year', () => DateTime.now().year.toString());
       _salaryReportBloc
           .add(LoadSalaryReport(filter: salaryFilter, search: search));
+    } else if (id == 13) {
+      _manufactureGoodsBloc
+          .add(LoadManufactureGoodsReport(filter: filter, search: search));
+    } else if (id == 14) {
+      _manufactureMaterialsBloc
+          .add(LoadManufactureMaterialsReport(filter: filter, search: search));
     }
     // else if (id == 10) {
     //   _orderQuantityBloc.add(LoadOrderQuantityReport(filter: filter, search: search));
@@ -270,6 +285,72 @@ class _DetailedReportScreenState extends State<DetailedReportScreen>
       _filters[_currentTabIndex] = {};
     });
     _reloadCurrentTabData();
+  }
+
+  Future<void> _loadManufactureSettings() async {
+    try {
+      final settings = await _apiService.getSettings(null);
+      final result = settings['result'] as Map<String, dynamic>?;
+      final hasManufacture =
+          result?['has_manufacture'] == true || result?['has_manufacture'] == 1;
+
+      if (!mounted || _hasManufacture == hasManufacture) return;
+
+      setState(() {
+        _hasManufacture = hasManufacture;
+        _rebuildTabs(preserveCurrentSelection: true);
+      });
+    } catch (_) {
+      if (!mounted) return;
+    }
+  }
+
+  void _rebuildTabs({
+    int? initialIndex,
+    bool preserveCurrentSelection = false,
+  }) {
+    final currentTabId = preserveCurrentSelection && _tabTitles.isNotEmpty
+        ? _tabTitles[_currentTabIndex]['id'] as int
+        : null;
+
+    _tabTitles = [
+      ..._baseTabTitles,
+      _salaryTab,
+      if (_hasManufacture) ..._manufactureTabTitles,
+    ];
+
+    final nextIndex = preserveCurrentSelection && currentTabId != null
+        ? _tabTitles.indexWhere((tab) => tab['id'] == currentTabId)
+        : (initialIndex ?? widget.currentTabIndex);
+    _currentTabIndex =
+        nextIndex >= 0 && nextIndex < _tabTitles.length ? nextIndex : 0;
+
+    _tabKeys = List.generate(_tabTitles.length, (_) => GlobalKey());
+
+    if (_tabControllerInitialized) {
+      _tabController.dispose();
+    }
+
+    _tabController = TabController(
+      length: _tabTitles.length,
+      vsync: this,
+      initialIndex: _currentTabIndex,
+    );
+    _tabController.addListener(() {
+      if (_tabController.indexIsChanging) return;
+      setState(() {
+        _currentTabIndex = _tabController.index;
+      });
+      _reloadCurrentTabData();
+      _scrollToActiveTab();
+    });
+    _tabControllerInitialized = true;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _reloadCurrentTabData();
+      }
+    });
   }
 
   @override
@@ -302,6 +383,10 @@ class _DetailedReportScreenState extends State<DetailedReportScreen>
               value: _expenseStructureBloc),
           BlocProvider<SalesDashboardSalaryReportBloc>.value(
               value: _salaryReportBloc),
+          BlocProvider<SalesDashboardManufactureGoodsBloc>.value(
+              value: _manufactureGoodsBloc),
+          BlocProvider<SalesDashboardManufactureMaterialsBloc>.value(
+              value: _manufactureMaterialsBloc),
           // BlocProvider<SalesDashboardOrderQuantityBloc>.value(value: _orderQuantityBloc), // ЗАКОММЕНТИРОВАНО: Вкладка "Количество заказов" отключена
           BlocProvider<SalesDashboardReconciliationActBloc>.value(
               value: _reconciliationActBloc),
@@ -337,6 +422,7 @@ class _DetailedReportScreenState extends State<DetailedReportScreen>
               showFilterIcon: !isClickAvatarIcon &&
                   _tabTitles[_currentTabIndex]['id'] != 12,
               currentTabIndex: _currentTabIndex,
+              currentTabId: _tabTitles[_currentTabIndex]['id'] as int,
               onChangedSearchInput: _onSearch,
               textEditingController: _searchController,
               focusNode: _searchFocusNode,
@@ -451,6 +537,10 @@ class _DetailedReportScreenState extends State<DetailedReportScreen>
           _reloadCurrentTabData();
         },
       );
+    } else if (id == 13) {
+      return const ManufactureGoodsContent();
+    } else if (id == 14) {
+      return const ManufactureMaterialsContent();
     }
     // else if (id == 10) {
     //   return OrderQuantityContent();

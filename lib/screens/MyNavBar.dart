@@ -181,23 +181,28 @@ class _MyNavBarState extends State<MyNavBar> {
     }
 
     if (_orderedItems != null && _orderedItems!.isNotEmpty) {
+      final currentItems = _getAllItems();
       List<NavBarItemData> updatedItems = [];
 
       for (var orderedItem in _orderedItems!) {
-        bool newIsActive = false;
-        if (orderedItem.groupIndex == 1) {
-          newIsActive = widget.currentIndexGroup1 == orderedItem.itemIndex;
-        } else if (orderedItem.groupIndex == 2) {
-          newIsActive = widget.currentIndexGroup2 == orderedItem.itemIndex;
+        final latestItemIndex = currentItems.indexWhere((item) {
+          return item.groupIndex == orderedItem.groupIndex &&
+              item.itemIndex == orderedItem.itemIndex;
+        });
+
+        if (latestItemIndex == -1) {
+          continue;
         }
 
+        final latestItem = currentItems[latestItemIndex];
+
         updatedItems.add(NavBarItemData(
-          title: orderedItem.title,
-          activeIcon: orderedItem.activeIcon,
-          inactiveIcon: orderedItem.inactiveIcon,
-          groupIndex: orderedItem.groupIndex,
-          itemIndex: orderedItem.itemIndex,
-          isActive: newIsActive,
+          title: latestItem.title,
+          activeIcon: latestItem.activeIcon,
+          inactiveIcon: latestItem.inactiveIcon,
+          groupIndex: latestItem.groupIndex,
+          itemIndex: latestItem.itemIndex,
+          isActive: latestItem.isActive,
         ));
       }
 

@@ -1,6 +1,4 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
-import 'package:crm_task_manager/bloc/deal/deal_bloc.dart';
-import 'package:crm_task_manager/bloc/deal/deal_event.dart';
 import 'package:crm_task_manager/custom_widget/custom_card_tasks_tabBar.dart';
 import 'package:crm_task_manager/models/deal_model.dart';
 import 'package:crm_task_manager/screens/deal/deal_cache.dart';
@@ -8,7 +6,6 @@ import 'package:crm_task_manager/screens/deal/tabBar/deal_details_screen.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_dropdown_bottom_dialog.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -16,8 +13,8 @@ class DealCard extends StatefulWidget {
   final Deal deal;
   final String title;
   final int statusId;
-  final VoidCallback onStatusUpdated;
-  final void Function(int newStatusId) onStatusId;
+  final void Function(int oldStatusId, int newStatusId) onStatusUpdated;
+  final void Function(int oldStatusId, int newStatusId) onStatusId;
   final GlobalKey? dropdownKey;
 
   DealCard({
@@ -107,6 +104,7 @@ class _DealCardState extends State<DealCard>
     'telegram_account': 'assets/icons/leads/telegram.png',
     'telegram_bot': 'assets/icons/leads/telegram.png',
     'whatsapp': 'assets/icons/leads/whatsapp.png',
+    'green_api': 'assets/icons/leads/whatsapp.png',
     'facebook': 'assets/icons/leads/messenger.png',
     'instagram': 'assets/icons/leads/instagram.png',
   };
@@ -162,9 +160,20 @@ class _DealCardState extends State<DealCard>
           ),
         );
 
-        if (shouldRefresh == true && mounted) {
-          await DealCache.clearDealsForStatus(widget.statusId);
-          context.read<DealBloc>().add(FetchDeals(widget.statusId));
+        if (mounted && shouldRefresh != null) {
+          final resultMap = shouldRefresh is Map<String, dynamic>
+              ? shouldRefresh
+              : <String, dynamic>{'refresh': shouldRefresh == true};
+          final needsRefresh = resultMap['refresh'] == true;
+
+          if (needsRefresh) {
+            final oldStatusId = resultMap['statusId'] as int? ?? widget.statusId;
+            final newStatusId = resultMap['newStatusId'] as int? ?? oldStatusId;
+
+            await DealCache.clearDealsForStatus(oldStatusId);
+            widget.onStatusUpdated(oldStatusId, newStatusId);
+            widget.onStatusId(oldStatusId, newStatusId);
+          }
         }
       },
       child: AnimatedBuilder(
@@ -272,16 +281,33 @@ class _DealCardState extends State<DealCard>
                                 showDealStatusBottomSheet(
                                   context,
                                   dropdownValue,
-                                  (String newValue, List<int> newStatusIds) {
+                                  (String newValue,
+                                      List<int> newStatusIds) async {
+                                    final oldStatusId = widget.statusId;
                                     final newStatusId = newStatusIds.isNotEmpty
                                         ? newStatusIds.first
-                                        : statusId;
+                                        : oldStatusId;
+
+                                    if (newStatusId != oldStatusId) {
+                                      await DealCache.clearDealsForStatus(
+                                          oldStatusId);
+                                      await DealCache.clearDealsForStatus(
+                                          newStatusId);
+                                      await DealCache.updateDealCountTemporary(
+                                        oldStatusId,
+                                        newStatusId,
+                                      );
+                                    }
+
                                     setState(() {
                                       dropdownValue = newValue;
                                       statusId = newStatusId;
                                     });
-                                    widget.onStatusId(newStatusId);
-                                    widget.onStatusUpdated();
+                                    widget.onStatusId(oldStatusId, newStatusId);
+                                    widget.onStatusUpdated(
+                                      oldStatusId,
+                                      newStatusId,
+                                    );
                                   },
                                   widget.deal,
                                   ApiService(),

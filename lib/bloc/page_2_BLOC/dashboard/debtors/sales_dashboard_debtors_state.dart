@@ -16,13 +16,19 @@ final class SalesDashboardDebtorsLoading extends SalesDashboardDebtorsState {
 
 final class SalesDashboardDebtorsLoaded extends SalesDashboardDebtorsState {
   final DebtorsResponse result;
+  final int currentPage;
+  final int totalPages;
+  final bool hasReachedMax;
 
   const SalesDashboardDebtorsLoaded({
     required this.result,
+    required this.currentPage,
+    required this.totalPages,
+    required this.hasReachedMax,
   });
 
   @override
-  List<Object> get props => [result];
+  List<Object> get props => [result, currentPage, totalPages, hasReachedMax];
 }
 
 final class SalesDashboardDebtorsError extends SalesDashboardDebtorsState {

@@ -93,6 +93,7 @@ import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/storage_bloc
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/units_bloc/units_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/measure_units/measure_units_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/movement/movement_bloc.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/document/manufacture/manufacture_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/price_type/bloc/price_type_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/storage/bloc/storage_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/supplier_return/supplier_return_bloc.dart';
@@ -139,6 +140,7 @@ import 'package:crm_task_manager/update_dialog.dart';
 import 'package:crm_task_manager/widgets/native_internet_aware_wrapper_WITH_GAME.dart';
 import 'package:crm_task_manager/widgets/native_internet_monitor_simple.dart';
 import 'package:crm_task_manager/widgets/http_inspector_fab.dart';
+import 'package:crm_task_manager/widgets/in_app_update_corner_indicator.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
@@ -162,12 +164,12 @@ final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
 void main() async {
   try {
     WidgetsFlutterBinding.ensureInitialized();
-    await OfflineBootstrap.initialize();
-
-    await _initializeFirebase();
 
     final apiService = ApiService();
     final authService = AuthService();
+
+    await _safeInitializeOfflineRuntime();
+    await _safeInitializeFirebase();
 
     final sessionValidation = await _validateApplicationSession(apiService);
 
@@ -181,34 +183,16 @@ void main() async {
       isDomainChecked = await apiService.isDomainChecked();
 
       if (isDomainChecked) {
-        await apiService.initialize();
-        CoreOutboxExecutors.register(apiService);
+        await _safeInitializeApiService(apiService);
+        _safeRegisterOutboxExecutors(apiService);
       }
     } else {
       await _clearAllApplicationData(apiService, authService);
     }
 
-    RemoteMessage? initialMessage;
-    try {
-      if (Firebase.apps.isNotEmpty) {
-        initialMessage = await FirebaseMessaging.instance.getInitialMessage();
-      }
-    } catch (e) {
-      //print('main: Ошибка получения initial message: $e');
-    }
-
-    SystemChrome.setSystemUIOverlayStyle(
-      const SystemUiOverlayStyle(
-        statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.dark,
-        systemNavigationBarColor: Colors.white,
-      ),
-    );
-
-    final String? savedLanguageCode = await LanguageManager.getLanguage();
-    final Locale savedLocale = savedLanguageCode != null
-        ? Locale(savedLanguageCode)
-        : const Locale('ru');
+    final initialMessage = await _safeLoadInitialMessage();
+    _safeConfigureSystemUi();
+    final savedLocale = await _safeLoadLocale();
 
     runApp(MyApp(
       apiService: apiService,
@@ -225,6 +209,84 @@ void main() async {
     debugPrint('main: startup stackTrace: $stackTrace');
     runApp(ErrorApp(error: e.toString()));
   }
+}
+
+Future<void> _safeInitializeOfflineRuntime() async {
+  try {
+    await OfflineBootstrap.initialize();
+  } catch (e, stackTrace) {
+    debugPrint('main: OfflineBootstrap initialize error: $e');
+    debugPrint('main: OfflineBootstrap stackTrace: $stackTrace');
+  }
+}
+
+Future<void> _safeInitializeFirebase() async {
+  try {
+    await _initializeFirebase();
+  } catch (e, stackTrace) {
+    debugPrint('main: Firebase initialize error: $e');
+    debugPrint('main: Firebase initialize stackTrace: $stackTrace');
+  }
+}
+
+Future<void> _safeInitializeApiService(ApiService apiService) async {
+  try {
+    await apiService.initialize();
+  } catch (e, stackTrace) {
+    debugPrint('main: ApiService initialize error: $e');
+    debugPrint('main: ApiService initialize stackTrace: $stackTrace');
+  }
+}
+
+void _safeRegisterOutboxExecutors(ApiService apiService) {
+  try {
+    CoreOutboxExecutors.register(apiService);
+  } catch (e, stackTrace) {
+    debugPrint('main: CoreOutboxExecutors register error: $e');
+    debugPrint('main: CoreOutboxExecutors register stackTrace: $stackTrace');
+  }
+}
+
+Future<RemoteMessage?> _safeLoadInitialMessage() async {
+  try {
+    if (Firebase.apps.isNotEmpty) {
+      return await FirebaseMessaging.instance.getInitialMessage();
+    }
+  } catch (e, stackTrace) {
+    debugPrint('main: initial message error: $e');
+    debugPrint('main: initial message stackTrace: $stackTrace');
+  }
+
+  return null;
+}
+
+void _safeConfigureSystemUi() {
+  try {
+    SystemChrome.setSystemUIOverlayStyle(
+      const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.dark,
+        systemNavigationBarColor: Colors.white,
+      ),
+    );
+  } catch (e, stackTrace) {
+    debugPrint('main: System UI configuration error: $e');
+    debugPrint('main: System UI configuration stackTrace: $stackTrace');
+  }
+}
+
+Future<Locale> _safeLoadLocale() async {
+  try {
+    final String? savedLanguageCode = await LanguageManager.getLanguage();
+    if (savedLanguageCode != null && savedLanguageCode.isNotEmpty) {
+      return Locale(savedLanguageCode);
+    }
+  } catch (e, stackTrace) {
+    debugPrint('main: locale load error: $e');
+    debugPrint('main: locale load stackTrace: $stackTrace');
+  }
+
+  return const Locale('ru');
 }
 
 Future<void> _initializeFirebase() async {
@@ -546,8 +608,6 @@ class _MyAppState extends State<MyApp> {
 
 //1
   Future<void> checkForNewVersion(BuildContext context) async {
-    // TODO remove on building ipa or apk files
-    return;
     try {
       final newVersionPlus = NewVersionPlus();
       final status = await newVersionPlus.getVersionStatus();
@@ -557,7 +617,9 @@ class _MyAppState extends State<MyApp> {
       if (!mounted ||
           !context.mounted ||
           status == null ||
-          status.canUpdate == false) return;
+          status.canUpdate == false) {
+        return;
+      }
 
       final localizations = AppLocalizations.of(context);
 
@@ -756,6 +818,7 @@ class _MyAppState extends State<MyApp> {
             create: (context) => SupplierReturnBloc(widget.apiService)),
         BlocProvider(create: (context) => WriteOffBloc(widget.apiService)),
         BlocProvider(create: (context) => MovementBloc(widget.apiService)),
+        BlocProvider(create: (context) => ManufactureBloc(widget.apiService)),
         BlocProvider(create: (context) => CashDeskBloc()),
         BlocProvider(create: (context) => ExpenseBloc()),
         BlocProvider(create: (context) => IncomeBloc()),
@@ -811,6 +874,7 @@ class _MyAppState extends State<MyApp> {
                 // ← НОВОЕ ИМЯ
                 child: child ?? const SizedBox.shrink(),
               ),
+              const InAppUpdateCornerIndicator(),
               // HTTP Inspector FAB (только в DEBUG режиме)
               if (kDebugMode) const HttpInspectorFab(),
             ],
