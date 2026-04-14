@@ -8199,6 +8199,99 @@ class ApiService {
     }
   }
 
+  Future<int> getUnreadMessagesCount() async {
+    final token = await getToken();
+    String path = '/v2/chat/getUnreadMessagesCount';
+    path = await _appendQueryParams(path);
+
+    final response = await http.get(
+      Uri.parse('$baseUrl$path'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception(
+          'Ошибка ${response.statusCode} при получении общего счетчика чатов');
+    }
+
+    final data = json.decode(response.body);
+    return _extractUnreadCountFromResponse(data);
+  }
+
+  Future<int> getUnreadMessagesCountByChatType(String type) async {
+    final token = await getToken();
+    String path = '/v2/chat/getUnreadMessagesCountByChatType/$type';
+    path = await _appendQueryParams(path);
+
+    final response = await http.get(
+      Uri.parse('$baseUrl$path'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception(
+          'Ошибка ${response.statusCode} при получении счетчика чатов типа $type');
+    }
+
+    final data = json.decode(response.body);
+    return _extractUnreadCountFromResponse(data);
+  }
+
+  int _extractUnreadCountFromResponse(dynamic data) {
+    if (data is int) {
+      return data;
+    }
+
+    if (data is String) {
+      return int.tryParse(data) ?? 0;
+    }
+
+    if (data is Map<String, dynamic>) {
+      final dynamic result = data['result'] ?? data['data'] ?? data;
+
+      if (result is int) {
+        return result;
+      }
+
+      if (result is String) {
+        return int.tryParse(result) ?? 0;
+      }
+
+      if (result is Map<String, dynamic>) {
+        const keys = [
+          'count',
+          'unread_count',
+          'unreadCount',
+          'total',
+          'messages_count',
+        ];
+
+        for (final key in keys) {
+          final value = result[key];
+          if (value is int) {
+            return value;
+          }
+          if (value is String) {
+            final parsed = int.tryParse(value);
+            if (parsed != null) {
+              return parsed;
+            }
+          }
+        }
+      }
+    }
+
+    return 0;
+  }
+
   Future<String> sendMessages(List<int> messageIds) async {
     final token = await getToken();
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id

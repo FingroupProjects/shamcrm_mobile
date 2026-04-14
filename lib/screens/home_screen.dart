@@ -35,6 +35,7 @@ import 'package:crm_task_manager/screens/lead/lead_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/sip/sip_screen.dart';
 import 'package:crm_task_manager/screens/task/task_screen.dart';
+import 'package:crm_task_manager/services/chat_unread_counter_service.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
@@ -66,6 +67,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   List<String> _inactiveIconsGroup1 = [];
   List<String> _inactiveIconsGroup2 = [];
 
+  void _refreshChatUnreadCounters() {
+    ChatUnreadCounterService.instance.refreshCounts(silent: true);
+  }
+
   @override
   void initState() {
     super.initState();
@@ -82,6 +87,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     // ✅ Запускаем фоновую загрузку и обработку push после отрисовки
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted && !_isBackgroundLoading) {
+        ChatUnreadCounterService.instance.initialize();
         _loadDataInBackground();
         _handleInitialMessage();
         _checkPendingWidgetNavigation();
@@ -98,6 +104,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     WidgetService.onNavigateFromWidget = (group, screenIndex) {
       if (mounted) {
         context.read<PermissionsBloc>().add(FetchPermissionsEvent());
+        _refreshChatUnreadCounters();
         setState(() {
           if (group == 1 && screenIndex < _widgetOptionsGroup1.length) {
             _selectedIndexGroup1 = screenIndex;
@@ -115,6 +122,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       if (mounted) {
         context.read<PermissionsBloc>().add(FetchPermissionsEvent());
         debugPrint('HomeScreen: Callback triggered for: $screenIdentifier');
+        _refreshChatUnreadCounters();
         _navigateToScreenByIdentifier(screenIdentifier);
       }
     };
@@ -138,6 +146,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         // Проверяем pending navigation с небольшой задержкой
         Future.delayed(const Duration(milliseconds: 300), () {
           if (mounted) {
+            ChatUnreadCounterService.instance.refreshCounts(silent: true);
             _checkPendingWidgetNavigation();
           }
         });
@@ -161,6 +170,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     if (pendingScreen != null) {
       context.read<PermissionsBloc>().add(FetchPermissionsEvent());
       debugPrint('HomeScreen: Found pending widget navigation: $pendingScreen');
+      _refreshChatUnreadCounters();
       _navigateToScreenByIdentifier(pendingScreen);
     } else {
       debugPrint('HomeScreen: No pending navigation');
@@ -254,6 +264,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
       if (warehouseIndex != null) {
         // Navigate to warehouse tab first
+        _refreshChatUnreadCounters();
         setState(() {
           _selectedIndexGroup1 = warehouseIndex!;
           _selectedIndexGroup2 = -1;
@@ -362,6 +373,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       }
 
       if (warehouseIndex != null) {
+        _refreshChatUnreadCounters();
         setState(() {
           _selectedIndexGroup1 = warehouseIndex!;
           _selectedIndexGroup2 = -1;
@@ -496,6 +508,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     if (targetIndexGroup1 != null) {
       debugPrint(
           'HomeScreen: Setting _selectedIndexGroup1 = $targetIndexGroup1');
+      _refreshChatUnreadCounters();
       setState(() {
         _selectedIndexGroup1 = targetIndexGroup1!;
         _selectedIndexGroup2 = -1;
@@ -505,6 +518,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     } else if (targetIndexGroup2 != null) {
       debugPrint(
           'HomeScreen: Setting _selectedIndexGroup2 = $targetIndexGroup2');
+      _refreshChatUnreadCounters();
       setState(() {
         _selectedIndexGroup2 = targetIndexGroup2!;
         _selectedIndexGroup1 = -1;
@@ -780,15 +794,15 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     // SIP
     // Fallback for current rollout: if backend does not send any sip.* permissions yet,
     // keep the tab visible for integration/testing.
-    final bool showSipTab =
-        hasPermission('sip.read') || !hasAnyPermissionWithPrefix('sip.');
-    if (showSipTab) {
-      widgetsGroup1.add(const SipScreen());
-      titleKeysGroup1.add('appbar_sip');
-      navBarTitleKeysGroup1.add('appbar_sip');
-      activeIconsGroup1.add('assets/icons/MyNavBar/sip_ON.png');
-      inactiveIconsGroup1.add('assets/icons/MyNavBar/sip_OFF.png');
-    }
+    // final bool showSipTab =
+    //     hasPermission('sip.read') || !hasAnyPermissionWithPrefix('sip.');
+    // if (showSipTab) {
+    //   widgetsGroup1.add(const SipScreen());
+    //   titleKeysGroup1.add('appbar_sip');
+    //   navBarTitleKeysGroup1.add('appbar_sip');
+    //   activeIconsGroup1.add('assets/icons/MyNavBar/sip_ON.png');
+    //   inactiveIconsGroup1.add('assets/icons/MyNavBar/sip_OFF.png');
+    // }
 
     // ========== КЛЮЧЕВАЯ ЛОГИКА ==========
 
@@ -892,6 +906,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
 
     if (args != null && !_isPushHandled && _isInitialized) {
+      _refreshChatUnreadCounters();
       setState(() {
         if (args['group'] == 1) {
           if (_widgetOptionsGroup1.isNotEmpty) {
@@ -965,57 +980,72 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             backgroundColor: Colors.white,
             bottomNavigationBar: currentWidget is NoAccessScreen
                 ? const SizedBox.shrink()
-                : AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 260),
-                    switchInCurve: Curves.easeOutCubic,
-                    switchOutCurve: Curves.easeInCubic,
-                    child: _isInitialized && hasNavBarItems
-                        ? MyNavBar(
-                            key: const ValueKey('main_nav_bar'),
-                            currentIndexGroup1: _selectedIndexGroup1,
-                            currentIndexGroup2: _selectedIndexGroup2,
-                            onItemSelected: (groupIndex, itemIndex) {
-                              // Обновляем разрешения при переключении табов (с ограничением частоты)
-                              final now = DateTime.now();
-                              if (_lastPermissionUpdate == null ||
-                                  now.difference(_lastPermissionUpdate!) >
-                                      const Duration(seconds: 5)) {
-                                context
-                                    .read<PermissionsBloc>()
-                                    .add(FetchPermissionsEvent());
-                                _lastPermissionUpdate = now;
-                              }
+                : ValueListenableBuilder<ChatUnreadCounts>(
+                    valueListenable: ChatUnreadCounterService.instance.counts,
+                    builder: (context, chatCounts, _) {
+                      final unreadCountsGroup1 = _navBarTitleKeysGroup1
+                          .map((key) =>
+                              key == 'appbar_chats' ? chatCounts.total : 0)
+                          .toList();
+                      final unreadCountsGroup2 =
+                          _navBarTitleKeysGroup2.map((_) => 0).toList();
 
-                              setState(() {
-                                if (groupIndex == 1) {
-                                  _selectedIndexGroup1 = itemIndex;
-                                  _selectedIndexGroup2 = -1;
-                                } else if (groupIndex == 2) {
-                                  _selectedIndexGroup2 = itemIndex;
-                                  _selectedIndexGroup1 = -1;
-                                }
-                              });
-                            },
-                            navBarTitlesGroup1: _navBarTitleKeysGroup1
-                                .map((key) => key.isEmpty
-                                    ? ''
-                                    : AppLocalizations.of(context)!
-                                        .translate(key))
-                                .toList(),
-                            navBarTitlesGroup2: _navBarTitleKeysGroup2
-                                .map((key) => key.isEmpty
-                                    ? ''
-                                    : AppLocalizations.of(context)!
-                                        .translate(key))
-                                .toList(),
-                            activeIconsGroup1: _activeIconsGroup1,
-                            activeIconsGroup2: _activeIconsGroup2,
-                            inactiveIconsGroup1: _inactiveIconsGroup1,
-                            inactiveIconsGroup2: _inactiveIconsGroup2,
-                          )
-                        : const NavBarShimmerSkeleton(
-                            key: ValueKey('nav_bar_skeleton'),
-                          ),
+                      return AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 260),
+                        switchInCurve: Curves.easeOutCubic,
+                        switchOutCurve: Curves.easeInCubic,
+                        child: _isInitialized && hasNavBarItems
+                            ? MyNavBar(
+                                key: const ValueKey('main_nav_bar'),
+                                currentIndexGroup1: _selectedIndexGroup1,
+                                currentIndexGroup2: _selectedIndexGroup2,
+                                onItemSelected: (groupIndex, itemIndex) {
+                                  final now = DateTime.now();
+                                  if (_lastPermissionUpdate == null ||
+                                      now.difference(_lastPermissionUpdate!) >
+                                          const Duration(seconds: 5)) {
+                                    context
+                                        .read<PermissionsBloc>()
+                                        .add(FetchPermissionsEvent());
+                                    _lastPermissionUpdate = now;
+                                  }
+
+                                  _refreshChatUnreadCounters();
+
+                                  setState(() {
+                                    if (groupIndex == 1) {
+                                      _selectedIndexGroup1 = itemIndex;
+                                      _selectedIndexGroup2 = -1;
+                                    } else if (groupIndex == 2) {
+                                      _selectedIndexGroup2 = itemIndex;
+                                      _selectedIndexGroup1 = -1;
+                                    }
+                                  });
+                                },
+                                navBarTitlesGroup1: _navBarTitleKeysGroup1
+                                    .map((key) => key.isEmpty
+                                        ? ''
+                                        : AppLocalizations.of(context)!
+                                            .translate(key))
+                                    .toList(),
+                                navBarTitlesGroup2: _navBarTitleKeysGroup2
+                                    .map((key) => key.isEmpty
+                                        ? ''
+                                        : AppLocalizations.of(context)!
+                                            .translate(key))
+                                    .toList(),
+                                activeIconsGroup1: _activeIconsGroup1,
+                                activeIconsGroup2: _activeIconsGroup2,
+                                inactiveIconsGroup1: _inactiveIconsGroup1,
+                                inactiveIconsGroup2: _inactiveIconsGroup2,
+                                unreadCountsGroup1: unreadCountsGroup1,
+                                unreadCountsGroup2: unreadCountsGroup2,
+                              )
+                            : const NavBarShimmerSkeleton(
+                                key: ValueKey('nav_bar_skeleton'),
+                              ),
+                      );
+                    },
                   ),
           );
         },

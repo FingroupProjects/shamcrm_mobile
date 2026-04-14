@@ -44,6 +44,7 @@ import 'package:crm_task_manager/api/service/http_logger.dart';
 import 'package:crm_task_manager/api/service/message_reaction_api_service.dart';
 import 'package:crm_task_manager/custom_widget/custom_chat_styles.dart';
 import 'package:crm_task_manager/models/message_reaction_model.dart';
+import 'package:crm_task_manager/services/chat_unread_counter_service.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/chats_items.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/file_message_bubble.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/message_bubble.dart';
@@ -1020,6 +1021,13 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
     super.initState();
     _checkPermissions();
     _getMyDisplayName();
+    ChatUnreadCounterService.instance.markChatOpened(
+      unreadCount: widget.chatItem.unreadCount,
+      type: widget.endPointInTab,
+    );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ChatUnreadCounterService.instance.refreshCounts(silent: true);
+    });
     if (widget.initialChannelName != null &&
         widget.initialChannelName!.isNotEmpty) {
       channelName = widget.initialChannelName;
@@ -3836,6 +3844,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
     // ✅ ШАГ 7: Обнуляем счетчик непрочитанных сообщений локально
     // Это скрывает счетчик до момента прихода нового сообщения от сервера
     _chatsBloc?.add(ResetUnreadCount(widget.chatId));
+    ChatUnreadCounterService.instance.refreshCounts(silent: true);
 
     debugPrint(
         '=================-=== ✅ ChatSmsScreen.dispose COMPLETED for chat ${widget.chatId}');
