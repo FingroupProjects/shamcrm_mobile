@@ -415,6 +415,7 @@ class GoodsBloc extends Bloc<GoodsEvent, GoodsState> {
           labelId: event.labelId, // Передаем ID метки
           productionType: event.productionType,
           materialGoods: event.materialGoods,
+          relatedGoods: event.relatedGoods,
         );
 
         if (response['success'] == true) {
@@ -470,6 +471,7 @@ class GoodsBloc extends Bloc<GoodsEvent, GoodsState> {
           labelId: event.labelId, // Передаем ID метки
           productionType: event.productionType,
           materialGoods: event.materialGoods,
+          relatedGoods: event.relatedGoods,
         );
 
         if (response['success'] == true) {

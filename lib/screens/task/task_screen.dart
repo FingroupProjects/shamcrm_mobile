@@ -290,12 +290,14 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
           _isTutorialShown = isTutorialShown;
         });
 
-        // ✅ Если статусы уже пришли, но табы пустые — повторно обработаем статусы
+        // Если права пришли позже статусов, повторно запрашиваем статусы,
+        // даже если bloc уже успел уйти из TaskLoaded в другое состояние.
         if (mounted && _canReadTaskStatus && _tabTitles.isEmpty) {
-          final taskBloc = context.read<TaskBloc>();
-          if (taskBloc.state is TaskLoaded) {
-            taskBloc.add(FetchTaskStatuses());
-          }
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              context.read<TaskBloc>().add(FetchTaskStatuses());
+            }
+          });
         }
         return;
       }
@@ -356,13 +358,14 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
         _isTutorialShown = isTutorialShown;
       });
 
-      // ✅ ВАЖНО: если статусы уже загружены, но права пришли позже,
-      // табы могли остаться пустыми → триггерим повторную обработку статусов
+      // Если права пришли позже статусов, повторно запрашиваем статусы,
+      // даже если bloc уже успел переключиться в TaskLoading/TaskDataLoaded.
       if (mounted && _canReadTaskStatus && _tabTitles.isEmpty) {
-        final taskBloc = context.read<TaskBloc>();
-        if (taskBloc.state is TaskLoaded) {
-          taskBloc.add(FetchTaskStatuses());
-        }
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            context.read<TaskBloc>().add(FetchTaskStatuses());
+          }
+        });
       }
 
       if (tutorialProgress != null &&
@@ -1800,7 +1803,8 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
 
                 if (_pendingStatusIdAfterHardRefresh != null) {
                   final pendingIndex = _tabTitles.indexWhere(
-                    (status) => status['id'] == _pendingStatusIdAfterHardRefresh,
+                    (status) =>
+                        status['id'] == _pendingStatusIdAfterHardRefresh,
                   );
 
                   if (pendingIndex != -1) {
@@ -1961,6 +1965,8 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
                     statusId: status['id'],
                     name: status['title'],
                     userId: _selectedUserId,
+                    isActive:
+                        status['id'] == _tabTitles[_currentTabIndex]['id'],
                     onStatusId: (newStatusId) {
                       _hardRefreshAfterTaskChange(newStatusId);
                     },

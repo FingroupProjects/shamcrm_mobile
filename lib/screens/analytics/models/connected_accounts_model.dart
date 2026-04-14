@@ -94,8 +94,8 @@ class ConnectedAccountsResponse {
               ? result['totals']
               : <String, dynamic>{},
         ),
-        bestAccount:
-            SafeConverters.toSafeString(result['best_account'], defaultValue: ''),
+        bestAccount: SafeConverters.toSafeString(result['best_account'],
+            defaultValue: ''),
       );
     }
 

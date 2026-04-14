@@ -49,6 +49,7 @@ class DealBloc extends Bloc<DealEvent, DealState> {
     on<DeleteDealStatuses>(_deleteDealStatuses);
     on<UpdateDealStatusEdit>(_updateDealStatusEdit);
     on<FetchDealStatus>(_fetchDealStatus);
+    on<DealCreatedFromSocket>(_onDealCreatedFromSocket);
   }
 
   bool get _hasActiveFilters {
@@ -379,6 +380,70 @@ class DealBloc extends Bloc<DealEvent, DealState> {
     } catch (e) {
       debugPrint('❌ DealBloc: _fetchDealStatuses - Error: $e');
       emit(DealError('Не удалось загрузить статусы: $e'));
+    }
+  }
+
+  Future<void> _onDealCreatedFromSocket(
+    DealCreatedFromSocket event,
+    Emitter<DealState> emit,
+  ) async {
+    if (event.hasActiveFilters) {
+      if (event.activeStatusId != null) {
+        add(FetchDeals(
+          event.activeStatusId!,
+          query: _currentQuery,
+          managerIds: _currentManagerIds,
+          regionsIds: _currentRegionsIds,
+          regionId: _currentRegionId,
+          cityIds: _currentCityIds,
+          executorIds: _currentExecutorIds,
+          sources: _currentSources,
+          leadIds: _currentLeadIds,
+          statusIds: _currentStatusId,
+          fromDate: _currentFromDate,
+          toDate: _currentToDate,
+          daysWithoutActivity: _currentDaysWithoutActivity,
+          hasTasks: _currentHasTasks,
+          withoutNotices: _currentWithoutNotices,
+          overdueNotices: _currentOverdueNotices,
+          leadStatuses: _currentLeadStatuses,
+          reasonForRefusalIds: _currentReasonForRefusalIds,
+          salesFunnelId: currentSalesFunnelId,
+          directoryValues: _currentDirectoryValues,
+          names: _currentNames,
+          customFieldFilters: _currentCustomFieldFilters,
+        ));
+      }
+      return;
+    }
+
+    final newCount = (_dealCounts[event.deal.statusId] ?? 0) + 1;
+    _dealCounts[event.deal.statusId] = newCount;
+
+    await DealCache.incrementDealCount(event.deal.statusId);
+    await DealCache.insertOrUpdateDealForStatus(
+        event.deal.statusId, event.deal);
+
+    if (state is DealLoaded) {
+      final currentState = state as DealLoaded;
+      emit(currentState.copyWith(dealCounts: Map<int, int>.from(_dealCounts)));
+      return;
+    }
+
+    if (state is DealDataLoaded) {
+      final currentState = state as DealDataLoaded;
+      final updatedDeals = List<Deal>.from(currentState.deals)
+        ..removeWhere((deal) => deal.id == event.deal.id);
+
+      if (event.activeStatusId == event.deal.statusId) {
+        updatedDeals.insert(0, event.deal);
+      }
+
+      emit(currentState.copyWith(
+        deals: updatedDeals,
+        currentPage: 1,
+        dealCounts: Map<int, int>.from(_dealCounts),
+      ));
     }
   }
 

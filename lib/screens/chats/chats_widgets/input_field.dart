@@ -292,53 +292,54 @@ class _InputFieldState extends State<InputField>
 
     final selection = widget.messageController.selection;
     final hasSelection = selection.isValid && selection.start != selection.end;
+    final localizations = AppLocalizations.of(context);
 
     final buttons = [
       _buildFormattingButton(
         icon: Icons.copy_rounded,
-        label: 'Копировать',
+        label: localizations?.translate('copy') ?? 'Копировать',
         onTap: _copy,
         isEnabled: hasSelection,
       ),
       _buildFormattingButton(
         icon: Icons.content_cut_rounded,
-        label: 'Вырезать',
+        label: localizations?.translate('cut') ?? 'Вырезать',
         onTap: _cut,
         isEnabled: hasSelection,
       ),
       _buildFormattingButton(
         icon: Icons.content_paste_rounded,
-        label: 'Вставить',
+        label: localizations?.translate('paste') ?? 'Вставить',
         onTap: _paste,
         isEnabled: true,
       ),
       _buildFormattingButton(
         icon: Icons.select_all_rounded,
-        label: 'Выбрать все',
+        label: localizations?.translate('select_all') ?? 'Выбрать все',
         onTap: _selectAll,
         isEnabled: widget.messageController.text.isNotEmpty,
       ),
       _buildFormattingButton(
         icon: Icons.format_bold_rounded,
-        label: 'Жирный',
+        label: localizations?.translate('bold') ?? 'Жирный',
         onTap: () => _applyFormatting('bold'),
         isEnabled: hasSelection,
       ),
       _buildFormattingButton(
         icon: Icons.format_italic_rounded,
-        label: 'Курсив',
+        label: localizations?.translate('italic') ?? 'Курсив',
         onTap: () => _applyFormatting('italic'),
         isEnabled: hasSelection,
       ),
       _buildFormattingButton(
         icon: Icons.link_rounded,
-        label: 'Ссылка',
+        label: localizations?.translate('link') ?? 'Ссылка',
         onTap: () => _applyLinkFormatting(context),
         isEnabled: hasSelection,
       ),
       _buildFormattingButton(
         icon: Icons.strikethrough_s_rounded,
-        label: 'Зачеркнутый',
+        label: localizations?.translate('strikethrough') ?? 'Зачеркнутый',
         onTap: () => _applyFormatting('strikethrough'),
         isEnabled: hasSelection,
       ),
@@ -492,6 +493,7 @@ class _InputFieldState extends State<InputField>
 
     final text = widget.messageController.text;
     final selectedText = text.substring(selection.start, selection.end);
+    final localizations = AppLocalizations.of(context);
 
     final urlController = TextEditingController();
     String? url;
@@ -515,7 +517,8 @@ class _InputFieldState extends State<InputField>
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Вставьте ссылку',
+                localizations?.translate('paste_link_title') ??
+                    'Вставьте ссылку',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
@@ -564,7 +567,7 @@ class _InputFieldState extends State<InputField>
                           EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     ),
                     child: Text(
-                      'Отмена',
+                      localizations?.translate('cancel') ?? 'Отмена',
                       style: TextStyle(
                         color: Colors.grey.shade600,
                         fontSize: 14,
@@ -589,7 +592,7 @@ class _InputFieldState extends State<InputField>
                       elevation: 0,
                     ),
                     child: Text(
-                      'Добавить',
+                      localizations?.translate('add') ?? 'Добавить',
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: 14,

@@ -68,6 +68,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
   bool _manufactureLoaded = false;
   String _productionType = 'raw';
   final List<Map<String, dynamic>> _materialGoods = [];
+  final List<Map<String, dynamic>> _relatedGoods = [];
   final Map<int, TextEditingController> _materialNormControllers = {};
 
   @override
@@ -110,6 +111,15 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                 'name': item.displayName,
                 'unit_name': item.displayUnit?.name ?? '',
                 'norm': item.pivot?.norm ?? 0,
+              }));
+    _relatedGoods
+      ..clear()
+      ..addAll((widget.goods.relatedGoods ?? const [])
+          .where((item) => item.variantId != null)
+          .map((item) => {
+                'variant_id': item.variantId,
+                'name': item.displayName,
+                'is_required': item.isRequired,
               }));
     for (final material in _materialGoods) {
       final goodId = material['good_id'] as int?;
@@ -239,6 +249,42 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
     final norm = num.tryParse(value.replaceAll(',', '.'));
     setState(() {
       _materialGoods[index]['norm'] = norm ?? 0;
+    });
+  }
+
+  Future<void> _selectRelatedGood() async {
+    final selected = await showModalBottomSheet<Map<String, dynamic>>(
+      context: context,
+      backgroundColor: Colors.white,
+      isScrollControlled: true,
+      builder: (context) => VariantSelectionBottomSheet(
+        existingItems: _relatedGoods
+            .map((item) => {'variantId': item['variant_id']})
+            .toList(),
+        isService: false,
+      ),
+    );
+
+    if (selected == null || selected['variantId'] == null) return;
+
+    setState(() {
+      _relatedGoods.add({
+        'variant_id': selected['variantId'],
+        'name': selected['name'],
+        'is_required': false,
+      });
+    });
+  }
+
+  void _removeRelatedGood(int index) {
+    setState(() {
+      _relatedGoods.removeAt(index);
+    });
+  }
+
+  void _toggleRelatedGoodRequired(int index, bool value) {
+    setState(() {
+      _relatedGoods[index]['is_required'] = value;
     });
   }
 
@@ -904,6 +950,232 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
     );
   }
 
+  Widget _buildRelatedGoodsSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 16),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Expanded(
+              child: Text(
+                'Сопутствующие товары',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  fontFamily: 'Gilroy',
+                  color: Color(0xff1E2E52),
+                ),
+              ),
+            ),
+            ElevatedButton.icon(
+              onPressed: _selectRelatedGood,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xff4759FF),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              icon: const Icon(Icons.add, color: Colors.white, size: 18),
+              label: const Text(
+                'Добавить',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  fontFamily: 'Gilroy',
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        _buildRelatedGoodsTable(),
+      ],
+    );
+  }
+
+  Widget _buildRelatedGoodsTable() {
+    if (_relatedGoods.isEmpty) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 18),
+        decoration: BoxDecoration(
+          color: const Color(0xFFE9F1FF),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: const Text(
+          'Пусто',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 16,
+            fontFamily: 'Gilroy',
+            color: Color(0xff5C6F91),
+          ),
+        ),
+      );
+    }
+
+    return Column(
+      children: [
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          decoration: BoxDecoration(
+            color: const Color(0xFFE9F1FF),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: const Row(
+            children: [
+              Expanded(
+                flex: 1,
+                child: Text(
+                  '#',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontFamily: 'Gilroy',
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xff5C6F91),
+                  ),
+                ),
+              ),
+              Expanded(
+                flex: 5,
+                child: Text(
+                  'Название',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontFamily: 'Gilroy',
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xff5C6F91),
+                  ),
+                ),
+              ),
+              Expanded(
+                flex: 3,
+                child: Text(
+                  'Обязательный',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontFamily: 'Gilroy',
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xff5C6F91),
+                  ),
+                ),
+              ),
+              Expanded(
+                flex: 2,
+                child: Text(
+                  '',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontFamily: 'Gilroy',
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xff5C6F91),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
+        ..._relatedGoods.asMap().entries.map((entry) {
+          final index = entry.key;
+          final item = entry.value;
+          final isRequired = item['is_required'] == true;
+
+          return Container(
+            margin: const EdgeInsets.only(bottom: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFFE5E7EB)),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  flex: 1,
+                  child: Text(
+                    '${index + 1}',
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xff1E2E52),
+                    ),
+                  ),
+                ),
+                Expanded(
+                  flex: 5,
+                  child: Text(
+                    item['name']?.toString() ?? '',
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w500,
+                      color: Color(0xff1E2E52),
+                    ),
+                  ),
+                ),
+                Expanded(
+                  flex: 3,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Checkbox(
+                        value: isRequired,
+                        onChanged: (value) =>
+                            _toggleRelatedGoodRequired(index, value ?? false),
+                        fillColor: WidgetStateProperty.resolveWith<Color>(
+                          (states) => states.contains(WidgetState.selected)
+                              ? const Color(0xff4759FF)
+                              : Colors.white,
+                        ),
+                        checkColor: Colors.white,
+                        side: const BorderSide(
+                          color: Color(0xff99A4BA),
+                          width: 1.4,
+                        ),
+                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        visualDensity: VisualDensity.compact,
+                      ),
+                      const SizedBox(width: 4),
+                      const Text(
+                        'Да',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontFamily: 'Gilroy',
+                          color: Color(0xff1E2E52),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  flex: 2,
+                  child: IconButton(
+                    onPressed: () => _removeRelatedGood(index),
+                    icon: const Icon(
+                      Icons.delete_outline,
+                      color: Color(0xff1E2E52),
+                      size: 20,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        }),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -1017,6 +1289,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                     },
                   ),
                   _buildProductionTypeSection(),
+                  _buildRelatedGoodsSection(),
                   const SizedBox(height: 8),
                   subCategories.isEmpty
                       ? Center(
@@ -1887,7 +2160,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
         name: goodsNameController.text.trim(),
         parentId: selectedCategory!.id,
         description: goodsDescriptionController.text.trim(),
-        quantity: int.tryParse(stockQuantityController.text) ?? 0,
+        quantity: int.tryParse(stockQuantityController.text),
         unitId: selectedUnit != null ? int.tryParse(selectedUnit!) : null,
         attributes: attributes,
         variants: variants,
@@ -1912,6 +2185,13 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                     })
                 .toList()
             : const [],
+        relatedGoods: _relatedGoods
+            .where((item) => item['variant_id'] != null)
+            .map((item) => {
+                  'variant_id': item['variant_id'],
+                  'is_required': item['is_required'] == true ? 1 : 0,
+                })
+            .toList(),
       );
 
       if (response['success'] == true) {

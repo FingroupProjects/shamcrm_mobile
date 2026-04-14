@@ -676,6 +676,7 @@ class _CustomAppBarState extends State<CustomAppBar>
   Future<void> _loadUserProfile() async {
     try {
       SharedPreferences prefs = await SharedPreferences.getInstance();
+      if (!mounted) return;
       String UUID = prefs.getString('userID') ??
           AppLocalizations.of(context)!.translate('not_found');
 
@@ -683,6 +684,7 @@ class _CustomAppBarState extends State<CustomAppBar>
           await ApiService().getUserById(int.parse(UUID));
 
       if (userProfile.image != null && userProfile.image != _lastLoadedImage) {
+        if (!mounted) return;
         setState(() {
           _userImage = userProfile.image!;
           _lastLoadedImage = userProfile.image!;
@@ -691,6 +693,7 @@ class _CustomAppBarState extends State<CustomAppBar>
 
         await prefs.setString('userProfileImage_$UUID', _userImage);
       } else if (_userImage.isEmpty && _cachedUserImage.isNotEmpty) {
+        if (!mounted) return;
         setState(() {
           _userImage = _cachedUserImage;
         });
@@ -698,6 +701,7 @@ class _CustomAppBarState extends State<CustomAppBar>
     } catch (e) {
       //debugPrint('Ошибка при загрузке изображения!');
       if (_userImage.isEmpty && _cachedUserImage.isNotEmpty) {
+        if (!mounted) return;
         setState(() {
           _userImage = _cachedUserImage;
         });

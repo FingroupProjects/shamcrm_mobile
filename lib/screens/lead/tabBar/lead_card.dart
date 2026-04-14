@@ -138,6 +138,8 @@ class _LeadCardState extends State<LeadCard>
       return Container();
     }
 
+    final lastUpdate = widget.lead.lastUpdate ?? 0;
+
     return Row(
       children: [
         Container(
@@ -145,7 +147,7 @@ class _LeadCardState extends State<LeadCard>
           height: 18,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: widget.lead.lastUpdate! > 5 ? Colors.red : Color(0xff99A4BA),
+            color: lastUpdate > 5 ? Colors.red : Color(0xff99A4BA),
           ),
           child: Center(
             child: Icon(
@@ -156,7 +158,7 @@ class _LeadCardState extends State<LeadCard>
           ),
         ),
         Text(
-          ' ${widget.lead.lastUpdate ?? 0}',
+          ' $lastUpdate',
           style: const TextStyle(
             fontSize: 12,
             fontFamily: 'Gilroy',

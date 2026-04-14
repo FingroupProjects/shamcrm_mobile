@@ -29,6 +29,7 @@ import 'package:flutter_unfocuser/flutter_unfocuser.dart';
 import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
+import 'package:crm_task_manager/services/chat_unread_counter_service.dart';
 
 class ChatsScreen extends StatefulWidget {
   const ChatsScreen({super.key});
@@ -240,6 +241,7 @@ class _ChatsScreenState extends State<ChatsScreen>
           _isTabControllerInitialized = true;
         });
         setUpServices();
+        ChatUnreadCounterService.instance.refreshCounts(silent: true);
 
         //print('ChatsScreen: Fetching sales funnels');
         context.read<SalesFunnelBloc>().add(FetchSalesFunnels());
@@ -1057,6 +1059,7 @@ class _ChatsScreenState extends State<ChatsScreen>
     if (_chatsBlocs.containsKey(chatEndpoint)) {
       debugPrint(
           '=================-=== ChatsScreen: Updating chat ID: ${chat.id} for endpoint $chatEndpoint');
+      _chatsBlocs[chatEndpoint]!.endPoint = chatEndpoint;
       _chatsBlocs[chatEndpoint]!.add(UpdateChatsFromSocket(chat: chat));
 
       // Если обновляется текущая вкладка, обновляем UI
@@ -1234,19 +1237,26 @@ class _ChatsScreenState extends State<ChatsScreen>
                         if (_hasActiveFilters) SizedBox(height: 8),
                         SingleChildScrollView(
                           scrollDirection: Axis.horizontal,
-                          child: Row(
-                            children: List.generate(_tabTitles.length, (index) {
-                              if ((index == 0 && !_showLeadChat) ||
-                                  (index == 1 && !_showTaskChat) ||
-                                  (index == 2 && !_showCorporateChat)) {
-                                return Container();
-                              }
-                              return Padding(
-                                padding:
-                                    const EdgeInsets.symmetric(horizontal: 8),
-                                child: _buildTabButton(index),
+                          child: ValueListenableBuilder<ChatUnreadCounts>(
+                            valueListenable:
+                                ChatUnreadCounterService.instance.counts,
+                            builder: (context, chatCounts, _) {
+                              return Row(
+                                children:
+                                    List.generate(_tabTitles.length, (index) {
+                                  if ((index == 0 && !_showLeadChat) ||
+                                      (index == 1 && !_showTaskChat) ||
+                                      (index == 2 && !_showCorporateChat)) {
+                                    return Container();
+                                  }
+                                  return Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 8),
+                                    child: _buildTabButton(index, chatCounts),
+                                  );
+                                }),
                               );
-                            }),
+                            },
                           ),
                         ),
                         SizedBox(height: 12),
@@ -1272,7 +1282,7 @@ class _ChatsScreenState extends State<ChatsScreen>
     );
   }
 
-  Widget _buildTabButton(int index) {
+  Widget _buildTabButton(int index, ChatUnreadCounts chatCounts) {
     bool isActive = _tabController.index == index;
     GlobalKey? tabKey;
 
@@ -1303,6 +1313,7 @@ class _ChatsScreenState extends State<ChatsScreen>
                 ? 'task'
                 : 'corporate';
         endPointInTab = newEndPoint;
+        ChatUnreadCounterService.instance.refreshCounts(silent: true);
 
         final chatsBloc = _chatsBlocs[newEndPoint]!;
         chatsBloc.add(ClearChats());
@@ -1318,16 +1329,64 @@ class _ChatsScreenState extends State<ChatsScreen>
       },
       child: Container(
         key: tabKey,
-        decoration: TaskStyles.tabButtonDecoration(isActive),
-        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
-        child: Center(
-          child: Text(
-            _tabTitles[index],
-            style: TaskStyles.tabTextStyle.copyWith(
-              color:
-                  isActive ? TaskStyles.activeColor : TaskStyles.inactiveColor,
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Container(
+              decoration: TaskStyles.tabButtonDecoration(isActive),
+              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+              child: Center(
+                child: Text(
+                  _tabTitles[index],
+                  style: TaskStyles.tabTextStyle.copyWith(
+                    color: isActive
+                        ? TaskStyles.activeColor
+                        : TaskStyles.inactiveColor,
+                  ),
+                ),
+              ),
             ),
-          ),
+            if (chatCounts.countForEndpoint(index == 0
+                    ? 'lead'
+                    : index == 1
+                        ? 'task'
+                        : 'corporate') >
+                0)
+              Positioned(
+                top: -12,
+                left: -10,
+                child: _buildUnreadBadge(
+                  chatCounts.countForEndpoint(
+                    index == 0
+                        ? 'lead'
+                        : index == 1
+                            ? 'task'
+                            : 'corporate',
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildUnreadBadge(int count) {
+    return Container(
+      constraints: const BoxConstraints(minWidth: 26, minHeight: 26),
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+      decoration: const BoxDecoration(
+        color: Color(0xffF44336),
+        shape: BoxShape.circle,
+      ),
+      alignment: Alignment.center,
+      child: Text(
+        count > 99 ? '99+' : '$count',
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 12,
+          fontWeight: FontWeight.w700,
+          fontFamily: 'Gilroy',
         ),
       ),
     );
@@ -1386,6 +1445,7 @@ class _ChatsScreenState extends State<ChatsScreen>
         if (mounted) {
           final chatsBloc = _chatsBlocs[endPointInTab]!;
           chatsBloc.add(RefreshChats());
+          ChatUnreadCounterService.instance.refreshCounts(silent: true);
         }
       });
     }
@@ -1452,7 +1512,10 @@ class _ChatItemsWidgetState extends State<_ChatItemsWidget> {
           ),
         ),
       ),
-    ); // ✅ УДАЛИЛИ .then((_) { widget.updateChats.call(); });
+    ).then((_) {
+      widget.updateChats.call();
+      ChatUnreadCounterService.instance.refreshCounts(silent: true);
+    });
   }
 
   void onLongPress(Chats chat) {
@@ -1490,7 +1553,8 @@ class _ChatItemsWidgetState extends State<_ChatItemsWidget> {
     }
 
     if (rawMessage.contains('No internet connection') ||
-        rawMessage.contains(localizations.translate('no_internet_connection')) ||
+        rawMessage
+            .contains(localizations.translate('no_internet_connection')) ||
         rawMessage.contains('SocketException')) {
       return localizations.translate('no_internet_connection');
     }
@@ -1554,7 +1618,9 @@ class _ChatItemsWidgetState extends State<_ChatItemsWidget> {
             ),
             const SizedBox(height: 8),
             Text(
-              isOffline ? 'Чаты появятся сразу после восстановления сети.' : message,
+              isOffline
+                  ? 'Чаты появятся сразу после восстановления сети.'
+                  : message,
               textAlign: TextAlign.center,
               style: const TextStyle(
                 fontFamily: 'Gilroy',
@@ -1771,7 +1837,8 @@ class _ChatItemsWidgetState extends State<_ChatItemsWidget> {
             }
           }
         } else if (state is ChatsError) {
-          final currentItems = widget.pagingController.itemList ?? const <Chats>[];
+          final currentItems =
+              widget.pagingController.itemList ?? const <Chats>[];
           if (currentItems.isEmpty) {
             widget.pagingController.error = state.message;
           }

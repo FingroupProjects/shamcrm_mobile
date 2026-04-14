@@ -37,6 +37,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
   List<Map<String, dynamic>>?
       _currentDirectoryValues; // Добавляем для справочников
   bool isFetching = false; // Флаг для предотвращения параллельных запросов
+  FetchTasks? _queuedFetchTasksEvent;
 
   TaskBloc(this.apiService) : super(TaskInitial()) {
     on<FetchTaskStatuses>(_fetchTaskStatuses);
@@ -234,9 +235,11 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
         }
 
         // ОПТИМИЗАЦИЯ: ВСЕГДА загружаем с009 API для получения актуальных счётчиков с timeout
-        response = await apiService.getTaskStatuses(
+        response = await apiService
+            .getTaskStatuses(
           bypassCache: event.forceRefresh,
-        ).timeout(
+        )
+            .timeout(
           Duration(seconds: 15),
           onTimeout: () async {
             // При timeout возвращаем кэшированные данные
@@ -294,15 +297,17 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
   }
 
   Future<void> _fetchTasks(FetchTasks event, Emitter<TaskState> emit) async {
-    // ОПТИМИЗАЦИЯ: Улучшенная проверка на параллельные запросы
     if (isFetching) {
       if (kDebugMode) {
-        debugPrint('⚠️ TaskBloc: _fetchTasks - Already fetching, skipping');
+        debugPrint(
+            '⚠️ TaskBloc: _fetchTasks - Already fetching, queueing latest request for status ${event.statusId}');
       }
+      _queuedFetchTasksEvent = event;
       return;
     }
 
     isFetching = true;
+    _queuedFetchTasksEvent = null;
 
     if (kDebugMode) {
       debugPrint('🔍 TaskBloc: _fetchTasks - START');
@@ -495,6 +500,17 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
       if (kDebugMode) {
         debugPrint('🏁 TaskBloc: _fetchTasks - FINISHED');
       }
+
+      final queuedEvent = _queuedFetchTasksEvent;
+      _queuedFetchTasksEvent = null;
+
+      if (queuedEvent != null) {
+        if (kDebugMode) {
+          debugPrint(
+              '🔁 TaskBloc: _fetchTasks - Running queued request for status ${queuedEvent.statusId}');
+        }
+        add(queuedEvent);
+      }
     }
   }
 
@@ -679,28 +695,6 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
       emit(TaskError(
           event.localizations.translate('error_task_update_successfully')));
     }
-  }
-
-  // Метод для проверки наличия активных фильтров
-  bool _hasActiveFilters() {
-    return (_currentQuery != null && _currentQuery!.isNotEmpty) ||
-        (_currentUserIds != null && _currentUserIds!.isNotEmpty) ||
-        (_currentStatusIds != null) ||
-        (_currentFromDate != null) ||
-        (_currentToDate != null) ||
-        (_currentOverdue == true) ||
-        (_currentHasFile == true) ||
-        (_currentHasDeal == true) ||
-        (_currentUrgent == true) ||
-        (_currentProjectIds != null && _currentProjectIds!.isNotEmpty) ||
-        (_currentReasonForRefusalIds != null &&
-            _currentReasonForRefusalIds!.isNotEmpty) ||
-        (_currentAuthors != null && _currentAuthors!.isNotEmpty) ||
-        (_currentDeadlineFromDate != null) ||
-        (_currentDeadlineToDate != null) ||
-        (_currentDepartment != null && _currentDepartment!.isNotEmpty) ||
-        (_currentDirectoryValues != null &&
-            _currentDirectoryValues!.isNotEmpty);
   }
 
   // Кэш статуса интернет-соединения
@@ -1090,6 +1084,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
     _taskCounts.clear();
     allTasksFetched = false;
     isFetching = false;
+    _queuedFetchTasksEvent = null;
 
     // Сбрасываем все текущие параметры фильтрации
     _currentQuery = null;

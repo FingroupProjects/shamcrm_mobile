@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:crm_task_manager/screens/analytics/utils/analytics_localization.dart';
 import 'package:crm_task_manager/screens/analytics/widgets/chart_shimmer_loader.dart';
+import 'package:crm_task_manager/screens/analytics/utils/chart_request_policy.dart';
 import 'package:crm_task_manager/screens/analytics/utils/responsive_helper.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/screens/analytics/models/users_chart_model.dart';
@@ -26,25 +28,25 @@ class _GoalsChartState extends State<GoalsChart> {
 
   static final List<UserPerformance> _previewGoals = [
     UserPerformance(
-      name: 'Иван Петров',
+      name: 'Ivan Petrov',
       userId: 1,
       finishedTasksPercent: 92,
       status: 'best',
     ),
     UserPerformance(
-      name: 'Анна Смирнова',
+      name: 'Anna Smirnova',
       userId: 2,
       finishedTasksPercent: 86,
       status: 'good',
     ),
     UserPerformance(
-      name: 'Дмитрий Козлов',
+      name: 'Dmitry Kozlov',
       userId: 3,
       finishedTasksPercent: 68,
       status: 'requires_attention',
     ),
     UserPerformance(
-      name: 'Елена Васильева',
+      name: 'Elena Vasilyeva',
       userId: 4,
       finishedTasksPercent: 95,
       status: 'best',
@@ -58,6 +60,8 @@ class _GoalsChartState extends State<GoalsChart> {
   }
 
   Future<void> _loadData() async {
+    final chartId = AnalyticsChartRequestPolicy.chartIdForState(this);
+    AnalyticsChartRequestPolicy.cancelPendingRetry(chartId);
     setState(() {
       _isLoading = true;
       _error = null;
@@ -67,17 +71,27 @@ class _GoalsChartState extends State<GoalsChart> {
       final apiService = ApiService();
       final response = await apiService.getUsersChartV2();
 
+      AnalyticsChartRequestPolicy.reset(chartId);
+      if (!mounted) return;
       setState(() {
         _goals = response.users;
         _averageKpi = response.averageKpi;
         _requiresAttentionCount = response.requiresAttentionCount;
         _isLoading = false;
       });
-    } catch (e) {
-      setState(() {
-        _error = 'Не удалось загрузить данные. Попробуйте позже.';
-        _isLoading = false;
-      });
+    } catch (e, stackTrace) {
+      await AnalyticsChartRequestPolicy.handleLoadError(
+        state: this,
+        setStateCallback: setState,
+        chartId: chartId,
+        error: e,
+        stackTrace: stackTrace,
+        onFatalError: () {
+          _error = AnalyticsChartRequestPolicy.userFacingMessage(e);
+          _isLoading = false;
+        },
+        retry: _loadData,
+      );
     }
   }
 
@@ -267,7 +281,11 @@ class _GoalsChartState extends State<GoalsChart> {
                             SizedBox(
                                 height: ResponsiveHelper(context).smallSpacing),
                             Text(
-                              _error!,
+                              analyticsText(
+                                context,
+                                _error!,
+                                fallback: _error!,
+                              ),
                               style: TextStyle(
                                 color: Color(0xff64748B),
                                 fontSize: responsive.bodyFontSize,
@@ -279,7 +297,13 @@ class _GoalsChartState extends State<GoalsChart> {
                                 height: ResponsiveHelper(context).smallSpacing),
                             TextButton(
                               onPressed: _loadData,
-                              child: Text('Повторить'),
+                              child: Text(
+                                analyticsText(
+                                  context,
+                                  'retry',
+                                  fallback: 'Retry',
+                                ),
+                              ),
                             ),
                           ],
                         ),
@@ -322,7 +346,11 @@ class _GoalsChartState extends State<GoalsChart> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Средний KPI',
+                        analyticsText(
+                          context,
+                          'analytics_average_kpi',
+                          fallback: 'Average KPI',
+                        ),
                         style: TextStyle(
                           fontSize: responsive.smallFontSize,
                           color: Color(0xff64748B),
@@ -345,7 +373,11 @@ class _GoalsChartState extends State<GoalsChart> {
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       Text(
-                        'Требуют внимания',
+                        analyticsText(
+                          context,
+                          'analytics_requires_attention',
+                          fallback: 'Need attention',
+                        ),
                         style: TextStyle(
                           fontSize: responsive.smallFontSize,
                           color: Color(0xff64748B),
@@ -354,7 +386,7 @@ class _GoalsChartState extends State<GoalsChart> {
                       ),
                       SizedBox(height: 4),
                       Text(
-                        '${_requiresAttentionCount > 0 ? _requiresAttentionCount : _goals.where((g) => g.requiresAttention || g.isBad).length} человек(а)',
+                        '${_requiresAttentionCount > 0 ? _requiresAttentionCount : _goals.where((g) => g.requiresAttention || g.isBad).length} ${analyticsText(context, 'analytics_people_suffix', fallback: 'people')}',
                         style: TextStyle(
                           fontSize: responsive.largeFontSize,
                           fontWeight: FontWeight.w700,

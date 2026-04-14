@@ -206,6 +206,7 @@ class Goods {
   final bool? isService;
   final String? productionType;
   final List<MaterialGood>? materialGoods;
+  final List<RelatedGood>? relatedGoods;
 
   Goods({
     required this.id,
@@ -236,6 +237,7 @@ class Goods {
     this.isService,
     this.productionType,
     this.materialGoods,
+    this.relatedGoods,
   });
 
   factory Goods.fromJson(Map<String, dynamic> json) {
@@ -338,6 +340,17 @@ class Goods {
             .toList();
       }
 
+      List<RelatedGood>? relatedGoods;
+      final relatedsData = data['related_goods'] ??
+          json['related_goods'] ??
+          data['relateds'] ??
+          json['relateds'];
+      if (relatedsData != null && relatedsData is List) {
+        relatedGoods = relatedsData
+            .map((r) => RelatedGood.fromJson(r as Map<String, dynamic>))
+            .toList();
+      }
+
       // Парсим файлы: проверяем несколько возможных мест
       List<GoodsFile> files = [];
       if (json['files'] != null && json['files'] is List) {
@@ -401,6 +414,7 @@ class Goods {
             : null, // Инициализируем поле unit
         productionType: data['production_type'] as String?,
         materialGoods: materialGoods,
+        relatedGoods: relatedGoods,
       );
     } catch (e, stackTrace) {
       //print('GoodsModel: Ошибка парсинга товара: $e');
@@ -511,6 +525,109 @@ class MaterialGood {
   Unit? get displayUnit {
     if (good?.unit != null) return good?.unit;
     if (good?.units?.isNotEmpty == true) return good!.units!.first;
+    return null;
+  }
+}
+
+class RelatedGood {
+  final int? id;
+  final int? variantId;
+  final bool isRequired;
+  final String? fullName;
+  final double? price;
+
+  RelatedGood({
+    this.id,
+    this.variantId,
+    required this.isRequired,
+    this.fullName,
+    this.price,
+  });
+
+  factory RelatedGood.fromJson(Map<String, dynamic> json) {
+    final variantData = _extractVariantData(json);
+    final pivotData = json['pivot'] is Map<String, dynamic>
+        ? json['pivot'] as Map<String, dynamic>
+        : null;
+    final parsedPrice = _parsePrice(json['price']) ??
+        _parsePrice(variantData?['price']) ??
+        _parsePrice((json['good'] is Map<String, dynamic>)
+            ? (json['good'] as Map<String, dynamic>)['price']
+            : null);
+
+    String? displayName =
+        json['full_name']?.toString() ?? json['name']?.toString();
+
+    if ((displayName == null || displayName.isEmpty) && variantData != null) {
+      displayName = variantData['full_name']?.toString() ??
+          variantData['name']?.toString();
+      final nestedGood = variantData['good'];
+      if ((displayName == null || displayName.isEmpty) &&
+          nestedGood is Map<String, dynamic>) {
+        displayName = nestedGood['name']?.toString();
+      }
+    }
+
+    if ((displayName == null || displayName.isEmpty) &&
+        json['good'] is Map<String, dynamic>) {
+      displayName = (json['good'] as Map<String, dynamic>)['name']?.toString();
+    }
+
+    return RelatedGood(
+      id: Unit._parseInt(json['id']),
+      variantId: Unit._parseInt(json['variant_id']) ??
+          Unit._parseInt(variantData?['id']) ??
+          (variantData == null ? Unit._parseInt(json['id']) : null),
+      isRequired: _parseBool(json['is_required']) ||
+          _parseBool(pivotData?['is_required']),
+      fullName: displayName,
+      price: parsedPrice,
+    );
+  }
+
+  String get displayName {
+    if (fullName != null && fullName!.trim().isNotEmpty) {
+      return fullName!;
+    }
+    if (variantId != null) {
+      return 'Вариант #$variantId';
+    }
+    return 'Неизвестный товар';
+  }
+
+  static Map<String, dynamic>? _extractVariantData(Map<String, dynamic> json) {
+    final candidates = [
+      json['variant'],
+      json['good_variant'],
+      json['related_variant'],
+    ];
+
+    for (final candidate in candidates) {
+      if (candidate is Map<String, dynamic>) {
+        return candidate;
+      }
+    }
+
+    return null;
+  }
+
+  static bool _parseBool(dynamic value) {
+    if (value is bool) return value;
+    if (value is int) return value == 1;
+    if (value is String) {
+      final normalized = value.trim().toLowerCase();
+      return normalized == '1' || normalized == 'true';
+    }
+    return false;
+  }
+
+  static double? _parsePrice(dynamic value) {
+    if (value == null) return null;
+    if (value is num) return value.toDouble();
+    if (value is String) return double.tryParse(value);
+    if (value is Map<String, dynamic>) {
+      return _parsePrice(value['price']);
+    }
     return null;
   }
 }

@@ -110,7 +110,11 @@ class _PinScreenState extends State<PinScreen>
         setState(() {
           _isLoading = false;
         });
-        _showErrorDialog('Ошибка инициализации', e.toString());
+        _showErrorDialog(
+          AppLocalizations.of(context)?.translate('initialization_error') ??
+              'Ошибка инициализации',
+          e.toString(),
+        );
       }
     }
   }
@@ -128,9 +132,11 @@ class _PinScreenState extends State<PinScreen>
       String? savedUserImage = prefs.getString('userImage');
 
       if (mounted) {
+        final fallbackUser =
+            AppLocalizations.of(context)?.translate('user') ?? 'Пользователь';
         setState(() {
-          _userName = savedUserName ?? 'Пользователь';
-          _userNameProfile = savedUserNameProfile ?? 'Пользователь';
+          _userName = savedUserName ?? fallbackUser;
+          _userNameProfile = savedUserNameProfile ?? fallbackUser;
           _userImage = savedUserImage ?? '';
         });
       }
@@ -436,7 +442,10 @@ class _PinScreenState extends State<PinScreen>
               Navigator.of(context).pop();
               SystemNavigator.pop();
             },
-            child: Text('Закрыть приложение'),
+            child: Text(
+              AppLocalizations.of(context)?.translate('close_app') ??
+                  'Закрыть приложение',
+            ),
           ),
           TextButton(
             onPressed: () {
@@ -447,7 +456,10 @@ class _PinScreenState extends State<PinScreen>
               });
               _initializeMinimal();
             },
-            child: Text('Повторить'),
+            child: Text(
+              AppLocalizations.of(context)?.translate('retry_dialog') ??
+                  'Повторить',
+            ),
           ),
         ],
       ),
@@ -512,7 +524,7 @@ class _PinScreenState extends State<PinScreen>
                           Navigator.of(context).pop(false);
                         },
                         child: Text(
-                          'Отмена',
+                          localizations?.translate('cancel') ?? 'Отмена',
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,

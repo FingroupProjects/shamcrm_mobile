@@ -79,7 +79,12 @@ class _AuthScreenState extends State<AuthScreen> {
 
     if (!launched && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Не удалось открыть сайт')),
+        SnackBar(
+          content: Text(
+            AppLocalizations.of(context)?.translate('site_open_failed') ??
+                'Не удалось открыть сайт',
+          ),
+        ),
       );
     }
   }
@@ -106,7 +111,7 @@ class _AuthScreenState extends State<AuthScreen> {
               ),
               SizedBox(height: 20),
               Text(
-                'Проверка конфигурации...',
+                localizations.translate('configuration_check'),
                 style: TextStyle(
                   fontSize: 16,
                   fontFamily: 'Gilroy',
@@ -148,7 +153,7 @@ class _AuthScreenState extends State<AuthScreen> {
                     child: Column(
                       children: [
                         Text(
-                          localizations.translate('Сканируйте QR-код'),
+                          localizations.translate('scan_qr_prompt'),
                           style: const TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
@@ -188,9 +193,12 @@ class _AuthScreenState extends State<AuthScreen> {
                                       .add(CheckEmail(scanResult));
                                 } else {
                                   ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                        content: Text(
-                                            'Неверный адрес электронной почты в QR-коде')),
+                                    SnackBar(
+                                      content: Text(
+                                        localizations
+                                            .translate('invalid_email_in_qr'),
+                                      ),
+                                    ),
                                   );
                                 }
                               }
@@ -198,9 +206,11 @@ class _AuthScreenState extends State<AuthScreen> {
                               //print('AuthScreen: Error with QR scan: $e');
                               if (mounted) {
                                 ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                      content:
-                                          Text('Ошибка сканирования QR-кода')),
+                                  SnackBar(
+                                    content: Text(
+                                      localizations.translate('qr_scan_error'),
+                                    ),
+                                  ),
                                 );
                               }
                             }
@@ -226,7 +236,7 @@ class _AuthScreenState extends State<AuthScreen> {
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Text(
-                                localizations.translate('Ручной ввод'),
+                                localizations.translate('manual_input'),
                                 style: const TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
@@ -279,9 +289,9 @@ class _AuthScreenState extends State<AuthScreen> {
                                       CustomTextField(
                                         controller: passwordController,
                                         hintText: localizations
-                                            .translate('Введите пароль'),
-                                        label:
-                                            localizations.translate('Пароль'),
+                                            .translate('login_password_hint'),
+                                        label: localizations
+                                            .translate('login_password_label'),
                                         isPassword: true,
                                       ),
                                       const SizedBox(height: 16),
@@ -334,8 +344,11 @@ class _AuthScreenState extends State<AuthScreen> {
                                             const Icon(Icons.check_circle,
                                                 color: Colors.white, size: 20),
                                             const SizedBox(width: 8),
-                                            Text(localizations.translate(
-                                                'Email успешно подтверждена')),
+                                            Text(
+                                              localizations.translate(
+                                                'email_verified_success',
+                                              ),
+                                            ),
                                           ],
                                         ),
                                         backgroundColor: Colors.green,
@@ -349,8 +362,12 @@ class _AuthScreenState extends State<AuthScreen> {
                                 if (mounted) {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(
-                                        content: Text(
-                                            'Произошла ошибка при проверке email')),
+                                      content: Text(
+                                        localizations.translate(
+                                          'email_verification_error',
+                                        ),
+                                      ),
+                                    ),
                                   );
                                 }
                               }
@@ -366,8 +383,8 @@ class _AuthScreenState extends State<AuthScreen> {
                                   );
                                 }
                                 return CustomButton(
-                                  buttonText:
-                                      localizations.translate('Продолжить'),
+                                  buttonText: localizations
+                                      .translate('continue_button'),
                                   buttonColor: const Color(0xff4F40EC),
                                   textColor: Colors.white,
                                   onPressed: () {
@@ -377,14 +394,14 @@ class _AuthScreenState extends State<AuthScreen> {
                                           .showSnackBar(
                                         SnackBar(
                                             content: Text(localizations
-                                                .translate('Введите email'))),
+                                                .translate('enter_email'))),
                                       );
                                     } else if (!_isValidEmail(email)) {
                                       ScaffoldMessenger.of(context)
                                           .showSnackBar(
                                         SnackBar(
                                             content: Text(localizations
-                                                .translate('Неверный email'))),
+                                                .translate('invalid_email'))),
                                       );
                                     } else {
                                       context
@@ -459,8 +476,12 @@ class _AuthScreenState extends State<AuthScreen> {
                                       ScaffoldMessenger.of(context)
                                           .showSnackBar(
                                         SnackBar(
-                                            content:
-                                                Text('Ошибка входа в систему')),
+                                          content: Text(
+                                            localizations.translate(
+                                              'login_error_system',
+                                            ),
+                                          ),
+                                        ),
                                       );
                                     }
                                   }
@@ -478,7 +499,7 @@ class _AuthScreenState extends State<AuthScreen> {
                                   }
                                   return CustomButton(
                                     buttonText:
-                                        localizations.translate('Войти'),
+                                        localizations.translate('login_button'),
                                     buttonColor: const Color(0xff4F40EC),
                                     textColor: Colors.white,
                                     onPressed: () {
@@ -495,7 +516,7 @@ class _AuthScreenState extends State<AuthScreen> {
                                           SnackBar(
                                               content: Text(
                                                   localizations.translate(
-                                                      'Введите пароль'))),
+                                                      'login_password_hint'))),
                                         );
                                       }
                                     },
@@ -528,7 +549,7 @@ class _AuthScreenState extends State<AuthScreen> {
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: Text(
-                                  localizations.translate('QR Code'),
+                                  localizations.translate('qr_code_label'),
                                   style: const TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.bold,

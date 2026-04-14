@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:crm_task_manager/screens/analytics/utils/analytics_localization.dart';
 import 'package:crm_task_manager/screens/analytics/widgets/chart_shimmer_loader.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:crm_task_manager/screens/analytics/utils/chart_request_policy.dart';
 import 'package:crm_task_manager/screens/analytics/utils/responsive_helper.dart';
 import 'package:crm_task_manager/screens/analytics/models/replies_messages_model.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
@@ -61,6 +63,8 @@ class _RepliesMessagesChartState extends State<RepliesMessagesChart> {
   }
 
   Future<void> _loadData() async {
+    final chartId = AnalyticsChartRequestPolicy.chartIdForState(this);
+    AnalyticsChartRequestPolicy.cancelPendingRetry(chartId);
     setState(() {
       _isLoading = true;
       _error = null;
@@ -70,15 +74,25 @@ class _RepliesMessagesChartState extends State<RepliesMessagesChart> {
       final apiService = ApiService();
       final response = await apiService.getRepliesToMessagesChartV2();
 
+      AnalyticsChartRequestPolicy.reset(chartId);
+      if (!mounted) return;
       setState(() {
         _data = response;
         _isLoading = false;
       });
-    } catch (e) {
-      setState(() {
-        _error = 'Не удалось загрузить данные. Попробуйте позже.';
-        _isLoading = false;
-      });
+    } catch (e, stackTrace) {
+      await AnalyticsChartRequestPolicy.handleLoadError(
+        state: this,
+        setStateCallback: setState,
+        chartId: chartId,
+        error: e,
+        stackTrace: stackTrace,
+        onFatalError: () {
+          _error = AnalyticsChartRequestPolicy.userFacingMessage(e);
+          _isLoading = false;
+        },
+        retry: _loadData,
+      );
     }
   }
 
@@ -145,7 +159,7 @@ class _RepliesMessagesChartState extends State<RepliesMessagesChart> {
                         ),
                       ),
                       subtitle: Text(
-                        'Получено: ${item.receivedMessages}, Отвечено: ${item.sentMessages}',
+                        '${analyticsText(context, 'analytics_received', fallback: 'Received')}: ${item.receivedMessages}, ${analyticsText(context, 'analytics_answered', fallback: 'Answered')}: ${item.sentMessages}',
                         style: TextStyle(
                           fontSize: ResponsiveHelper(context).smallFontSize,
                           color: Color(0xff64748B),
@@ -153,7 +167,7 @@ class _RepliesMessagesChartState extends State<RepliesMessagesChart> {
                         ),
                       ),
                       trailing: Text(
-                        'Без ответа: ${item.unansweredChats}',
+                        '${analyticsText(context, 'unanswered', fallback: 'Unanswered')}: ${item.unansweredChats}',
                         style: TextStyle(
                           fontSize: ResponsiveHelper(context).smallFontSize,
                           fontWeight: FontWeight.w600,
@@ -330,7 +344,11 @@ class _RepliesMessagesChartState extends State<RepliesMessagesChart> {
                 : _error != null
                     ? Center(
                         child: Text(
-                          _error!,
+                          analyticsText(
+                            context,
+                            _error!,
+                            fallback: _error!,
+                          ),
                           style: const TextStyle(
                             color: Color(0xffEF4444),
                             fontFamily: 'Golos',
@@ -376,7 +394,7 @@ class _RepliesMessagesChartState extends State<RepliesMessagesChart> {
                                       children: [
                                         TextSpan(
                                           text:
-                                              'Получено: ${item.receivedMessages}\n',
+                                              '${analyticsText(context, 'analytics_received', fallback: 'Received')}: ${item.receivedMessages}\n',
                                           style: TextStyle(
                                             color: const Color(0xff6366F1),
                                             fontWeight: FontWeight.w600,
@@ -386,7 +404,7 @@ class _RepliesMessagesChartState extends State<RepliesMessagesChart> {
                                         ),
                                         TextSpan(
                                           text:
-                                              'Отвечено: ${item.sentMessages}\n',
+                                              '${analyticsText(context, 'analytics_answered', fallback: 'Answered')}: ${item.sentMessages}\n',
                                           style: TextStyle(
                                             color: const Color(0xff10B981),
                                             fontWeight: FontWeight.w600,
@@ -396,7 +414,7 @@ class _RepliesMessagesChartState extends State<RepliesMessagesChart> {
                                         ),
                                         TextSpan(
                                           text:
-                                              'Без ответа: ${item.unansweredChats}',
+                                              '${analyticsText(context, 'unanswered', fallback: 'Unanswered')}: ${item.unansweredChats}',
                                           style: TextStyle(
                                             color: const Color(0xffEF4444),
                                             fontWeight: FontWeight.w600,
@@ -421,7 +439,11 @@ class _RepliesMessagesChartState extends State<RepliesMessagesChart> {
                               titlesData: FlTitlesData(
                                 leftTitles: AxisTitles(
                                   axisNameWidget: Text(
-                                    'Количество',
+                                    analyticsText(
+                                      context,
+                                      'quantity',
+                                      fallback: 'Quantity',
+                                    ),
                                     style: TextStyle(
                                       fontSize: responsive.xSmallFontSize,
                                       color: Color(0xff94A3B8),
@@ -503,21 +525,33 @@ class _RepliesMessagesChartState extends State<RepliesMessagesChart> {
               children: [
                 _LegendToggleDot(
                   color: const Color(0xff6366F1),
-                  label: 'Получено',
+                  label: analyticsText(
+                    context,
+                    'analytics_received',
+                    fallback: 'Received',
+                  ),
                   enabled: _showReceived,
                   onTap: () => setState(() => _showReceived = !_showReceived),
                 ),
                 SizedBox(width: ResponsiveHelper(context).smallSpacing),
                 _LegendToggleDot(
                   color: const Color(0xff10B981),
-                  label: 'Отвечено',
+                  label: analyticsText(
+                    context,
+                    'analytics_answered',
+                    fallback: 'Answered',
+                  ),
                   enabled: _showAnswered,
                   onTap: () => setState(() => _showAnswered = !_showAnswered),
                 ),
                 SizedBox(width: ResponsiveHelper(context).smallSpacing),
                 _LegendToggleDot(
                   color: const Color(0xffEF4444),
-                  label: 'Без ответа',
+                  label: analyticsText(
+                    context,
+                    'unanswered',
+                    fallback: 'Unanswered',
+                  ),
                   enabled: _showUnanswered,
                   onTap: () =>
                       setState(() => _showUnanswered = !_showUnanswered),

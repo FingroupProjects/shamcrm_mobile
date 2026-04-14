@@ -14,7 +14,8 @@ class ProjectTaskStatus {
   factory ProjectTaskStatus.fromJson(Map<String, dynamic> json) {
     return ProjectTaskStatus(
       statusName: SafeConverters.toSafeString(json['status_name']),
-      color: SafeConverters.toSafeString(json['color'], defaultValue: '#000000'),
+      color:
+          SafeConverters.toSafeString(json['color'], defaultValue: '#000000'),
       count: SafeConverters.toInt(json['count']),
     );
   }

@@ -1,8 +1,159 @@
 import 'dart:io';
+import 'package:crm_task_manager/custom_widget/shimmer_wave.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
+
+const double _kNavBarHeight = 60;
+
+class NavBarShimmerSkeleton extends StatelessWidget {
+  final int itemCount;
+
+  const NavBarShimmerSkeleton({
+    super.key,
+    this.itemCount = 4,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    Widget navBarContent = Container(
+      height: _kNavBarHeight,
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            Color(0xffFCFEFF),
+            Color(0xffF1F8FF),
+          ],
+        ),
+        border: Border(
+          top: BorderSide(
+            color: Color(0x99D9ECFF),
+          ),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xff7FCBFF).withValues(alpha: 0.10),
+            blurRadius: 16,
+            offset: const Offset(0, -3),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+        child: ShimmerWave(
+          duration: const Duration(milliseconds: 1650),
+          colors: const [
+            Color(0xffE7F3FF),
+            Color(0xffF7FCFF),
+            Color(0xffCFEFFF),
+            Color(0xffFFFFFF),
+            Color(0xffE7F3FF),
+          ],
+          stops: const [0.0, 0.32, 0.52, 0.68, 1.0],
+          child: Row(
+            children: List.generate(itemCount, (index) {
+              final bool isLast = index == itemCount - 1;
+              final int flex = index == 0 ? 5 : 4;
+
+              return Expanded(
+                flex: flex,
+                child: Padding(
+                  padding: EdgeInsets.only(right: isLast ? 0 : 8),
+                  child: Container(
+                    height: 44,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: index == 0
+                            ? const [
+                                Color(0xffE9F7FF),
+                                Color(0xffD8EEFF),
+                              ]
+                            : const [
+                                Color(0xffF7FBFF),
+                                Color(0xffE6F3FF),
+                              ],
+                      ),
+                      border: Border.all(
+                        color: index == 0
+                            ? const Color(0xffC7E7FF)
+                            : const Color(0xffD7ECFF),
+                        width: 1,
+                      ),
+                      borderRadius: BorderRadius.circular(25),
+                      boxShadow: [
+                        BoxShadow(
+                          color:
+                              const Color(0xff89D2FF).withValues(alpha: 0.10),
+                          blurRadius: 10,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 14),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 18,
+                          height: 18,
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [
+                                Color(0xffD8F0FF),
+                                Color(0xffFDFEFF),
+                              ],
+                            ),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Container(
+                            height: 10,
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                begin: Alignment.centerLeft,
+                                end: Alignment.centerRight,
+                                colors: [
+                                  Color(0xffDCF2FF),
+                                  Color(0xffFDFEFF),
+                                ],
+                              ),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            }),
+          ),
+        ),
+      ),
+    );
+
+    if (Platform.isIOS) {
+      return SafeArea(
+        top: false,
+        bottom: true,
+        child: navBarContent,
+      );
+    }
+
+    return SafeArea(
+      top: false,
+      child: navBarContent,
+    );
+  }
+}
 
 class MyNavBar extends StatefulWidget {
   final Function(int, int) onItemSelected;
@@ -14,8 +165,11 @@ class MyNavBar extends StatefulWidget {
   final List<String> inactiveIconsGroup2;
   final int currentIndexGroup1;
   final int currentIndexGroup2;
+  final List<int> unreadCountsGroup1;
+  final List<int> unreadCountsGroup2;
 
-  MyNavBar({
+  const MyNavBar({
+    super.key,
     required this.onItemSelected,
     required this.navBarTitlesGroup1,
     required this.navBarTitlesGroup2,
@@ -23,17 +177,18 @@ class MyNavBar extends StatefulWidget {
     required this.activeIconsGroup2,
     required this.inactiveIconsGroup1,
     required this.inactiveIconsGroup2,
+    this.unreadCountsGroup1 = const [],
+    this.unreadCountsGroup2 = const [],
     this.currentIndexGroup1 = -1,
     this.currentIndexGroup2 = -1,
   });
 
   @override
-  _MyNavBarState createState() => _MyNavBarState();
+  State<MyNavBar> createState() => _MyNavBarState();
 }
 
 class _MyNavBarState extends State<MyNavBar> {
   final ScrollController _scrollController = ScrollController();
-  static final double _navBarHeight = 60;
   List<NavBarItemData>? _orderedItems;
   bool _isReordering = false;
   int _lastItemCount = 0;
@@ -129,7 +284,6 @@ class _MyNavBarState extends State<MyNavBar> {
 
       if (success) {
         //print('💾 Порядок сохранён успешно: $orderJson');
-        final verification = prefs.getString('navbar_order_v2');
         //print('✅ Проверка: данные в SharedPreferences = $verification');
       } else {
         //print('❌ Не удалось сохранить порядок');
@@ -147,6 +301,9 @@ class _MyNavBarState extends State<MyNavBar> {
         title: widget.navBarTitlesGroup1[i],
         activeIcon: widget.activeIconsGroup1[i],
         inactiveIcon: widget.inactiveIconsGroup1[i],
+        unreadCount: i < widget.unreadCountsGroup1.length
+            ? widget.unreadCountsGroup1[i]
+            : 0,
         groupIndex: 1,
         itemIndex: i,
         isActive: widget.currentIndexGroup1 == i,
@@ -158,6 +315,9 @@ class _MyNavBarState extends State<MyNavBar> {
         title: widget.navBarTitlesGroup2[i],
         activeIcon: widget.activeIconsGroup2[i],
         inactiveIcon: widget.inactiveIconsGroup2[i],
+        unreadCount: i < widget.unreadCountsGroup2.length
+            ? widget.unreadCountsGroup2[i]
+            : 0,
         groupIndex: 2,
         itemIndex: i,
         isActive: widget.currentIndexGroup2 == i,
@@ -200,6 +360,7 @@ class _MyNavBarState extends State<MyNavBar> {
           title: latestItem.title,
           activeIcon: latestItem.activeIcon,
           inactiveIcon: latestItem.inactiveIcon,
+          unreadCount: latestItem.unreadCount,
           groupIndex: latestItem.groupIndex,
           itemIndex: latestItem.itemIndex,
           isActive: latestItem.isActive,
@@ -242,25 +403,21 @@ class _MyNavBarState extends State<MyNavBar> {
 
   @override
   Widget build(BuildContext context) {
-    // Если данные не загружены, показываем пустой контейнер БЕЗ спиннера
+    // Пока порядок кнопок грузится из SharedPreferences, показываем skeleton,
+    // чтобы нижняя панель не появлялась резким пустым блоком.
     if (_orderedItems == null || _orderedItems!.isEmpty) {
-      return Container(
-        height: _navBarHeight,
-        decoration: BoxDecoration(
-          color: Color(0xffF4F7FD),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 10,
-              offset: Offset(0, -2),
-            ),
-          ],
-        ),
+      return NavBarShimmerSkeleton(
+        itemCount: widget.navBarTitlesGroup1.isNotEmpty ||
+                widget.navBarTitlesGroup2.isNotEmpty
+            ? (widget.navBarTitlesGroup1.length +
+                    widget.navBarTitlesGroup2.length)
+                .clamp(3, 4)
+            : 4,
       );
     }
 
     Widget navBarContent = Container(
-      height: _navBarHeight,
+      height: _kNavBarHeight,
       decoration: BoxDecoration(
         color: Color(0xffF4F7FD),
         boxShadow: [
@@ -414,6 +571,7 @@ class NavBarItemData {
   final String title;
   final String activeIcon;
   final String inactiveIcon;
+  final int unreadCount;
   final int groupIndex;
   final int itemIndex;
   final bool isActive;
@@ -422,6 +580,7 @@ class NavBarItemData {
     required this.title,
     required this.activeIcon,
     required this.inactiveIcon,
+    required this.unreadCount,
     required this.groupIndex,
     required this.itemIndex,
     required this.isActive,
@@ -446,58 +605,87 @@ class _NavBarItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        margin: EdgeInsets.symmetric(horizontal: 4),
-        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: data.isActive ? Color(0xff1E2E52) : Color(0xffF4F7FD),
-          border: Border.all(
-            color: Color(0xff1E2E52).withOpacity(0.5),
-            width: data.isActive ? 0 : 0.5,
-          ),
-          borderRadius: BorderRadius.circular(25),
-          boxShadow: data.isActive
-              ? [
-                  BoxShadow(
-                    color: Color(0xff1E2E52).withOpacity(0.3),
-                    blurRadius: 8,
-                    offset: Offset(0, 2),
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Container(
+            margin: EdgeInsets.symmetric(horizontal: 4),
+            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              color: data.isActive ? Color(0xff1E2E52) : Color(0xffF4F7FD),
+              border: Border.all(
+                color: Color(0xff1E2E52).withOpacity(0.5),
+                width: data.isActive ? 0 : 0.5,
+              ),
+              borderRadius: BorderRadius.circular(25),
+              boxShadow: data.isActive
+                  ? [
+                      BoxShadow(
+                        color: Color(0xff1E2E52).withOpacity(0.3),
+                        blurRadius: 8,
+                        offset: Offset(0, 2),
+                      ),
+                    ]
+                  : [],
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (isReordering)
+                  Padding(
+                    padding: EdgeInsets.only(right: 6),
+                    child: Icon(
+                      Icons.drag_indicator,
+                      size: 18,
+                      color: data.isActive
+                          ? Color(0xffF4F7FD)
+                          : Color(0xff1E2E52).withOpacity(0.5),
+                    ),
                   ),
-                ]
-              : [],
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (isReordering)
-              Padding(
-                padding: EdgeInsets.only(right: 6),
-                child: Icon(
-                  Icons.drag_indicator,
-                  size: 18,
-                  color: data.isActive
-                      ? Color(0xffF4F7FD)
-                      : Color(0xff1E2E52).withOpacity(0.5),
+                Image.asset(
+                  data.isActive ? data.activeIcon : data.inactiveIcon,
+                  width: _iconSize,
+                  height: _iconSize,
+                  color: data.isActive ? Color(0xffF4F7FD) : Color(0xff1E2E52),
+                ),
+                SizedBox(width: 8),
+                Text(
+                  data.title,
+                  style: TextStyle(
+                    color:
+                        data.isActive ? Color(0xffF4F7FD) : Color(0xff1E2E52),
+                    fontFamily: 'Golos',
+                    fontWeight: FontWeight.w500,
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (data.unreadCount > 0)
+            Positioned(
+              top: -8,
+              left: -2,
+              child: Container(
+                constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
+                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                decoration: const BoxDecoration(
+                  color: Color(0xffF44336),
+                  shape: BoxShape.circle,
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  data.unreadCount > 99 ? '99+' : '${data.unreadCount}',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    fontFamily: 'Golos',
+                  ),
                 ),
               ),
-            Image.asset(
-              data.isActive ? data.activeIcon : data.inactiveIcon,
-              width: _iconSize,
-              height: _iconSize,
-              color: data.isActive ? Color(0xffF4F7FD) : Color(0xff1E2E52),
             ),
-            SizedBox(width: 8),
-            Text(
-              data.title,
-              style: TextStyle(
-                color: data.isActive ? Color(0xffF4F7FD) : Color(0xff1E2E52),
-                fontFamily: 'Golos',
-                fontWeight: data.isActive ? FontWeight.w500 : FontWeight.w500,
-                fontSize: 14,
-              ),
-            ),
-          ],
-        ),
+        ],
       ),
     );
   }

@@ -206,9 +206,6 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                       ),
                     )
                   : CustomDropdown<UserData>.multiSelectSearchRequest(
-                      key: ValueKey(
-                        'task-users-${usersList.length}-${selectedUsersData.length}',
-                      ),
                       futureRequest: _searchUsers,
                       futureRequestDelay: const Duration(milliseconds: 350),
                       closeDropDownOnClearFilterSearch: true,

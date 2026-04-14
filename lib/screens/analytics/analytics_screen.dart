@@ -1,29 +1,30 @@
 import 'dart:convert';
 
-import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
-import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
-import 'package:crm_task_manager/screens/analytics/widgets/analytics_stat_card.dart';
-import 'package:crm_task_manager/screens/analytics/widgets/analytics_filter_sheet.dart';
+import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/custom_widget/shimmer_wave.dart';
+import 'package:crm_task_manager/screens/analytics/charts/advertising_roi_chart.dart';
+import 'package:crm_task_manager/screens/analytics/charts/connected_accounts_chart.dart';
 import 'package:crm_task_manager/screens/analytics/charts/conversion_chart.dart';
-import 'package:crm_task_manager/screens/analytics/charts/sources_chart.dart';
-import 'package:crm_task_manager/screens/analytics/charts/managers_chart.dart';
-import 'package:crm_task_manager/screens/analytics/charts/speed_gauge.dart';
 import 'package:crm_task_manager/screens/analytics/charts/goals_chart.dart';
 import 'package:crm_task_manager/screens/analytics/charts/kpi_chart.dart';
+import 'package:crm_task_manager/screens/analytics/charts/lead_conversion_statuses_chart.dart';
+import 'package:crm_task_manager/screens/analytics/charts/managers_chart.dart';
 import 'package:crm_task_manager/screens/analytics/charts/orders_chart.dart';
 import 'package:crm_task_manager/screens/analytics/charts/products_chart.dart';
-import 'package:crm_task_manager/screens/analytics/charts/lead_conversion_statuses_chart.dart';
 import 'package:crm_task_manager/screens/analytics/charts/replies_messages_chart.dart';
-import 'package:crm_task_manager/screens/analytics/charts/telephony_events_chart.dart';
-import 'package:crm_task_manager/screens/analytics/charts/task_stats_by_project_chart.dart';
-import 'package:crm_task_manager/screens/analytics/charts/connected_accounts_chart.dart';
-import 'package:crm_task_manager/screens/analytics/charts/advertising_roi_chart.dart';
+import 'package:crm_task_manager/screens/analytics/charts/sources_chart.dart';
+import 'package:crm_task_manager/screens/analytics/charts/speed_gauge.dart';
 import 'package:crm_task_manager/screens/analytics/charts/targeted_ads_chart.dart';
+import 'package:crm_task_manager/screens/analytics/charts/task_stats_by_project_chart.dart';
 import 'package:crm_task_manager/screens/analytics/charts/telephony_by_hour_chart.dart';
-import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/screens/analytics/charts/telephony_events_chart.dart';
 import 'package:crm_task_manager/screens/analytics/models/dashboard_setting_item.dart';
-import 'package:crm_task_manager/custom_widget/shimmer_wave.dart';
+import 'package:crm_task_manager/screens/analytics/utils/analytics_localization.dart';
+import 'package:crm_task_manager/screens/analytics/widgets/analytics_filter_sheet.dart';
+import 'package:crm_task_manager/screens/analytics/widgets/analytics_stat_card.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class AnalyticsScreen extends StatefulWidget {
@@ -56,23 +57,23 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     'calls_by_hour',
   };
   static const Map<String, String> _fallbackChartTitles = {
-    'conversion': 'Конверсия лидов',
-    'lead_sources': 'Источник лидов',
-    'manager_deals': 'Сделки по менеджерам',
-    'speed_chart': 'Средняя скорость обработки лидов',
-    'achieving_goals': 'Выполнение целей',
-    'achieving_tasks': 'Выполнение задач (KPI)',
-    'online_store_orders': 'Заказы интернет-магазина',
-    'top_selling_products': 'ТОП продаваемых товаров',
-    'telephony_and_events': 'Телефония и события',
-    'replies_to_messages': 'Ответы на сообщения',
-    'task_statistics_by_project': 'Статистика задач по проектам',
-    'project_statistics': 'Статистика по проектам',
-    'targeted_advertising': 'Таргетированная реклама (Meta Ads)',
-    'connected_accounts': 'Подключённые аккаунты (по каналам)',
-    'advertising_effectiveness': 'Эффективность рекламы (ROI)',
-    'conversion_by_statuses': 'Конверсия и количество по статусам',
-    'calls_by_hour': 'Аналитика звонков по часам',
+    'conversion': 'Lead conversion',
+    'lead_sources': 'Lead sources',
+    'manager_deals': 'Deals by managers',
+    'speed_chart': 'Lead processing speed',
+    'achieving_goals': 'Goal achievement',
+    'achieving_tasks': 'Task completion (KPI)',
+    'online_store_orders': 'Online store orders',
+    'top_selling_products': 'Top selling products',
+    'telephony_and_events': 'Telephony and events',
+    'replies_to_messages': 'Replies to messages',
+    'task_statistics_by_project': 'Task statistics by project',
+    'project_statistics': 'Project statistics',
+    'targeted_advertising': 'Targeted advertising (Meta Ads)',
+    'connected_accounts': 'Connected accounts',
+    'advertising_effectiveness': 'Advertising effectiveness (ROI)',
+    'conversion_by_statuses': 'Conversion by statuses',
+    'calls_by_hour': 'Calls by hour',
   };
 
   String? _selectedPeriodKey;
@@ -237,9 +238,13 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       entries.add(
         _ChartVisibilitySettingEntry(
           key: canonicalKey,
-          title: item.name.trim().isNotEmpty
-              ? item.name.trim()
-              : (_fallbackChartTitles[canonicalKey] ?? canonicalKey),
+          title: analyticsChartTitle(
+            context,
+            canonicalKey,
+            fallback: item.name.trim().isNotEmpty
+                ? item.name.trim()
+                : (_fallbackChartTitles[canonicalKey] ?? canonicalKey),
+          ),
         ),
       );
     }
@@ -290,7 +295,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     } catch (_) {
       if (!mounted) return;
       setState(() {
-        _chartSettingsError = 'Не удалось загрузить настройки графиков.';
+        _chartSettingsError = 'analytics_chart_settings_error';
         _orderedChartSettings = [];
         _isLoadingChartSettings = false;
       });
@@ -410,7 +415,11 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
           child: Column(
             children: [
               Text(
-                _chartSettingsError!,
+                analyticsText(
+                  context,
+                  _chartSettingsError!,
+                  fallback: _chartSettingsError!,
+                ),
                 style: const TextStyle(
                   color: Color(0xff64748B),
                   fontSize: 14,
@@ -421,7 +430,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
               const SizedBox(height: 8),
               TextButton(
                 onPressed: _loadDashboardSettings,
-                child: const Text('Повторить'),
+                child: Text(
+                  analyticsText(context, 'retry', fallback: 'Retry'),
+                ),
               ),
             ],
           ),
@@ -442,9 +453,13 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       }
       if (!_isChartEnabled(canonicalKey)) continue;
 
-      final title = item.name.trim().isNotEmpty
-          ? item.name
-          : (_fallbackChartTitles[canonicalKey] ?? canonicalKey);
+      final title = analyticsChartTitle(
+        context,
+        canonicalKey,
+        fallback: item.name.trim().isNotEmpty
+            ? item.name
+            : (_fallbackChartTitles[canonicalKey] ?? canonicalKey),
+      );
 
       Widget? chartWidget;
       switch (canonicalKey) {
@@ -535,12 +550,16 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
 
     if (widgets.isNotEmpty) return widgets;
 
-    return const [
+    return [
       Padding(
-        padding: EdgeInsets.symmetric(vertical: 16),
+        padding: const EdgeInsets.symmetric(vertical: 16),
         child: Text(
-          'Нет включенных графиков',
-          style: TextStyle(
+          analyticsText(
+            context,
+            'analytics_no_enabled_charts',
+            fallback: 'No charts enabled',
+          ),
+          style: const TextStyle(
             color: Color(0xff64748B),
             fontSize: 14,
             fontFamily: 'Gilroy',
@@ -588,10 +607,15 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
           builder: (context, setSheetState) {
             final bottomInset = MediaQuery.of(context).viewInsets.bottom;
             final maxHeight = MediaQuery.of(context).size.height * 0.82;
-            final allSelected =
-                entries.isNotEmpty &&
+            final allSelected = entries.isNotEmpty &&
                 entries.every((entry) => tempVisibility[entry.key] ?? false);
-            final selectAllLabel = allSelected ? 'Отключить все' : 'Включить все';
+            final selectAllLabel = analyticsText(
+              context,
+              allSelected
+                  ? 'analytics_disable_all_charts'
+                  : 'analytics_enable_all_charts',
+              fallback: allSelected ? 'Disable all' : 'Enable all',
+            );
 
             return SafeArea(
               top: false,
@@ -612,8 +636,12 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                       ),
                     ),
                     const SizedBox(height: 14),
-                    const Text(
-                      'Настройки CRM',
+                    Text(
+                      analyticsText(
+                        context,
+                        'analytics_crm_settings',
+                        fallback: 'CRM settings',
+                      ),
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w700,
@@ -622,8 +650,12 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                       ),
                     ),
                     const SizedBox(height: 6),
-                    const Text(
-                      'Включите или выключите отображение графиков',
+                    Text(
+                      analyticsText(
+                        context,
+                        'analytics_chart_visibility_hint',
+                        fallback: 'Enable or disable chart visibility',
+                      ),
                       style: TextStyle(
                         fontSize: 13,
                         color: Color(0xff64748B),
@@ -633,9 +665,13 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                     const SizedBox(height: 14),
                     Expanded(
                       child: entries.isEmpty
-                          ? const Center(
+                          ? Center(
                               child: Text(
-                                'Нет доступных графиков',
+                                analyticsText(
+                                  context,
+                                  'analytics_no_available_charts',
+                                  fallback: 'No charts available',
+                                ),
                                 style: TextStyle(
                                   color: Color(0xff64748B),
                                   fontSize: 14,
@@ -765,8 +801,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                                                   value: enabled,
                                                   onChanged: (value) {
                                                     setSheetState(() {
-                                                      tempVisibility[entry
-                                                          .key] = value;
+                                                      tempVisibility[
+                                                          entry.key] = value;
                                                     });
                                                   },
                                                   activeThumbColor:
@@ -846,8 +882,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                             borderRadius: BorderRadius.circular(12),
                           ),
                         ),
-                        child: const Text(
-                          'Сохранить',
+                        child: Text(
+                          analyticsText(context, 'save', fallback: 'Save'),
                           style: TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w600,
@@ -966,7 +1002,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                                   AnalyticsStatCard(
                                     title: localizations
                                             ?.translate('stat_total_leads') ??
-                                        'Всего лидов',
+                                        'Total leads',
                                     value: _totalLeads,
                                     change:
                                         '${_leadsChange.toStringAsFixed(2)}%',
@@ -977,7 +1013,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                                   AnalyticsStatCard(
                                     title: localizations
                                             ?.translate('stat_closed_deals') ??
-                                        'Закрытых сделок',
+                                        'Closed deals',
                                     value: _closedDeals,
                                     change:
                                         '${_dealsChange.toStringAsFixed(2)}%',
@@ -988,7 +1024,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                                   AnalyticsStatCard(
                                     title: localizations
                                             ?.translate('stat_total_revenue') ??
-                                        'Общая выручка',
+                                        'Total revenue',
                                     value: _totalRevenue,
                                     change:
                                         '${_revenueChange.toStringAsFixed(2)}%',
@@ -999,7 +1035,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                                   AnalyticsStatCard(
                                     title: localizations
                                             ?.translate('stat_conversion') ??
-                                        'Конверсия',
+                                        'Conversion',
                                     value: _conversionRate,
                                     change:
                                         '${_conversionChange.toStringAsFixed(2)}%',
@@ -1060,7 +1096,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         elevation: 0,
         automaticallyImplyLeading: false,
         title: Text(
-          localizations?.translate('appbar_analytics') ?? 'Аналитика',
+          localizations?.translate('appbar_analytics') ?? 'Analytics',
           style: TextStyle(
             fontSize: isSmallPhone ? 18 : 20,
             fontWeight: FontWeight.w700,
@@ -1079,7 +1115,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
               onPressed: _showFilterSheet,
               icon: const Icon(Icons.filter_list, size: 18),
               label: Text(
-                localizations?.translate('filters') ?? 'Фильтры',
+                localizations?.translate('filters') ?? 'Filters',
                 style: TextStyle(
                   fontSize: isSmallPhone ? 12 : 14,
                   fontWeight: FontWeight.w600,

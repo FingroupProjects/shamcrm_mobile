@@ -795,9 +795,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       case 'lead':
         return localizations.translate('task_deadline_reminder');
       case 'myTaskOutDated':
-        return localizations.translate('Напоминание о просрочке мои задачи');
+        return localizations.translate('my_task_overdue_reminder');
       case 'updateLeadStatus':
-        return localizations.translate('Статус лида изменен!');
+        return localizations.translate('lead_status_changed');
       default:
         return type;
     }

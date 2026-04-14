@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:crm_task_manager/screens/analytics/utils/analytics_localization.dart';
 import 'package:crm_task_manager/screens/analytics/widgets/chart_shimmer_loader.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:crm_task_manager/screens/analytics/utils/chart_request_policy.dart';
 import 'package:crm_task_manager/screens/analytics/utils/responsive_helper.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/screens/analytics/widgets/chart_empty_overlay.dart';
@@ -22,36 +24,6 @@ class _ConversionChartState extends State<ConversionChart> {
   List<double> _conversionData = [];
 
   String get _title => widget.title;
-
-  static const List<String> _monthNames = [
-    'Янв',
-    'Фев',
-    'Мар',
-    'Апр',
-    'Май',
-    'Июн',
-    'Июл',
-    'Авг',
-    'Сен',
-    'Окт',
-    'Ноя',
-    'Дек'
-  ];
-
-  static const List<String> _fullMonthNames = [
-    'Январь',
-    'Февраль',
-    'Март',
-    'Апрель',
-    'Май',
-    'Июнь',
-    'Июль',
-    'Август',
-    'Сентябрь',
-    'Октябрь',
-    'Ноябрь',
-    'Декабрь'
-  ];
 
   static const List<double> _previewData = [
     18.2,
@@ -75,6 +47,8 @@ class _ConversionChartState extends State<ConversionChart> {
   }
 
   Future<void> _loadData() async {
+    final chartId = AnalyticsChartRequestPolicy.chartIdForState(this);
+    AnalyticsChartRequestPolicy.cancelPendingRetry(chartId);
     setState(() {
       _isLoading = true;
       _error = null;
@@ -84,15 +58,25 @@ class _ConversionChartState extends State<ConversionChart> {
       final apiService = ApiService();
       final response = await apiService.getLeadConversionDataV2();
 
+      AnalyticsChartRequestPolicy.reset(chartId);
+      if (!mounted) return;
       setState(() {
         _conversionData = response.monthlyData;
         _isLoading = false;
       });
-    } catch (e) {
-      setState(() {
-        _error = 'Не удалось загрузить данные. Попробуйте позже.';
-        _isLoading = false;
-      });
+    } catch (e, stackTrace) {
+      await AnalyticsChartRequestPolicy.handleLoadError(
+        state: this,
+        setStateCallback: setState,
+        chartId: chartId,
+        error: e,
+        stackTrace: stackTrace,
+        onFatalError: () {
+          _error = AnalyticsChartRequestPolicy.userFacingMessage(e);
+          _isLoading = false;
+        },
+        retry: _loadData,
+      );
     }
   }
 
@@ -133,10 +117,7 @@ class _ConversionChartState extends State<ConversionChart> {
   }
 
   String get _bestMonth {
-    final index = _bestMonthIndex;
-    return index < _fullMonthNames.length
-        ? _fullMonthNames[index]
-        : 'Неизвестно';
+    return analyticsMonthFull(context, _bestMonthIndex + 1);
   }
 
   void _showDetails() {
@@ -181,9 +162,7 @@ class _ConversionChartState extends State<ConversionChart> {
                   itemCount: _conversionData.length,
                   separatorBuilder: (_, __) => const Divider(height: 1),
                   itemBuilder: (context, index) {
-                    final monthName = index < _fullMonthNames.length
-                        ? _fullMonthNames[index]
-                        : 'Месяц ${index + 1}';
+                    final monthName = analyticsMonthFull(context, index + 1);
                     return ListTile(
                       contentPadding: EdgeInsets.zero,
                       title: Text(
@@ -307,7 +286,11 @@ class _ConversionChartState extends State<ConversionChart> {
                             SizedBox(
                                 height: ResponsiveHelper(context).smallSpacing),
                             Text(
-                              _error!,
+                              analyticsText(
+                                context,
+                                _error!,
+                                fallback: _error!,
+                              ),
                               style: TextStyle(
                                 color: Color(0xff64748B),
                                 fontSize: responsive.bodyFontSize,
@@ -319,7 +302,13 @@ class _ConversionChartState extends State<ConversionChart> {
                                 height: ResponsiveHelper(context).smallSpacing),
                             TextButton(
                               onPressed: _loadData,
-                              child: const Text('Повторить'),
+                              child: Text(
+                                analyticsText(
+                                  context,
+                                  'retry',
+                                  fallback: 'Retry',
+                                ),
+                              ),
                             ),
                           ],
                         ),
@@ -372,7 +361,10 @@ class _ConversionChartState extends State<ConversionChart> {
                                               padding:
                                                   const EdgeInsets.only(top: 8),
                                               child: Text(
-                                                _monthNames[value.toInt()],
+                                                analyticsMonthShort(
+                                                  context,
+                                                  value.toInt() + 1,
+                                                ),
                                                 style: TextStyle(
                                                   color: Color(0xff64748B),
                                                   fontSize:
@@ -467,7 +459,11 @@ class _ConversionChartState extends State<ConversionChart> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Средняя конверсия',
+                        analyticsText(
+                          context,
+                          'analytics_average_conversion',
+                          fallback: 'Average conversion',
+                        ),
                         style: TextStyle(
                           fontSize: responsive.smallFontSize,
                           color: Color(0xff64748B),
@@ -490,7 +486,11 @@ class _ConversionChartState extends State<ConversionChart> {
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       Text(
-                        'Лучший период',
+                        analyticsText(
+                          context,
+                          'analytics_best_period',
+                          fallback: 'Best period',
+                        ),
                         style: TextStyle(
                           fontSize: responsive.smallFontSize,
                           color: Color(0xff64748B),

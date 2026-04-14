@@ -1,6 +1,5 @@
 import 'package:crm_task_manager/models/file_helper.dart';
-import 'package:crm_task_manager/models/leadById_model.dart';
-import 'package:crm_task_manager/screens/lead/tabBar/lead_edit_screen.dart';
+import 'package:crm_task_manager/models/lead_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 
 abstract class LeadEvent {}
@@ -277,6 +276,18 @@ class RefreshCurrentStatus extends LeadEvent {
   final int? salesFunnelId;
 
   RefreshCurrentStatus(this.statusId, {this.salesFunnelId});
+}
+
+class LeadCreatedFromSocket extends LeadEvent {
+  final Lead lead;
+  final int? activeStatusId;
+  final bool hasActiveFilters;
+
+  LeadCreatedFromSocket({
+    required this.lead,
+    required this.activeStatusId,
+    required this.hasActiveFilters,
+  });
 }
 
 class FetchLeadStatusesWithFilters extends LeadEvent {

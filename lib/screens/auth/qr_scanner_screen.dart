@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/screens/auth/pin_setup_screen.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -55,7 +56,10 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
       List<String> qrParts = cleanedResult.split('?');
 
       if (qrParts.length < 6) {
-        _showError('Неверный формат QR-кода');
+        _showError(
+          AppLocalizations.of(context)?.translate('invalid_qr_format') ??
+              'Неверный формат QR-кода',
+        );
         return;
       }
 
@@ -70,7 +74,8 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
 
       // Инициализируем домен и сохраняем данные
       await apiService.initializeWithDomain(domain, mainDomain);
-      await apiService.saveQrData(domain, mainDomain, login, token, userId, organizationId);
+      await apiService.saveQrData(
+          domain, mainDomain, login, token, userId, organizationId);
 
       await controller.stop();
 
@@ -84,7 +89,10 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
         );
       }
     } catch (e) {
-      _showError('Ошибка обработки QR-кода');
+      _showError(
+        AppLocalizations.of(context)?.translate('qr_processing_error') ??
+            'Ошибка обработки QR-кода',
+      );
       debugPrint('QrScannerScreen: Ошибка: $e');
     }
   }
@@ -101,7 +109,10 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
           await _processQrCode(qrCode);
         }
       } else {
-        _showError('QR-код не найден на изображении');
+        _showError(
+          AppLocalizations.of(context)?.translate('qr_not_found_in_image') ??
+              'QR-код не найден на изображении',
+        );
       }
     }
   }
@@ -120,15 +131,21 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context);
+
     return Scaffold(
       appBar: AppBar(
-        title: Text('Сканер QR-кода', style: TextStyle(fontFamily: 'Gilroy', fontWeight: FontWeight.w600)),
+        title: Text(
+          localizations?.translate('qr_scanner_title') ?? 'Сканер QR-кода',
+          style: TextStyle(fontFamily: 'Gilroy', fontWeight: FontWeight.w600),
+        ),
         backgroundColor: Colors.white,
         elevation: 0,
         iconTheme: IconThemeData(color: Color(0xff1E2E52)),
         forceMaterialTransparency: true,
         leading: IconButton(
-          icon: Image.asset('assets/icons/arrow-left.png', width: 24, height: 24),
+          icon:
+              Image.asset('assets/icons/arrow-left.png', width: 24, height: 24),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -140,16 +157,27 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
             Container(
               width: double.infinity,
               height: 350,
-              decoration: BoxDecoration(border: Border.all(color: Colors.black, width: 2)),
+              decoration: BoxDecoration(
+                  border: Border.all(color: Colors.black, width: 2)),
               child: MobileScanner(controller: controller, onDetect: _onDetect),
             ),
             SizedBox(height: 20),
-            Text('Сканируйте QR-код', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500, fontFamily: 'Gilroy')),
+            Text(
+              localizations?.translate('scan_qr_prompt') ?? 'Сканируйте QR-код',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w500,
+                fontFamily: 'Gilroy',
+              ),
+            ),
             SizedBox(height: 20),
             ElevatedButton.icon(
               onPressed: _pickFile,
               icon: Icon(Icons.file_upload),
-              label: Text('Загрузить файл с QR-кодом'),
+              label: Text(
+                localizations?.translate('upload_qr_file') ??
+                    'Загрузить файл с QR-кодом',
+              ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Color(0xff1E2E52),
                 foregroundColor: Colors.white,
