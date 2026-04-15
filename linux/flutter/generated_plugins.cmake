@@ -10,6 +10,7 @@ list(APPEND FLUTTER_PLUGIN_LIST
   flutter_webrtc
   open_file_linux
   record_linux
+  restart_app
   sqlite3_flutter_libs
   url_launcher_linux
 )
