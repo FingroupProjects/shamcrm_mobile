@@ -1629,7 +1629,10 @@ class _CustomAppBarState extends State<CustomAppBar>
                                 children: [
                                   Icon(Icons.tune_rounded, color: _iconColor),
                                   SizedBox(width: 8),
-                                  Text('Настройки CRM'),
+                                  Text(
+                                    AppLocalizations.of(context)!
+                                        .translate('analytics_crm_settings'),
+                                  ),
                                 ],
                               ),
                             ),

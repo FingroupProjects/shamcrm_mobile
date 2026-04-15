@@ -45,7 +45,7 @@ class _PriceTypeCardState extends State<PriceTypeCard> {
   @override
   Widget build(BuildContext context) {
     final localization = AppLocalizations.of(context);
-    
+
     return GestureDetector(
       // ИЗМЕНЕНО: Открываем редактирование только если есть право
       onTap: widget.hasUpdatePermission
@@ -53,14 +53,17 @@ class _PriceTypeCardState extends State<PriceTypeCard> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => EditPriceTypeScreen(priceType: widget.priceType),
+                  builder: (context) =>
+                      EditPriceTypeScreen(priceType: widget.priceType),
                 ),
               ).then((_) {
                 if (widget.onUpdate != null) {
                   widget.onUpdate!();
                 } else {
                   // BLoC использует сохраненный query
-                  context.read<PriceTypeScreenBloc>().add(const FetchPriceType());
+                  context
+                      .read<PriceTypeScreenBloc>()
+                      .add(const FetchPriceType());
                 }
               });
             }
@@ -110,7 +113,8 @@ class _PriceTypeCardState extends State<PriceTypeCard> {
                         context: context,
                         builder: (_) => BlocProvider.value(
                           value: context.read<PriceTypeScreenBloc>(),
-                          child: PriceTypesDeleteDialog(documentId: widget.priceType.id),
+                          child: PriceTypesDeleteDialog(
+                              documentId: widget.priceType.id),
                         ),
                       ).then((_) {
                         // BLoC сам обновляет список после удаления с сохранением query

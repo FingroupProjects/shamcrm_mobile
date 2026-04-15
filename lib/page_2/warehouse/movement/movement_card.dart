@@ -34,9 +34,7 @@ class MovementCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: isSelected
-              ? const Color(0xFFDDE8F5)
-              : const Color(0xFFE9EDF5),
+          color: isSelected ? const Color(0xFFDDE8F5) : const Color(0xFFE9EDF5),
           borderRadius: BorderRadius.circular(12),
           boxShadow: [BoxShadow(color: Colors.grey.shade200, blurRadius: 4)],
         ),
@@ -52,7 +50,7 @@ class MovementCard extends StatelessWidget {
                     children: [
                       Expanded(
                         child: Text(
-                          '${localizations.translate('empty_0') ?? 'Перемещение'}№${document.docNumber ?? ''}',
+                          '№${document.docNumber ?? ''}',
                           style: const TextStyle(
                             fontSize: 18,
                             fontFamily: 'Gilroy',
@@ -62,7 +60,8 @@ class MovementCard extends StatelessWidget {
                         ),
                       ),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
                           color: document.statusColor.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(4),
@@ -126,7 +125,9 @@ class MovementCard extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.only(left: 8),
                 child: Icon(
-                  isSelected ? Icons.check_circle : Icons.radio_button_unchecked,
+                  isSelected
+                      ? Icons.check_circle
+                      : Icons.radio_button_unchecked,
                   color: const Color(0xff1E2E52),
                   size: 24,
                 ),

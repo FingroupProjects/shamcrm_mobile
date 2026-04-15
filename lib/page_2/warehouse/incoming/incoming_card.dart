@@ -43,7 +43,8 @@ class _IncomingCardState extends State<IncomingCard> {
   }
 
   String _formatDate(DateTime? date) {
-    if (date == null) return AppLocalizations.of(context)!.translate('no_date') ?? 'Нет даты';
+    if (date == null)
+      return AppLocalizations.of(context)!.translate('no_date') ?? 'Нет даты';
     return DateFormat('dd.MM.yyyy').format(date);
   }
 
@@ -114,7 +115,7 @@ class _IncomingCardState extends State<IncomingCard> {
                     children: [
                       Expanded(
                         child: Text(
-                          '${localizations.translate('empty_0') ?? 'Приход'}№${doc.docNumber ?? 'N/A'}',
+                          '№${doc.docNumber ?? 'N/A'}',
                           style: const TextStyle(
                             fontSize: 18,
                             fontFamily: 'Gilroy',
@@ -124,7 +125,8 @@ class _IncomingCardState extends State<IncomingCard> {
                         ),
                       ),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
                           color: _getStatusColor().withOpacity(0.1),
                           borderRadius: BorderRadius.circular(4),
@@ -233,7 +235,9 @@ class _IncomingCardState extends State<IncomingCard> {
               Padding(
                 padding: const EdgeInsets.only(left: 8),
                 child: Icon(
-                  widget.isSelected ? Icons.check_circle : Icons.radio_button_unchecked,
+                  widget.isSelected
+                      ? Icons.check_circle
+                      : Icons.radio_button_unchecked,
                   color: Color(0xff1E2E52),
                   size: 24,
                 ),
