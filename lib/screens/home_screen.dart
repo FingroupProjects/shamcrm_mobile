@@ -794,15 +794,15 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     // SIP
     // Fallback for current rollout: if backend does not send any sip.* permissions yet,
     // keep the tab visible for integration/testing.
-    // final bool showSipTab =
-    //     hasPermission('sip.read') || !hasAnyPermissionWithPrefix('sip.');
-    // if (showSipTab) {
-    //   widgetsGroup1.add(const SipScreen());
-    //   titleKeysGroup1.add('appbar_sip');
-    //   navBarTitleKeysGroup1.add('appbar_sip');
-    //   activeIconsGroup1.add('assets/icons/MyNavBar/sip_ON.png');
-    //   inactiveIconsGroup1.add('assets/icons/MyNavBar/sip_OFF.png');
-    // }
+    final bool showSipTab =
+        hasPermission('sip.read') || !hasAnyPermissionWithPrefix('sip.');
+    if (showSipTab) {
+      widgetsGroup1.add(const SipScreen());
+      titleKeysGroup1.add('appbar_sip');
+      navBarTitleKeysGroup1.add('appbar_sip');
+      activeIconsGroup1.add('assets/icons/MyNavBar/sip_ON.png');
+      inactiveIconsGroup1.add('assets/icons/MyNavBar/sip_OFF.png');
+    }
 
     // ========== КЛЮЧЕВАЯ ЛОГИКА ==========
 

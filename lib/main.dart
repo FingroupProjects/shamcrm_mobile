@@ -136,6 +136,7 @@ import 'package:crm_task_manager/screens/auth/auth_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/profile/languages/local_manager_lang.dart';
 import 'package:crm_task_manager/screens/profile/profile_screen.dart';
+import 'package:crm_task_manager/screens/sip/sip_service.dart';
 import 'package:crm_task_manager/update_dialog.dart';
 import 'package:crm_task_manager/widgets/native_internet_aware_wrapper_WITH_GAME.dart';
 import 'package:crm_task_manager/widgets/native_internet_monitor_simple.dart';
@@ -193,6 +194,7 @@ void main() async {
     final initialMessage = await _safeLoadInitialMessage();
     _safeConfigureSystemUi();
     final savedLocale = await _safeLoadLocale();
+    await _safeInitializeSipRuntime();
 
     runApp(MyApp(
       apiService: apiService,
@@ -208,6 +210,15 @@ void main() async {
     debugPrint('main: startup error: $e');
     debugPrint('main: startup stackTrace: $stackTrace');
     runApp(ErrorApp(error: e.toString()));
+  }
+}
+
+Future<void> _safeInitializeSipRuntime() async {
+  try {
+    await SipService().initialize();
+  } catch (e, stackTrace) {
+    debugPrint('main: SipService initialize error: $e');
+    debugPrint('main: SipService initialize stackTrace: $stackTrace');
   }
 }
 

@@ -12,7 +12,11 @@ import 'sip_state.dart';
 class SipService extends ChangeNotifier
     with WidgetsBindingObserver
     implements SipUaHelperListener {
-  SipService();
+  SipService._internal();
+
+  static final SipService _instance = SipService._internal();
+
+  factory SipService() => _instance;
 
   static const FlutterSecureStorage _storage = FlutterSecureStorage();
 
@@ -22,6 +26,7 @@ class SipService extends ChangeNotifier
   static const String _sipIdKey = 'sip_target_sip_id';
   static const String _transportKey = 'sip_transport';
   static const String _portKey = 'sip_port';
+  static const String _enabledKey = 'sip_enabled';
 
   final SIPUAHelper _helper = SIPUAHelper();
   final Connectivity _connectivity = Connectivity();
@@ -38,6 +43,7 @@ class SipService extends ChangeNotifier
   bool _shouldStayConnected = false;
   bool _networkAvailable = true;
   bool _reconnectInProgress = false;
+  bool _sipEnabled = false;
   DateTime? _lastReconnectAttemptAt;
   Timer? _reconnectTimer;
   Timer? _registrationWatchdogTimer;
@@ -68,7 +74,9 @@ class SipService extends ChangeNotifier
     final sipId = await _storage.read(key: _sipIdKey) ?? '';
     final transportRaw = await _storage.read(key: _transportKey) ?? 'ws';
     final portRaw = await _storage.read(key: _portKey) ?? '7443';
+    final enabledRaw = await _storage.read(key: _enabledKey) ?? 'false';
     final parsedPort = int.tryParse(portRaw) ?? 7443;
+    _sipEnabled = enabledRaw == 'true';
     final transport = switch (transportRaw) {
       'tcp' => SipTransportUi.tcp,
       'udp' => SipTransportUi.udp,
@@ -88,6 +96,10 @@ class SipService extends ChangeNotifier
     _startConnectivityMonitoring();
     _startRegistrationWatchdog();
     notifyListeners();
+
+    if (_sipEnabled && _hasSipCredentials()) {
+      Future.microtask(() => connect());
+    }
   }
 
   Future<void> saveDraft({
@@ -136,6 +148,8 @@ class SipService extends ChangeNotifier
     }
 
     _shouldStayConnected = true;
+    _sipEnabled = true;
+    await _storage.write(key: _enabledKey, value: 'true');
     await _startSipRegistration();
   }
 
@@ -184,6 +198,8 @@ class SipService extends ChangeNotifier
 
   Future<void> disconnect() async {
     _shouldStayConnected = false;
+    _sipEnabled = false;
+    await _storage.write(key: _enabledKey, value: 'false');
     _cancelReconnect();
     _stopKeepAlive();
 
@@ -208,6 +224,38 @@ class SipService extends ChangeNotifier
     );
     notifyListeners();
   }
+
+  Future<void> clearSavedCredentials() async {
+    _shouldStayConnected = false;
+    _sipEnabled = false;
+    _cancelReconnect();
+    _stopKeepAlive();
+
+    try {
+      _activeCall?.hangup(<String, dynamic>{'status_code': 603});
+    } catch (_) {}
+
+    _activeCall = null;
+    if (_helper.registered) {
+      _helper.unregister(true);
+    }
+    _helper.stop();
+    _releaseStreams();
+
+    await _storage.delete(key: _serverKey);
+    await _storage.delete(key: _loginKey);
+    await _storage.delete(key: _passwordKey);
+    await _storage.delete(key: _sipIdKey);
+    await _storage.delete(key: _transportKey);
+    await _storage.delete(key: _portKey);
+    await _storage.delete(key: _enabledKey);
+
+    _state = SipUiState.initial();
+    notifyListeners();
+  }
+
+  bool get hasSavedCredentials => _hasSipCredentials();
+  bool get isSipEnabled => _sipEnabled;
 
   Future<void> makeCall() async {
     if (_state.registrationStatus != SipRegistrationUiStatus.registered) {
@@ -540,7 +588,9 @@ class SipService extends ChangeNotifier
         break;
       case RegistrationStateEnum.UNREGISTERED:
         _state = _state.copyWith(
-          registrationStatus: SipRegistrationUiStatus.disconnected,
+          registrationStatus: _shouldStayConnected
+              ? SipRegistrationUiStatus.registering
+              : SipRegistrationUiStatus.disconnected,
           callStatus: SipCallUiStatus.idle,
           clearRemoteIdentity: true,
         );

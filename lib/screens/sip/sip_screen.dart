@@ -168,6 +168,20 @@ class _SipScreenState extends State<SipScreen> {
     await _sipService.makeCall();
   }
 
+  String _registrationLabel(
+      BuildContext context, SipRegistrationUiStatus status) {
+    switch (status) {
+      case SipRegistrationUiStatus.disconnected:
+        return 'Отключено';
+      case SipRegistrationUiStatus.registering:
+        return 'Подключение';
+      case SipRegistrationUiStatus.registered:
+        return 'Подключено';
+      case SipRegistrationUiStatus.failed:
+        return 'Ошибка';
+    }
+  }
+
   String _callLabel(BuildContext context, SipCallUiStatus status) {
     final l10n = AppLocalizations.of(context)!;
     switch (status) {
@@ -371,10 +385,8 @@ class _SipScreenState extends State<SipScreen> {
       animation: _sipService,
       builder: (context, child) {
         final state = _sipService.state;
-        final isRegistered =
-            state.registrationStatus == SipRegistrationUiStatus.registered;
 
-        if (!_hasCredentials(state) || !isRegistered) {
+        if (!_hasCredentials(state)) {
           return _buildAuthorizationView(context, state);
         }
 
@@ -678,14 +690,52 @@ class _SipScreenState extends State<SipScreen> {
           ),
           const SizedBox(width: 8),
           Expanded(
-            child: Text(
-              '${l10n.translate('sip_call_state')}: ${_callLabel(context, state.callStatus)}',
-              style: const TextStyle(
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF111827),
-              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '${l10n.translate('sip_call_state')}: ${_callLabel(context, state.callStatus)}',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF111827),
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'Состояние SIP: ${_registrationLabel(context, state.registrationStatus)}',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Color(0xFF64748B),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
             ),
           ),
+          if (state.registrationStatus != SipRegistrationUiStatus.registered &&
+              state.callStatus != SipCallUiStatus.incoming)
+            CupertinoButton(
+              padding: EdgeInsets.zero,
+              onPressed: state.registrationStatus ==
+                      SipRegistrationUiStatus.registering
+                  ? null
+                  : () async {
+                      await _saveDraft();
+                      await _sipService.connect();
+                    },
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF0A84FF),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  l10n.translate('sip_connect'),
+                  style: const TextStyle(color: Colors.white),
+                ),
+              ),
+            ),
           if (state.callStatus == SipCallUiStatus.incoming)
             Row(
               children: [
@@ -825,17 +875,26 @@ class _SipScreenState extends State<SipScreen> {
                   SizedBox(width: callButtonSize * 0.75),
                   CupertinoButton(
                     padding: EdgeInsets.zero,
-                    onPressed: _startDialCall,
+                    onPressed: state.registrationStatus ==
+                            SipRegistrationUiStatus.registered
+                        ? _startDialCall
+                        : null,
                     child: Container(
                       width: callButtonSize,
                       height: callButtonSize,
                       decoration: BoxDecoration(
-                        color: const Color(0xFF22C55E),
+                        color: state.registrationStatus ==
+                                SipRegistrationUiStatus.registered
+                            ? const Color(0xFF22C55E)
+                            : const Color(0xFF94A3B8),
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
-                            color:
-                                const Color(0xFF22C55E).withValues(alpha: 0.45),
+                            color: (state.registrationStatus ==
+                                        SipRegistrationUiStatus.registered
+                                    ? const Color(0xFF22C55E)
+                                    : const Color(0xFF94A3B8))
+                                .withValues(alpha: 0.32),
                             blurRadius: 16,
                             offset: const Offset(0, 6),
                           ),
@@ -869,6 +928,21 @@ class _SipScreenState extends State<SipScreen> {
                 ],
               ),
               const SizedBox(height: 6),
+              if (state.registrationStatus !=
+                  SipRegistrationUiStatus.registered)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Text(
+                    state.errorMessage?.trim().isNotEmpty == true
+                        ? state.errorMessage!
+                        : 'Подключение SIP...',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: Color(0xFF64748B),
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
               if (state.callStatus == SipCallUiStatus.inCall ||
                   state.callStatus == SipCallUiStatus.ringing ||
                   state.callStatus == SipCallUiStatus.calling)
