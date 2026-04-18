@@ -165,6 +165,8 @@ class MyNavBar extends StatefulWidget {
   final List<String> inactiveIconsGroup2;
   final int currentIndexGroup1;
   final int currentIndexGroup2;
+  final List<int> unreadCountsGroup1;
+  final List<int> unreadCountsGroup2;
 
   const MyNavBar({
     super.key,
@@ -175,6 +177,8 @@ class MyNavBar extends StatefulWidget {
     required this.activeIconsGroup2,
     required this.inactiveIconsGroup1,
     required this.inactiveIconsGroup2,
+    this.unreadCountsGroup1 = const [],
+    this.unreadCountsGroup2 = const [],
     this.currentIndexGroup1 = -1,
     this.currentIndexGroup2 = -1,
   });
@@ -297,6 +301,9 @@ class _MyNavBarState extends State<MyNavBar> {
         title: widget.navBarTitlesGroup1[i],
         activeIcon: widget.activeIconsGroup1[i],
         inactiveIcon: widget.inactiveIconsGroup1[i],
+        unreadCount: i < widget.unreadCountsGroup1.length
+            ? widget.unreadCountsGroup1[i]
+            : 0,
         groupIndex: 1,
         itemIndex: i,
         isActive: widget.currentIndexGroup1 == i,
@@ -308,6 +315,9 @@ class _MyNavBarState extends State<MyNavBar> {
         title: widget.navBarTitlesGroup2[i],
         activeIcon: widget.activeIconsGroup2[i],
         inactiveIcon: widget.inactiveIconsGroup2[i],
+        unreadCount: i < widget.unreadCountsGroup2.length
+            ? widget.unreadCountsGroup2[i]
+            : 0,
         groupIndex: 2,
         itemIndex: i,
         isActive: widget.currentIndexGroup2 == i,
@@ -350,6 +360,7 @@ class _MyNavBarState extends State<MyNavBar> {
           title: latestItem.title,
           activeIcon: latestItem.activeIcon,
           inactiveIcon: latestItem.inactiveIcon,
+          unreadCount: latestItem.unreadCount,
           groupIndex: latestItem.groupIndex,
           itemIndex: latestItem.itemIndex,
           isActive: latestItem.isActive,
@@ -560,6 +571,7 @@ class NavBarItemData {
   final String title;
   final String activeIcon;
   final String inactiveIcon;
+  final int unreadCount;
   final int groupIndex;
   final int itemIndex;
   final bool isActive;
@@ -568,6 +580,7 @@ class NavBarItemData {
     required this.title,
     required this.activeIcon,
     required this.inactiveIcon,
+    required this.unreadCount,
     required this.groupIndex,
     required this.itemIndex,
     required this.isActive,
@@ -592,58 +605,87 @@ class _NavBarItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        margin: EdgeInsets.symmetric(horizontal: 4),
-        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: data.isActive ? Color(0xff1E2E52) : Color(0xffF4F7FD),
-          border: Border.all(
-            color: Color(0xff1E2E52).withOpacity(0.5),
-            width: data.isActive ? 0 : 0.5,
-          ),
-          borderRadius: BorderRadius.circular(25),
-          boxShadow: data.isActive
-              ? [
-                  BoxShadow(
-                    color: Color(0xff1E2E52).withOpacity(0.3),
-                    blurRadius: 8,
-                    offset: Offset(0, 2),
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Container(
+            margin: EdgeInsets.symmetric(horizontal: 4),
+            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              color: data.isActive ? Color(0xff1E2E52) : Color(0xffF4F7FD),
+              border: Border.all(
+                color: Color(0xff1E2E52).withOpacity(0.5),
+                width: data.isActive ? 0 : 0.5,
+              ),
+              borderRadius: BorderRadius.circular(25),
+              boxShadow: data.isActive
+                  ? [
+                      BoxShadow(
+                        color: Color(0xff1E2E52).withOpacity(0.3),
+                        blurRadius: 8,
+                        offset: Offset(0, 2),
+                      ),
+                    ]
+                  : [],
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (isReordering)
+                  Padding(
+                    padding: EdgeInsets.only(right: 6),
+                    child: Icon(
+                      Icons.drag_indicator,
+                      size: 18,
+                      color: data.isActive
+                          ? Color(0xffF4F7FD)
+                          : Color(0xff1E2E52).withOpacity(0.5),
+                    ),
                   ),
-                ]
-              : [],
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (isReordering)
-              Padding(
-                padding: EdgeInsets.only(right: 6),
-                child: Icon(
-                  Icons.drag_indicator,
-                  size: 18,
-                  color: data.isActive
-                      ? Color(0xffF4F7FD)
-                      : Color(0xff1E2E52).withOpacity(0.5),
+                Image.asset(
+                  data.isActive ? data.activeIcon : data.inactiveIcon,
+                  width: _iconSize,
+                  height: _iconSize,
+                  color: data.isActive ? Color(0xffF4F7FD) : Color(0xff1E2E52),
+                ),
+                SizedBox(width: 8),
+                Text(
+                  data.title,
+                  style: TextStyle(
+                    color:
+                        data.isActive ? Color(0xffF4F7FD) : Color(0xff1E2E52),
+                    fontFamily: 'Golos',
+                    fontWeight: FontWeight.w500,
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (data.unreadCount > 0)
+            Positioned(
+              top: -8,
+              left: -2,
+              child: Container(
+                constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
+                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                decoration: const BoxDecoration(
+                  color: Color(0xffF44336),
+                  shape: BoxShape.circle,
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  data.unreadCount > 99 ? '99+' : '${data.unreadCount}',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    fontFamily: 'Golos',
+                  ),
                 ),
               ),
-            Image.asset(
-              data.isActive ? data.activeIcon : data.inactiveIcon,
-              width: _iconSize,
-              height: _iconSize,
-              color: data.isActive ? Color(0xffF4F7FD) : Color(0xff1E2E52),
             ),
-            SizedBox(width: 8),
-            Text(
-              data.title,
-              style: TextStyle(
-                color: data.isActive ? Color(0xffF4F7FD) : Color(0xff1E2E52),
-                fontFamily: 'Golos',
-                fontWeight: data.isActive ? FontWeight.w500 : FontWeight.w500,
-                fontSize: 14,
-              ),
-            ),
-          ],
-        ),
+        ],
       ),
     );
   }

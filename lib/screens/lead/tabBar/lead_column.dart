@@ -186,11 +186,12 @@ class _LeadColumnState extends State<LeadColumn> {
 
             if (state is LeadError) {
               final bool shouldRetryNow = !_hasRetriedAfterError;
+              final bool isCurrentRoute = ModalRoute.of(context)?.isCurrent ?? true;
 
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 if (!mounted) return;
 
-                if (_lastShownErrorMessage != state.message) {
+                if (isCurrentRoute && _lastShownErrorMessage != state.message) {
                   _lastShownErrorMessage = state.message;
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(

@@ -46,6 +46,7 @@ object NativeSipBridge {
     private var prefs: SharedPreferences? = null
     private var nativeSipManager: NativeSipManager? = null
     private var flutterEventSink: EventChannel.EventSink? = null
+    private var appInForeground = false
     private var currentSnapshot = hashMapOf<String, Any?>(
         "registrationState" to "disconnected",
         "callState" to "idle",
@@ -55,6 +56,7 @@ object NativeSipBridge {
         "speakerOn" to false,
         "persistentEnabled" to false,
         "systemAlertWindowGranted" to true,
+        "appForeground" to false,
     )
 
     private fun startRuntimeServiceIfPossible(reason: String) {
@@ -130,18 +132,29 @@ object NativeSipBridge {
         val trimmedServer = server.trim()
         val trimmedLogin = login.trim()
         val trimmedAuthUser = authUser?.trim().takeUnless { it.isNullOrEmpty() } ?: trimmedLogin
-
-        persistConfig(
-            NativeSipStoredConfig(
-                server = trimmedServer,
-                login = trimmedLogin,
-                password = password,
-                port = port,
-                transport = transport,
-                authUser = trimmedAuthUser,
-                enabled = true,
-            ),
+        val requestedConfig = NativeSipStoredConfig(
+            server = trimmedServer,
+            login = trimmedLogin,
+            password = password,
+            port = port,
+            transport = transport,
+            authUser = trimmedAuthUser,
+            enabled = true,
         )
+        val currentState = currentSnapshot["registrationState"]?.toString()
+
+        if (
+            (currentState == "registering" || currentState == "registered") &&
+            isSameConfig(getStoredConfig(), requestedConfig)
+        ) {
+            Log.d(TAG, "register skipped: state=$currentState for same config")
+            startRuntimeServiceIfPossible("register-skip-$currentState")
+            SipKeepAliveWorker.schedule(context)
+            return true
+        }
+
+        persistConfig(requestedConfig)
+        markRegistrationStarting("Starting native SIP registration")
 
         val success = ensureManager().register(
             server = trimmedServer,
@@ -173,9 +186,15 @@ object NativeSipBridge {
 
         val registrationState = currentSnapshot["registrationState"]?.toString()
         if (registrationState == "registered" || registrationState == "registering") {
+            Log.d(TAG, "restoreRegistrationIfNeeded skipped: registrationState=$registrationState")
+            if (startService) {
+                startRuntimeServiceIfPossible("restore-already-registered")
+                SipKeepAliveWorker.schedule(context)
+            }
             return true
         }
 
+        markRegistrationStarting("Restoring native SIP registration")
         val success = ensureManager().register(
             server = config.server,
             login = config.login,
@@ -187,6 +206,7 @@ object NativeSipBridge {
 
         if (success && startService) {
             startRuntimeServiceIfPossible("restore")
+            SipKeepAliveWorker.schedule(context)
         }
 
         return success
@@ -194,6 +214,7 @@ object NativeSipBridge {
 
     fun unregister() {
         val context = requireContext()
+        Log.w(TAG, "unregister requested", Throwable("NativeSipBridge.unregister trace"))
         updateEnabled(false)
         ensureManager().unregister()
         currentSnapshot["persistentEnabled"] = false
@@ -233,11 +254,54 @@ object NativeSipBridge {
     }
 
     fun onAppForeground() {
+        appInForeground = true
+        currentSnapshot["appForeground"] = true
+        dispatchBridgeEvent(
+            hashMapOf(
+                "type" to "app_visibility",
+                "appForeground" to true,
+                "callState" to currentSnapshot["callState"],
+                "remoteIdentity" to currentSnapshot["remoteIdentity"],
+            ),
+        )
         nativeSipManager?.onAppForeground()
     }
 
     fun onAppBackground() {
+        appInForeground = false
+        currentSnapshot["appForeground"] = false
+        dispatchBridgeEvent(
+            hashMapOf(
+                "type" to "app_visibility",
+                "appForeground" to false,
+                "callState" to currentSnapshot["callState"],
+                "remoteIdentity" to currentSnapshot["remoteIdentity"],
+            ),
+        )
         nativeSipManager?.onAppBackground()
+    }
+
+    fun isAppInForeground(): Boolean = appInForeground
+
+    fun maintainRegistration(reason: String): Boolean {
+        val context = requireContext()
+        initialize(context)
+        if (!isPersistentEnabled()) {
+            Log.d(TAG, "maintainRegistration skipped: persistent SIP disabled, reason=$reason")
+            return false
+        }
+
+        val registrationState = currentSnapshot["registrationState"]?.toString()
+        val callState = currentSnapshot["callState"]?.toString()
+        if (callState == "incoming" || callState == "calling" || callState == "ringing" || callState == "in_call") {
+            Log.d(TAG, "maintainRegistration skipped: active call state=$callState, reason=$reason")
+            return true
+        }
+
+        return when (registrationState) {
+            "registered", "registering" -> ensureManager().maintainRegistration(reason)
+            else -> restoreRegistrationIfNeeded(startService = false)
+        }
     }
 
     fun getStateSnapshot(): HashMap<String, Any?> {
@@ -311,12 +375,24 @@ object NativeSipBridge {
     }
 
     private fun handleManagerEvent(event: HashMap<String, Any?>) {
+        Log.d(TAG, "handleManagerEvent: $event")
         updateSnapshotFromEvent(event)
+        dispatchBridgeEvent(event)
+    }
 
+    private fun dispatchBridgeEvent(event: HashMap<String, Any?>) {
         mainHandler.post {
-            flutterEventSink?.success(event)
+            try {
+                flutterEventSink?.success(event)
+            } catch (error: Throwable) {
+                Log.e(TAG, "Flutter event dispatch failed: ${error.message}", error)
+            }
             bridgeObservers.toList().forEach { observer ->
-                observer.invoke(HashMap(event))
+                try {
+                    observer.invoke(HashMap(event))
+                } catch (error: Throwable) {
+                    Log.e(TAG, "Bridge observer failed: ${error.message}", error)
+                }
             }
         }
     }
@@ -344,6 +420,9 @@ object NativeSipBridge {
             "native" -> {
                 currentSnapshot["message"] = event["state"]
             }
+            "app_visibility" -> {
+                currentSnapshot["appForeground"] = event["appForeground"] ?: false
+            }
         }
 
         currentSnapshot["persistentEnabled"] = isPersistentEnabled()
@@ -370,6 +449,25 @@ object NativeSipBridge {
         getPrefs()?.edit()?.putBoolean(KEY_ENABLED, enabled)?.apply()
         writePlainFlag(enabled)
         currentSnapshot["persistentEnabled"] = enabled
+    }
+
+    private fun markRegistrationStarting(message: String) {
+        currentSnapshot["registrationState"] = "registering"
+        currentSnapshot["message"] = message
+        currentSnapshot["persistentEnabled"] = true
+    }
+
+    private fun isSameConfig(
+        left: NativeSipStoredConfig?,
+        right: NativeSipStoredConfig,
+    ): Boolean {
+        if (left == null) return false
+        return left.server == right.server &&
+            left.login == right.login &&
+            left.password == right.password &&
+            left.port == right.port &&
+            left.transport.equals(right.transport, ignoreCase = true) &&
+            left.authUser == right.authUser
     }
 
     /**

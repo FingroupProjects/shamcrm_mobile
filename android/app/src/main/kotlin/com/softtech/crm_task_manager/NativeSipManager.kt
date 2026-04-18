@@ -33,6 +33,7 @@ class NativeSipManager(
     private var currentCall: Call? = null
     private var isSpeakerOn = false
     private var currentDomain: String = ""
+    private var desiredRegistrationEnabled = false
 
     fun setEventListener(listener: ((HashMap<String, Any?>) -> Unit)?) {
         eventListener = listener
@@ -58,6 +59,10 @@ class NativeSipManager(
         authUser: String?,
     ): Boolean {
         return try {
+            Log.d(
+                TAG,
+                "register start: server=$server, login=$login, port=$port, transport=$transport, authUser=$authUser",
+            )
             val sipCore = ensureCore()
             val factory = Factory.instance()
             val trimmedServer = server.trim()
@@ -69,6 +74,8 @@ class NativeSipManager(
             currentCall = null
             currentAccount = null
             isSpeakerOn = false
+            desiredRegistrationEnabled = true
+            markNetworkReachable(sipCore)
 
             sipCore.clearAccounts()
             sipCore.clearAllAuthInfo()
@@ -116,6 +123,7 @@ class NativeSipManager(
 
             emitRegistration("registering", "Starting native SIP registration")
             sipCore.start()
+            Log.d(TAG, "register invoked core.start()")
             true
         } catch (error: Throwable) {
             Log.e(TAG, "register failed: ${error.message}", error)
@@ -125,6 +133,7 @@ class NativeSipManager(
     }
 
     fun unregister() {
+        desiredRegistrationEnabled = false
         try {
             currentCall?.terminate()
         } catch (_: Throwable) {
@@ -141,6 +150,24 @@ class NativeSipManager(
 
         emitRegistration("disconnected", "Native SIP disconnected")
         emitCallState("ended", null, "Call ended")
+    }
+
+    fun maintainRegistration(reason: String): Boolean {
+        val sipCore = core ?: return false
+        if (!desiredRegistrationEnabled) {
+            Log.d(TAG, "maintainRegistration skipped: desiredRegistrationEnabled=false, reason=$reason")
+            return false
+        }
+
+        return try {
+            markNetworkReachable(sipCore)
+            sipCore.refreshRegisters()
+            Log.d(TAG, "maintainRegistration: core.refreshRegisters(), reason=$reason")
+            true
+        } catch (error: Throwable) {
+            Log.e(TAG, "maintainRegistration failed: ${error.message}, reason=$reason", error)
+            false
+        }
     }
 
     fun makeCall(target: String): Boolean {
@@ -275,6 +302,7 @@ class NativeSipManager(
     }
 
     fun dispose() {
+        desiredRegistrationEnabled = false
         try {
             currentCall?.terminate()
         } catch (_: Throwable) {
@@ -295,7 +323,14 @@ class NativeSipManager(
 
     fun onAppForeground() {
         try {
-            core?.enterForeground()
+            core?.let { sipCore ->
+                markNetworkReachable(sipCore)
+                sipCore.enterForeground()
+                if (desiredRegistrationEnabled) {
+                    sipCore.ensureRegistered()
+                    Log.d(TAG, "onAppForeground: core.ensureRegistered()")
+                }
+            }
         } catch (_: Throwable) {
         }
     }
@@ -314,10 +349,13 @@ class NativeSipManager(
         val factory = Factory.instance()
         val createdCore = factory.createCore(null, null, context)
         createdCore.setAutoIterateEnabled(true)
+        createdCore.setKeepAliveEnabled(true)
+        createdCore.setRegisterOnlyWhenNetworkIsUp(true)
         createdCore.setMediaEncryption(MediaEncryption.None)
         createdCore.setMediaEncryptionMandatory(false)
         createdCore.setNativeRingingEnabled(false)
         createdCore.disableCallRinging(false)
+        markNetworkReachable(createdCore)
 
         val natPolicy = createdCore.createNatPolicy()
         natPolicy.setIceEnabled(false)
@@ -333,8 +371,24 @@ class NativeSipManager(
                 state: RegistrationState,
                 message: String,
             ) {
-                val mappedState = mapRegistrationState(state.toString())
-                emitRegistration(mappedState, message.ifEmpty { mappedState })
+                val rawState = state.toString()
+                val mappedState = when {
+                    rawState == "Cleared" && desiredRegistrationEnabled -> "registering"
+                    else -> mapRegistrationState(rawState)
+                }
+                val effectiveMessage = when {
+                    rawState == "Cleared" && desiredRegistrationEnabled -> "Refreshing SIP registration"
+                    else -> message.ifEmpty { mappedState }
+                }
+                Log.d(
+                    TAG,
+                    "onAccountRegistrationStateChanged: rawState=$rawState, mappedState=$mappedState, message=$effectiveMessage",
+                )
+                if (rawState == "Ok") {
+                    currentAccount = account
+                    desiredRegistrationEnabled = true
+                }
+                emitRegistration(mappedState, effectiveMessage)
             }
 
             override fun onCallStateChanged(
@@ -343,6 +397,10 @@ class NativeSipManager(
                 state: Call.State,
                 message: String,
             ) {
+                Log.d(
+                    TAG,
+                    "onCallStateChanged: rawState=${state.toString()}, remote=${remoteIdentityFor(call)}, message=$message",
+                )
                 currentCall = when (mapCallState(state.toString())) {
                     "ended", "failed", "idle" -> null
                     else -> call
@@ -415,10 +473,19 @@ class NativeSipManager(
     private fun mapRegistrationState(value: String?): String {
         return when (value) {
             "Ok" -> "registered"
-            "Progress" -> "registering"
+            "Progress", "Refreshing" -> "registering"
             "Failed" -> "failed"
             "Cleared" -> "disconnected"
             else -> "disconnected"
+        }
+    }
+
+    private fun markNetworkReachable(sipCore: Core) {
+        try {
+            sipCore.setNetworkReachable(true)
+            sipCore.setSipNetworkReachable(true)
+            sipCore.setMediaNetworkReachable(true)
+        } catch (_: Throwable) {
         }
     }
 

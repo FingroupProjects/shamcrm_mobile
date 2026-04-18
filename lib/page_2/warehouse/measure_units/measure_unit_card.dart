@@ -45,7 +45,7 @@ class _MeasureUnitCardState extends State<MeasureUnitCard> {
   @override
   Widget build(BuildContext context) {
     final localization = AppLocalizations.of(context);
-    
+
     return GestureDetector(
       // ИЗМЕНЕНО: Открываем редактирование только если есть право
       onTap: widget.hasUpdatePermission
@@ -54,14 +54,17 @@ class _MeasureUnitCardState extends State<MeasureUnitCard> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => EditMeasureUnitScreen(measureUnit: widget.supplier),
+                    builder: (context) =>
+                        EditMeasureUnitScreen(measureUnit: widget.supplier),
                   ),
                 ).then((result) {
                   if (result == true) {
                     if (widget.onUpdate != null) {
                       widget.onUpdate!();
                     } else {
-                      context.read<MeasureUnitsBloc>().add(const FetchMeasureUnits());
+                      context
+                          .read<MeasureUnitsBloc>()
+                          .add(const FetchMeasureUnits());
                     }
                   }
                 });
@@ -111,7 +114,8 @@ class _MeasureUnitCardState extends State<MeasureUnitCard> {
                     onTap: () {
                       showDialog(
                         context: context,
-                        builder: (context) => MeasureUnitDeleteDialog(measureUnitId: widget.supplier.id),
+                        builder: (context) => MeasureUnitDeleteDialog(
+                            measureUnitId: widget.supplier.id),
                       ).then((result) {
                         if (result == true) {
                           // BLoC сам обновляет список после удаления с сохранением query
@@ -124,7 +128,8 @@ class _MeasureUnitCardState extends State<MeasureUnitCard> {
                   ),
               ],
             ),
-            if (widget.supplier.shortName != null && widget.supplier.shortName!.isNotEmpty)
+            if (widget.supplier.shortName != null &&
+                widget.supplier.shortName!.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.only(top: 8),
                 child: Text(

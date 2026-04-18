@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/models/api_exception_model.dart';
 import 'package:crm_task_manager/models/lead_model.dart';
 import 'package:crm_task_manager/offline/core/offline_module.dart';
 import 'package:crm_task_manager/offline/core/offline_runtime.dart';
@@ -58,6 +59,7 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
     on<RestoreCountsFromCache>(_restoreCountsFromCache);
     on<RefreshCurrentStatus>(_refreshCurrentStatus);
     on<FetchLeadStatusesWithFilters>(_fetchLeadStatusesWithFilters);
+    on<LeadCreatedFromSocket>(_onLeadCreatedFromSocket);
   }
 
   bool get _hasActiveFilters {
@@ -619,7 +621,17 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
         emit(LeadError(result['message']));
       }
     } catch (e) {
-      emit(LeadError(event.localizations.translate('lead_creation_error')));
+      if (e is ApiException) {
+        emit(LeadError(e.message));
+        return;
+      }
+
+      final rawMessage = e.toString().replaceFirst(RegExp(r'^Exception:\s*'), '');
+      emit(LeadError(
+        rawMessage.isNotEmpty
+            ? rawMessage
+            : event.localizations.translate('lead_creation_error'),
+      ));
     }
   }
 
@@ -954,6 +966,75 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
     } catch (e) {
       //print('LeadBloc: _refreshCurrentStatus - Error: $e');
       emit(LeadError('Не удалось обновить данные статуса: $e'));
+    }
+  }
+
+  Future<void> _onLeadCreatedFromSocket(
+    LeadCreatedFromSocket event,
+    Emitter<LeadState> emit,
+  ) async {
+    if (event.hasActiveFilters) {
+      if (event.activeStatusId != null) {
+        add(FetchLeads(
+          event.activeStatusId!,
+          query: _currentQuery,
+          managerIds: _currentManagerIds,
+          regionsIds: _currentRegionIds,
+          regionId: _currentRegionId,
+          cityIds: _currentCityIds,
+          sourcesIds: _currentSourceIds,
+          channelIds: _currentChannelIds,
+          advertisingCampaignIds: _currentAdvertisingCampaignIds,
+          reasonForRefusalIds: _currentReasonForRefusalIds,
+          statusIds: _currentStatusId,
+          fromDate: _currentFromDate,
+          toDate: _currentToDate,
+          hasSuccessDeals: _currentHasSuccessDeals,
+          hasInProgressDeals: _currentHasInProgressDeals,
+          hasFailureDeals: _currentHasFailureDeals,
+          hasNotices: _currentHasNotices,
+          hasContact: _currentHasContact,
+          hasChat: _currentHasChat,
+          hasNoReplies: _currentHasNoReplies,
+          hasUnreadMessages: _currentHasUnreadMessages,
+          hasDeal: _currentHasDeal,
+          hasOrders: _currentHasOrders,
+          daysWithoutActivity: _currentDaysWithoutActivity,
+          numberOfDaysDeal: _currentNumberOfDaysDeal,
+          directoryValues: _currentDirectoryValues,
+          customFieldFilters: _currentCustomFieldFilters,
+          ignoreCache: true,
+        ));
+      }
+      return;
+    }
+
+    final newCount = (_leadCounts[event.lead.statusId] ?? 0) + 1;
+    _leadCounts[event.lead.statusId] = newCount;
+
+    await LeadCache.incrementLeadCount(event.lead.statusId);
+    await LeadCache.insertOrUpdateLeadForStatus(
+        event.lead.statusId, event.lead);
+
+    if (state is LeadLoaded) {
+      final currentState = state as LeadLoaded;
+      emit(currentState.copyWith(leadCounts: Map<int, int>.from(_leadCounts)));
+      return;
+    }
+
+    if (state is LeadDataLoaded) {
+      final currentState = state as LeadDataLoaded;
+      final updatedLeads = List<Lead>.from(currentState.leads)
+        ..removeWhere((lead) => lead.id == event.lead.id);
+
+      if (event.activeStatusId == event.lead.statusId) {
+        updatedLeads.insert(0, event.lead);
+      }
+
+      emit(currentState.refresh(
+        updatedLeads,
+        newCounts: Map<int, int>.from(_leadCounts),
+      ));
     }
   }
 

@@ -79,6 +79,7 @@ class NetworkProfileService {
           maxParallelRequests: lowBandwidth ? 1 : 2,
         );
       case ConnectivityResult.bluetooth:
+      case ConnectivityResult.satellite:
       case ConnectivityResult.vpn:
       case ConnectivityResult.other:
         return NetworkProfile(
@@ -93,7 +94,8 @@ class NetworkProfileService {
 
   bool _isLowBandwidth(ConnectivityResult result) {
     return result == ConnectivityResult.mobile ||
-        result == ConnectivityResult.bluetooth;
+        result == ConnectivityResult.bluetooth ||
+        result == ConnectivityResult.satellite;
   }
 
   Future<bool> isLowBandwidthModeEnabled() async {

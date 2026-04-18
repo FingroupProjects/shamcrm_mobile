@@ -6,6 +6,8 @@ import 'package:crm_task_manager/screens/profile/languages/app_localizations.dar
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_contacts/flutter_contacts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'sip_service.dart';
 import 'sip_state.dart';
@@ -26,6 +28,7 @@ class _SipScreenState extends State<SipScreen>
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _sipIdController = TextEditingController();
   final TextEditingController _portController = TextEditingController();
+  final FocusNode _dialFocusNode = FocusNode();
   final AudioPlayer _callFeedbackPlayer = AudioPlayer();
 
   SipTransportUi _selectedTransport = SipTransportUi.ws;
@@ -37,17 +40,26 @@ class _SipScreenState extends State<SipScreen>
   String? _activeFeedbackAsset;
   DateTime? _connectedAt;
   Duration _connectedDuration = Duration.zero;
+  bool _contactsEnabled = false;
+  bool _contactsLoaded = false;
+  bool _contactsPermissionDenied = false;
+  List<Contact> _contacts = const [];
+  List<_SipIndexedContact> _indexedContacts = const [];
+  List<_SipContactSuggestion> _contactSuggestions = const [];
+  Timer? _contactSearchDebounce;
+  Timer? _draftSaveDebounce;
+  bool _suspendDraftAutosave = false;
 
   static const List<Map<String, String>> _dialPadItems = [
     {'key': '1', 'letters': ''},
-    {'key': '2', 'letters': 'ABC'},
-    {'key': '3', 'letters': 'DEF'},
-    {'key': '4', 'letters': 'GHI'},
-    {'key': '5', 'letters': 'JKL'},
-    {'key': '6', 'letters': 'MNO'},
-    {'key': '7', 'letters': 'PQRS'},
-    {'key': '8', 'letters': 'TUV'},
-    {'key': '9', 'letters': 'WXYZ'},
+    {'key': '2', 'letters': 'АБВГ'},
+    {'key': '3', 'letters': 'ДЕЁЖ'},
+    {'key': '4', 'letters': 'ЗИЙК'},
+    {'key': '5', 'letters': 'ЛМНО'},
+    {'key': '6', 'letters': 'ПРСТ'},
+    {'key': '7', 'letters': 'УФХЦ'},
+    {'key': '8', 'letters': 'ЧШЩЪ'},
+    {'key': '9', 'letters': 'ЫЬЭЮЯ'},
     {'key': '*', 'letters': ''},
     {'key': '0', 'letters': '+'},
     {'key': '#', 'letters': ''},
@@ -57,6 +69,12 @@ class _SipScreenState extends State<SipScreen>
   void initState() {
     super.initState();
     _sipService.setSipScreenVisible(true);
+    _serverController.addListener(_handleDraftChanged);
+    _loginController.addListener(_handleDraftChanged);
+    _passwordController.addListener(_handleDraftChanged);
+    _portController.addListener(_handleDraftChanged);
+    _sipIdController.addListener(_handleDialChanged);
+    _sipIdController.addListener(_handleDraftChanged);
     _pulseController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1600),
@@ -76,17 +94,71 @@ class _SipScreenState extends State<SipScreen>
   Future<void> _initializeSip() async {
     await _sipService.initialize();
     await _sipService.prepareSipRuntimePermissions();
+    await _loadContactsConfiguration();
     final state = _sipService.state;
 
+    _suspendDraftAutosave = true;
     _serverController.text = state.server;
     _loginController.text = state.login;
     _passwordController.text = state.password;
     _sipIdController.text = state.sipId;
     _portController.text = state.port.toString();
     _selectedTransport = state.transport;
+    _suspendDraftAutosave = false;
 
     if (mounted) {
+      _refreshContactSuggestions();
       setState(() {});
+    }
+  }
+
+  Future<void> _loadContactsConfiguration() async {
+    final prefs = await SharedPreferences.getInstance();
+    _contactsEnabled = prefs.getBool('switchContact') ?? false;
+    if (_contactsEnabled) {
+      await _loadContacts();
+    }
+  }
+
+  Future<void> _loadContacts() async {
+    if (_contactsLoaded || !_contactsEnabled) return;
+
+    try {
+      final granted = await FlutterContacts.requestPermission();
+      if (!granted) {
+        _contactsPermissionDenied = true;
+        return;
+      }
+
+      final contacts = await FlutterContacts.getContacts(
+        withProperties: true,
+        withPhoto: true,
+      );
+
+      _contacts = contacts
+          .where((contact) =>
+              contact.displayName.trim().isNotEmpty &&
+              contact.phones.isNotEmpty)
+          .toList(growable: false);
+      _indexedContacts = _contacts.expand((contact) {
+        final lowerName = contact.displayName.toLowerCase();
+        final t9Name = _nameToT9Digits(lowerName);
+        return contact.phones.map(
+          (phone) => _SipIndexedContact(
+            name: contact.displayName,
+            lowerName: lowerName,
+            t9Name: t9Name,
+            phone: phone.number,
+            normalizedPhone: _digitsOnly(phone.number),
+            photo: contact.photo,
+          ),
+        );
+      }).toList(growable: false);
+      _contactsLoaded = true;
+      _contactsPermissionDenied = false;
+      _refreshContactSuggestions();
+    } catch (_) {
+      _contactsPermissionDenied = true;
     }
   }
 
@@ -94,14 +166,23 @@ class _SipScreenState extends State<SipScreen>
   void dispose() {
     _sipService.setSipScreenVisible(false);
     _callDurationTimer?.cancel();
+    _contactSearchDebounce?.cancel();
+    _draftSaveDebounce?.cancel();
     _pulseController.dispose();
     unawaited(_callFeedbackPlayer.stop());
     _callFeedbackPlayer.dispose();
+    _sipIdController.removeListener(_handleDialChanged);
+    _serverController.removeListener(_handleDraftChanged);
+    _loginController.removeListener(_handleDraftChanged);
+    _passwordController.removeListener(_handleDraftChanged);
+    _portController.removeListener(_handleDraftChanged);
+    _sipIdController.removeListener(_handleDraftChanged);
     _serverController.dispose();
     _loginController.dispose();
     _passwordController.dispose();
     _sipIdController.dispose();
     _portController.dispose();
+    _dialFocusNode.dispose();
     super.dispose();
   }
 
@@ -118,28 +199,88 @@ class _SipScreenState extends State<SipScreen>
     );
   }
 
+  void _handleDraftChanged() {
+    if (_suspendDraftAutosave) return;
+    _draftSaveDebounce?.cancel();
+    _draftSaveDebounce = Timer(const Duration(milliseconds: 250), () async {
+      final parsedPort = int.tryParse(_portController.text.trim()) ??
+          (_selectedTransport == SipTransportUi.ws ? 7443 : 5060);
+      await _sipService.saveDraft(
+        server: _serverController.text,
+        login: _loginController.text,
+        password: _passwordController.text,
+        sipId: _sipIdController.text,
+        transport: _selectedTransport,
+        port: parsedPort,
+        notifyUi: false,
+      );
+    });
+  }
+
   bool _hasCredentials(SipUiState state) {
     return state.server.trim().isNotEmpty &&
         state.login.trim().isNotEmpty &&
         state.password.trim().isNotEmpty;
   }
 
-  void _appendDial(String value) {
-    _sipIdController.text = '${_sipIdController.text}$value';
-    setState(() {});
+  void _handleDialChanged() {
+    if (!mounted) return;
+    _contactSearchDebounce?.cancel();
+    _contactSearchDebounce = Timer(const Duration(milliseconds: 60), () {
+      if (!mounted) return;
+      _refreshContactSuggestions();
+      setState(() {});
+    });
+  }
+
+  void _insertDialText(String value) {
+    final currentValue = _sipIdController.value;
+    final selection = currentValue.selection;
+    final start =
+        selection.isValid ? selection.start : currentValue.text.length;
+    final end = selection.isValid ? selection.end : currentValue.text.length;
+    final safeStart = start < 0 ? currentValue.text.length : start;
+    final safeEnd = end < 0 ? currentValue.text.length : end;
+    final newText = currentValue.text.replaceRange(safeStart, safeEnd, value);
+    _sipIdController.value = TextEditingValue(
+      text: newText,
+      selection: TextSelection.collapsed(offset: safeStart + value.length),
+    );
+    _dialFocusNode.requestFocus();
   }
 
   void _backspaceDial() {
-    if (_sipIdController.text.isEmpty) return;
-    _sipIdController.text =
-        _sipIdController.text.substring(0, _sipIdController.text.length - 1);
-    setState(() {});
+    final currentValue = _sipIdController.value;
+    final text = currentValue.text;
+    final selection = currentValue.selection;
+    if (text.isEmpty) return;
+
+    final start = selection.isValid ? selection.start : text.length;
+    final end = selection.isValid ? selection.end : text.length;
+
+    if (start != end && start >= 0 && end >= 0) {
+      final newText = text.replaceRange(start, end, '');
+      _sipIdController.value = TextEditingValue(
+        text: newText,
+        selection: TextSelection.collapsed(offset: start),
+      );
+      _dialFocusNode.requestFocus();
+      return;
+    }
+
+    if (start <= 0) return;
+    final newText = text.replaceRange(start - 1, start, '');
+    _sipIdController.value = TextEditingValue(
+      text: newText,
+      selection: TextSelection.collapsed(offset: start - 1),
+    );
+    _dialFocusNode.requestFocus();
   }
 
   void _clearDial() {
     if (_sipIdController.text.isEmpty) return;
     _sipIdController.clear();
-    setState(() {});
+    _dialFocusNode.requestFocus();
   }
 
   Future<void> _copyDial() async {
@@ -153,8 +294,7 @@ class _SipScreenState extends State<SipScreen>
     final source = (data?.text ?? '').trim();
     if (source.isEmpty) return;
     final normalized = source.replaceAll(RegExp(r'[^0-9+*#]'), '');
-    _sipIdController.text = normalized.isEmpty ? source : normalized;
-    setState(() {});
+    _insertDialText(normalized.isEmpty ? source : normalized);
   }
 
   Future<void> _showDialActions() async {
@@ -196,6 +336,295 @@ class _SipScreenState extends State<SipScreen>
   Future<void> _startDialCall() async {
     await _saveDraft();
     await _sipService.makeCall();
+  }
+
+  Future<void> _fillAndCallContact(_SipContactSuggestion suggestion) async {
+    _sipIdController.value = TextEditingValue(
+      text: suggestion.phone,
+      selection: TextSelection.collapsed(offset: suggestion.phone.length),
+    );
+    await _saveDraft();
+    await _sipService.makeCall();
+  }
+
+  void _fillContactNumber(_SipContactSuggestion suggestion) {
+    _sipIdController.value = TextEditingValue(
+      text: suggestion.phone,
+      selection: TextSelection.collapsed(offset: suggestion.phone.length),
+    );
+    _dialFocusNode.requestFocus();
+  }
+
+  String _digitsOnly(String input) {
+    return input.replaceAll(RegExp(r'[^0-9]'), '');
+  }
+
+  String _nameToT9Digits(String input) {
+    const map = <String, String>{
+      'a': '2',
+      'b': '2',
+      'c': '2',
+      'd': '3',
+      'e': '3',
+      'f': '3',
+      'g': '4',
+      'h': '4',
+      'i': '4',
+      'j': '5',
+      'k': '5',
+      'l': '5',
+      'm': '6',
+      'n': '6',
+      'o': '6',
+      'p': '7',
+      'q': '7',
+      'r': '7',
+      's': '7',
+      't': '8',
+      'u': '8',
+      'v': '8',
+      'w': '9',
+      'x': '9',
+      'y': '9',
+      'z': '9',
+      'а': '2',
+      'б': '2',
+      'в': '2',
+      'г': '2',
+      'д': '3',
+      'е': '3',
+      'ё': '3',
+      'ж': '3',
+      'з': '3',
+      'и': '4',
+      'й': '4',
+      'к': '4',
+      'л': '4',
+      'м': '5',
+      'н': '5',
+      'о': '5',
+      'п': '5',
+      'р': '6',
+      'с': '6',
+      'т': '6',
+      'у': '6',
+      'ф': '7',
+      'х': '7',
+      'ц': '7',
+      'ч': '7',
+      'ш': '8',
+      'щ': '8',
+      'ъ': '8',
+      'ы': '8',
+      'ь': '9',
+      'э': '9',
+      'ю': '9',
+      'я': '9',
+    };
+
+    final buffer = StringBuffer();
+    for (final rune in input.toLowerCase().runes) {
+      final char = String.fromCharCode(rune);
+      final digit = map[char];
+      if (digit != null) {
+        buffer.write(digit);
+      }
+    }
+    return buffer.toString();
+  }
+
+  void _refreshContactSuggestions() {
+    if (!_contactsEnabled || !_contactsLoaded) {
+      _contactSuggestions = const [];
+      return;
+    }
+
+    final rawQuery = _sipIdController.text.trim();
+    final queryDigits = _digitsOnly(rawQuery);
+    if (rawQuery.isEmpty) {
+      _contactSuggestions = const [];
+      return;
+    }
+
+    final suggestions = <_SipContactSuggestion>[];
+    final loweredQuery = rawQuery.toLowerCase();
+    for (final contact in _indexedContacts) {
+      final matches = contact.lowerName.contains(loweredQuery) ||
+          (queryDigits.isNotEmpty &&
+              (contact.normalizedPhone.contains(queryDigits) ||
+                  contact.t9Name.contains(queryDigits)));
+
+      if (!matches) continue;
+
+      suggestions.add(
+        _SipContactSuggestion(
+          name: contact.name,
+          phone: contact.phone,
+          normalizedPhone: contact.normalizedPhone,
+          photo: contact.photo,
+        ),
+      );
+    }
+
+    suggestions.sort((a, b) {
+      final query = queryDigits;
+      final aStarts = query.isNotEmpty && a.normalizedPhone.startsWith(query);
+      final bStarts = query.isNotEmpty && b.normalizedPhone.startsWith(query);
+      if (aStarts != bStarts) {
+        return aStarts ? -1 : 1;
+      }
+      return a.name.compareTo(b.name);
+    });
+
+    final unique = <String>{};
+    _contactSuggestions = suggestions
+        .where((item) {
+          final key = '${item.name}|${item.normalizedPhone}';
+          return unique.add(key);
+        })
+        .take(6)
+        .toList(growable: false);
+  }
+
+  List<_SipContactSuggestion> _recommendedContacts() {
+    if (!_contactsEnabled || !_contactsLoaded) {
+      return const [];
+    }
+
+    if (_contactSuggestions.isNotEmpty) {
+      return _contactSuggestions.take(4).toList(growable: false);
+    }
+
+    final seen = <String>{};
+    final suggestions = <_SipContactSuggestion>[];
+    for (final contact in _indexedContacts) {
+      final key = '${contact.name}|${contact.normalizedPhone}';
+      if (!seen.add(key)) continue;
+      suggestions.add(
+        _SipContactSuggestion(
+          name: contact.name,
+          phone: contact.phone,
+          normalizedPhone: contact.normalizedPhone,
+          photo: contact.photo,
+        ),
+      );
+      if (suggestions.length == 4) break;
+    }
+    return suggestions;
+  }
+
+  Future<void> _showContactsSheet() async {
+    if (!_contactsEnabled) return;
+    await _loadContacts();
+    if (!mounted) return;
+
+    final contacts = _contacts
+        .map((contact) => _SipContactSuggestion(
+              name: contact.displayName,
+              phone: contact.phones.first.number,
+              normalizedPhone: _digitsOnly(contact.phones.first.number),
+              photo: contact.photo,
+            ))
+        .toList(growable: false)
+      ..sort((a, b) => a.name.compareTo(b.name));
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        var filtered = contacts;
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return SafeArea(
+              top: false,
+              child: Container(
+                height: MediaQuery.of(context).size.height * 0.78,
+                decoration: const BoxDecoration(
+                  color: Color(0xFFF8F9FC),
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+                ),
+                child: Column(
+                  children: [
+                    const SizedBox(height: 10),
+                    Container(
+                      width: 44,
+                      height: 5,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFD5DAE8),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    const Text(
+                      'Контакты',
+                      style:
+                          TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                      child: CupertinoSearchTextField(
+                        onChanged: (value) {
+                          final query = value.trim().toLowerCase();
+                          final queryDigits = _digitsOnly(value);
+                          setModalState(() {
+                            if (query.isEmpty) {
+                              filtered = contacts;
+                            } else {
+                              filtered = contacts.where((contact) {
+                                return contact.name
+                                        .toLowerCase()
+                                        .contains(query) ||
+                                    contact.normalizedPhone
+                                        .contains(queryDigits) ||
+                                    _nameToT9Digits(contact.name)
+                                        .contains(queryDigits);
+                              }).toList(growable: false);
+                            }
+                          });
+                        },
+                      ),
+                    ),
+                    Expanded(
+                      child: _contactsPermissionDenied
+                          ? const Center(
+                              child: Padding(
+                                padding: EdgeInsets.all(24),
+                                child: Text(
+                                  'Нет доступа к контактам.',
+                                  textAlign: TextAlign.center,
+                                ),
+                              ),
+                            )
+                          : ListView.separated(
+                              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                              itemCount: filtered.length,
+                              separatorBuilder: (_, __) =>
+                                  const SizedBox(height: 8),
+                              itemBuilder: (context, index) {
+                                final contact = filtered[index];
+                                return _contactTile(
+                                  suggestion: contact,
+                                  onTap: () {
+                                    _fillContactNumber(contact);
+                                    Navigator.of(context).pop();
+                                  },
+                                  onCallTap: () async {
+                                    Navigator.of(context).pop();
+                                    await _fillAndCallContact(contact);
+                                  },
+                                );
+                              },
+                            ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
   }
 
   void _syncCallEffects(SipUiState state) {
@@ -520,6 +949,7 @@ class _SipScreenState extends State<SipScreen>
                   value == SipTransportUi.ws ? '7443' : '5060';
             }
           });
+          _handleDraftChanged();
         },
       ),
     );
@@ -530,14 +960,21 @@ class _SipScreenState extends State<SipScreen>
     return AnimatedBuilder(
       animation: _sipService,
       builder: (context, child) {
+        if (!_sipService.isConfigLoaded) {
+          return const Scaffold(
+            backgroundColor: Color(0xFFF3F6FD),
+            body: Center(
+              child: CircularProgressIndicator.adaptive(),
+            ),
+          );
+        }
+
         final state = _sipService.state;
-        final isRegistered =
-            state.registrationStatus == SipRegistrationUiStatus.registered;
         final isActiveCall = _isActiveCallState(state.callStatus);
 
         _syncCallEffects(state);
 
-        if (!_hasCredentials(state) || !isRegistered) {
+        if (!_hasCredentials(state)) {
           return _buildAuthorizationView(context, state);
         }
 
@@ -560,20 +997,16 @@ class _SipScreenState extends State<SipScreen>
                       : Column(
                           children: [
                             _buildTopBar(context, state),
-                            Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 16),
-                              child: _statusBanner(context, state),
-                            ),
-                            if (state.transport != SipTransportUi.ws ||
-                                (state.errorMessage != null &&
-                                    state.errorMessage!.trim().isNotEmpty))
+                            if (state.registrationStatus ==
+                                    SipRegistrationUiStatus.registered ||
+                                state.callStatus == SipCallUiStatus.incoming ||
+                                state.registrationStatus ==
+                                    SipRegistrationUiStatus.failed)
                               Padding(
                                 padding:
-                                    const EdgeInsets.fromLTRB(16, 8, 16, 0),
-                                child: _compatibilityBanner(state),
+                                    const EdgeInsets.symmetric(horizontal: 16),
+                                child: _statusBanner(context, state),
                               ),
-                            const SizedBox(height: 8),
                             Expanded(
                               child: AnimatedSwitcher(
                                 duration: const Duration(milliseconds: 220),
@@ -582,7 +1015,7 @@ class _SipScreenState extends State<SipScreen>
                                     : _journalView(context, state),
                               ),
                             ),
-                            _bottomSwitcher(context),
+                            if (_bottomTabIndex == 1) _bottomSwitcher(context),
                           ],
                         ),
                 ),
@@ -595,46 +1028,61 @@ class _SipScreenState extends State<SipScreen>
   }
 
   Widget _buildTopBar(BuildContext context, SipUiState state) {
-    final l10n = AppLocalizations.of(context)!;
-
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 6),
+      padding: const EdgeInsets.fromLTRB(18, 10, 18, 8),
       child: Row(
         children: [
           Expanded(
-            child: Text(
-              l10n.translate('appbar_sip'),
-              style: const TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.w700,
-                color: Color(0xFF0F172A),
-              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Телефония',
+                  style: TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF0F172A),
+                    letterSpacing: -0.8,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  state.registrationStatus == SipRegistrationUiStatus.registered
+                      ? 'Линия активна и готова к входящим'
+                      : 'Подключите линию для звонков в фоне',
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: Color(0xFF64748B),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
             ),
           ),
           CupertinoButton(
-            padding: const EdgeInsets.all(8),
+            padding: EdgeInsets.zero,
             onPressed: _showSettingsSheet,
             child: Container(
-              width: 38,
-              height: 38,
+              width: 46,
+              height: 46,
               decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
+                color: Colors.white.withValues(alpha: 0.92),
+                borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
                     color: const Color(0xFF0B1736).withValues(alpha: 0.08),
-                    blurRadius: 14,
-                    offset: const Offset(0, 5),
+                    blurRadius: 18,
+                    offset: const Offset(0, 8),
                   ),
                 ],
               ),
               child: const Icon(
                 CupertinoIcons.gear_alt_fill,
-                size: 20,
+                size: 21,
                 color: Color(0xFF1F2937),
               ),
             ),
-          )
+          ),
         ],
       ),
     );
@@ -785,8 +1233,8 @@ class _SipScreenState extends State<SipScreen>
                                   },
                             child: Text(
                               isRegistering
-                                  ? l10n.translate('sip_status_registering')
-                                  : l10n.translate('sip_enter_dialer'),
+                                  ? 'Подключение...'
+                                  : 'Подключить телефонию',
                               style:
                                   const TextStyle(fontWeight: FontWeight.w600),
                             ),
@@ -819,47 +1267,98 @@ class _SipScreenState extends State<SipScreen>
   Widget _statusBanner(BuildContext context, SipUiState state) {
     final l10n = AppLocalizations.of(context)!;
 
-    final Color toneColor;
-    if (state.callStatus == SipCallUiStatus.incoming) {
-      toneColor = const Color(0xFFF59E0B);
-    } else if (state.callStatus == SipCallUiStatus.inCall) {
-      toneColor = const Color(0xFF10B981);
-    } else if (state.callStatus == SipCallUiStatus.failed) {
-      toneColor = const Color(0xFFEF4444);
-    } else {
-      toneColor = const Color(0xFF64748B);
-    }
+    final bool isRegistered =
+        state.registrationStatus == SipRegistrationUiStatus.registered;
+    final Color toneColor = state.callStatus == SipCallUiStatus.incoming
+        ? const Color(0xFFF59E0B)
+        : isRegistered
+            ? const Color(0xFF16A34A)
+            : state.registrationStatus == SipRegistrationUiStatus.failed
+                ? const Color(0xFFDC2626)
+                : const Color(0xFF64748B);
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
+        color: Colors.white.withValues(alpha: 0.96),
+        borderRadius: BorderRadius.circular(18),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF0F172A).withValues(alpha: 0.06),
-            blurRadius: 14,
-            offset: const Offset(0, 6),
+            color: const Color(0xFF0F172A).withValues(alpha: 0.05),
+            blurRadius: 18,
+            offset: const Offset(0, 10),
           ),
         ],
       ),
       child: Row(
         children: [
           Container(
-            width: 10,
-            height: 10,
-            decoration: BoxDecoration(color: toneColor, shape: BoxShape.circle),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              '${l10n.translate('sip_call_state')}: ${_callLabel(context, state.callStatus)}',
-              style: const TextStyle(
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF111827),
-              ),
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: toneColor.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              state.callStatus == SipCallUiStatus.incoming
+                  ? CupertinoIcons.phone_fill_arrow_down_left
+                  : isRegistered
+                      ? CupertinoIcons.check_mark_circled_solid
+                      : CupertinoIcons.antenna_radiowaves_left_right,
+              size: 18,
+              color: toneColor,
             ),
           ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  isRegistered
+                      ? 'Телефония подключена'
+                      : 'Телефония не подключена',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF111827),
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  '${l10n.translate('sip_call_state')}: ${_callLabel(context, state.callStatus)}',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Color(0xFF64748B),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (state.registrationStatus != SipRegistrationUiStatus.registered &&
+              state.callStatus != SipCallUiStatus.incoming)
+            CupertinoButton(
+              padding: EdgeInsets.zero,
+              onPressed: state.registrationStatus ==
+                      SipRegistrationUiStatus.registering
+                  ? null
+                  : () async {
+                      await _saveDraft();
+                      await _sipService.connect();
+                    },
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF0F172A),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  'Подключить',
+                  style: const TextStyle(color: Colors.white),
+                ),
+              ),
+            ),
           if (state.callStatus == SipCallUiStatus.incoming)
             Row(
               children: [
@@ -903,210 +1402,246 @@ class _SipScreenState extends State<SipScreen>
     );
   }
 
-  Widget _compatibilityBanner(SipUiState state) {
-    final hasMessage =
-        state.errorMessage != null && state.errorMessage!.trim().isNotEmpty;
-    final isFailure = state.callStatus == SipCallUiStatus.failed ||
-        state.registrationStatus == SipRegistrationUiStatus.failed;
-
-    final title = hasMessage
-        ? (isFailure ? 'Диагностика SIP' : 'Режим вызова')
-        : 'Встроенный SIP';
-    final body = hasMessage
-        ? state.errorMessage!.trim()
-        : state.transport == SipTransportUi.ws
-            ? 'WS/WSS использует текущий Flutter SIP/WebRTC стек.'
-            : 'UDP/TCP на Android теперь идут через встроенный native SIP-движок внутри CRM. Внешние SIP-приложения не требуются.';
-    final color = isFailure ? const Color(0xFFDC2626) : const Color(0xFF2563EB);
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: color.withValues(alpha: 0.18)),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(
-            isFailure
-                ? CupertinoIcons.exclamationmark_triangle_fill
-                : CupertinoIcons.arrow_up_right_circle_fill,
-            color: color,
-            size: 18,
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: TextStyle(
-                    color: color,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 14,
-                  ),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  body,
-                  style: const TextStyle(
-                    color: Color(0xFF334155),
-                    height: 1.35,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _dialPadView(BuildContext context, SipUiState state) {
     return LayoutBuilder(
       key: const ValueKey('dial'),
       builder: (context, constraints) {
-        const horizontalPadding = 8.0;
-        final spacing = constraints.maxWidth < 380 ? 10.0 : 16.0;
+        final spacing = constraints.maxWidth < 380 ? 10.0 : 14.0;
+        final quickContacts = _recommendedContacts();
         final widthBased =
-            ((constraints.maxWidth - horizontalPadding * 2 - spacing * 2) / 3)
-                .clamp(62.0, 102.0);
-        final keypadHeight = (constraints.maxHeight * 0.58).clamp(260.0, 420.0);
+            ((constraints.maxWidth - 48 - spacing * 2) / 3).clamp(74.0, 112.0);
+        final keypadHeight = (constraints.maxHeight * 0.46).clamp(300.0, 420.0);
         final heightBased =
-            ((keypadHeight - spacing * 3) / 4).clamp(62.0, 102.0);
+            ((keypadHeight - spacing * 3) / 4).clamp(74.0, 110.0);
         final buttonSize = math.min(widthBased, heightBased);
-        final numberFont = (buttonSize * 0.46).clamp(28.0, 40.0);
+        final numberFont = (buttonSize * 0.42).clamp(26.0, 38.0);
         final lettersFont = (buttonSize * 0.13).clamp(10.0, 13.0);
-        final callButtonSize = (buttonSize * 0.84).clamp(62.0, 78.0);
+        final callButtonHeight = constraints.maxHeight < 700 ? 58.0 : 64.0;
+        final bottomPanelHeight = 430.0;
 
         return Padding(
-          padding: const EdgeInsets.fromLTRB(8, 4, 8, 0),
-          child: Column(
+          padding: const EdgeInsets.fromLTRB(14, 4, 14, 10),
+          child: Stack(
             children: [
-              Container(
-                width: double.infinity,
-                padding:
-                    const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFF0F172A).withValues(alpha: 0.06),
-                      blurRadius: 16,
-                      offset: const Offset(0, 6),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  children: [
-                    GestureDetector(
-                      onLongPress: _showDialActions,
-                      child: SelectableText(
-                        _sipIdController.text.isEmpty
-                            ? ' '
-                            : _sipIdController.text,
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: constraints.maxWidth < 380 ? 30 : 36,
-                          height: 1,
-                          fontWeight: FontWeight.w300,
-                          letterSpacing: 0.8,
-                          color: const Color(0xFF0B1220),
+              Positioned.fill(
+                child: Padding(
+                  padding: EdgeInsets.only(bottom: bottomPanelHeight - 36),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (quickContacts.isNotEmpty) ...[
+                        Padding(
+                          padding: const EdgeInsets.only(left: 4, bottom: 10),
+                          child: Row(
+                            children: [
+                              const Text(
+                                'Рекомендуемые',
+                                style: TextStyle(
+                                  fontSize: 17,
+                                  fontWeight: FontWeight.w700,
+                                  color: Color(0xFF0F172A),
+                                ),
+                              ),
+                              const Spacer(),
+                              if (_contactsEnabled)
+                                CupertinoButton(
+                                  padding: EdgeInsets.zero,
+                                  onPressed: _showContactsSheet,
+                                  child: const Icon(
+                                    CupertinoIcons.person_2_fill,
+                                    color: Color(0xFF64748B),
+                                    size: 20,
+                                  ),
+                                ),
+                            ],
+                          ),
                         ),
-                      ),
-                    ),
-                  ],
+                        Expanded(
+                          child: ListView.separated(
+                            padding: const EdgeInsets.only(bottom: 24),
+                            physics: const ClampingScrollPhysics(),
+                            itemCount: quickContacts.length,
+                            separatorBuilder: (_, __) =>
+                                const SizedBox(height: 10),
+                            itemBuilder: (context, index) {
+                              final suggestion = quickContacts[index];
+                              return _contactTile(
+                                suggestion: suggestion,
+                                onTap: () => _fillContactNumber(suggestion),
+                                onCallTap: () =>
+                                    _fillAndCallContact(suggestion),
+                              );
+                            },
+                          ),
+                        ),
+                      ] else
+                        Expanded(
+                          child: Center(
+                            child: Text(
+                              _contactsEnabled
+                                  ? 'Начните вводить номер или откройте контакты'
+                                  : 'Телефония готова к набору',
+                              style: const TextStyle(
+                                color: Color(0xFF94A3B8),
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
               ),
-              const SizedBox(height: 12),
-              SizedBox(
-                height: buttonSize * 4 + spacing * 3,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: List.generate(4, (row) {
-                    final start = row * 3;
-                    return Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: List.generate(3, (col) {
-                        final item = _dialPadItems[start + col];
-                        final key = item['key']!;
-                        return Padding(
-                          padding: EdgeInsets.only(
-                            right: col == 2 ? 0 : spacing,
+              Align(
+                alignment: Alignment.bottomCenter,
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE8EBF1),
+                    borderRadius: BorderRadius.circular(34),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: GestureDetector(
+                              onLongPress: _showDialActions,
+                              child: CupertinoTextField(
+                                controller: _sipIdController,
+                                focusNode: _dialFocusNode,
+                                readOnly: true,
+                                showCursor: true,
+                                cursorColor: const Color(0xFF111827),
+                                cursorWidth: 1.3,
+                                cursorHeight: numberFont + 2,
+                                keyboardType: TextInputType.phone,
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize:
+                                      constraints.maxWidth < 380 ? 30 : 36,
+                                  height: 1,
+                                  fontWeight: FontWeight.w400,
+                                  color: const Color(0xFF0B1220),
+                                ),
+                                placeholder: 'Введите номер',
+                                placeholderStyle: TextStyle(
+                                  fontSize:
+                                      constraints.maxWidth < 380 ? 30 : 36,
+                                  fontWeight: FontWeight.w400,
+                                  color: const Color(0xFF9AA6B8),
+                                ),
+                                magnifierConfiguration:
+                                    TextMagnifierConfiguration.disabled,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 6,
+                                ),
+                                decoration: const BoxDecoration(),
+                              ),
+                            ),
                           ),
-                          child: _dialButton(
-                            value: key,
-                            letters: item['letters']!,
-                            size: buttonSize,
-                            numberFontSize: numberFont,
-                            lettersFontSize: lettersFont,
-                            onTap: () => _appendDial(key),
-                            onLongPress:
-                                key == '0' ? () => _appendDial('+') : null,
-                          ),
-                        );
-                      }),
-                    );
-                  }),
-                ),
-              ),
-              const Spacer(),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  SizedBox(width: callButtonSize * 0.75),
-                  CupertinoButton(
-                    padding: EdgeInsets.zero,
-                    onPressed: _startDialCall,
-                    child: Container(
-                      width: callButtonSize,
-                      height: callButtonSize,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF22C55E),
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color:
-                                const Color(0xFF22C55E).withValues(alpha: 0.45),
-                            blurRadius: 16,
-                            offset: const Offset(0, 6),
+                          const SizedBox(width: 8),
+                          GestureDetector(
+                            onTap: _backspaceDial,
+                            onLongPress: _clearDial,
+                            child: Container(
+                              width: 42,
+                              height: 42,
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.82),
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                              child: const Icon(
+                                CupertinoIcons.delete_left,
+                                color: Color(0xFF6B7280),
+                                size: 20,
+                              ),
+                            ),
                           ),
                         ],
                       ),
-                      child: Icon(
-                        CupertinoIcons.phone_fill,
-                        color: Colors.white,
-                        size: (callButtonSize * 0.38).clamp(24.0, 30.0),
+                      const SizedBox(height: 18),
+                      SizedBox(
+                        height: buttonSize * 4 + spacing * 3,
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: List.generate(4, (row) {
+                            final start = row * 3;
+                            return Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: List.generate(3, (col) {
+                                final item = _dialPadItems[start + col];
+                                final key = item['key']!;
+                                return Padding(
+                                  padding: EdgeInsets.only(
+                                    right: col == 2 ? 0 : spacing,
+                                  ),
+                                  child: _dialButton(
+                                    value: key,
+                                    letters: item['letters']!,
+                                    size: buttonSize,
+                                    numberFontSize: numberFont,
+                                    lettersFontSize: lettersFont,
+                                    onTap: () => _insertDialText(key),
+                                    onLongPress: key == '0'
+                                        ? () => _insertDialText('+')
+                                        : null,
+                                  ),
+                                );
+                              }),
+                            );
+                          }),
+                        ),
                       ),
-                    ),
+                      const SizedBox(height: 16),
+                      SizedBox(
+                        width: math.min(constraints.maxWidth * 0.64, 260),
+                        child: CupertinoButton(
+                          padding: EdgeInsets.zero,
+                          onPressed: state.registrationStatus ==
+                                  SipRegistrationUiStatus.registered
+                              ? _startDialCall
+                              : null,
+                          child: Container(
+                            height: callButtonHeight,
+                            decoration: BoxDecoration(
+                              color: state.registrationStatus ==
+                                      SipRegistrationUiStatus.registered
+                                  ? const Color(0xFF25A344)
+                                  : const Color(0xFF9CA3AF),
+                              borderRadius: BorderRadius.circular(22),
+                            ),
+                            child: const Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  CupertinoIcons.phone_fill,
+                                  color: Colors.white,
+                                  size: 24,
+                                ),
+                                SizedBox(width: 10),
+                                Text(
+                                  'Позвонить',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 18),
+                      _bottomSwitcher(context, embedded: true),
+                    ],
                   ),
-                  const SizedBox(width: 14),
-                  GestureDetector(
-                    onTap: _backspaceDial,
-                    onLongPress: _clearDial,
-                    child: Container(
-                      width: (callButtonSize * 0.58).clamp(40.0, 46.0),
-                      height: (callButtonSize * 0.58).clamp(40.0, 46.0),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFE7ECF7),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Icon(
-                        CupertinoIcons.delete_left,
-                        color: Color(0xFF111827),
-                        size: 20,
-                      ),
-                    ),
-                  ),
-                ],
+                ),
               ),
-              const SizedBox(height: 6),
             ],
           ),
         );
@@ -1361,9 +1896,25 @@ class _SipScreenState extends State<SipScreen>
   }
 
   Widget _soundIndicatorCard(SipUiState state, Color accent) {
-    final isSoundActive = state.callStatus == SipCallUiStatus.incoming ||
+    final isRinging = state.callStatus == SipCallUiStatus.incoming ||
         state.callStatus == SipCallUiStatus.calling ||
         state.callStatus == SipCallUiStatus.ringing;
+    final isInCall = state.callStatus == SipCallUiStatus.inCall;
+    final icon = isRinging
+        ? CupertinoIcons.waveform_path_ecg
+        : isInCall
+            ? CupertinoIcons.speaker_2_fill
+            : CupertinoIcons.info_circle_fill;
+    final title = isRinging
+        ? 'Идёт сигнал вызова'
+        : isInCall
+            ? 'Разговор активен'
+            : 'Звук появится во время звонка';
+    final subtitle = isRinging
+        ? 'Входящий или исходящий вызов сейчас сопровождается сигналом.'
+        : isInCall
+            ? 'Микрофон и динамик работают во время активного разговора.'
+            : 'Это нормальное состояние. До начала вызова приложение не воспроизводит аудио.';
 
     return Container(
       width: double.infinity,
@@ -1389,9 +1940,7 @@ class _SipScreenState extends State<SipScreen>
               borderRadius: BorderRadius.circular(18),
             ),
             child: Icon(
-              isSoundActive
-                  ? CupertinoIcons.waveform_path_ecg
-                  : CupertinoIcons.speaker_slash_fill,
+              icon,
               color: accent,
               size: 24,
             ),
@@ -1402,9 +1951,7 @@ class _SipScreenState extends State<SipScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  isSoundActive
-                      ? 'Звуковой сигнал активен'
-                      : 'Ожидание без звука',
+                  title,
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
@@ -1413,7 +1960,7 @@ class _SipScreenState extends State<SipScreen>
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  _callHint(state.callStatus),
+                  subtitle,
                   style: const TextStyle(
                     color: Color(0xFF64748B),
                     fontWeight: FontWeight.w500,
@@ -1599,13 +2146,13 @@ class _SipScreenState extends State<SipScreen>
         width: size,
         height: size,
         decoration: BoxDecoration(
-          color: const Color(0xFFE9EDF6),
-          shape: BoxShape.circle,
+          color: Colors.white.withValues(alpha: 0.88),
+          borderRadius: BorderRadius.circular(size * 0.26),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF8EA0BF).withValues(alpha: 0.18),
-              blurRadius: 8,
-              offset: const Offset(0, 3),
+              color: const Color(0xFF8EA0BF).withValues(alpha: 0.12),
+              blurRadius: 10,
+              offset: const Offset(0, 5),
             ),
           ],
         ),
@@ -1633,6 +2180,101 @@ class _SipScreenState extends State<SipScreen>
               ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _contactTile({
+    required _SipContactSuggestion suggestion,
+    required VoidCallback onTap,
+    required VoidCallback onCallTap,
+    bool compact = false,
+  }) {
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: compact ? 10 : 12,
+        vertical: compact ? 8 : 10,
+      ),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(22),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF0F172A).withValues(alpha: 0.04),
+            blurRadius: 14,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: compact ? 18 : 20,
+            backgroundColor: const Color(0xFFE7ECF7),
+            backgroundImage: suggestion.photo != null
+                ? MemoryImage(suggestion.photo!)
+                : null,
+            child: suggestion.photo == null
+                ? Text(
+                    suggestion.name.isEmpty
+                        ? '?'
+                        : suggestion.name[0].toUpperCase(),
+                    style: const TextStyle(
+                      color: Color(0xFF111827),
+                      fontWeight: FontWeight.w700,
+                    ),
+                  )
+                : null,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: GestureDetector(
+              onTap: onTap,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    suggestion.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF111827),
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    suggestion.phone,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Color(0xFF64748B),
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          CupertinoButton(
+            padding: EdgeInsets.zero,
+            onPressed: onCallTap,
+            child: Container(
+              width: compact ? 38 : 44,
+              height: compact ? 38 : 44,
+              decoration: BoxDecoration(
+                color: const Color(0xFF22C55E),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: const Icon(
+                CupertinoIcons.phone_fill,
+                color: Colors.white,
+                size: 18,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -1728,47 +2370,56 @@ class _SipScreenState extends State<SipScreen>
     );
   }
 
-  Widget _bottomSwitcher(BuildContext context) {
+  Widget _bottomSwitcher(BuildContext context, {bool embedded = false}) {
     final l10n = AppLocalizations.of(context)!;
+
+    final switcher = Container(
+      margin:
+          embedded ? EdgeInsets.zero : const EdgeInsets.fromLTRB(16, 6, 16, 10),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: embedded ? 0.76 : 1),
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: embedded
+            ? null
+            : [
+                BoxShadow(
+                  color: const Color(0xFF0B1736).withValues(alpha: 0.08),
+                  blurRadius: 16,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: _switchItem(
+              icon: CupertinoIcons.circle_grid_3x3_fill,
+              label: l10n.translate('sip_tab_keypad'),
+              selected: _bottomTabIndex == 0,
+              onTap: () => setState(() => _bottomTabIndex = 0),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: _switchItem(
+              icon: CupertinoIcons.clock_fill,
+              label: l10n.translate('sip_tab_journal'),
+              selected: _bottomTabIndex == 1,
+              onTap: () => setState(() => _bottomTabIndex = 1),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (embedded) {
+      return switcher;
+    }
 
     return SafeArea(
       top: false,
-      child: Container(
-        margin: const EdgeInsets.fromLTRB(16, 6, 16, 10),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFF0B1736).withValues(alpha: 0.08),
-              blurRadius: 16,
-              offset: const Offset(0, 8),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            Expanded(
-              child: _switchItem(
-                icon: CupertinoIcons.circle_grid_3x3_fill,
-                label: l10n.translate('sip_tab_keypad'),
-                selected: _bottomTabIndex == 0,
-                onTap: () => setState(() => _bottomTabIndex = 0),
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: _switchItem(
-                icon: CupertinoIcons.clock_fill,
-                label: l10n.translate('sip_tab_journal'),
-                selected: _bottomTabIndex == 1,
-                onTap: () => setState(() => _bottomTabIndex = 1),
-              ),
-            ),
-          ],
-        ),
-      ),
+      child: switcher,
     );
   }
 
@@ -1783,7 +2434,7 @@ class _SipScreenState extends State<SipScreen>
       onPressed: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
-        padding: const EdgeInsets.symmetric(vertical: 10),
+        padding: const EdgeInsets.symmetric(vertical: 8),
         decoration: BoxDecoration(
           color: selected ? const Color(0xFFE9F2FF) : Colors.transparent,
           borderRadius: BorderRadius.circular(12),
@@ -1812,4 +2463,36 @@ class _SipScreenState extends State<SipScreen>
       ),
     );
   }
+}
+
+class _SipContactSuggestion {
+  const _SipContactSuggestion({
+    required this.name,
+    required this.phone,
+    required this.normalizedPhone,
+    this.photo,
+  });
+
+  final String name;
+  final String phone;
+  final String normalizedPhone;
+  final Uint8List? photo;
+}
+
+class _SipIndexedContact {
+  const _SipIndexedContact({
+    required this.name,
+    required this.lowerName,
+    required this.t9Name,
+    required this.phone,
+    required this.normalizedPhone,
+    this.photo,
+  });
+
+  final String name;
+  final String lowerName;
+  final String t9Name;
+  final String phone;
+  final String normalizedPhone;
+  final Uint8List? photo;
 }

@@ -28,7 +28,11 @@ class SipService extends ChangeNotifier
   static const String _portKey = 'sip_port';
   static const String _enabledKey = 'sip_enabled';
   static const String _backgroundReliabilityPromptedKey =
-      'sip_background_reliability_prompted';
+      'sip_background_reliability_prompted_v2';
+  static const String _xiaomiPopupPromptedKey =
+      'sip_xiaomi_popup_prompted_v1';
+  static const String _xiaomiAutoStartPromptedKey =
+      'sip_xiaomi_autostart_prompted_v1';
   static const MethodChannel _nativeSipMethodChannel =
       MethodChannel('com.shamcrm/native_sip/methods');
   static const EventChannel _nativeSipEventChannel =
@@ -44,14 +48,18 @@ class SipService extends ChangeNotifier
   SipUiState get state => _state;
 
   bool _initialized = false;
+  bool _configLoaded = false;
+  Completer<void>? _initializationCompleter;
   bool _renderersReady = false;
   bool get renderersReady => _renderersReady;
+  bool get isConfigLoaded => _configLoaded;
   bool _sipScreenVisible = false;
   bool get isSipScreenVisible => _sipScreenVisible;
   bool _shouldStayConnected = false;
   bool _persistentSipEnabled = false;
   bool _networkAvailable = true;
   bool _reconnectInProgress = false;
+  bool _sipEnabled = false;
   DateTime? _lastReconnectAttemptAt;
   Timer? _reconnectTimer;
   Timer? _registrationWatchdogTimer;
@@ -68,53 +76,107 @@ class SipService extends ChangeNotifier
   String? _currentInviteUri;
 
   Future<void> initialize() async {
-    if (_initialized) return;
+    if (_configLoaded) return;
+    if (_initializationCompleter != null) {
+      return _initializationCompleter!.future;
+    }
 
-    _initialized = true;
-    _helper.addSipUaHelperListener(this);
-    WidgetsBinding.instance.addObserver(this);
+    final completer = Completer<void>();
+    _initializationCompleter = completer;
 
-    await localRenderer.initialize();
-    await remoteRenderer.initialize();
-    _renderersReady = true;
+    try {
+      if (!_initialized) {
+        _initialized = true;
+        _helper.addSipUaHelperListener(this);
+        WidgetsBinding.instance.addObserver(this);
+      }
 
-    final server = await _storage.read(key: _serverKey) ?? '';
-    final login = await _storage.read(key: _loginKey) ?? '';
-    final password = await _storage.read(key: _passwordKey) ?? '';
-    final sipId = await _storage.read(key: _sipIdKey) ?? '';
-    final transportRaw = await _storage.read(key: _transportKey) ?? 'udp';
-    final portRaw = await _storage.read(key: _portKey) ?? '5060';
-    final enabledRaw = await _storage.read(key: _enabledKey) ?? 'false';
-    final parsedPort = int.tryParse(portRaw) ?? 5060;
-    _persistentSipEnabled = enabledRaw == 'true';
-    final transport = switch (transportRaw) {
-      'tcp' => SipTransportUi.tcp,
-      'udp' => SipTransportUi.udp,
-      _ => SipTransportUi.ws,
-    };
+      final server = await _storage.read(key: _serverKey) ?? '';
+      final login = await _storage.read(key: _loginKey) ?? '';
+      final password = await _storage.read(key: _passwordKey) ?? '';
+      final sipId = await _storage.read(key: _sipIdKey) ?? '';
+      final transportRaw = await _storage.read(key: _transportKey) ?? 'udp';
+      final portRaw = await _storage.read(key: _portKey) ?? '5060';
+      final enabledRaw = await _storage.read(key: _enabledKey) ?? 'false';
+      final parsedPort = int.tryParse(portRaw) ?? 5060;
+      final hasStoredCredentials = server.trim().isNotEmpty &&
+          login.trim().isNotEmpty &&
+          password.isNotEmpty;
+      _sipEnabled = enabledRaw == 'true' && hasStoredCredentials;
+      _persistentSipEnabled = _sipEnabled;
+      if (enabledRaw == 'true' && !hasStoredCredentials) {
+        unawaited(_storage.write(key: _enabledKey, value: 'false'));
+      }
+      final transport = switch (transportRaw) {
+        'tcp' => SipTransportUi.tcp,
+        'udp' => SipTransportUi.udp,
+        _ => SipTransportUi.ws,
+      };
 
-    _state = _state.copyWith(
-      server: server,
-      login: login,
-      password: password,
-      sipId: sipId,
-      transport: transport,
-      port: parsedPort,
-      clearError: true,
-      clearRemoteIdentity: true,
-    );
-    await _initializeNativeSipBridge();
-    await _syncNativeSnapshot();
-    _startConnectivityMonitoring();
-    _startRegistrationWatchdog();
-    unawaited(_restorePersistentConnection());
-    notifyListeners();
+      _state = _state.copyWith(
+        server: server,
+        login: login,
+        password: password,
+        sipId: sipId,
+        transport: transport,
+        port: parsedPort,
+        clearError: true,
+        clearRemoteIdentity: true,
+      );
+      await _ensureRenderersInitializedForCurrentMode();
+      await _initializeNativeSipBridge();
+      await _syncNativeSnapshot();
+      _startConnectivityMonitoring();
+      _startRegistrationWatchdog();
+      _configLoaded = true;
+      unawaited(_restorePersistentConnection());
+      notifyListeners();
+      completer.complete();
+    } catch (error, stackTrace) {
+      _initialized = false;
+      _configLoaded = false;
+      if (!completer.isCompleted) {
+        completer.completeError(error, stackTrace);
+      }
+      rethrow;
+    } finally {
+      _initializationCompleter = null;
+    }
+  }
+
+  Future<void> ensureRenderersInitialized() async {
+    await _ensureRenderersInitialized(force: true);
   }
 
   bool _shouldUseNativeSip() {
     return Platform.isAndroid &&
         (_state.transport == SipTransportUi.udp ||
             _state.transport == SipTransportUi.tcp);
+  }
+
+  Future<void> _ensureRenderersInitializedForCurrentMode() async {
+    if (_shouldUseNativeSip()) {
+      return;
+    }
+    await _ensureRenderersInitialized();
+  }
+
+  Future<void> _ensureRenderersInitialized({bool force = false}) async {
+    if (_renderersReady) {
+      return;
+    }
+    if (!force && _shouldUseNativeSip()) {
+      return;
+    }
+
+    try {
+      await localRenderer.initialize();
+      await remoteRenderer.initialize();
+      _renderersReady = true;
+    } catch (error, stackTrace) {
+      debugPrint('SipService: renderer initialize skipped: $error');
+      debugPrint('SipService: renderer initialize stackTrace: $stackTrace');
+    }
   }
 
   void setSipScreenVisible(bool visible) {
@@ -124,7 +186,7 @@ class SipService extends ChangeNotifier
   }
 
   Future<void> _restorePersistentConnection() async {
-    if (!_persistentSipEnabled || !_hasSipCredentials()) {
+    if (!_persistentSipEnabled || !_hasSipCredentials() || !_networkAvailable) {
       return;
     }
 
@@ -184,6 +246,7 @@ class SipService extends ChangeNotifier
     required String sipId,
     required SipTransportUi transport,
     required int port,
+    bool notifyUi = true,
   }) async {
     final normalizedServer = _normalizeServerInput(server, transport);
 
@@ -210,7 +273,9 @@ class SipService extends ChangeNotifier
         });
     await _storage.write(key: _portKey, value: _state.port.toString());
 
-    notifyListeners();
+    if (notifyUi) {
+      notifyListeners();
+    }
   }
 
   Future<void> prepareSipRuntimePermissions() async {
@@ -227,9 +292,22 @@ class SipService extends ChangeNotifier
     } catch (_) {}
 
     if (_shouldUseNativeSip()) {
-      final prompted =
+      final hasOverlay =
+          await _invokeNativeSipMethod<bool>('checkSystemAlertWindowPermission') ??
+              true;
+      if (!hasOverlay) {
+        await _invokeNativeSipMethod<bool>('requestSystemAlertWindowPermission');
+      }
+
+      final canUseFullScreenIntent =
+          await _invokeNativeSipMethod<bool>('canUseFullScreenIntent') ?? true;
+      if (!canUseFullScreenIntent) {
+        await _invokeNativeSipMethod<bool>('requestFullScreenIntentPermission');
+      }
+
+      final promptedBackgroundReliability =
           await _storage.read(key: _backgroundReliabilityPromptedKey);
-      if (prompted != 'true') {
+      if (promptedBackgroundReliability != 'true') {
         final opened = await _invokeNativeSipMethod<bool>(
               'requestBackgroundReliabilitySettings',
             ) ??
@@ -241,22 +319,40 @@ class SipService extends ChangeNotifier
           );
         }
       }
-      // Дополнительно предлагаем Xiaomi AutoStart настройки
-      // (Poco X6 Pro HyperOS 2 без AutoStart убивает фоновые сервисы)
-      await openXiaomiSettings();
-    }
-  }
 
-  /// Открывает настройки AutoStart для Xiaomi/HyperOS.
-  /// Возвращает true если экран был открыт, false если не Xiaomi устройство.
-  Future<bool> openXiaomiSettings() async {
-    if (!Platform.isAndroid) return false;
-    return await _invokeNativeSipMethod<bool>('openXiaomiSettings') ?? false;
+      final promptedXiaomiPopup =
+          await _storage.read(key: _xiaomiPopupPromptedKey);
+      if (promptedXiaomiPopup != 'true') {
+        final opened = await _invokeNativeSipMethod<bool>(
+              'openXiaomiPopupPermissionSettings',
+            ) ??
+            false;
+        if (opened) {
+          await _storage.write(
+            key: _xiaomiPopupPromptedKey,
+            value: 'true',
+          );
+        }
+      }
+
+      final promptedXiaomiAutoStart =
+          await _storage.read(key: _xiaomiAutoStartPromptedKey);
+      if (promptedXiaomiAutoStart != 'true') {
+        final opened =
+            await _invokeNativeSipMethod<bool>('openXiaomiSettings') ?? false;
+        if (opened) {
+          await _storage.write(
+            key: _xiaomiAutoStartPromptedKey,
+            value: 'true',
+          );
+        }
+      }
+    }
   }
 
   Future<void> connect() async {
     if (!_hasSipCredentials()) {
-      _setError('SIP config is incomplete. Fill server, login and password.');
+      _setError('Заполните сервер, логин и пароль SIP.');
       return;
     }
 
@@ -267,7 +363,7 @@ class SipService extends ChangeNotifier
     }
 
     if (!_networkAvailable) {
-      _setError('No internet connection. SIP registration paused.');
+      _setError('Нет интернета. Регистрация SIP приостановлена.');
       return;
     }
 
@@ -276,6 +372,7 @@ class SipService extends ChangeNotifier
     }
 
     _shouldStayConnected = true;
+    _sipEnabled = true;
     _persistentSipEnabled = true;
     await _storage.write(key: _enabledKey, value: 'true');
     _logSipConfig('connect');
@@ -330,6 +427,8 @@ class SipService extends ChangeNotifier
       return;
     }
 
+    await _ensureRenderersInitializedForCurrentMode();
+
     final settings = UaSettings();
     if (_state.transport == SipTransportUi.ws) {
       settings.webSocketUrl = _toWebSocketUrl(_state.server, _state.port);
@@ -349,8 +448,10 @@ class SipService extends ChangeNotifier
   }
 
   Future<void> disconnect() async {
+    debugPrint('SipService.disconnect invoked');
     _shouldStayConnected = false;
     _persistentSipEnabled = false;
+    _sipEnabled = false;
     await _storage.write(key: _enabledKey, value: 'false');
     _cancelReconnect();
     _stopKeepAlive();
@@ -380,6 +481,38 @@ class SipService extends ChangeNotifier
     );
     notifyListeners();
   }
+
+  Future<void> clearSavedCredentials() async {
+    _shouldStayConnected = false;
+    _sipEnabled = false;
+    _cancelReconnect();
+    _stopKeepAlive();
+
+    try {
+      _activeCall?.hangup(<String, dynamic>{'status_code': 603});
+    } catch (_) {}
+
+    _activeCall = null;
+    if (_helper.registered) {
+      _helper.unregister(true);
+    }
+    _helper.stop();
+    _releaseStreams();
+
+    await _storage.delete(key: _serverKey);
+    await _storage.delete(key: _loginKey);
+    await _storage.delete(key: _passwordKey);
+    await _storage.delete(key: _sipIdKey);
+    await _storage.delete(key: _transportKey);
+    await _storage.delete(key: _portKey);
+    await _storage.delete(key: _enabledKey);
+
+    _state = SipUiState.initial();
+    notifyListeners();
+  }
+
+  bool get hasSavedCredentials => _hasSipCredentials();
+  bool get isSipEnabled => _sipEnabled;
 
   Future<void> makeCall() async {
     if (_state.registrationStatus != SipRegistrationUiStatus.registered) {
@@ -577,18 +710,18 @@ class SipService extends ChangeNotifier
   String? _validateSipConfiguration() {
     final server = _state.server.trim();
     if (server.isEmpty) {
-      return 'SIP server is empty.';
+      return 'Сервер SIP не указан.';
     }
 
     final isWsAddress =
         server.startsWith('ws://') || server.startsWith('wss://');
 
     if (_state.transport == SipTransportUi.ws && !isWsAddress) {
-      return 'WS/WSS requires a full WebSocket URL. For classic SIP providers like TTL use UDP or TCP on port 5060 unless they gave you a ws:// or wss:// address.';
+      return 'Для WS/WSS нужен полный адрес `ws://` или `wss://`. Для обычной SIP-телефонии используйте UDP или TCP.';
     }
 
     if (_state.transport != SipTransportUi.ws && isWsAddress) {
-      return 'This server looks like a WebSocket endpoint. Switch transport to WS/WSS.';
+      return 'Этот адрес похож на WebSocket endpoint. Переключите transport на WS/WSS.';
     }
 
     return null;
@@ -739,7 +872,9 @@ class SipService extends ChangeNotifier
       case 'registering':
         _state = _state.copyWith(
           registrationStatus: SipRegistrationUiStatus.registering,
-          errorMessage: message,
+          errorMessage: message == null || message == 'Registration in progress'
+              ? null
+              : message,
         );
         break;
       case 'registered':
@@ -765,7 +900,10 @@ class SipService extends ChangeNotifier
         _state = _state.copyWith(
           registrationStatus: SipRegistrationUiStatus.disconnected,
           callStatus: SipCallUiStatus.idle,
-          errorMessage: message,
+          errorMessage: message == 'Registration disabled' ||
+                  message == 'Unregistration done'
+              ? null
+              : message,
           clearRemoteIdentity: true,
         );
         if (_shouldStayConnected) {
@@ -905,15 +1043,12 @@ class SipService extends ChangeNotifier
   }
 
   void _checkAndRecoverRegistration(String reason) {
-    if (!_shouldStayConnected || !_networkAvailable) return;
+    if (!_shouldStayConnected || !_networkAvailable || !_hasSipCredentials()) {
+      return;
+    }
 
     if (_shouldUseNativeSip()) {
-      if (_state.registrationStatus == SipRegistrationUiStatus.registered ||
-          _state.registrationStatus == SipRegistrationUiStatus.registering) {
-        return;
-      }
-
-      _scheduleReconnect(reason);
+      unawaited(_checkAndRecoverNativeRegistration(reason));
       return;
     }
 
@@ -928,9 +1063,25 @@ class SipService extends ChangeNotifier
     _scheduleReconnect(reason);
   }
 
+  Future<void> _checkAndRecoverNativeRegistration(String reason) async {
+    if (!_shouldStayConnected || !_networkAvailable || !_hasSipCredentials()) {
+      return;
+    }
+
+    await _syncNativeSnapshot();
+    if (_state.registrationStatus == SipRegistrationUiStatus.registered ||
+        _state.registrationStatus == SipRegistrationUiStatus.registering) {
+      return;
+    }
+
+    _scheduleReconnect(reason);
+  }
+
   void _scheduleReconnect(String reason,
       {Duration delay = const Duration(seconds: 2)}) {
-    if (!_shouldStayConnected || !_networkAvailable) return;
+    if (!_shouldStayConnected || !_networkAvailable || !_hasSipCredentials()) {
+      return;
+    }
 
     final lastAttempt = _lastReconnectAttemptAt;
     if (lastAttempt != null &&
@@ -1082,8 +1233,10 @@ class SipService extends ChangeNotifier
 
     _localStream = null;
     _remoteStream = null;
-    localRenderer.srcObject = null;
-    remoteRenderer.srcObject = null;
+    if (_renderersReady) {
+      localRenderer.srcObject = null;
+      remoteRenderer.srcObject = null;
+    }
   }
 
   void _setError(String message) {
@@ -1154,7 +1307,9 @@ class SipService extends ChangeNotifier
         break;
       case RegistrationStateEnum.UNREGISTERED:
         _state = _state.copyWith(
-          registrationStatus: SipRegistrationUiStatus.disconnected,
+          registrationStatus: _shouldStayConnected
+              ? SipRegistrationUiStatus.registering
+              : SipRegistrationUiStatus.disconnected,
           callStatus: SipCallUiStatus.idle,
           clearRemoteIdentity: true,
         );
@@ -1183,11 +1338,15 @@ class SipService extends ChangeNotifier
       final stream = callState.stream;
       if (stream != null && callState.originator == 'local') {
         _localStream = stream;
-        localRenderer.srcObject = stream;
+        if (_renderersReady) {
+          localRenderer.srcObject = stream;
+        }
       }
       if (stream != null && callState.originator == 'remote') {
         _remoteStream = stream;
-        remoteRenderer.srcObject = stream;
+        if (_renderersReady) {
+          remoteRenderer.srcObject = stream;
+        }
       }
     }
 
@@ -1316,8 +1475,11 @@ class SipService extends ChangeNotifier
     _nativeSipEventsSubscription?.cancel();
     _releaseStreams();
 
-    localRenderer.dispose();
-    remoteRenderer.dispose();
+    if (_renderersReady) {
+      localRenderer.dispose();
+      remoteRenderer.dispose();
+      _renderersReady = false;
+    }
 
     super.dispose();
   }

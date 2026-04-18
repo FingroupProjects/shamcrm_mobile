@@ -1,19 +1,28 @@
 package com.softtech.crm_task_manager
 
+import android.app.ActivityOptions
 import android.app.AlarmManager
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
+import android.app.KeyguardManager
 import android.content.Context
 import android.content.Intent
+import android.media.AudioAttributes
+import android.graphics.BitmapFactory
+import android.media.Ringtone
+import android.media.RingtoneManager
 import android.os.Build
+import android.os.Handler
 import android.os.IBinder
+import android.os.Looper
 import android.os.PowerManager
 import android.os.SystemClock
 import android.util.Log
 import androidx.core.app.NotificationCompat
+import androidx.core.app.Person
 import androidx.core.content.ContextCompat
 
 class NativeSipForegroundService : Service() {
@@ -24,10 +33,12 @@ class NativeSipForegroundService : Service() {
         const val ACTION_STOP = "com.shamcrm.native_sip.STOP"
 
         private const val CHANNEL_SERVICE_ID = "shamcrm_sip_runtime"
-        private const val CHANNEL_CALLS_ID = "shamcrm_sip_calls"
+        private const val CHANNEL_CALLS_ID = "shamcrm_sip_calls_v2"
+        private val LEGACY_CALL_CHANNEL_IDS = listOf("shamcrm_sip_calls")
         private const val NOTIFICATION_SERVICE_ID = 7301
         private const val NOTIFICATION_CALL_ID = 7302
         private const val RESTART_REQUEST_CODE = 7303
+        private const val REGISTRATION_HEARTBEAT_INTERVAL_MS = 45_000L
 
         fun start(context: Context): Boolean {
             return try {
@@ -121,11 +132,61 @@ class NativeSipForegroundService : Service() {
     private val notificationManager by lazy {
         getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
     }
+    private val keyguardManager by lazy {
+        getSystemService(Context.KEYGUARD_SERVICE) as KeyguardManager
+    }
+    private val incomingCallOverlayController by lazy {
+        IncomingCallOverlayController(applicationContext)
+    }
 
     private val bridgeObserver: (HashMap<String, Any?>) -> Unit = { event ->
         handleBridgeEvent(event)
     }
+    private val maintenanceHandler = Handler(Looper.getMainLooper())
+    private val registrationHeartbeat = object : Runnable {
+        override fun run() {
+            try {
+                NativeSipBridge.maintainRegistration("foreground-service-heartbeat")
+            } finally {
+                maintenanceHandler.postDelayed(this, REGISTRATION_HEARTBEAT_INTERVAL_MS)
+            }
+        }
+    }
+    private var incomingUiRetryCount = 0
+    private val incomingUiWatchdog = object : Runnable {
+        override fun run() {
+            val snapshot = NativeSipBridge.getStateSnapshot()
+            val callState = snapshot["callState"]?.toString()
+            if (
+                callState != "incoming" ||
+                NativeSipBridge.isAppInForeground() ||
+                IncomingCallActivity.isVisible()
+            ) {
+                Log.d(
+                    TAG,
+                    "Incoming UI watchdog stopped: callState=$callState, appForeground=${NativeSipBridge.isAppInForeground()}, activityVisible=${IncomingCallActivity.isVisible()}",
+                )
+                return
+            }
+
+            if (incomingUiRetryCount >= 2) {
+                Log.d(TAG, "Incoming UI watchdog reached retry limit, keep waiting on current UI path")
+                return
+            }
+
+            incomingUiRetryCount += 1
+            val incomingEvent = hashMapOf<String, Any?>(
+                "type" to "call",
+                "state" to "incoming",
+                "remoteIdentity" to snapshot["remoteIdentity"],
+            )
+            Log.d(TAG, "Incoming UI watchdog retry=$incomingUiRetryCount: relaunch IncomingCallActivity")
+            launchIncomingCallUiFallback(incomingEvent)
+            maintenanceHandler.postDelayed(this, 900L)
+        }
+    }
     private var explicitStopRequested = false
+    private var incomingCallRingtone: Ringtone? = null
 
     override fun onCreate() {
         super.onCreate()
@@ -133,6 +194,7 @@ class NativeSipForegroundService : Service() {
         NativeSipBridge.initialize(applicationContext)
         NativeSipBridge.addObserver(bridgeObserver)
         createNotificationChannels()
+        startRegistrationHeartbeat()
         try {
             startForeground(
                 NOTIFICATION_SERVICE_ID,
@@ -157,6 +219,7 @@ class NativeSipForegroundService : Service() {
                 explicitStopRequested = false
                 cancelScheduledRestart(applicationContext)
                 NativeSipBridge.restoreRegistrationIfNeeded(startService = false)
+                startRegistrationHeartbeat()
                 // Подтверждаем WorkManager задачу при каждом старте сервиса.
                 // Система иногда вычищает WorkManager задачи — переподтверждаем.
                 SipKeepAliveWorker.schedule(applicationContext)
@@ -172,7 +235,10 @@ class NativeSipForegroundService : Service() {
     }
 
     override fun onDestroy() {
+        hideIncomingCallOverlay("service-destroy")
+        stopIncomingCallRingtone()
         releaseIncomingCallWakeLock()
+        stopRegistrationHeartbeat()
         stopForeground(STOP_FOREGROUND_REMOVE)
         NativeSipBridge.removeObserver(bridgeObserver)
         notificationManager.cancel(NOTIFICATION_CALL_ID)
@@ -192,20 +258,72 @@ class NativeSipForegroundService : Service() {
     }
 
     private fun handleBridgeEvent(event: HashMap<String, Any?>) {
-        if (event["type"]?.toString() == "call") {
-            when (event["state"]?.toString()) {
-                "incoming" -> {
-                    acquireIncomingCallWakeLock()
-                    showIncomingCallNotification(event)
+        when (event["type"]?.toString()) {
+            "call" -> {
+                val state = event["state"]?.toString()
+                Log.d(
+                    TAG,
+                    "handleBridgeEvent(call): state=$state, remote=${event["remoteIdentity"]}, appForeground=${NativeSipBridge.isAppInForeground()}, deviceLocked=${isDeviceLocked()}, canDrawOverlays=${canDrawOverlays()}",
+                )
+                when (state) {
+                    "incoming" -> {
+                        logIncomingUiDecision("call-event")
+                        acquireIncomingCallWakeLock()
+                        notificationManager.cancel(NOTIFICATION_CALL_ID)
+                        launchIncomingCallUiIfNeeded(event, "call-event")
+                        if (shouldPlaySystemIncomingRingtone()) {
+                            startIncomingCallRingtone()
+                        } else {
+                            stopIncomingCallRingtone()
+                        }
+                        scheduleIncomingUiWatchdog()
+                    }
+                    "calling", "ringing", "in_call", "ended", "failed", "idle" -> {
+                        cancelIncomingUiWatchdog()
+                        hideIncomingCallOverlay("call-state-$state")
+                        stopIncomingCallRingtone()
+                        releaseIncomingCallWakeLock()
+                        notificationManager.cancel(NOTIFICATION_CALL_ID)
+                    }
                 }
-                "calling", "ringing", "in_call", "ended", "failed", "idle" -> {
-                    releaseIncomingCallWakeLock()
-                    notificationManager.cancel(NOTIFICATION_CALL_ID)
-                }
+            }
+            "app_visibility" -> {
+                handleAppVisibilityEvent(event)
             }
         }
 
         updateServiceNotification()
+    }
+
+    private fun handleAppVisibilityEvent(event: HashMap<String, Any?>) {
+        val callState = event["callState"]?.toString()
+        Log.d(
+            TAG,
+            "handleAppVisibilityEvent: appForeground=${event["appForeground"]}, callState=$callState, remote=${event["remoteIdentity"]}, deviceLocked=${isDeviceLocked()}, canDrawOverlays=${canDrawOverlays()}",
+        )
+        if (callState != "incoming") {
+            cancelIncomingUiWatchdog()
+            hideIncomingCallOverlay("app-visibility-non-incoming-$callState")
+            stopIncomingCallRingtone()
+            return
+        }
+
+        val incomingEvent = hashMapOf<String, Any?>(
+            "type" to "call",
+            "state" to "incoming",
+            "remoteIdentity" to event["remoteIdentity"],
+        )
+
+        logIncomingUiDecision("app-visibility")
+        notificationManager.cancel(NOTIFICATION_CALL_ID)
+        launchIncomingCallUiIfNeeded(incomingEvent, "app-visibility")
+
+        if (shouldPlaySystemIncomingRingtone()) {
+            startIncomingCallRingtone()
+        } else {
+            stopIncomingCallRingtone()
+        }
+        scheduleIncomingUiWatchdog()
     }
 
     // WakeLock — держим CPU/экран живым при входящем звонке в фоне
@@ -251,6 +369,15 @@ class NativeSipForegroundService : Service() {
         }
     }
 
+    private fun startRegistrationHeartbeat() {
+        maintenanceHandler.removeCallbacks(registrationHeartbeat)
+        maintenanceHandler.postDelayed(registrationHeartbeat, REGISTRATION_HEARTBEAT_INTERVAL_MS)
+    }
+
+    private fun stopRegistrationHeartbeat() {
+        maintenanceHandler.removeCallbacks(registrationHeartbeat)
+    }
+
     private fun buildServiceNotification(snapshot: HashMap<String, Any?>): Notification {
         val registrationState = snapshot["registrationState"]?.toString() ?: "disconnected"
         val callState = snapshot["callState"]?.toString() ?: "idle"
@@ -260,15 +387,16 @@ class NativeSipForegroundService : Service() {
             callState == "calling" -> "Исходящий звонок: $remoteIdentity"
             callState == "ringing" -> "Ожидаем ответ: $remoteIdentity"
             callState == "in_call" -> "Разговор: $remoteIdentity"
-            registrationState == "registered" -> "SIP подключен и ждёт входящие звонки"
-            registrationState == "registering" -> "Подключаем SIP..."
-            else -> "SIP не подключен"
+            registrationState == "registered" -> "Телефония подключена и ждёт входящие звонки"
+            registrationState == "registering" -> "Подключаем телефонию..."
+            else -> "Телефония не подключена"
         }
 
         val builder = NotificationCompat.Builder(this, CHANNEL_SERVICE_ID)
             .setSmallIcon(R.mipmap.ic_launcher)
-            .setContentTitle("SHAMCRM SIP")
+            .setContentTitle("SHAMCRM Телефония")
             .setContentText(text)
+            .setSubText("Телефония")
             .setContentIntent(mainActivityPendingIntent(openCall = callState != "idle"))
             .setOnlyAlertOnce(true)
             .setOngoing(true)
@@ -300,45 +428,47 @@ class NativeSipForegroundService : Service() {
 
     private fun showIncomingCallNotification(event: HashMap<String, Any?>) {
         val remoteIdentity = formatIdentity(event["remoteIdentity"]?.toString())
+        val largeIcon = BitmapFactory.decodeResource(resources, R.drawable.sham_crm_logo)
+        val declineIntent = actionPendingIntent(NativeSipActionReceiver.ACTION_DECLINE)
+        val answerIntent = actionPendingIntent(NativeSipActionReceiver.ACTION_ANSWER)
+        val caller = Person.Builder()
+            .setName(remoteIdentity)
+            .setImportant(true)
+            .build()
 
         val notification = NotificationCompat.Builder(this, CHANNEL_CALLS_ID)
             .setSmallIcon(R.mipmap.ic_launcher)
-            .setContentTitle("Входящий SIP звонок")
-            .setContentText(remoteIdentity)
+            .setContentTitle("SHAMCRM: входящий звонок")
+            .setContentText("Входящий звонок")
+            .setSubText("Телефония")
+            .setLargeIcon(largeIcon)
+            .setColor(0xFF1E88E5.toInt())
+            .setColorized(true)
+            .setStyle(
+                NotificationCompat.CallStyle.forIncomingCall(
+                    caller,
+                    declineIntent,
+                    answerIntent,
+                )
+                    .setAnswerButtonColorHint(0xFF4CD964.toInt())
+                    .setDeclineButtonColorHint(0xFFFF3B30.toInt()),
+            )
             .setPriority(NotificationCompat.PRIORITY_MAX)
             .setCategory(NotificationCompat.CATEGORY_CALL)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setOngoing(true)
             .setAutoCancel(false)
-            .setDefaults(Notification.DEFAULT_ALL) // Включает звук, свет и вибрацию по умолчанию
             .setFullScreenIntent(incomingCallActivityPendingIntent(event), true)
             .setContentIntent(incomingCallActivityPendingIntent(event))
-            .addAction(
-                R.mipmap.ic_launcher,
-                "Отклонить",
-                actionPendingIntent(NativeSipActionReceiver.ACTION_DECLINE),
-            )
-            .addAction(
-                R.mipmap.ic_launcher,
-                "Ответить",
-                actionPendingIntent(NativeSipActionReceiver.ACTION_ANSWER),
-            )
             .build()
 
         try {
             notificationManager.notify(NOTIFICATION_CALL_ID, notification)
-            
-            // 🔥 ПРИНУДИТЕЛЬНЫЙ ЗАПУСК АКТИВНОСТИ 🔥
-            // FullScreenIntent полагается на решение системы (на Xiaomi часто игнорируется).
-            // Прямой вызов startActivity намного агрессивнее и срабатывает почти всегда,
-            // особенно если есть разрешение "Отображать всплывающие окна".
-            val intent = Intent(this, IncomingCallActivity::class.java).apply {
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
-                putExtra(IncomingCallActivity.EXTRA_CALLER_NAME, remoteIdentity)
+            Log.d(TAG, "Incoming call notification posted with fullScreenIntent")
+            if (!shouldUseIncomingCallOverlay()) {
+                Log.d(TAG, "Incoming UI fallback selected: launching IncomingCallActivity via PendingIntent")
+                launchIncomingCallUiFallback(event)
             }
-            startActivity(intent)
-            Log.d(TAG, "Forced startActivity for IncomingCallActivity")
-            
         } catch (error: Throwable) {
             Log.e(TAG, "showIncomingCallNotification failed: ${error.message}", error)
         }
@@ -350,26 +480,27 @@ class NativeSipForegroundService : Service() {
             putExtra("open_sip_call", openCall)
         }
 
-        return PendingIntent.getActivity(
-            this,
-            if (openCall) 1002 else 1001,
-            intent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        return createActivityPendingIntent(
+            requestCode = if (openCall) 1002 else 1001,
+            intent = intent,
         )
     }
 
     private fun incomingCallActivityPendingIntent(event: HashMap<String, Any?>): PendingIntent {
         val remoteIdentity = formatIdentity(event["remoteIdentity"]?.toString())
         val intent = Intent(this, IncomingCallActivity::class.java).apply {
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+            addFlags(
+                Intent.FLAG_ACTIVITY_NEW_TASK or
+                    Intent.FLAG_ACTIVITY_CLEAR_TOP or
+                    Intent.FLAG_ACTIVITY_SINGLE_TOP or
+                    Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS,
+            )
             putExtra(IncomingCallActivity.EXTRA_CALLER_NAME, remoteIdentity)
         }
 
-        return PendingIntent.getActivity(
-            this,
-            1003,
-            intent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        return createActivityPendingIntent(
+            requestCode = 1003,
+            intent = intent,
         )
     }
 
@@ -391,12 +522,19 @@ class NativeSipForegroundService : Service() {
             return
         }
 
+        LEGACY_CALL_CHANNEL_IDS.forEach { legacyChannelId ->
+            try {
+                notificationManager.deleteNotificationChannel(legacyChannelId)
+            } catch (_: Throwable) {
+            }
+        }
+
         val runtimeChannel = NotificationChannel(
             CHANNEL_SERVICE_ID,
-            "SHAMCRM SIP Runtime",
+            "SHAMCRM Телефония Runtime",
             NotificationManager.IMPORTANCE_LOW,
         ).apply {
-            description = "Постоянное SIP-подключение внутри CRM"
+            description = "Постоянное подключение телефонии внутри CRM"
             setShowBadge(false)
         }
 
@@ -404,11 +542,12 @@ class NativeSipForegroundService : Service() {
         // и видимостью на экране блокировки. На Xiaomi HyperOS это критично.
         val callsChannel = NotificationChannel(
             CHANNEL_CALLS_ID,
-            "SHAMCRM SIP Звонки",
+            "SHAMCRM Телефония Звонки",
             NotificationManager.IMPORTANCE_HIGH,
         ).apply {
-            description = "Входящие SIP звонки"
+            description = "Входящие звонки"
             lockscreenVisibility = Notification.VISIBILITY_PUBLIC
+            setSound(null, null)
             enableVibration(true)
             vibrationPattern = longArrayOf(0, 400, 200, 400, 200, 400)
             enableLights(true)
@@ -438,5 +577,215 @@ class NativeSipForegroundService : Service() {
             normalized = normalized.substringBefore("@")
         }
         return normalized.ifEmpty { "Неизвестный номер" }
+    }
+
+    private fun createActivityPendingIntent(
+        requestCode: Int,
+        intent: Intent,
+    ): PendingIntent {
+        val flags = PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        val options = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            ActivityOptions.makeBasic()
+                .setPendingIntentCreatorBackgroundActivityStartMode(
+                    ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOWED,
+                )
+                .toBundle()
+        } else {
+            null
+        }
+
+        return PendingIntent.getActivity(
+            this,
+            requestCode,
+            intent,
+            flags,
+            options,
+        )
+    }
+
+    private fun launchIncomingCallUiFallback(event: HashMap<String, Any?>) {
+        val pendingIntent = incomingCallActivityPendingIntent(event)
+
+        try {
+            val options = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                ActivityOptions.makeBasic()
+                    .setPendingIntentBackgroundActivityStartMode(
+                        ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOWED,
+                    )
+                    .toBundle()
+            } else {
+                null
+            }
+
+            pendingIntent.send(
+                this,
+                0,
+                null,
+                null,
+                null,
+                null,
+                options,
+            )
+            Log.d(TAG, "IncomingCallActivity launch fallback sent via PendingIntent")
+        } catch (error: PendingIntent.CanceledException) {
+            Log.e(TAG, "IncomingCallActivity fallback was canceled: ${error.message}", error)
+        } catch (error: Throwable) {
+            Log.e(TAG, "IncomingCallActivity fallback failed: ${error.message}", error)
+        }
+    }
+
+    private fun shouldUseIncomingCallOverlay(): Boolean {
+        if (NativeSipBridge.isAppInForeground()) {
+            return false
+        }
+        if (isDeviceLocked()) {
+            return false
+        }
+        return canDrawOverlays()
+    }
+
+    private fun shouldPlaySystemIncomingRingtone(): Boolean {
+        return !NativeSipBridge.isAppInForeground()
+    }
+
+    private fun canDrawOverlays(): Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            android.provider.Settings.canDrawOverlays(this)
+        } else {
+            true
+        }
+    }
+
+    private fun shouldLaunchIncomingCallUi(): Boolean {
+        return !NativeSipBridge.isAppInForeground()
+    }
+
+    private fun isDeviceLocked(): Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            keyguardManager.isDeviceLocked
+        } else {
+            @Suppress("DEPRECATION")
+            keyguardManager.isKeyguardLocked
+        }
+    }
+
+    private fun showIncomingCallOverlay(event: HashMap<String, Any?>) {
+        val remoteIdentity = formatIdentity(event["remoteIdentity"]?.toString())
+        Log.d(
+            TAG,
+            "Showing incoming call overlay: remote=$remoteIdentity, appForeground=${NativeSipBridge.isAppInForeground()}, deviceLocked=${isDeviceLocked()}, canDrawOverlays=${canDrawOverlays()}",
+        )
+        incomingCallOverlayController.show(
+            callerName = remoteIdentity,
+            onAnswer = {
+                hideIncomingCallOverlay("overlay-answer")
+                stopIncomingCallRingtone()
+                NativeSipBridge.acceptCall()
+                openFlutterCallUi()
+            },
+            onDecline = {
+                hideIncomingCallOverlay("overlay-decline")
+                stopIncomingCallRingtone()
+                NativeSipBridge.declineCall()
+            },
+        )
+    }
+
+    private fun hideIncomingCallOverlay(reason: String) {
+        Log.d(
+            TAG,
+            "Hiding incoming call overlay: reason=$reason, wasShowing=${incomingCallOverlayController.isShowing()}",
+        )
+        incomingCallOverlayController.hide()
+    }
+
+    private fun logIncomingUiDecision(source: String) {
+        Log.d(
+            TAG,
+            "Incoming UI decision[$source]: launchActivity=${shouldLaunchIncomingCallUi()}, activityVisible=${IncomingCallActivity.isVisible()}, playRingtone=${shouldPlaySystemIncomingRingtone()}, appForeground=${NativeSipBridge.isAppInForeground()}, deviceLocked=${isDeviceLocked()}, canDrawOverlays=${canDrawOverlays()}",
+        )
+    }
+
+    private fun launchIncomingCallUiIfNeeded(event: HashMap<String, Any?>, source: String) {
+        if (!shouldLaunchIncomingCallUi()) {
+            Log.d(TAG, "Incoming UI launch skipped[$source]: app is foreground")
+            return
+        }
+        if (IncomingCallActivity.isVisible()) {
+            Log.d(TAG, "Incoming UI launch skipped[$source]: IncomingCallActivity already visible")
+            return
+        }
+        Log.d(
+            TAG,
+            "Incoming UI launch[$source]: remote=${event["remoteIdentity"]}, deviceLocked=${isDeviceLocked()}, canDrawOverlays=${canDrawOverlays()}",
+        )
+        launchIncomingCallUiFallback(event)
+    }
+
+    private fun scheduleIncomingUiWatchdog() {
+        maintenanceHandler.removeCallbacks(incomingUiWatchdog)
+        incomingUiRetryCount = 0
+        maintenanceHandler.postDelayed(incomingUiWatchdog, 900L)
+    }
+
+    private fun cancelIncomingUiWatchdog() {
+        maintenanceHandler.removeCallbacks(incomingUiWatchdog)
+        incomingUiRetryCount = 0
+    }
+
+    private fun startIncomingCallRingtone() {
+        try {
+            if (incomingCallRingtone?.isPlaying == true) {
+                return
+            }
+
+            val ringtoneUri =
+                RingtoneManager.getActualDefaultRingtoneUri(this, RingtoneManager.TYPE_RINGTONE)
+                    ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE)
+                    ?: return
+            val ringtone = RingtoneManager.getRingtone(this, ringtoneUri) ?: return
+            ringtone.setAudioAttributes(
+                AudioAttributes.Builder()
+                    .setUsage(AudioAttributes.USAGE_NOTIFICATION_RINGTONE)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                    .build(),
+            )
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                ringtone.isLooping = true
+            }
+            ringtone.play()
+            incomingCallRingtone = ringtone
+            Log.d(TAG, "System incoming call ringtone started")
+        } catch (error: Throwable) {
+            Log.e(TAG, "Failed to start system incoming call ringtone: ${error.message}", error)
+        }
+    }
+
+    private fun stopIncomingCallRingtone() {
+        try {
+            if (incomingCallRingtone?.isPlaying == true) {
+                incomingCallRingtone?.stop()
+            }
+        } catch (_: Throwable) {
+        } finally {
+            incomingCallRingtone = null
+        }
+    }
+
+    private fun openFlutterCallUi() {
+        try {
+            startActivity(
+                Intent(this, MainActivity::class.java).apply {
+                    addFlags(
+                        Intent.FLAG_ACTIVITY_NEW_TASK or
+                            Intent.FLAG_ACTIVITY_CLEAR_TOP or
+                            Intent.FLAG_ACTIVITY_SINGLE_TOP,
+                    )
+                    putExtra("open_sip_call", true)
+                },
+            )
+        } catch (error: Throwable) {
+            Log.e(TAG, "Failed to open Flutter call UI from overlay: ${error.message}", error)
+        }
     }
 }

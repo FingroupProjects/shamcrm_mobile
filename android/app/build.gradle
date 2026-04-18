@@ -25,6 +25,7 @@ if (flutterVersionName == null) {
 android {
     namespace "com.softtech.crm_task_manager"
     compileSdk 36
+    buildToolsVersion "36.0.0"
     ndkVersion "26.1.10909125"
 
     compileOptions {
@@ -64,6 +65,7 @@ android {
     buildTypes {
         release {
             signingConfig signingConfigs.release
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
 

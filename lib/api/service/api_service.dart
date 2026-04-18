@@ -374,6 +374,27 @@ class ApiService {
     }
   }
 
+  String? _extractPrimaryMessageFromResponse(http.Response response) {
+    try {
+      final body = jsonDecode(response.body);
+      if (body is Map<String, dynamic>) {
+        final rawMessage = body['message'];
+        if (rawMessage == null) {
+          return null;
+        }
+        if (rawMessage is String) {
+          return rawMessage.trim().isEmpty ? null : rawMessage.trim();
+        }
+        return rawMessage.toString().trim().isEmpty
+            ? null
+            : rawMessage.toString().trim();
+      }
+      return null;
+    } catch (_) {
+      return null;
+    }
+  }
+
   String _getOrderStatusChangeErrorMessage(http.Response response) {
     return _extractErrorMessageFromResponse(response) ??
         'Вы не можете переместить заказ на этот статус';
@@ -3187,6 +3208,8 @@ class ApiService {
     if (response.statusCode == 200 || response.statusCode == 201) {
       return {'success': true, 'message': 'lead_created_successfully'};
     } else if (response.statusCode == 422) {
+      final serverMessage = _extractPrimaryMessageFromResponse(response);
+
       if (response.body.contains('The phone has already been taken.')) {
         return {'success': false, 'message': 'phone_already_exists'};
       }
@@ -3227,11 +3250,22 @@ class ApiService {
       if (response.body.contains('directory_values')) {
         return {'success': false, 'message': 'invalid_directory_values'};
       }
-      return {'success': false, 'message': 'unknown_error'};
+      return {
+        'success': false,
+        'message': serverMessage?.trim().isNotEmpty == true
+            ? serverMessage!.trim()
+            : 'unknown_error'
+      };
     } else if (response.statusCode == 500) {
       return {'success': false, 'message': 'error_server_text'};
     } else {
-      return {'success': false, 'message': 'lead_creation_error'};
+      final serverMessage = _extractPrimaryMessageFromResponse(response);
+      return {
+        'success': false,
+        'message': serverMessage?.trim().isNotEmpty == true
+            ? serverMessage!.trim()
+            : 'lead_creation_error'
+      };
     }
   }
 
@@ -8197,6 +8231,99 @@ class ApiService {
     } else {
       throw Exception('Ошибка ${response.statusCode}: ${response.body}');
     }
+  }
+
+  Future<int> getUnreadMessagesCount() async {
+    final token = await getToken();
+    String path = '/v2/chat/getUnreadMessagesCount';
+    path = await _appendQueryParams(path);
+
+    final response = await http.get(
+      Uri.parse('$baseUrl$path'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception(
+          'Ошибка ${response.statusCode} при получении общего счетчика чатов');
+    }
+
+    final data = json.decode(response.body);
+    return _extractUnreadCountFromResponse(data);
+  }
+
+  Future<int> getUnreadMessagesCountByChatType(String type) async {
+    final token = await getToken();
+    String path = '/v2/chat/getUnreadMessagesCountByChatType/$type';
+    path = await _appendQueryParams(path);
+
+    final response = await http.get(
+      Uri.parse('$baseUrl$path'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception(
+          'Ошибка ${response.statusCode} при получении счетчика чатов типа $type');
+    }
+
+    final data = json.decode(response.body);
+    return _extractUnreadCountFromResponse(data);
+  }
+
+  int _extractUnreadCountFromResponse(dynamic data) {
+    if (data is int) {
+      return data;
+    }
+
+    if (data is String) {
+      return int.tryParse(data) ?? 0;
+    }
+
+    if (data is Map<String, dynamic>) {
+      final dynamic result = data['result'] ?? data['data'] ?? data;
+
+      if (result is int) {
+        return result;
+      }
+
+      if (result is String) {
+        return int.tryParse(result) ?? 0;
+      }
+
+      if (result is Map<String, dynamic>) {
+        const keys = [
+          'count',
+          'unread_count',
+          'unreadCount',
+          'total',
+          'messages_count',
+        ];
+
+        for (final key in keys) {
+          final value = result[key];
+          if (value is int) {
+            return value;
+          }
+          if (value is String) {
+            final parsed = int.tryParse(value);
+            if (parsed != null) {
+              return parsed;
+            }
+          }
+        }
+      }
+    }
+
+    return 0;
   }
 
   Future<String> sendMessages(List<int> messageIds) async {

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:crm_task_manager/screens/analytics/utils/analytics_localization.dart';
 import 'package:crm_task_manager/screens/analytics/widgets/chart_shimmer_loader.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:crm_task_manager/screens/analytics/utils/chart_request_policy.dart';
@@ -79,7 +80,11 @@ class _MessageStatsChartState extends State<MessageStatsChart> {
                 children: [
                   Expanded(
                     child: Text(
-                      'Статистика сообщений',
+                      analyticsText(
+                        context,
+                        'analytics_chart_message_stats',
+                        fallback: 'Message statistics',
+                      ),
                       style: TextStyle(
                         fontSize: ResponsiveHelper(context).titleFontSize,
                         fontWeight: FontWeight.w700,
@@ -121,7 +126,7 @@ class _MessageStatsChartState extends State<MessageStatsChart> {
                         ),
                       ),
                       subtitle: Text(
-                        'Получено: ${item.received}',
+                        '${analyticsText(context, 'analytics_received', fallback: 'Received')}: ${item.received}',
                         style: TextStyle(
                           fontSize: ResponsiveHelper(context).smallFontSize,
                           color: Color(0xff64748B),
@@ -129,7 +134,7 @@ class _MessageStatsChartState extends State<MessageStatsChart> {
                         ),
                       ),
                       trailing: Text(
-                        'Отправлено: ${item.sent}',
+                        '${analyticsText(context, 'analytics_answered', fallback: 'Answered')}: ${item.sent}',
                         style: TextStyle(
                           fontSize: ResponsiveHelper(context).smallFontSize,
                           fontWeight: FontWeight.w600,
@@ -225,7 +230,11 @@ class _MessageStatsChartState extends State<MessageStatsChart> {
                 SizedBox(width: ResponsiveHelper(context).smallSpacing),
                 Expanded(
                   child: Text(
-                    'Статистика сообщений',
+                    analyticsText(
+                      context,
+                      'analytics_chart_message_stats',
+                      fallback: 'Message statistics',
+                    ),
                     style: TextStyle(
                       fontSize: responsive.titleFontSize,
                       fontWeight: FontWeight.w600,
@@ -283,7 +292,11 @@ class _MessageStatsChartState extends State<MessageStatsChart> {
                             titlesData: FlTitlesData(
                               leftTitles: AxisTitles(
                                 axisNameWidget: Text(
-                                  'Количество',
+                                  analyticsText(
+                                    context,
+                                    'quantity',
+                                    fallback: 'Quantity',
+                                  ),
                                   style: TextStyle(
                                     fontSize: responsive.xSmallFontSize,
                                     color: Color(0xff94A3B8),
@@ -350,9 +363,23 @@ class _MessageStatsChartState extends State<MessageStatsChart> {
             ),
             child: Row(
               children: [
-                _LegendDot(color: Color(0xff6366F1), label: 'Получено'),
+                _LegendDot(
+                  color: Color(0xff6366F1),
+                  label: analyticsText(
+                    context,
+                    'analytics_received',
+                    fallback: 'Received',
+                  ),
+                ),
                 SizedBox(width: ResponsiveHelper(context).smallSpacing),
-                _LegendDot(color: Color(0xff10B981), label: 'Отправлено'),
+                _LegendDot(
+                  color: Color(0xff10B981),
+                  label: analyticsText(
+                    context,
+                    'analytics_answered',
+                    fallback: 'Answered',
+                  ),
+                ),
               ],
             ),
           ),

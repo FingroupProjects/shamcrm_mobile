@@ -50,7 +50,7 @@ class ManufactureCard extends StatelessWidget {
                     children: [
                       Expanded(
                         child: Text(
-                          '${localizations.translate('empty_0') ?? 'Перемещение'}№${document.docNumber ?? ''}',
+                          '№${document.docNumber ?? ''}',
                           style: const TextStyle(
                             fontSize: 18,
                             fontFamily: 'Gilroy',

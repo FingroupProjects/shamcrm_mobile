@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/models/dealById_model.dart';
+import 'package:crm_task_manager/models/deal_model.dart';
 import 'package:crm_task_manager/models/file_helper.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 
@@ -118,6 +119,18 @@ class FetchMoreDeals extends DealEvent {
   final int currentPage;
 
   FetchMoreDeals(this.statusId, this.currentPage);
+}
+
+class DealCreatedFromSocket extends DealEvent {
+  final Deal deal;
+  final int? activeStatusId;
+  final bool hasActiveFilters;
+
+  DealCreatedFromSocket({
+    required this.deal,
+    required this.activeStatusId,
+    required this.hasActiveFilters,
+  });
 }
 
 class CreateDealStatus extends DealEvent {

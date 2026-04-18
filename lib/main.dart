@@ -195,7 +195,7 @@ void main() async {
     final initialMessage = await _safeLoadInitialMessage();
     _safeConfigureSystemUi();
     final savedLocale = await _safeLoadLocale();
-    
+    await _safeInitializeSipRuntime();
     runApp(MyApp(
       apiService: apiService,
       authService: authService,
@@ -210,6 +210,15 @@ void main() async {
     debugPrint('main: startup error: $e');
     debugPrint('main: startup stackTrace: $stackTrace');
     runApp(ErrorApp(error: e.toString()));
+  }
+}
+
+Future<void> _safeInitializeSipRuntime() async {
+  try {
+    await SipService().initialize();
+  } catch (e, stackTrace) {
+    debugPrint('main: SipService initialize error: $e');
+    debugPrint('main: SipService initialize stackTrace: $stackTrace');
   }
 }
 

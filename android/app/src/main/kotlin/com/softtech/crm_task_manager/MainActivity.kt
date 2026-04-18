@@ -1,5 +1,6 @@
 package com.softtech.crm_task_manager
 
+import android.app.NotificationManager
 import android.appwidget.AppWidgetManager
 import android.content.ComponentName
 import android.content.Context
@@ -310,6 +311,7 @@ class MainActivity : FlutterFragmentActivity() {
                     }
                 }
                 "unregister" -> {
+                    Log.w("MainActivity", "Native SIP unregister invoked from Flutter method channel")
                     NativeSipBridge.unregister()
                     result.success(true)
                 }
@@ -349,6 +351,12 @@ class MainActivity : FlutterFragmentActivity() {
                 }
                 "requestSystemAlertWindowPermission" -> {
                     result.success(requestSystemAlertWindowPermission())
+                }
+                "canUseFullScreenIntent" -> {
+                    result.success(canUseFullScreenIntent())
+                }
+                "requestFullScreenIntentPermission" -> {
+                    result.success(requestFullScreenIntentPermission())
                 }
                 "openXiaomiPopupPermissionSettings" -> {
                     result.success(openXiaomiPopupPermissionSettings())
@@ -562,6 +570,47 @@ class MainActivity : FlutterFragmentActivity() {
             }
         }
         return true
+    }
+
+    private fun canUseFullScreenIntent(): Boolean {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            return true
+        }
+
+        return try {
+            val notificationManager =
+                getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            notificationManager.canUseFullScreenIntent()
+        } catch (error: Throwable) {
+            Log.e("MainActivity", "Failed to check full-screen intent permission: ${error.message}", error)
+            false
+        }
+    }
+
+    private fun requestFullScreenIntentPermission(): Boolean {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            return true
+        }
+
+        return try {
+            val intent = Intent(Settings.ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT).apply {
+                data = Uri.parse("package:$packageName")
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            startActivity(intent)
+            true
+        } catch (error: Throwable) {
+            Log.e("MainActivity", "Failed to open full-screen intent settings: ${error.message}", error)
+            try {
+                startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                    data = Uri.parse("package:$packageName")
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                })
+                true
+            } catch (_: Throwable) {
+                false
+            }
+        }
     }
 
     /**

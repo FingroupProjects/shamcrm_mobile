@@ -1,7 +1,6 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:crm_task_manager/api/service/api_service.dart';
-import 'package:crm_task_manager/bloc/deal/deal_bloc.dart';
-import 'package:crm_task_manager/bloc/deal/deal_event.dart';
 import 'package:crm_task_manager/bloc/manager_list/manager_bloc.dart';
 import 'package:crm_task_manager/bloc/region_list/region_bloc.dart';
 import 'package:crm_task_manager/bloc/sales_funnel/sales_funnel_bloc.dart';
@@ -19,7 +18,6 @@ import 'package:crm_task_manager/models/sales_funnel_model.dart';
 import 'package:crm_task_manager/models/source_list_model.dart';
 import 'package:crm_task_manager/models/advertising_campaign_model.dart';
 import 'package:crm_task_manager/screens/auth/login_screen.dart';
-import 'package:crm_task_manager/screens/deal/deal_cache.dart';
 import 'package:crm_task_manager/screens/lead/lead_cache.dart';
 import 'package:crm_task_manager/screens/lead/lead_status_delete.dart';
 import 'package:crm_task_manager/screens/lead/lead_status_edit.dart';
@@ -28,7 +26,6 @@ import 'package:crm_task_manager/screens/lead/tabBar/lead_column.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_status_add.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/profile/profile_screen.dart';
-import 'package:crm_task_manager/utils/TutorialStyleWidget.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -36,6 +33,7 @@ import 'package:crm_task_manager/bloc/lead/lead_bloc.dart';
 import 'package:crm_task_manager/bloc/lead/lead_event.dart';
 import 'package:crm_task_manager/bloc/lead/lead_state.dart';
 import 'package:crm_task_manager/custom_widget/custom_tasks_tabBar.dart';
+import 'package:dart_pusher_channels/dart_pusher_channels.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/contact_list_screen.dart';
@@ -134,6 +132,8 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
   bool _isFilterLoading = false;
   bool _shouldShowLoader = false;
   bool _skipNextTabListener = false;
+  PusherChannelsClient? _leadSocketClient;
+  final List<StreamSubscription<dynamic>> _leadSocketSubscriptions = [];
 
   Map<String, List<String>> _cloneCustomFieldFilters(
       Map<String, List<String>> source) {
@@ -231,6 +231,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
     });
 
     _checkPermissions();
+    _setupLeadSocket();
   }
 
   Future<void> _initializeSalesFunnel() async {
@@ -257,6 +258,148 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
 
   void _onScroll() {
     // Логика прокрутки табов
+  }
+
+  Future<void> _setupLeadSocket() async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('token');
+    final userId = prefs.getString('unique_id');
+
+    if (token == null || token.isEmpty || userId == null || userId.isEmpty) {
+      debugPrint('LeadScreen: socket init skipped, token or userId is missing');
+      return;
+    }
+
+    final enteredDomainMap = await _apiService.getEnteredDomain();
+    final enteredMainDomain = enteredDomainMap['enteredMainDomain'];
+    final enteredDomain = enteredDomainMap['enteredDomain'];
+
+    if (enteredMainDomain == null ||
+        enteredMainDomain.isEmpty ||
+        enteredDomain == null ||
+        enteredDomain.isEmpty) {
+      debugPrint('LeadScreen: socket init skipped, domain is missing');
+      return;
+    }
+
+    final customOptions = PusherChannelsOptions.custom(
+      uriResolver: (metadata) =>
+          Uri.parse('wss://soketi.$enteredMainDomain/app/app-key'),
+      metadata: PusherChannelsOptionsMetadata.byDefault(),
+    );
+
+    final socketClient = PusherChannelsClient.websocket(
+      options: customOptions,
+      connectionErrorHandler: (exception, trace, refresh) {
+        debugPrint('LeadScreen: socket connection error: $exception');
+        refresh();
+      },
+      minimumReconnectDelayDuration: const Duration(seconds: 1),
+    );
+
+    final presenceChannel = socketClient.presenceChannel(
+      'presence-user.$userId',
+      authorizationDelegate:
+          EndpointAuthorizableChannelTokenAuthorizationDelegate
+              .forPresenceChannel(
+        authorizationEndpoint: Uri.parse(
+          'https://$enteredDomain-back.$enteredMainDomain/broadcasting/auth',
+        ),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'X-Tenant': '$enteredDomain-back',
+        },
+        onAuthFailed: (exception, trace) {
+          debugPrint('LeadScreen: socket auth failed: $exception');
+        },
+      ),
+    );
+
+    _leadSocketSubscriptions.add(
+      socketClient.onConnectionEstablished.listen((_) {
+        presenceChannel.subscribeIfNotUnsubscribed();
+      }),
+    );
+
+    _leadSocketSubscriptions.add(
+      presenceChannel.bind('lead.created').listen((event) async {
+        await _handleLeadCreatedSocketEvent(event.data);
+      }),
+    );
+
+    _leadSocketClient = socketClient;
+
+    try {
+      await socketClient.connect();
+    } catch (e) {
+      debugPrint('LeadScreen: socket connect failed: $e');
+    }
+  }
+
+  Future<void> _handleLeadCreatedSocketEvent(dynamic rawData) async {
+    try {
+      final payload = _decodeSocketPayload(rawData);
+      final leadJson = payload['lead'];
+
+      if (leadJson is! Map<String, dynamic>) {
+        debugPrint('LeadScreen: invalid lead.created payload: $rawData');
+        return;
+      }
+
+      final leadStatusId =
+          int.tryParse(leadJson['lead_status_id']?.toString() ?? '') ?? 0;
+      final salesFunnelId =
+          int.tryParse(leadJson['sales_funnel_id']?.toString() ?? '');
+
+      if (leadStatusId == 0) {
+        debugPrint('LeadScreen: lead.created skipped, lead_status_id is empty');
+        return;
+      }
+
+      if (_selectedFunnel != null &&
+          salesFunnelId != null &&
+          salesFunnelId != _selectedFunnel!.id) {
+        return;
+      }
+
+      if (!mounted) return;
+
+      context.read<LeadBloc>().add(
+            LeadCreatedFromSocket(
+              lead: Lead.fromJson(leadJson, leadStatusId),
+              activeStatusId: _tabTitles.isNotEmpty
+                  ? _tabTitles[_currentTabIndex]['id'] as int?
+                  : null,
+              hasActiveFilters: _hasActiveFilters(),
+            ),
+          );
+    } catch (e) {
+      debugPrint('LeadScreen: failed to process lead.created: $e');
+    }
+  }
+
+  Map<String, dynamic> _decodeSocketPayload(dynamic rawData) {
+    dynamic decoded = rawData;
+
+    if (decoded is String) {
+      decoded = json.decode(decoded);
+    }
+
+    if (decoded is Map && decoded['data'] is String) {
+      decoded = json.decode(decoded['data'] as String);
+    }
+
+    if (decoded is Map<String, dynamic>) {
+      return decoded;
+    }
+
+    if (decoded is Map) {
+      return decoded.map(
+        (key, value) => MapEntry(key.toString(), value),
+      );
+    }
+
+    throw const FormatException('Unsupported socket payload');
   }
 
   Future<void> _onRefresh(int currentStatusId) async {
@@ -2219,6 +2362,10 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
 
   @override
   void dispose() {
+    for (final subscription in _leadSocketSubscriptions) {
+      subscription.cancel();
+    }
+    _leadSocketClient?.disconnect();
     tabScrollController.dispose();
     _tabController.dispose();
     super.dispose();

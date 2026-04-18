@@ -241,9 +241,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
           title: analyticsChartTitle(
             context,
             canonicalKey,
-            fallback: item.name.trim().isNotEmpty
-                ? item.name.trim()
-                : (_fallbackChartTitles[canonicalKey] ?? canonicalKey),
+            fallback: _fallbackChartTitles[canonicalKey] ?? canonicalKey,
           ),
         ),
       );
@@ -456,9 +454,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       final title = analyticsChartTitle(
         context,
         canonicalKey,
-        fallback: item.name.trim().isNotEmpty
-            ? item.name
-            : (_fallbackChartTitles[canonicalKey] ?? canonicalKey),
+        fallback: _fallbackChartTitles[canonicalKey] ?? canonicalKey,
       );
 
       Widget? chartWidget;
