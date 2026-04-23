@@ -1,9 +1,9 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/messaging/messaging_cubit.dart';
 import 'package:crm_task_manager/main.dart';
 import 'package:crm_task_manager/models/chats_model.dart';
-import 'package:crm_task_manager/models/deal_model.dart';
 import 'package:crm_task_manager/models/page_2/order_card.dart';
 import 'package:crm_task_manager/page_2/order/order_details/order_details_screen.dart';
 import 'package:crm_task_manager/screens/chats/chat_sms_screen.dart';
@@ -23,7 +23,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   try {
     if (Firebase.apps.isEmpty) {
-      debugPrint("Firebase не инициализирован, инициализируем... FirebaseApi.Line.26");
+      debugPrint(
+          "Firebase не инициализирован, инициализируем... FirebaseApi.Line.26");
       await Firebase.initializeApp();
     }
 
@@ -48,17 +49,18 @@ class FirebaseApi {
   FirebaseApi._internal();
 
   final _firebaseMessaging = FirebaseMessaging.instance;
+  final ApiService _apiService = ApiService();
   RemoteMessage? _initialMessage;
   bool _isInitialized = false;
-
-  // ✅ КРИТИЧНО: Единственный экземпляр ApiService
-  late final ApiService _apiService;
+  bool _backgroundHandlerRegistered = false;
+  StreamSubscription<String>? _tokenRefreshSubscription;
 
   Future<void> initNotifications() async {
     try {
       // КРИТИЧЕСКАЯ ПРОВЕРКА: Firebase должен быть инициализирован
       if (Firebase.apps.isEmpty) {
-        debugPrint('FirebaseApi: Firebase не инициализирован, пропускаем настройку уведомлений');
+        debugPrint(
+            'FirebaseApi: Firebase не инициализирован, пропускаем настройку уведомлений');
         return;
       }
 
@@ -70,18 +72,13 @@ class FirebaseApi {
         return;
       }
 
-      if (_isInitialized) {
-        debugPrint('FirebaseApi уже инициализирован');
-        return;
-      }
-
-      // ✅ КРИТИЧНО: Инициализируем ApiService ОДИН РАЗ
-      _apiService = ApiService();
       await _apiService.initialize();
-      debugPrint('FirebaseApi: ApiService initialized with baseUrl: ${_apiService.baseUrl}');
+      debugPrint(
+          'FirebaseApi: ApiService initialized with baseUrl: ${_apiService.baseUrl}');
 
       // Запрашиваем разрешение на уведомления
-      NotificationSettings settings = await _firebaseMessaging.requestPermission(
+      NotificationSettings settings =
+          await _firebaseMessaging.requestPermission(
         alert: true,
         badge: true,
         sound: true,
@@ -92,45 +89,98 @@ class FirebaseApi {
         return;
       }
 
-      // Проверяем APNS-токен (только для iOS/iPadOS)
-      if (Platform.isIOS) {
-        String? apnsToken = await _firebaseMessaging.getAPNSToken();
-        if (apnsToken == null) {
-          debugPrint('APNS token is not available yet. Skipping FCM token retrieval.');
-          return;
-        }
+      await syncCurrentTokenWithServer();
+
+      if (_isInitialized) {
+        debugPrint(
+            'FirebaseApi уже инициализирован, токен пересинхронизирован');
+        return;
       }
 
-      // Получаем FCM-токен
-      final fcmToken = await _firebaseMessaging.getToken();
-      if (fcmToken != null) {
-        debugPrint('FCM Token: $fcmToken');
-      } else {
-        debugPrint('Failed to get FCM token');
-      }
-
-      // Безопасная регистрация background handler
-      try {
-        if (Firebase.apps.isNotEmpty) {
-          FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
-          debugPrint('Background message handler зарегистрирован');
-        }
-      } catch (e) {
-        if (e.toString().contains('already')) {
-          debugPrint('Background handler уже зарегистрирован');
-        } else {
-          debugPrint('Ошибка регистрации background handler: $e');
-        }
-      }
-
+      _registerBackgroundHandler();
+      _registerTokenRefreshListener();
       await initPushNotification();
       _isInitialized = true;
       debugPrint('FirebaseApi успешно инициализирован');
-
     } catch (e) {
       debugPrint('Error initializing notifications: $e');
       // НЕ пробрасываем ошибку дальше
     }
+  }
+
+  Future<void> syncCurrentTokenWithServer() async {
+    try {
+      final fcmToken = await _getCurrentFcmToken();
+      if (fcmToken == null || fcmToken.isEmpty) {
+        debugPrint(
+            'FirebaseApi: Не удалось получить актуальный FCM токен для синхронизации');
+        return;
+      }
+
+      await _syncTokenWithBackend(fcmToken, source: 'manual-sync');
+    } catch (e) {
+      debugPrint('FirebaseApi: Ошибка ручной синхронизации FCM токена: $e');
+    }
+  }
+
+  Future<String?> _getCurrentFcmToken() async {
+    if (Platform.isIOS) {
+      final apnsToken = await _firebaseMessaging.getAPNSToken();
+      if (apnsToken == null) {
+        debugPrint(
+            'FirebaseApi: APNS token is not available yet. Skipping FCM token retrieval.');
+        return null;
+      }
+    }
+
+    return _firebaseMessaging.getToken();
+  }
+
+  Future<void> _syncTokenWithBackend(
+    String fcmToken, {
+    required String source,
+  }) async {
+    final preview =
+        fcmToken.length > 20 ? '${fcmToken.substring(0, 20)}...' : fcmToken;
+    debugPrint('FirebaseApi: [$source] FCM token: $preview');
+    await _apiService.sendDeviceToken(fcmToken);
+  }
+
+  void _registerBackgroundHandler() {
+    if (_backgroundHandlerRegistered) {
+      return;
+    }
+
+    try {
+      if (Firebase.apps.isNotEmpty) {
+        FirebaseMessaging.onBackgroundMessage(
+            firebaseMessagingBackgroundHandler);
+        _backgroundHandlerRegistered = true;
+        debugPrint('Background message handler зарегистрирован');
+      }
+    } catch (e) {
+      if (e.toString().contains('already')) {
+        _backgroundHandlerRegistered = true;
+        debugPrint('Background handler уже зарегистрирован');
+      } else {
+        debugPrint('Ошибка регистрации background handler: $e');
+      }
+    }
+  }
+
+  void _registerTokenRefreshListener() {
+    if (_tokenRefreshSubscription != null) {
+      return;
+    }
+
+    _tokenRefreshSubscription = _firebaseMessaging.onTokenRefresh.listen(
+      (newToken) {
+        unawaited(_syncTokenWithBackend(newToken, source: 'token-refresh'));
+      },
+      onError: (Object error) {
+        debugPrint('FirebaseApi: Ошибка onTokenRefresh: $error');
+      },
+    );
   }
 
   Future<void> initPushNotification() async {
@@ -143,7 +193,8 @@ class FirebaseApi {
       });
 
       FirebaseMessaging.onMessage.listen((message) {
-        debugPrint('Уведомление при активном приложении: ${message.notification?.title}');
+        debugPrint(
+            'Уведомление при активном приложении: ${message.notification?.title}');
         _printCustomData(message);
       });
     } catch (e) {
@@ -233,7 +284,8 @@ class FirebaseApi {
   }
 
 // ✅ ИСПРАВЛЕНИЕ: Упрощенная навигация - СРАЗУ на нужный экран
-  Future<void> navigateToSpecificScreen(String type, String id, RemoteMessage message) async {
+  Future<void> navigateToSpecificScreen(
+      String type, String id, RemoteMessage message) async {
     try {
       debugPrint('🚀 navigateToSpecificScreen: type=$type, id=$id');
 
@@ -271,6 +323,7 @@ class FirebaseApi {
       debugPrint('StackTrace: $stackTrace');
     }
   }
+
   Future<void> navigateToChatScreen(String id, RemoteMessage message) async {
     debugPrint('═══════════════════════════════════════════════════════');
     debugPrint('💬 NAVIGATE TO CHAT SCREEN');
@@ -333,12 +386,12 @@ class FirebaseApi {
                 chatName = message.data['sender_name'];
               } else {
                 try {
-                  final allChatsResponse = await _apiService.getAllChats('corporate', 1);
+                  final allChatsResponse =
+                      await _apiService.getAllChats('corporate', 1);
                   final allChats = allChatsResponse.data ?? [];
                   final targetChat = allChats.firstWhere(
-                          (chat) => chat.id == chatId,
-                      orElse: () => throw Exception('Chat not found')
-                  );
+                      (chat) => chat.id == chatId,
+                      orElse: () => throw Exception('Chat not found'));
                   chatName = targetChat.name;
                 } catch (e) {
                   chatName = getChatById.name ?? 'Чат #$chatId';
@@ -348,10 +401,11 @@ class FirebaseApi {
               chatName = getChatById.chatUsers[0].participant.name;
             } else {
               int userIndex = getChatById.chatUsers.indexWhere(
-                      (user) => user.participant.id.toString() == userId);
+                  (user) => user.participant.id.toString() == userId);
               if (userIndex != -1) {
                 int otherUserIndex = (userIndex == 0) ? 1 : 0;
-                chatName = getChatById.chatUsers[otherUserIndex].participant.name;
+                chatName =
+                    getChatById.chatUsers[otherUserIndex].participant.name;
               } else {
                 chatName = getChatById.chatUsers[0].participant.name;
               }
@@ -409,6 +463,7 @@ class FirebaseApi {
       debugPrint('StackTrace: $stackTrace');
     }
   }
+
   // ✅ НОВЫЙ МЕТОД: Проверка и настройка доменов
   Future<void> _ensureDomainsConfigured() async {
     try {
@@ -422,10 +477,12 @@ class FirebaseApi {
       // Проверяем email верификацию
       String? verifiedDomain = await _apiService.getVerifiedDomain();
 
-      debugPrint('_ensureDomainsConfigured: enteredMainDomain=$enteredMainDomain, enteredDomain=$enteredDomain, verifiedDomain=$verifiedDomain');
+      debugPrint(
+          '_ensureDomainsConfigured: enteredMainDomain=$enteredMainDomain, enteredDomain=$enteredDomain, verifiedDomain=$verifiedDomain');
 
       // Если домены не настроены, используем verifiedDomain
-      if ((enteredMainDomain == null || enteredDomain == null) && verifiedDomain != null) {
+      if ((enteredMainDomain == null || enteredDomain == null) &&
+          verifiedDomain != null) {
         if (verifiedDomain.contains('-back.')) {
           final parts = verifiedDomain.split('-back.');
           enteredDomain = parts[0];
@@ -434,7 +491,8 @@ class FirebaseApi {
           await prefs.setString('enteredMainDomain', enteredMainDomain);
           await prefs.setString('enteredDomain', enteredDomain);
 
-          debugPrint('_ensureDomainsConfigured: Configured from verifiedDomain');
+          debugPrint(
+              '_ensureDomainsConfigured: Configured from verifiedDomain');
         }
       }
 
@@ -776,6 +834,7 @@ class FirebaseApi {
       debugPrint('StackTrace: $stackTrace');
     }
   }
+
   Future<void> navigateToMyTaskScreen(String id, RemoteMessage message) async {
     try {
       final myTaskId = message.data['id'];
@@ -830,7 +889,6 @@ class FirebaseApi {
               sum: '',
               dealStatus: '',
               statusId: 1,
-
             ),
           ),
         );
@@ -868,7 +926,6 @@ class FirebaseApi {
     }
   }
 
-
   // Получение FCM токена с безопасной обработкой
   Future<String?> getFCMToken() async {
     try {
@@ -891,7 +948,8 @@ class FirebaseApi {
   Future<void> subscribeToTopic(String topic) async {
     try {
       if (Firebase.apps.isEmpty) {
-        debugPrint('Firebase не инициализирован, не можем подписаться на топик');
+        debugPrint(
+            'Firebase не инициализирован, не можем подписаться на топик');
         return;
       }
 
@@ -905,7 +963,8 @@ class FirebaseApi {
   Future<void> unsubscribeFromTopic(String topic) async {
     try {
       if (Firebase.apps.isEmpty) {
-        debugPrint('Firebase не инициализирован, не можем отписаться от топика');
+        debugPrint(
+            'Firebase не инициализирован, не можем отписаться от топика');
         return;
       }
 
@@ -917,7 +976,10 @@ class FirebaseApi {
   }
 
   void dispose() {
+    _tokenRefreshSubscription?.cancel();
+    _tokenRefreshSubscription = null;
     _isInitialized = false;
     _initialMessage = null;
+    _backgroundHandlerRegistered = false;
   }
 }

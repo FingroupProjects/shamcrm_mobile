@@ -24,6 +24,10 @@ class OfflineRuntime {
   final OutboxService outboxService;
   final LocalCacheRepository localCacheRepository;
 
+  static OfflineRuntime? get maybeInstance => _instance;
+
+  static bool get isInitialized => _instance != null;
+
   static OfflineRuntime get instance {
     final runtime = _instance;
     if (runtime == null) {

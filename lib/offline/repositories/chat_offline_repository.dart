@@ -12,19 +12,20 @@ import 'package:flutter/foundation.dart';
 class ChatOfflineRepository {
   ChatOfflineRepository({
     required ApiService apiService,
-    required LocalCacheRepository cacheRepository,
+    required LocalCacheRepository? cacheRepository,
   })  : _apiService = apiService,
         _cacheRepository = cacheRepository;
 
   factory ChatOfflineRepository.fromRuntime(ApiService apiService) {
+    final runtime = OfflineRuntime.maybeInstance;
     return ChatOfflineRepository(
       apiService: apiService,
-      cacheRepository: OfflineRuntime.instance.localCacheRepository,
+      cacheRepository: runtime?.localCacheRepository,
     );
   }
 
   final ApiService _apiService;
-  final LocalCacheRepository _cacheRepository;
+  final LocalCacheRepository? _cacheRepository;
 
   String _cacheKey({
     required String endPoint,
@@ -49,7 +50,12 @@ class ChatOfflineRepository {
     int? salesFunnelId,
     Map<String, dynamic>? filters,
   }) async {
-    final entry = await _cacheRepository.read(
+    final cacheRepository = _cacheRepository;
+    if (cacheRepository == null) {
+      return null;
+    }
+
+    final entry = await cacheRepository.read(
       module: OfflineModule.chatList.value,
       cacheKey: _cacheKey(
         endPoint: endPoint,
@@ -87,29 +93,45 @@ class ChatOfflineRepository {
     int? salesFunnelId,
     Map<String, dynamic>? filters,
   }) async {
-    final result = await OfflineRuntime.instance.requestScheduler.schedule(
-      priority: RequestPriority.high,
-      task: () => _apiService.getAllChats(
-        endPoint,
-        page,
-        query,
-        salesFunnelId,
-        filters,
-      ),
-    );
+    final runtime = OfflineRuntime.maybeInstance;
+    final scheduler = runtime?.requestScheduler;
+    final result = scheduler != null
+        ? await scheduler.schedule(
+            priority: RequestPriority.high,
+            task: () => _apiService.getAllChats(
+              endPoint,
+              page,
+              query,
+              salesFunnelId,
+              filters,
+            ),
+          )
+        : await _apiService.getAllChats(
+            endPoint,
+            page,
+            query,
+            salesFunnelId,
+            filters,
+          );
 
-    await _cacheRepository.write(
-      module: OfflineModule.chatList.value,
-      cacheKey: _cacheKey(
-        endPoint: endPoint,
-        page: page,
-        query: query,
-        salesFunnelId: salesFunnelId,
-        filters: filters,
-      ),
-      payload: _serialize(result),
-      lastSyncedAt: DateTime.now(),
-    );
+    final cacheRepository = _cacheRepository;
+    if (cacheRepository != null) {
+      await cacheRepository.write(
+        module: OfflineModule.chatList.value,
+        cacheKey: _cacheKey(
+          endPoint: endPoint,
+          page: page,
+          query: query,
+          salesFunnelId: salesFunnelId,
+          filters: filters,
+        ),
+        payload: _serialize(result),
+        lastSyncedAt: DateTime.now(),
+      );
+    } else {
+      debugPrint(
+          'ChatOfflineRepository: OfflineRuntime недоступен, пропускаем сохранение кэша');
+    }
 
     return result;
   }

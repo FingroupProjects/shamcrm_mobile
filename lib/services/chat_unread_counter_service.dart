@@ -71,6 +71,7 @@ class ChatUnreadCounterService {
   PusherChannelsClient? _socketClient;
   final List<StreamSubscription<dynamic>> _subscriptions = [];
   final Map<String, String> _lastMessageFingerprints = {};
+  final Set<String> _unsupportedChatTypes = <String>{};
 
   Timer? _refreshDebounce;
   bool _isInitialized = false;
@@ -110,9 +111,9 @@ class ChatUnreadCounterService {
     try {
       final results = await Future.wait<int>([
         _apiService.getUnreadMessagesCount(),
-        _apiService.getUnreadMessagesCountByChatType('lead'),
-        _apiService.getUnreadMessagesCountByChatType('task'),
-        _apiService.getUnreadMessagesCountByChatType('support'),
+        _getUnreadMessagesCountByChatTypeSafe('lead'),
+        _getUnreadMessagesCountByChatTypeSafe('task'),
+        _getUnreadMessagesCountByChatTypeSafe('support'),
       ]);
 
       counts.value = ChatUnreadCounts(
@@ -131,6 +132,26 @@ class ChatUnreadCounterService {
       );
     } finally {
       _isRefreshing = false;
+    }
+  }
+
+  Future<int> _getUnreadMessagesCountByChatTypeSafe(String type) async {
+    if (_unsupportedChatTypes.contains(type)) {
+      return 0;
+    }
+
+    try {
+      return await _apiService.getUnreadMessagesCountByChatType(type);
+    } catch (e) {
+      final error = e.toString().toLowerCase();
+      if (error.contains('404')) {
+        _unsupportedChatTypes.add(type);
+        debugPrint(
+          'ChatUnreadCounterService: endpoint for "$type" is not supported, fallback to 0',
+        );
+        return 0;
+      }
+      rethrow;
     }
   }
 

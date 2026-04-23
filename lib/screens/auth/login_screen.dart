@@ -1,6 +1,7 @@
 import 'package:crm_task_manager/bloc/login/login_bloc.dart';
 import 'package:crm_task_manager/bloc/login/login_event.dart';
 import 'package:crm_task_manager/bloc/login/login_state.dart';
+import 'package:crm_task_manager/api/service/firebase_api.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/utils/global_value.dart';
 import 'package:flutter/material.dart';
@@ -41,7 +42,13 @@ class LoginScreen extends StatelessWidget {
                 await prefs.setString('userAllRoles', allRoles);
               }
 
-              // FCM-токен отправится в PinSetupScreen — здесь НЕ трогаем!
+              try {
+                await FirebaseApi().syncCurrentTokenWithServer();
+              } catch (e) {
+                debugPrint(
+                    'LoginScreen: Ошибка синхронизации FCM токена после логина: $e');
+              }
+
               await Future.delayed(Duration(seconds: 1));
               await _checkPinSetupStatus(context);
             } else if (state is LoginError) {

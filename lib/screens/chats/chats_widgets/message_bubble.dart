@@ -40,6 +40,7 @@ class MessageBubble extends StatelessWidget {
   final String? replyMessage;
   final String? replyAuthorName;
   final bool isTargetReferralReplyPreview;
+  final VoidCallback? onTargetReferralTap;
   final int? replyMessageId;
   final void Function(int)? onReplyTap;
   final bool isHighlighted;
@@ -61,6 +62,7 @@ class MessageBubble extends StatelessWidget {
     this.replyMessage,
     this.replyAuthorName,
     this.isTargetReferralReplyPreview = false,
+    this.onTargetReferralTap,
     this.replyMessageId,
     this.onReplyTap,
     this.isHighlighted = false,
@@ -216,19 +218,29 @@ class MessageBubble extends StatelessWidget {
 
   Widget _buildReplyPreview(BuildContext context) {
     final replyText = _stripHtmlTags(replyMessage ?? '').trim();
-    final isTapEnabled = replyMessageId != null && onReplyTap != null;
+    final isTapEnabled = isTargetReferralReplyPreview
+        ? onTargetReferralTap != null
+        : replyMessageId != null && onReplyTap != null;
     final Color accentColor = isSender ? Colors.white : AppColors.primaryBlue;
     final Color panelBackground =
         isSender ? const Color(0x26FFFFFF) : const Color(0xFFF1F5FF);
     final Color titleColor = isSender ? Colors.white : AppColors.primaryBlue;
     final Color bodyColor = isSender ? Colors.white70 : Colors.black87;
-final int maxPreviewLines = isTargetReferralReplyPreview ? 40 : 2;
+    final int maxPreviewLines = isTargetReferralReplyPreview ? 40 : 2;
     final authorLabel = (replyAuthorName ?? '').trim().isNotEmpty
         ? replyAuthorName!.trim()
         : AppLocalizations.of(context)!.translate('unknown_channel');
-  
+
     return GestureDetector(
-      onTap: isTapEnabled ? () => onReplyTap!(replyMessageId!) : null,
+      onTap: isTapEnabled
+          ? () {
+              if (isTargetReferralReplyPreview) {
+                onTargetReferralTap?.call();
+                return;
+              }
+              onReplyTap?.call(replyMessageId!);
+            }
+          : null,
       child: Container(
         constraints: BoxConstraints(
           maxWidth: MediaQuery.of(context).size.width * 0.68,

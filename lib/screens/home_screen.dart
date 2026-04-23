@@ -33,7 +33,8 @@ import 'package:crm_task_manager/screens/empty_screen.dart';
 import 'package:crm_task_manager/screens/no_access_screen.dart';
 import 'package:crm_task_manager/screens/lead/lead_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
-import 'package:crm_task_manager/screens/sip/sip_screen.dart';
+import 'package:crm_task_manager/screens/sip/sip_service.dart';
+import 'package:crm_task_manager/screens/sip/sip_state.dart';
 import 'package:crm_task_manager/screens/task/task_screen.dart';
 import 'package:crm_task_manager/services/chat_unread_counter_service.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -57,6 +58,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   bool _isBackgroundLoading = false;
   bool _isInitialized = false;
   DateTime? _lastPermissionUpdate;
+  DateTime? _lastResumeSyncAt;
 
   List<Widget> _widgetOptionsGroup1 = [];
   List<Widget> _widgetOptionsGroup2 = [];
@@ -68,7 +70,37 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   List<String> _inactiveIconsGroup2 = [];
 
   void _refreshChatUnreadCounters() {
+    if (_hasActiveSipInteraction()) {
+      debugPrint(
+          'HomeScreen: skip chat unread refresh while SIP call is active');
+      return;
+    }
     ChatUnreadCounterService.instance.refreshCounts(silent: true);
+  }
+
+  bool _hasActiveSipInteraction() {
+    final callStatus = SipService().state.callStatus;
+    return callStatus == SipCallUiStatus.incoming ||
+        callStatus == SipCallUiStatus.calling ||
+        callStatus == SipCallUiStatus.ringing ||
+        callStatus == SipCallUiStatus.inCall;
+  }
+
+  bool _shouldSkipResumeSideEffects() {
+    if (_hasActiveSipInteraction()) {
+      debugPrint('HomeScreen: resume side effects skipped during active SIP call');
+      return true;
+    }
+
+    final now = DateTime.now();
+    if (_lastResumeSyncAt != null &&
+        now.difference(_lastResumeSyncAt!) < const Duration(seconds: 2)) {
+      debugPrint('HomeScreen: resume side effects skipped due to debounce');
+      return true;
+    }
+
+    _lastResumeSyncAt = now;
+    return false;
   }
 
   @override
@@ -146,6 +178,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         // Проверяем pending navigation с небольшой задержкой
         Future.delayed(const Duration(milliseconds: 300), () {
           if (mounted) {
+            if (_shouldSkipResumeSideEffects()) {
+              return;
+            }
             ChatUnreadCounterService.instance.refreshCounts(silent: true);
             _checkPendingWidgetNavigation();
           }
@@ -163,6 +198,12 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     debugPrint('HomeScreen: _isInitialized = $_isInitialized');
     debugPrint(
         'HomeScreen: _widgetOptionsGroup1.length = ${_widgetOptionsGroup1.length}');
+
+    if (_hasActiveSipInteraction()) {
+      debugPrint(
+          'HomeScreen: skip pending widget navigation while SIP call is active');
+      return;
+    }
 
     final pendingScreen = WidgetService.consumePendingNavigation();
     debugPrint('HomeScreen: pendingScreen from WidgetService: $pendingScreen');
@@ -789,19 +830,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       navBarTitleKeysGroup1.add('appbar_chats');
       activeIconsGroup1.add('assets/icons/MyNavBar/chats_ON.png');
       inactiveIconsGroup1.add('assets/icons/MyNavBar/chats_OFF.png');
-    }
-
-    // SIP
-    // Fallback for current rollout: if backend does not send any sip.* permissions yet,
-    // keep the tab visible for integration/testing.
-    final bool showSipTab =
-        hasPermission('sip.read') || !hasAnyPermissionWithPrefix('sip.');
-    if (showSipTab) {
-      widgetsGroup1.add(const SipScreen());
-      titleKeysGroup1.add('appbar_sip');
-      navBarTitleKeysGroup1.add('appbar_sip');
-      activeIconsGroup1.add('assets/icons/MyNavBar/sip_ON.png');
-      inactiveIconsGroup1.add('assets/icons/MyNavBar/sip_OFF.png');
     }
 
     // ========== КЛЮЧЕВАЯ ЛОГИКА ==========

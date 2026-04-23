@@ -1032,6 +1032,11 @@ class _SipScreenState extends State<SipScreen>
       padding: const EdgeInsets.fromLTRB(18, 10, 18, 8),
       child: Row(
         children: [
+          _buildTopIconButton(
+            icon: CupertinoIcons.back,
+            onPressed: () => Navigator.of(context).maybePop(),
+          ),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1059,31 +1064,41 @@ class _SipScreenState extends State<SipScreen>
               ],
             ),
           ),
-          CupertinoButton(
-            padding: EdgeInsets.zero,
+          _buildTopIconButton(
+            icon: CupertinoIcons.gear_alt_fill,
             onPressed: _showSettingsSheet,
-            child: Container(
-              width: 46,
-              height: 46,
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.92),
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFF0B1736).withValues(alpha: 0.08),
-                    blurRadius: 18,
-                    offset: const Offset(0, 8),
-                  ),
-                ],
-              ),
-              child: const Icon(
-                CupertinoIcons.gear_alt_fill,
-                size: 21,
-                color: Color(0xFF1F2937),
-              ),
-            ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildTopIconButton({
+    required IconData icon,
+    required VoidCallback onPressed,
+  }) {
+    return CupertinoButton(
+      padding: EdgeInsets.zero,
+      onPressed: onPressed,
+      child: Container(
+        width: 46,
+        height: 46,
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.92),
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF0B1736).withValues(alpha: 0.08),
+              blurRadius: 18,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Icon(
+          icon,
+          size: 21,
+          color: const Color(0xFF1F2937),
+        ),
       ),
     );
   }
@@ -1110,6 +1125,14 @@ class _SipScreenState extends State<SipScreen>
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(18, 14, 18, 24),
                 children: [
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: _buildTopIconButton(
+                      icon: CupertinoIcons.back,
+                      onPressed: () => Navigator.of(context).maybePop(),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
                   Container(
                     padding: const EdgeInsets.all(18),
                     decoration: BoxDecoration(

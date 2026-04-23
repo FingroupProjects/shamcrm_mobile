@@ -6,20 +6,30 @@ import 'package:flutter/foundation.dart';
 class MessageCacheService {
   MessageCacheService._({
     ChatMessageCacheRepository? repository,
-  }) : _repository = repository ?? ChatMessageCacheRepository.fromRuntime();
+  }) : _repository = repository;
 
   static final MessageCacheService _instance = MessageCacheService._();
   factory MessageCacheService() => _instance;
 
-  final ChatMessageCacheRepository _repository;
+  ChatMessageCacheRepository? _repository;
   final Map<int, List<Message>> _memoryCache = {};
   final Map<int, DateTime> _memoryCacheTime = {};
+
+  ChatMessageCacheRepository? _resolveRepository() {
+    return _repository ??= ChatMessageCacheRepository.tryFromRuntime();
+  }
 
   Future<void> cacheMessages(int chatId, List<Message> messages) async {
     try {
       _memoryCache[chatId] = messages;
       _memoryCacheTime[chatId] = DateTime.now();
-      await _repository.saveMessages(chatId, messages);
+      final repository = _resolveRepository();
+      if (repository == null) {
+        debugPrint(
+            'MessageCache: OfflineRuntime недоступен, сохраняем только в memory cache');
+        return;
+      }
+      await repository.saveMessages(chatId, messages);
     } catch (e) {
       debugPrint('MessageCache: cache error for chat=$chatId: $e');
     }
@@ -35,7 +45,11 @@ class MessageCacheService {
     }
 
     try {
-      final messages = await _repository.getMessages(chatId);
+      final repository = _resolveRepository();
+      if (repository == null) {
+        return null;
+      }
+      final messages = await repository.getMessages(chatId);
       if (messages.isEmpty) {
         return null;
       }
@@ -52,7 +66,11 @@ class MessageCacheService {
     if (_memoryCache.containsKey(chatId)) {
       return true;
     }
-    return _repository.hasMessages(chatId);
+    final repository = _resolveRepository();
+    if (repository == null) {
+      return false;
+    }
+    return repository.hasMessages(chatId);
   }
 
   Future<void> clearChatCache(int chatId) async {
@@ -68,7 +86,8 @@ class MessageCacheService {
     return _memoryCacheTime[chatId];
   }
 
-  Future<void> clearOldCache({Duration maxAge = const Duration(days: 7)}) async {
+  Future<void> clearOldCache(
+      {Duration maxAge = const Duration(days: 7)}) async {
     final expiredIds = _memoryCacheTime.entries
         .where((entry) => DateTime.now().difference(entry.value) > maxAge)
         .map((entry) => entry.key)

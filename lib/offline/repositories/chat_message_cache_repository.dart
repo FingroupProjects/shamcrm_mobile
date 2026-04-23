@@ -13,6 +13,14 @@ class ChatMessageCacheRepository {
     return ChatMessageCacheRepository(OfflineRuntime.instance.database);
   }
 
+  static ChatMessageCacheRepository? tryFromRuntime() {
+    final runtime = OfflineRuntime.maybeInstance;
+    if (runtime == null) {
+      return null;
+    }
+    return ChatMessageCacheRepository(runtime.database);
+  }
+
   static const int maxCachedMessages = 200;
 
   final AppDatabase _database;
@@ -46,7 +54,8 @@ class ChatMessageCacheRepository {
 
   Future<List<Message>> getMessages(int chatId) async {
     final rows = await (_database.select(_database.chatMessages)
-          ..where((tbl) => tbl.chatId.equals(chatId) & tbl.isDeleted.equals(false))
+          ..where(
+              (tbl) => tbl.chatId.equals(chatId) & tbl.isDeleted.equals(false))
           ..orderBy([
             (tbl) => OrderingTerm.desc(tbl.createdAt),
           ]))

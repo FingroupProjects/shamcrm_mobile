@@ -584,7 +584,7 @@ class _MyAppState extends State<MyApp> {
   Locale? _locale;
   bool _platformServicesInitialized = false;
   bool _deferredStartupInitialized = false;
-
+  
   @override
   void initState() {
     super.initState();

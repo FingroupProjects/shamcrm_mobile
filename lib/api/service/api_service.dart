@@ -11101,11 +11101,52 @@ class ApiService {
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
-      return data;
+      return _normalizeTutorialProgressResponse(data);
     } else {
       throw Exception(
           'Failed to get tutorial progress: ${response.statusCode}');
     }
+  }
+
+  Map<String, dynamic> _normalizeTutorialProgressResponse(dynamic rawData) {
+    Map<String, dynamic> normalizeResult(dynamic value) {
+      if (value is Map<String, dynamic>) {
+        return value;
+      }
+      if (value is Map) {
+        return Map<String, dynamic>.from(value);
+      }
+      if (value is List) {
+        for (final item in value) {
+          if (item is Map<String, dynamic>) {
+            return item;
+          }
+          if (item is Map) {
+            return Map<String, dynamic>.from(item);
+          }
+        }
+      }
+      return <String, dynamic>{};
+    }
+
+    if (rawData is Map<String, dynamic>) {
+      return <String, dynamic>{
+        ...rawData,
+        'result': normalizeResult(rawData['result']),
+      };
+    }
+
+    if (rawData is Map) {
+      final data = Map<String, dynamic>.from(rawData);
+      return <String, dynamic>{
+        ...data,
+        'result': normalizeResult(data['result']),
+      };
+    }
+
+    return <String, dynamic>{
+      'result': normalizeResult(rawData),
+    };
   }
 
   Future<Map<String, dynamic>> getSettings(String? organizationId) async {

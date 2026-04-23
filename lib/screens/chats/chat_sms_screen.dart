@@ -9,9 +9,11 @@ import 'package:crm_task_manager/bloc/cubit/listen_sender_file_cubit.dart';
 import 'package:crm_task_manager/bloc/cubit/listen_sender_text_cubit.dart';
 import 'package:crm_task_manager/bloc/cubit/listen_sender_voice_cubit.dart';
 import 'package:crm_task_manager/bloc/messaging/messaging_cubit.dart';
+import 'package:crm_task_manager/models/chatGetId_model.dart';
 import 'package:crm_task_manager/models/integration_model.dart';
 import 'package:crm_task_manager/utils/active_chat_tracker.dart';
 import 'package:crm_task_manager/services/message_cache_service.dart';
+import 'package:crm_task_manager/screens/chats/chat_target_details_screen.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/chatById_screen.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/chatById_task_screen.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/image_message_bubble.dart';
@@ -99,6 +101,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
   Timer? _searchDebounce;
   String? integrationUsername;
   String? channelName;
+  ChatAdvertising? _chatAdvertising;
   int? _lastMarkedMessageId;
   bool _isRecordingInProgress = false;
   String? referralBody;
@@ -1525,6 +1528,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
 
       setState(() {
         referralBody = chatData.referralBody;
+        _chatAdvertising = chatData.advertising;
         prefs.setString('referral_body_${widget.chatId}', referralBody ?? '');
       });
 
@@ -1598,6 +1602,22 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
     }
 
     return 'messenger';
+  }
+
+  Future<void> _openTargetDetails() async {
+    final advertising = _chatAdvertising;
+    if (advertising == null || !mounted) {
+      return;
+    }
+
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => ChatTargetDetailsScreen(
+          advertising: advertising,
+          referralBody: referralBody,
+        ),
+      ),
+    );
   }
 
   Future<void> _playSound() async {
@@ -2557,6 +2577,10 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
                           isFirstMessage: isFirstMessage,
                           referralBody:
                               state.hasReachedMax ? referralBody : null,
+                          onTargetReferralTap:
+                              isFirstMessage && _chatAdvertising != null
+                                  ? _openTargetDetails
+                                  : null,
                           isGroupChat: _isGroupChat,
                           chatChannelName: channelName,
                           companionName: _cachedCompanionName ??
@@ -3919,6 +3943,7 @@ class MessageItemWidget extends StatelessWidget {
   final String? companionName;
   final bool canSendMessageInChat;
   final void Function(Message message, String emoji)? onReactionToggle;
+  final VoidCallback? onTargetReferralTap;
 
   MessageItemWidget({
     super.key,
@@ -3944,6 +3969,7 @@ class MessageItemWidget extends StatelessWidget {
     this.companionName,
     required this.canSendMessageInChat,
     this.onReactionToggle,
+    this.onTargetReferralTap,
   });
 
   String get _normalizedChannelName {
@@ -4047,6 +4073,8 @@ class MessageItemWidget extends StatelessWidget {
           replyMessage: replyMessageText,
           replyAuthorName: replyPreviewAuthorName,
           isTargetReferralReplyPreview: isTargetReferralReplyPreview,
+          onTargetReferralTap:
+              isTargetReferralReplyPreview ? onTargetReferralTap : null,
           replyMessageId: message.forwardedMessage?.id,
           onReplyTap: (id) => onReplyTap?.call(id),
           isHighlighted: highlightedMessageId == message.id,

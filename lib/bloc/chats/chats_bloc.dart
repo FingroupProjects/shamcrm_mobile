@@ -69,7 +69,13 @@ class ChatsBloc extends Bloc<ChatsEvent, ChatsState> {
 
   // Проверка подключения к интернету
   Future<bool> _checkInternetConnection() async {
-    return OfflineRuntime.instance.networkProfileService.currentProfile.isOnline;
+    final runtime = OfflineRuntime.maybeInstance;
+    if (runtime == null) {
+      debugPrint(
+          'ChatsBloc: OfflineRuntime недоступен, считаем сеть доступной и используем API fallback');
+      return true;
+    }
+    return runtime.networkProfileService.currentProfile.isOnline;
   }
 
   // Сохраняем параметры последнего запроса
