@@ -51,6 +51,17 @@ post_install do |installer|
     target.build_configurations.each do |config|
       config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
       config.build_settings['ENABLE_BITCODE'] = 'NO'
+
+      if target.name == 'permission_handler_apple'
+        config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] ||= [
+          '$(inherited)',
+          'PERMISSION_MICROPHONE=1',
+          'PERMISSION_CAMERA=1',
+          'PERMISSION_CONTACTS=1',
+          'PERMISSION_NOTIFICATIONS=1',
+          'PERMISSION_LOCATION=1',
+        ]
+      end
     end
   end
 end

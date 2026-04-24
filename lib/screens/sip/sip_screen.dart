@@ -796,96 +796,119 @@ class _SipScreenState extends State<SipScreen>
     await showCupertinoModalPopup<void>(
       context: context,
       builder: (context) {
+        final mediaQuery = MediaQuery.of(context);
         return Material(
           color: Colors.transparent,
-          child: Align(
-            alignment: Alignment.bottomCenter,
-            child: Container(
-              constraints: const BoxConstraints(maxWidth: 560),
-              decoration: const BoxDecoration(
-                color: Color(0xFFF8F9FC),
-                borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-              ),
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-              child: SafeArea(
-                top: false,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 46,
-                      height: 5,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFD5DAE8),
-                        borderRadius: BorderRadius.circular(12),
+          child: AnimatedPadding(
+            duration: const Duration(milliseconds: 220),
+            curve: Curves.easeOut,
+            padding: EdgeInsets.only(bottom: mediaQuery.viewInsets.bottom),
+            child: Align(
+              alignment: Alignment.bottomCenter,
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxWidth: 560,
+                  maxHeight: mediaQuery.size.height * 0.92,
+                ),
+                child: SafeArea(
+                  top: false,
+                  child: SingleChildScrollView(
+                    padding: EdgeInsets.zero,
+                    child: Container(
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFF8F9FC),
+                        borderRadius:
+                            BorderRadius.vertical(top: Radius.circular(28)),
+                      ),
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 46,
+                            height: 5,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFD5DAE8),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          const SizedBox(height: 14),
+                          Text(
+                            l10n.translate('sip_settings'),
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          _iosField(
+                            controller: _serverController,
+                            placeholder: l10n.translate('sip_server'),
+                          ),
+                          const SizedBox(height: 10),
+                          _iosField(
+                            controller: _loginController,
+                            placeholder: l10n.translate('sip_login'),
+                          ),
+                          const SizedBox(height: 10),
+                          _iosField(
+                            controller: _passwordController,
+                            placeholder: l10n.translate('sip_password'),
+                            obscureText: true,
+                          ),
+                          const SizedBox(height: 10),
+                          _transportSelector(context),
+                          const SizedBox(height: 10),
+                          _iosField(
+                            controller: _portController,
+                            placeholder: l10n.translate('sip_port'),
+                            keyboardType: TextInputType.number,
+                          ),
+                          const SizedBox(height: 14),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: CupertinoButton(
+                                  color: const Color(0xFF0A84FF),
+                                  borderRadius: BorderRadius.circular(14),
+                                  onPressed: () async {
+                                    await _saveDraft();
+                                    if (context.mounted) {
+                                      Navigator.of(context).pop();
+                                    }
+                                    WidgetsBinding.instance
+                                        .addPostFrameCallback((_) {
+                                      unawaited(_sipService.connect());
+                                    });
+                                  },
+                                  child: Text(l10n.translate('sip_connect')),
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: CupertinoButton(
+                                  color: const Color(0xFFFF3B30),
+                                  borderRadius: BorderRadius.circular(14),
+                                  onPressed: () async {
+                                    if (context.mounted) {
+                                      Navigator.of(context).pop();
+                                    }
+                                    WidgetsBinding.instance
+                                        .addPostFrameCallback((_) {
+                                      unawaited(_sipService.disconnect());
+                                    });
+                                  },
+                                  child: Text(
+                                    l10n.translate('sip_disconnect'),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
                     ),
-                    const SizedBox(height: 14),
-                    Text(
-                      l10n.translate('sip_settings'),
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    _iosField(
-                      controller: _serverController,
-                      placeholder: l10n.translate('sip_server'),
-                    ),
-                    const SizedBox(height: 10),
-                    _iosField(
-                      controller: _loginController,
-                      placeholder: l10n.translate('sip_login'),
-                    ),
-                    const SizedBox(height: 10),
-                    _iosField(
-                      controller: _passwordController,
-                      placeholder: l10n.translate('sip_password'),
-                      obscureText: true,
-                    ),
-                    const SizedBox(height: 10),
-                    _transportSelector(context),
-                    const SizedBox(height: 10),
-                    _iosField(
-                      controller: _portController,
-                      placeholder: l10n.translate('sip_port'),
-                      keyboardType: TextInputType.number,
-                    ),
-                    const SizedBox(height: 14),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: CupertinoButton(
-                            color: const Color(0xFF0A84FF),
-                            borderRadius: BorderRadius.circular(14),
-                            onPressed: () async {
-                              await _saveDraft();
-                              await _sipService.connect();
-                              if (context.mounted) {
-                                Navigator.of(context).pop();
-                              }
-                            },
-                            child: Text(l10n.translate('sip_connect')),
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: CupertinoButton(
-                            color: const Color(0xFFFF3B30),
-                            borderRadius: BorderRadius.circular(14),
-                            onPressed: () async {
-                              await _sipService.disconnect();
-                              if (context.mounted) {
-                                Navigator.of(context).pop();
-                              }
-                            },
-                            child: Text(l10n.translate('sip_disconnect')),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
+                  ),
                 ),
               ),
             ),
@@ -979,6 +1002,7 @@ class _SipScreenState extends State<SipScreen>
         }
 
         return Scaffold(
+          resizeToAvoidBottomInset: false,
           backgroundColor: const Color(0xFFF3F6FD),
           body: Container(
             decoration: const BoxDecoration(

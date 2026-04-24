@@ -44,9 +44,10 @@ class LoginScreen extends StatelessWidget {
 
               try {
                 await FirebaseApi().syncCurrentTokenWithServer();
+                await FirebaseApi().syncCurrentVoipTokenWithServer();
               } catch (e) {
                 debugPrint(
-                    'LoginScreen: Ошибка синхронизации FCM токена после логина: $e');
+                    'LoginScreen: Ошибка синхронизации push токенов после логина: $e');
               }
 
               await Future.delayed(Duration(seconds: 1));

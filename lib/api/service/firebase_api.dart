@@ -7,6 +7,7 @@ import 'package:crm_task_manager/models/chats_model.dart';
 import 'package:crm_task_manager/models/page_2/order_card.dart';
 import 'package:crm_task_manager/page_2/order/order_details/order_details_screen.dart';
 import 'package:crm_task_manager/screens/chats/chat_sms_screen.dart';
+import 'package:crm_task_manager/screens/sip/sip_service.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_details_screen.dart';
 import 'package:crm_task_manager/screens/event/event_details/event_details_screen.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details_screen.dart';
@@ -90,6 +91,9 @@ class FirebaseApi {
       }
 
       await syncCurrentTokenWithServer();
+      if (Platform.isIOS) {
+        await syncCurrentVoipTokenWithServer();
+      }
 
       if (_isInitialized) {
         debugPrint(
@@ -120,6 +124,30 @@ class FirebaseApi {
       await _syncTokenWithBackend(fcmToken, source: 'manual-sync');
     } catch (e) {
       debugPrint('FirebaseApi: Ошибка ручной синхронизации FCM токена: $e');
+    }
+  }
+
+  Future<void> syncCurrentVoipTokenWithServer() async {
+    if (!Platform.isIOS) {
+      return;
+    }
+
+    try {
+      final voipToken = await SipService().getVoipPushToken();
+      if (voipToken == null || voipToken.isEmpty) {
+        debugPrint(
+            'FirebaseApi: VoIP token пока недоступен, пробуем отложенную синхронизацию');
+        await _apiService.sendPendingVoipTokenIfNeeded();
+        return;
+      }
+
+      final preview = voipToken.length > 20
+          ? '${voipToken.substring(0, 20)}...'
+          : voipToken;
+      debugPrint('FirebaseApi: [manual-sync] VoIP token: $preview');
+      await _apiService.sendVoipToken(voipToken);
+    } catch (e) {
+      debugPrint('FirebaseApi: Ошибка синхронизации VoIP токена: $e');
     }
   }
 

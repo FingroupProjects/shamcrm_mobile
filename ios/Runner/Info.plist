@@ -76,7 +76,7 @@
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>shamCRM использует ваше местоположение для предоставления функций геолокации, таких как отображение вашего текущего положения в приложении.</string>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>Мы используем микрофон для записи голосовых сообщений в чате.</string>
+	<string>Мы используем микрофон для SIP-звонков и записи голосовых сообщений.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>Приложение сохраняет изображения в вашу фотогалерею.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
@@ -90,6 +90,7 @@
 		<string>fetch</string>
 		<string>processing</string>
 		<string>remote-notification</string>
+		<string>voip</string>
 	</array>
 	<key>UILaunchStoryboardName</key>
 	<string>Launch Screen</string>
