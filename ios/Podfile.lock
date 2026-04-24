@@ -92,7 +92,7 @@ PODS:
     - Flutter
   - flutter_webrtc (0.12.6):
     - Flutter
-    - WebRTC-SDK (= 125.6422.07)
+    - WebRTC-SDK (= 125.6422.06)
   - GoogleDataTransport (10.1.0):
     - nanopb (~> 3.30910.0)
     - PromisesObjC (~> 2.4)
@@ -154,9 +154,9 @@ PODS:
     - Flutter
   - restart_app (1.7.3):
     - Flutter
-  - SDWebImage (5.21.5):
-    - SDWebImage/Core (= 5.21.5)
-  - SDWebImage/Core (5.21.5)
+  - SDWebImage (5.21.7):
+    - SDWebImage/Core (= 5.21.7)
+  - SDWebImage/Core (5.21.7)
   - share_plus (0.0.1):
     - Flutter
   - shared_preferences_foundation (0.0.1):
@@ -195,7 +195,7 @@ PODS:
     - Flutter
   - vibration (1.7.5):
     - Flutter
-  - WebRTC-SDK (125.6422.07)
+  - WebRTC-SDK (125.6422.06)
 
 DEPENDENCIES:
   - app_tracking_transparency (from `.symlinks/plugins/app_tracking_transparency/ios`)
@@ -344,7 +344,7 @@ SPEC CHECKSUMS:
   flutter_localization: 72299fb6cb4e51cae587bd953ed0b958040b71e6
   flutter_native_splash: c32d145d68aeda5502d5f543ee38c192065986cf
   flutter_secure_storage: 1ed9476fba7e7a782b22888f956cce43e2c62f13
-  flutter_webrtc: 97929f9447692a772f3c181cd45c86f0c7936fc0
+  flutter_webrtc: 57f32415b8744e806f9c2a96ccdb60c6a627ba33
   GoogleDataTransport: aae35b7ea0c09004c3797d53c8c41f66f219d6a7
   GoogleUtilities: 00c88b9a86066ef77f0da2fab05f65d7768ed8e1
   image_gallery_saver_plus: e597bf65a7846979417a3eae0763b71b6dfec6c3
@@ -361,7 +361,7 @@ SPEC CHECKSUMS:
   quill_native_bridge_ios: f47af4b14e7757968486641656c5d23250cee521
   record_darwin: fb1f375f1d9603714f55b8708a903bbb91ffdb0a
   restart_app: 0714144901e260eae68f7afc2fc4aacc1a323ad2
-  SDWebImage: e9c98383c7572d713c1a0d7dd2783b10599b9838
+  SDWebImage: e9fc87c1aab89a8ab1bbd74eba378c6f53be8abf
   share_plus: 50da8cb520a8f0f65671c6c6a99b3617ed10a58a
   shared_preferences_foundation: 9e1978ff2562383bd5676f64ec4e9aa8fa06a6f7
   sqflite_darwin: 20b2a3a3b70e43edae938624ce550a3cbf66a3d0
@@ -370,8 +370,8 @@ SPEC CHECKSUMS:
   SwiftyGif: 706c60cf65fa2bc5ee0313beece843c8eb8194d4
   url_launcher_ios: 694010445543906933d732453a59da0a173ae33d
   vibration: 8e2f50fc35bb736f9eecb7dd9f7047fbb6a6e888
-  WebRTC-SDK: dff00a3892bc570b6014e046297782084071657e
+  WebRTC-SDK: 79942c006ea64f6fb48d7da8a4786dfc820bc1db
 
-PODFILE CHECKSUM: ee66a736c5649cd46755939b57fdc9f1d311fafc
+PODFILE CHECKSUM: cc52d1830e3ef255246997254292f67ffe3fb67b
 
 COCOAPODS: 1.16.2

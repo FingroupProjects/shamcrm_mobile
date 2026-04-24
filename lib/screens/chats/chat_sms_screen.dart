@@ -39,6 +39,7 @@ import 'package:just_audio/just_audio.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/api/service/api_service_chats.dart';
 import 'package:crm_task_manager/api/service/http_log_model.dart';
@@ -1604,20 +1605,34 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
     return 'messenger';
   }
 
-  Future<void> _openTargetDetails() async {
+  Future<void> _openTargetMediaUrl() async {
     final advertising = _chatAdvertising;
     if (advertising == null || !mounted) {
       return;
     }
 
-    await Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => ChatTargetDetailsScreen(
-          advertising: advertising,
-          referralBody: referralBody,
-        ),
-      ),
-    );
+    final mediaUrl = advertising.mediaUrl?.trim();
+    if (mediaUrl == null || mediaUrl.isEmpty) {
+      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+        const SnackBar(content: Text('У этого таргета нет media_url')),
+      );
+      return;
+    }
+
+    final uri = Uri.tryParse(mediaUrl);
+    if (uri == null) {
+      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+        const SnackBar(content: Text('Некорректная ссылка media_url')),
+      );
+      return;
+    }
+
+    final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (!opened) {
+      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+        const SnackBar(content: Text('Не удалось открыть media_url')),
+      );
+    }
   }
 
   Future<void> _playSound() async {
@@ -2579,7 +2594,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
                               state.hasReachedMax ? referralBody : null,
                           onTargetReferralTap:
                               isFirstMessage && _chatAdvertising != null
-                                  ? _openTargetDetails
+                                  ? _openTargetMediaUrl
                                   : null,
                           isGroupChat: _isGroupChat,
                           chatChannelName: channelName,

@@ -1771,52 +1771,35 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
 
   Widget _buildTabButton(int index) {
     bool isActive = _tabController.index == index;
+    final statusId = _tabTitles[index]['id'] as int;
 
-    return FutureBuilder<int>(
-      future: DealCache.getPersistentDealCount(_tabTitles[index]['id']),
-      builder: (context, snapshot) {
-        // Сначала пробуем получить count из постоянного кэша
-        int dealCount = snapshot.data ?? 0;
+    return BlocBuilder<DealBloc, DealState>(
+      builder: (context, state) {
+        int dealCount = (_tabTitles[index]['deals_count'] as int?) ?? 0;
 
-        // Если в постоянном кэше нет данных, пробуем другие источники
-        if (dealCount == 0) {
-          return BlocBuilder<DealBloc, DealState>(
-            builder: (context, state) {
-              // Используем данные из состояния только если нет постоянного счетчика
-              if (state is DealLoaded) {
-                final statusId = _tabTitles[index]['id'];
-                final dealStatus = state.dealStatuses.firstWhere(
-                  (status) => status.id == statusId,
-                  orElse: () => DealStatus(
-                    id: 0,
-                    title: '',
-                    color: '#000000',
-                    dealsCount: 0,
-                    isSuccess: false,
-                    isFailure: false,
-                    isUnassembled: false,
-                    showOnMainPage: false,
-                  ),
-                );
-                dealCount = dealStatus.dealsCount ?? 0;
-
-                // Сразу сохраняем в постоянный кэш
-                DealCache.setPersistentDealCount(statusId, dealCount);
-              } else if (state is DealDataLoaded &&
-                  state.dealCounts.containsKey(_tabTitles[index]['id'])) {
-                dealCount = state.dealCounts[_tabTitles[index]['id']] ?? 0;
-
-                // Сразу сохраняем в постоянный кэш
-                DealCache.setPersistentDealCount(
-                    _tabTitles[index]['id'], dealCount);
-              }
-
-              return _buildTabButtonUI(index, isActive, dealCount);
-            },
-          );
+        if (state is DealLoaded) {
+          dealCount = state.dealCounts[statusId] ??
+              (state.dealStatuses
+                      .firstWhere(
+                        (status) => status.id == statusId,
+                        orElse: () => DealStatus(
+                          id: 0,
+                          title: '',
+                          color: '#000000',
+                          dealsCount: 0,
+                          isSuccess: false,
+                          isFailure: false,
+                          isUnassembled: false,
+                          showOnMainPage: false,
+                        ),
+                      )
+                      .dealsCount ??
+                  0);
+        } else if (state is DealDataLoaded) {
+          dealCount = state.dealCounts[statusId] ?? dealCount;
         }
 
-        // Если есть постоянный счетчик, используем его напрямую
+        DealCache.setPersistentDealCount(statusId, dealCount);
         return _buildTabButtonUI(index, isActive, dealCount);
       },
     );

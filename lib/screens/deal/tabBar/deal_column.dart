@@ -2,7 +2,9 @@ import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/deal/deal_bloc.dart';
 import 'package:crm_task_manager/bloc/deal/deal_event.dart';
 import 'package:crm_task_manager/bloc/deal/deal_state.dart';
+import 'package:crm_task_manager/models/deal_model.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
+import 'package:crm_task_manager/screens/deal/deal_cache.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_add_screen.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_card.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
@@ -322,6 +324,72 @@ class _DealColumnState extends State<DealColumn> {
     return Future.delayed(Duration(milliseconds: 500));
   }
 
+  Widget _buildDealsList(List<Deal> deals) {
+    if (deals.isNotEmpty) {
+      return RefreshIndicator(
+        color: Color(0xff1E2E52),
+        backgroundColor: Colors.white,
+        onRefresh: _onRefresh,
+        child: ListView.builder(
+          controller: _scrollController,
+          physics: const AlwaysScrollableScrollPhysics(),
+          itemCount: deals.length,
+          itemBuilder: (context, index) {
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: DealCard(
+                key: index == 0 ? keyDealCard : null,
+                dropdownKey: index == 0 ? keyDropdown : null,
+                deal: deals[index],
+                title: widget.title,
+                statusId: widget.statusId,
+                onStatusUpdated: (oldStatusId, newStatusId) {
+                  if (oldStatusId == widget.statusId) {
+                    _dealBloc.add(FetchDeals(
+                      widget.statusId,
+                      salesFunnelId: widget.salesFunnelId,
+                    ));
+                  }
+                },
+                onStatusId: (oldStatusId, newStatusId) {
+                  widget.onStatusId(oldStatusId, newStatusId);
+                },
+              ),
+            );
+          },
+        ),
+      );
+    }
+
+    return RefreshIndicator(
+      color: Color(0xff1E2E52),
+      backgroundColor: Colors.white,
+      onRefresh: _onRefresh,
+      child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        children: [
+          SizedBox(height: MediaQuery.of(context).size.height * 0.4),
+          Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  AppLocalizations.of(context)!
+                      .translate('no_deal_in_selected_status'),
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    fontFamily: 'Gilroy',
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -341,68 +409,16 @@ class _DealColumnState extends State<DealColumn> {
                 .toList();
 
             if (deals.isNotEmpty) {
-              return RefreshIndicator(
-                color: Color(0xff1E2E52),
-                backgroundColor: Colors.white,
-                onRefresh: _onRefresh,
-                child: ListView.builder(
-                  controller: _scrollController,
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  itemCount: deals.length,
-                  itemBuilder: (context, index) {
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 8),
-                      child: DealCard(
-                        key: index == 0 ? keyDealCard : null,
-                        dropdownKey: index == 0 ? keyDropdown : null,
-                        deal: deals[index],
-                        title: widget.title,
-                        statusId: widget.statusId,
-                        onStatusUpdated: (oldStatusId, newStatusId) {
-                          if (oldStatusId == widget.statusId) {
-                            _dealBloc.add(FetchDeals(
-                              widget.statusId,
-                              salesFunnelId: widget.salesFunnelId,
-                            ));
-                          }
-                        },
-                        onStatusId: (oldStatusId, newStatusId) {
-                          widget.onStatusId(oldStatusId, newStatusId);
-                        },
-                      ),
-                    );
-                  },
-                ),
-              );
-            } else {
-              return RefreshIndicator(
-                color: Color(0xff1E2E52),
-                backgroundColor: Colors.white,
-                onRefresh: _onRefresh,
-                child: ListView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  children: [
-                    SizedBox(height: MediaQuery.of(context).size.height * 0.4),
-                    Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            AppLocalizations.of(context)!
-                                .translate('no_deal_in_selected_status'),
-                            style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w500,
-                                fontFamily: 'Gilroy'),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              );
+              return _buildDealsList(deals);
             }
+
+            return FutureBuilder<List<Deal>>(
+              future: DealCache.getDealsForStatus(widget.statusId),
+              builder: (context, snapshot) {
+                final cachedDeals = snapshot.data ?? const <Deal>[];
+                return _buildDealsList(cachedDeals);
+              },
+            );
           } else if (state is DealError) {
             // Обработка ошибок...
             return const SizedBox();

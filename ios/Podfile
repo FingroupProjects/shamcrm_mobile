@@ -28,18 +28,6 @@ require File.expand_path(File.join('packages', 'flutter_tools', 'bin', 'podhelpe
 
 flutter_ios_podfile_setup
 
-pre_install do |_installer|
-  webrtc_podspec = File.join(__dir__, '.symlinks', 'plugins', 'flutter_webrtc', 'ios', 'flutter_webrtc.podspec')
-  next unless File.exist?(webrtc_podspec)
-
-  podspec = File.read(webrtc_podspec)
-  fixed_podspec = podspec.gsub("s.dependency 'WebRTC-SDK', '125.6422.06'",
-                               "s.dependency 'WebRTC-SDK', '125.6422.07'")
-  fixed_podspec = fixed_podspec.gsub("s.dependency 'WebRTC-SDK', '125.6422.06.1'",
-                                     "s.dependency 'WebRTC-SDK', '125.6422.07'")
-  File.write(webrtc_podspec, fixed_podspec) if fixed_podspec != podspec
-end
-
 target 'Runner' do
   use_frameworks!
   use_modular_headers!
