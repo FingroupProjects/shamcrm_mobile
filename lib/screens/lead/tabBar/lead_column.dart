@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/screens/lead/lead_cache.dart';
+import 'package:crm_task_manager/models/lead_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -61,7 +62,8 @@ class _LeadColumnState extends State<LeadColumn> {
 
   void _onScroll() {
     final bloc = context.read<LeadBloc>();
-    if (_scrollController.position.pixels == _scrollController.position.maxScrollExtent &&
+    if (_scrollController.position.pixels ==
+            _scrollController.position.maxScrollExtent &&
         !bloc.allLeadsFetched) {
       final state = bloc.state;
       if (state is LeadDataLoaded) {
@@ -100,7 +102,79 @@ class _LeadColumnState extends State<LeadColumn> {
 
   Future<void> _onRefresh() async {
     context.read<LeadBloc>().add(FetchLeadStatuses(forceRefresh: true));
-    context.read<LeadBloc>().add(FetchLeads(widget.statusId, ignoreCache: true));
+    context
+        .read<LeadBloc>()
+        .add(FetchLeads(widget.statusId, ignoreCache: true));
+  }
+
+  Widget _buildLeadsList(List<Lead> leads) {
+    if (leads.isNotEmpty) {
+      if (!_isInitialized &&
+          !_isTutorialShown &&
+          !widget.isLeadScreenTutorialCompleted) {
+        _isInitialized = true;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          // _startTutorialLogic();
+        });
+      }
+
+      return ListView.builder(
+        controller: _scrollController,
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        itemCount: leads.length,
+        itemBuilder: (context, index) {
+          final lead = leads[index];
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: LeadCard(
+              key: index == 0 ? keyLeadCard : null,
+              dropdownStatusKey: index == 0 ? keyStatusDropdown : null,
+              lead: lead,
+              title: widget.title,
+              statusId: widget.statusId,
+              onStatusUpdated: () async {
+                final newStatusId = lead.statusId;
+                if (newStatusId != widget.statusId) {
+                  await LeadCache.moveLeadToStatus(
+                      lead, widget.statusId, newStatusId);
+                  await LeadCache.updateLeadCountTemporary(
+                      widget.statusId, newStatusId);
+                  context.read<LeadBloc>().add(RestoreCountsFromCache());
+                }
+              },
+              onStatusId: widget.onStatusId,
+            ),
+          );
+        },
+      );
+    }
+
+    if (!_isInitialized &&
+        !_isTutorialShown &&
+        !widget.isLeadScreenTutorialCompleted) {
+      _isInitialized = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        // _startTutorialLogic();
+      });
+    }
+
+    return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      children: [
+        SizedBox(height: MediaQuery.of(context).size.height * 0.4),
+        Center(
+          child: Text(
+            AppLocalizations.of(context)!.translate('no_lead_in_status'),
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              fontFamily: 'Gilroy',
+            ),
+          ),
+        ),
+      ],
+    );
   }
 
   @override
@@ -116,77 +190,37 @@ class _LeadColumnState extends State<LeadColumn> {
 
             if (state is LeadLoading) {
               return const Center(
-                child: PlayStoreImageLoading(size: 80.0, duration: Duration(milliseconds: 1000)),
+                child: PlayStoreImageLoading(
+                    size: 80.0, duration: Duration(milliseconds: 1000)),
               );
             }
 
             if (state is LeadDataLoaded) {
               _hasRetriedAfterError = false;
               _lastShownErrorMessage = null;
-              final leads = state.leads.where((l) => l.statusId == widget.statusId).toList();
-              debugPrint('LeadColumn: Filtered ${leads.length} leads for status ${widget.statusId}');
+              final leads = state.leads
+                  .where((l) => l.statusId == widget.statusId)
+                  .toList();
+              debugPrint(
+                  'LeadColumn: Filtered ${leads.length} leads for status ${widget.statusId}');
 
               if (leads.isNotEmpty) {
-                if (!_isInitialized && !_isTutorialShown && !widget.isLeadScreenTutorialCompleted) {
-                  _isInitialized = true;
-                  WidgetsBinding.instance.addPostFrameCallback((_) {
-                    // _startTutorialLogic();
-                  });
-                }
-
-                return ListView.builder(
-                  controller: _scrollController,
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                  itemCount: leads.length,
-                  itemBuilder: (context, index) {
-                    final lead = leads[index];
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      child: LeadCard(
-                        key: index == 0 ? keyLeadCard : null,
-                        dropdownStatusKey: index == 0 ? keyStatusDropdown : null,
-                        lead: lead,
-                        title: widget.title,
-                        statusId: widget.statusId,
-                        onStatusUpdated: () async {
-                          final newStatusId = lead.statusId;
-                          if (newStatusId != widget.statusId) {
-                            await LeadCache.moveLeadToStatus(lead, widget.statusId, newStatusId);
-                            await LeadCache.updateLeadCountTemporary(widget.statusId, newStatusId);
-                            context.read<LeadBloc>().add(RestoreCountsFromCache());
-                          }
-                        },
-                        onStatusId: widget.onStatusId,
-                      ),
-                    );
-                  },
-                );
-              } else {
-                if (!_isInitialized && !_isTutorialShown && !widget.isLeadScreenTutorialCompleted) {
-                  _isInitialized = true;
-                  WidgetsBinding.instance.addPostFrameCallback((_) {
-                    // _startTutorialLogic();
-                  });
-                }
-                return ListView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  children: [
-                    SizedBox(height: MediaQuery.of(context).size.height * 0.4),
-                    Center(
-                      child: Text(
-                        AppLocalizations.of(context)!.translate('no_lead_in_status'),
-                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500, fontFamily: 'Gilroy'),
-                      ),
-                    ),
-                  ],
-                );
+                return _buildLeadsList(leads);
               }
+
+              return FutureBuilder<List<Lead>>(
+                future: LeadCache.getLeadsForStatus(widget.statusId),
+                builder: (context, snapshot) {
+                  final cachedLeads = snapshot.data ?? const <Lead>[];
+                  return _buildLeadsList(cachedLeads);
+                },
+              );
             }
 
             if (state is LeadError) {
               final bool shouldRetryNow = !_hasRetriedAfterError;
-              final bool isCurrentRoute = ModalRoute.of(context)?.isCurrent ?? true;
+              final bool isCurrentRoute =
+                  ModalRoute.of(context)?.isCurrent ?? true;
 
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 if (!mounted) return;
@@ -197,12 +231,18 @@ class _LeadColumnState extends State<LeadColumn> {
                     SnackBar(
                       content: Text(
                         AppLocalizations.of(context)!.translate(state.message),
-                        style: const TextStyle(fontFamily: 'Gilroy', fontSize: 16, fontWeight: FontWeight.w500, color: Colors.white),
+                        style: const TextStyle(
+                            fontFamily: 'Gilroy',
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.white),
                       ),
                       backgroundColor: Colors.red,
                       behavior: SnackBarBehavior.floating,
-                      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      margin: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 8),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
                       duration: const Duration(seconds: 3),
                     ),
                   );

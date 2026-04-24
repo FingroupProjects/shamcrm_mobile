@@ -1655,51 +1655,33 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
 // Обновленный метод _buildTabButton в LeadScreen
   Widget _buildTabButton(int index) {
     bool isActive = _tabController.index == index;
+    final statusId = _tabTitles[index]['id'] as int;
 
-    return FutureBuilder<int>(
-      future: LeadCache.getPersistentLeadCount(_tabTitles[index]['id']),
-      builder: (context, snapshot) {
-        // Сначала пробуем получить count из постоянного кэша
-        int leadCount = snapshot.data ?? 0;
+    return BlocBuilder<LeadBloc, LeadState>(
+      builder: (context, state) {
+        int leadCount = (_tabTitles[index]['leads_count'] as int?) ?? 0;
 
-        // Если в постоянном кэше нет данных, пробуем другие источники
-        if (leadCount == 0) {
-          return BlocBuilder<LeadBloc, LeadState>(
-            builder: (context, state) {
-              // Используем данные из состояния только если нет постоянного счетчика
-              if (state is LeadLoaded) {
-                final statusId = _tabTitles[index]['id'];
-                final leadStatus = state.leadStatuses.firstWhere(
-                  (status) => status.id == statusId,
-                  orElse: () => LeadStatus(
-                    id: 0,
-                    title: '',
-                    leadsCount: 0,
-                    isSuccess: false,
-                    position: 1,
-                    isFailure: false,
-                    isUnassembled: false,
-                  ),
-                );
-                leadCount = leadStatus.leadsCount;
-
-                // Сразу сохраняем в постоянный кэш
-                LeadCache.setPersistentLeadCount(statusId, leadCount);
-              } else if (state is LeadDataLoaded &&
-                  state.leadCounts.containsKey(_tabTitles[index]['id'])) {
-                leadCount = state.leadCounts[_tabTitles[index]['id']] ?? 0;
-
-                // Сразу сохраняем в постоянный кэш
-                LeadCache.setPersistentLeadCount(
-                    _tabTitles[index]['id'], leadCount);
-              }
-
-              return _buildTabButtonUI(index, isActive, leadCount);
-            },
-          );
+        if (state is LeadLoaded) {
+          leadCount = state.leadCounts[statusId] ??
+              state.leadStatuses
+                  .firstWhere(
+                    (status) => status.id == statusId,
+                    orElse: () => LeadStatus(
+                      id: 0,
+                      title: '',
+                      leadsCount: 0,
+                      isSuccess: false,
+                      position: 1,
+                      isFailure: false,
+                      isUnassembled: false,
+                    ),
+                  )
+                  .leadsCount;
+        } else if (state is LeadDataLoaded) {
+          leadCount = state.leadCounts[statusId] ?? leadCount;
         }
 
-        // Если есть постоянный счетчик, используем его напрямую
+        LeadCache.setPersistentLeadCount(statusId, leadCount);
         return _buildTabButtonUI(index, isActive, leadCount);
       },
     );
