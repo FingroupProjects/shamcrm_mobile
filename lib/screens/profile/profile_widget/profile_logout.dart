@@ -1,9 +1,7 @@
-import 'dart:io';
-
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/api/service/secure_storage_service.dart';
+import 'package:crm_task_manager/screens/sip/sip_service.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 
@@ -16,30 +14,40 @@ class LogoutButtonWidget extends StatelessWidget {
 
     return GestureDetector(
       onTap: () async {
+        final apiService = ApiService();
+        final authService = AuthService();
+
         try {
-          final apiService = ApiService();
-          final authService = AuthService();
-
-          // Вызов API для выхода из аккаунта
           await apiService.logoutAccount();
+        } catch (e) {
+          debugPrint('Ошибка серверного выхода: $e');
+        }
 
-          // Полная очистка SharedPreferences
-          final prefs = await SharedPreferences.getInstance();
-          await prefs.clear();
+        try {
+          await SipService().disconnect();
+        } catch (e) {
+          debugPrint('Ошибка отключения SIP при выходе: $e');
+        }
 
-          // Очистка локальных auth-данных и внутренних состояний API
+        try {
           await authService.clearAllAuthData();
           await apiService.logout();
           await apiService.reset();
 
-          // Небольшая задержка для завершения асинхронных операций
-          await Future.delayed(const Duration(milliseconds: 300));
-
-          _terminateApplication();
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.clear();
         } catch (e) {
-          debugPrint('Ошибка при выходе: $e');
-          _terminateApplication();
+          debugPrint('Ошибка локальной очистки при выходе: $e');
         }
+
+        if (!context.mounted) {
+          return;
+        }
+
+        Navigator.of(context, rootNavigator: true).pushNamedAndRemoveUntil(
+          '/local_auth',
+          (route) => false,
+        );
       },
       child: _buildProfileOption(
         iconPath: 'assets/icons/Profile/logout.png',
@@ -83,15 +91,5 @@ class LogoutButtonWidget extends StatelessWidget {
         ],
       ),
     );
-  }
-
-  void _terminateApplication() {
-    if (Platform.isAndroid) {
-      // SystemNavigator иногда только сворачивает задачу, поэтому завершаем процесс.
-      exit(0);
-    } else {
-      // На iOS принудительное завершение не рекомендуется, оставляем системное закрытие.
-      SystemNavigator.pop();
-    }
   }
 }

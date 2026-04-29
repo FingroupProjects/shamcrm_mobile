@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 // import 'package:connectivity_plus/connectivity_plus.dart';
@@ -6,6 +7,7 @@ import 'package:crm_task_manager/api/service/firebase_api.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/screens/auth/forgot_pin.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/services/chat_unread_counter_service.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
@@ -332,6 +334,7 @@ class _PinScreenState extends State<PinScreen>
     }
 
     debugPrint('PinScreen: PIN верифицирован, переход на HomeScreen');
+    unawaited(ChatUnreadCounterService.instance.initialize());
 
     // ✅ ИСПРАВЛЕНИЕ: Передаем initialMessage через arguments
     Future.delayed(Duration(milliseconds: 50), () {

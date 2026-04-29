@@ -71,7 +71,6 @@ class ChatUnreadCounterService {
   PusherChannelsClient? _socketClient;
   final List<StreamSubscription<dynamic>> _subscriptions = [];
   final Map<String, String> _lastMessageFingerprints = {};
-  final Set<String> _unsupportedChatTypes = <String>{};
 
   Timer? _refreshDebounce;
   bool _isInitialized = false;
@@ -80,18 +79,34 @@ class ChatUnreadCounterService {
   String? _currentUserUniqueId;
 
   Future<void> initialize() async {
+    debugPrint(
+      'ChatUnreadCounterService.initialize: isInitialized=$_isInitialized, isConnecting=$_isConnecting',
+    );
     if (_isInitialized || _isConnecting) {
+      debugPrint(
+        'ChatUnreadCounterService.initialize: already initialized/connecting, refreshing counts silently',
+      );
+      unawaited(refreshCounts(silent: true));
       return;
     }
 
     _isConnecting = true;
 
     try {
-      await _connectSocketIfNeeded();
-      _isInitialized = true;
       await refreshCounts();
+      unawaited(_initializeSocket());
     } catch (e) {
       debugPrint('ChatUnreadCounterService.initialize error: $e');
+      _isConnecting = false;
+    }
+  }
+
+  Future<void> _initializeSocket() async {
+    try {
+      await _connectSocketIfNeeded();
+      _isInitialized = true;
+    } catch (e) {
+      debugPrint('ChatUnreadCounterService._initializeSocket error: $e');
     } finally {
       _isConnecting = false;
     }
@@ -99,30 +114,42 @@ class ChatUnreadCounterService {
 
   Future<void> refreshCounts({bool silent = false}) async {
     if (_isRefreshing) {
+      debugPrint(
+        'ChatUnreadCounterService.refreshCounts: skipped, refresh already in progress',
+      );
       return;
     }
 
     _isRefreshing = true;
+    debugPrint(
+        'ChatUnreadCounterService.refreshCounts: started, silent=$silent');
 
     if (!silent) {
       counts.value = counts.value.copyWith(isLoading: true);
     }
 
     try {
-      final results = await Future.wait<int>([
-        _apiService.getUnreadMessagesCount(),
-        _getUnreadMessagesCountByChatTypeSafe('lead'),
-        _getUnreadMessagesCountByChatTypeSafe('task'),
-        _getUnreadMessagesCountByChatTypeSafe('support'),
-      ]);
+      await _apiService.initialize();
+      final typeCounts = await _apiService.getUnreadMessagesCountByChatType();
+      final lead = typeCounts['leads'] ?? 0;
+      final task = typeCounts['tasks'] ?? 0;
+      final support = typeCounts['corporate'] ?? 0;
+      final total = typeCounts['all'] ?? (lead + task + support);
+
+      debugPrint(
+        'ChatUnreadCounterService.refreshCounts: loaded total=$total, lead=$lead, task=$task, support=$support',
+      );
 
       counts.value = ChatUnreadCounts(
-        total: results[0],
-        lead: results[1],
-        task: results[2],
-        support: results[3],
+        total: total,
+        lead: lead,
+        task: task,
+        support: support,
         isLoading: false,
         isInitialized: true,
+      );
+      debugPrint(
+        'ChatUnreadCounterService.refreshCounts: notifier updated total=${counts.value.total}, lead=${counts.value.lead}, task=${counts.value.task}, support=${counts.value.support}, initialized=${counts.value.isInitialized}',
       );
     } catch (e) {
       debugPrint('ChatUnreadCounterService.refreshCounts error: $e');
@@ -132,26 +159,6 @@ class ChatUnreadCounterService {
       );
     } finally {
       _isRefreshing = false;
-    }
-  }
-
-  Future<int> _getUnreadMessagesCountByChatTypeSafe(String type) async {
-    if (_unsupportedChatTypes.contains(type)) {
-      return 0;
-    }
-
-    try {
-      return await _apiService.getUnreadMessagesCountByChatType(type);
-    } catch (e) {
-      final error = e.toString().toLowerCase();
-      if (error.contains('404')) {
-        _unsupportedChatTypes.add(type);
-        debugPrint(
-          'ChatUnreadCounterService: endpoint for "$type" is not supported, fallback to 0',
-        );
-        return 0;
-      }
-      rethrow;
     }
   }
 

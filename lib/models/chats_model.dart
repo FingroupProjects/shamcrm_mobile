@@ -3,7 +3,6 @@ import 'package:crm_task_manager/models/task_model.dart';
 import 'package:crm_task_manager/models/message_reaction_model.dart'; // Из ветки reaction
 import 'package:crm_task_manager/screens/chats/chats_widgets/chats_items.dart';
 import 'package:crm_task_manager/utils/global_value.dart';
-import 'package:flutter/material.dart';
 
 class Integration {
   final int? id;
@@ -342,6 +341,8 @@ class Message {
   final String text;
   final String type;
   final String? filePath;
+  final double? latitude;
+  final double? longitude;
   final bool isMyMessage;
   final String createMessateTime;
   bool isPlaying;
@@ -364,6 +365,8 @@ class Message {
     required this.text,
     required this.type,
     this.filePath,
+    this.latitude,
+    this.longitude,
     required this.isMyMessage,
     required this.createMessateTime,
     required this.senderName,
@@ -387,6 +390,8 @@ class Message {
     String? text,
     String? type,
     String? filePath,
+    double? latitude,
+    double? longitude,
     bool? isMyMessage,
     String? createMessateTime,
     bool? isPlaying,
@@ -409,6 +414,8 @@ class Message {
       text: text ?? this.text,
       type: type ?? this.type,
       filePath: filePath ?? this.filePath,
+      latitude: latitude ?? this.latitude,
+      longitude: longitude ?? this.longitude,
       isMyMessage: isMyMessage ?? this.isMyMessage,
       createMessateTime: createMessateTime ?? this.createMessateTime,
       isPlaying: isPlaying ?? this.isPlaying,
@@ -431,6 +438,14 @@ class Message {
     String text = (json['type'] == 'file')
         ? (json['text'] ?? 'unknown_file')
         : (json['text'] ?? '');
+    final location = json['location'];
+    double? latitude = _parseDouble(json['lattitude'] ??
+        json['latitude'] ??
+        (location is Map
+            ? location['lattitude'] ?? location['latitude']
+            : null));
+    double? longitude = _parseDouble(
+        json['longitude'] ?? (location is Map ? location['longitude'] : null));
 
     ReadStatus? readStatus;
     try {
@@ -549,6 +564,8 @@ class Message {
       referralBody: json['chat']?['referral_body'],
       createMessateTime: json['created_at'] ?? '',
       filePath: json['file_path'],
+      latitude: latitude,
+      longitude: longitude,
       isPinned: json['is_pinned'] ?? false,
       isChanged: json['is_changed'] ?? false,
       isMyMessage: isMyMessage,
@@ -568,8 +585,14 @@ class Message {
 
   @override
   String toString() {
-    return 'Message{id: $id, text: $text, type: $type, filePath: $filePath, isMyMessage: $isMyMessage, isPlaying: $isPlaying, isPause: $isPause, duration: $duration, position: $position, forwardedMessage: $forwardedMessage, isPinned: $isPinned, isChanged: $isChanged, isRead: $isRead, readStatus: $readStatus}';
+    return 'Message{id: $id, text: $text, type: $type, filePath: $filePath, latitude: $latitude, longitude: $longitude, isMyMessage: $isMyMessage, isPlaying: $isPlaying, isPause: $isPause, duration: $duration, position: $position, forwardedMessage: $forwardedMessage, isPinned: $isPinned, isChanged: $isChanged, isRead: $isRead, readStatus: $readStatus}';
   }
+}
+
+double? _parseDouble(dynamic value) {
+  if (value == null) return null;
+  if (value is num) return value.toDouble();
+  return double.tryParse(value.toString());
 }
 
 class ForwardedMessage {

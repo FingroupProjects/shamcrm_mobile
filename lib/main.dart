@@ -191,11 +191,10 @@ void main() async {
     } else {
       await _clearAllApplicationData(apiService, authService);
     }
-    
+
     final initialMessage = await _safeLoadInitialMessage();
     _safeConfigureSystemUi();
     final savedLocale = await _safeLoadLocale();
-    await _safeInitializeSipRuntime();
     runApp(MyApp(
       apiService: apiService,
       authService: authService,
@@ -215,7 +214,7 @@ void main() async {
 
 Future<void> _safeInitializeSipRuntime() async {
   try {
-    await SipService().initialize();
+    await SipService().initialize().timeout(const Duration(seconds: 8));
   } catch (e, stackTrace) {
     debugPrint('main: SipService initialize error: $e');
     debugPrint('main: SipService initialize stackTrace: $stackTrace');
@@ -224,7 +223,7 @@ Future<void> _safeInitializeSipRuntime() async {
 
 Future<void> _safeInitializeOfflineRuntime() async {
   try {
-    await OfflineBootstrap.initialize();
+    await OfflineBootstrap.initialize().timeout(const Duration(seconds: 8));
   } catch (e, stackTrace) {
     debugPrint('main: OfflineBootstrap initialize error: $e');
     debugPrint('main: OfflineBootstrap stackTrace: $stackTrace');
@@ -233,7 +232,7 @@ Future<void> _safeInitializeOfflineRuntime() async {
 
 Future<void> _safeInitializeFirebase() async {
   try {
-    await _initializeFirebase();
+    await _initializeFirebase().timeout(const Duration(seconds: 8));
   } catch (e, stackTrace) {
     debugPrint('main: Firebase initialize error: $e');
     debugPrint('main: Firebase initialize stackTrace: $stackTrace');
@@ -242,7 +241,7 @@ Future<void> _safeInitializeFirebase() async {
 
 Future<void> _safeInitializeApiService(ApiService apiService) async {
   try {
-    await apiService.initialize();
+    await apiService.initialize().timeout(const Duration(seconds: 6));
   } catch (e, stackTrace) {
     debugPrint('main: ApiService initialize error: $e');
     debugPrint('main: ApiService initialize stackTrace: $stackTrace');
@@ -261,7 +260,9 @@ void _safeRegisterOutboxExecutors(ApiService apiService) {
 Future<RemoteMessage?> _safeLoadInitialMessage() async {
   try {
     if (Firebase.apps.isNotEmpty) {
-      return await FirebaseMessaging.instance.getInitialMessage();
+      return await FirebaseMessaging.instance
+          .getInitialMessage()
+          .timeout(const Duration(seconds: 3));
     }
   } catch (e, stackTrace) {
     debugPrint('main: initial message error: $e');
@@ -288,7 +289,8 @@ void _safeConfigureSystemUi() {
 
 Future<Locale> _safeLoadLocale() async {
   try {
-    final String? savedLanguageCode = await LanguageManager.getLanguage();
+    final String? savedLanguageCode =
+        await LanguageManager.getLanguage().timeout(const Duration(seconds: 2));
     if (savedLanguageCode != null && savedLanguageCode.isNotEmpty) {
       return Locale(savedLanguageCode);
     }
@@ -584,7 +586,7 @@ class _MyAppState extends State<MyApp> {
   Locale? _locale;
   bool _platformServicesInitialized = false;
   bool _deferredStartupInitialized = false;
-  
+
   @override
   void initState() {
     super.initState();
@@ -603,7 +605,7 @@ class _MyAppState extends State<MyApp> {
     WidgetService.initialize();
     await NativeInternetMonitor().initialize();
     if (widget.sessionValid) {
-      unawaited(SipService().initialize());
+      unawaited(_safeInitializeSipRuntime());
     }
     _initializeDeferredStartup();
   }

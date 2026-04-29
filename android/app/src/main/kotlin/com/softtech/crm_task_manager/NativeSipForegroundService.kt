@@ -10,6 +10,7 @@ import android.app.Service
 import android.app.KeyguardManager
 import android.content.Context
 import android.content.Intent
+import android.content.pm.ServiceInfo
 import android.media.AudioAttributes
 import android.graphics.BitmapFactory
 import android.media.Ringtone
@@ -196,10 +197,7 @@ class NativeSipForegroundService : Service() {
         createNotificationChannels()
         startRegistrationHeartbeat()
         try {
-            startForeground(
-                NOTIFICATION_SERVICE_ID,
-                buildServiceNotification(NativeSipBridge.getStateSnapshot()),
-            )
+            startSipForeground(buildServiceNotification(NativeSipBridge.getStateSnapshot()))
         } catch (error: Throwable) {
             Log.e(TAG, "startForeground failed: ${error.message}", error)
             stopSelf()
@@ -249,6 +247,18 @@ class NativeSipForegroundService : Service() {
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
+
+    private fun startSipForeground(notification: Notification) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            startForeground(
+                NOTIFICATION_SERVICE_ID,
+                notification,
+                ServiceInfo.FOREGROUND_SERVICE_TYPE_PHONE_CALL,
+            )
+        } else {
+            startForeground(NOTIFICATION_SERVICE_ID, notification)
+        }
+    }
 
     override fun onTaskRemoved(rootIntent: Intent?) {
         if (!explicitStopRequested && NativeSipBridge.isPersistentEnabled()) {

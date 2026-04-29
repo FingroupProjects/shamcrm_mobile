@@ -186,6 +186,36 @@ void main() {
   });
 
   test(
+      'mergeIncomingMessage replaces fresh local temp message when socket mislabels it',
+      () async {
+    final cubit = MessagingCubit(
+      _FakeApiService({
+        const _RequestKey(page: 1): _page(
+          [_message(2, 'server')],
+          currentPage: 1,
+          totalPages: 1,
+        ),
+      }),
+    );
+
+    cubit.showCachedMessages([
+      _message(-1, 'hello',
+          isMyMessage: true, createdAt: '2026-01-01T10:00:00.000Z'),
+    ]);
+
+    cubit.mergeIncomingMessage(
+      _message(10, 'hello',
+          isMyMessage: false, createdAt: '2026-01-01T10:00:01.000Z'),
+    );
+
+    final state = cubit.state as MessagesCollectionState;
+    expect(state.messages, hasLength(1));
+    expect(state.messages.first.id, 10);
+    expect(state.messages.first.isMyMessage, isTrue);
+    expect(state.messages.first.senderName, 'Me');
+  });
+
+  test(
       'resetAndSearch resets to page 1 and clears previously loaded older pages',
       () async {
     final cubit = MessagingCubit(

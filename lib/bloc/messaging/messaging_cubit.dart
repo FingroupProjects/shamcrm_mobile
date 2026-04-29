@@ -827,7 +827,11 @@ class MessagingCubit extends Cubit<MessagingState> {
         _findPendingLocalMessageIndex(updatedMessages, incomingMessage);
 
     if (pendingIndex != -1) {
-      updatedMessages[pendingIndex] = incomingMessage;
+      final pendingMessage = updatedMessages[pendingIndex];
+      updatedMessages[pendingIndex] = _mergePendingLocalWithIncoming(
+        pendingMessage,
+        incomingMessage,
+      );
       return List<Message>.unmodifiable(updatedMessages);
     }
 
@@ -848,14 +852,15 @@ class MessagingCubit extends Cubit<MessagingState> {
   ) {
     for (int index = 0; index < messages.length; index++) {
       final message = messages[index];
-      if (message.id >= 0 ||
-          message.type != incomingMessage.type ||
-          message.isMyMessage != incomingMessage.isMyMessage) {
+      if (message.id >= 0 || message.type != incomingMessage.type) {
         continue;
       }
 
-      if (incomingMessage.text.isNotEmpty &&
-          message.text == incomingMessage.text) {
+      if (!_isFreshPendingMatch(message, incomingMessage)) {
+        continue;
+      }
+
+      if (_sameNormalizedText(message.text, incomingMessage.text)) {
         return index;
       }
 
@@ -866,6 +871,46 @@ class MessagingCubit extends Cubit<MessagingState> {
     }
 
     return -1;
+  }
+
+  Message _mergePendingLocalWithIncoming(
+    Message pendingMessage,
+    Message incomingMessage,
+  ) {
+    if (pendingMessage.isMyMessage && !incomingMessage.isMyMessage) {
+      return incomingMessage.copyWith(
+        isMyMessage: true,
+        senderName: pendingMessage.senderName,
+      );
+    }
+
+    return incomingMessage;
+  }
+
+  bool _isFreshPendingMatch(Message pendingMessage, Message incomingMessage) {
+    if (pendingMessage.isMyMessage == incomingMessage.isMyMessage) {
+      return true;
+    }
+
+    if (!pendingMessage.isMyMessage) {
+      return false;
+    }
+
+    final pendingDate = _tryParseMessageDate(pendingMessage.createMessateTime);
+    final incomingDate =
+        _tryParseMessageDate(incomingMessage.createMessateTime);
+    if (pendingDate == null || incomingDate == null) {
+      return false;
+    }
+
+    final difference = incomingDate.difference(pendingDate).abs();
+    return difference <= const Duration(minutes: 3);
+  }
+
+  bool _sameNormalizedText(String left, String right) {
+    final normalizedLeft = left.trim();
+    final normalizedRight = right.trim();
+    return normalizedLeft.isNotEmpty && normalizedLeft == normalizedRight;
   }
 
   List<Message> _replaceMessageById(

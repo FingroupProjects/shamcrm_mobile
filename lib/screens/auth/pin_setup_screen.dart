@@ -12,7 +12,6 @@ import 'package:crm_task_manager/bloc/permission/permession_bloc.dart';
 import 'package:crm_task_manager/bloc/permission/permession_event.dart';
 import 'package:crm_task_manager/bloc/task/task_bloc.dart';
 import 'package:crm_task_manager/bloc/task/task_event.dart';
-import 'package:crm_task_manager/main.dart';
 import 'package:crm_task_manager/models/user_byId_model..dart';
 import 'package:crm_task_manager/screens/home_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
@@ -20,10 +19,11 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:local_auth/local_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class PinSetupScreen extends StatefulWidget {
-  const PinSetupScreen({Key? key}) : super(key: key);
+  const PinSetupScreen({super.key});
 
   @override
   State<PinSetupScreen> createState() => _PinSetupScreenState();
@@ -39,9 +39,13 @@ class _PinSetupScreenState extends State<PinSetupScreen>
   String _confirmPin = '';
   bool _isConfirming = false;
   bool _pinsDoNotMatch = false;
+  static const String _biometricPromptShownKey =
+      'biometric_prompt_shown_after_first_login';
+  static const String _biometricEnabledKey = 'biometric_auth_enabled';
 
   late AnimationController _animationController;
   late Animation<double> _shakeAnimation;
+  final LocalAuthentication _localAuth = LocalAuthentication();
 
   int? userRoleId;
   bool isPermissionsLoaded = false;
@@ -210,7 +214,7 @@ class _PinSetupScreenState extends State<PinSetupScreen>
               return fcmToken;
             }
             attempts++;
-            debugPrint('PinSetupScreen: ⏳ Попытка ${attempts}/$maxAttempts...');
+            debugPrint('PinSetupScreen: ⏳ Попытка $attempts/$maxAttempts...');
           }
 
           debugPrint(
@@ -558,6 +562,9 @@ class _PinSetupScreenState extends State<PinSetupScreen>
         debugPrint('PinSetupScreen: 🏠 Переход на HomeScreen');
         debugPrint('════════════════════════════════════════════════════════');
 
+        await _maybeShowBiometricPrompt();
+        if (!mounted) return;
+
         Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(builder: (context) => HomeScreen()),
@@ -571,6 +578,193 @@ class _PinSetupScreenState extends State<PinSetupScreen>
       debugPrint('PinSetupScreen: ❌ PIN-коды не совпадают');
       _triggerErrorEffect();
     }
+  }
+
+  Future<void> _maybeShowBiometricPrompt() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final wasShown = prefs.getBool(_biometricPromptShownKey) ?? false;
+      final isEnabled = prefs.getBool(_biometricEnabledKey) ?? false;
+
+      if (wasShown || isEnabled) {
+        return;
+      }
+
+      final isAvailable = await _isBiometricAvailable();
+      if (!isAvailable || !mounted) {
+        return;
+      }
+
+      final shouldEnable = await _showBiometricPromptDialog();
+      await prefs.setBool(_biometricPromptShownKey, true);
+
+      if (shouldEnable != true || !mounted) {
+        return;
+      }
+
+      final didAuthenticate = await _localAuth.authenticate(
+        localizedReason:
+            'Подтвердите личность, чтобы включить быстрый вход в shamCRM',
+        options: const AuthenticationOptions(
+          biometricOnly: true,
+          stickyAuth: true,
+          useErrorDialogs: true,
+        ),
+      );
+
+      await prefs.setBool(_biometricEnabledKey, didAuthenticate);
+
+      if (!didAuthenticate || !mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Биометрический вход включен'),
+          backgroundColor: Color(0xFF1E9E63),
+        ),
+      );
+    } catch (e) {
+      debugPrint('PinSetupScreen: Ошибка предложения биометрии: $e');
+    }
+  }
+
+  Future<bool> _isBiometricAvailable() async {
+    try {
+      final canCheckBiometrics = await _localAuth.canCheckBiometrics;
+      final isDeviceSupported = await _localAuth.isDeviceSupported();
+      if (!canCheckBiometrics || !isDeviceSupported) {
+        return false;
+      }
+
+      final biometrics = await _localAuth.getAvailableBiometrics();
+      if (Platform.isIOS) {
+        return biometrics.contains(BiometricType.face) ||
+            biometrics.contains(BiometricType.fingerprint);
+      }
+
+      return biometrics.contains(BiometricType.strong) ||
+          biometrics.contains(BiometricType.fingerprint);
+    } catch (e) {
+      debugPrint('PinSetupScreen: Биометрия недоступна: $e');
+      return false;
+    }
+  }
+
+  Future<bool?> _showBiometricPromptDialog() {
+    final isIos = Platform.isIOS;
+    final title = isIos ? 'Включить Face ID?' : 'Включить биометрию?';
+    final description = isIos
+        ? 'Входите в аккаунт быстрее и безопаснее с помощью Face ID. PIN останется запасным способом входа.'
+        : 'Входите в аккаунт быстрее и безопаснее с помощью биометрии. PIN останется запасным способом входа.';
+
+    return showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return Dialog(
+          insetPadding:
+              const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+          ),
+          backgroundColor: Colors.white,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(24, 24, 24, 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 72,
+                  height: 72,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF1E9E63).withValues(alpha: 0.12),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    isIos ? Icons.face_retouching_natural : Icons.fingerprint,
+                    color: const Color(0xFF1E9E63),
+                    size: 38,
+                  ),
+                ),
+                const SizedBox(height: 18),
+                Text(
+                  title,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w700,
+                    fontFamily: 'Gilroy',
+                    color: Color(0xFF1E1E1E),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  description,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    height: 1.45,
+                    fontWeight: FontWeight.w400,
+                    fontFamily: 'Gilroy',
+                    color: Color(0xFF667085),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.of(dialogContext).pop(false),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: const Color(0xFF475467),
+                          side: const BorderSide(color: Color(0xFFD0D5DD)),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: const Text(
+                          'Позже',
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                            fontFamily: 'Gilroy',
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () => Navigator.of(dialogContext).pop(true),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF1E9E63),
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: const Text(
+                          'Включить',
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                            fontFamily: 'Gilroy',
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   void _triggerErrorEffect() async {

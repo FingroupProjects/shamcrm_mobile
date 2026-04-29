@@ -242,6 +242,9 @@ class _ChatsScreenState extends State<ChatsScreen>
         });
         setUpServices();
         ChatUnreadCounterService.instance.refreshCounts(silent: true);
+        debugPrint(
+          'ChatsScreen.initState: requested unread counts refresh after permissions',
+        );
 
         //print('ChatsScreen: Fetching sales funnels');
         context.read<SalesFunnelBloc>().add(FetchSalesFunnels());
@@ -1081,7 +1084,17 @@ class _ChatsScreenState extends State<ChatsScreen>
   }
 
   void updateChats() {
-    _chatsBlocs[endPointInTab]!.add(RefreshChats());
+    final chatsBloc = _chatsBlocs[endPointInTab]!;
+    chatsBloc.add(ClearChats());
+    _pagingControllers[endPointInTab]!.itemList = null;
+    _pagingControllers[endPointInTab]!.refresh();
+    chatsBloc.add(FetchChats(
+      endPoint: endPointInTab,
+      salesFunnelId: endPointInTab == 'lead' ? _selectedFunnel?.id : null,
+      filters: endPointInTab == 'lead' || endPointInTab == 'task'
+          ? _activeFilters
+          : null,
+    ));
   }
 
   bool isClickAvatarIcon = false;
@@ -1241,6 +1254,9 @@ class _ChatsScreenState extends State<ChatsScreen>
                             valueListenable:
                                 ChatUnreadCounterService.instance.counts,
                             builder: (context, chatCounts, _) {
+                              debugPrint(
+                                'ChatsScreen.tabs builder: total=${chatCounts.total}, lead=${chatCounts.lead}, task=${chatCounts.task}, support=${chatCounts.support}, initialized=${chatCounts.isInitialized}, loading=${chatCounts.isLoading}',
+                              );
                               return Row(
                                 children:
                                     List.generate(_tabTitles.length, (index) {
@@ -1285,6 +1301,12 @@ class _ChatsScreenState extends State<ChatsScreen>
   Widget _buildTabButton(int index, ChatUnreadCounts chatCounts) {
     bool isActive = _tabController.index == index;
     GlobalKey? tabKey;
+    final endPoint = _chatEndpointForTabIndex(index);
+    final unreadType = _unreadCounterTypeForTabIndex(index);
+    final unreadCount = chatCounts.countForEndpoint(unreadType);
+    debugPrint(
+      'ChatsScreen._buildTabButton: index=$index, title="${_tabTitles[index]}", endPoint=$endPoint, unreadType=$unreadType, unreadCount=$unreadCount, active=${_tabController.index == index}',
+    );
 
     if (index == 0) {
       tabKey = keyChatLead;
@@ -1307,11 +1329,7 @@ class _ChatsScreenState extends State<ChatsScreen>
         });
         _tabController.animateTo(index);
 
-        String newEndPoint = index == 0
-            ? 'lead'
-            : index == 1
-                ? 'task'
-                : 'corporate';
+        String newEndPoint = endPoint;
         endPointInTab = newEndPoint;
         ChatUnreadCounterService.instance.refreshCounts(silent: true);
 
@@ -1346,29 +1364,38 @@ class _ChatsScreenState extends State<ChatsScreen>
                 ),
               ),
             ),
-            if (chatCounts.countForEndpoint(index == 0
-                    ? 'lead'
-                    : index == 1
-                        ? 'task'
-                        : 'corporate') >
-                0)
+            if (unreadCount > 0)
               Positioned(
                 top: -12,
                 left: -10,
-                child: _buildUnreadBadge(
-                  chatCounts.countForEndpoint(
-                    index == 0
-                        ? 'lead'
-                        : index == 1
-                            ? 'task'
-                            : 'corporate',
-                  ),
-                ),
+                child: _buildUnreadBadge(unreadCount),
               ),
           ],
         ),
       ),
     );
+  }
+
+  String _chatEndpointForTabIndex(int index) {
+    switch (index) {
+      case 0:
+        return 'lead';
+      case 1:
+        return 'task';
+      default:
+        return 'corporate';
+    }
+  }
+
+  String _unreadCounterTypeForTabIndex(int index) {
+    switch (index) {
+      case 0:
+        return 'lead';
+      case 1:
+        return 'task';
+      default:
+        return 'support';
+    }
   }
 
   Widget _buildUnreadBadge(int count) {
@@ -1493,6 +1520,11 @@ class _ChatItemsWidgetState extends State<_ChatItemsWidget> {
   }
 
   void onTap(Chats chat) {
+    final unreadCountBeforeOpen = chat.unreadCount;
+    ChatUnreadCounterService.instance.markChatOpened(
+      unreadCount: unreadCountBeforeOpen,
+      type: widget.endPointInTab,
+    );
     setState(() {
       chat.unreadCount = 0;
     });
@@ -1513,9 +1545,13 @@ class _ChatItemsWidgetState extends State<_ChatItemsWidget> {
         ),
       ),
     ).then((_) {
+      setState(() {});
+    });
+
+    if (unreadCountBeforeOpen == 0) {
       widget.updateChats.call();
       ChatUnreadCounterService.instance.refreshCounts(silent: true);
-    });
+    }
   }
 
   void onLongPress(Chats chat) {

@@ -1712,7 +1712,8 @@ class ApiService {
 
       await ensureInitialized();
       if (baseUrl == null || baseUrl!.isEmpty) {
-        debugPrint('sendVoipToken: baseUrl не готов → сохраняем как отложенный');
+        debugPrint(
+            'sendVoipToken: baseUrl не готов → сохраняем как отложенный');
         await _savePendingVoipToken(voipToken);
         return;
       }
@@ -1754,8 +1755,7 @@ class ApiService {
         debugPrint('sendVoipToken: УСПЕШНО отправлен');
         await _removePendingVoipToken();
       } else {
-        debugPrint(
-            'sendVoipToken: Ошибка ${response.statusCode} → отложенный');
+        debugPrint('sendVoipToken: Ошибка ${response.statusCode} → отложенный');
         await _savePendingVoipToken(voipToken);
       }
     } catch (e, s) {
@@ -8347,27 +8347,60 @@ class ApiService {
     return _extractUnreadCountFromResponse(data);
   }
 
-  Future<int> getUnreadMessagesCountByChatType(String type) async {
+  Future<Map<String, int>> getUnreadMessagesCountByChatType() async {
     final token = await getToken();
-    String path = '/v2/chat/getUnreadMessagesCountByChatType/$type';
+    String path = '/v2/chat/getUnreadMessagesCountByChatType';
     path = await _appendQueryParams(path);
+    final uri = Uri.parse('$baseUrl$path');
+    debugPrint('ApiService.getUnreadMessagesCountByChatType: GET $uri');
 
     final response = await http.get(
-      Uri.parse('$baseUrl$path'),
+      uri,
       headers: {
         'Authorization': 'Bearer $token',
         'Content-Type': 'application/json',
         'Accept': 'application/json',
       },
     );
+    debugPrint(
+      'ApiService.getUnreadMessagesCountByChatType: status=${response.statusCode}, body=${response.body}',
+    );
 
     if (response.statusCode != 200) {
       throw Exception(
-          'Ошибка ${response.statusCode} при получении счетчика чатов типа $type');
+          'Ошибка ${response.statusCode} при получении счетчиков чатов по типам');
     }
 
     final data = json.decode(response.body);
-    return _extractUnreadCountFromResponse(data);
+    final result = data is Map<String, dynamic> ? data['result'] : null;
+    if (result is! Map<String, dynamic>) {
+      return const {
+        'corporate': 0,
+        'leads': 0,
+        'tasks': 0,
+        'all': 0,
+      };
+    }
+
+    return {
+      'corporate': _extractIntValue(result['corporate']),
+      'leads': _extractIntValue(result['leads']),
+      'tasks': _extractIntValue(result['tasks']),
+      'all': _extractIntValue(result['all']),
+    };
+  }
+
+  int _extractIntValue(dynamic value) {
+    if (value is int) {
+      return value;
+    }
+    if (value is num) {
+      return value.toInt();
+    }
+    if (value is String) {
+      return int.tryParse(value) ?? 0;
+    }
+    return 0;
   }
 
   int _extractUnreadCountFromResponse(dynamic data) {
@@ -8582,6 +8615,25 @@ class ApiService {
 
     if (response.statusCode != 200) {
       throw Exception('Ошибка отправки сообщения!');
+    }
+  }
+
+  Future<void> sendLocation(
+    int chatId, {
+    required double latitude,
+    required double longitude,
+    String? responseType,
+  }) async {
+    final path = await _appendQueryParams('/v2/sendLocation/$chatId');
+
+    final response = await _postRequest(path, {
+      'lattitude': latitude,
+      'longitude': longitude,
+      if (responseType != null) 'response_type': responseType,
+    });
+
+    if (response.statusCode != 200) {
+      throw Exception('Ошибка отправки местоположения!');
     }
   }
 

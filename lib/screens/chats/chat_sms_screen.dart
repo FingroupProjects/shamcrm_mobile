@@ -18,11 +18,13 @@ import 'package:crm_task_manager/screens/chats/chats_widgets/chatById_screen.dar
 import 'package:crm_task_manager/screens/chats/chats_widgets/chatById_task_screen.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/image_message_bubble.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/input_field.dart';
+import 'package:crm_task_manager/screens/chats/chats_widgets/location_message_bubble.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/pin_lead_screen.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/profile_corporate_screen.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/profile_user_corporate.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/voice_message_bubble.dart';
 import 'package:crm_task_manager/screens/chats/pin_message_widget.dart';
+import 'package:crm_task_manager/screens/chats/location_picker_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/utils/app_colors.dart';
 import 'package:crm_task_manager/utils/global_fun.dart';
@@ -1029,9 +1031,6 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
       unreadCount: widget.chatItem.unreadCount,
       type: widget.endPointInTab,
     );
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ChatUnreadCounterService.instance.refreshCounts(silent: true);
-    });
     if (widget.initialChannelName != null &&
         widget.initialChannelName!.isNotEmpty) {
       channelName = widget.initialChannelName;
@@ -1230,6 +1229,12 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
       debugPrint('=================-=== ❌ Failed to load my display name: $e');
     }
     return _myDisplayName;
+  }
+
+  double? _parseCoordinate(dynamic value) {
+    if (value == null) return null;
+    if (value is num) return value.toDouble();
+    return double.tryParse(value.toString());
   }
 
   // ========== РЕАКЦИИ ВРЕМЕННО ОТКЛЮЧЕНЫ ==========
@@ -3134,17 +3139,26 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
         final senderDisplayName = isMyMessageResult
             ? (senderName ?? myName)
             : (senderName ?? fallbackCompanionName);
+        final locationData = messageData['location'];
+        final latitude = _parseCoordinate(messageData['lattitude'] ??
+            messageData['latitude'] ??
+            (locationData is Map
+                ? locationData['lattitude'] ?? locationData['latitude']
+                : null));
+        final longitude = _parseCoordinate(messageData['longitude'] ??
+            (locationData is Map ? locationData['longitude'] : null));
 
         final msg = Message(
           id: messageId ?? -1,
-          text: text ??
-              (type == 'voice' ? 'Голосовое сообщение' : type ?? 'Сообщение'),
+          text: text ?? (type == 'voice' ? 'Голосовое сообщение' : type),
           type: type,
           createMessateTime:
               messageData['created_at'] ?? DateTime.now().toIso8601String(),
           isMyMessage: isMyMessageResult,
           senderName: senderDisplayName,
           filePath: messageData['file_path']?.toString(),
+          latitude: latitude,
+          longitude: longitude,
           duration: messageData['voice_duration'] != null
               ? Duration(
                   seconds:
@@ -3747,6 +3761,8 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
       if (result != null && result.files.single.path != null) {
         _handlePickedFile(result.files.single.path!, result.files.single.name);
       }
+    } else if (source == 'location') {
+      _openLocationPicker();
     }
   }
 
@@ -3803,12 +3819,67 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
                 ),
                 onTap: () => Navigator.pop(context, 'file'),
               ),
+              ListTile(
+                leading: Icon(Icons.location_on, color: Color(0xFF1E1E1E)),
+                title: Text(
+                  'Местоположение',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    fontFamily: 'Gilroy',
+                    color: Color(0xFF1E1E1E),
+                  ),
+                ),
+                onTap: () => Navigator.pop(context, 'location'),
+              ),
               SizedBox(height: 10),
             ],
           ),
         );
       },
     );
+  }
+
+  Future<void> _openLocationPicker() async {
+    final result = await Navigator.push<PickedLocation>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const LocationPickerScreen(),
+      ),
+    );
+    if (result == null) return;
+
+    await _sendLocationMessage(result);
+  }
+
+  Future<void> _sendLocationMessage(PickedLocation location) async {
+    try {
+      final myName = await _getMyDisplayName();
+      final localMessage = Message(
+        id: -DateTime.now().millisecondsSinceEpoch,
+        text: 'Местоположение',
+        type: 'location',
+        createMessateTime: DateTime.now().toUtc().toIso8601String(),
+        isMyMessage: true,
+        senderName: myName,
+        latitude: location.latitude,
+        longitude: location.longitude,
+      );
+
+      context.read<MessagingCubit>().addLocalMessage(localMessage);
+      _scrollToBottom(force: true);
+      await _playSound();
+
+      await widget.apiService.sendLocation(
+        widget.chatId,
+        latitude: location.latitude,
+        longitude: location.longitude,
+        responseType:
+            _isInstagramCommentChannel ? _instagramResponseType : null,
+      );
+    } catch (e) {
+      debugPrint('Ошибка отправки местоположения: $e');
+    }
   }
 
   void _handlePickedFile(String path, String name) async {
@@ -3875,15 +3946,14 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
     socketClient.dispose();
     _focusNode.dispose();
 
-    // ✅ ШАГ 6: Помечаем сообщения как прочитанные на сервере
-    // Это гарантирует, что сервер знает, что пользователь прочитал все сообщения в этом чате
-    // После этого сервер будет правильно отправлять счетчик непрочитанных (начиная с 1 для новых сообщений)
-    _markMessagesAsReadOnExit();
-
-    // ✅ ШАГ 7: Обнуляем счетчик непрочитанных сообщений локально
+    // ✅ ШАГ 6: Обнуляем счетчик непрочитанных сообщений локально
     // Это скрывает счетчик до момента прихода нового сообщения от сервера
     _chatsBloc?.add(ResetUnreadCount(widget.chatId));
-    ChatUnreadCounterService.instance.refreshCounts(silent: true);
+
+    // ✅ ШАГ 7: Помечаем сообщения как прочитанные на сервере, затем обновляем
+    // серверные счетчики. Не делаем refresh раньше readMessages, иначе сервер
+    // вернет старый unreadCount и перезапишет локальный ноль.
+    unawaited(_markMessagesAsReadOnExit());
 
     debugPrint(
         '=================-=== ✅ ChatSmsScreen.dispose COMPLETED for chat ${widget.chatId}');
@@ -3918,8 +3988,14 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
         await widget.apiService.readMessages(widget.chatId, latestMessageId);
         debugPrint(
             'ChatSmsScreen: Messages marked as read on server successfully');
+        ChatUnreadCounterService.instance.refreshCounts(silent: true);
+        if (_chatsBloc != null && !_chatsBloc!.isClosed) {
+          _chatsBloc!.add(ClearChats());
+          _chatsBloc!.add(FetchChats(endPoint: widget.endPointInTab));
+        }
       } else {
         debugPrint('ChatSmsScreen: No messages to mark as read on exit');
+        ChatUnreadCounterService.instance.refreshCounts(silent: true);
       }
 
       // ✅ ИСПРАВЛЕНО: НЕ обновляем список чатов сразу после выхода
@@ -4162,6 +4238,34 @@ class MessageItemWidget extends StatelessWidget {
               ? (emoji) => onReactionToggle?.call(message, emoji)
               : null,
         );
+        break;
+      case 'location':
+        if (message.latitude == null || message.longitude == null) {
+          content = MessageBubble(
+            message: message.text.isNotEmpty ? message.text : 'Местоположение',
+            time: time(message.createMessateTime),
+            isSender: message.isMyMessage,
+            senderName: message.senderName.toString(),
+            isHighlighted: highlightedMessageId == message.id,
+            isChanged: message.isChanged,
+            isRead: message.isRead,
+            isNote: message.isNote,
+            isLeadChat: isLeadChat,
+            isGroupChat: isGroupChat,
+          );
+        } else {
+          content = LocationMessageBubble(
+            latitude: message.latitude!,
+            longitude: message.longitude!,
+            time: time(message.createMessateTime),
+            isSender: message.isMyMessage,
+            senderName: message.senderName,
+            isRead: message.isRead,
+            isLeadChat: isLeadChat,
+            isGroupChat: isGroupChat,
+            isHighlighted: highlightedMessageId == message.id,
+          );
+        }
         break;
       default:
         content = const SizedBox();
