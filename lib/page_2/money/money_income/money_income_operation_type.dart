@@ -13,6 +13,6 @@ MoneyIncomeOperationType? getOperationTypeFromString(String? operationTypeString
           (e) => e.name == operationTypeString,
     );
   } catch (e) {
-    return null;
+
   }
 }

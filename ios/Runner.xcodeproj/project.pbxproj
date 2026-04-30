@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		0779A4FC083F7F0B2AC61EF2 /* IOSNativeSipManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47FE53839E013AC4EAE3D106 /* IOSNativeSipManager.swift */; };
 		1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */ = {isa = PBXBuildFile; fileRef = 1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */; };
 		2B923DD72D09484B001F749E /* Launch Screen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 2B923DD62D09484B001F749E /* Launch Screen.storyboard */; };
 		331C808B294A63AB00263BE5 /* RunnerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 331C807B294A618700263BE5 /* RunnerTests.swift */; };
@@ -20,6 +21,7 @@
 		CF2404482ED5877B00DB3604 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 47B16CCD2EBEFD9E00C29A96 /* WidgetKit.framework */; };
 		CF2404492ED5877B00DB3604 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 47B16CCF2EBEFD9E00C29A96 /* SwiftUI.framework */; };
 		CF2404562ED5877D00DB3604 /* deeplink_widgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = CF2404472ED5877B00DB3604 /* deeplink_widgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		EE9AEE1E3E7B1E907148C6C5 /* linphonesw in Frameworks */ = {isa = PBXBuildFile; productRef = F6807D8903F19CC0FDC57351 /* linphonesw */; };
 		FCB4CCAD9D85386F3DDCD850 /* Pods_RunnerTests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 606D8F66C17BAA9C2FC2661A /* Pods_RunnerTests.framework */; };
 /* End PBXBuildFile section */
 
@@ -67,6 +69,7 @@
 		47B16CCC2EBEFD9E00C29A96 /* ShamCRMWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = ShamCRMWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		47B16CCD2EBEFD9E00C29A96 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
 		47B16CCF2EBEFD9E00C29A96 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
+		47FE53839E013AC4EAE3D106 /* IOSNativeSipManager.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = IOSNativeSipManager.swift; path = IOSNativeSipManager.swift; sourceTree = "<group>"; };
 		4C8D92837D7CE711209C2C0E /* Pods-Runner.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.release.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.release.xcconfig"; sourceTree = "<group>"; };
 		606D8F66C17BAA9C2FC2661A /* Pods_RunnerTests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_RunnerTests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		74858FAD1ED2DC5600515810 /* Runner-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "Runner-Bridging-Header.h"; sourceTree = "<group>"; };
@@ -107,6 +110,8 @@
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		470C69562DF929F800D05511 /* New Folder */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+			);
 			path = "New Folder";
 			sourceTree = "<group>";
 		};
@@ -151,6 +156,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				842091D0C2E8DE63D51630E3 /* Pods_Runner.framework in Frameworks */,
+				EE9AEE1E3E7B1E907148C6C5 /* linphonesw in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -236,6 +242,7 @@
 				74858FAE1ED2DC5600515810 /* AppDelegate.swift */,
 				74858FAD1ED2DC5600515810 /* Runner-Bridging-Header.h */,
 				2B923DD62D09484B001F749E /* Launch Screen.storyboard */,
+				47FE53839E013AC4EAE3D106 /* IOSNativeSipManager.swift */,
 			);
 			path = Runner;
 			sourceTree = "<group>";
@@ -315,6 +322,9 @@
 				CF2404552ED5877D00DB3604 /* PBXTargetDependency */,
 			);
 			name = Runner;
+			packageProductDependencies = (
+				F6807D8903F19CC0FDC57351 /* linphonesw */,
+			);
 			productName = Runner;
 			productReference = 97C146EE1CF9000F007C117D /* Runner.app */;
 			productType = "com.apple.product-type.application";
@@ -374,6 +384,9 @@
 				Base,
 			);
 			mainGroup = 97C146E51CF9000F007C117D;
+			packageReferences = (
+				07C3AB87D8577DE2A59835A2 /* XCLocalSwiftPackageReference "LinphoneSDKPackage" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 97C146EF1CF9000F007C117D /* Products */;
 			projectDirPath = "";
@@ -558,6 +571,7 @@
 			files = (
 				74858FAF1ED2DC5600515810 /* AppDelegate.swift in Sources */,
 				1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */,
+				0779A4FC083F7F0B2AC61EF2 /* IOSNativeSipManager.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1208,6 +1222,21 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		07C3AB87D8577DE2A59835A2 /* XCLocalSwiftPackageReference "LinphoneSDKPackage" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = LinphoneSDKPackage;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		F6807D8903F19CC0FDC57351 /* linphonesw */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 07C3AB87D8577DE2A59835A2 /* XCLocalSwiftPackageReference "LinphoneSDKPackage" */;
+			productName = linphonesw;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 97C146E61CF9000F007C117D /* Project object */;
 }

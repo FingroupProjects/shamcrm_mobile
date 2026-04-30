@@ -2,6 +2,7 @@ import 'dart:io' show Platform;
 import 'dart:async';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter/services.dart';
@@ -41,6 +42,7 @@ class SipService extends ChangeNotifier
 
   final SIPUAHelper _helper = SIPUAHelper();
   final Connectivity _connectivity = Connectivity();
+  final ApiService _apiService = ApiService();
 
   final RTCVideoRenderer localRenderer = RTCVideoRenderer();
   final RTCVideoRenderer remoteRenderer = RTCVideoRenderer();
@@ -73,6 +75,7 @@ class SipService extends ChangeNotifier
   StreamSubscription<dynamic>? _nativeSipEventsSubscription;
   bool _nativeSipBridgeAvailable = false;
   Future<void>? _nativeSipBridgeInitializationFuture;
+  String? _lastSyncedIosVoipPushToken;
 
   Call? _activeCall;
   MediaStream? _localStream;
@@ -139,6 +142,7 @@ class SipService extends ChangeNotifier
       await _initializeNativeSipBridge();
       await _syncNativeSnapshot();
       await _consumePendingIosCallActions();
+      await _syncCurrentIosVoipPushTokenIfAvailable();
       _startConnectivityMonitoring();
       _startRegistrationWatchdog();
       _configLoaded = true;
@@ -311,6 +315,55 @@ class SipService extends ChangeNotifier
     }
 
     return _storage.read(key: _voipPushTokenKey);
+  }
+
+  Future<bool> simulateIosIncomingCall({
+    String handle = '100',
+    String? callerName,
+    String? callId,
+    String? fromUri,
+    String? toUri,
+    String? sipUri,
+    bool hasVideo = false,
+  }) async {
+    if (!Platform.isIOS) {
+      return false;
+    }
+
+    final available = await _ensureNativeSipBridgeInitialized();
+    if (!available) {
+      return false;
+    }
+
+    return await _invokeNativeSipMethod<bool>(
+          'simulateIncomingCall',
+          <String, dynamic>{
+            'handle': handle,
+            'callerName': callerName ?? handle,
+            if (callId != null && callId.trim().isNotEmpty)
+              'callId': callId.trim(),
+            if (fromUri != null && fromUri.trim().isNotEmpty)
+              'fromUri': fromUri.trim(),
+            if (toUri != null && toUri.trim().isNotEmpty) 'toUri': toUri.trim(),
+            if (sipUri != null && sipUri.trim().isNotEmpty)
+              'sipUri': sipUri.trim(),
+            'hasVideo': hasVideo,
+          },
+        ) ??
+        false;
+  }
+
+  Future<void> _syncCurrentIosVoipPushTokenIfAvailable() async {
+    if (!Platform.isIOS) {
+      return;
+    }
+
+    final token = await getVoipPushToken();
+    if (token == null || token.trim().isEmpty) {
+      return;
+    }
+
+    await _syncIosVoipPushTokenWithBackend(token);
   }
 
   Future<void> _syncNativeSnapshot({bool restoreIfNeeded = false}) async {
@@ -1003,6 +1056,25 @@ class SipService extends ChangeNotifier
       'SipService native push token event -> provider=${payload['provider']}, token=${normalizedToken.length > 20 ? '${normalizedToken.substring(0, 20)}...' : normalizedToken}',
     );
     unawaited(_storage.write(key: _voipPushTokenKey, value: normalizedToken));
+    unawaited(_syncIosVoipPushTokenWithBackend(normalizedToken));
+  }
+
+  Future<void> _syncIosVoipPushTokenWithBackend(String token) async {
+    if (!Platform.isIOS || token.trim().isEmpty) {
+      return;
+    }
+
+    final normalizedToken = token.trim();
+    if (_lastSyncedIosVoipPushToken == normalizedToken) {
+      return;
+    }
+
+    try {
+      await _apiService.sendVoipToken(normalizedToken);
+      _lastSyncedIosVoipPushToken = normalizedToken;
+    } catch (error) {
+      debugPrint('SipService: failed to sync iOS VoIP token: $error');
+    }
   }
 
   void _handleNativeCallActionEvent(Map<String, dynamic> payload) {
@@ -1046,8 +1118,12 @@ class SipService extends ChangeNotifier
     final normalized = <String, dynamic>{
       'action': action,
       'callUUID': payload['callUUID']?.toString(),
+      'callId': payload['callId']?.toString(),
       'remoteIdentity': payload['remoteIdentity']?.toString(),
       'callerName': payload['callerName']?.toString(),
+      'fromUri': payload['fromUri']?.toString(),
+      'toUri': payload['toUri']?.toString(),
+      'sipUri': payload['sipUri']?.toString(),
       'timestamp': payload['timestamp'] is num
           ? (payload['timestamp'] as num).toDouble()
           : DateTime.now().millisecondsSinceEpoch / 1000.0,
