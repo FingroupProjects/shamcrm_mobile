@@ -13,16 +13,17 @@ import 'package:crm_task_manager/models/chatGetId_model.dart';
 import 'package:crm_task_manager/models/integration_model.dart';
 import 'package:crm_task_manager/utils/active_chat_tracker.dart';
 import 'package:crm_task_manager/services/message_cache_service.dart';
-import 'package:crm_task_manager/screens/chats/chat_target_details_screen.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/chatById_screen.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/chatById_task_screen.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/image_message_bubble.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/input_field.dart';
+import 'package:crm_task_manager/screens/chats/chats_widgets/location_message_bubble.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/pin_lead_screen.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/profile_corporate_screen.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/profile_user_corporate.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/voice_message_bubble.dart';
 import 'package:crm_task_manager/screens/chats/pin_message_widget.dart';
+import 'package:crm_task_manager/screens/chats/location_picker_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/utils/app_colors.dart';
 import 'package:crm_task_manager/utils/global_fun.dart';
@@ -150,6 +151,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
       builder: (context) {
+        final localizations = AppLocalizations.of(context)!;
         return SafeArea(
           child: Padding(
             padding: const EdgeInsets.all(16),
@@ -158,12 +160,12 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
               children: [
                 ListTile(
                   leading: const Icon(Icons.reply, color: Colors.black87),
-                  title: const Text('Ответить как комментарий'),
+                  title: Text(localizations.translate('reply_as_comment')),
                   onTap: () => Navigator.pop(context, 'comment'),
                 ),
                 ListTile(
                   leading: const Icon(Icons.send, color: Colors.black87),
-                  title: const Text('Ответить в директ'),
+                  title: Text(localizations.translate('reply_in_direct')),
                   onTap: () => Navigator.pop(context, 'direct'),
                 ),
               ],
@@ -408,7 +410,10 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
       });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Не удалось обновить реакцию'),
+          content: Text(
+            AppLocalizations.of(context)!
+                .translate('failed_to_update_reaction'),
+          ),
           backgroundColor: Colors.red,
         ),
       );
@@ -1029,9 +1034,6 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
       unreadCount: widget.chatItem.unreadCount,
       type: widget.endPointInTab,
     );
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ChatUnreadCounterService.instance.refreshCounts(silent: true);
-    });
     if (widget.initialChannelName != null &&
         widget.initialChannelName!.isNotEmpty) {
       channelName = widget.initialChannelName;
@@ -1074,7 +1076,11 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Повторная попытка не удалась: $e'),
+            content: Text(
+              AppLocalizations.of(context)!
+                  .translate('retry_failed_with_error')
+                  .replaceFirst('{error}', e.toString()),
+            ),
             backgroundColor: Colors.red,
           ),
         );
@@ -1230,6 +1236,12 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
       debugPrint('=================-=== ❌ Failed to load my display name: $e');
     }
     return _myDisplayName;
+  }
+
+  double? _parseCoordinate(dynamic value) {
+    if (value == null) return null;
+    if (value is num) return value.toDouble();
+    return double.tryParse(value.toString());
   }
 
   // ========== РЕАКЦИИ ВРЕМЕННО ОТКЛЮЧЕНЫ ==========
@@ -1443,7 +1455,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          'Частичная ошибка подключения: ${_getReadableError(error)}',
+          '${AppLocalizations.of(context)!.translate('partial_connection_error')}: ${_getReadableError(error)}',
           style: const TextStyle(
             fontFamily: 'Gilroy',
             fontSize: 14,
@@ -1454,7 +1466,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
         backgroundColor: Colors.orange,
         duration: const Duration(seconds: 5),
         action: SnackBarAction(
-          label: 'Повторить',
+          label: AppLocalizations.of(context)!.translate('retry'),
           textColor: Colors.white,
           onPressed: () {
             _initializeServices();
@@ -1614,7 +1626,11 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
     final mediaUrl = advertising.mediaUrl?.trim();
     if (mediaUrl == null || mediaUrl.isEmpty) {
       ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-        const SnackBar(content: Text('У этого таргета нет media_url')),
+        SnackBar(
+          content: Text(
+            AppLocalizations.of(context)!.translate('target_has_no_media_url'),
+          ),
+        ),
       );
       return;
     }
@@ -1622,7 +1638,11 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
     final uri = Uri.tryParse(mediaUrl);
     if (uri == null) {
       ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-        const SnackBar(content: Text('Некорректная ссылка media_url')),
+        SnackBar(
+          content: Text(
+            AppLocalizations.of(context)!.translate('invalid_media_url'),
+          ),
+        ),
       );
       return;
     }
@@ -1630,7 +1650,11 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
     final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
     if (!opened) {
       ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-        const SnackBar(content: Text('Не удалось открыть media_url')),
+        SnackBar(
+          content: Text(
+            AppLocalizations.of(context)!.translate('failed_to_open_media_url'),
+          ),
+        ),
       );
     }
   }
@@ -1726,23 +1750,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
                       titleTextStyle:
                           const TextStyle(fontSize: 18, fontFamily: 'Gilroy'),
                       titleTextFormatter: (date, locale) {
-                        final monthNames = {
-                          1: 'Январь',
-                          2: 'Февраль',
-                          3: 'Март',
-                          4: 'Апрель',
-                          5: 'Май',
-                          6: 'Июнь',
-                          7: 'Июль',
-                          8: 'Август',
-                          9: 'Сентябрь',
-                          10: 'Октябрь',
-                          11: 'Ноябрь',
-                          12: 'Декабрь'
-                        };
-
-                        final monthName = monthNames[date.month] ?? '';
-                        return '$monthName ${date.year} г.';
+                        return DateFormat.yMMMM(locale).format(date);
                       },
                     ),
                     calendarBuilders: CalendarBuilders(
@@ -1781,7 +1789,10 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text(
-                              'Нет сообщений за ${formatDate(selectedDay)}',
+                              AppLocalizations.of(context)!
+                                  .translate('no_messages_for_date')
+                                  .replaceFirst(
+                                      '{date}', formatDate(selectedDay)),
                               style: const TextStyle(
                                 fontFamily: 'Gilroy',
                                 fontSize: 16,
@@ -1833,7 +1844,9 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'Нет сообщений за ${formatDate(selectedDate)}',
+              AppLocalizations.of(context)!
+                  .translate('no_messages_for_date')
+                  .replaceFirst('{date}', formatDate(selectedDate)),
               style: const TextStyle(
                 fontFamily: 'Gilroy',
                 fontSize: 16,
@@ -2177,7 +2190,8 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(
                                       content: Text(
-                                        'ОШИБКА!',
+                                        AppLocalizations.of(context)!
+                                            .translate('error'),
                                         style: const TextStyle(
                                           fontFamily: 'Gilroy',
                                           fontSize: 16,
@@ -2273,8 +2287,11 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
 
       if (state.hasReachedMax) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Не удалось найти сообщение в загруженной истории'),
+          SnackBar(
+            content: Text(
+              AppLocalizations.of(context)!
+                  .translate('message_not_found_in_history'),
+            ),
             backgroundColor: Colors.red,
           ),
         );
@@ -2311,6 +2328,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
   Widget messageListUi() {
     return BlocBuilder<MessagingCubit, MessagingState>(
       builder: (context, state) {
+        final localizations = AppLocalizations.of(context)!;
         debugPrint(
             '=================-=== messageListUi: Building with state: $state');
 
@@ -2323,7 +2341,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
                     size: 64, color: Colors.orange),
                 SizedBox(height: 16),
                 Text(
-                  "Частичная ошибка подключения",
+                  localizations.translate('partial_connection_error'),
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
@@ -2361,7 +2379,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
                             EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                       ),
                       child: Text(
-                        "Повторить",
+                        localizations.translate('retry'),
                         style: TextStyle(
                           fontFamily: 'Gilroy',
                           fontWeight: FontWeight.w600,
@@ -2375,7 +2393,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
                         context.read<MessagingCubit>().showEmptyChat();
                       },
                       child: Text(
-                        "Пустой чат",
+                        localizations.translate('empty_chat'),
                         style: TextStyle(
                           fontFamily: 'Gilroy',
                           color: Colors.grey[600],
@@ -2399,7 +2417,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
                   Icon(Icons.error_outline, size: 64, color: Colors.red),
                   SizedBox(height: 16),
                   Text(
-                    "Ошибка подключения к серверу",
+                    localizations.translate('server_connection_error'),
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w600,
@@ -2418,14 +2436,14 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
                       backgroundColor: Colors.red,
                       foregroundColor: Colors.white,
                     ),
-                    child: Text("Повторить попытку"),
+                    child: Text(localizations.translate('retry_attempt')),
                   ),
                   SizedBox(height: 12),
                   TextButton(
                     onPressed: () {
                       context.read<MessagingCubit>().showEmptyChat();
                     },
-                    child: Text("Открыть пустой чат"),
+                    child: Text(localizations.translate('open_empty_chat')),
                   ),
                 ],
               ),
@@ -2435,7 +2453,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text("Ошибка загрузки сообщений"),
+                Text(localizations.translate('messages_load_error')),
                 SizedBox(height: 16),
                 ElevatedButton(
                   onPressed: () {
@@ -2443,7 +2461,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
                         widget.chatId,
                         chatType: widget.endPointInTab);
                   },
-                  child: Text("Повторить"),
+                  child: Text(localizations.translate('retry')),
                 ),
               ],
             ),
@@ -2702,14 +2720,17 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
                   const SizedBox(width: 6),
                   Text(
                     _instagramResponseType == 'direct'
-                        ? 'Ответ: в директ'
-                        : 'Ответ: комментарий',
+                        ? AppLocalizations.of(context)!
+                            .translate('answer_direct')
+                        : AppLocalizations.of(context)!
+                            .translate('answer_comment'),
                     style: const TextStyle(fontSize: 12, color: Colors.black54),
                   ),
                   const Spacer(),
                   TextButton(
                     onPressed: () => _showInstagramResponseTypePicker(null),
-                    child: const Text('Изменить'),
+                    child:
+                        Text(AppLocalizations.of(context)!.translate('edit')),
                   ),
                 ],
               ),
@@ -2734,7 +2755,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
 
               final tempMessage = Message(
                 id: -DateTime.now().millisecondsSinceEpoch,
-                text: "Голосовое сообщение",
+                text: AppLocalizations.of(context)!.translate('voice_message'),
                 type: 'voice',
                 createMessateTime: DateTime.now().toUtc().toIso8601String(),
                 isMyMessage: true,
@@ -3134,17 +3155,39 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
         final senderDisplayName = isMyMessageResult
             ? (senderName ?? myName)
             : (senderName ?? fallbackCompanionName);
+        final locationData = messageData['location'];
+        final latitude = _parseCoordinate(messageData['lattitude'] ??
+            messageData['latitude'] ??
+            (locationData is Map
+                ? locationData['lattitude'] ?? locationData['latitude']
+                : null));
+        final longitude = _parseCoordinate(messageData['longitude'] ??
+            (locationData is Map ? locationData['longitude'] : null));
+        final inferredLocation =
+            Message.extractLocationCoordinatesFromText(text ?? '');
+        final resolvedLatitude = latitude ?? inferredLocation?['latitude'];
+        final resolvedLongitude = longitude ?? inferredLocation?['longitude'];
+        final resolvedType = Message.resolveIncomingType(
+          type,
+          text ?? '',
+          latitude: resolvedLatitude,
+          longitude: resolvedLongitude,
+        );
 
         final msg = Message(
           id: messageId ?? -1,
           text: text ??
-              (type == 'voice' ? 'Голосовое сообщение' : type ?? 'Сообщение'),
-          type: type,
+              (type == 'voice'
+                  ? AppLocalizations.of(context)!.translate('voice_message')
+                  : type),
+          type: resolvedType,
           createMessateTime:
               messageData['created_at'] ?? DateTime.now().toIso8601String(),
           isMyMessage: isMyMessageResult,
           senderName: senderDisplayName,
           filePath: messageData['file_path']?.toString(),
+          latitude: resolvedLatitude,
+          longitude: resolvedLongitude,
           duration: messageData['voice_duration'] != null
               ? Duration(
                   seconds:
@@ -3747,6 +3790,8 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
       if (result != null && result.files.single.path != null) {
         _handlePickedFile(result.files.single.path!, result.files.single.name);
       }
+    } else if (source == 'location') {
+      _openLocationPicker();
     }
   }
 
@@ -3758,6 +3803,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
       ),
       context: context,
       builder: (context) {
+        final localizations = AppLocalizations.of(context)!;
         return Container(
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -3766,7 +3812,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
               ListTile(
                 leading: Icon(Icons.photo_camera, color: Color(0xFF1E1E1E)),
                 title: Text(
-                  'Сделать фото',
+                  localizations.translate('take_photo'),
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
@@ -3779,7 +3825,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
               ListTile(
                 leading: Icon(Icons.photo_library, color: Color(0xFF1E1E1E)),
                 title: Text(
-                  'Выбрать из галереи',
+                  localizations.translate('choose_from_gallery'),
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
@@ -3793,7 +3839,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
                 leading:
                     Icon(Icons.insert_drive_file, color: Color(0xFF1E1E1E)),
                 title: Text(
-                  'Выбрать файл',
+                  localizations.translate('choose_file'),
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
@@ -3803,12 +3849,67 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
                 ),
                 onTap: () => Navigator.pop(context, 'file'),
               ),
+              ListTile(
+                leading: Icon(Icons.location_on, color: Color(0xFF1E1E1E)),
+                title: Text(
+                  localizations.translate('geolocation'),
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    fontFamily: 'Gilroy',
+                    color: Color(0xFF1E1E1E),
+                  ),
+                ),
+                onTap: () => Navigator.pop(context, 'location'),
+              ),
               SizedBox(height: 10),
             ],
           ),
         );
       },
     );
+  }
+
+  Future<void> _openLocationPicker() async {
+    final result = await Navigator.push<PickedLocation>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const LocationPickerScreen(),
+      ),
+    );
+    if (result == null) return;
+
+    await _sendLocationMessage(result);
+  }
+
+  Future<void> _sendLocationMessage(PickedLocation location) async {
+    try {
+      final myName = await _getMyDisplayName();
+      final localMessage = Message(
+        id: -DateTime.now().millisecondsSinceEpoch,
+        text: AppLocalizations.of(context)!.translate('geolocation'),
+        type: 'location',
+        createMessateTime: DateTime.now().toUtc().toIso8601String(),
+        isMyMessage: true,
+        senderName: myName,
+        latitude: location.latitude,
+        longitude: location.longitude,
+      );
+
+      context.read<MessagingCubit>().addLocalMessage(localMessage);
+      _scrollToBottom(force: true);
+      await _playSound();
+
+      await widget.apiService.sendLocation(
+        widget.chatId,
+        latitude: location.latitude,
+        longitude: location.longitude,
+        responseType:
+            _isInstagramCommentChannel ? _instagramResponseType : null,
+      );
+    } catch (e) {
+      debugPrint('Ошибка отправки местоположения: $e');
+    }
   }
 
   void _handlePickedFile(String path, String name) async {
@@ -3875,15 +3976,14 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
     socketClient.dispose();
     _focusNode.dispose();
 
-    // ✅ ШАГ 6: Помечаем сообщения как прочитанные на сервере
-    // Это гарантирует, что сервер знает, что пользователь прочитал все сообщения в этом чате
-    // После этого сервер будет правильно отправлять счетчик непрочитанных (начиная с 1 для новых сообщений)
-    _markMessagesAsReadOnExit();
-
-    // ✅ ШАГ 7: Обнуляем счетчик непрочитанных сообщений локально
+    // ✅ ШАГ 6: Обнуляем счетчик непрочитанных сообщений локально
     // Это скрывает счетчик до момента прихода нового сообщения от сервера
     _chatsBloc?.add(ResetUnreadCount(widget.chatId));
-    ChatUnreadCounterService.instance.refreshCounts(silent: true);
+
+    // ✅ ШАГ 7: Помечаем сообщения как прочитанные на сервере, затем обновляем
+    // серверные счетчики. Не делаем refresh раньше readMessages, иначе сервер
+    // вернет старый unreadCount и перезапишет локальный ноль.
+    unawaited(_markMessagesAsReadOnExit());
 
     debugPrint(
         '=================-=== ✅ ChatSmsScreen.dispose COMPLETED for chat ${widget.chatId}');
@@ -3918,8 +4018,14 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
         await widget.apiService.readMessages(widget.chatId, latestMessageId);
         debugPrint(
             'ChatSmsScreen: Messages marked as read on server successfully');
+        ChatUnreadCounterService.instance.refreshCounts(silent: true);
+        if (_chatsBloc != null && !_chatsBloc!.isClosed) {
+          _chatsBloc!.add(ClearChats());
+          _chatsBloc!.add(FetchChats(endPoint: widget.endPointInTab));
+        }
       } else {
         debugPrint('ChatSmsScreen: No messages to mark as read on exit');
+        ChatUnreadCounterService.instance.refreshCounts(silent: true);
       }
 
       // ✅ ИСПРАВЛЕНО: НЕ обновляем список чатов сразу после выхода
@@ -4067,7 +4173,7 @@ class MessageItemWidget extends StatelessWidget {
       replyPreviewAuthorName = fallbackCompanionName;
     } else if (message.forwardedMessage != null) {
       replyMessageText = message.forwardedMessage!.type == 'voice'
-          ? "Голосовое сообщение"
+          ? AppLocalizations.of(context)!.translate('voice_message')
           : message.forwardedMessage!.text;
       final forwardedAuthor = message.forwardedMessage!.senderName?.trim();
       if (forwardedAuthor != null && forwardedAuthor.isNotEmpty) {
@@ -4163,6 +4269,36 @@ class MessageItemWidget extends StatelessWidget {
               : null,
         );
         break;
+      case 'location':
+        if (message.latitude == null || message.longitude == null) {
+          content = MessageBubble(
+            message: message.text.isNotEmpty
+                ? message.text
+                : AppLocalizations.of(context)!.translate('geolocation'),
+            time: time(message.createMessateTime),
+            isSender: message.isMyMessage,
+            senderName: message.senderName.toString(),
+            isHighlighted: highlightedMessageId == message.id,
+            isChanged: message.isChanged,
+            isRead: message.isRead,
+            isNote: message.isNote,
+            isLeadChat: isLeadChat,
+            isGroupChat: isGroupChat,
+          );
+        } else {
+          content = LocationMessageBubble(
+            latitude: message.latitude!,
+            longitude: message.longitude!,
+            time: time(message.createMessateTime),
+            isSender: message.isMyMessage,
+            senderName: message.senderName,
+            isRead: message.isRead,
+            isLeadChat: isLeadChat,
+            isGroupChat: isGroupChat,
+            isHighlighted: highlightedMessageId == message.id,
+          );
+        }
+        break;
       default:
         content = const SizedBox();
     }
@@ -4183,8 +4319,11 @@ class MessageItemWidget extends StatelessWidget {
   }
 
   Widget _buildPostPreview(BuildContext context, Post post) {
+    final localizations = AppLocalizations.of(context)!;
     final caption = post.caption.trim();
-    final text = caption.isNotEmpty ? caption : 'Пост в Instagram';
+    final text = caption.isNotEmpty
+        ? caption
+        : localizations.translate('instagram_post');
 
     return GestureDetector(
       onTap: onTogglePost,
@@ -4223,7 +4362,7 @@ class MessageItemWidget extends StatelessWidget {
                 ),
                 const SizedBox(width: 6),
                 Text(
-                  'Ответ на пост',
+                  localizations.translate('reply_to_post'),
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
@@ -4276,7 +4415,7 @@ class MessageItemWidget extends StatelessWidget {
       menuItems.add(
         ContextMenuItem(
           icon: 'assets/icons/chats/menu_icons/reply.svg',
-          text: 'Ответить как комментарий',
+          text: AppLocalizations.of(context)!.translate('reply_as_comment'),
           onTap: () {
             onInstagramReplyTap?.call('comment');
           },
@@ -4285,7 +4424,7 @@ class MessageItemWidget extends StatelessWidget {
       menuItems.add(
         ContextMenuItem(
           icon: 'assets/icons/chats/menu_icons/reply.svg',
-          text: 'Ответить в директ',
+          text: AppLocalizations.of(context)!.translate('reply_in_direct'),
           onTap: () {
             onInstagramReplyTap?.call('direct');
           },

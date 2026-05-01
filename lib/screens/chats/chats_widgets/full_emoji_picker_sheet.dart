@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:crm_task_manager/data/emoji_data.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 
 /// Полная панель выбора эмодзи (100+) с категориями и поиском
 /// Открывается как bottom sheet
@@ -61,6 +62,7 @@ class _FullEmojiPickerSheetState extends State<FullEmojiPickerSheet>
 
   @override
   Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context)!;
     return Container(
       height: MediaQuery.of(context).size.height * 0.6,
       decoration: const BoxDecoration(
@@ -74,11 +76,11 @@ class _FullEmojiPickerSheetState extends State<FullEmojiPickerSheet>
           // Быстрые реакции сверху
           _buildQuickReactions(),
           // Поле поиска
-          _buildSearchBar(),
+          _buildSearchBar(localizations),
           // Табы категорий или результаты поиска
           Expanded(
             child: _isSearching
-                ? _buildSearchResults()
+                ? _buildSearchResults(localizations)
                 : _buildCategoriesWithTabs(),
           ),
         ],
@@ -135,7 +137,7 @@ class _FullEmojiPickerSheetState extends State<FullEmojiPickerSheet>
     );
   }
 
-  Widget _buildSearchBar() {
+  Widget _buildSearchBar(AppLocalizations localizations) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
@@ -145,7 +147,7 @@ class _FullEmojiPickerSheetState extends State<FullEmojiPickerSheet>
       child: TextField(
         controller: _searchController,
         decoration: InputDecoration(
-          hintText: 'Поиск эмодзи...',
+          hintText: localizations.translate('search_emoji'),
           prefixIcon: const Icon(Icons.search, color: Colors.grey),
           suffixIcon: _isSearching
               ? IconButton(
@@ -165,12 +167,12 @@ class _FullEmojiPickerSheetState extends State<FullEmojiPickerSheet>
     );
   }
 
-  Widget _buildSearchResults() {
+  Widget _buildSearchResults(AppLocalizations localizations) {
     if (_searchResults.isEmpty) {
-      return const Center(
+      return Center(
         child: Text(
-          'Эмодзи не найдены',
-          style: TextStyle(color: Colors.grey),
+          localizations.translate('emoji_not_found'),
+          style: const TextStyle(color: Colors.grey),
         ),
       );
     }

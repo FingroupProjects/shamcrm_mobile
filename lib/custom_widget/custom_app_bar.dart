@@ -20,7 +20,7 @@ import 'package:crm_task_manager/screens/event/event_screen.dart';
 import 'package:crm_task_manager/screens/gps/background_location_service.dart';
 import 'package:crm_task_manager/screens/my-task/my_task_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
-import 'package:crm_task_manager/screens/sip/sip_screen.dart';
+// import 'package:crm_task_manager/screens/sip/sip_screen.dart';
 import 'package:dart_pusher_channels/dart_pusher_channels.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
@@ -1611,14 +1611,14 @@ class _CustomAppBarState extends State<CustomAppBar>
                             ),
                           );
                           break;
-                        case 'sip':
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const SipScreen(),
-                            ),
-                          );
-                          break;
+                        // case 'sip':
+                        //   Navigator.push(
+                        //     context,
+                        //     MaterialPageRoute(
+                        //       builder: (context) => const SipScreen(),
+                        //     ),
+                        //   );
+                        //   break;
                         case 'filter_dashboard':
                           widget.onDashboardFilterPressed?.call();
                           break;
@@ -1813,18 +1813,19 @@ class _CustomAppBarState extends State<CustomAppBar>
                                 ],
                               ),
                             ),
-                          if (_canReadSip)
-                            PopupMenuItem<String>(
-                              value: 'sip',
-                              child: Row(
-                                children: [
-                                  const Icon(Icons.phone_in_talk_outlined),
-                                  const SizedBox(width: 8),
-                                  Text(AppLocalizations.of(context)!
-                                      .translate('appbar_sip')),
-                                ],
-                              ),
-                            ),
+                          // SIP скрыт перед публикацией.
+                          // if (_canReadSip)
+                          //   PopupMenuItem<String>(
+                          //     value: 'sip',
+                          //     child: Row(
+                          //       children: [
+                          //         const Icon(Icons.phone_in_talk_outlined),
+                          //         const SizedBox(width: 8),
+                          //         Text(AppLocalizations.of(context)!
+                          //             .translate('appbar_sip')),
+                          //       ],
+                          //     ),
+                          //   ),
                           // if (widget.showGps && _canReadGps) // Новый пункт для GPS
                           //             PopupMenuItem<String>(
                           //               value: 'gps',

@@ -2,8 +2,9 @@ import 'package:crm_task_manager/models/integration_model.dart';
 import 'package:crm_task_manager/models/task_model.dart';
 import 'package:crm_task_manager/models/message_reaction_model.dart'; // Из ветки reaction
 import 'package:crm_task_manager/screens/chats/chats_widgets/chats_items.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/utils/global_value.dart';
-import 'package:flutter/material.dart';
+import 'package:crm_task_manager/main.dart';
 
 class Integration {
   final int? id;
@@ -148,25 +149,47 @@ class Chats {
 
   static String _getLastMessageText(Map<String, dynamic> lastMessage) {
     final isMyMessage = lastMessage['is_my_message'] ?? false;
+    final text = lastMessage['text']?.toString() ?? '';
+    final hasGeoInText =
+        Message.extractLocationCoordinatesFromText(text) != null;
+    final context = navigatorKey.currentContext;
+    final localizations = context != null ? AppLocalizations.of(context) : null;
     switch (lastMessage['type']) {
       case 'text':
-        return lastMessage['text'] ?? 'Текстовое сообщение';
+        if (hasGeoInText) {
+          return isMyMessage
+              ? (localizations?.translate('you_sent_geolocation') ??
+                  'Вы отправили геолокацию')
+              : (localizations?.translate('received_geolocation') ??
+                  'Вам пришла геолокация');
+        }
+        return lastMessage['text'] ??
+            (localizations?.translate('text_message') ?? 'Текстовое сообщение');
       case 'voice':
         return isMyMessage
-            ? 'Отправлено голосовое сообщение'
-            : 'Вам пришло голосовое сообщение';
+            ? (localizations?.translate('sent_voice_message') ??
+                'Отправлено голосовое сообщение')
+            : (localizations?.translate('received_voice_message') ??
+                'Вам пришло голосовое сообщение');
       case 'file':
-        return 'Файл: неизвестное имя';
+        return localizations?.translate('file_message') ??
+            'Файл: неизвестное имя';
       case 'image':
-        return 'Изображение';
+        return localizations?.translate('image_message') ?? 'Изображение';
       case 'video':
-        return 'Вам пришло видео сообщение';
+        return localizations?.translate('video_message') ??
+            'Вам пришло видео сообщение';
       case 'location':
-        return 'Вам пришло местоположение: ${lastMessage['location'] ?? 'неизвестно'}';
+        return isMyMessage
+            ? (localizations?.translate('you_sent_geolocation') ??
+                'Вы отправили геолокацию')
+            : (localizations?.translate('received_geolocation') ??
+                'Вам пришла геолокация');
       case 'sticker':
-        return 'Вам пришел стикер';
+        return localizations?.translate('sticker_message') ??
+            'Вам пришел стикер';
       default:
-        return 'Новое сообщение';
+        return localizations?.translate('new_message') ?? 'Новое сообщение';
     }
   }
 
@@ -338,10 +361,17 @@ class Group {
 }
 
 class Message {
+  static final RegExp _googleMapsQueryRegExp = RegExp(
+    r"""https?:\/\/(?:www\.)?google\.com\/maps(?:\/search\/)?(?:\?[^'"\s>]*?(?:q|query)=)([-+]?\d+(?:\.\d+)?),([-+]?\d+(?:\.\d+)?)""",
+    caseSensitive: false,
+  );
+
   final int id;
   final String text;
   final String type;
   final String? filePath;
+  final double? latitude;
+  final double? longitude;
   final bool isMyMessage;
   final String createMessateTime;
   bool isPlaying;
@@ -364,6 +394,8 @@ class Message {
     required this.text,
     required this.type,
     this.filePath,
+    this.latitude,
+    this.longitude,
     required this.isMyMessage,
     required this.createMessateTime,
     required this.senderName,
@@ -387,6 +419,8 @@ class Message {
     String? text,
     String? type,
     String? filePath,
+    double? latitude,
+    double? longitude,
     bool? isMyMessage,
     String? createMessateTime,
     bool? isPlaying,
@@ -409,6 +443,8 @@ class Message {
       text: text ?? this.text,
       type: type ?? this.type,
       filePath: filePath ?? this.filePath,
+      latitude: latitude ?? this.latitude,
+      longitude: longitude ?? this.longitude,
       isMyMessage: isMyMessage ?? this.isMyMessage,
       createMessateTime: createMessateTime ?? this.createMessateTime,
       isPlaying: isPlaying ?? this.isPlaying,
@@ -427,10 +463,56 @@ class Message {
     );
   }
 
+  static Map<String, double>? extractLocationCoordinatesFromText(String text) {
+    if (text.isEmpty) return null;
+
+    final match = _googleMapsQueryRegExp.firstMatch(text);
+    if (match == null) return null;
+
+    final latitude = _parseDouble(match.group(1));
+    final longitude = _parseDouble(match.group(2));
+    if (latitude == null || longitude == null) return null;
+
+    return {
+      'latitude': latitude,
+      'longitude': longitude,
+    };
+  }
+
+  static String resolveIncomingType(
+    String? rawType,
+    String text, {
+    double? latitude,
+    double? longitude,
+  }) {
+    final normalizedType = (rawType ?? 'text').toLowerCase();
+    if (normalizedType == 'location') return 'location';
+    if (latitude != null && longitude != null) return 'location';
+    if (extractLocationCoordinatesFromText(text) != null) return 'location';
+    return normalizedType;
+  }
+
   factory Message.fromJson(Map<String, dynamic> json, {String? chatType}) {
     String text = (json['type'] == 'file')
         ? (json['text'] ?? 'unknown_file')
         : (json['text'] ?? '');
+    final location = json['location'];
+    double? latitude = _parseDouble(json['lattitude'] ??
+        json['latitude'] ??
+        (location is Map
+            ? location['lattitude'] ?? location['latitude']
+            : null));
+    double? longitude = _parseDouble(
+        json['longitude'] ?? (location is Map ? location['longitude'] : null));
+    final inferredLocation = extractLocationCoordinatesFromText(text);
+    latitude ??= inferredLocation?['latitude'];
+    longitude ??= inferredLocation?['longitude'];
+    final resolvedType = resolveIncomingType(
+      json['type']?.toString(),
+      text,
+      latitude: latitude,
+      longitude: longitude,
+    );
 
     ReadStatus? readStatus;
     try {
@@ -542,13 +624,15 @@ class Message {
     return Message(
       id: json['id'],
       text: text,
-      type: json['type'],
+      type: resolvedType,
       senderName: json['sender'] == null
           ? 'Без имени'
           : json['sender']['name'] ?? 'Без имени',
       referralBody: json['chat']?['referral_body'],
       createMessateTime: json['created_at'] ?? '',
       filePath: json['file_path'],
+      latitude: latitude,
+      longitude: longitude,
       isPinned: json['is_pinned'] ?? false,
       isChanged: json['is_changed'] ?? false,
       isMyMessage: isMyMessage,
@@ -568,8 +652,14 @@ class Message {
 
   @override
   String toString() {
-    return 'Message{id: $id, text: $text, type: $type, filePath: $filePath, isMyMessage: $isMyMessage, isPlaying: $isPlaying, isPause: $isPause, duration: $duration, position: $position, forwardedMessage: $forwardedMessage, isPinned: $isPinned, isChanged: $isChanged, isRead: $isRead, readStatus: $readStatus}';
+    return 'Message{id: $id, text: $text, type: $type, filePath: $filePath, latitude: $latitude, longitude: $longitude, isMyMessage: $isMyMessage, isPlaying: $isPlaying, isPause: $isPause, duration: $duration, position: $position, forwardedMessage: $forwardedMessage, isPinned: $isPinned, isChanged: $isChanged, isRead: $isRead, readStatus: $readStatus}';
   }
+}
+
+double? _parseDouble(dynamic value) {
+  if (value == null) return null;
+  if (value is num) return value.toDouble();
+  return double.tryParse(value.toString());
 }
 
 class ForwardedMessage {
