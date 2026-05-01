@@ -2,7 +2,7 @@ name: crm_task_manager
 description: "A new Flutter project."
 publish_to: none
 
-version: 2.1.105+133
+version: 2.1.106+134
 
 
 environment:
@@ -89,6 +89,9 @@ dependencies:
   json_annotation: ^4.9.0
   json_serializable: ^6.11.1
   build_runner: ^2.8.0
+  flutter_map: ^8.3.0
+  latlong2: ^0.9.1
+  geolocator: ^14.0.2
   sip_ua:
     path: third_party/sip_ua
   flutter_webrtc: ^0.12.12+hotfix.1

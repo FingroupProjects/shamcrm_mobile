@@ -3450,111 +3450,8 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
                 '✅ Обновлено имя собеседника из chat.updated: $extractedName');
           }
 
-          // ✅ Если chat.message не пришёл, подстрахуемся lastMessage из chat.updated
-          final lastMessage = chatObj?['lastMessage'];
-          if (lastMessage is Map) {
-            final rawMessageId = lastMessage['id'];
-            final messageId = rawMessageId is int
-                ? rawMessageId
-                : int.tryParse(rawMessageId?.toString() ?? '');
-
-            if (messageId != null) {
-              bool alreadyExists = false;
-              final state = context.read<MessagingCubit>().state;
-              if (state is MessagesCollectionState) {
-                alreadyExists =
-                    state.messages.any((msg) => msg.id == messageId);
-              }
-
-              if (!alreadyExists) {
-                bool? isMyMessageFromServer;
-                final isMyMsgValue = lastMessage['is_my_message'];
-                if (isMyMsgValue is bool) {
-                  isMyMessageFromServer = isMyMsgValue;
-                } else if (isMyMsgValue is int) {
-                  isMyMessageFromServer = isMyMsgValue == 1;
-                } else if (isMyMsgValue is String) {
-                  isMyMessageFromServer =
-                      isMyMsgValue.toLowerCase() == 'true' ||
-                          isMyMsgValue == '1';
-                }
-
-                final senderId = lastMessage['sender']?['id']?.toString();
-                final senderType = lastMessage['sender']?['type']?.toString();
-                final isLeadChat = widget.endPointInTab == 'lead';
-
-                // Достаем имя отправителя из последних данных (ветка 1)
-                final senderNameFromLast =
-                    lastMessage['sender']?['name']?.toString();
-
-                // Объединенный вызов с новым параметром messageSenderName
-                final isMyMessage = await _determineIsMyMessage(
-                  messageSenderId: senderId,
-                  messageSenderType: senderType,
-                  messageSenderName: senderNameFromLast, // Из ветки 1
-                  myUserId: myUserId,
-                  isLeadChat: isLeadChat,
-                  isMyMessageFromServer: isMyMessageFromServer,
-                  debugContext: 'user_channel.chat.updated',
-                );
-                final fallbackName = extractedName ??
-                    _cachedCompanionName ??
-                    (_isGroupChat == true
-                        ? ''
-                        : (widget.chatItem.name.isNotEmpty
-                            ? widget.chatItem.name
-                            : ''));
-
-                final myName = await _getMyDisplayName();
-                final myDisplayName = myName.isNotEmpty ? myName : '';
-
-                final newMessage = Message(
-                  id: messageId,
-                  text: lastMessage['text'] ?? '',
-                  type: lastMessage['type'] ?? 'text',
-                  filePath: lastMessage['file_path'],
-                  isMyMessage: isMyMessage,
-                  createMessateTime: lastMessage['created_at'] ??
-                      DateTime.now().toIso8601String(),
-                  senderName: isMyMessage ? myDisplayName : fallbackName,
-                  duration: Duration(
-                    seconds: lastMessage['voice_duration'] != null
-                        ? double.tryParse(
-                                    lastMessage['voice_duration'].toString())
-                                ?.round() ??
-                            0
-                        : 0,
-                  ),
-                  isPinned: lastMessage['is_pinned'] ?? false,
-                  isChanged: lastMessage['is_changed'] ?? false,
-                  isNote: lastMessage['is_note'] ?? false,
-                );
-
-                if (mounted) {
-                  context
-                      .read<MessagingCubit>()
-                      .mergeIncomingMessage(newMessage);
-                  if (isMyMessage || _isNearBottom) {
-                    _scrollToBottom(force: true);
-                    if (!isMyMessage) {
-                      _markMessagesAsRead();
-                    }
-                  } else {
-                    _registerIncomingMessageForScrollButton(newMessage);
-                  }
-                }
-
-                if (!isMyMessage) {
-                  try {
-                    await _audioPlayer.setAsset('assets/audio/get.mp3');
-                    await _audioPlayer.play();
-                  } catch (e) {
-                    // ignore
-                  }
-                }
-              }
-            }
-          }
+          // Для открытого чата сообщения добавляем только через chat.message.
+          // chat.updated здесь нужен для имени/метаданных чата и списка чатов.
         } catch (e, stack) {
           debugPrint('❌ Ошибка парсинга chat.updated: $e');
           _logSocketEventToInspector(
@@ -3732,12 +3629,13 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
 
   Future<void> _onSendInButton(
       String messageText, String? replyMessageId) async {
-    if (messageText.trim().isNotEmpty) {
+    final normalizedMessageText = messageText.trim();
+    if (normalizedMessageText.isNotEmpty) {
       try {
         final myName = await _getMyDisplayName();
         final localMessage = Message(
           id: -DateTime.now().millisecondsSinceEpoch,
-          text: messageText,
+          text: normalizedMessageText,
           type: 'text',
           createMessateTime: DateTime.now().toUtc().toIso8601String(),
           isMyMessage: true,
@@ -3753,7 +3651,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
 
         await widget.apiService.sendMessage(
           widget.chatId,
-          messageText.trim(),
+          normalizedMessageText,
           replyMessageId: replyMessageId,
           responseType:
               _isInstagramCommentChannel ? _instagramResponseType : null,

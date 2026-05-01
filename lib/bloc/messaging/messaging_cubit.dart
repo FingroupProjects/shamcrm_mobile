@@ -846,6 +846,11 @@ class MessagingCubit extends Cubit<MessagingState> {
     List<Message> messages,
     Message incomingMessage,
   ) {
+    final incomingCreatedAt =
+        _tryParseMessageDate(incomingMessage.createMessateTime);
+    final incomingNormalizedText =
+        _normalizeMessageContent(incomingMessage.text);
+
     for (int index = 0; index < messages.length; index++) {
       final message = messages[index];
       if (message.id >= 0 ||
@@ -854,18 +859,45 @@ class MessagingCubit extends Cubit<MessagingState> {
         continue;
       }
 
-      if (incomingMessage.text.isNotEmpty &&
-          message.text == incomingMessage.text) {
+      final localNormalizedText = _normalizeMessageContent(message.text);
+      if (incomingNormalizedText.isNotEmpty &&
+          localNormalizedText == incomingNormalizedText &&
+          _isWithinPendingMatchWindow(
+            localMessage: message,
+            incomingCreatedAt: incomingCreatedAt,
+          )) {
         return index;
       }
 
       if (incomingMessage.filePath != null &&
-          message.filePath == incomingMessage.filePath) {
+          message.filePath == incomingMessage.filePath &&
+          _isWithinPendingMatchWindow(
+            localMessage: message,
+            incomingCreatedAt: incomingCreatedAt,
+          )) {
         return index;
       }
     }
 
     return -1;
+  }
+
+  String _normalizeMessageContent(String value) {
+    return value.replaceAll(RegExp(r'\s+'), ' ').trim();
+  }
+
+  bool _isWithinPendingMatchWindow({
+    required Message localMessage,
+    required DateTime? incomingCreatedAt,
+  }) {
+    final localCreatedAt = _tryParseMessageDate(localMessage.createMessateTime);
+    if (localCreatedAt == null || incomingCreatedAt == null) {
+      return true;
+    }
+
+    final difference =
+        localCreatedAt.difference(incomingCreatedAt).inSeconds.abs();
+    return difference <= 30;
   }
 
   List<Message> _replaceMessageById(

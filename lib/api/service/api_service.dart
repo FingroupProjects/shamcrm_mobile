@@ -8494,6 +8494,27 @@ class ApiService {
     }
   }
 
+  Future<void> sendLocation(
+    int chatId, {
+    required double latitude,
+    required double longitude,
+    String? responseType,
+  }) async {
+    final path = await _appendQueryParams('/v2/chat/sendLocation/$chatId');
+
+    final response = await _postRequest(path, {
+      'latitude': latitude,
+      // Some backend payloads in this project use the legacy "lattitude" key.
+      'lattitude': latitude,
+      'longitude': longitude,
+      if (responseType != null) 'response_type': responseType,
+    });
+
+    if (response.statusCode != 200) {
+      throw Exception('Ошибка отправки геопозиции!');
+    }
+  }
+
   Future<void> pinMessage(String messageId) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/v2/chat/pinMessage/$messageId');
