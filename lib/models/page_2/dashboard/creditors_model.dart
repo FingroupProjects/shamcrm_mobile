@@ -11,7 +11,9 @@ class CreditorsResponse extends Equatable {
 
   factory CreditorsResponse.fromJson(Map<String, dynamic> json) {
     return CreditorsResponse(
-      result: json['result'] != null ? CreditorsResult.fromJson(json['result'] as Map<String, dynamic>) : null,
+      result: json['result'] != null
+          ? CreditorsResult.fromJson(json['result'] as Map<String, dynamic>)
+          : null,
       errors: json['errors'] as String?, // Updated to String?
     );
   }
@@ -33,6 +35,7 @@ class CreditorsResult extends Equatable {
   final Period period;
   final num percentageChange;
   final bool isPositiveChange;
+  final CreditorsPagination? pagination;
 
   const CreditorsResult({
     required this.totalDebt,
@@ -40,15 +43,24 @@ class CreditorsResult extends Equatable {
     required this.period,
     required this.percentageChange,
     required this.isPositiveChange,
+    this.pagination,
   });
 
   factory CreditorsResult.fromJson(Map<String, dynamic> json) {
     return CreditorsResult(
       totalDebt: json['total_debt'] as num,
-      creditors: (json['creditors'] as List<dynamic>).map((e) => Creditor.fromJson(e as Map<String, dynamic>)).toList(),
+      creditors: ((json['creditors'] as List<dynamic>?) ?? [])
+          .map((e) => Creditor.fromJson(e as Map<String, dynamic>))
+          .toList(),
       period: Period.fromJson(json['period'] as Map<String, dynamic>),
-      percentageChange: (json['percentage_change'] as num).toDouble(), // Handle int or double
+      percentageChange:
+          (json['percentage_change'] as num).toDouble(), // Handle int or double
       isPositiveChange: json['is_positive_change'] as bool,
+      pagination: json['pagination'] != null
+          ? CreditorsPagination.fromJson(
+              json['pagination'] as Map<String, dynamic>,
+            )
+          : null,
     );
   }
 
@@ -59,11 +71,19 @@ class CreditorsResult extends Equatable {
       'period': period.toJson(),
       'percentage_change': percentageChange,
       'is_positive_change': isPositiveChange,
+      'pagination': pagination?.toJson(),
     };
   }
 
   @override
-  List<Object> get props => [totalDebt, creditors, period, percentageChange, isPositiveChange];
+  List<Object?> get props => [
+        totalDebt,
+        creditors,
+        period,
+        percentageChange,
+        isPositiveChange,
+        pagination,
+      ];
 }
 
 class Creditor extends Equatable {
@@ -129,18 +149,18 @@ class Period extends Equatable {
 }
 
 class DateRange extends Equatable {
-  final String? from;  // Changed to nullable
-  final String? to;    // Changed to nullable
+  final String? from; // Changed to nullable
+  final String? to; // Changed to nullable
 
   const DateRange({
-    this.from,  // No longer required
-    this.to,    // No longer required
+    this.from, // No longer required
+    this.to, // No longer required
   });
 
   factory DateRange.fromJson(Map<String, dynamic> json) {
     return DateRange(
-      from: json['from'] as String?,  // Cast to String?
-      to: json['to'] as String?,      // Cast to String?
+      from: json['from'] as String?, // Cast to String?
+      to: json['to'] as String?, // Cast to String?
     );
   }
 
@@ -152,5 +172,40 @@ class DateRange extends Equatable {
   }
 
   @override
-  List<Object?> get props => [from, to];  // Changed to Object? to handle nulls
+  List<Object?> get props => [from, to]; // Changed to Object? to handle nulls
+}
+
+class CreditorsPagination extends Equatable {
+  final int currentPage;
+  final int totalPages;
+  final int total;
+  final int perPage;
+
+  const CreditorsPagination({
+    required this.currentPage,
+    required this.totalPages,
+    required this.total,
+    required this.perPage,
+  });
+
+  factory CreditorsPagination.fromJson(Map<String, dynamic> json) {
+    return CreditorsPagination(
+      currentPage: (json['current_page'] as num?)?.toInt() ?? 1,
+      totalPages: (json['total_pages'] as num?)?.toInt() ?? 1,
+      total: (json['total'] as num?)?.toInt() ?? 0,
+      perPage: (json['per_page'] as num?)?.toInt() ?? 20,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'current_page': currentPage,
+      'total_pages': totalPages,
+      'total': total,
+      'per_page': perPage,
+    };
+  }
+
+  @override
+  List<Object> get props => [currentPage, totalPages, total, perPage];
 }

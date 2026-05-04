@@ -28,9 +28,12 @@ class _CashRegisterContentState extends State<CashRegisterContent> {
   }
 
   Future<void> _onRefresh() async {
-    context.read<CashRegisterOpeningsBloc>().add(LoadCashRegisterOpenings());
-    await context.read<CashRegisterOpeningsBloc>().stream.firstWhere(
-          (state) => state is! CashRegisterOpeningsLoading || state is CashRegisterOpeningsLoaded || state is CashRegisterOpeningsError,
+    final bloc = context.read<CashRegisterOpeningsBloc>();
+    final state = bloc.state;
+    final search = state is CashRegisterOpeningsLoaded ? state.search : null;
+    bloc.add(RefreshCashRegisterOpenings(search: search));
+    await bloc.stream.firstWhere(
+          (s) => s is! CashRegisterOpeningsLoading || s is CashRegisterOpeningsLoaded || s is CashRegisterOpeningsError,
     );
   }
 
@@ -200,7 +203,10 @@ class _CashRegisterContentState extends State<CashRegisterContent> {
                       const SizedBox(height: 16),
                       ElevatedButton(
                         onPressed: () {
-                          context.read<CashRegisterOpeningsBloc>().add(LoadCashRegisterOpenings());
+                          final bloc = context.read<CashRegisterOpeningsBloc>();
+                          final st = bloc.state;
+                          final q = st is CashRegisterOpeningsLoaded ? st.search : null;
+                          bloc.add(LoadCashRegisterOpenings(search: q));
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xff1E2E52),
@@ -264,8 +270,16 @@ class _CashRegisterContentState extends State<CashRegisterContent> {
             message: state.message,
             isSuccess: false,
           );
-          // Refresh data after delete error
-          context.read<CashRegisterOpeningsBloc>().add(LoadCashRegisterOpenings());
+          // Refresh data after delete error, сохраняем search из previousState
+          final bloc = context.read<CashRegisterOpeningsBloc>();
+          final st = bloc.state;
+          String? q;
+          if (st is CashRegisterOpeningsOperationError && st.previousState is CashRegisterOpeningsLoaded) {
+            q = (st.previousState as CashRegisterOpeningsLoaded).search;
+          } else if (st is CashRegisterOpeningsLoaded) {
+            q = st.search;
+          }
+          bloc.add(LoadCashRegisterOpenings(search: q));
         }
 
         // Поддержка старого состояния ошибки обновления (deprecated)

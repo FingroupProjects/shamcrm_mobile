@@ -21,6 +21,7 @@ class Lead {
   final List<Map<String, dynamic>>? chats;
   final List<MainPageDeal>? mainPageDeals; // Новое поле
   final num? debt;
+  final LeadCurrency? currency;
 
   Lead({
     required this.id,
@@ -41,6 +42,7 @@ class Lead {
     this.chats,
     this.mainPageDeals,
     this.debt,
+    this.currency,
   });
 
   factory Lead.fromJson(Map<String, dynamic> json, int leadStatusId) {
@@ -84,6 +86,9 @@ class Lead {
               .toList()
           : null,
       debt: json['debt'] is num ? json['debt'] : null,
+      currency: json['currency'] != null
+          ? LeadCurrency.fromJson(json['currency'])
+          : null,
     );
   }
 
@@ -107,6 +112,51 @@ class Lead {
       'chats': chats,
       'main_page_deals': mainPageDeals?.map((deal) => deal.toJson()).toList(),
       'debt': debt,
+      'currency': currency?.toJson(),
+    };
+  }
+}
+
+class LeadCurrency {
+  final int? id;
+  final String? name;
+  final int? digitalCode;
+  final String? symbolCode;
+  final int? organizationId;
+  final String? createdAt;
+  final String? updatedAt;
+
+  LeadCurrency({
+    this.id,
+    this.name,
+    this.digitalCode,
+    this.symbolCode,
+    this.organizationId,
+    this.createdAt,
+    this.updatedAt,
+  });
+
+  factory LeadCurrency.fromJson(Map<String, dynamic> json) {
+    return LeadCurrency(
+      id: json['id'],
+      name: json['name']?.toString(),
+      digitalCode: json['digital_code'],
+      symbolCode: json['symbol_code']?.toString(),
+      organizationId: json['organization_id'],
+      createdAt: json['created_at']?.toString(),
+      updatedAt: json['updated_at']?.toString(),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'digital_code': digitalCode,
+      'symbol_code': symbolCode,
+      'organization_id': organizationId,
+      'created_at': createdAt,
+      'updated_at': updatedAt,
     };
   }
 }
@@ -223,6 +273,7 @@ class LeadStatus {
   final bool isSuccess;
   final int position;
   final bool isFailure;
+  final bool isUnassembled;
 
   LeadStatus({
     required this.id,
@@ -234,24 +285,28 @@ class LeadStatus {
     required this.isSuccess,
     required this.position,
     required this.isFailure,
+    required this.isUnassembled,
   });
 
-factory LeadStatus.fromJson(Map<String, dynamic> json) {
-  return LeadStatus(
-    id: json['id'],
-    title: json['title'] ?? json['name'] ?? '',
-    color: json['color'],
-    lead_status_id: json['lead_status_id'] ?? null,
-    leadsCount: json['leads_count'] ?? 0, // Убедимся, что leads_count читается
-    isSuccess: json['is_success'] == true || json['is_success'] == 1,
-    position: json['position'] ?? 0,
-    isFailure: json['is_failure'] == true || json['is_failure'] == 1,
-    leads: (json['leads'] as List<dynamic>?)
-            ?.map((lead) => Lead.fromJson(lead, json['id']))
-            .toList() ??
-        [],
-  );
-}
+  factory LeadStatus.fromJson(Map<String, dynamic> json) {
+    return LeadStatus(
+      id: json['id'],
+      title: json['title'] ?? json['name'] ?? '',
+      color: json['color'],
+      lead_status_id: json['lead_status_id'] ?? null,
+      leadsCount:
+          json['leads_count'] ?? 0, // Убедимся, что leads_count читается
+      isSuccess: json['is_success'] == true || json['is_success'] == 1,
+      position: json['position'] ?? 0,
+      isFailure: json['is_failure'] == true || json['is_failure'] == 1,
+      isUnassembled:
+          json['is_unassembled'] == true || json['is_unassembled'] == 1,
+      leads: (json['leads'] as List<dynamic>?)
+              ?.map((lead) => Lead.fromJson(lead, json['id']))
+              .toList() ??
+          [],
+    );
+  }
 
   Map<String, dynamic> toJson() {
     return {
@@ -263,6 +318,7 @@ factory LeadStatus.fromJson(Map<String, dynamic> json) {
       'is_success': isSuccess,
       'position': position,
       'is_failure': isFailure,
+      'is_unassembled': isUnassembled,
     };
   }
 }

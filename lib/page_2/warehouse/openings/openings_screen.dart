@@ -75,6 +75,7 @@ class _OpeningsScreenState extends State<OpeningsScreen> with TickerProviderStat
   bool isClickAvatarIcon = false;
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
+  String? _currentSearch;
 
   // Store bloc instances
   late SupplierOpeningsBloc _supplierBloc;
@@ -104,6 +105,11 @@ class _OpeningsScreenState extends State<OpeningsScreen> with TickerProviderStat
       if (_tabController.indexIsChanging) return;
       setState(() {
         _currentTabIndex = _tabController.index;
+        // Если переключились на вкладку Касса (id == 3), очищаем поиск
+        if (_tabTitles[_tabController.index]['id'] == 3) {
+          _currentSearch = null;
+          _searchController.clear();
+        }
       });
       _scrollToActiveTab();
       // Reload data when tab changes
@@ -168,11 +174,22 @@ class _OpeningsScreenState extends State<OpeningsScreen> with TickerProviderStat
                 isClickAvatarIcon = !isClickAvatarIcon;
               });
             },
-            showSearchIcon: false,
-            onChangedSearchInput: (value) {},
+            showSearchIcon: !isClickAvatarIcon && _currentTabIndex != 3, // Показываем поиск на всех вкладках кроме Кассы (id=3)
+            onChangedSearchInput: _onSearch,
             textEditingController: _searchController,
             focusNode: _searchFocusNode,
-            clearButtonClick: (isSearching) {},
+            clearButtonClick: (isSearching) {
+              if (!isSearching) {
+                setState(() {
+                  _currentSearch = null;
+                  _searchController.clear();
+                });
+                // Не применяем поиск на вкладке Касса (id == 3)
+                if (_tabTitles[_currentTabIndex]['id'] != 3) {
+                  _loadDataForCurrentTab();
+                }
+              }
+            },
           ),
         ),
         body: isClickAvatarIcon
@@ -275,21 +292,35 @@ class _OpeningsScreenState extends State<OpeningsScreen> with TickerProviderStat
     }
   }
 
+  void _onSearch(String query) {
+    // Не применяем поиск на вкладке Касса (id == 3)
+    if (_tabTitles[_currentTabIndex]['id'] == 3) {
+      return;
+    }
+    
+    setState(() {
+      _currentSearch = query.trim().isNotEmpty ? query : null;
+    });
+    
+    // Ищем в текущей вкладке
+    _loadDataForCurrentTab();
+  }
+
   void _loadDataForCurrentTab() {
     final id = _tabTitles[_currentTabIndex]['id'];
     
     if (id == 0) {
-      // Supplier tab
-      _supplierBloc.add(LoadSupplierOpenings());
+      // Supplier tab - передаем текущий search
+      _supplierBloc.add(LoadSupplierOpenings(search: _currentSearch));
     } else if (id == 1) {
-      // Client tab
-      _clientBloc.add(LoadClientOpenings());
+      // Client tab - передаем текущий search
+      _clientBloc.add(LoadClientOpenings(search: _currentSearch));
     } else if (id == 2) {
-      // Goods tab
-      _goodsBloc.add(LoadGoodsOpenings());
+      // Goods tab - передаем текущий search
+      _goodsBloc.add(LoadGoodsOpenings(search: _currentSearch));
     } else if (id == 3) {
-      // Cash register tab
-      _cashRegisterBloc.add(LoadCashRegisterOpenings());
+      // Cash register tab - поиск не используется, всегда null
+      _cashRegisterBloc.add(LoadCashRegisterOpenings(search: null));
     }
   }
 

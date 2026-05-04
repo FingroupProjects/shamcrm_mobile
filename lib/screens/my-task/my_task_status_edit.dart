@@ -280,8 +280,11 @@ class _EditMyTaskStatusScreenState extends State<EditMyTaskStatusScreen> {
           controller: controller,
           hintText: hintText ?? '',
           label: label,
+          maxLines: 2,
           validator: isRequired
-              ? (value) => value!.isEmpty ? 'Поле обязательно' : null
+              ? (value) => value!.isEmpty
+                  ? AppLocalizations.of(context)!.translate('field_required')
+                  : null
               : null,
           keyboardType: keyboardType ?? TextInputType.text,
           inputFormatters: formatters,

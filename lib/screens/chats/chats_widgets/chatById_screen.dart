@@ -37,6 +37,13 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   bool _canEditLead = false;
   bool _isLoadingPermissions = true;
 
+  String _getLeadErrorMessage(String error) {
+    if (error.toLowerCase().contains('интернет')) {
+      return error;
+    }
+    return 'Лид был удален';
+  }
+
   @override
   void initState() {
     super.initState();
@@ -46,7 +53,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   Future<void> _checkPermissions() async {
     try {
       final canEdit = await _apiService.hasPermission('lead.update');
-      
+
       if (mounted) {
         setState(() {
           _canEditLead = canEdit;
@@ -104,7 +111,8 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (context) => ChatProfileBloc(ApiService())..add(FetchChatProfile(widget.chatId)),
+      create: (context) =>
+          ChatProfileBloc(ApiService())..add(FetchChatProfile(widget.chatId)),
       child: Scaffold(
         backgroundColor: const Color(0xffF4F7FD),
         appBar: AppBar(
@@ -139,7 +147,8 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
             } else if (state is ChatProfileLoaded) {
               final profile = state.profile;
               final DateTime parsedDate = DateTime.parse(profile.createdAt);
-              final String formattedDate = DateFormat('dd.MM.yyyy').format(parsedDate);
+              final String formattedDate =
+                  DateFormat('dd.MM.yyyy').format(parsedDate);
 
               return SingleChildScrollView(
                 padding: const EdgeInsets.all(16),
@@ -150,7 +159,8 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(20),
                       ),
-                      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 16, horizontal: 16),
                       child: Column(
                         children: [
                           buildInfoRow(
@@ -176,8 +186,10 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                           buildInfoRow(
                             context,
                             profile,
-                            AppLocalizations.of(context)!.translate('instagram'),
-                            profile.instaLogin ?? AppLocalizations.of(context)!.translate(''),
+                            AppLocalizations.of(context)!
+                                .translate('instagram'),
+                            profile.instaLogin ??
+                                AppLocalizations.of(context)!.translate(''),
                             null,
                             'assets/icons/leads/instagram.png',
                           ),
@@ -186,7 +198,8 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                             context,
                             profile,
                             AppLocalizations.of(context)!.translate('telegram'),
-                            profile.tgNick ?? AppLocalizations.of(context)!.translate(''),
+                            profile.tgNick ??
+                                AppLocalizations.of(context)!.translate(''),
                             null,
                             'assets/icons/leads/telegram.png',
                           ),
@@ -195,7 +208,8 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                             context,
                             profile,
                             AppLocalizations.of(context)!.translate('whatsApp'),
-                            profile.waPhone ?? AppLocalizations.of(context)!.translate(''),
+                            profile.waPhone ??
+                                AppLocalizations.of(context)!.translate(''),
                             null,
                             'assets/icons/leads/whatsapp.png',
                           ),
@@ -204,7 +218,8 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                             context,
                             profile,
                             AppLocalizations.of(context)!.translate('facebook'),
-                            profile.facebookLogin ?? AppLocalizations.of(context)!.translate(''),
+                            profile.facebookLogin ??
+                                AppLocalizations.of(context)!.translate(''),
                             null,
                             'assets/icons/leads/facebook.png',
                           ),
@@ -212,8 +227,10 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                           buildInfoRow(
                             context,
                             profile,
-                            AppLocalizations.of(context)!.translate('description_list'),
-                            profile.description ?? AppLocalizations.of(context)!.translate(''),
+                            AppLocalizations.of(context)!
+                                .translate('description_list'),
+                            profile.description ??
+                                AppLocalizations.of(context)!.translate(''),
                             Icons.description,
                             null,
                           ),
@@ -221,7 +238,8 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                           buildInfoRow(
                             context,
                             profile,
-                            AppLocalizations.of(context)!.translate('creation_date_lead'),
+                            AppLocalizations.of(context)!
+                                .translate('creation_date_lead'),
                             formattedDate,
                             Icons.calendar_today,
                             null,
@@ -230,14 +248,16 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                           Row(
                             crossAxisAlignment: CrossAxisAlignment.center,
                             children: [
-                              Icon(Icons.supervisor_account, size: 32, color: const Color(0xff1E2E52)),
+                              Icon(Icons.supervisor_account,
+                                  size: 32, color: const Color(0xff1E2E52)),
                               const SizedBox(width: 12),
                               Expanded(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      AppLocalizations.of(context)!.translate('manager'),
+                                      AppLocalizations.of(context)!
+                                          .translate('manager'),
                                       style: const TextStyle(
                                         fontSize: 14,
                                         fontWeight: FontWeight.w500,
@@ -259,58 +279,95 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                                       Padding(
                                         padding: EdgeInsets.only(left: 0),
                                         child: Row(
-                                          mainAxisAlignment: MainAxisAlignment.start,
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.start,
                                           children: [
                                             GestureDetector(
                                               onTap: () async {
-                                                bool? confirm = await showDialog<bool>(
+                                                bool? confirm =
+                                                    await showDialog<bool>(
                                                   context: context,
-                                                  builder: (BuildContext context) {
+                                                  builder:
+                                                      (BuildContext context) {
                                                     return AlertDialog(
-                                                      backgroundColor: Colors.white,
+                                                      backgroundColor:
+                                                          Colors.white,
                                                       title: Center(
                                                         child: Text(
-                                                          AppLocalizations.of(context)!.translate('confirm_manager_title'),
+                                                          AppLocalizations.of(
+                                                                  context)!
+                                                              .translate(
+                                                                  'confirm_manager_title'),
                                                           style: TextStyle(
                                                             fontSize: 20,
-                                                            fontFamily: 'Gilroy',
-                                                            fontWeight: FontWeight.w600,
-                                                            color: Color(0xFF1E2E52),
+                                                            fontFamily:
+                                                                'Gilroy',
+                                                            fontWeight:
+                                                                FontWeight.w600,
+                                                            color: Color(
+                                                                0xFF1E2E52),
                                                           ),
                                                         ),
                                                       ),
                                                       content: Text(
-                                                        AppLocalizations.of(context)!.translate('confirm_manager_message'),
+                                                        AppLocalizations.of(
+                                                                context)!
+                                                            .translate(
+                                                                'confirm_manager_message'),
                                                         style: TextStyle(
                                                           fontSize: 16,
                                                           fontFamily: 'Gilroy',
-                                                          fontWeight: FontWeight.w500,
-                                                          color: Color(0xFF1E2E52),
+                                                          fontWeight:
+                                                              FontWeight.w500,
+                                                          color:
+                                                              Color(0xFF1E2E52),
                                                         ),
                                                       ),
                                                       actions: [
                                                         Row(
-                                                          mainAxisAlignment: MainAxisAlignment.end,
+                                                          mainAxisAlignment:
+                                                              MainAxisAlignment
+                                                                  .end,
                                                           children: [
                                                             Expanded(
-                                                              child: CustomButton(
-                                                                buttonText: AppLocalizations.of(context)!.translate('no'),
+                                                              child:
+                                                                  CustomButton(
+                                                                buttonText: AppLocalizations.of(
+                                                                        context)!
+                                                                    .translate(
+                                                                        'no'),
                                                                 onPressed: () {
-                                                                  Navigator.of(context).pop(false);
+                                                                  Navigator.of(
+                                                                          context)
+                                                                      .pop(
+                                                                          false);
                                                                 },
-                                                                buttonColor: Colors.red,
-                                                                textColor: Colors.white,
+                                                                buttonColor:
+                                                                    Colors.red,
+                                                                textColor:
+                                                                    Colors
+                                                                        .white,
                                                               ),
                                                             ),
                                                             SizedBox(width: 8),
                                                             Expanded(
-                                                              child: CustomButton(
-                                                                buttonText: AppLocalizations.of(context)!.translate('yes'),
+                                                              child:
+                                                                  CustomButton(
+                                                                buttonText: AppLocalizations.of(
+                                                                        context)!
+                                                                    .translate(
+                                                                        'yes'),
                                                                 onPressed: () {
-                                                                  Navigator.of(context).pop(true);
+                                                                  Navigator.of(
+                                                                          context)
+                                                                      .pop(
+                                                                          true);
                                                                 },
-                                                                buttonColor: Color(0xFF1E2E52),
-                                                                textColor: Colors.white,
+                                                                buttonColor: Color(
+                                                                    0xFF1E2E52),
+                                                                textColor:
+                                                                    Colors
+                                                                        .white,
                                                               ),
                                                             ),
                                                           ],
@@ -324,73 +381,103 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                                                   return;
                                                 }
 
-                                                if (profile.phone == null || profile.phone!.isEmpty) {
-                                                  showCustomSnackBar(
-                                                    context: context,
-                                                    message: AppLocalizations.of(context)!.translate('phone_required'),
-                                                    isSuccess: false,
-                                                  );
-                                                  return;
-                                                }
-
                                                 try {
-                                                  SharedPreferences prefs = await SharedPreferences.getInstance();
-                                                  String? userID = prefs.getString('userID');
-                                                  if (userID == null || userID.isEmpty) {
+                                                  SharedPreferences prefs =
+                                                      await SharedPreferences
+                                                          .getInstance();
+                                                  String? userID =
+                                                      prefs.getString('userID');
+                                                  if (userID == null ||
+                                                      userID.isEmpty) {
                                                     return;
                                                   }
-                                                  int? parsedUserId = int.tryParse(userID);
+                                                  int? parsedUserId =
+                                                      int.tryParse(userID);
 
-                                                  final completer = Completer<void>();
-                                                  final leadBloc = context.read<LeadBloc>();
+                                                  final completer =
+                                                      Completer<void>();
+                                                  final leadBloc =
+                                                      context.read<LeadBloc>();
 
-                                                  final listener = context.read<LeadBloc>().stream.listen((state) {
+                                                  final listener = context
+                                                      .read<LeadBloc>()
+                                                      .stream
+                                                      .listen((state) {
                                                     if (state is LeadSuccess) {
                                                       completer.complete();
-                                                    } else if (state is LeadError) {
-                                                      completer.completeError(Exception(state.message));
+                                                    } else if (state
+                                                        is LeadError) {
+                                                      completer.completeError(
+                                                          Exception(
+                                                              state.message));
                                                     }
                                                   });
 
-                                                  final localizations = AppLocalizations.of(context)!;
+                                                  final localizations =
+                                                      AppLocalizations.of(
+                                                          context)!;
                                                   leadBloc.add(UpdateLead(
                                                     leadId: profile.id,
                                                     name: profile.name,
                                                     phone: profile.phone ?? "",
                                                     managerId: parsedUserId,
-                                                    leadStatusId: profile.leadStatus?.id ?? 0,
-                                                    localizations: localizations,
-                                                    existingFiles: [], customFields: [], directoryValues: [], isSystemManager: false, filePaths: [],
+                                                    leadStatusId: profile
+                                                            .leadStatus?.id ??
+                                                        0,
+                                                    localizations:
+                                                        localizations,
+                                                    // existingFiles: [],
+                                                    customFields: [],
+                                                    directoryValues: [],
+                                                    isSystemManager: false,
+                                                    // filePaths: [],
                                                   ));
 
                                                   await completer.future;
                                                   listener.cancel();
 
-                                                  context.read<ChatProfileBloc>().add(FetchChatProfile(widget.chatId));
+                                                  context
+                                                      .read<ChatProfileBloc>()
+                                                      .add(FetchChatProfile(
+                                                          widget.chatId));
 
-                                                  context.read<LeadByIdBloc>().add(FetchLeadByIdEvent(leadId: profile.id));
-                                                  context.read<LeadBloc>().add(FetchLeadStatuses());
+                                                  context
+                                                      .read<LeadByIdBloc>()
+                                                      .add(FetchLeadByIdEvent(
+                                                          leadId: profile.id));
+                                                  context
+                                                      .read<LeadBloc>()
+                                                      .add(FetchLeadStatuses());
                                                   showCustomSnackBar(
                                                     context: context,
-                                                    message: AppLocalizations.of(context)!.translate('manager_assigned_success'),
+                                                    message: AppLocalizations
+                                                            .of(context)!
+                                                        .translate(
+                                                            'manager_assigned_success'),
                                                     isSuccess: true,
                                                   );
                                                 } catch (e) {
                                                   showCustomSnackBar(
                                                     context: context,
-                                                    message: AppLocalizations.of(context)!.translate('manager_assign_failed'),
+                                                    message: AppLocalizations
+                                                            .of(context)!
+                                                        .translate(
+                                                            'manager_assign_failed'),
                                                     isSuccess: false,
                                                   );
                                                 }
                                               },
                                               child: Container(
-                                                padding: EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+                                                padding: EdgeInsets.symmetric(
+                                                    horizontal: 6, vertical: 6),
                                                 decoration: BoxDecoration(
                                                   color: Color(0xff1E2E52),
-                                                  borderRadius: BorderRadius.circular(10),
+                                                  borderRadius:
+                                                      BorderRadius.circular(10),
                                                 ),
                                                 child: Row(
-                                                  mainAxisSize: MainAxisSize.min,
+                                                  mainAxisSize:
+                                                      MainAxisSize.min,
                                                   children: [
                                                     Icon(
                                                       Icons.person_add_alt_1,
@@ -399,12 +486,17 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                                                     ),
                                                     SizedBox(width: 12),
                                                     Text(
-                                                      AppLocalizations.of(context)!.translate('become_manager'),
-                                                      textAlign: TextAlign.center,
+                                                      AppLocalizations.of(
+                                                              context)!
+                                                          .translate(
+                                                              'become_manager'),
+                                                      textAlign:
+                                                          TextAlign.center,
                                                       style: TextStyle(
                                                         fontSize: 16,
                                                         fontFamily: 'Gilroy',
-                                                        fontWeight: FontWeight.w500,
+                                                        fontWeight:
+                                                            FontWeight.w500,
                                                         color: Colors.white,
                                                       ),
                                                     ),
@@ -433,9 +525,21 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                 ),
               );
             } else if (state is ChatProfileError) {
-              return Center(child: Text(state.error));
+              return Center(
+                child: Text(
+                  _getLeadErrorMessage(state.error),
+                  style: const TextStyle(
+                    fontFamily: 'Gilroy',
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.black,
+                  ),
+                ),
+              );
             }
-            return Center(child: Text(AppLocalizations.of(context)!.translate('download_data')));
+            return Center(
+                child: Text(
+                    AppLocalizations.of(context)!.translate('download_data')));
           },
         ),
       ),
@@ -492,10 +596,14 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                   () {
                     // Callback после успешного изменения статуса
                     // Перезагружаем профиль
-                    context.read<ChatProfileBloc>().add(FetchChatProfile(widget.chatId));
-                    
+                    context
+                        .read<ChatProfileBloc>()
+                        .add(FetchChatProfile(widget.chatId));
+
                     // Также обновляем данные в других блоках, если они используются
-                    context.read<LeadByIdBloc>().add(FetchLeadByIdEvent(leadId: profile.id));
+                    context
+                        .read<LeadByIdBloc>()
+                        .add(FetchLeadByIdEvent(leadId: profile.id));
                     context.read<LeadBloc>().add(FetchLeadStatuses());
                   },
                 );
@@ -548,34 +656,40 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
           } else {
             showCustomSnackBar(
               context: context,
-              message: AppLocalizations.of(context)!.translate('lead_data_missing'),
+              message:
+                  AppLocalizations.of(context)!.translate('lead_data_missing'),
               isSuccess: false,
             );
           }
         },
         child: Text(value, style: clickableStyle),
       );
-    } else if (title == AppLocalizations.of(context)!.translate('phone') && value != AppLocalizations.of(context)!.translate('')) {
+    } else if (title == AppLocalizations.of(context)!.translate('phone') &&
+        value != AppLocalizations.of(context)!.translate('')) {
       content = GestureDetector(
         onTap: () => _makePhoneCall(value),
         child: Text(value, style: clickableStyle),
       );
-    } else if (title == AppLocalizations.of(context)!.translate('whatsApp') && value != AppLocalizations.of(context)!.translate('')) {
+    } else if (title == AppLocalizations.of(context)!.translate('whatsApp') &&
+        value != AppLocalizations.of(context)!.translate('')) {
       content = GestureDetector(
         onTap: () => _openWhatsApp(value),
         child: Text(value, style: clickableStyle),
       );
-    } else if (title == AppLocalizations.of(context)!.translate('telegram') && value != AppLocalizations.of(context)!.translate('')) {
+    } else if (title == AppLocalizations.of(context)!.translate('telegram') &&
+        value != AppLocalizations.of(context)!.translate('')) {
       content = GestureDetector(
         onTap: () => _openTelegram(value),
         child: Text(value, style: clickableStyle),
       );
-    } else if (title == AppLocalizations.of(context)!.translate('instagram') && value != AppLocalizations.of(context)!.translate('')) {
+    } else if (title == AppLocalizations.of(context)!.translate('instagram') &&
+        value != AppLocalizations.of(context)!.translate('')) {
       content = GestureDetector(
         onTap: () => _openInstagram(value),
         child: Text(value, style: clickableStyle),
       );
-    } else if (title == AppLocalizations.of(context)!.translate('facebook') && value != AppLocalizations.of(context)!.translate('')) {
+    } else if (title == AppLocalizations.of(context)!.translate('facebook') &&
+        value != AppLocalizations.of(context)!.translate('')) {
       content = GestureDetector(
         onTap: () => _openFacebook(value),
         child: Text(value, style: clickableStyle),

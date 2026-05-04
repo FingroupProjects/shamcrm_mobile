@@ -2,18 +2,22 @@ import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/custom_widget/custom_bottom_dropdown.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/models/task_model.dart';
+import 'package:crm_task_manager/screens/common/reason_for_refusal_modal.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void DropdownBottomSheet(
   BuildContext context,
   String defaultValue,
-  Function(String, int) onSelect, 
+  Function(String, int) onSelect,
   Task task,
 ) {
+  final rootContext = context;
   String selectedValue = defaultValue;
   int? selectedStatusId;
-  bool isLoading = false; 
+  bool isLoading = false;
+  List<TaskStatus> loadedStatuses = [];
 
   showModalBottomSheet(
     context: context,
@@ -43,11 +47,16 @@ void DropdownBottomSheet(
                     future: ApiService().getTaskStatuses(),
                     builder: (context, snapshot) {
                       if (snapshot.hasError) {
-                        return Center(child: Text(AppLocalizations.of(context)!.translate('error')));
+                        return Center(
+                            child: Text(AppLocalizations.of(context)!
+                                .translate('error')));
                       } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                        return Center(child: Text(AppLocalizations.of(context)!.translate('loading')));
+                        return Center(
+                            child: Text(AppLocalizations.of(context)!
+                                .translate('loading')));
                       }
                       List<TaskStatus> statuses = snapshot.data!;
+                      loadedStatuses = statuses;
 
                       return ListView(
                         children: statuses.map((TaskStatus status) {
@@ -60,7 +69,8 @@ void DropdownBottomSheet(
                             },
                             child: buildDropDownStyles(
                               text: status.taskStatus!.name ?? "",
-                              isSelected: selectedValue == status.taskStatus!.name,
+                              isSelected:
+                                  selectedValue == status.taskStatus!.name,
                             ),
                           );
                         }).toList(),
@@ -75,55 +85,92 @@ void DropdownBottomSheet(
                         ),
                       )
                     : CustomButton(
-                        buttonText: AppLocalizations.of(context)!.translate('save'),
+                        buttonText:
+                            AppLocalizations.of(context)!.translate('save'),
                         buttonColor: Color(0xfff4F40EC),
                         textColor: Colors.white,
-                        onPressed: () {
+                        onPressed: () async {
                           if (selectedStatusId != null) {
+                            final prefs = await SharedPreferences.getInstance();
+                            final askReason =
+                                prefs.getBool('ask_reason_for_refusal') ??
+                                    false;
+                            final targetStatus =
+                                loadedStatuses.cast<TaskStatus?>().firstWhere(
+                                      (status) =>
+                                          status?.id == selectedStatusId,
+                                      orElse: () => null,
+                                    );
+
+                            ReasonForRefusalSubmitData? refusalData;
+                            if (askReason &&
+                                targetStatus != null &&
+                                targetStatus.isUnassembled) {
+                              refusalData = await showReasonForRefusalDialog(
+                                context: context,
+                                type: 'task',
+                              );
+                              if (refusalData == null) {
+                                return;
+                              }
+                            }
+
                             setState(() {
-                              isLoading = true; 
+                              isLoading = true;
                             });
 
-                            ApiService().updateTaskStatus(task.id, task.statusId, selectedStatusId!).then((_) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                 SnackBar(
-                                   content: Text(
-                                     AppLocalizations.of(context)!.translate('status_changed_successfully'),
-                                     style: TextStyle(
-                                       fontFamily: 'Gilroy',
-                                       fontSize: 16,
-                                       fontWeight: FontWeight.w500,
-                                       color: Colors.white,
-                                     ),
-                                   ),
-                                   behavior: SnackBarBehavior.floating,
-                                   margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                   shape: RoundedRectangleBorder(
-                                     borderRadius: BorderRadius.circular(12),
-                                   ),
-                                   backgroundColor: Colors.green,
-                                   elevation: 3,
-                                   padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                                   duration: Duration(seconds: 3),
-                                 ),
-                               );
+                            ApiService()
+                                .updateTaskStatus(
+                              task.id,
+                              task.statusId,
+                              selectedStatusId!,
+                              reasonForRefusalId: refusalData?.reasonId,
+                              reasonForRefusal: refusalData?.comment,
+                            )
+                                .then((_) {
+                              ScaffoldMessenger.of(rootContext).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    AppLocalizations.of(context)!.translate(
+                                        'status_changed_successfully'),
+                                    style: TextStyle(
+                                      fontFamily: 'Gilroy',
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w500,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                  behavior: SnackBarBehavior.floating,
+                                  margin: EdgeInsets.symmetric(
+                                      horizontal: 16, vertical: 8),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  backgroundColor: Colors.green,
+                                  elevation: 3,
+                                  padding: EdgeInsets.symmetric(
+                                      vertical: 12, horizontal: 16),
+                                  duration: Duration(seconds: 3),
+                                ),
+                              );
                               setState(() {
-                                isLoading = false; 
+                                isLoading = false;
                               });
 
                               Navigator.pop(context);
                               onSelect(selectedValue, selectedStatusId!);
                             }).catchError((error) {
                               setState(() {
-                                isLoading = false; 
+                                isLoading = false;
                               });
 
                               if (error is TaskStatusUpdateException &&
                                   error.statusCode == 422) {
-                                ScaffoldMessenger.of(context).showSnackBar(
+                                Navigator.pop(context);
+                                ScaffoldMessenger.of(rootContext).showSnackBar(
                                   SnackBar(
                                     content: Text(
-                                      AppLocalizations.of(context)!.translate('cannot_move_task_to_status'),
+                                      error.message,
                                       style: TextStyle(
                                         fontFamily: 'Gilroy',
                                         fontSize: 16,
@@ -132,17 +179,18 @@ void DropdownBottomSheet(
                                       ),
                                     ),
                                     behavior: SnackBarBehavior.floating,
-                                    margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                    margin: EdgeInsets.symmetric(
+                                        horizontal: 16, vertical: 8),
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(12),
                                     ),
                                     backgroundColor: Colors.red,
                                     elevation: 3,
-                                    padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                                    padding: EdgeInsets.symmetric(
+                                        vertical: 12, horizontal: 16),
                                     duration: Duration(seconds: 3),
                                   ),
                                 );
-                                Navigator.pop(context);
                               } else {
                                 //print('Ошибка обновления статуса задачи!rror');
                               }

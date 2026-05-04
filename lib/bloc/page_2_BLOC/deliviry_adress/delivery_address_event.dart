@@ -4,11 +4,11 @@ import 'package:flutter/material.dart';
 abstract class DeliveryAddressEvent {}
 
 class FetchDeliveryAddresses extends DeliveryAddressEvent {
-  final int leadId;
-  // final int organizationId;
+  final int? leadId;
+  final int? dealId;
 
   FetchDeliveryAddresses({
-    required this.leadId,
-    // required this.organizationId,
+    this.leadId,
+    this.dealId,
   });
 }

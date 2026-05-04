@@ -2,7 +2,9 @@ import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/deal/deal_bloc.dart';
 import 'package:crm_task_manager/bloc/deal/deal_event.dart';
 import 'package:crm_task_manager/bloc/deal/deal_state.dart';
+import 'package:crm_task_manager/models/deal_model.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
+import 'package:crm_task_manager/screens/deal/deal_cache.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_add_screen.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_card.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
@@ -16,19 +18,22 @@ import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 class DealColumn extends StatefulWidget {
   final int statusId;
   final String title;
-  final Function(int) onStatusId;
+  final void Function(int oldStatusId, int newStatusId) onStatusId;
   final int? managerId;
   final bool isDealScreenTutorialCompleted;
   final int? salesFunnelId; // Добавляем этот параметр
+  final int refreshVersion;
 
   DealColumn({
+    Key? key,
     required this.statusId,
     required this.title,
     required this.onStatusId,
     this.managerId,
     required this.isDealScreenTutorialCompleted,
     this.salesFunnelId, // Добавляем в конструктор
-  });
+    required this.refreshVersion,
+  }) : super(key: key);
 
   @override
   _DealColumnState createState() => _DealColumnState();
@@ -54,7 +59,9 @@ class _DealColumnState extends State<DealColumn> {
   void initState() {
     super.initState();
     //print('DealColumn: initState started for statusId: ${widget.statusId}');
-    _dealBloc = DealBloc(_apiService)..add(FetchDeals(widget.statusId));
+    _dealBloc = context.read<DealBloc>();
+    _dealBloc
+        .add(FetchDeals(widget.statusId, salesFunnelId: widget.salesFunnelId));
     _scrollController = ScrollController();
     _scrollController.addListener(_onScroll);
 
@@ -70,7 +77,9 @@ class _DealColumnState extends State<DealColumn> {
       _initTutorialTargets();
       _isInitialized = true;
     }
-    if (widget.isDealScreenTutorialCompleted && !_isTutorialShown && !_isTutorialInProgress) {
+    if (widget.isDealScreenTutorialCompleted &&
+        !_isTutorialShown &&
+        !_isTutorialInProgress) {
       _startTutorialLogic();
     }
   }
@@ -78,7 +87,8 @@ class _DealColumnState extends State<DealColumn> {
   @override
   void didUpdateWidget(covariant DealColumn oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.isDealScreenTutorialCompleted != oldWidget.isDealScreenTutorialCompleted &&
+    if (widget.isDealScreenTutorialCompleted !=
+            oldWidget.isDealScreenTutorialCompleted &&
         widget.isDealScreenTutorialCompleted &&
         !_isTutorialShown &&
         !_isTutorialInProgress) {
@@ -91,7 +101,6 @@ class _DealColumnState extends State<DealColumn> {
     //print('DealColumn: Disposing for statusId: ${widget.statusId}');
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
-    _dealBloc.close();
     super.dispose();
   }
 
@@ -131,7 +140,8 @@ class _DealColumnState extends State<DealColumn> {
         identify: "DealCard",
         keyTarget: keyDealCard,
         title: AppLocalizations.of(context)!.translate('dealCard'),
-        description: AppLocalizations.of(context)!.translate('dealCardDescription'),
+        description:
+            AppLocalizations.of(context)!.translate('dealCardDescription'),
         align: ContentAlign.bottom,
         context: context,
         contentPosition: ContentPosition.below,
@@ -141,7 +151,8 @@ class _DealColumnState extends State<DealColumn> {
         identify: "Dropdown",
         keyTarget: keyDropdown,
         title: AppLocalizations.of(context)!.translate('statusManagement'),
-        description: AppLocalizations.of(context)!.translate('statusManagementDescription'),
+        description: AppLocalizations.of(context)!
+            .translate('statusManagementDescription'),
         align: ContentAlign.bottom,
         context: context,
       ),
@@ -150,7 +161,8 @@ class _DealColumnState extends State<DealColumn> {
           identify: "FloatingActionButton",
           keyTarget: keyFloatingActionButton,
           title: AppLocalizations.of(context)!.translate('addDeal'),
-          description: AppLocalizations.of(context)!.translate('addDealDescription'),
+          description:
+              AppLocalizations.of(context)!.translate('addDealDescription'),
           align: ContentAlign.top,
           context: context,
         ),
@@ -205,7 +217,9 @@ class _DealColumnState extends State<DealColumn> {
         break;
       case 1:
         if (_canCreateDeal) {
-          currentTargets = targets.where((t) => t.identify == "FloatingActionButton").toList();
+          currentTargets = targets
+              .where((t) => t.identify == "FloatingActionButton")
+              .toList();
           isLastStep = true;
         }
         break;
@@ -217,7 +231,8 @@ class _DealColumnState extends State<DealColumn> {
           .where((deal) => deal.statusId == widget.statusId)
           .toList();
       if (deals.isEmpty && _tutorialStep == 0 && _canCreateDeal) {
-        currentTargets = targets.where((t) => t.identify == "FloatingActionButton").toList();
+        currentTargets =
+            targets.where((t) => t.identify == "FloatingActionButton").toList();
         isLastStep = true;
       }
     }
@@ -288,29 +303,96 @@ class _DealColumnState extends State<DealColumn> {
   }
 
   void _onScroll() {
-    if (_scrollController.position.pixels == _scrollController.position.maxScrollExtent) {
+    if (_scrollController.position.pixels ==
+        _scrollController.position.maxScrollExtent) {
       final currentState = _dealBloc.state;
       if (currentState is DealDataLoaded) {
         if (!_dealBloc.allDealsFetched) {
-          _dealBloc.add(FetchMoreDeals(widget.statusId, currentState.currentPage));
+          _dealBloc
+              .add(FetchMoreDeals(widget.statusId, currentState.currentPage));
         }
       }
     }
   }
 
 // В DealColumn добавьте этот метод:
-Future<void> _onRefresh() async {
-  // При обновлении заново загружаем сделки
-  context.read<DealBloc>().add(FetchDealStatuses(salesFunnelId: widget.salesFunnelId));
-  _dealBloc.add(FetchDeals(widget.statusId, salesFunnelId: widget.salesFunnelId));
-  return Future.delayed(Duration(milliseconds: 500));
-}
+  Future<void> _onRefresh() async {
+    // При обновлении заново загружаем сделки
+    _dealBloc.add(FetchDealStatuses(salesFunnelId: widget.salesFunnelId));
+    _dealBloc
+        .add(FetchDeals(widget.statusId, salesFunnelId: widget.salesFunnelId));
+    return Future.delayed(Duration(milliseconds: 500));
+  }
+
+  Widget _buildDealsList(List<Deal> deals) {
+    if (deals.isNotEmpty) {
+      return RefreshIndicator(
+        color: Color(0xff1E2E52),
+        backgroundColor: Colors.white,
+        onRefresh: _onRefresh,
+        child: ListView.builder(
+          controller: _scrollController,
+          physics: const AlwaysScrollableScrollPhysics(),
+          itemCount: deals.length,
+          itemBuilder: (context, index) {
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: DealCard(
+                key: index == 0 ? keyDealCard : null,
+                dropdownKey: index == 0 ? keyDropdown : null,
+                deal: deals[index],
+                title: widget.title,
+                statusId: widget.statusId,
+                onStatusUpdated: (oldStatusId, newStatusId) {
+                  if (oldStatusId == widget.statusId) {
+                    _dealBloc.add(FetchDeals(
+                      widget.statusId,
+                      salesFunnelId: widget.salesFunnelId,
+                    ));
+                  }
+                },
+                onStatusId: (oldStatusId, newStatusId) {
+                  widget.onStatusId(oldStatusId, newStatusId);
+                },
+              ),
+            );
+          },
+        ),
+      );
+    }
+
+    return RefreshIndicator(
+      color: Color(0xff1E2E52),
+      backgroundColor: Colors.white,
+      onRefresh: _onRefresh,
+      child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        children: [
+          SizedBox(height: MediaQuery.of(context).size.height * 0.4),
+          Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  AppLocalizations.of(context)!
+                      .translate('no_deal_in_selected_status'),
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    fontFamily: 'Gilroy',
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
-Widget build(BuildContext context) {
-  return BlocProvider.value(
-    value: _dealBloc,
-    child: Scaffold(
+  Widget build(BuildContext context) {
+    return Scaffold(
       backgroundColor: Colors.white,
       body: BlocBuilder<DealBloc, DealState>(
         builder: (context, state) {
@@ -322,61 +404,21 @@ Widget build(BuildContext context) {
               ),
             );
           } else if (state is DealDataLoaded) {
-            final deals = state.deals.where((deal) => deal.statusId == widget.statusId).toList();
-            
+            final deals = state.deals
+                .where((deal) => deal.statusId == widget.statusId)
+                .toList();
+
             if (deals.isNotEmpty) {
-              return RefreshIndicator(
-                color: Color(0xff1E2E52),
-                backgroundColor: Colors.white,
-                onRefresh: _onRefresh,
-                child: ListView.builder(
-                  controller: _scrollController,
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  itemCount: deals.length,
-                  itemBuilder: (context, index) {
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      child: DealCard(
-                        key: index == 0 ? keyDealCard : null,
-                        dropdownKey: index == 0 ? keyDropdown : null,
-                        deal: deals[index],
-                        title: widget.title,
-                        statusId: widget.statusId,
-                        onStatusUpdated: () {
-                          _dealBloc.add(FetchDeals(widget.statusId));
-                        },
-                        onStatusId: (StatusDealId) {
-                          widget.onStatusId(StatusDealId);
-                        },
-                      ),
-                    );
-                  },
-                ),
-              );
-            } else {
-              return RefreshIndicator(
-                color: Color(0xff1E2E52),
-                backgroundColor: Colors.white,
-                onRefresh: _onRefresh,
-                child: ListView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  children: [
-                    SizedBox(height: MediaQuery.of(context).size.height * 0.4),
-                    Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            AppLocalizations.of(context)!.translate('no_deal_in_selected_status'),
-                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, fontFamily: 'Gilroy'),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              );
+              return _buildDealsList(deals);
             }
+
+            return FutureBuilder<List<Deal>>(
+              future: DealCache.getDealsForStatus(widget.statusId),
+              builder: (context, snapshot) {
+                final cachedDeals = snapshot.data ?? const <Deal>[];
+                return _buildDealsList(cachedDeals);
+              },
+            );
           } else if (state is DealError) {
             // Обработка ошибок...
             return const SizedBox();
@@ -392,10 +434,14 @@ Widget build(BuildContext context) {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => DealAddScreen(statusId: widget.statusId),
+                      builder: (context) =>
+                          DealAddScreen(statusId: widget.statusId),
                     ),
                   ).then((_) {
-                    _dealBloc.add(FetchDeals(widget.statusId));
+                    _dealBloc.add(FetchDeals(
+                      widget.statusId,
+                      salesFunnelId: widget.salesFunnelId,
+                    ));
                   });
                 }
               },
@@ -403,7 +449,6 @@ Widget build(BuildContext context) {
               child: Icon(Icons.add, color: Colors.white),
             )
           : null,
-    ),
-  );
-}
+    );
+  }
 }

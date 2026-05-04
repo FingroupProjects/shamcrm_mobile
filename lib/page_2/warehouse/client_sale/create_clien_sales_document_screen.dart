@@ -1,3 +1,5 @@
+import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/api/service/localization_service.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/client_sale/bloc/client_sale_bloc.dart';
 import 'package:crm_task_manager/custom_widget/compact_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
@@ -39,6 +41,7 @@ class CreateClienSalesDocumentScreenState
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _dateController = TextEditingController();
   final TextEditingController _commentController = TextEditingController();
+  final TextEditingController _exchangeRateController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   String? _selectedStorage;
   LeadData? _selectedLead;
@@ -58,6 +61,14 @@ class CreateClienSalesDocumentScreenState
 
   late TabController _tabController;
 
+  // ✅ НОВОЕ: Флаг разрешения на изменение цены
+  bool _hasPriceUpdatePermission = false;
+  // ✅ НОВОЕ: Флаг разрешения на проведение документа
+  bool _hasApprovePermission = false;
+  final ApiService _apiService = ApiService();
+  int? _organizationCurrencyId;
+  String? _exchangeRateErrorText;
+
   @override
   void initState() {
     super.initState();
@@ -72,13 +83,91 @@ class CreateClienSalesDocumentScreenState
 
         // Вариант 2: Принудительно загружаем заново (даже если есть кэш)
         context.read<GetAllLeadBloc>().add(GetAllLeadEv(
-          showDebt: true,
-          // forceRefresh: true, // Если ваш BLoC поддерживает этот параметры
-        ));
+              showDebt: true,
+              // forceRefresh: true, // Если ваш BLoC поддерживает этот параметры
+            ));
       }
     });
 
     _tabController = TabController(length: 2, vsync: this);
+    _checkPriceUpdatePermission();
+    _checkApprovePermission();
+    _loadOrganizationCurrency();
+  }
+
+  Future<void> _loadOrganizationCurrency() async {
+    final currencyId = await LocalizationService.getCurrencyId();
+    if (!mounted) return;
+    setState(() {
+      _organizationCurrencyId = currencyId;
+    });
+  }
+
+  int? get _selectedLeadCurrencyId =>
+      _selectedLead?.currency?.id ?? _selectedLead?.currencyId;
+  String? get _selectedLeadCurrencyName => _selectedLead?.currency?.name;
+
+  bool get _isExchangeRateRequired {
+    if (_organizationCurrencyId == null || _selectedLeadCurrencyId == null) {
+      return false;
+    }
+    return _organizationCurrencyId != _selectedLeadCurrencyId;
+  }
+
+  double? get _exchangeRateValue =>
+      double.tryParse(_exchangeRateController.text.replaceAll(',', '.'));
+
+  double get _totalByCurrency {
+    final rate = _exchangeRateValue ?? 0;
+    return _totalAmount * rate;
+  }
+
+  String _totalByCurrencyLabel(AppLocalizations localizations) {
+    final base =
+        localizations.translate('total_by_currency') ?? 'Итого по валюте';
+    final currencyName = _selectedLeadCurrencyName;
+    if (currencyName == null || currencyName.isEmpty) return base;
+    return '$base: $currencyName';
+  }
+
+  // ✅ НОВОЕ: Проверка разрешения на изменение цены
+  Future<void> _checkPriceUpdatePermission() async {
+    try {
+      final hasPermission =
+          await _apiService.hasPermission('expense_document_price.update');
+      if (mounted) {
+        setState(() {
+          _hasPriceUpdatePermission = hasPermission;
+        });
+      }
+    } catch (e) {
+      debugPrint('Ошибка при проверке права на изменение цены: $e');
+      if (mounted) {
+        setState(() {
+          _hasPriceUpdatePermission = false;
+        });
+      }
+    }
+  }
+
+  // ✅ НОВОЕ: Проверка разрешения на проведение документа
+  Future<void> _checkApprovePermission() async {
+    try {
+      final hasPermission =
+          await _apiService.hasPermission('expense_document.approve');
+      if (mounted) {
+        setState(() {
+          _hasApprovePermission = hasPermission;
+        });
+      }
+    } catch (e) {
+      debugPrint('Ошибка при проверке права на проведение документа: $e');
+      if (mounted) {
+        setState(() {
+          _hasApprovePermission = false;
+        });
+      }
+    }
   }
 
   void _handleVariantSelection(Map<String, dynamic>? newItem) {
@@ -108,7 +197,9 @@ class CreateClienSalesDocumentScreenState
           final amount = newItem['amount'] ?? 1;
 
           _priceControllers[variantId] = TextEditingController(
-              text: initialPrice > 0 ? parseNumberToString(initialPrice * amount) : '');
+              text: initialPrice > 0
+                  ? parseNumberToString(initialPrice * amount)
+                  : '');
 
           // ✅ Количество НЕ устанавливается - пустое поле
           _quantityControllers[variantId] = TextEditingController(text: '');
@@ -156,7 +247,7 @@ class CreateClienSalesDocumentScreenState
 
       _listKey.currentState?.removeItem(
         index,
-            (context, animation) =>
+        (context, animation) =>
             _buildSelectedItemCard(index, removedItem, animation),
         duration: const Duration(milliseconds: 300),
       );
@@ -228,7 +319,8 @@ class CreateClienSalesDocumentScreenState
     final quantity = int.tryParse(value);
     if (quantity != null && quantity > 0) {
       setState(() {
-        final index = _items.indexWhere((item) => item['variantId'] == variantId);
+        final index =
+            _items.indexWhere((item) => item['variantId'] == variantId);
         if (index != -1) {
           _items[index]['quantity'] = quantity;
           final price = _items[index]['price'] ?? 0.0;
@@ -241,7 +333,8 @@ class CreateClienSalesDocumentScreenState
       });
     } else if (value.isEmpty) {
       setState(() {
-        final index = _items.indexWhere((item) => item['variantId'] == variantId);
+        final index =
+            _items.indexWhere((item) => item['variantId'] == variantId);
         if (index != -1) {
           // ✅ ВАЖНО: Удаляем quantity из item, а не устанавливаем в 0
           _items[index].remove('quantity');
@@ -253,10 +346,16 @@ class CreateClienSalesDocumentScreenState
 
 // ✅ ИСПРАВЛЕНО: функция _updateItemPrice
   void _updateItemPrice(int variantId, String value) {
+    // ✅ НОВОЕ: Проверка разрешения на изменение цены
+    if (!_hasPriceUpdatePermission) {
+      return;
+    }
+
     final inputPrice = double.tryParse(value);
     if (inputPrice != null && inputPrice >= 0) {
       setState(() {
-        final index = _items.indexWhere((item) => item['variantId'] == variantId);
+        final index =
+            _items.indexWhere((item) => item['variantId'] == variantId);
         if (index != -1) {
           final amount = _items[index]['amount'] ?? 1;
 
@@ -272,7 +371,8 @@ class CreateClienSalesDocumentScreenState
       });
     } else if (value.isEmpty) {
       setState(() {
-        final index = _items.indexWhere((item) => item['variantId'] == variantId);
+        final index =
+            _items.indexWhere((item) => item['variantId'] == variantId);
         if (index != -1) {
           _items[index]['price'] = 0.0;
           _items[index]['total'] = 0.0;
@@ -289,10 +389,13 @@ class CreateClienSalesDocumentScreenState
         _items[index]['selectedUnit'] = newUnit;
         _items[index]['unit_id'] = newUnitId;
 
-        final availableUnits = _items[index]['availableUnits'] as List<Unit>? ?? [];
+        final availableUnits =
+            _items[index]['availableUnits'] as List<Unit>? ?? [];
         final selectedUnitObj = availableUnits.firstWhere(
-              (unit) => (unit.name) == newUnit,
-          orElse: () => availableUnits.isNotEmpty ? availableUnits.first : Unit(id: null, name: '', amount: 1),
+          (unit) => (unit.name) == newUnit,
+          orElse: () => availableUnits.isNotEmpty
+              ? availableUnits.first
+              : Unit(id: null, name: '', amount: 1),
         );
 
         final newAmount = selectedUnitObj.amount ?? 1;
@@ -307,7 +410,8 @@ class CreateClienSalesDocumentScreenState
         _items[index]['total'] = (quantity * basePrice * newAmount).round();
 
         // ✅ В контроллере показываем: basePrice * newAmount
-        _priceControllers[variantId]?.text = parseNumberToString(basePrice * newAmount);
+        _priceControllers[variantId]?.text =
+            parseNumberToString(basePrice * newAmount);
       }
     });
   }
@@ -360,21 +464,62 @@ class CreateClienSalesDocumentScreenState
   }
 
   void _createDocument({bool approve = false}) {
-    if (!_formKey.currentState!.validate()) return;
+    if (_isLoading) return;
+    setState(() => _isLoading = true);
+
+    void cancelLoading() {
+      if (!mounted || !_isLoading) return;
+      setState(() => _isLoading = false);
+    }
+
+    if (!_formKey.currentState!.validate()) {
+      cancelLoading();
+      return;
+    }
 
     if (_items.isEmpty) {
       _showSnackBar('Добавьте хотя бы один товар', false);
+      cancelLoading();
       return;
     }
 
     if (_selectedStorage == null) {
       _showSnackBar('Выберите склад', false);
+      cancelLoading();
       return;
     }
 
     if (_selectedLead == null) {
       _showSnackBar('Выберите лид', false);
+      cancelLoading();
       return;
+    }
+
+    if (approve && _isExchangeRateRequired) {
+      final rate = _exchangeRateValue;
+      if (rate == null || rate <= 0) {
+        setState(() {
+          _exchangeRateErrorText = AppLocalizations.of(context)!
+                  .translate('field_required_project') ??
+              'Заполните курс валюты';
+        });
+        if (_tabController.index != 0) {
+          _tabController.animateTo(0);
+        }
+        _showSnackBar(
+          AppLocalizations.of(context)!.translate('fill_valid_exchange_rate') ??
+              'Заполните корректный курс валюты',
+          false,
+        );
+        cancelLoading();
+        return;
+      }
+    }
+
+    if (_exchangeRateErrorText != null) {
+      setState(() {
+        _exchangeRateErrorText = null;
+      });
     }
 
     bool hasErrors = false;
@@ -415,23 +560,22 @@ class CreateClienSalesDocumentScreenState
       );
       // Фокусируемся на первом товаре с ошибкой
       _focusFirstErrorItem();
+      cancelLoading();
       return;
     }
 
-    setState(() => _isLoading = true);
-
     try {
       DateTime? parsedDate =
-      DateFormat('dd/MM/yyyy HH:mm').parse(_dateController.text);
+          DateFormat('dd/MM/yyyy HH:mm').parse(_dateController.text);
       String isoDate =
-      DateFormat("yyyy-MM-ddTHH:mm:ss.SSS'Z'").format(parsedDate);
+          DateFormat("yyyy-MM-ddTHH:mm:ss.SSS'Z'").format(parsedDate);
 
       final bloc = context.read<ClientSaleBloc>();
       bloc.add(CreateClientSalesDocument(
         date: isoDate,
         storageId: int.parse(_selectedStorage!),
         comment: _commentController.text.trim(),
-        counterpartyId: _selectedLead!.id!,
+        counterpartyId: _selectedLead!.id,
         documentGoods: _items.map((item) {
           final availableUnits = item['availableUnits'] as List<Unit>? ?? [];
           final hasUnits = availableUnits.isNotEmpty;
@@ -446,9 +590,10 @@ class CreateClienSalesDocumentScreenState
         organizationId: widget.organizationId ?? 1,
         salesFunnelId: 1,
         approve: approve,
+        exchangeRate: _exchangeRateValue,
       ));
     } catch (e) {
-      setState(() => _isLoading = false);
+      cancelLoading();
       _showSnackBar(e.toString(), false);
     }
   }
@@ -531,7 +676,7 @@ class CreateClienSalesDocumentScreenState
                       tabs: [
                         Tab(
                             text:
-                            localizations.translate('main') ?? 'Основное'),
+                                localizations.translate('main') ?? 'Основное'),
                         Tab(text: localizations.translate('goods') ?? 'Товары'),
                       ],
                     ),
@@ -565,7 +710,13 @@ class CreateClienSalesDocumentScreenState
           const SizedBox(height: 16),
           LeadRadioGroupWidget(
             selectedLead: _selectedLead?.id.toString(),
-            onSelectLead: (lead) => setState(() => _selectedLead = lead),
+            onSelectLead: (lead) => setState(() {
+              _selectedLead = lead;
+              _exchangeRateErrorText = null;
+              if (!_isExchangeRateRequired) {
+                _exchangeRateController.clear();
+              }
+            }),
             showDebt: true,
           ),
           const SizedBox(height: 16),
@@ -574,8 +725,16 @@ class CreateClienSalesDocumentScreenState
             selectedStorage: _selectedStorage,
             onChanged: (value) => setState(() => _selectedStorage = value),
           ),
+          if (_isExchangeRateRequired) ...[
+            const SizedBox(height: 16),
+            _buildExchangeRateField(localizations),
+          ],
           const SizedBox(height: 16),
           _buildCommentField(localizations),
+          if (_isExchangeRateRequired) ...[
+            const SizedBox(height: 16),
+            _buildTotalByCurrencyField(localizations),
+          ],
           const SizedBox(height: 24),
           _buildActionButtons(localizations),
           const SizedBox(height: 16),
@@ -766,9 +925,64 @@ class CreateClienSalesDocumentScreenState
       controller: _commentController,
       label: localizations.translate('comment') ?? 'Примечание',
       hintText:
-      localizations.translate('enter_comment') ?? 'Введите примечание',
+          localizations.translate('enter_comment') ?? 'Введите примечание',
       maxLines: 3,
       keyboardType: TextInputType.multiline,
+    );
+  }
+
+  Widget _buildExchangeRateField(AppLocalizations localizations) {
+    return CustomTextField(
+      controller: _exchangeRateController,
+      label: localizations.translate('exchange_rate') ?? 'Курс валюты',
+      hintText: localizations.translate('enter_value') ?? 'Введите курс',
+      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+      inputFormatters: [
+        PriceInputFormatter(),
+      ],
+      errorText: _exchangeRateErrorText,
+      onChanged: (_) {
+        if (_exchangeRateErrorText != null) {
+          setState(() => _exchangeRateErrorText = null);
+        } else {
+          setState(() {});
+        }
+      },
+    );
+  }
+
+  Widget _buildTotalByCurrencyField(AppLocalizations localizations) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          _totalByCurrencyLabel(localizations),
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            fontFamily: 'Gilroy',
+            color: Color(0xff1E2E52),
+          ),
+        ),
+        const SizedBox(height: 4),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+          decoration: BoxDecoration(
+            color: const Color(0xffF4F7FD),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Text(
+            parseNumberToString(_totalByCurrency.toStringAsFixed(2)),
+            style: const TextStyle(
+              fontFamily: 'Gilroy',
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+              color: Color(0xff1E2E52),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -843,14 +1057,17 @@ class CreateClienSalesDocumentScreenState
                     ),
                     const SizedBox(width: 8),
                     Icon(
-                      isCollapsed ? Icons.keyboard_arrow_down : Icons.keyboard_arrow_up,
+                      isCollapsed
+                          ? Icons.keyboard_arrow_down
+                          : Icons.keyboard_arrow_up,
                       color: const Color(0xff4759FF),
                       size: 20,
                     ),
                     const SizedBox(width: 8),
                     GestureDetector(
                       onTap: () => _removeItem(index),
-                      child: const Icon(Icons.close, color: Color(0xff99A4BA), size: 18),
+                      child: const Icon(Icons.close,
+                          color: Color(0xff99A4BA), size: 18),
                     ),
                   ],
                 ),
@@ -893,10 +1110,10 @@ class CreateClienSalesDocumentScreenState
                         const SizedBox(height: 4),
                         CompactTextField(
                           controller:
-                          quantityController ?? TextEditingController(),
+                              quantityController ?? TextEditingController(),
                           focusNode: quantityFocusNode,
                           hintText: AppLocalizations.of(context)!
-                              .translate('quantity') ??
+                                  .translate('quantity') ??
                               'Количество',
                           keyboardType: TextInputType.number,
                           inputFormatters: [
@@ -939,12 +1156,12 @@ class CreateClienSalesDocumentScreenState
                             Container(
                               height: 48,
                               padding:
-                              const EdgeInsets.symmetric(horizontal: 8),
+                                  const EdgeInsets.symmetric(horizontal: 8),
                               decoration: BoxDecoration(
                                 color: const Color(0xFFF4F7FD),
                                 borderRadius: BorderRadius.circular(8),
                                 border:
-                                Border.all(color: const Color(0xFFE5E7EB)),
+                                    Border.all(color: const Color(0xFFE5E7EB)),
                               ),
                               child: DropdownButtonHideUnderline(
                                 child: DropdownButton<String>(
@@ -969,8 +1186,8 @@ class CreateClienSalesDocumentScreenState
                                   onChanged: (String? newValue) {
                                     if (newValue != null) {
                                       final selectedUnit =
-                                      availableUnits.firstWhere(
-                                            (unit) => (unit.name) == newValue,
+                                          availableUnits.firstWhere(
+                                        (unit) => (unit.name) == newValue,
                                       );
                                       _updateItemUnit(
                                           variantId, newValue, selectedUnit.id);
@@ -983,12 +1200,12 @@ class CreateClienSalesDocumentScreenState
                             Container(
                               height: 48,
                               padding:
-                              const EdgeInsets.symmetric(horizontal: 8),
+                                  const EdgeInsets.symmetric(horizontal: 8),
                               decoration: BoxDecoration(
                                 color: const Color(0xFFF4F7FD),
                                 borderRadius: BorderRadius.circular(8),
                                 border:
-                                Border.all(color: const Color(0xFFE5E7EB)),
+                                    Border.all(color: const Color(0xFFE5E7EB)),
                               ),
                               alignment: Alignment.centerLeft,
                               child: Text(
@@ -1023,25 +1240,29 @@ class CreateClienSalesDocumentScreenState
                           const SizedBox(height: 4),
                           CompactTextField(
                             controller:
-                            priceController ?? TextEditingController(),
+                                priceController ?? TextEditingController(),
                             focusNode: priceFocusNode,
                             hintText: AppLocalizations.of(context)!
-                                .translate('price') ??
+                                    .translate('price') ??
                                 'Цена',
                             keyboardType: const TextInputType.numberWithOptions(
                                 decimal: true),
                             inputFormatters: [
                               PriceInputFormatter(),
                             ],
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 13,
                               fontFamily: 'Gilroy',
                               fontWeight: FontWeight.w600,
-                              color: Color(0xff1E2E52),
+                              color: _hasPriceUpdatePermission
+                                  ? const Color(0xff1E2E52)
+                                  : const Color(0xff99A4BA),
                             ),
                             hasError: _priceErrors[variantId] == true,
-                            onChanged: (value) =>
-                                _updateItemPrice(variantId, value),
+                            enabled: _hasPriceUpdatePermission,
+                            onChanged: _hasPriceUpdatePermission
+                                ? (value) => _updateItemPrice(variantId, value)
+                                : null,
                             onDone: _moveToNextEmptyField,
                           ),
                         ]),
@@ -1058,51 +1279,54 @@ class CreateClienSalesDocumentScreenState
   Widget _buildActionButtons(AppLocalizations localizations) {
     return Row(
       children: [
-        Expanded(
-          child: Container(
-            height: 48,
-            decoration: BoxDecoration(
-              border: Border.all(color: const Color(0xff4CAF50), width: 1.5),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
+        // ✅ НОВОЕ: Показываем кнопку "Провести" только если есть разрешение
+        if (_hasApprovePermission) ...[
+          Expanded(
+            child: Container(
+              height: 48,
+              decoration: BoxDecoration(
+                border: Border.all(color: const Color(0xff4CAF50), width: 1.5),
                 borderRadius: BorderRadius.circular(12),
-                onTap: _isLoading ? null : _createAndApproveDocument,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.check_circle_outline,
-                        size: 18,
-                        color: _isLoading
-                            ? const Color(0xff99A4BA)
-                            : const Color(0xff4CAF50),
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        localizations.translate('save_and_approve') ??
-                            'Провести',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontFamily: 'Gilroy',
-                          fontWeight: FontWeight.w600,
+              ),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(12),
+                  onTap: _isLoading ? null : _createAndApproveDocument,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.check_circle_outline,
+                          size: 18,
                           color: _isLoading
                               ? const Color(0xff99A4BA)
                               : const Color(0xff4CAF50),
                         ),
-                      ),
-                    ],
+                        const SizedBox(width: 6),
+                        Text(
+                          localizations.translate('save_and_approve') ??
+                              'Провести',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontFamily: 'Gilroy',
+                            fontWeight: FontWeight.w600,
+                            color: _isLoading
+                                ? const Color(0xff99A4BA)
+                                : const Color(0xff4CAF50),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
             ),
           ),
-        ),
-        const SizedBox(width: 12),
+          const SizedBox(width: 12),
+        ],
         Expanded(
           child: SizedBox(
             height: 48,
@@ -1118,30 +1342,30 @@ class CreateClienSalesDocumentScreenState
               ),
               child: _isLoading
                   ? const SizedBox(
-                width: 18,
-                height: 18,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                ),
-              )
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    )
                   : Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.save_outlined,
-                      color: Colors.white, size: 18),
-                  const SizedBox(width: 6),
-                  Text(
-                    localizations.translate('save') ?? 'Сохранить',
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.save_outlined,
+                            color: Colors.white, size: 18),
+                        const SizedBox(width: 6),
+                        Text(
+                          localizations.translate('save') ?? 'Сохранить',
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontFamily: 'Gilroy',
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                ],
-              ),
             ),
           ),
         ),
@@ -1161,6 +1385,7 @@ class CreateClienSalesDocumentScreenState
   void dispose() {
     _dateController.dispose();
     _commentController.dispose();
+    _exchangeRateController.dispose();
     _scrollController.dispose();
     _tabController.dispose();
 

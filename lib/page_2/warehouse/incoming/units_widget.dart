@@ -19,6 +19,7 @@ class UnitsWidget extends StatefulWidget {
 
 class _UnitsWidgetState extends State<UnitsWidget> {
   MeasureUnitModel? selectedUnitData;
+  String? _autoSelectedUnitId;
 
   @override
   void initState() {
@@ -71,6 +72,20 @@ class _UnitsWidgetState extends State<UnitsWidget> {
               } catch (e) {
                 selectedUnitData = null;
               }
+            }
+
+            if (unitsList.length == 1 &&
+                (widget.selectedUnit == null || selectedUnitData == null) &&
+                _autoSelectedUnitId != unitsList.first.id.toString()) {
+              final singleUnit = unitsList.first;
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (!mounted) return;
+                widget.onChanged(singleUnit.id.toString());
+                setState(() {
+                  selectedUnitData = singleUnit;
+                  _autoSelectedUnitId = singleUnit.id.toString();
+                });
+              });
             }
           }
 
@@ -229,4 +244,3 @@ class _UnitsWidgetState extends State<UnitsWidget> {
     );
   }
 }
-

@@ -78,12 +78,19 @@ class _GoodsMovementDetailsDialogState extends State<GoodsMovementDetailsDialog>
   }
 
   String _formatDate(DateTime date) {
-    return DateFormat('dd.MM.yyyy HH:mm').format(date);
+    return DateFormat('dd.MM.yyyy').format(date);
+  }
+
+  String _getDefaultValue(String? value) {
+    if (value == null || value.isEmpty || value.trim().isEmpty || value == 'N/A' || value == 'not_specified') {
+      return 'Не указано';
+    }
+    return value;
   }
 
   String _getDocumentTypeDisplay(String? documentType) {
     if (documentType == null || documentType.isEmpty) {
-      return AppLocalizations.of(context)!.translate('not_specified');
+      return 'Не указано';
     }
     if (documentType.toLowerCase() == 'income') {
       return AppLocalizations.of(context)!.translate('income_document');
@@ -115,51 +122,6 @@ class _GoodsMovementDetailsDialogState extends State<GoodsMovementDetailsDialog>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Заголовок - Товар
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(16),
-            decoration: const BoxDecoration(
-              color: Color(0xffF8FAFC),
-              borderRadius: BorderRadius.only(
-                topLeft: Radius.circular(12),
-                topRight: Radius.circular(12),
-              ),
-              border: Border(
-                left: BorderSide(
-                  width: 4,
-                  color: Color(0xff1E2E52),
-                ),
-              ),
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: GestureDetector(
-                    onTap: () {
-                      showFullTextDialog(
-                        AppLocalizations.of(context)!.translate('goods_movement_history_title'),
-                        movement.goodName,
-                        context,
-                      );
-                    },
-                    child: Text(
-                      movement.goodName,
-                      style: const TextStyle(
-                        fontFamily: 'Gilroy',
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xff1E2E52),
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
           // Первая строка: Контрагент и Склад
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
@@ -169,7 +131,7 @@ class _GoodsMovementDetailsDialogState extends State<GoodsMovementDetailsDialog>
                 Expanded(
                   child: _buildInfoBox(
                     label: AppLocalizations.of(context)!.translate('counterparty_label'),
-                    value: movement.counterparty ?? AppLocalizations.of(context)!.translate('not_specified'),
+                    value: _getDefaultValue(movement.counterparty),
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -177,7 +139,7 @@ class _GoodsMovementDetailsDialogState extends State<GoodsMovementDetailsDialog>
                 Expanded(
                   child: _buildInfoBox(
                     label: AppLocalizations.of(context)!.translate('storage_label'),
-                    value: movement.storage,
+                    value: _getDefaultValue(movement.storage),
                   ),
                 ),
               ],
@@ -534,41 +496,6 @@ class _GoodsMovementDetailsDialogState extends State<GoodsMovementDetailsDialog>
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  // Заголовок секции
-                                  Container(
-                                    width: double.infinity,
-                                    padding: const EdgeInsets.all(16),
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xffF1F5F9),
-                                      borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(
-                                        color: const Color(0xffCBD5E1),
-                                        width: 1,
-                                      ),
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        const Icon(
-                                          Icons.history,
-                                          color: Color(0xff1E2E52),
-                                          size: 20,
-                                        ),
-                                        const SizedBox(width: 12),
-                                        Expanded(
-                                          child: Text(
-                                            AppLocalizations.of(context)!.translate('movement_history'),
-                                            style: const TextStyle(
-                                              fontFamily: 'Gilroy',
-                                              fontSize: 16,
-                                              fontWeight: FontWeight.w600,
-                                              color: Color(0xff1E2E52),
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  const SizedBox(height: 16),
                                   // Список движений
                                   ..._movements
                                       .map((movement) => _buildMovementItem(movement))

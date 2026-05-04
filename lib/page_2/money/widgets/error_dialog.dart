@@ -31,6 +31,18 @@ enum ErrorDialogEnum {
   nothing;
 }
 
+class _ParsedInventoryError {
+  final String productName;
+  final String required;
+  final String available;
+
+  const _ParsedInventoryError({
+    required this.productName,
+    required this.required,
+    required this.available,
+  });
+}
+
 void showSimpleErrorDialog(BuildContext context, String title, String errorMessage, {ErrorDialogEnum errorDialogEnum = ErrorDialogEnum.nothing}) {
   showDialog(
       context: context,
@@ -2328,14 +2340,40 @@ class ErrorDialog extends StatelessWidget {
   }
 
   Widget _buildGoodsMovementUpdateError(String message) {
-    // Парсим сообщение формата: "Недостаточно остатков для следующих товаров: - Товар: tesats требуется 1200, доступно 999"
+    // Поддерживаем оба формата:
+    // 1. "Недостаточно остатков для следующих товаров: - Товар: tesats требуется 1200, доступно 999"
+    // 2. "Недостаточно сырья 'Товар' на складе списания: требуется 32, доступно 0"
     debugPrint("🔍 [GoodsMovementUpdate] Полученное сообщение: $message");
 
-    // Парсим все товары с помощью регулярного выражения (поддерживаем целые и дробные числа)
-    RegExp movementRegex = RegExp(r'- Товар: ([^\s]+) требуется ([\d.]+), доступно ([\d.]+)');
-    Iterable<Match> matches = movementRegex.allMatches(message);
+    final List<_ParsedInventoryError> parsedItems = [];
 
-    debugPrint("🔍 [GoodsMovementUpdate] Найдено совпадений: ${matches.length}");
+    final RegExp oldFormatRegex =
+        RegExp(r"- Товар: (.+?) требуется ([\d.,]+), доступно ([\d.,]+)");
+    for (final match in oldFormatRegex.allMatches(message)) {
+      parsedItems.add(
+        _ParsedInventoryError(
+          productName: match.group(1)?.trim() ?? 'Неизвестный товар',
+          required: match.group(2)?.trim() ?? '0',
+          available: match.group(3)?.trim() ?? '0',
+        ),
+      );
+    }
+
+    final RegExp newFormatRegex = RegExp(
+      r"Недостаточно\s+(?:сырья|товара)\s+'([^']+)'.*?требуется\s+([\d.,]+),\s+доступно\s+([\d.,]+)",
+      caseSensitive: false,
+    );
+    for (final match in newFormatRegex.allMatches(message)) {
+      parsedItems.add(
+        _ParsedInventoryError(
+          productName: match.group(1)?.trim() ?? 'Неизвестный товар',
+          required: match.group(2)?.trim() ?? '0',
+          available: match.group(3)?.trim() ?? '0',
+        ),
+      );
+    }
+
+    debugPrint("🔍 [GoodsMovementUpdate] Найдено совпадений: ${parsedItems.length}");
 
     List<Widget> widgets = [];
 
@@ -2372,16 +2410,48 @@ class ErrorDialog extends StatelessWidget {
 
     widgets.add(SizedBox(height: 16));
 
+    if (parsedItems.isEmpty) {
+      widgets.add(
+        Container(
+          width: double.infinity,
+          padding: EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Color(0xffFFF5F5),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: Color(0xffFECDD3),
+              width: 1,
+            ),
+          ),
+          child: Text(
+            message,
+            style: TextStyle(
+              fontFamily: 'Gilroy',
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: Color(0xff991B1B),
+              height: 1.4,
+            ),
+          ),
+        ),
+      );
+
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: widgets,
+      );
+    }
+
     // Добавляем информацию по каждому товару
-    for (int index = 0; index < matches.length; index++) {
+    for (int index = 0; index < parsedItems.length; index++) {
       if (index > 0) {
         widgets.add(SizedBox(height: 12));
       }
 
-      Match match = matches.elementAt(index);
-      String productName = match.group(1)?.trim() ?? 'Неизвестный товар';
-      String required = match.group(2) ?? '0';
-      String available = match.group(3) ?? '0';
+      final item = parsedItems[index];
+      final productName = item.productName;
+      final required = item.required;
+      final available = item.available;
 
       debugPrint("🔍 [GoodsMovementUpdate] Товар #${index + 1}: $productName, требуется: $required, доступно: $available");
 

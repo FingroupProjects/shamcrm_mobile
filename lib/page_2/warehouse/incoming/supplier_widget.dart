@@ -1,4 +1,5 @@
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
+import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/supplier_bloc/supplier_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/supplier_bloc/supplier_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/supplier_bloc/supplier_state.dart';
@@ -10,21 +11,45 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 class SupplierWidget extends StatefulWidget {
   final String? selectedSupplier;
   final ValueChanged<String?> onChanged;
+  final ValueChanged<Supplier?>? onChangedSupplier;
 
-  SupplierWidget({required this.selectedSupplier, required this.onChanged});
+  const SupplierWidget({
+    super.key,
+    required this.selectedSupplier,
+    required this.onChanged,
+    this.onChangedSupplier,
+  });
 
   @override
-  _SupplierWidgetState createState() => _SupplierWidgetState();
+  State<SupplierWidget> createState() => _SupplierWidgetState();
 }
 
 class _SupplierWidgetState extends State<SupplierWidget> {
+  static const int _pageSize = 20;
+  final ApiService _apiService = ApiService();
   Supplier? selectedSupplierData;
   bool _isInitialLoad = true; // ✅ Track if this is the first load
+  String? _autoSelectedSupplierId;
 
   @override
   void initState() {
     super.initState();
     context.read<SupplierBloc>().add(FetchSupplier(query: null));
+  }
+
+  Future<CustomDropdownPaginatedResponse<Supplier>> _searchSuppliers(
+    String query,
+    int page,
+  ) async {
+    final items = await _apiService.getSupplier(
+      search: query,
+      page: page,
+      perPage: _pageSize,
+    );
+    return CustomDropdownPaginatedResponse<Supplier>(
+      items: items,
+      hasMore: items.length >= _pageSize,
+    );
   }
 
   @override
@@ -73,12 +98,28 @@ class _SupplierWidgetState extends State<SupplierWidget> {
             if (widget.selectedSupplier != null && supplierList.isNotEmpty) {
               try {
                 selectedSupplierData = supplierList.firstWhere(
-                      (supplier) =>
-                  supplier.id.toString() == widget.selectedSupplier,
+                  (supplier) =>
+                      supplier.id.toString() == widget.selectedSupplier,
                 );
               } catch (e) {
                 selectedSupplierData = null;
               }
+            }
+
+            if (supplierList.length == 1 &&
+                (widget.selectedSupplier == null ||
+                    selectedSupplierData == null) &&
+                _autoSelectedSupplierId != supplierList.first.id.toString()) {
+              final singleSupplier = supplierList.first;
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (!mounted) return;
+                widget.onChanged(singleSupplier.id.toString());
+                widget.onChangedSupplier?.call(singleSupplier);
+                setState(() {
+                  selectedSupplierData = singleSupplier;
+                  _autoSelectedSupplierId = singleSupplier.id.toString();
+                });
+              });
             }
           }
 
@@ -96,11 +137,13 @@ class _SupplierWidgetState extends State<SupplierWidget> {
               ),
               const SizedBox(height: 4),
               Container(
-                child: CustomDropdown<Supplier>.search(
+                child: CustomDropdown<Supplier>.searchRequestPaginated(
+                  paginatedRequest: _searchSuppliers,
+                  futureRequestDelay: const Duration(milliseconds: 350),
                   closeDropDownOnClearFilterSearch: true,
                   items: state is SupplierLoaded ? state.supplierList : [],
                   searchHintText:
-                  AppLocalizations.of(context)!.translate('search'),
+                      AppLocalizations.of(context)!.translate('search'),
                   overlayHeight: 400,
                   enabled: !isLoading,
                   decoration: CustomDropdownDecoration(
@@ -154,16 +197,15 @@ class _SupplierWidgetState extends State<SupplierWidget> {
                           height: 20,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                                Color(0xff1E2E52)),
                           ),
                         ),
                       );
                     }
 
                     return Text(
-                      selectedItem?.name ??
-                          AppLocalizations.of(context)!
-                              .translate('select_supplier'),
+                      selectedItem.name,
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
@@ -180,14 +222,16 @@ class _SupplierWidgetState extends State<SupplierWidget> {
                           height: 20,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                                Color(0xff1E2E52)),
                           ),
                         ),
                       );
                     }
 
                     return Text(
-                      AppLocalizations.of(context)!.translate('select_supplier'),
+                      AppLocalizations.of(context)!
+                          .translate('select_supplier'),
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
@@ -203,7 +247,8 @@ class _SupplierWidgetState extends State<SupplierWidget> {
                           padding: EdgeInsets.all(20.0),
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                                Color(0xff1E2E52)),
                           ),
                         ),
                       );
@@ -224,7 +269,7 @@ class _SupplierWidgetState extends State<SupplierWidget> {
                   },
                   excludeSelected: false,
                   initialItem: (state is SupplierLoaded &&
-                      state.supplierList.contains(selectedSupplierData))
+                          state.supplierList.contains(selectedSupplierData))
                       ? selectedSupplierData
                       : null,
                   // ✅ FIX: Don't validate while data is loading or on initial load
@@ -233,13 +278,15 @@ class _SupplierWidgetState extends State<SupplierWidget> {
                       return null; // Skip validation during initial load
                     }
                     if (value == null) {
-                      return AppLocalizations.of(context)!.translate('field_required_project');
+                      return AppLocalizations.of(context)!
+                          .translate('field_required_project');
                     }
                     return null;
                   },
                   onChanged: (value) {
                     if (value != null) {
                       widget.onChanged(value.id.toString());
+                      widget.onChangedSupplier?.call(value);
                       setState(() {
                         selectedSupplierData = value;
                       });

@@ -15,22 +15,26 @@ class EventDataLoaded extends EventState {
   final List<NoticeEvent> events;
   final int currentPage;
   final bool hasReachedEnd;
+  final Map<int, int> eventCounts;
 
   EventDataLoaded({
     required this.events,
     required this.currentPage,
     required this.hasReachedEnd,
+    this.eventCounts = const {},
   });
 
   EventDataLoaded copyWith({
     List<NoticeEvent>? events,
     int? currentPage,
     bool? hasReachedEnd,
+    Map<int, int>? eventCounts,
   }) {
     return EventDataLoaded(
       events: events ?? this.events,
       currentPage: currentPage ?? this.currentPage,
       hasReachedEnd: hasReachedEnd ?? this.hasReachedEnd,
+      eventCounts: eventCounts ?? this.eventCounts,
     );
   }
 }

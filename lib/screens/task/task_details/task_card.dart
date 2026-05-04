@@ -1,9 +1,14 @@
 import 'package:crm_task_manager/custom_widget/custom_card_tasks_tabBar.dart'; // Импорт кастомного виджета для задач в TabBar
+import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/bloc/task/task_bloc.dart';
+import 'package:crm_task_manager/bloc/task/task_event.dart';
 import 'package:crm_task_manager/models/task_model.dart'; // Импорт модели задачи
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/screens/task/task_cache.dart';
 import 'package:crm_task_manager/screens/task/task_details/task_details_screen.dart'; // Импорт экрана деталей задачи
 import 'package:crm_task_manager/screens/task/task_details/task_dropdown_bottom_dialog.dart'; // Импорт виджета выпадающего диалога для выбора статуса задачи
 import 'package:flutter/material.dart'; // Импорт Flutter фреймворка
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart'; // Импорт для форматирования даты
 
 /// Класс виджета для отображения карточки задачи
@@ -202,8 +207,8 @@ class _TaskCardState extends State<TaskCard> {
     int overdueDays = _getOverdueDays(widget.task.endDate);
 
     return GestureDetector(
-        onTap: () {
-          Navigator.push(
+        onTap: () async {
+          final result = await Navigator.push(
             context,
             MaterialPageRoute(
               builder: (context) => TaskDetailsScreen(
@@ -218,10 +223,31 @@ class _TaskCardState extends State<TaskCard> {
                 description: widget.task.description, // Описание задачи
                 project: widget.task.project?.name ?? widget.project ??
                     AppLocalizations.of(context)!.translate('no_project'),
-                taskCustomFields: widget.task.taskCustomFields,
+                customFields: widget.task.customFields,
               ),
             ),
           );
+
+          if (result is Map<String, dynamic> && result['refresh'] == true) {
+            final oldStatusId = result['statusId'] as int? ?? widget.statusId;
+            final newStatusId = result['newStatusId'] as int? ?? oldStatusId;
+
+            await TaskCache.clearEverything();
+            ApiService.clearAnalyticsResponseCache();
+            await TaskCache.clearTasksForStatus(oldStatusId);
+            if (newStatusId != oldStatusId) {
+              await TaskCache.clearTasksForStatus(newStatusId);
+              await TaskCache.updateTaskCountTemporary(oldStatusId, newStatusId);
+            }
+
+            context.read<TaskBloc>().add(FetchTaskStatuses(forceRefresh: true));
+
+            if (newStatusId == oldStatusId) {
+              widget.onStatusUpdated();
+            } else {
+              widget.onStatusId(newStatusId);
+            }
+          }
         },
         child: Container(
           padding: const EdgeInsets.all(12),
@@ -315,12 +341,15 @@ class _TaskCardState extends State<TaskCard> {
                             context,
                             dropdownValue,
                             (String newValue, int newStatusId) {
+                              final previousStatusId = statusIdTask;
                               setState(() {
                                 dropdownValue = newValue;
                                 statusIdTask = newStatusId;
                               });
                               widget.onStatusId(newStatusId);
-                              widget.onStatusUpdated();
+                              if (newStatusId == previousStatusId) {
+                                widget.onStatusUpdated();
+                              }
                             },
                             widget.task,
                           );

@@ -32,7 +32,7 @@ class MyTaskEditScreen extends StatefulWidget {
   final String? endDate;
   final String? description;
   final String? file;
-  final List<MyTaskFiles>? files; // вместо String? taskFile
+  final List<MyTaskFiles>? files;
 
   MyTaskEditScreen({
     required this.taskId,
@@ -60,34 +60,25 @@ class _MyTaskEditScreenState extends State<MyTaskEditScreen> {
   // Конфигурация полей
   List<FieldConfiguration> fieldConfigurations = [];
   bool isConfigurationLoaded = false;
+  bool isConfigurationLoading = true; // НОВОЕ: флаг загрузки
   Map<String, Widget> fieldWidgets = {};
   List<String> fieldOrder = [];
 
-  // Добавьте эти переменные в класс _MyTaskEditScreenState
   List<String> selectedFiles = [];
   List<String> fileNames = [];
   List<String> fileSizes = [];
   bool isEndDateInvalid = false;
   bool setPush = false;
   bool _showAdditionalFields = false;
-  List<MyTaskFiles> existingFiles = []; // Для существующих файлов
+  List<MyTaskFiles> existingFiles = [];
 
   final ApiService _apiService = ApiService();
-    int? _selectedStatuses;
-      bool isSubmitted = false;
-
-
+  int? _selectedStatuses;
+  bool isSubmitted = false;
 
   @override
   void initState() {
     super.initState();
-    
-    // Загружаем конфигурацию после build
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        _loadFieldConfiguration();
-      }
-    });
     
     _initializeControllers();
     _loadInitialData();
@@ -97,6 +88,13 @@ class _MyTaskEditScreenState extends State<MyTaskEditScreen> {
       existingFiles = widget.files!;
       fileNames = existingFiles.map((file) => file.name).toList();
     }
+    
+    // Загружаем конфигурацию сразу в initState
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _loadFieldConfiguration();
+      }
+    });
   }
 
   void _initializeControllers() {
@@ -120,19 +118,19 @@ class _MyTaskEditScreenState extends State<MyTaskEditScreen> {
 
   Future<void> _loadFieldConfiguration() async {
     if (kDebugMode) {
-      //print('MyTaskEditScreen: Loading field configuration');
+      print('MyTaskEditScreen: Loading field configuration');
     }
     
     if (mounted) {
       context.read<FieldConfigurationBloc>().add(
-        FetchFieldConfiguration('tasks')  // Используем ту же конфигурацию что и для обычных задач
+        FetchFieldConfiguration('tasks')
       );
     }
   }
 
   void _buildFieldsFromConfiguration() {
     if (kDebugMode) {
-      //print('MyTaskEditScreen: Building fields from configuration with ${fieldConfigurations.length} fields');
+      print('MyTaskEditScreen: Building fields from configuration with ${fieldConfigurations.length} fields');
     }
     
     fieldWidgets.clear();
@@ -141,7 +139,7 @@ class _MyTaskEditScreenState extends State<MyTaskEditScreen> {
     for (var config in fieldConfigurations) {
       if (!config.isActive) {
         if (kDebugMode) {
-          //print('MyTaskEditScreen: Skipping inactive field: ${config.fieldName}');
+          print('MyTaskEditScreen: Skipping inactive field: ${config.fieldName}');
         }
         continue;
       }
@@ -152,271 +150,286 @@ class _MyTaskEditScreenState extends State<MyTaskEditScreen> {
         fieldOrder.add(config.fieldName);
         
         if (kDebugMode) {
-          //print('MyTaskEditScreen: Added field widget for: ${config.fieldName} at position ${config.position}');
+          print('MyTaskEditScreen: Added field widget for: ${config.fieldName} at position ${config.position}');
         }
       }
     }
     
     if (kDebugMode) {
-      //print('MyTaskEditScreen: Total field widgets: ${fieldWidgets.length}');
+      print('MyTaskEditScreen: Total field widgets: ${fieldWidgets.length}');
     }
   }
 
   Widget? _buildFieldWidget(FieldConfiguration config) {
     switch (config.fieldName) {
       case 'name':
-        return CustomTextField(
-          controller: nameController,
-          hintText: AppLocalizations.of(context)!.translate('enter_title'),
-          label: AppLocalizations.of(context)!.translate('event_name'),
-          validator: (value) {
-            if (value == null || value.isEmpty) {
-              return AppLocalizations.of(context)!.translate('field_required');
-            }
-            return null;
-          },
-        );
+        return _buildNameField();
         
       case 'status_id':
-        return MyTaskStatusEditWidget(
-          selectedStatus: _selectedStatuses?.toString(),
-          onSelectStatus: (MyTaskStatus selectedStatusData) {
-            setState(() {
-              _selectedStatuses = selectedStatusData.id;
-            });
-          },
-          isSubmitted: isSubmitted,
-        );
+        return _buildStatusField();
         
       case 'description':
-        return CustomTextField(
-          controller: descriptionController,
-          hintText: AppLocalizations.of(context)!.translate('enter_description'),
-          label: AppLocalizations.of(context)!.translate('description_list'),
-          maxLines: 5,
-          keyboardType: TextInputType.multiline,
-        );
+        return _buildDescriptionField();
         
       case 'end_date':
-        return CustomTextFieldDate(
-          controller: endDateController,
-          label: AppLocalizations.of(context)!.translate('deadline'),
-          hasError: isEndDateInvalid,
-          validator: (value) {
-            if (value == null || value.isEmpty) {
-              return AppLocalizations.of(context)!.translate('field_required');
-            }
-            return null;
-          },
-        );
+        return _buildEndDateField();
         
       default:
         if (kDebugMode) {
-          //print('MyTaskEditScreen: Unknown field: ${config.fieldName}');
+          print('MyTaskEditScreen: Unknown field: ${config.fieldName}');
         }
         return null;
     }
   }
 
+  // НОВЫЕ МЕТОДЫ: Выносим построение полей в отдельные методы
+  // Это гарантирует единообразие и избавляет от дублирования
+  
+  Widget _buildNameField() {
+    return CustomTextField(
+      controller: nameController,
+      hintText: AppLocalizations.of(context)!.translate('enter_title'),
+      label: AppLocalizations.of(context)!.translate('event_name'),
+      validator: (value) {
+        if (value == null || value.isEmpty) {
+          return AppLocalizations.of(context)!.translate('field_required');
+        }
+        return null;
+      },
+    );
+  }
 
+  Widget _buildStatusField() {
+    return MyTaskStatusEditWidget(
+      selectedStatus: _selectedStatuses?.toString(),
+      onSelectStatus: (MyTaskStatus selectedStatusData) {
+        setState(() {
+          _selectedStatuses = selectedStatusData.id;
+        });
+      },
+      isSubmitted: isSubmitted,
+    );
+  }
 
-Widget _buildFileSelection() {
-  return Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Text(
-        AppLocalizations.of(context)!.translate('file'),
-        style: TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.w500,
-          fontFamily: 'Gilroy',
-          color: Color(0xff1E2E52),
+  Widget _buildDescriptionField() {
+    return CustomTextField(
+      controller: descriptionController,
+      hintText: AppLocalizations.of(context)!.translate('enter_description'),
+      label: AppLocalizations.of(context)!.translate('description_list'),
+      maxLines: 5,
+      keyboardType: TextInputType.multiline,
+    );
+  }
+
+  Widget _buildEndDateField() {
+    return CustomTextFieldDate(
+      controller: endDateController,
+      label: AppLocalizations.of(context)!.translate('deadline'),
+      hasError: isEndDateInvalid,
+      validator: (value) {
+        if (value == null || value.isEmpty) {
+          return AppLocalizations.of(context)!.translate('field_required');
+        }
+        return null;
+      },
+    );
+  }
+
+  // КЛЮЧЕВОЙ МЕТОД: Построение всех обязательных полей
+  // Независимо от конфигурации, эти поля ВСЕГДА должны быть
+  List<Widget> _buildAllRequiredFields() {
+    return [
+      _buildNameField(),
+      const SizedBox(height: 8),
+      _buildStatusField(),
+      const SizedBox(height: 8),
+      _buildDescriptionField(),
+      const SizedBox(height: 8),
+      _buildEndDateField(),
+    ];
+  }
+
+  Widget _buildFileSelection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          AppLocalizations.of(context)!.translate('file'),
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            fontFamily: 'Gilroy',
+            color: Color(0xff1E2E52),
+          ),
         ),
-      ),
-      SizedBox(height: 16),
-      Container(
-        height: 120,
-        child: ListView.builder(
-          scrollDirection: Axis.horizontal,
-          itemCount: fileNames.isEmpty ? 1 : fileNames.length + 1,
-          itemBuilder: (context, index) {
-            // Кнопка добавления файла
-            if (fileNames.isEmpty || index == fileNames.length) {
-              return Padding(
-                padding: EdgeInsets.only(right: 16),
-                child: GestureDetector(
-                  onTap: _pickFile,
-                  child: Container(
-                    width: 100,
-                    child: Column(
-                      children: [
-                        Image.asset('assets/icons/files/add.png', width: 60, height: 60),
-                        SizedBox(height: 8),
-                        Text(
-                          AppLocalizations.of(context)!.translate('add_file'),
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontFamily: 'Gilroy',
-                            color: Color(0xff1E2E52),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              );
-            }
-            
-            // Отображение выбранных файлов
-            final fileName = fileNames[index];
-            final fileExtension = fileName.split('.').last.toLowerCase();
-            
-            return Padding(
-              padding: EdgeInsets.only(right: 16),
-              child: Stack(
-                children: [
-                  Container(
-                    width: 100,
-                    child: Column(
-                      children: [
-                        // НОВОЕ: Используем метод _buildFileIcon для показа превью или иконки
-                        _buildFileIcon(fileName, fileExtension),
-                        SizedBox(height: 8),
-                        Text(
-                          fileName,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontFamily: 'Gilroy',
-                            color: Color(0xff1E2E52),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  // Кнопка удаления файла
-                  Positioned(
-                    right: -2,
-                    top: -6,
-                    child: GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          selectedFiles.removeAt(index);
-                          fileNames.removeAt(index);
-                          fileSizes.removeAt(index);
-                        });
-                      },
-                      child: Container(
-                        padding: EdgeInsets.all(4),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.1),
-                              blurRadius: 4,
-                              offset: Offset(0, 2),
+        SizedBox(height: 16),
+        Container(
+          height: 120,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: fileNames.isEmpty ? 1 : fileNames.length + 1,
+            itemBuilder: (context, index) {
+              // Кнопка добавления файла
+              if (fileNames.isEmpty || index == fileNames.length) {
+                return Padding(
+                  padding: EdgeInsets.only(right: 16),
+                  child: GestureDetector(
+                    onTap: _pickFile,
+                    child: Container(
+                      width: 100,
+                      child: Column(
+                        children: [
+                          Image.asset('assets/icons/files/add.png', width: 60, height: 60),
+                          SizedBox(height: 8),
+                          Text(
+                            AppLocalizations.of(context)!.translate('add_file'),
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontFamily: 'Gilroy',
+                              color: Color(0xff1E2E52),
                             ),
-                          ],
-                        ),
-                        child: Icon(Icons.close, size: 16, color: Color(0xff1E2E52)),
+                          ),
+                        ],
                       ),
                     ),
                   ),
-                ],
-              ),
+                );
+              }
+              
+              // Отображение выбранных файлов
+              final fileName = fileNames[index];
+              final fileExtension = fileName.split('.').last.toLowerCase();
+              
+              return Padding(
+                padding: EdgeInsets.only(right: 16),
+                child: Stack(
+                  children: [
+                    Container(
+                      width: 100,
+                      child: Column(
+                        children: [
+                          _buildFileIcon(fileName, fileExtension),
+                          SizedBox(height: 8),
+                          Text(
+                            fileName,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontFamily: 'Gilroy',
+                              color: Color(0xff1E2E52),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    // Кнопка удаления файла
+                    Positioned(
+                      right: -2,
+                      top: -6,
+                      child: GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            selectedFiles.removeAt(index);
+                            fileNames.removeAt(index);
+                            fileSizes.removeAt(index);
+                          });
+                        },
+                        child: Container(
+                          padding: EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.1),
+                                blurRadius: 4,
+                                offset: Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: Icon(Icons.close, size: 16, color: Color(0xff1E2E52)),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFileIcon(String fileName, String fileExtension) {
+    final imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'heic', 'heif'];
+    
+    if (imageExtensions.contains(fileExtension)) {
+      final filePath = selectedFiles[fileNames.indexOf(fileName)];
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(8),
+        child: Image.file(
+          File(filePath),
+          width: 60,
+          height: 60,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) {
+            return Image.asset(
+              'assets/icons/files/file.png',
+              width: 60,
+              height: 60,
             );
           },
         ),
-      ),
-    ],
-  );
-}
-
-// ==========================================
-// НОВЫЙ ВСПОМОГАТЕЛЬНЫЙ МЕТОД
-// Добавьте этот метод в класс _DealAddScreenState
-// ==========================================
-
-/// Строит иконку файла или превью изображения
-Widget _buildFileIcon(String fileName, String fileExtension) {
-  // Список расширений изображений
-  final imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'heic', 'heif'];
-  
-  // Если файл - изображение, показываем превью
-  if (imageExtensions.contains(fileExtension)) {
-    final filePath = selectedFiles[fileNames.indexOf(fileName)];
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(8),
-      child: Image.file(
-        File(filePath),
+      );
+    } else {
+      return Image.asset(
+        'assets/icons/files/$fileExtension.png',
         width: 60,
         height: 60,
-        fit: BoxFit.cover,
         errorBuilder: (context, error, stackTrace) {
-          // Если не удалось загрузить превью, показываем иконку
           return Image.asset(
             'assets/icons/files/file.png',
             width: 60,
             height: 60,
           );
         },
-      ),
-    );
-  } else {
-    // Для остальных типов файлов показываем иконку по расширению
-    return Image.asset(
-      'assets/icons/files/$fileExtension.png',
-      width: 60,
-      height: 60,
-      errorBuilder: (context, error, stackTrace) {
-        // Если нет иконки для этого типа, показываем общую иконку файла
-        return Image.asset(
-          'assets/icons/files/file.png',
-          width: 60,
-          height: 60,
-        );
-      },
-    );
+      );
+    }
   }
-}
 
- Future<void> _pickFile() async {
-  // Вычисляем текущий общий размер файлов
-  double totalSize = selectedFiles.fold<double>(
-    0.0,
-    (sum, file) => sum + File(file).lengthSync() / (1024 * 1024),
-  );
+  Future<void> _pickFile() async {
+    double totalSize = selectedFiles.fold<double>(
+      0.0,
+      (sum, file) => sum + File(file).lengthSync() / (1024 * 1024),
+    );
 
-  // Показываем диалог выбора типа файла
-  final List<PickedFileInfo>? pickedFiles = await FilePickerDialog.show(
-    context: context,
-    allowMultiple: true,
-    maxSizeMB: 50.0,
-    currentTotalSizeMB: totalSize,
-    fileLabel: AppLocalizations.of(context)!.translate('file'),
-    galleryLabel: AppLocalizations.of(context)!.translate('gallery'),
-    cameraLabel: AppLocalizations.of(context)!.translate('camera'),
-    cancelLabel: AppLocalizations.of(context)!.translate('cancel'),
-    fileSizeTooLargeMessage: AppLocalizations.of(context)!.translate('file_size_too_large'),
-    errorPickingFileMessage: AppLocalizations.of(context)!.translate('error_picking_file'),
-  );
+    final List<PickedFileInfo>? pickedFiles = await FilePickerDialog.show(
+      context: context,
+      allowMultiple: true,
+      maxSizeMB: 50.0,
+      currentTotalSizeMB: totalSize,
+      fileLabel: AppLocalizations.of(context)!.translate('file'),
+      galleryLabel: AppLocalizations.of(context)!.translate('gallery'),
+      cameraLabel: AppLocalizations.of(context)!.translate('camera'),
+      cancelLabel: AppLocalizations.of(context)!.translate('cancel'),
+      fileSizeTooLargeMessage: AppLocalizations.of(context)!.translate('file_size_too_large'),
+      errorPickingFileMessage: AppLocalizations.of(context)!.translate('error_picking_file'),
+    );
 
-  // Если файлы выбраны, добавляем их
-  if (pickedFiles != null && pickedFiles.isNotEmpty) {
-    setState(() {
-      for (var file in pickedFiles) {
-        selectedFiles.add(file.path);
-        fileNames.add(file.name);
-        fileSizes.add(file.sizeKB);
-      }
-    });
+    if (pickedFiles != null && pickedFiles.isNotEmpty) {
+      setState(() {
+        for (var file in pickedFiles) {
+          selectedFiles.add(file.path);
+          fileNames.add(file.name);
+          fileSizes.add(file.sizeKB);
+        }
+      });
+    }
   }
-}
-
 
   void _showErrorSnackBar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -449,7 +462,8 @@ Widget _buildFileIcon(String fileName, String fileExtension) {
         backgroundColor: const Color.fromARGB(255, 255, 255, 255),
         elevation: 0,
         title: Transform.translate(
-          offset: const Offset(-10, 0),          child: Text(
+          offset: const Offset(-10, 0),
+          child: Text(
             AppLocalizations.of(context)!.translate('task_edit'),
             style: const TextStyle(
               fontSize: 20,
@@ -510,30 +524,32 @@ Widget _buildFileIcon(String fileName, String fileExtension) {
           BlocListener<FieldConfigurationBloc, FieldConfigurationState>(
             listener: (context, configState) {
               if (kDebugMode) {
-                //print('MyTaskEditScreen: FieldConfigurationBloc state changed: ${configState.runtimeType}');
+                print('MyTaskEditScreen: FieldConfigurationBloc state changed: ${configState.runtimeType}');
               }
               
               if (configState is FieldConfigurationLoaded) {
                 if (kDebugMode) {
-                  //print('MyTaskEditScreen: Configuration loaded with ${configState.fields.length} fields');
+                  print('MyTaskEditScreen: Configuration loaded with ${configState.fields.length} fields');
                 }
                 
                 if (mounted) {
                   setState(() {
                     fieldConfigurations = configState.fields;
                     isConfigurationLoaded = true;
+                    isConfigurationLoading = false; // ВАЖНО: убираем флаг загрузки
                   });
                   
                   _buildFieldsFromConfiguration();
                 }
               } else if (configState is FieldConfigurationError) {
                 if (kDebugMode) {
-                  //print('MyTaskEditScreen: Configuration error: ${configState.message}');
+                  print('MyTaskEditScreen: Configuration error: ${configState.message}');
                 }
                 
                 if (mounted) {
                   setState(() {
                     isConfigurationLoaded = false;
+                    isConfigurationLoading = false; // ВАЖНО: убираем флаг загрузки даже при ошибке
                   });
                 }
               }
@@ -541,92 +557,44 @@ Widget _buildFileIcon(String fileName, String fileExtension) {
           ),
         ],
         child: Form(
-        key: _formKey,
-        child: Column(
-          children: [
-            Expanded(
-              child: GestureDetector(
-                onTap: () {
-                  FocusScope.of(context).unfocus();
-                },
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Используем конфигурацию если загружена
-                      if (isConfigurationLoaded && fieldWidgets.isNotEmpty) ...[
-                        for (var fieldName in fieldOrder) ...[
-                          fieldWidgets[fieldName]!,
-                          const SizedBox(height: 8),
-                        ],
-                      ] else ...[
-                        // Fallback: показываем все поля как раньше
-                        CustomTextField(
-                          controller: nameController,
-                          hintText: AppLocalizations.of(context)!
-                              .translate('enter_title'),
-                          label: AppLocalizations.of(context)!
-                              .translate('event_name'),
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return AppLocalizations.of(context)!
-                                  .translate('field_required');
-                            }
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 8),
-                        MyTaskStatusEditWidget(
-                          selectedStatus: _selectedStatuses?.toString(),
-                          onSelectStatus: (MyTaskStatus selectedStatusData) {
-                            setState(() {
-                              _selectedStatuses = selectedStatusData.id;
-                            });
-                          },
-                          isSubmitted: isSubmitted,
-                        ),
-                        const SizedBox(height: 8),
-                        CustomTextField(
-                          controller: descriptionController,
-                          hintText: AppLocalizations.of(context)!
-                              .translate('enter_description'),
-                          label: AppLocalizations.of(context)!
-                              .translate('description_list'),
-                          maxLines: 5,
-                          keyboardType: TextInputType.multiline,
-                        ),
-                        const SizedBox(height: 8),
-                        CustomTextFieldDate(
-                          controller: endDateController,
-                          label:
-                              AppLocalizations.of(context)!.translate('deadline'),
-                          hasError: isEndDateInvalid,
-                        ),
-                      ],
-                      const SizedBox(height: 16),
+          key: _formKey,
+          child: Column(
+            children: [
+              Expanded(
+                child: GestureDetector(
+                  onTap: () {
+                    FocusScope.of(context).unfocus();
+                  },
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // КЛЮЧЕВОЕ ИЗМЕНЕНИЕ: Всегда показываем поля
+                        // Независимо от состояния загрузки конфигурации
+                        ..._buildAllRequiredFields(),
+                        
+                        const SizedBox(height: 16),
 
-                      if (!_showAdditionalFields)
-                        CustomButton(
-                          buttonText: AppLocalizations.of(context)!
-                              .translate('additionally'),
-                          buttonColor: Color(0xff1E2E52),
-                          textColor: Colors.white,
-                          onPressed: () {
-                            setState(() {
-                              _showAdditionalFields = true;
-                            });
-                          },
-                        )
-                      else ...[
-                        // const SizedBox(height: 16),
-                        _buildFileSelection(), // Добавляем виджет выбора файла
-                        // _buildPushNotificationCheckbox(), // Add this line
+                        if (!_showAdditionalFields)
+                          CustomButton(
+                            buttonText: AppLocalizations.of(context)!
+                                .translate('additionally'),
+                            buttonColor: Color(0xff1E2E52),
+                            textColor: Colors.white,
+                            onPressed: () {
+                              setState(() {
+                                _showAdditionalFields = true;
+                              });
+                            },
+                          )
+                        else ...[
+                          _buildFileSelection(),
+                        ],
                       ],
-                    ],
+                    ),
                   ),
                 ),
-              ),
               ),
               Container(
                 padding:
@@ -660,45 +628,19 @@ Widget _buildFileIcon(String fileName, String fileExtension) {
                               textColor: Colors.white,
                               onPressed: () {
                                 setState(() {
-                                    isSubmitted = true;
-                                  });
+                                  isSubmitted = true;
+                                });
 
                                 if (_formKey.currentState!.validate()) {
                                   DateTime? startDate;
                                   DateTime? endDate;
 
                                   try {
-                                    // if (startDateController.text.isNotEmpty) {
-                                    //   startDate = DateFormat('dd/MM/yyyy')
-                                    //       .parseStrict(
-                                    //           startDateController.text);
-                                    // }
                                     if (endDateController.text.isNotEmpty) {
                                       endDate = DateFormat('dd/MM/yyyy')
                                           .parseStrict(endDateController.text);
                                     }
-                                    // if (startDate != null &&
-                                    //     endDate != null &&
-                                    //     startDate.isAfter(endDate)) {
-                                    //   setState(() {
-                                    //     isEndDateInvalid = true;
-                                    //   });
-                                    //   ScaffoldMessenger.of(context)
-                                    //       .showSnackBar(
-                                    //     SnackBar(
-                                    //       content: Text(
-                                    //         AppLocalizations.of(context)!
-                                    //             .translate(
-                                    //                 'start_date_after_end_date'),
-                                    //         style: TextStyle(
-                                    //           color: Colors.white,
-                                    //         ),
-                                    //       ),
-                                    //       backgroundColor: Colors.red,
-                                    //     ),
-                                    //   );
-                                    //   return;
-                                    // }
+                                    
                                     final localizations =
                                         AppLocalizations.of(context)!;
                                     context.read<MyTaskBloc>().add(
@@ -706,16 +648,13 @@ Widget _buildFileIcon(String fileName, String fileExtension) {
                                             taskId: widget.taskId,
                                             name: nameController.text,
                                             taskStatusId: _selectedStatuses!.toInt(),
-                                            // startDate: startDate,
                                             endDate: endDate,
                                             description:
                                                 descriptionController.text,
-                                            filePaths:
-                                                selectedFiles, // Передаем список путей к файлам
-                                            setPush: setPush, // Add this line
+                                            filePaths: selectedFiles,
+                                            setPush: setPush,
                                             localizations: localizations,
-                                            existingFiles:
-                                                existingFiles, // Добавляем существующие файлы
+                                            existingFiles: existingFiles,
                                           ),
                                         );
                                   } catch (e) {

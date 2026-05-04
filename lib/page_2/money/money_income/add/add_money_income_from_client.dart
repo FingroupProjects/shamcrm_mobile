@@ -1,4 +1,7 @@
+import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/api/service/localization_service.dart';
 import 'package:crm_task_manager/bloc/lead_list/lead_list_bloc.dart';
+import 'package:crm_task_manager/bloc/lead_list/lead_list_event.dart';
 import 'package:crm_task_manager/bloc/lead_list/lead_list_state.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
@@ -8,6 +11,7 @@ import 'package:crm_task_manager/page_2/money/widgets/cash_register_radio_group.
 import 'package:crm_task_manager/screens/deal/tabBar/lead_list.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/utils/global_fun.dart';
+import 'package:crm_task_manager/custom_widget/price_input_formatter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
@@ -18,7 +22,8 @@ class AddMoneyIncomeFromClient extends StatefulWidget {
   const AddMoneyIncomeFromClient({super.key});
 
   @override
-  _AddMoneyIncomeFromClientState createState() => _AddMoneyIncomeFromClientState();
+  _AddMoneyIncomeFromClientState createState() =>
+      _AddMoneyIncomeFromClientState();
 }
 
 class _AddMoneyIncomeFromClientState extends State<AddMoneyIncomeFromClient> {
@@ -26,19 +31,91 @@ class _AddMoneyIncomeFromClientState extends State<AddMoneyIncomeFromClient> {
   final TextEditingController _dateController = TextEditingController();
   final TextEditingController _commentController = TextEditingController();
   final TextEditingController _amountController = TextEditingController();
+  final TextEditingController _exchangeRateController = TextEditingController();
 
   LeadData? _selectedLead;
   CashRegisterData? selectedCashRegister;
   bool _isLoading = false;
+  int? _organizationCurrencyId;
+  String? _exchangeRateErrorText;
+
+  // ✅ НОВОЕ: Флаг разрешения на проведение документа
+  bool _hasApprovePermission = false;
+  final ApiService _apiService = ApiService();
 
   @override
   void initState() {
     super.initState();
-    _dateController.text = DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now());
+    _dateController.text =
+        DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now());
 
-    // Предзагружаем данные если их еще нет
-    // ✅ УДАЛЕНО: _preloadDataIfNeeded() чтобы избежать race condition
-    // LeadRadioGroupWidget сам загрузит leads при необходимости
+    // ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Принудительно загружаем лиды с долгом
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        // Принудительно загружаем заново (даже если есть кэш)
+        context.read<GetAllLeadBloc>().add(GetAllLeadEv(
+              showDebt: true,
+            ));
+      }
+    });
+
+    _checkApprovePermission();
+    _loadOrganizationCurrency();
+  }
+
+  Future<void> _loadOrganizationCurrency() async {
+    final currencyId = await LocalizationService.getCurrencyId();
+    if (!mounted) return;
+    setState(() {
+      _organizationCurrencyId = currencyId;
+    });
+  }
+
+  int? get _selectedLeadCurrencyId =>
+      _selectedLead?.currency?.id ?? _selectedLead?.currencyId;
+  String? get _selectedLeadCurrencyName => _selectedLead?.currency?.name;
+
+  bool get _isExchangeRateRequired {
+    if (_organizationCurrencyId == null || _selectedLeadCurrencyId == null) {
+      return false;
+    }
+    return _organizationCurrencyId != _selectedLeadCurrencyId;
+  }
+
+  double? get _exchangeRateValue =>
+      double.tryParse(_exchangeRateController.text.replaceAll(',', '.'));
+
+  double get _amountValue =>
+      double.tryParse(_amountController.text.replaceAll(',', '.')) ?? 0;
+
+  double get _totalByCurrency => _amountValue * (_exchangeRateValue ?? 0);
+
+  String _totalByCurrencyLabel(AppLocalizations localizations) {
+    final base =
+        localizations.translate('total_by_currency') ?? 'Итого по валюте';
+    final currencyName = _selectedLeadCurrencyName;
+    if (currencyName == null || currencyName.isEmpty) return base;
+    return '$base: $currencyName';
+  }
+
+  // ✅ НОВОЕ: Проверка разрешения на проведение документа
+  Future<void> _checkApprovePermission() async {
+    try {
+      final hasPermission =
+          await _apiService.hasPermission('checking_account_pko.approve');
+      if (mounted) {
+        setState(() {
+          _hasApprovePermission = hasPermission;
+        });
+      }
+    } catch (e) {
+      debugPrint('Ошибка при проверке права на проведение документа: $e');
+      if (mounted) {
+        setState(() {
+          _hasApprovePermission = false;
+        });
+      }
+    }
   }
 
   void _createDocument({bool approve = false}) async {
@@ -46,10 +123,29 @@ class _AddMoneyIncomeFromClientState extends State<AddMoneyIncomeFromClient> {
 
     if (_selectedLead == null) {
       _showSnackBar(
-        AppLocalizations.of(context)!.translate('select_lead') ?? 'Пожалуйста, выберите сделку',
+        AppLocalizations.of(context)!.translate('select_lead') ??
+            'Пожалуйста, выберите сделку',
         false,
       );
       return;
+    }
+
+    if (approve && _isExchangeRateRequired) {
+      final rate = _exchangeRateValue;
+      if (rate == null || rate <= 0) {
+        setState(() {
+          _exchangeRateErrorText = AppLocalizations.of(context)!
+                  .translate('fill_valid_exchange_rate') ??
+              'Заполните корректный курс валюты';
+        });
+        return;
+      }
+    }
+
+    if (_exchangeRateErrorText != null) {
+      setState(() {
+        _exchangeRateErrorText = null;
+      });
     }
 
     setState(() => _isLoading = true);
@@ -57,12 +153,14 @@ class _AddMoneyIncomeFromClientState extends State<AddMoneyIncomeFromClient> {
     String? isoDate;
 
     try {
-      DateTime? parsedDate = DateFormat('dd/MM/yyyy HH:mm').parse(_dateController.text);
+      DateTime? parsedDate =
+          DateFormat('dd/MM/yyyy HH:mm').parse(_dateController.text);
       isoDate = DateFormat("yyyy-MM-ddTHH:mm:ss.SSS'Z'").format(parsedDate);
     } catch (e) {
       setState(() => _isLoading = false);
       _showSnackBar(
-        AppLocalizations.of(context)!.translate('enter_valid_datetime') ?? 'Введите корректную дату и время',
+        AppLocalizations.of(context)!.translate('enter_valid_datetime') ??
+            'Введите корректную дату и время',
         false,
       );
       return;
@@ -71,7 +169,8 @@ class _AddMoneyIncomeFromClientState extends State<AddMoneyIncomeFromClient> {
     if (selectedCashRegister == null) {
       setState(() => _isLoading = false);
       _showSnackBar(
-        AppLocalizations.of(context)!.translate('select_cash_register') ?? 'Пожалуйста, выберите кассу',
+        AppLocalizations.of(context)!.translate('select_cash_register') ??
+            'Пожалуйста, выберите кассу',
         false,
       );
       return;
@@ -86,12 +185,15 @@ class _AddMoneyIncomeFromClientState extends State<AddMoneyIncomeFromClient> {
         comment: _commentController.text.trim(),
         operationType: MoneyIncomeOperationType.client_payment.name,
         cashRegisterId: selectedCashRegister?.id,
+        exchangeRate: _exchangeRateValue,
         approve: approve, // Передаем параметр approve
       ));
     } catch (e) {
       setState(() => _isLoading = false);
       _showSnackBar(
-          AppLocalizations.of(context)!.translate('error_creating_document')?.replaceAll('{error}', e.toString()) ??
+          AppLocalizations.of(context)!
+                  .translate('error_creating_document')
+                  ?.replaceAll('{error}', e.toString()) ??
               'Ошибка создания документа: $e',
           false);
     }
@@ -150,9 +252,10 @@ class _AddMoneyIncomeFromClientState extends State<AddMoneyIncomeFromClient> {
               if (state is GetAllLeadError && mounted) {
                 debugPrint('Lead loading error: ${state.toString()}');
                 _showSnackBar(
-                  AppLocalizations.of(context)!.translate('error_loading_leads') ?? 'Ошибка загрузки лидов', 
-                  false
-                );
+                    AppLocalizations.of(context)!
+                            .translate('error_loading_leads') ??
+                        'Ошибка загрузки лидов',
+                    false);
               }
             },
           ),
@@ -163,7 +266,8 @@ class _AddMoneyIncomeFromClientState extends State<AddMoneyIncomeFromClient> {
             children: [
               Expanded(
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -175,9 +279,12 @@ class _AddMoneyIncomeFromClientState extends State<AddMoneyIncomeFromClient> {
                           if (mounted) {
                             setState(() {
                               _selectedLead = selectedLeadData;
+                              _exchangeRateErrorText = null;
+                              if (!_isExchangeRateRequired) {
+                                _exchangeRateController.clear();
+                              }
                             });
                           }
-
                         },
                         showDebt: true,
                       ),
@@ -185,8 +292,10 @@ class _AddMoneyIncomeFromClientState extends State<AddMoneyIncomeFromClient> {
                       _buildDateField(localizations),
                       const SizedBox(height: 16),
                       CashRegisterGroupWidget(
-                        selectedCashRegisterId: selectedCashRegister?.id.toString(),
-                        onSelectCashRegister: (CashRegisterData selectedRegionData) {
+                        selectedCashRegisterId:
+                            selectedCashRegister?.id.toString(),
+                        onSelectCashRegister:
+                            (CashRegisterData selectedRegionData) {
                           try {
                             setState(() {
                               selectedCashRegister = selectedRegionData;
@@ -194,13 +303,21 @@ class _AddMoneyIncomeFromClientState extends State<AddMoneyIncomeFromClient> {
                           } catch (e) {
                             debugPrint('Error selecting cash register: $e');
                             _showSnackBar(
-                                AppLocalizations.of(context)!.translate('error_selecting_cash_register') ?? 'Ошибка выбора кассы',
+                                AppLocalizations.of(context)!.translate(
+                                        'error_selecting_cash_register') ??
+                                    'Ошибка выбора кассы',
                                 false);
                           }
                         },
                       ),
                       const SizedBox(height: 16),
                       _buildAmountField(localizations),
+                      if (_isExchangeRateRequired) ...[
+                        const SizedBox(height: 16),
+                        _buildExchangeRateField(localizations),
+                        const SizedBox(height: 16),
+                        _buildTotalByCurrencyWidget(localizations),
+                      ],
                       const SizedBox(height: 16),
                       _buildCommentField(localizations),
                       const SizedBox(height: 16),
@@ -222,11 +339,13 @@ class _AddMoneyIncomeFromClientState extends State<AddMoneyIncomeFromClient> {
       forceMaterialTransparency: true,
       elevation: 0,
       leading: IconButton(
-        icon: const Icon(Icons.arrow_back_ios, color: Color(0xff1E2E52), size: 24),
+        icon: const Icon(Icons.arrow_back_ios,
+            color: Color(0xff1E2E52), size: 24),
         onPressed: () => Navigator.pop(context),
       ),
       title: Text(
-        AppLocalizations.of(context)!.translate('create_incoming_document') ?? 'Создать доход',
+        AppLocalizations.of(context)!.translate('create_incoming_document') ??
+            'Создать доход',
         style: const TextStyle(
           fontSize: 20,
           fontFamily: 'Gilroy',
@@ -256,8 +375,10 @@ class _AddMoneyIncomeFromClientState extends State<AddMoneyIncomeFromClient> {
   Widget _buildCommentField(AppLocalizations localizations) {
     return CustomTextField(
       controller: _commentController,
-      label: AppLocalizations.of(context)!.translate('comment') ?? 'Комментарий',
-      hintText: AppLocalizations.of(context)!.translate('enter_comment') ?? 'Введите комментарий',
+      label:
+          AppLocalizations.of(context)!.translate('comment') ?? 'Комментарий',
+      hintText: AppLocalizations.of(context)!.translate('enter_comment') ??
+          'Введите комментарий',
       maxLines: 3,
       keyboardType: TextInputType.multiline,
     );
@@ -266,29 +387,88 @@ class _AddMoneyIncomeFromClientState extends State<AddMoneyIncomeFromClient> {
   Widget _buildAmountField(AppLocalizations localizations) {
     return CustomTextField(
         inputFormatters: [
-          MoneyInputFormatter(),
+          PriceInputFormatter(),
         ],
         controller: _amountController,
         label: AppLocalizations.of(context)!.translate('amount') ?? 'Сумма',
-        hintText: AppLocalizations.of(context)!.translate('enter_amount') ?? 'Введите сумму',
+        hintText: AppLocalizations.of(context)!.translate('enter_amount') ??
+            'Введите сумму',
         maxLines: 1,
-        keyboardType: TextInputType.number,
+        keyboardType: const TextInputType.numberWithOptions(decimal: true),
         validator: (value) {
           if (value == null || value.isEmpty) {
-            return AppLocalizations.of(context)!.translate('enter_amount') ?? 'Введите сумму';
+            return AppLocalizations.of(context)!.translate('enter_amount') ??
+                'Введите сумму';
           }
 
           final doubleValue = double.tryParse(value.trim());
           if (doubleValue == null) {
-            return AppLocalizations.of(context)!.translate('enter_valid_amount') ?? 'Введите корректную сумму';
+            return AppLocalizations.of(context)!
+                    .translate('enter_valid_amount') ??
+                'Введите корректную сумму';
           }
 
           if (doubleValue <= 0) {
-            return AppLocalizations.of(context)!.translate('amount_must_be_greater_than_zero') ?? 'Сумма должна быть больше нуля';
+            return AppLocalizations.of(context)!
+                    .translate('amount_must_be_greater_than_zero') ??
+                'Сумма должна быть больше нуля';
           }
 
           return null;
-        });
+        },
+        onChanged: (_) => setState(() {}));
+  }
+
+  Widget _buildExchangeRateField(AppLocalizations localizations) {
+    return CustomTextField(
+      controller: _exchangeRateController,
+      inputFormatters: [PriceInputFormatter()],
+      label: localizations.translate('exchange_rate') ?? 'Курс валюты',
+      hintText: localizations.translate('enter_value') ?? 'Введите значение',
+      maxLines: 1,
+      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+      errorText: _exchangeRateErrorText,
+      onChanged: (_) {
+        setState(() {});
+        if (_exchangeRateErrorText != null) {
+          setState(() => _exchangeRateErrorText = null);
+        }
+      },
+    );
+  }
+
+  Widget _buildTotalByCurrencyWidget(AppLocalizations localizations) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+      decoration: BoxDecoration(
+        color: const Color(0xffF4F7FD),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            _totalByCurrencyLabel(localizations),
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              fontFamily: 'Gilroy',
+              color: Color(0xff1E2E52),
+            ),
+          ),
+          Text(
+            parseNumberToString(_totalByCurrency),
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              fontFamily: 'Gilroy',
+              color: Color(0xff1E2E52),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   // Метод для сохранения и проведения
@@ -318,46 +498,53 @@ class _AddMoneyIncomeFromClientState extends State<AddMoneyIncomeFromClient> {
       ),
       child: Column(
         children: [
-          // Кнопка "Сохранить и провести"
-          Container(
-            width: double.infinity,
-            height: 48,
-            decoration: BoxDecoration(
-              border: Border.all(color: const Color(0xff4CAF50), width: 1.5),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
+          // ✅ НОВОЕ: Показываем кнопку "Провести" только если есть разрешение
+          if (_hasApprovePermission) ...[
+            Container(
+              width: double.infinity,
+              height: 48,
+              decoration: BoxDecoration(
+                border: Border.all(color: const Color(0xff4CAF50), width: 1.5),
                 borderRadius: BorderRadius.circular(12),
-                onTap: _isLoading ? null : _createAndApproveDocument,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.check_circle_outline,
-                        size: 20,
-                        color: _isLoading ? const Color(0xff99A4BA) : const Color(0xff4CAF50),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        localizations.translate('save_and_approve') ?? 'Сохранить и провести',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontFamily: 'Gilroy',
-                          fontWeight: FontWeight.w600,
-                          color: _isLoading ? const Color(0xff99A4BA) : const Color(0xff4CAF50),
+              ),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(12),
+                  onTap: _isLoading ? null : _createAndApproveDocument,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.check_circle_outline,
+                          size: 20,
+                          color: _isLoading
+                              ? const Color(0xff99A4BA)
+                              : const Color(0xff4CAF50),
                         ),
-                      ),
-                    ],
+                        const SizedBox(width: 8),
+                        Text(
+                          localizations.translate('save_and_approve') ??
+                              'Сохранить и провести',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontFamily: 'Gilroy',
+                            fontWeight: FontWeight.w600,
+                            color: _isLoading
+                                ? const Color(0xff99A4BA)
+                                : const Color(0xff4CAF50),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
-          const SizedBox(height: 16),
+            const SizedBox(height: 16),
+          ],
           // Ряд кнопок "Отмена" и "Сохранить"
           Row(
             children: [
@@ -397,22 +584,23 @@ class _AddMoneyIncomeFromClientState extends State<AddMoneyIncomeFromClient> {
                   ),
                   child: _isLoading
                       ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                    ),
-                  )
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor:
+                                AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        )
                       : Text(
-                    localizations.translate('save') ?? 'Сохранить',
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w500,
-                      color: Colors.white,
-                    ),
-                  ),
+                          localizations.translate('save') ?? 'Сохранить',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontFamily: 'Gilroy',
+                            fontWeight: FontWeight.w500,
+                            color: Colors.white,
+                          ),
+                        ),
                 ),
               ),
             ],
@@ -427,6 +615,7 @@ class _AddMoneyIncomeFromClientState extends State<AddMoneyIncomeFromClient> {
     _dateController.dispose();
     _commentController.dispose();
     _amountController.dispose();
+    _exchangeRateController.dispose();
     super.dispose();
   }
 }

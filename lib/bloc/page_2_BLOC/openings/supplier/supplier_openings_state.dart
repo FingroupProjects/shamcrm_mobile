@@ -9,16 +9,20 @@ class SupplierOpeningsLoading extends SupplierOpeningsState {}
 
 class SupplierOpeningsLoaded extends SupplierOpeningsState {
   final List<SupplierOpening> suppliers;
+  final String? search;
 
   SupplierOpeningsLoaded({
     required this.suppliers,
+    this.search,
   });
 
   SupplierOpeningsLoaded copyWith({
     List<SupplierOpening>? suppliers,
+    String? search,
   }) {
     return SupplierOpeningsLoaded(
       suppliers: suppliers ?? this.suppliers,
+      search: search ?? this.search,
     );
   }
 }

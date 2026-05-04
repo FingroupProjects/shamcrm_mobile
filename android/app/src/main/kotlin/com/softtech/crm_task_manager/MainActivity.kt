@@ -1,24 +1,143 @@
 package com.softtech.crm_task_manager
 
+import android.app.NotificationManager
 import android.appwidget.AppWidgetManager
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.net.ConnectivityManager
+import android.net.Network
+import android.net.NetworkCapabilities
+import android.net.NetworkRequest
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.os.PowerManager
+import android.provider.Settings
 import android.util.Log
+import android.view.WindowManager
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.enableEdgeToEdge
+import androidx.core.content.FileProvider
+import com.google.android.play.core.appupdate.AppUpdateManager
+import com.google.android.play.core.appupdate.AppUpdateManagerFactory
+import com.google.android.play.core.appupdate.AppUpdateOptions
+import com.google.android.play.core.install.InstallStateUpdatedListener
+import com.google.android.play.core.install.model.AppUpdateType
+import com.google.android.play.core.install.model.InstallStatus
+import com.google.android.play.core.install.model.UpdateAvailability
 import io.flutter.embedding.android.FlutterFragmentActivity
 import io.flutter.embedding.engine.FlutterEngine
+import io.flutter.plugin.common.EventChannel
 import io.flutter.plugin.common.MethodChannel
+import java.io.File
 
 class MainActivity : FlutterFragmentActivity() {
     
     private val CHANNEL = "com.softtech.crm_task_manager/widget"
+    private val NETWORK_EVENT_CHANNEL = "com.shamcrm/network_status"
+    private val IN_APP_UPDATE_METHOD_CHANNEL = "com.shamcrm/in_app_update/methods"
+    private val IN_APP_UPDATE_EVENT_CHANNEL = "com.shamcrm/in_app_update/events"
+    private val NATIVE_SIP_METHOD_CHANNEL = "com.shamcrm/native_sip/methods"
+    private val NATIVE_SIP_EVENT_CHANNEL = "com.shamcrm/native_sip/events"
+    
     private var methodChannel: MethodChannel? = null
+    private var networkEventChannel: EventChannel? = null
+    private var inAppUpdateMethodChannel: MethodChannel? = null
+    private var inAppUpdateEventChannel: EventChannel? = null
+    private var nativeSipMethodChannel: MethodChannel? = null
+    private var nativeSipEventChannel: EventChannel? = null
     private val handler = Handler(Looper.getMainLooper())
+    
+    private var networkEventSink: EventChannel.EventSink? = null
+    private var inAppUpdateEventSink: EventChannel.EventSink? = null
+    private var nativeSipEventSink: EventChannel.EventSink? = null
+    private val connectivityManager by lazy {
+        getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+    }
+    private lateinit var appUpdateManager: AppUpdateManager
+    private var updateListenerRegistered = false
+    
+    // ✅ Отслеживаем есть ли ХОТЬ ОДНА сеть
+    private var hasAnyNetwork = false
+
+    private val installStateUpdatedListener = InstallStateUpdatedListener { state ->
+        val downloadedBytes = state.bytesDownloaded()
+        val totalBytes = state.totalBytesToDownload()
+        val progress = if (totalBytes > 0) {
+            ((downloadedBytes * 100) / totalBytes).toInt()
+        } else {
+            0
+        }
+
+        when (state.installStatus()) {
+            InstallStatus.PENDING -> sendInAppUpdateEvent("pending", 0, downloadedBytes, totalBytes)
+            InstallStatus.DOWNLOADING -> sendInAppUpdateEvent("downloading", progress, downloadedBytes, totalBytes)
+            InstallStatus.DOWNLOADED -> sendInAppUpdateEvent("downloaded", 100, downloadedBytes, totalBytes)
+            InstallStatus.INSTALLING -> sendInAppUpdateEvent("installing", 100, downloadedBytes, totalBytes)
+            InstallStatus.INSTALLED -> sendInAppUpdateEvent("installed", 100, downloadedBytes, totalBytes)
+            InstallStatus.CANCELED -> sendInAppUpdateEvent("canceled", progress, downloadedBytes, totalBytes, "Обновление отменено.")
+            InstallStatus.FAILED -> sendInAppUpdateEvent("failed", progress, downloadedBytes, totalBytes, "Не удалось загрузить обновление.")
+            else -> Unit
+        }
+    }
+
+    private val updateFlowLauncher = registerForActivityResult(
+        ActivityResultContracts.StartIntentSenderForResult()
+    ) { result ->
+        if (result.resultCode != RESULT_OK) {
+            sendInAppUpdateEvent(
+                "canceled",
+                0,
+                null,
+                null,
+                "Пользователь отменил обновление."
+            )
+        }
+    }
+    
+    private val networkCallback = object : ConnectivityManager.NetworkCallback() {
+        override fun onAvailable(network: Network) {
+            Log.d("MainActivity", "🤖 Network AVAILABLE")
+            hasAnyNetwork = true
+            sendNetworkStatus(true)
+        }
+        
+        override fun onLost(network: Network) {
+            Log.d("MainActivity", "🤖 Network LOST")
+            
+            // ✅ КРИТИЧНО: Проверяем есть ли ДРУГИЕ сети
+            handler.postDelayed({
+                val hasOtherNetworks = checkHasAnyNetwork()
+                Log.d("MainActivity", "🤖 Проверка других сетей: $hasOtherNetworks")
+                
+                if (!hasOtherNetworks) {
+                    // ❌ НЕТ ВООБЩЕ НИКАКИХ СЕТЕЙ - показываем overlay
+                    Log.d("MainActivity", "❌ НЕТ СЕТЕЙ - показываем overlay")
+                    hasAnyNetwork = false
+                    sendNetworkStatus(false)
+                } else {
+                    // ✅ Есть другие сети - всё ок
+                    Log.d("MainActivity", "✅ Есть другие сети - всё ок")
+                    hasAnyNetwork = true
+                }
+            }, 500) // Ждем 0.5 секунды чтобы система успела переключиться
+        }
+        
+        override fun onCapabilitiesChanged(network: Network, capabilities: NetworkCapabilities) {
+            // ✅ ИГНОРИРУЕМ ВАЛИДАЦИЮ - просто проверяем есть ли сеть
+            val hasInternet = capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+            
+            Log.d("MainActivity", "🤖 Capabilities: hasInternet=$hasInternet")
+            
+            if (hasInternet) {
+                hasAnyNetwork = true
+                // НЕ отправляем событие - пусть onAvailable/onLost управляют
+            }
+        }
+    }
     
     companion object {
         private const val PREFS_NAME = "WidgetNavigation"
@@ -28,30 +147,35 @@ class MainActivity : FlutterFragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
+        // ✅ Фильтруем предупреждения BLASTBufferQueue из логов
+        // Это предупреждение Android системы о буферах рендеринга, не критично
+        // Устанавливаем уровень логирования для подавления избыточных предупреждений
+        try {
+            System.setProperty("log.tag.BLASTBufferQueue", "ASSERT") // ASSERT = самый высокий уровень, скрывает все
+            System.setProperty("log.tag.SurfaceView", "ASSERT")
+        } catch (e: Exception) {
+            // Игнорируем ошибки при настройке фильтра
+        }
+        
         Log.d("MainActivity", "=== onCreate ===")
-        Log.d("MainActivity", "Intent: $intent")
-        Log.d("MainActivity", "Intent extras: ${intent?.extras}")
-        Log.d("MainActivity", "Intent action: ${intent?.action}")
-        Log.d("MainActivity", "screen_identifier extra: ${intent?.getStringExtra("screen_identifier")}")
+        appUpdateManager = AppUpdateManagerFactory.create(this)
+        NativeSipBridge.initialize(applicationContext)
 
-        // ✅ Edge-to-edge для Android 15+
         if (Build.VERSION.SDK_INT >= 35) {
             enableEdgeToEdge()
         }
         
-        // Store widget navigation in SharedPreferences for Flutter to read
         handleWidgetIntent(intent)
+        updateIncomingCallWindowMode(intent)
         
-        // If app is cold-started from widget, send navigation to Flutter after engine is ready
         val screenIdentifier = intent?.getStringExtra("screen_identifier")
         if (!screenIdentifier.isNullOrEmpty()) {
-            Log.d("MainActivity", "onCreate: Scheduling sendScreenToFlutter for: $screenIdentifier")
-            // Delay to ensure Flutter engine is ready
             handler.postDelayed({
-                Log.d("MainActivity", "onCreate: Executing delayed sendScreenToFlutter for: $screenIdentifier")
                 sendScreenToFlutter(screenIdentifier)
-            }, 500) // Longer delay for cold start
+            }, 500)
         }
+        
+        startNetworkMonitoring()
     }
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
@@ -59,15 +183,12 @@ class MainActivity : FlutterFragmentActivity() {
         
         Log.d("MainActivity", "=== configureFlutterEngine ===")
         
-        // Создаём MethodChannel для связи с Flutter
         methodChannel = MethodChannel(
             flutterEngine.dartExecutor.binaryMessenger,
             CHANNEL
         )
         
-        // Handle method calls from Flutter
         methodChannel?.setMethodCallHandler { call, result ->
-            Log.d("MainActivity", "MethodChannel call: ${call.method}")
             when (call.method) {
                 "updateWidget" -> {
                     updateWidget()
@@ -75,9 +196,21 @@ class MainActivity : FlutterFragmentActivity() {
                 }
                 "getPendingNavigation" -> {
                     val pending = getPendingNavigation()
-                    Log.d("MainActivity", "getPendingNavigation called, returning: $pending")
                     clearPendingNavigation()
                     result.success(pending)
+                }
+                "shareExportFile" -> {
+                    val path = call.argument<String>("path")
+                    val title = call.argument<String>("title")
+                    val text = call.argument<String>("text")
+                    val mimeType =
+                        call.argument<String>("mimeType") ?: "application/json"
+
+                    if (path.isNullOrEmpty()) {
+                        result.error("INVALID_PATH", "Path is empty", null)
+                    } else {
+                        shareExportFile(path, title, text, mimeType, result)
+                    }
                 }
                 else -> {
                     result.notImplemented()
@@ -85,51 +218,660 @@ class MainActivity : FlutterFragmentActivity() {
             }
         }
         
-        Log.d("MainActivity", "MethodChannel configured")
+        networkEventChannel = EventChannel(
+            flutterEngine.dartExecutor.binaryMessenger,
+            NETWORK_EVENT_CHANNEL
+        )
+        
+        networkEventChannel?.setStreamHandler(object : EventChannel.StreamHandler {
+            override fun onListen(arguments: Any?, events: EventChannel.EventSink?) {
+                Log.d("MainActivity", "✅ onListen called for network events")
+                networkEventSink = events
+                
+                handler.post {
+                    val hasNetwork = checkHasAnyNetwork()
+                    events?.success(hasNetwork)
+                    Log.d("MainActivity", "✅ Network event sink attached, hasNetwork: $hasNetwork")
+                }
+            }
+            
+            override fun onCancel(arguments: Any?) {
+                Log.d("MainActivity", "✅ onCancel called for network events")
+                networkEventSink = null
+            }
+        })
+
+        inAppUpdateMethodChannel = MethodChannel(
+            flutterEngine.dartExecutor.binaryMessenger,
+            IN_APP_UPDATE_METHOD_CHANNEL
+        )
+
+        inAppUpdateMethodChannel?.setMethodCallHandler { call, result ->
+            when (call.method) {
+                "isSupported" -> handleIsInAppUpdateSupported(result)
+                "startFlexibleUpdate" -> startFlexibleUpdate(result)
+                "completeFlexibleUpdate" -> completeFlexibleUpdate(result)
+                else -> result.notImplemented()
+            }
+        }
+
+        inAppUpdateEventChannel = EventChannel(
+            flutterEngine.dartExecutor.binaryMessenger,
+            IN_APP_UPDATE_EVENT_CHANNEL
+        )
+
+        inAppUpdateEventChannel?.setStreamHandler(object : EventChannel.StreamHandler {
+            override fun onListen(arguments: Any?, events: EventChannel.EventSink?) {
+                inAppUpdateEventSink = events
+                registerInstallStateListenerIfNeeded()
+                emitDownloadedStateIfNeeded()
+            }
+
+            override fun onCancel(arguments: Any?) {
+                inAppUpdateEventSink = null
+            }
+        })
+
+        nativeSipMethodChannel = MethodChannel(
+            flutterEngine.dartExecutor.binaryMessenger,
+            NATIVE_SIP_METHOD_CHANNEL
+        )
+
+        nativeSipMethodChannel?.setMethodCallHandler { call, result ->
+            when (call.method) {
+                "initialize" -> {
+                    result.success(true)
+                }
+                "register" -> {
+                    val server = call.argument<String>("server")
+                    val login = call.argument<String>("login")
+                    val password = call.argument<String>("password")
+                    val port = call.argument<Int>("port")
+                    val transport = call.argument<String>("transport")
+                    val authUser = call.argument<String>("authUser")
+
+                    if (server.isNullOrBlank() ||
+                        login.isNullOrBlank() ||
+                        password.isNullOrBlank() ||
+                        port == null ||
+                        transport.isNullOrBlank()
+                    ) {
+                        result.error("INVALID_ARGS", "Missing native SIP registration args", null)
+                    } else {
+                        result.success(
+                            NativeSipBridge.register(
+                                server = server,
+                                login = login,
+                                password = password,
+                                port = port,
+                                transport = transport,
+                                authUser = authUser,
+                            )
+                        )
+                    }
+                }
+                "unregister" -> {
+                    Log.w("MainActivity", "Native SIP unregister invoked from Flutter method channel")
+                    NativeSipBridge.unregister()
+                    result.success(true)
+                }
+                "getStateSnapshot" -> {
+                    result.success(NativeSipBridge.getStateSnapshot())
+                }
+                "restoreRegistrationIfNeeded" -> {
+                    result.success(NativeSipBridge.restoreRegistrationIfNeeded())
+                }
+                "makeCall" -> {
+                    val target = call.argument<String>("target")
+                    if (target.isNullOrBlank()) {
+                        result.error("INVALID_TARGET", "Target is empty", null)
+                    } else {
+                        result.success(NativeSipBridge.makeCall(target))
+                    }
+                }
+                "acceptCall" -> result.success(NativeSipBridge.acceptCall())
+                "declineCall" -> result.success(NativeSipBridge.declineCall())
+                "hangup" -> result.success(NativeSipBridge.hangup())
+                "setMuted" -> {
+                    val muted = call.argument<Boolean>("muted") ?: false
+                    result.success(NativeSipBridge.setMuted(muted))
+                }
+                "setSpeaker" -> {
+                    val speakerOn = call.argument<Boolean>("speakerOn") ?: false
+                    result.success(NativeSipBridge.setSpeaker(speakerOn))
+                }
+                "requestBackgroundReliabilitySettings" -> {
+                    result.success(requestBackgroundReliabilitySettings())
+                }
+                "openXiaomiSettings" -> {
+                    result.success(openXiaomiAutoStartSettings())
+                }
+                "checkSystemAlertWindowPermission" -> {
+                    result.success(checkSystemAlertWindowPermission())
+                }
+                "requestSystemAlertWindowPermission" -> {
+                    result.success(requestSystemAlertWindowPermission())
+                }
+                "canUseFullScreenIntent" -> {
+                    result.success(canUseFullScreenIntent())
+                }
+                "requestFullScreenIntentPermission" -> {
+                    result.success(requestFullScreenIntentPermission())
+                }
+                "openXiaomiPopupPermissionSettings" -> {
+                    result.success(openXiaomiPopupPermissionSettings())
+                }
+                "dispose" -> {
+                    result.success(true)
+                }
+                else -> result.notImplemented()
+            }
+        }
+
+        nativeSipEventChannel = EventChannel(
+            flutterEngine.dartExecutor.binaryMessenger,
+            NATIVE_SIP_EVENT_CHANNEL
+        )
+
+        nativeSipEventChannel?.setStreamHandler(object : EventChannel.StreamHandler {
+            override fun onListen(arguments: Any?, events: EventChannel.EventSink?) {
+                nativeSipEventSink = events
+                NativeSipBridge.setFlutterEventSink(object : EventChannel.EventSink {
+                    override fun success(event: Any?) {
+                        handler.post {
+                            nativeSipEventSink?.success(event)
+                        }
+                    }
+
+                    override fun error(code: String, message: String?, details: Any?) {
+                        handler.post {
+                            nativeSipEventSink?.error(code, message, details)
+                        }
+                    }
+
+                    override fun endOfStream() {
+                        handler.post {
+                            nativeSipEventSink?.endOfStream()
+                        }
+                    }
+                })
+            }
+
+            override fun onCancel(arguments: Any?) {
+                nativeSipEventSink = null
+                NativeSipBridge.setFlutterEventSink(null)
+            }
+        })
+        
+        Log.d("MainActivity", "✅ Channels configured")
     }
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         
-        Log.d("MainActivity", "=== onNewIntent ===")
-        Log.d("MainActivity", "Intent: $intent")
-        Log.d("MainActivity", "Intent extras: ${intent.extras}")
-        Log.d("MainActivity", "screen_identifier extra: ${intent.getStringExtra("screen_identifier")}")
-        
         setIntent(intent)
         handleWidgetIntent(intent)
+        updateIncomingCallWindowMode(intent)
         
-        // When app is already running, send navigation immediately with small delay
         val screenIdentifier = intent.getStringExtra("screen_identifier")
         if (!screenIdentifier.isNullOrEmpty()) {
-            Log.d("MainActivity", "Scheduling sendScreenToFlutter for: $screenIdentifier")
             handler.postDelayed({
-                Log.d("MainActivity", "Executing delayed sendScreenToFlutter for: $screenIdentifier")
                 sendScreenToFlutter(screenIdentifier)
             }, 100)
         }
     }
+    
+    override fun onDestroy() {
+        unregisterInstallStateListener()
+        super.onDestroy()
+        stopNetworkMonitoring()
+    }
 
+    override fun onResume() {
+        super.onResume()
+        NativeSipBridge.onAppForeground()
+    }
+
+    override fun onPause() {
+        NativeSipBridge.onAppBackground()
+        super.onPause()
+    }
+
+    // ✅ Network monitoring methods
+    
+    private fun startNetworkMonitoring() {
+        try {
+            val networkRequest = NetworkRequest.Builder()
+                .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+                .build()
+            
+            connectivityManager.registerNetworkCallback(networkRequest, networkCallback)
+            Log.d("MainActivity", "✅ Network monitoring started")
+        } catch (e: Exception) {
+            Log.e("MainActivity", "❌ Failed to start network monitoring: ${e.message}")
+        }
+    }
+    
+    private fun stopNetworkMonitoring() {
+        try {
+            connectivityManager.unregisterNetworkCallback(networkCallback)
+            Log.d("MainActivity", "✅ Network monitoring stopped")
+        } catch (e: Exception) {
+            Log.e("MainActivity", "❌ Failed to stop network monitoring: ${e.message}")
+        }
+    }
+
+    private fun requestBackgroundReliabilitySettings(): Boolean {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
+            return false
+        }
+
+        val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
+        if (powerManager.isIgnoringBatteryOptimizations(packageName)) {
+            // Уже исключено — открываем Xiaomi AutoStart настройки
+            return openXiaomiAutoStartSettings()
+        }
+
+        return try {
+            // Прямой запрос для нашего приложения — открывает диалог
+            // именно для нашего пакета, а не общий список
+            val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
+                data = Uri.parse("package:$packageName")
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            startActivity(intent)
+            true
+        } catch (error: Throwable) {
+            Log.e(
+                "MainActivity",
+                "Failed to open battery optimization request, fallback to list: ${error.message}",
+                error,
+            )
+            // Если прямой запрос не сработал — открываем общий список
+            try {
+                startActivity(
+                    Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS).apply {
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    }
+                )
+                true
+            } catch (_: Throwable) {
+                false
+            }
+        }
+    }
+
+    /**
+     * Открывает Xiaomi/MIUI/HyperOS специфичные настройки AutoStart.
+     * На Xiaomi с HyperOS 2 без AutoStart приложение убивается даже если ForegroundService
+     * правильно настроен. Возвращает true если настройки были открыты.
+     */
+    private fun openXiaomiAutoStartSettings(): Boolean {
+        // Список известных Xiaomi/HyperOS intent-ов для AutoStart (MIUI 8..HyperOS 2)
+        val xiaomiIntents = listOf(
+            // HyperOS 2 / MIUI 14+
+            Triple("com.miui.securitycenter", "com.miui.permcenter.autostart.AutoStartManagementActivity", "HyperOS AutoStart"),
+            // MIUI 12–13
+            Triple("com.miui.securitycenter", "com.miui.powercenter.PowerSettings", "MIUI PowerSettings"),
+            // Старые версии MIUI
+            Triple("com.miui.securitycenter", "com.miui.securitycenter.MainActivity", "MIUI SecurityCenter"),
+            // Xiaomi Security app
+            Triple("com.xiaomi.xmsf", "com.xiaomi.xmsf.push.service.PushServiceSettingsActivity", "Xiaomi Push Settings"),
+        )
+
+        for ((pkg, cls, label) in xiaomiIntents) {
+            try {
+                val intent = Intent().apply {
+                    setClassName(pkg, cls)
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                val resolveInfo = packageManager.resolveActivity(intent, 0)
+                if (resolveInfo != null) {
+                    startActivity(intent)
+                    Log.d("MainActivity", "Opened Xiaomi settings via $label")
+                    return true
+                }
+            } catch (error: Throwable) {
+                Log.d("MainActivity", "Xiaomi intent $label not available: ${error.message}")
+            }
+        }
+
+        Log.d("MainActivity", "Не Xiaomi устройство — Xiaomi настройки недоступны")
+        return false
+    }
+
+    private fun checkSystemAlertWindowPermission(): Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            Settings.canDrawOverlays(this)
+        } else {
+            true
+        }
+    }
+
+    private fun requestSystemAlertWindowPermission(): Boolean {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            return try {
+                val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION).apply {
+                    data = Uri.parse("package:$packageName")
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                startActivity(intent)
+                true
+            } catch (error: Throwable) {
+                Log.e("MainActivity", "Failed to open overlay settings: ${error.message}")
+                try {
+                    startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION).apply {
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    })
+                    true
+                } catch (_: Throwable) {
+                    false
+                }
+            }
+        }
+        return true
+    }
+
+    private fun canUseFullScreenIntent(): Boolean {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            return true
+        }
+
+        return try {
+            val notificationManager =
+                getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            notificationManager.canUseFullScreenIntent()
+        } catch (error: Throwable) {
+            Log.e("MainActivity", "Failed to check full-screen intent permission: ${error.message}", error)
+            false
+        }
+    }
+
+    private fun requestFullScreenIntentPermission(): Boolean {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            return true
+        }
+
+        return try {
+            val intent = Intent(Settings.ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT).apply {
+                data = Uri.parse("package:$packageName")
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            startActivity(intent)
+            true
+        } catch (error: Throwable) {
+            Log.e("MainActivity", "Failed to open full-screen intent settings: ${error.message}", error)
+            try {
+                startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                    data = Uri.parse("package:$packageName")
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                })
+                true
+            } catch (_: Throwable) {
+                false
+            }
+        }
+    }
+
+    /**
+     * Пытается открыть настройки «Отображать всплывающие окна в фоновом режиме» для Xiaomi.
+     * Это КРИТИЧЕСКОЕ разрешение для того, чтобы IncomingCallActivity появлялось
+     * сразу при звонке, если приложение свернуто.
+     */
+    private fun openXiaomiPopupPermissionSettings(): Boolean {
+        try {
+            // Intent для открытия страницы всех разрешений конкретного приложения в MIUI/HyperOS
+            val intent = Intent("miui.intent.action.APP_PERM_EDITOR").apply {
+                setClassName("com.miui.securitycenter", "com.miui.permcenter.permissions.PermissionsEditorActivity")
+                putExtra("extra_pkgname", packageName)
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            startActivity(intent)
+            Log.d("MainActivity", "Opened Xiaomi app permissions editor")
+            return true
+        } catch (error: Throwable) {
+            Log.e("MainActivity", "Failed to open Xiaomi app permissions editor: ${error.message}")
+            // Fallback: пробуем открыть настройки приложения вообще
+            return try {
+                val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                    data = Uri.parse("package:$packageName")
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                startActivity(intent)
+                true
+            } catch (_: Throwable) {
+                false
+            }
+        }
+    }
+
+    private fun updateIncomingCallWindowMode(intent: Intent?) {
+        val shouldWakeForCall = intent?.getBooleanExtra("open_sip_call", false) == true
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
+            setShowWhenLocked(shouldWakeForCall)
+            setTurnScreenOn(shouldWakeForCall)
+        } else {
+            if (shouldWakeForCall) {
+                window.addFlags(
+                    WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or
+                        WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON or
+                        WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON,
+                )
+            } else {
+                window.clearFlags(
+                    WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or
+                        WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON or
+                        WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON,
+                )
+            }
+        }
+
+        if (shouldWakeForCall) {
+            window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        } else {
+            window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        }
+    }
+    
+    private fun checkHasAnyNetwork(): Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            // ✅ Проверяем ВСЕ сети (WiFi, Mobile, Ethernet)
+            val allNetworks = connectivityManager.allNetworks
+            
+            Log.d("MainActivity", "🔍 Всего сетей: ${allNetworks.size}")
+            
+            for (network in allNetworks) {
+                val capabilities = connectivityManager.getNetworkCapabilities(network)
+                if (capabilities != null && 
+                    capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)) {
+                    Log.d("MainActivity", "✅ Найдена сеть с интернетом")
+                    return true
+                }
+            }
+            
+            Log.d("MainActivity", "❌ Нет сетей с интернетом")
+            false
+        } else {
+            @Suppress("DEPRECATION")
+            val networkInfo = connectivityManager.activeNetworkInfo
+            @Suppress("DEPRECATION")
+            networkInfo?.isConnected == true
+        }
+    }
+    
+    private fun sendNetworkStatus(hasNetwork: Boolean) {
+        handler.post {
+            networkEventSink?.success(hasNetwork)
+            Log.d("MainActivity", "📡 Sent to Flutter: $hasNetwork")
+        }
+    }
+
+    private fun handleIsInAppUpdateSupported(result: MethodChannel.Result) {
+        appUpdateManager.appUpdateInfo
+            .addOnSuccessListener {
+                result.success(true)
+            }
+            .addOnFailureListener { error ->
+                Log.e("MainActivity", "In-app update unsupported: ${error.message}", error)
+                result.success(false)
+            }
+    }
+
+    private fun startFlexibleUpdate(result: MethodChannel.Result) {
+        appUpdateManager.appUpdateInfo
+            .addOnSuccessListener { appUpdateInfo ->
+                val updateAvailable =
+                    appUpdateInfo.updateAvailability() == UpdateAvailability.UPDATE_AVAILABLE
+                val flexibleAllowed = appUpdateInfo.isUpdateTypeAllowed(AppUpdateType.FLEXIBLE)
+
+                if (!updateAvailable || !flexibleAllowed) {
+                    sendInAppUpdateEvent(
+                        "unavailable",
+                        0,
+                        null,
+                        null,
+                        "Встроенное обновление через Google Play недоступно."
+                    )
+                    result.success(false)
+                    return@addOnSuccessListener
+                }
+
+                registerInstallStateListenerIfNeeded()
+
+                try {
+                    val started = appUpdateManager.startUpdateFlowForResult(
+                        appUpdateInfo,
+                        updateFlowLauncher,
+                        AppUpdateOptions.newBuilder(AppUpdateType.FLEXIBLE).build()
+                    )
+
+                    if (started) {
+                        sendInAppUpdateEvent(
+                            "pending",
+                            0,
+                            null,
+                            null,
+                            "Подготавливаем загрузку обновления..."
+                        )
+                    }
+
+                    result.success(started)
+                } catch (error: Exception) {
+                    Log.e("MainActivity", "Failed to start flexible update: ${error.message}", error)
+                    sendInAppUpdateEvent(
+                        "failed",
+                        0,
+                        null,
+                        null,
+                        "Не удалось запустить обновление."
+                    )
+                    result.success(false)
+                }
+            }
+            .addOnFailureListener { error ->
+                Log.e("MainActivity", "Failed to check app update info: ${error.message}", error)
+                sendInAppUpdateEvent(
+                    "failed",
+                    0,
+                    null,
+                    null,
+                    "Не удалось проверить доступность обновления."
+                )
+                result.success(false)
+            }
+    }
+
+    private fun completeFlexibleUpdate(result: MethodChannel.Result) {
+        appUpdateManager.completeUpdate()
+            .addOnSuccessListener {
+                sendInAppUpdateEvent(
+                    "installing",
+                    100,
+                    null,
+                    null,
+                    "Устанавливаем обновление..."
+                )
+                result.success(true)
+            }
+            .addOnFailureListener { error ->
+                Log.e("MainActivity", "Failed to complete flexible update: ${error.message}", error)
+                sendInAppUpdateEvent(
+                    "failed",
+                    100,
+                    null,
+                    null,
+                    "Не удалось завершить установку обновления."
+                )
+                result.success(false)
+            }
+    }
+
+    private fun registerInstallStateListenerIfNeeded() {
+        if (updateListenerRegistered) {
+            return
+        }
+
+        appUpdateManager.registerListener(installStateUpdatedListener)
+        updateListenerRegistered = true
+    }
+
+    private fun unregisterInstallStateListener() {
+        if (!updateListenerRegistered) {
+            return
+        }
+
+        appUpdateManager.unregisterListener(installStateUpdatedListener)
+        updateListenerRegistered = false
+    }
+
+    private fun emitDownloadedStateIfNeeded() {
+        appUpdateManager.appUpdateInfo
+            .addOnSuccessListener { appUpdateInfo ->
+                if (appUpdateInfo.installStatus() == InstallStatus.DOWNLOADED) {
+                    sendInAppUpdateEvent(
+                        "downloaded",
+                        100,
+                        null,
+                        null,
+                        "Обновление загружено и готово к установке."
+                    )
+                }
+            }
+            .addOnFailureListener { error ->
+                Log.e("MainActivity", "Failed to emit downloaded state: ${error.message}", error)
+            }
+    }
+
+    private fun sendInAppUpdateEvent(
+        status: String,
+        progress: Int,
+        downloadedBytes: Long?,
+        totalBytes: Long?,
+        message: String? = null
+    ) {
+        handler.post {
+            val payload = hashMapOf<String, Any>(
+                "status" to status,
+                "progress" to progress
+            )
+
+            downloadedBytes?.let { payload["downloadedBytes"] = it.toInt() }
+            totalBytes?.let { payload["totalBytes"] = it.toInt() }
+            message?.let { payload["message"] = it }
+
+            inAppUpdateEventSink?.success(payload)
+        }
+    }
+
+    // ВАШ СУЩЕСТВУЮЩИЙ КОД (виджеты)
+    
     private fun handleWidgetIntent(intent: Intent?) {
-        Log.d("MainActivity", "=== handleWidgetIntent ===")
-        Log.d("MainActivity", "Intent is null: ${intent == null}")
-        
         intent?.let {
             val screenIdentifier = it.getStringExtra("screen_identifier")
             
-            Log.d("MainActivity", "Extracted screen_identifier: $screenIdentifier")
-            Log.d("MainActivity", "All extras keys: ${it.extras?.keySet()?.toList()}")
-            
             if (!screenIdentifier.isNullOrEmpty()) {
-                // Store in SharedPreferences for Flutter to read on cold start
                 savePendingNavigation(screenIdentifier)
-                Log.d("MainActivity", "Saved pending navigation to SharedPrefs: $screenIdentifier")
-                
-                // Verify it was saved
-                val verified = getPendingNavigation()
-                Log.d("MainActivity", "Verified saved value: $verified")
-            } else {
-                Log.d("MainActivity", "screen_identifier is null or empty, not saving")
             }
         }
     }
@@ -158,7 +900,6 @@ class MainActivity : FlutterFragmentActivity() {
             "screen" to screenIdentifier
         ))
         clearPendingNavigation()
-        Log.d("MainActivity", "Sent to Flutter: screen=$screenIdentifier")
     }
     
     private fun updateWidget() {
@@ -175,20 +916,52 @@ class MainActivity : FlutterFragmentActivity() {
                 val component = ComponentName(this, provider)
                 val widgetIds = appWidgetManager.getAppWidgetIds(component)
             
-            if (widgetIds.isNotEmpty()) {
+                if (widgetIds.isNotEmpty()) {
                     val intent = Intent(this, provider).apply {
-                    action = AppWidgetManager.ACTION_APPWIDGET_UPDATE
-                    putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, widgetIds)
-                }
-                sendBroadcast(intent)
-                
-                    Log.d("MainActivity", "Widget update triggered for ${provider.simpleName} (${widgetIds.size} instances)")
-            } else {
-                    Log.d("MainActivity", "No widgets to update for ${provider.simpleName}")
+                        action = AppWidgetManager.ACTION_APPWIDGET_UPDATE
+                        putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, widgetIds)
+                    }
+                    sendBroadcast(intent)
                 }
             }
         } catch (e: Exception) {
             Log.e("MainActivity", "Error updating widget: ${e.message}", e)
+        }
+    }
+
+    private fun shareExportFile(
+        path: String,
+        title: String?,
+        text: String?,
+        mimeType: String,
+        result: MethodChannel.Result
+    ) {
+        try {
+            val file = File(path)
+            if (!file.exists()) {
+                result.error("FILE_NOT_FOUND", "File does not exist: $path", null)
+                return
+            }
+
+            val authority = "${BuildConfig.APPLICATION_ID}.fileprovider"
+            val uri = FileProvider.getUriForFile(this, authority, file)
+
+            val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                type = mimeType
+                putExtra(Intent.EXTRA_STREAM, uri)
+                if (!text.isNullOrEmpty()) {
+                    putExtra(Intent.EXTRA_TEXT, text)
+                }
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+
+            val chooser = Intent.createChooser(shareIntent, title ?: "Share")
+            chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            startActivity(chooser)
+            result.success(true)
+        } catch (e: Exception) {
+            Log.e("MainActivity", "shareExportFile error: ${e.message}", e)
+            result.error("SHARE_ERROR", e.message, null)
         }
     }
 }

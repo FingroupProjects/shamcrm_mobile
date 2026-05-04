@@ -26,6 +26,7 @@ class OutcomeRadioGroupWidget extends StatefulWidget {
 class _OutcomeRadioGroupWidgetState extends State<OutcomeRadioGroupWidget> {
   List<OutcomeCategoryData> outcomeCategoriesList = [];
   OutcomeCategoryData? selectedOutcomeCategoryData;
+  String? _autoSelectedOutcomeCategoryId;
 
   @override
   void initState() {
@@ -80,6 +81,21 @@ class _OutcomeRadioGroupWidgetState extends State<OutcomeRadioGroupWidget> {
             if (state is GetAllOutcomeCategorySuccess) {
               outcomeCategoriesList = state.dataOutcomeCategories.result ?? [];
               _updateSelectedOutcomeCategoryData();
+
+              if (outcomeCategoriesList.length == 1 &&
+                  (widget.selectedOutcomeCategoryId == null ||
+                      selectedOutcomeCategoryData == null) &&
+                  _autoSelectedOutcomeCategoryId != outcomeCategoriesList.first.id.toString()) {
+                final singleCategory = outcomeCategoriesList.first;
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (!mounted) return;
+                  widget.onSelectOutcomeCategory(singleCategory);
+                  setState(() {
+                    selectedOutcomeCategoryData = singleCategory;
+                    _autoSelectedOutcomeCategoryId = singleCategory.id.toString();
+                  });
+                });
+              }
             }
 
             return CustomDropdown<OutcomeCategoryData>.search(

@@ -17,8 +17,9 @@ class CreateStatusDialog extends StatefulWidget {
 class _CreateStatusDialogState extends State<CreateStatusDialog> {
   final TextEditingController _titleController = TextEditingController();
   String? _errorMessage;
-  bool _isSuccess = true; // По умолчанию устанавливаем "Успешно"
+  bool _isSuccess = false; // Галочка "Успешно" выключена по умолчанию
   bool _isFailure = false;
+  bool _isUnassembled = false;
 
   @override
   void dispose() {
@@ -41,7 +42,7 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
           ),
         ),
         Text(
-          label, 
+          label,
           style: const TextStyle(
             fontSize: 16,
             fontFamily: 'Gilroy',
@@ -114,7 +115,8 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
                       ),
                     ),
                     IconButton(
-                      icon: Icon(Icons.close, size: 24, color: Colors.grey[600]),
+                      icon:
+                          Icon(Icons.close, size: 24, color: Colors.grey[600]),
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints(),
                       onPressed: () => Navigator.of(context).pop(),
@@ -132,27 +134,16 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
                           controller: _titleController,
                           isRequired: true,
                           hintText: 'Введите название',
+                          errorText: _errorMessage,
                         ),
-                        if (_errorMessage != null)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 8.0),
-                            child: Text(
-                              _errorMessage!,
-                              style: const TextStyle(
-                                color: Colors.red,
-                                fontSize: 14,
-                                fontFamily: 'Gilroy',
-                                fontWeight: FontWeight.w400,
-                              ),
-                            ),
-                          ),
                         const SizedBox(height: 20),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.start,
                           children: [
                             Expanded(
                               child: _buildCheckbox(
-                                AppLocalizations.of(context)!.translate('Успешно'),
+                                AppLocalizations.of(context)!
+                                    .translate('Успешно'),
                                 _isSuccess,
                                 (v) {
                                   if (v != null) {
@@ -167,7 +158,8 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
                             const SizedBox(width: 24),
                             Expanded(
                               child: _buildCheckbox(
-                                AppLocalizations.of(context)!.translate('Не успешно'),
+                                AppLocalizations.of(context)!
+                                    .translate('Не успешно'),
                                 _isFailure,
                                 (v) {
                                   if (v != null) {
@@ -180,6 +172,18 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
                               ),
                             ),
                           ],
+                        ),
+                        const SizedBox(height: 12),
+                        _buildCheckbox(
+                          'Неразобранные',
+                          _isUnassembled,
+                          (v) {
+                            if (v != null) {
+                              setState(() {
+                                _isUnassembled = v;
+                              });
+                            }
+                          },
                         ),
                       ],
                     ),
@@ -204,18 +208,20 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
                           final localizations = AppLocalizations.of(context)!;
 
                           context.read<LeadBloc>().add(
-                            CreateLeadStatus(
-                              title: title,
-                              color: color,
-                              isSuccess: _isSuccess,
-                              isFailure: _isFailure,
-                              localizations: localizations,
-                            ),
-                          );
+                                CreateLeadStatus(
+                                  title: title,
+                                  color: color,
+                                  isSuccess: _isSuccess,
+                                  isFailure: _isFailure,
+                                  isUnassembled: _isUnassembled,
+                                  localizations: localizations,
+                                ),
+                              );
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
                               content: Text(
-                                AppLocalizations.of(context)!.translate('status_created_successfully'),
+                                AppLocalizations.of(context)!
+                                    .translate('status_created_successfully'),
                                 style: const TextStyle(
                                   fontFamily: 'Gilroy',
                                   fontSize: 16,
@@ -224,20 +230,23 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
                                 ),
                               ),
                               behavior: SnackBarBehavior.floating,
-                              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                              margin: const EdgeInsets.symmetric(
+                                  horizontal: 16, vertical: 8),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               backgroundColor: Colors.green,
                               elevation: 3,
-                              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                              padding: const EdgeInsets.symmetric(
+                                  vertical: 12, horizontal: 16),
                               duration: const Duration(seconds: 3),
                             ),
                           );
                           Navigator.of(context).pop(true);
                         } else {
                           setState(() {
-                            _errorMessage = AppLocalizations.of(context)!.translate('enter_field');
+                            _errorMessage = AppLocalizations.of(context)!
+                                .translate('field_required');
                           });
                         }
                       },
@@ -274,6 +283,7 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
     TextInputType? keyboardType,
     List<TextInputFormatter>? inputFormatters,
     String? hintText,
+    String? errorText,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -282,8 +292,11 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
           controller: controller,
           hintText: hintText ?? '',
           label: label,
+          errorText: errorText,
           validator: isRequired
-              ? (value) => value!.isEmpty ? 'Поле обязательно' : null
+              ? (value) => value!.isEmpty
+                  ? AppLocalizations.of(context)!.translate('field_required')
+                  : null
               : null,
           keyboardType: keyboardType ?? TextInputType.text,
           inputFormatters: inputFormatters,

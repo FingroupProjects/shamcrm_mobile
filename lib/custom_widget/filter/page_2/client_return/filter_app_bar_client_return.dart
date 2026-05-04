@@ -47,7 +47,8 @@ class ClientReturnFilterScreen extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  _ClientReturnFilterScreenState createState() => _ClientReturnFilterScreenState();
+  _ClientReturnFilterScreenState createState() =>
+      _ClientReturnFilterScreenState();
 }
 
 class _ClientReturnFilterScreenState extends State<ClientReturnFilterScreen> {
@@ -109,13 +110,19 @@ class _ClientReturnFilterScreenState extends State<ClientReturnFilterScreen> {
       _fromDate = widget.initialFromDate;
       _toDate = widget.initialToDate;
       _selectedSupplier = widget.initialSupplier != null
-          ? SupplierData(id: int.tryParse(widget.initialSupplier!) ?? 0, name: widget.initialSupplier!)
+          ? SupplierData(
+              id: int.tryParse(widget.initialSupplier!) ?? 0,
+              name: widget.initialSupplier!)
           : null;
       _selectedLead = widget.initialLead != null
-          ? LeadData(id: int.tryParse(widget.initialLead!) ?? 0, name: widget.initialLead!)
+          ? LeadData(
+              id: int.tryParse(widget.initialLead!) ?? 0,
+              name: widget.initialLead!)
           : null;
       _selectedCashRegister = widget.initialCashRegister != null
-          ? CashRegisterData(id: int.tryParse(widget.initialCashRegister!) ?? 0, name: widget.initialCashRegister!)
+          ? CashRegisterData(
+              id: int.tryParse(widget.initialCashRegister!) ?? 0,
+              name: widget.initialCashRegister!)
           : null;
       _selectedStatus = widget.initialStatus;
       _isDeleted = widget.initialIsDeleted;
@@ -129,10 +136,12 @@ class _ClientReturnFilterScreenState extends State<ClientReturnFilterScreen> {
 
   void _updateDateControllers() {
     if (_fromDate != null) {
-      _fromDateController.text = "${_fromDate!.day.toString().padLeft(2, '0')}.${_fromDate!.month.toString().padLeft(2, '0')}.${_fromDate!.year}";
+      _fromDateController.text =
+          "${_fromDate!.day.toString().padLeft(2, '0')}.${_fromDate!.month.toString().padLeft(2, '0')}.${_fromDate!.year}";
     }
     if (_toDate != null) {
-      _toDateController.text = "${_toDate!.day.toString().padLeft(2, '0')}.${_toDate!.month.toString().padLeft(2, '0')}.${_toDate!.year}";
+      _toDateController.text =
+          "${_toDate!.day.toString().padLeft(2, '0')}.${_toDate!.month.toString().padLeft(2, '0')}.${_toDate!.year}";
     }
   }
 
@@ -153,13 +162,16 @@ class _ClientReturnFilterScreenState extends State<ClientReturnFilterScreen> {
           final supplierName = prefs.getString('client_return_supplier');
           final supplierId = prefs.getInt('client_return_supplier_id');
           if (supplierName != null && supplierId != null) {
-            _selectedSupplier = SupplierData(id: supplierId, name: supplierName);
+            _selectedSupplier =
+                SupplierData(id: supplierId, name: supplierName);
           }
 
-          final cashRegisterName = prefs.getString('client_return_cash_register');
+          final cashRegisterName =
+              prefs.getString('client_return_cash_register');
           final cashRegisterId = prefs.getInt('client_return_cash_register_id');
           if (cashRegisterName != null && cashRegisterId != null) {
-            _selectedCashRegister = CashRegisterData(id: cashRegisterId, name: cashRegisterName);
+            _selectedCashRegister =
+                CashRegisterData(id: cashRegisterId, name: cashRegisterName);
           }
 
           final leadName = prefs.getString('client_return_lead');
@@ -171,11 +183,14 @@ class _ClientReturnFilterScreenState extends State<ClientReturnFilterScreen> {
           final authorName = prefs.getString('client_return_author');
           final authorId = prefs.getInt('client_return_author_id');
           if (authorName != null && authorId != null) {
-            selectedAuthor = AuthorData(id: authorId, name: authorName, lastname: '');
+            selectedAuthor =
+                AuthorData(id: authorId, name: authorName, lastname: '');
           }
 
-          _selectedStatus = prefs.getString('money_client_return_status') ?? widget.initialStatus;
-          _isDeleted = prefs.getBool('client_return_is_deleted') ?? widget.initialIsDeleted;
+          _selectedStatus = prefs.getString('money_client_return_status') ??
+              widget.initialStatus;
+          _isDeleted = prefs.getBool('client_return_is_deleted') ??
+              widget.initialIsDeleted;
 
           _updateDateControllers();
         });
@@ -190,19 +205,22 @@ class _ClientReturnFilterScreenState extends State<ClientReturnFilterScreen> {
       final prefs = await SharedPreferences.getInstance();
 
       if (_fromDate != null) {
-        await prefs.setInt('client_return_from_date', _fromDate!.millisecondsSinceEpoch);
+        await prefs.setInt(
+            'client_return_from_date', _fromDate!.millisecondsSinceEpoch);
       } else {
         await prefs.remove('client_return_from_date');
       }
 
       if (_toDate != null) {
-        await prefs.setInt('client_return_to_date', _toDate!.millisecondsSinceEpoch);
+        await prefs.setInt(
+            'client_return_to_date', _toDate!.millisecondsSinceEpoch);
       } else {
         await prefs.remove('client_return_to_date');
       }
 
       if (_selectedSupplier != null) {
-        await prefs.setString('client_return_supplier', _selectedSupplier!.name);
+        await prefs.setString(
+            'client_return_supplier', _selectedSupplier!.name);
         await prefs.setInt('client_return_supplier_id', _selectedSupplier!.id);
       } else {
         await prefs.remove('client_return_supplier');
@@ -210,8 +228,10 @@ class _ClientReturnFilterScreenState extends State<ClientReturnFilterScreen> {
       }
 
       if (_selectedCashRegister != null) {
-        await prefs.setString('client_return_cash_register', _selectedCashRegister!.name);
-        await prefs.setInt('client_return_cash_register_id', _selectedCashRegister!.id);
+        await prefs.setString(
+            'client_return_cash_register', _selectedCashRegister!.name);
+        await prefs.setInt(
+            'client_return_cash_register_id', _selectedCashRegister!.id);
       } else {
         await prefs.remove('client_return_cash_register');
         await prefs.remove('client_return_cash_register_id');
@@ -286,13 +306,14 @@ class _ClientReturnFilterScreenState extends State<ClientReturnFilterScreen> {
     if (!_isAnyFilterSelected()) {
       widget.onResetFilters?.call();
     } else {
-
       // choose from date 00:00:00 and to date 23:59:59
       if (_fromDate != null) {
-        _fromDate = DateTime(_fromDate!.year, _fromDate!.month, _fromDate!.day, 0, 0, 0);
+        _fromDate = DateTime(
+            _fromDate!.year, _fromDate!.month, _fromDate!.day, 0, 0, 0);
       }
       if (_toDate != null) {
-        _toDate = DateTime(_toDate!.year, _toDate!.month, _toDate!.day, 23, 59, 59);
+        _toDate =
+            DateTime(_toDate!.year, _toDate!.month, _toDate!.day, 23, 59, 59);
       }
 
       // Set from date to 00:00:00 and to date to 23:59:59
@@ -300,10 +321,12 @@ class _ClientReturnFilterScreenState extends State<ClientReturnFilterScreen> {
       DateTime? toDateWithTime = _toDate;
 
       if (fromDateWithTime != null) {
-        fromDateWithTime = DateTime(fromDateWithTime.year, fromDateWithTime.month, fromDateWithTime.day, 0, 0, 0);
+        fromDateWithTime = DateTime(fromDateWithTime.year,
+            fromDateWithTime.month, fromDateWithTime.day, 0, 0, 0);
       }
       if (toDateWithTime != null) {
-        toDateWithTime = DateTime(toDateWithTime.year, toDateWithTime.month, toDateWithTime.day, 23, 59, 59);
+        toDateWithTime = DateTime(toDateWithTime.year, toDateWithTime.month,
+            toDateWithTime.day, 23, 59, 59);
       }
 
       final filters = {
@@ -314,7 +337,11 @@ class _ClientReturnFilterScreenState extends State<ClientReturnFilterScreen> {
         'lead_id': _selectedLead?.id.toString(),
         'approved': _selectedStatus,
         'author_id': selectedAuthor?.id.toString(),
-        'deleted': _isDeleted == null ? null : _isDeleted == true ? '1' : '0'
+        'deleted': _isDeleted == null
+            ? null
+            : _isDeleted == true
+                ? '1'
+                : '0'
       };
 
       widget.onSelectedDataFilter?.call(filters);
@@ -332,7 +359,8 @@ class _ClientReturnFilterScreenState extends State<ClientReturnFilterScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              AppLocalizations.of(context)!.translate('supplier') ?? 'Поставщик',
+              AppLocalizations.of(context)!.translate('supplier') ??
+                  'Поставщик',
               style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
@@ -350,7 +378,8 @@ class _ClientReturnFilterScreenState extends State<ClientReturnFilterScreen> {
                 }
               },
               builder: (context, state) {
-                if (state is GetAllSupplierInitial || (state is GetAllSupplierSuccess && suppliersList.isEmpty)) {
+                if (state is GetAllSupplierInitial ||
+                    (state is GetAllSupplierSuccess && suppliersList.isEmpty)) {
                   context.read<GetAllSupplierBloc>().add(GetAllSupplierEv());
                   return const DropdownLoadingState();
                 }
@@ -366,12 +395,20 @@ class _ClientReturnFilterScreenState extends State<ClientReturnFilterScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Text('Ошибка загрузки', style: TextStyle(color: Colors.red, fontSize: 12)),
+                        Text(
+                            AppLocalizations.of(context)!
+                                .translate('error_loading_dialog'),
+                            style: TextStyle(color: Colors.red, fontSize: 12)),
                         TextButton(
                           onPressed: () {
-                            context.read<GetAllSupplierBloc>().add(GetAllSupplierEv());
+                            context
+                                .read<GetAllSupplierBloc>()
+                                .add(GetAllSupplierEv());
                           },
-                          child: Text('Повторить', style: TextStyle(fontSize: 12)),
+                          child: Text(
+                              AppLocalizations.of(context)!
+                                  .translate('retry_dialog'),
+                              style: TextStyle(fontSize: 12)),
                         ),
                       ],
                     ),
@@ -388,7 +425,9 @@ class _ClientReturnFilterScreenState extends State<ClientReturnFilterScreen> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
-                      AppLocalizations.of(context)!.translate('select_supplier') ?? 'Выберите поставщика',
+                      AppLocalizations.of(context)!
+                              .translate('select_supplier') ??
+                          'Выберите поставщика',
                       style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
@@ -401,15 +440,19 @@ class _ClientReturnFilterScreenState extends State<ClientReturnFilterScreen> {
 
                 return CustomDropdown<SupplierData>.search(
                   items: suppliersList,
-                  searchHintText: AppLocalizations.of(context)!.translate('search') ?? 'Поиск',
+                  searchHintText:
+                      AppLocalizations.of(context)!.translate('search') ??
+                          'Поиск',
                   overlayHeight: 300,
                   enabled: true,
                   decoration: CustomDropdownDecoration(
                     closedFillColor: const Color(0xffF4F7FD),
                     expandedFillColor: Colors.white,
-                    closedBorder: Border.all(color: const Color(0xffF4F7FD), width: 1),
+                    closedBorder:
+                        Border.all(color: const Color(0xffF4F7FD), width: 1),
                     closedBorderRadius: BorderRadius.circular(12),
-                    expandedBorder: Border.all(color: const Color(0xffF4F7FD), width: 1),
+                    expandedBorder:
+                        Border.all(color: const Color(0xffF4F7FD), width: 1),
                     expandedBorderRadius: BorderRadius.circular(12),
                   ),
                   listItemBuilder: (context, item, isSelected, onItemSelect) {
@@ -425,7 +468,10 @@ class _ClientReturnFilterScreenState extends State<ClientReturnFilterScreen> {
                   },
                   headerBuilder: (context, selectedItem, enabled) {
                     return Text(
-                      selectedItem?.name ?? AppLocalizations.of(context)!.translate('select_supplier') ?? 'Выберите поставщика',
+                      selectedItem?.name ??
+                          AppLocalizations.of(context)!
+                              .translate('select_supplier') ??
+                          'Выберите поставщика',
                       style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
@@ -435,7 +481,9 @@ class _ClientReturnFilterScreenState extends State<ClientReturnFilterScreen> {
                     );
                   },
                   hintBuilder: (context, hint, enabled) => Text(
-                    AppLocalizations.of(context)!.translate('select_supplier') ?? 'Выберите поставщика',
+                    AppLocalizations.of(context)!
+                            .translate('select_supplier') ??
+                        'Выберите поставщика',
                     style: const TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
@@ -443,8 +491,11 @@ class _ClientReturnFilterScreenState extends State<ClientReturnFilterScreen> {
                       color: Color(0xff1E2E52),
                     ),
                   ),
-                  initialItem: _selectedSupplier != null && suppliersList.any((s) => s.id == _selectedSupplier!.id)
-                      ? suppliersList.firstWhere((s) => s.id == _selectedSupplier!.id)
+                  initialItem: _selectedSupplier != null &&
+                          suppliersList
+                              .any((s) => s.id == _selectedSupplier!.id)
+                      ? suppliersList
+                          .firstWhere((s) => s.id == _selectedSupplier!.id)
                       : null,
                   onChanged: (value) {
                     if (value != null && mounted) {
@@ -473,7 +524,8 @@ class _ClientReturnFilterScreenState extends State<ClientReturnFilterScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              AppLocalizations.of(context)!.translate('cash_register') ?? 'Касса',
+              AppLocalizations.of(context)!.translate('cash_register') ??
+                  'Касса',
               style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
@@ -491,8 +543,12 @@ class _ClientReturnFilterScreenState extends State<ClientReturnFilterScreen> {
                 }
               },
               builder: (context, state) {
-                if (state is GetAllCashRegisterInitial || (state is GetAllCashRegisterSuccess && cashRegistersList.isEmpty)) {
-                  context.read<GetAllCashRegisterBloc>().add(GetAllCashRegisterEv());
+                if (state is GetAllCashRegisterInitial ||
+                    (state is GetAllCashRegisterSuccess &&
+                        cashRegistersList.isEmpty)) {
+                  context
+                      .read<GetAllCashRegisterBloc>()
+                      .add(GetAllCashRegisterEv());
                   return const DropdownLoadingState();
                 }
 
@@ -507,12 +563,20 @@ class _ClientReturnFilterScreenState extends State<ClientReturnFilterScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Text('Ошибка загрузки', style: TextStyle(color: Colors.red, fontSize: 12)),
+                        Text(
+                            AppLocalizations.of(context)!
+                                .translate('error_loading_dialog'),
+                            style: TextStyle(color: Colors.red, fontSize: 12)),
                         TextButton(
                           onPressed: () {
-                            context.read<GetAllCashRegisterBloc>().add(GetAllCashRegisterEv());
+                            context
+                                .read<GetAllCashRegisterBloc>()
+                                .add(GetAllCashRegisterEv());
                           },
-                          child: Text('Повторить', style: TextStyle(fontSize: 12)),
+                          child: Text(
+                              AppLocalizations.of(context)!
+                                  .translate('retry_dialog'),
+                              style: TextStyle(fontSize: 12)),
                         ),
                       ],
                     ),
@@ -520,7 +584,8 @@ class _ClientReturnFilterScreenState extends State<ClientReturnFilterScreen> {
                 }
 
                 // Если список пуст даже после успешной загрузки, показываем placeholder
-                if (state is GetAllCashRegisterSuccess && cashRegistersList.isEmpty) {
+                if (state is GetAllCashRegisterSuccess &&
+                    cashRegistersList.isEmpty) {
                   return Container(
                     height: 50,
                     alignment: Alignment.center,
@@ -529,7 +594,9 @@ class _ClientReturnFilterScreenState extends State<ClientReturnFilterScreen> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
-                      AppLocalizations.of(context)!.translate('select_cash_register') ?? 'Выберите кассу',
+                      AppLocalizations.of(context)!
+                              .translate('select_cash_register') ??
+                          'Выберите кассу',
                       style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
@@ -542,15 +609,19 @@ class _ClientReturnFilterScreenState extends State<ClientReturnFilterScreen> {
 
                 return CustomDropdown<CashRegisterData>.search(
                   items: cashRegistersList,
-                  searchHintText: AppLocalizations.of(context)!.translate('search') ?? 'Поиск',
+                  searchHintText:
+                      AppLocalizations.of(context)!.translate('search') ??
+                          'Поиск',
                   overlayHeight: 300,
                   enabled: true,
                   decoration: CustomDropdownDecoration(
                     closedFillColor: const Color(0xffF4F7FD),
                     expandedFillColor: Colors.white,
-                    closedBorder: Border.all(color: const Color(0xffF4F7FD), width: 1),
+                    closedBorder:
+                        Border.all(color: const Color(0xffF4F7FD), width: 1),
                     closedBorderRadius: BorderRadius.circular(12),
-                    expandedBorder: Border.all(color: const Color(0xffF4F7FD), width: 1),
+                    expandedBorder:
+                        Border.all(color: const Color(0xffF4F7FD), width: 1),
                     expandedBorderRadius: BorderRadius.circular(12),
                   ),
                   listItemBuilder: (context, item, isSelected, onItemSelect) {
@@ -566,7 +637,10 @@ class _ClientReturnFilterScreenState extends State<ClientReturnFilterScreen> {
                   },
                   headerBuilder: (context, selectedItem, enabled) {
                     return Text(
-                      selectedItem?.name ?? AppLocalizations.of(context)!.translate('select_cash_register') ?? 'Выберите кассу',
+                      selectedItem?.name ??
+                          AppLocalizations.of(context)!
+                              .translate('select_cash_register') ??
+                          'Выберите кассу',
                       style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
@@ -576,7 +650,9 @@ class _ClientReturnFilterScreenState extends State<ClientReturnFilterScreen> {
                     );
                   },
                   hintBuilder: (context, hint, enabled) => Text(
-                    AppLocalizations.of(context)!.translate('select_cash_register') ?? 'Выберите кассу',
+                    AppLocalizations.of(context)!
+                            .translate('select_cash_register') ??
+                        'Выберите кассу',
                     style: const TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
@@ -584,8 +660,11 @@ class _ClientReturnFilterScreenState extends State<ClientReturnFilterScreen> {
                       color: Color(0xff1E2E52),
                     ),
                   ),
-                  initialItem: _selectedCashRegister != null && cashRegistersList.any((c) => c.id == _selectedCashRegister!.id)
-                      ? cashRegistersList.firstWhere((c) => c.id == _selectedCashRegister!.id)
+                  initialItem: _selectedCashRegister != null &&
+                          cashRegistersList
+                              .any((c) => c.id == _selectedCashRegister!.id)
+                      ? cashRegistersList
+                          .firstWhere((c) => c.id == _selectedCashRegister!.id)
                       : null,
                   onChanged: (value) {
                     if (value != null && mounted) {
@@ -632,7 +711,8 @@ class _ClientReturnFilterScreenState extends State<ClientReturnFilterScreen> {
                 }
               },
               builder: (context, state) {
-                if (state is GetAllLeadInitial || (state is GetAllLeadSuccess && leadsList.isEmpty)) {
+                if (state is GetAllLeadInitial ||
+                    (state is GetAllLeadSuccess && leadsList.isEmpty)) {
                   context.read<GetAllLeadBloc>().add(GetAllLeadEv());
                   return const DropdownLoadingState();
                 }
@@ -648,12 +728,18 @@ class _ClientReturnFilterScreenState extends State<ClientReturnFilterScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Text('Ошибка загрузки', style: TextStyle(color: Colors.red, fontSize: 12)),
+                        Text(
+                            AppLocalizations.of(context)!
+                                .translate('error_loading_dialog'),
+                            style: TextStyle(color: Colors.red, fontSize: 12)),
                         TextButton(
                           onPressed: () {
                             context.read<GetAllLeadBloc>().add(GetAllLeadEv());
                           },
-                          child: Text('Повторить', style: TextStyle(fontSize: 12)),
+                          child: Text(
+                              AppLocalizations.of(context)!
+                                  .translate('retry_dialog'),
+                              style: TextStyle(fontSize: 12)),
                         ),
                       ],
                     ),
@@ -670,7 +756,9 @@ class _ClientReturnFilterScreenState extends State<ClientReturnFilterScreen> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
-                      AppLocalizations.of(context)!.translate('select_client') ?? 'Выберите клиента',
+                      AppLocalizations.of(context)!
+                              .translate('select_client') ??
+                          'Выберите клиента',
                       style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
@@ -683,15 +771,19 @@ class _ClientReturnFilterScreenState extends State<ClientReturnFilterScreen> {
 
                 return CustomDropdown<LeadData>.search(
                   items: leadsList,
-                  searchHintText: AppLocalizations.of(context)!.translate('search') ?? 'Поиск',
+                  searchHintText:
+                      AppLocalizations.of(context)!.translate('search') ??
+                          'Поиск',
                   overlayHeight: 300,
                   enabled: true,
                   decoration: CustomDropdownDecoration(
                     closedFillColor: const Color(0xffF4F7FD),
                     expandedFillColor: Colors.white,
-                    closedBorder: Border.all(color: const Color(0xffF4F7FD), width: 1),
+                    closedBorder:
+                        Border.all(color: const Color(0xffF4F7FD), width: 1),
                     closedBorderRadius: BorderRadius.circular(12),
-                    expandedBorder: Border.all(color: const Color(0xffF4F7FD), width: 1),
+                    expandedBorder:
+                        Border.all(color: const Color(0xffF4F7FD), width: 1),
                     expandedBorderRadius: BorderRadius.circular(12),
                   ),
                   listItemBuilder: (context, item, isSelected, onItemSelect) {
@@ -707,7 +799,10 @@ class _ClientReturnFilterScreenState extends State<ClientReturnFilterScreen> {
                   },
                   headerBuilder: (context, selectedItem, enabled) {
                     return Text(
-                      selectedItem?.name ?? AppLocalizations.of(context)!.translate('select_client') ?? 'Выберите клиента',
+                      selectedItem?.name ??
+                          AppLocalizations.of(context)!
+                              .translate('select_client') ??
+                          'Выберите клиента',
                       style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
@@ -717,7 +812,8 @@ class _ClientReturnFilterScreenState extends State<ClientReturnFilterScreen> {
                     );
                   },
                   hintBuilder: (context, hint, enabled) => Text(
-                    AppLocalizations.of(context)!.translate('select_client') ?? 'Выберите клиента',
+                    AppLocalizations.of(context)!.translate('select_client') ??
+                        'Выберите клиента',
                     style: const TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
@@ -725,7 +821,8 @@ class _ClientReturnFilterScreenState extends State<ClientReturnFilterScreen> {
                       color: Color(0xff1E2E52),
                     ),
                   ),
-                  initialItem: _selectedLead != null && leadsList.any((c) => c.id == _selectedLead!.id)
+                  initialItem: _selectedLead != null &&
+                          leadsList.any((c) => c.id == _selectedLead!.id)
                       ? leadsList.firstWhere((c) => c.id == _selectedLead!.id)
                       : null,
                   onChanged: (value) {
@@ -773,7 +870,8 @@ class _ClientReturnFilterScreenState extends State<ClientReturnFilterScreen> {
                 }
               },
               builder: (context, state) {
-                if (state is GetAllAuthorInitial || (state is GetAllAuthorSuccess && authorsList.isEmpty)) {
+                if (state is GetAllAuthorInitial ||
+                    (state is GetAllAuthorSuccess && authorsList.isEmpty)) {
                   context.read<GetAllAuthorBloc>().add(GetAllAuthorEv());
                   return const DropdownLoadingState();
                 }
@@ -789,12 +887,20 @@ class _ClientReturnFilterScreenState extends State<ClientReturnFilterScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Text('Ошибка загрузки', style: TextStyle(color: Colors.red, fontSize: 12)),
+                        Text(
+                            AppLocalizations.of(context)!
+                                .translate('error_loading_dialog'),
+                            style: TextStyle(color: Colors.red, fontSize: 12)),
                         TextButton(
                           onPressed: () {
-                            context.read<GetAllAuthorBloc>().add(GetAllAuthorEv());
+                            context
+                                .read<GetAllAuthorBloc>()
+                                .add(GetAllAuthorEv());
                           },
-                          child: Text('Повторить', style: TextStyle(fontSize: 12)),
+                          child: Text(
+                              AppLocalizations.of(context)!
+                                  .translate('retry_dialog'),
+                              style: TextStyle(fontSize: 12)),
                         ),
                       ],
                     ),
@@ -808,15 +914,19 @@ class _ClientReturnFilterScreenState extends State<ClientReturnFilterScreen> {
 
                 return CustomDropdown<AuthorData>.search(
                   items: authorsList,
-                  searchHintText: AppLocalizations.of(context)!.translate('search') ?? 'Поиск',
+                  searchHintText:
+                      AppLocalizations.of(context)!.translate('search') ??
+                          'Поиск',
                   overlayHeight: 300,
                   enabled: true,
                   decoration: CustomDropdownDecoration(
                     closedFillColor: const Color(0xffF4F7FD),
                     expandedFillColor: Colors.white,
-                    closedBorder: Border.all(color: const Color(0xffF4F7FD), width: 1),
+                    closedBorder:
+                        Border.all(color: const Color(0xffF4F7FD), width: 1),
                     closedBorderRadius: BorderRadius.circular(12),
-                    expandedBorder: Border.all(color: const Color(0xffF4F7FD), width: 1),
+                    expandedBorder:
+                        Border.all(color: const Color(0xffF4F7FD), width: 1),
                     expandedBorderRadius: BorderRadius.circular(12),
                   ),
                   listItemBuilder: (context, item, isSelected, onItemSelect) {
@@ -834,7 +944,9 @@ class _ClientReturnFilterScreenState extends State<ClientReturnFilterScreen> {
                     return Text(
                       selectedItem != null
                           ? '${selectedItem.name ?? ''} ${selectedItem.lastname ?? ''}'
-                          : AppLocalizations.of(context)!.translate('select_author') ?? 'Выберите автора',
+                          : AppLocalizations.of(context)!
+                                  .translate('select_author') ??
+                              'Выберите автора',
                       style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
@@ -844,7 +956,8 @@ class _ClientReturnFilterScreenState extends State<ClientReturnFilterScreen> {
                     );
                   },
                   hintBuilder: (context, hint, enabled) => Text(
-                    AppLocalizations.of(context)!.translate('select_author') ?? 'Выберите автора',
+                    AppLocalizations.of(context)!.translate('select_author') ??
+                        'Выберите автора',
                     style: const TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
@@ -852,8 +965,10 @@ class _ClientReturnFilterScreenState extends State<ClientReturnFilterScreen> {
                       color: Color(0xff1E2E52),
                     ),
                   ),
-                  initialItem: selectedAuthor != null && authorsList.any((a) => a.id == selectedAuthor!.id)
-                      ? authorsList.firstWhere((a) => a.id == selectedAuthor!.id)
+                  initialItem: selectedAuthor != null &&
+                          authorsList.any((a) => a.id == selectedAuthor!.id)
+                      ? authorsList
+                          .firstWhere((a) => a.id == selectedAuthor!.id)
                       : null,
                   onChanged: (value) {
                     if (value != null && mounted) {
@@ -945,14 +1060,17 @@ class _ClientReturnFilterScreenState extends State<ClientReturnFilterScreen> {
                   children: [
                     // From Date
                     Card(
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
                       color: Colors.white,
                       child: Padding(
                         padding: const EdgeInsets.all(8),
                         child: DateFieldWithFromTo(
                           isFrom: true,
                           controller: _fromDateController,
-                          label: AppLocalizations.of(context)!.translate('date') ?? 'От даты',
+                          label:
+                              AppLocalizations.of(context)!.translate('date') ??
+                                  'От даты',
                           withTime: false,
                           onDateSelected: (date) {
                             if (mounted) {
@@ -976,14 +1094,17 @@ class _ClientReturnFilterScreenState extends State<ClientReturnFilterScreen> {
 
                     // To Date
                     Card(
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
                       color: Colors.white,
                       child: Padding(
                         padding: const EdgeInsets.all(8),
                         child: DateFieldWithFromTo(
                           isFrom: false,
                           controller: _toDateController,
-                          label: AppLocalizations.of(context)!.translate('date') ?? 'До даты',
+                          label:
+                              AppLocalizations.of(context)!.translate('date') ??
+                                  'До даты',
                           withTime: false,
                           onDateSelected: (date) {
                             if (mounted) {
@@ -1019,29 +1140,41 @@ class _ClientReturnFilterScreenState extends State<ClientReturnFilterScreen> {
 
                     // Status Dropdown with localization
                     Card(
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
                       color: Colors.white,
                       child: Padding(
                         padding: const EdgeInsets.all(8),
                         child: _StatusMethodDropdown(
-                            title: AppLocalizations.of(context)!.translate('status') ?? 'Статус',
+                            title: AppLocalizations.of(context)!
+                                    .translate('status') ??
+                                'Статус',
                             statusMethodsList: [
-                              AppLocalizations.of(context)!.translate('approved') ?? 'Одобрено',
-                              AppLocalizations.of(context)!.translate('not_approved') ?? 'Не одобрено',
+                              AppLocalizations.of(context)!
+                                      .translate('approved') ??
+                                  'Одобрено',
+                              AppLocalizations.of(context)!
+                                      .translate('not_approved') ??
+                                  'Не одобрено',
                             ],
                             onSelectstatusMethod: (String value) {
                               if (mounted) {
                                 setState(() {
-                                  _selectedStatus = value == AppLocalizations.of(context)!.translate('approved') ? "1" : "0";
+                                  _selectedStatus = value ==
+                                          AppLocalizations.of(context)!
+                                              .translate('approved')
+                                      ? "1"
+                                      : "0";
                                 });
                               }
                             },
                             selectedstatusMethod: _selectedStatus != null
                                 ? (_selectedStatus == "1"
-                                ? AppLocalizations.of(context)!.translate('approved')
-                                : AppLocalizations.of(context)!.translate('not_approved'))
+                                    ? AppLocalizations.of(context)!
+                                        .translate('approved')
+                                    : AppLocalizations.of(context)!
+                                        .translate('not_approved'))
                                 : null),
-
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -1052,25 +1185,37 @@ class _ClientReturnFilterScreenState extends State<ClientReturnFilterScreen> {
 
                     // Boolean Deleted Status Dropdown
                     Card(
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
                       color: Colors.white,
                       child: Padding(
                         padding: const EdgeInsets.all(8),
                         child: _StatusMethodDropdown(
-                            title: AppLocalizations.of(context)!.translate('status_delete') ?? 'Статус удаления',
+                            title: AppLocalizations.of(context)!
+                                    .translate('status_delete') ??
+                                'Статус удаления',
                             statusMethodsList: [
-                              AppLocalizations.of(context)!.translate('deleted') ?? 'Удалено',
-                              AppLocalizations.of(context)!.translate('not_deleted') ?? 'Не удалено',
+                              AppLocalizations.of(context)!
+                                      .translate('deleted') ??
+                                  'Удалено',
+                              AppLocalizations.of(context)!
+                                      .translate('not_deleted') ??
+                                  'Не удалено',
                             ],
                             selectedstatusMethod: _isDeleted != null
                                 ? (_isDeleted == true
-                                ? AppLocalizations.of(context)!.translate('status_deleted')
-                                : AppLocalizations.of(context)!.translate('status_not_deleted'))
+                                    ? AppLocalizations.of(context)!
+                                        .translate('status_deleted')
+                                    : AppLocalizations.of(context)!
+                                        .translate('status_not_deleted'))
                                 : null,
                             onSelectstatusMethod: (String value) {
                               if (mounted) {
                                 setState(() {
-                                  _isDeleted = value == (AppLocalizations.of(context)!.translate('deleted') ?? 'Удалено');
+                                  _isDeleted = value ==
+                                      (AppLocalizations.of(context)!
+                                              .translate('deleted') ??
+                                          'Удалено');
                                 });
                               }
                             }),
@@ -1149,7 +1294,9 @@ class _StatusMethodDropdownState extends State<_StatusMethodDropdown> {
           items: widget.statusMethodsList,
           overlayHeight: 150,
           enabled: true,
-          hintText: AppLocalizations.of(context)!.translate('select_status_method') ?? 'Выберите статус',
+          hintText:
+              AppLocalizations.of(context)!.translate('select_status_method') ??
+                  'Выберите статус',
           decoration: CustomDropdownDecoration(
             closedFillColor: Color(0xffF4F7FD),
             closedBorder: Border.all(
@@ -1177,7 +1324,9 @@ class _StatusMethodDropdownState extends State<_StatusMethodDropdown> {
             return Text(
               selectedItem.isNotEmpty
                   ? selectedItem
-                  : AppLocalizations.of(context)!.translate('select_status_method') ?? 'Выберите статус',
+                  : AppLocalizations.of(context)!
+                          .translate('select_status_method') ??
+                      'Выберите статус',
               style: const TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
@@ -1190,7 +1339,9 @@ class _StatusMethodDropdownState extends State<_StatusMethodDropdown> {
             return Text(
               selectedItem.isNotEmpty
                   ? selectedItem
-                  : AppLocalizations.of(context)!.translate('select_status_method') ?? 'Выберите статус',
+                  : AppLocalizations.of(context)!
+                          .translate('select_status_method') ??
+                      'Выберите статус',
               style: const TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w500,

@@ -24,6 +24,7 @@ class _EditLeadStatusScreenState extends State<EditLeadStatusScreen> {
   late TextEditingController _titleController;
   bool _isSuccess = false;
   bool _isFailure = false;
+  bool _isUnassembled = false;
   late LeadBloc _leadBloc;
   bool _dataLoaded = false;
 
@@ -57,6 +58,7 @@ class _EditLeadStatusScreenState extends State<EditLeadStatusScreen> {
           _titleController.text,
           _isSuccess,
           _isFailure,
+          _isUnassembled,
           localizations,
         ),
       );
@@ -109,63 +111,62 @@ class _EditLeadStatusScreenState extends State<EditLeadStatusScreen> {
             _titleController.text = state.leadStatus.title;
             _isSuccess = state.leadStatus.isSuccess;
             _isFailure = state.leadStatus.isFailure;
+            _isUnassembled = state.leadStatus.isUnassembled;
             _dataLoaded = true;
           });
         } else if (state is LeadStatusUpdatedEdit) {
           ScaffoldMessenger.of(context).showSnackBar(
-                                 SnackBar(
-                          content: Text(
-                            "Статус успешно обновлен!",
-                            style: TextStyle(
-                              fontFamily: 'Gilroy',
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.white,
-                            ),
-                          ),
-                          behavior: SnackBarBehavior.floating,
-                          margin:
-                              EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          backgroundColor: Colors.green,
-                          elevation: 3,
-                          padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                          duration: Duration(seconds: 3),
-                        ),
+            SnackBar(
+              content: Text(
+                "Статус успешно обновлен!",
+                style: TextStyle(
+                  fontFamily: 'Gilroy',
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white,
+                ),
+              ),
+              behavior: SnackBarBehavior.floating,
+              margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              backgroundColor: Colors.green,
+              elevation: 3,
+              padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+              duration: Duration(seconds: 3),
+            ),
           );
-            // После успешного обновления статуса
+          // После успешного обновления статуса
           final dealBloc = BlocProvider.of<LeadBloc>(context, listen: false);
           // Обновляем список статусов
           dealBloc.add(FetchLeadStatuses());
           // Обновляем сделки для текущего статуса
           dealBloc.add(FetchLeads(widget.leadStatusId));
-          
+
           Navigator.of(context).pop();
         } else if (state is LeadError) {
           ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                          content: Text(
-                            "Ошибка обновления статуса!",
-                            style: TextStyle(
-                              fontFamily: 'Gilroy',
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.white,
-                            ),
-                          ),
-                          behavior: SnackBarBehavior.floating,
-                          margin:
-                              EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          backgroundColor: Colors.red,
-                          elevation: 3,
-                          padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                          duration: Duration(seconds: 3),
-                        ),
+            SnackBar(
+              content: Text(
+                "Ошибка обновления статуса!",
+                style: TextStyle(
+                  fontFamily: 'Gilroy',
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white,
+                ),
+              ),
+              behavior: SnackBarBehavior.floating,
+              margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              backgroundColor: Colors.red,
+              elevation: 3,
+              padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+              duration: Duration(seconds: 3),
+            ),
           );
         }
       },
@@ -177,7 +178,7 @@ class _EditLeadStatusScreenState extends State<EditLeadStatusScreen> {
           insetPadding: const EdgeInsets.all(16),
           child: SizedBox(
             width: 400,
-            height: 320, // Уменьшили высоту с 450 до 300
+            height: 360,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
               decoration: BoxDecoration(
@@ -260,6 +261,18 @@ class _EditLeadStatusScreenState extends State<EditLeadStatusScreen> {
                                       ),
                                     ),
                                   ],
+                                ),
+                                const SizedBox(height: 12),
+                                _buildCheckbox(
+                                  'Неразобранные',
+                                  _isUnassembled,
+                                  (v) {
+                                    if (v != null) {
+                                      setState(() {
+                                        _isUnassembled = v;
+                                      });
+                                    }
+                                  },
                                 ),
                               ],
                             ),

@@ -59,6 +59,7 @@ class ExpenseDocumentDetail extends Equatable {
   final DateTime? deletedAt;
   final String? docNumber;
   final int? approved;
+  final ExchangeRate? exchangeRate;
 
   const ExpenseDocumentDetail({
     this.id,
@@ -85,15 +86,11 @@ class ExpenseDocumentDetail extends Equatable {
     this.storageId,
     this.currencyId,
     this.authorId,
+    this.exchangeRate,
   });
 
   @override
-  List<Object?> get props => [
-    id,
-    deletedAt,
-    approved,
-    updatedAt
-  ];
+  List<Object?> get props => [id, deletedAt, approved, updatedAt];
 
   factory ExpenseDocumentDetail.fromJson(Map<String, dynamic> json) {
     return ExpenseDocumentDetail(
@@ -103,14 +100,25 @@ class ExpenseDocumentDetail extends Equatable {
       modelId: parseInt(json['model_id']),
       counterpartyAgreementId: parseInt(json['counterparty_agreement_id']),
       organizationId: parseInt(json['organization_id']),
-      storage: json['storage'] != null ? WareHouse.fromJson(json['storage']) : null,
-      article: json['article'] != null ? ArticleGood.fromJson(json['article']) : null,
-      sender_storage_id: json['sender_storage_id'] != null ? WareHouse.fromJson(json['sender_storage_id']) : null,
-      recipient_storage_id: json['recipient_storage_id'] != null ? WareHouse.fromJson(json['recipient_storage_id']) : null,
+      storage:
+          json['storage'] != null ? WareHouse.fromJson(json['storage']) : null,
+      article: json['article'] != null
+          ? ArticleGood.fromJson(json['article'])
+          : null,
+      sender_storage_id: json['sender_storage_id'] != null
+          ? WareHouse.fromJson(json['sender_storage_id'])
+          : null,
+      recipient_storage_id: json['recipient_storage_id'] != null
+          ? WareHouse.fromJson(json['recipient_storage_id'])
+          : null,
       comment: json['comment'],
-      currency: json['currency'] != null ? Currency.fromJson(json['currency']) : null,
+      currency:
+          json['currency'] != null ? Currency.fromJson(json['currency']) : null,
       documentGoods: json['document_goods'] != null
-          ? (json['document_goods'] as List).map((i) => DocumentGood.fromJson(i)).toList() : null,
+          ? (json['document_goods'] as List)
+              .map((i) => DocumentGood.fromJson(i))
+              .toList()
+          : null,
       author: json['author'] != null ? Author.fromJson(json['author']) : null,
       model: json['model'] != null ? Model.fromJson(json['model']) : null,
       createdAt: parseDate(json['created_at']),
@@ -122,6 +130,11 @@ class ExpenseDocumentDetail extends Equatable {
       storageId: parseInt(json['storage_id']),
       currencyId: parseInt(json['currency_id']),
       authorId: parseInt(json['author_id']),
+      exchangeRate: json['exchangeRate'] != null
+          ? ExchangeRate.fromJson(json['exchangeRate'])
+          : (json['exchange_rate'] != null
+              ? ExchangeRate.fromJson(json['exchange_rate'])
+              : null),
     );
   }
 
@@ -151,6 +164,7 @@ class ExpenseDocumentDetail extends Equatable {
       'author_id': authorId,
       'sender_storage_id': sender_storage_id?.toJson(),
       'recipient_storage_id': recipient_storage_id?.toJson(),
+      'exchangeRate': exchangeRate?.toJson(),
     };
   }
 
@@ -177,14 +191,18 @@ class ExpenseDocumentDetail extends Equatable {
               (unit) => unit.id == documentGood.unitId,
             );
             unitMultiplier = matchingUnit.amount ?? 1.0;
-            debugPrint("Found matching unit: id=${matchingUnit.id}, amount=${matchingUnit.amount}");
+            debugPrint(
+                "Found matching unit: id=${matchingUnit.id}, amount=${matchingUnit.amount}");
           } catch (e) {
-            debugPrint("Unit not found in good.units array, using default multiplier 1.0");
+            debugPrint(
+                "Unit not found in good.units array, using default multiplier 1.0");
           }
         }
 
-        debugPrint("Good.units array: ${good?.units?.map((u) => 'id:${u.id}, amount:${u.amount}').toList()}");
-        debugPrint("FINAL: price=$price, quantity=$quantity, multiplier=$unitMultiplier");
+        debugPrint(
+            "Good.units array: ${good?.units?.map((u) => 'id:${u.id}, amount:${u.amount}').toList()}");
+        debugPrint(
+            "FINAL: price=$price, quantity=$quantity, multiplier=$unitMultiplier");
         debugPrint("Item total: ${quantity * price * unitMultiplier}");
         debugPrint("=== End ExpenseDocumentGood ===\n");
 
@@ -195,7 +213,8 @@ class ExpenseDocumentDetail extends Equatable {
 
   int get totalQuantity {
     if (documentGoods == null || documentGoods!.isEmpty) return 0;
-    return documentGoods!.fold(0, (sum, good) => sum + (good.quantity?.toInt() ?? 0));
+    return documentGoods!
+        .fold(0, (sum, good) => sum + (good.quantity?.toInt() ?? 0));
   }
 
   String get statusText {
@@ -237,13 +256,15 @@ class ExpenseDocumentDetail extends Equatable {
     int? authorId,
     WareHouse? sender_storage_id,
     WareHouse? recipient_storage_id,
+    ExchangeRate? exchangeRate,
   }) {
     return ExpenseDocumentDetail(
       id: id ?? this.id,
       date: date ?? this.date,
       modelType: modelType ?? this.modelType,
       modelId: modelId ?? this.modelId,
-      counterpartyAgreementId: counterpartyAgreementId ?? this.counterpartyAgreementId,
+      counterpartyAgreementId:
+          counterpartyAgreementId ?? this.counterpartyAgreementId,
       organizationId: organizationId ?? this.organizationId,
       storage: storage ?? this.storage,
       article: article ?? this.article,
@@ -262,6 +283,7 @@ class ExpenseDocumentDetail extends Equatable {
       authorId: authorId ?? this.authorId,
       sender_storage_id: sender_storage_id ?? this.sender_storage_id,
       recipient_storage_id: recipient_storage_id ?? this.recipient_storage_id,
+      exchangeRate: exchangeRate ?? this.exchangeRate,
     );
   }
 }
@@ -340,7 +362,8 @@ class Author {
       jobTitle: json['job_title'],
       hasImage: parseInt(json['has_image']),
       isFirstLogin: parseInt(json['is_first_login']),
-      internalNumber: json['internal_number']?.toString(),  // ← Добавлена конвертация
+      internalNumber:
+          json['internal_number']?.toString(), // ← Добавлена конвертация
       departmentId: parseInt(json['department_id']),
       uniqueId: json['unique_id'],
       shiftId: parseInt(json['shift_id']),
@@ -392,8 +415,12 @@ class Storage {
     return Storage(
       id: parseInt(json['id']),
       name: json['name'],
-      createdAt: json['created_at'] != null ? DateTime.parse(json['created_at']) : null,
-      updatedAt: json['updated_at'] != null ? DateTime.parse(json['updated_at']) : null,
+      createdAt: json['created_at'] != null
+          ? DateTime.parse(json['created_at'])
+          : null,
+      updatedAt: json['updated_at'] != null
+          ? DateTime.parse(json['updated_at'])
+          : null,
     );
   }
 
@@ -455,7 +482,7 @@ class Currency {
   }
 }
 
- class DocumentGood {
+class DocumentGood {
   final int? id;
   final int? documentId;
   final int? variantId;
@@ -474,7 +501,8 @@ class Currency {
 
   Unit get selectedUnit {
     if (good?.units != null && unit?.id != null) {
-      return good!.units!.firstWhere((u) => u.id == unit?.id, orElse: () => Unit(id: unitId, name: 'Шт', amount: 1));
+      return good!.units!.firstWhere((u) => u.id == unit?.id,
+          orElse: () => Unit(id: unitId, name: 'Шт', amount: 1));
     }
     return Unit(id: unit?.id, name: 'Шт', amount: 1);
   }
@@ -512,8 +540,8 @@ class Currency {
       updatedAt: parseDate(json['updated_at']),
       attributes: json['attributes'] != null
           ? (json['attributes'] as List)
-          .map((i) => Attribute.fromJson(i))
-          .toList()
+              .map((i) => Attribute.fromJson(i))
+              .toList()
           : null,
       fullName: json['full_name'] as String?,
       // FIXED: Extract unit_id from the unit object if unit_id field doesn't exist
@@ -593,8 +621,11 @@ class Good {
 
   factory Good.fromJson(Map<String, dynamic> json) {
     return Good(
-      units: json['units'] != null ? (json['units'] as List).map((i) => Unit.fromJson(i)).toList() : null,
-      unitId: json['unit_id'] is int ? json['unit_id']
+      units: json['units'] != null
+          ? (json['units'] as List).map((i) => Unit.fromJson(i)).toList()
+          : null,
+      unitId: json['unit_id'] is int
+          ? json['unit_id']
           : (json['unit_id'] is String ? int.tryParse(json['unit_id']) : null),
       id: parseInt(json['id']),
       oneCId: json['one_c_id'],
@@ -747,8 +778,8 @@ class GoodVariant {
       good: json['good'] != null ? Good.fromJson(json['good']) : null,
       attributeValues: json['attribute_values'] != null
           ? (json['attribute_values'] as List)
-          .map((i) => AttributeValue.fromJson(i))
-          .toList()
+              .map((i) => AttributeValue.fromJson(i))
+              .toList()
           : null,
     );
   }
@@ -942,6 +973,8 @@ class Model {
   final String? name;
   final String? phone;
   final int? inn;
+  final int? currencyId;
+  final Currency? currency;
   final String? note;
   final DateTime? createdAt;
   final DateTime? updatedAt;
@@ -951,6 +984,8 @@ class Model {
     this.name,
     this.phone,
     this.inn,
+    this.currencyId,
+    this.currency,
     this.note,
     this.createdAt,
     this.updatedAt,
@@ -962,6 +997,9 @@ class Model {
       name: json['name'],
       phone: json['phone'],
       inn: parseInt(json['inn']),
+      currencyId: parseInt(json['currency_id']),
+      currency:
+          json['currency'] != null ? Currency.fromJson(json['currency']) : null,
       note: json['note'],
       createdAt: json['created_at'] != null
           ? DateTime.parse(json['created_at'])
@@ -978,7 +1016,53 @@ class Model {
       'name': name,
       'phone': phone,
       'inn': inn,
+      'currency_id': currencyId,
+      'currency': currency?.toJson(),
       'note': note,
+      'created_at': createdAt?.toIso8601String(),
+      'updated_at': updatedAt?.toIso8601String(),
+    };
+  }
+}
+
+class ExchangeRate {
+  final int? id;
+  final DateTime? date;
+  final int? currencyId;
+  final String? value;
+  final DateTime? deletedAt;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
+
+  const ExchangeRate({
+    this.id,
+    this.date,
+    this.currencyId,
+    this.value,
+    this.deletedAt,
+    this.createdAt,
+    this.updatedAt,
+  });
+
+  factory ExchangeRate.fromJson(Map<String, dynamic> json) {
+    return ExchangeRate(
+      id: parseInt(json['id']),
+      date: parseDate(json['date']),
+      currencyId: parseInt(json['currency_id']),
+      value: json['value']?.toString(),
+      deletedAt: parseDate(json['deleted_at']),
+      createdAt: parseDate(json['created_at']),
+      updatedAt: parseDate(json['updated_at']),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'date': date?.toIso8601String(),
+      'currency_id': currencyId,
+      'value': value,
+      'deleted_at': deletedAt?.toIso8601String(),
       'created_at': createdAt?.toIso8601String(),
       'updated_at': updatedAt?.toIso8601String(),
     };
@@ -1075,7 +1159,6 @@ class AttributeValue {
 }
 
 class ArticleGood {
-
   final int? id;
   final String? name;
   final String? type;

@@ -31,7 +31,7 @@ class _CallCenterScreenState extends State<CallCenterScreen> {
   final FocusNode _focusNode = FocusNode();
   bool _isSearching = false;
   final ScrollController _scrollController = ScrollController();
-  
+
   // Добавляем PageController для swipe навигации
   final PageController _pageController = PageController();
   int _currentPageIndex = 0;
@@ -139,48 +139,48 @@ class _CallCenterScreenState extends State<CallCenterScreen> {
     _updateFiltersState();
 
     context.read<CallCenterBloc>().add(LoadCalls(
-          callType: _selectedFilter,
-          page: 1,
-          searchQuery: '',
-        ));
+      callType: _selectedFilter,
+      page: 1,
+      searchQuery: '',
+    ));
   }
 
   void _onFiltersSelected(Map filters) {
     setState(() {
       _selectedCallTypes = (filters['callTypes'] as List<dynamic>?)
-              ?.map(
-                  (id) => CallTypeData(id: int.parse(id.toString()), name: ''))
-              .toList() ??
+          ?.map(
+              (id) => CallTypeData(id: int.parse(id.toString()), name: ''))
+          .toList() ??
           [];
       _selectedOperators = (filters['operators'] as List<dynamic>?)
-              ?.map((id) => Operator(
-                  id: int.parse(id.toString()),
-                  name: '',
-                  lastname: '',
-                  login: '',
-                  email: '',
-                  phone: '',
-                  image: '',
-                  telegramUserId: null,
-                  jobTitle: '',
-                  fullName: '',
-                  isFirstLogin: 0,
-                  departmentId: null,
-                  uniqueId: '',
-                  operatorAvgRating: 0.0))
-              .toList() ??
+          ?.map((id) => Operator(
+          id: int.parse(id.toString()),
+          name: '',
+          lastname: '',
+          login: '',
+          email: '',
+          phone: '',
+          image: '',
+          telegramUserId: null,
+          jobTitle: '',
+          fullName: '',
+          isFirstLogin: 0,
+          departmentId: null,
+          uniqueId: '',
+          operatorAvgRating: 0.0))
+          .toList() ??
           [];
       _selectedStatuses = (filters['statuses'] as List<dynamic>?)
-              ?.map((id) => StatusData(id: int.parse(id.toString()), name: ''))
-              .toList() ??
+          ?.map((id) => StatusData(id: int.parse(id.toString()), name: ''))
+          .toList() ??
           [];
       _selectedRatings = (filters['ratings'] as List<dynamic>?)
-              ?.map((id) => RatingData(id: int.parse(id.toString()), name: ''))
-              .toList() ??
+          ?.map((id) => RatingData(id: int.parse(id.toString()), name: ''))
+          .toList() ??
           [];
       _selectedLeads = (filters['leads'] as List<dynamic>?)
-              ?.map((id) => LeadData(id: int.parse(id.toString()), name: ''))
-              .toList() ??
+          ?.map((id) => LeadData(id: int.parse(id.toString()), name: ''))
+          .toList() ??
           [];
     });
 
@@ -410,7 +410,7 @@ class _CallCenterScreenState extends State<CallCenterScreen> {
                 focusNode: _focusNode,
                 decoration: InputDecoration(
                   hintText:
-                      AppLocalizations.of(context)!.translate('search_appbar'),
+                  AppLocalizations.of(context)!.translate('search_appbar'),
                   border: InputBorder.none,
                 ),
                 style: const TextStyle(fontSize: 16, color: Colors.black),
@@ -423,10 +423,10 @@ class _CallCenterScreenState extends State<CallCenterScreen> {
             icon: _isSearching
                 ? const Icon(Icons.close, color: Colors.black)
                 : Image.asset(
-                    'assets/icons/AppBar/search.png',
-                    width: 24,
-                    height: 24,
-                  ),
+              'assets/icons/AppBar/search.png',
+              width: 24,
+              height: 24,
+            ),
             tooltip: AppLocalizations.of(context)!.translate('search'),
             onPressed: () {
               if (_isSearching) {
@@ -494,15 +494,15 @@ class _CallCenterScreenState extends State<CallCenterScreen> {
                       });
                     },
                     initialCallTypes:
-                        _selectedCallTypes.map((c) => c.id.toString()).toList(),
+                    _selectedCallTypes.map((c) => c.id.toString()).toList(),
                     initialOperators:
-                        _selectedOperators.map((o) => o.id.toString()).toList(),
+                    _selectedOperators.map((o) => o.id.toString()).toList(),
                     initialStatuses:
-                        _selectedStatuses.map((s) => s.id.toString()).toList(),
+                    _selectedStatuses.map((s) => s.id.toString()).toList(),
                     initialRatings:
-                        _selectedRatings.map((r) => r.id.toString()).toList(),
+                    _selectedRatings.map((r) => r.id.toString()).toList(),
                     initialLeads:
-                        _selectedLeads.map((l) => l.id.toString()).toList(),
+                    _selectedLeads.map((l) => l.id.toString()).toList(),
                     initialRemarkStatus: selectedRemarkStatus,
                     initialStartDate: startDate?.toIso8601String(),
                     initialEndDate: endDate?.toIso8601String(),
@@ -607,10 +607,10 @@ class _CallCenterScreenState extends State<CallCenterScreen> {
         page = currentState.currentPage;
       }
       context.read<CallCenterBloc>().add(LoadCalls(
-            callType: _selectedFilter,
-            page: page,
-            searchQuery: _searchQuery,
-          ));
+        callType: _selectedFilter,
+        page: page,
+        searchQuery: _searchQuery,
+      ));
     });
   }
 

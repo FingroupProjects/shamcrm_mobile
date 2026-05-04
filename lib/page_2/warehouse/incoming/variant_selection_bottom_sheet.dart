@@ -23,10 +23,12 @@ class VariantSelectionBottomSheet extends StatefulWidget {
   });
 
   @override
-  State<VariantSelectionBottomSheet> createState() => _VariantSelectionBottomSheetState();
+  State<VariantSelectionBottomSheet> createState() =>
+      _VariantSelectionBottomSheetState();
 }
 
-class _VariantSelectionBottomSheetState extends State<VariantSelectionBottomSheet> {
+class _VariantSelectionBottomSheetState
+    extends State<VariantSelectionBottomSheet> {
   // Constants
   static const double _scrollThreshold = 0.9;
   static const Duration _searchDebounceDelay = Duration(milliseconds: 500);
@@ -66,7 +68,9 @@ class _VariantSelectionBottomSheetState extends State<VariantSelectionBottomShee
 
     if (mounted) {
       if (_showAllMode) {
-        _bloc.add(FetchVariants(forceReload: widget.forceReload, isService: widget.isService));  // ADD isService
+        _bloc.add(FetchVariants(
+            forceReload: widget.forceReload,
+            isService: widget.isService)); // ADD isService
       } else {
         _bloc.add(FetchCategories(forceReload: widget.forceReload));
       }
@@ -80,16 +84,20 @@ class _VariantSelectionBottomSheetState extends State<VariantSelectionBottomShee
   }
 
   void _onScroll() {
-    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent * _scrollThreshold) {
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent * _scrollThreshold) {
       final state = _bloc.state;
 
       if (state.isLoadingMore) return;
 
-      if (state.isInSearchMode && _hasMorePages(state.searchVariantsPagination, state.currentPage)) {
+      if (state.isInSearchMode &&
+          _hasMorePages(state.searchVariantsPagination, state.currentPage)) {
         _bloc.add(FetchMoreSearchResults(state.currentPage));
-      } else if (state.isInAllVariantsMode && _hasMorePages(state.allVariantsPagination, state.currentPage)) {
+      } else if (state.isInAllVariantsMode &&
+          _hasMorePages(state.allVariantsPagination, state.currentPage)) {
         _bloc.add(FetchMoreVariants(state.currentPage));
-      } else if (state.isInCategoryMode && _hasMorePages(state.categoryVariantsPagination, state.currentPage)) {
+      } else if (state.isInCategoryMode &&
+          _hasMorePages(state.categoryVariantsPagination, state.currentPage)) {
         _bloc.add(FetchMoreVariantsByCategory(
           categoryId: state.selectedCategoryId!,
           currentPage: state.currentPage,
@@ -120,7 +128,7 @@ class _VariantSelectionBottomSheetState extends State<VariantSelectionBottomShee
     _saveDisplayMode(_showAllMode);
 
     if (_showAllMode) {
-      _bloc.add(FetchVariants(isService: widget.isService));  // ADD isService
+      _bloc.add(FetchVariants(isService: widget.isService)); // ADD isService
     } else {
       _bloc.add(FetchCategories());
     }
@@ -130,7 +138,7 @@ class _VariantSelectionBottomSheetState extends State<VariantSelectionBottomShee
     _bloc.add(FetchVariantsByCategory(
       categoryId: categoryId,
       categoryName: categoryName,
-      isService: widget.isService,  // ADD THIS
+      isService: widget.isService, // ADD THIS
     ));
   }
 
@@ -139,14 +147,18 @@ class _VariantSelectionBottomSheetState extends State<VariantSelectionBottomShee
   }
 
   void _onVariantTap(Variant variant) {
-    final isAlreadyAdded = widget.existingItems.any((item) => item['variantId'] == variant.id);
+    final isAlreadyAdded =
+        widget.existingItems.any((item) => item['variantId'] == variant.id);
 
     if (isAlreadyAdded) {
-      _showErrorSnackBar(AppLocalizations.of(context)!.translate('item_already_added'));
+      _showErrorSnackBar(
+          AppLocalizations.of(context)!.translate('item_already_added'));
       return;
     }
 
-    final firstUnitAmount = variant.availableUnits.isNotEmpty ? (variant.availableUnits.first.amount ?? 1) : 1;
+    final firstUnitAmount = variant.availableUnits.isNotEmpty
+        ? (variant.availableUnits.first.amount ?? 1)
+        : 1;
 
     final result = <String, dynamic>{
       'id': variant.goodId,
@@ -158,6 +170,7 @@ class _VariantSelectionBottomSheetState extends State<VariantSelectionBottomShee
       'amount': firstUnitAmount,
       'availableUnits': variant.availableUnits,
       'remainder': variant.remainder ?? 0,
+      'materialGoods': variant.good?.materialGoods ?? const [],
     };
 
     if (variant.availableUnits.isNotEmpty) {
@@ -235,7 +248,8 @@ class _VariantSelectionBottomSheetState extends State<VariantSelectionBottomShee
     );
   }
 
-  Widget _buildHeader(AppLocalizations localizations, VariantBottomSheetState state) {
+  Widget _buildHeader(
+      AppLocalizations localizations, VariantBottomSheetState state) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
@@ -261,10 +275,8 @@ class _VariantSelectionBottomSheetState extends State<VariantSelectionBottomShee
                     color: Color(0xff1E2E52),
                   ),
                 ),
-                if (state.isInCategoryMode)
-                  _buildCategoryBreadcrumb(state),
-                if (state.isInSearchMode)
-                  _buildSearchBreadcrumb(state),
+                if (state.isInCategoryMode) _buildCategoryBreadcrumb(state),
+                if (state.isInSearchMode) _buildSearchBreadcrumb(state),
               ],
             ),
           ),
@@ -318,13 +330,16 @@ class _VariantSelectionBottomSheetState extends State<VariantSelectionBottomShee
   }
 
   Widget _buildSearchBreadcrumb(VariantBottomSheetState state) {
-    final totalResults = state.searchCategories.length + state.searchVariants.length;
+    final totalResults =
+        state.searchCategories.length + state.searchVariants.length;
     final localizations = AppLocalizations.of(context)!;
 
     return Padding(
       padding: const EdgeInsets.only(top: 4),
       child: Text(
-        localizations.translate('found_results').replaceAll('{count}', totalResults.toString()),
+        localizations
+            .translate('found_results')
+            .replaceAll('{count}', totalResults.toString()),
         style: const TextStyle(
           fontSize: 13,
           fontFamily: 'Gilroy',
@@ -335,7 +350,8 @@ class _VariantSelectionBottomSheetState extends State<VariantSelectionBottomShee
     );
   }
 
-  Widget _buildSearchField(AppLocalizations localizations, VariantBottomSheetState state) {
+  Widget _buildSearchField(
+      AppLocalizations localizations, VariantBottomSheetState state) {
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Row(
@@ -354,12 +370,12 @@ class _VariantSelectionBottomSheetState extends State<VariantSelectionBottomShee
                 prefixIcon: const Icon(Icons.search, color: Color(0xff4759FF)),
                 suffixIcon: _searchController.text.isNotEmpty
                     ? IconButton(
-                  icon: const Icon(Icons.clear, color: Color(0xff99A4BA)),
-                  onPressed: () {
-                    _searchController.clear();
-                    _bloc.add(SearchAll(''));
-                  },
-                )
+                        icon: const Icon(Icons.clear, color: Color(0xff99A4BA)),
+                        onPressed: () {
+                          _searchController.clear();
+                          _bloc.add(SearchAll(''));
+                        },
+                      )
                     : null,
                 filled: true,
                 fillColor: const Color(0xFFF4F7FD),
@@ -367,7 +383,8 @@ class _VariantSelectionBottomSheetState extends State<VariantSelectionBottomShee
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide.none,
                 ),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               ),
             ),
           ),
@@ -396,7 +413,8 @@ class _VariantSelectionBottomSheetState extends State<VariantSelectionBottomShee
     );
   }
 
-  Widget _buildContent(AppLocalizations localizations, VariantBottomSheetState state) {
+  Widget _buildContent(
+      AppLocalizations localizations, VariantBottomSheetState state) {
     if (state.isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -421,7 +439,9 @@ class _VariantSelectionBottomSheetState extends State<VariantSelectionBottomShee
             ElevatedButton(
               onPressed: () {
                 if (_showAllMode) {
-                  _bloc.add(FetchVariants(forceReload: true, isService: widget.isService));  // ADD isService
+                  _bloc.add(FetchVariants(
+                      forceReload: true,
+                      isService: widget.isService)); // ADD isService
                 } else {
                   _bloc.add(FetchCategories(forceReload: true));
                 }
@@ -452,7 +472,8 @@ class _VariantSelectionBottomSheetState extends State<VariantSelectionBottomShee
     return _buildCategories(localizations, state);
   }
 
-  Widget _buildSearchResults(AppLocalizations localizations, VariantBottomSheetState state) {
+  Widget _buildSearchResults(
+      AppLocalizations localizations, VariantBottomSheetState state) {
     if (state.isSearching) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -465,25 +486,25 @@ class _VariantSelectionBottomSheetState extends State<VariantSelectionBottomShee
       );
     }
 
-    final availableVariants = state.searchVariants
-        .where((v) => !_isItemAlreadyAdded(v))
-        .toList();
+    final availableVariants =
+        state.searchVariants.where((v) => !_isItemAlreadyAdded(v)).toList();
 
     return ListView(
       controller: _scrollController,
       padding: const EdgeInsets.symmetric(horizontal: 16),
       children: [
         if (state.searchCategories.isNotEmpty) ...[
-          _buildSectionHeader(localizations.translate('categories'), state.searchCategories.length),
+          _buildSectionHeader(localizations.translate('categories'),
+              state.searchCategories.length),
           ...state.searchCategories.map((cat) => _buildCategoryCard(cat)),
           const SizedBox(height: 24),
         ],
         if (availableVariants.isNotEmpty) ...[
-          _buildSectionHeader(localizations.translate('goods'), availableVariants.length),
+          _buildSectionHeader(
+              localizations.translate('goods'), availableVariants.length),
           ...availableVariants.map((v) => _buildVariantCard(v, localizations)),
         ],
-        if (state.isLoadingMore)
-          _buildLoadingIndicator(),
+        if (state.isLoadingMore) _buildLoadingIndicator(),
       ],
     );
   }
@@ -524,7 +545,8 @@ class _VariantSelectionBottomSheetState extends State<VariantSelectionBottomShee
     );
   }
 
-  Widget _buildCategories(AppLocalizations localizations, VariantBottomSheetState state) {
+  Widget _buildCategories(
+      AppLocalizations localizations, VariantBottomSheetState state) {
     if (state.categories.isEmpty) {
       return Center(
         child: Text(
@@ -557,12 +579,15 @@ class _VariantSelectionBottomSheetState extends State<VariantSelectionBottomShee
     return GestureDetector(
       onTap: () => _onCategoryTap(category.id, category.name),
       child: Container(
-        margin: EdgeInsets.only(bottom: 12, left: level > 0 ? leftPadding - 16 : 0),
+        margin:
+            EdgeInsets.only(bottom: 12, left: level > 0 ? leftPadding - 16 : 0),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: level > 0 ? const Color(0xFFE5E7EB).withValues(alpha: 0.7) : const Color(0xFFE5E7EB),
+            color: level > 0
+                ? const Color(0xFFE5E7EB).withValues(alpha: 0.7)
+                : const Color(0xFFE5E7EB),
             width: 1,
           ),
         ),
@@ -590,29 +615,34 @@ class _VariantSelectionBottomSheetState extends State<VariantSelectionBottomShee
                 ),
                 child: category.image != null && category.image!.isNotEmpty
                     ? ClipRRect(
-                  borderRadius: BorderRadius.circular(10),
-                  child: CachedNetworkImage(
-                    imageUrl: 'https://shamcrm.com/storage/${category.image}',
-                    fit: BoxFit.cover,
-                    placeholder: (context, url) => const Center(
-                      child: SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      ),
-                    ),
-                    errorWidget: (context, url, error) => Icon(
-                      level > 0 ? Icons.subdirectory_arrow_right : Icons.category,
-                      color: const Color(0xff4759FF),
-                      size: level > 0 ? 20 : 28,
-                    ),
-                  ),
-                )
+                        borderRadius: BorderRadius.circular(10),
+                        child: CachedNetworkImage(
+                          imageUrl:
+                              'https://shamcrm.com/storage/${category.image}',
+                          fit: BoxFit.cover,
+                          placeholder: (context, url) => const Center(
+                            child: SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                          ),
+                          errorWidget: (context, url, error) => Icon(
+                            level > 0
+                                ? Icons.subdirectory_arrow_right
+                                : Icons.category,
+                            color: const Color(0xff4759FF),
+                            size: level > 0 ? 20 : 28,
+                          ),
+                        ),
+                      )
                     : Icon(
-                  level > 0 ? Icons.subdirectory_arrow_right : Icons.category,
-                  color: const Color(0xff4759FF),
-                  size: level > 0 ? 20 : 28,
-                ),
+                        level > 0
+                            ? Icons.subdirectory_arrow_right
+                            : Icons.category,
+                        color: const Color(0xff4759FF),
+                        size: level > 0 ? 20 : 28,
+                      ),
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -638,7 +668,8 @@ class _VariantSelectionBottomSheetState extends State<VariantSelectionBottomShee
     );
   }
 
-  Widget _buildAllVariants(AppLocalizations localizations, VariantBottomSheetState state) {
+  Widget _buildAllVariants(
+      AppLocalizations localizations, VariantBottomSheetState state) {
     return _buildVariantsList(
       variants: state.allVariants,
       emptyMessageKey: 'no_variants_found',
@@ -647,7 +678,8 @@ class _VariantSelectionBottomSheetState extends State<VariantSelectionBottomShee
     );
   }
 
-  Widget _buildCategoryVariants(AppLocalizations localizations, VariantBottomSheetState state) {
+  Widget _buildCategoryVariants(
+      AppLocalizations localizations, VariantBottomSheetState state) {
     // ✅ ИСПРАВЛЕНИЕ: Определяем правильное сообщение в зависимости от ситуации
     String emptyMessageKey;
     if (state.categoryVariants.isEmpty) {
@@ -672,7 +704,8 @@ class _VariantSelectionBottomSheetState extends State<VariantSelectionBottomShee
     required VariantBottomSheetState state,
     required AppLocalizations localizations,
   }) {
-    final availableVariants = variants.where((v) => !_isItemAlreadyAdded(v)).toList();
+    final availableVariants =
+        variants.where((v) => !_isItemAlreadyAdded(v)).toList();
 
     if (availableVariants.isEmpty) {
       return Center(
@@ -775,29 +808,29 @@ class _VariantSelectionBottomSheetState extends State<VariantSelectionBottomShee
                 ),
                 child: imageUrl != null
                     ? ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: CachedNetworkImage(
-                    imageUrl: imageUrl,
-                    fit: BoxFit.cover,
-                    placeholder: (context, url) => const Center(
-                      child: SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      ),
-                    ),
-                    errorWidget: (context, url, error) => const Icon(
-                      Icons.shopping_cart_outlined,
-                      color: Color(0xff4759FF),
-                      size: 24,
-                    ),
-                  ),
-                )
+                        borderRadius: BorderRadius.circular(8),
+                        child: CachedNetworkImage(
+                          imageUrl: imageUrl,
+                          fit: BoxFit.cover,
+                          placeholder: (context, url) => const Center(
+                            child: SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                          ),
+                          errorWidget: (context, url, error) => const Icon(
+                            Icons.shopping_cart_outlined,
+                            color: Color(0xff4759FF),
+                            size: 24,
+                          ),
+                        ),
+                      )
                     : const Icon(
-                  Icons.shopping_cart_outlined,
-                  color: Color(0xff4759FF),
-                  size: 24,
-                ),
+                        Icons.shopping_cart_outlined,
+                        color: Color(0xff4759FF),
+                        size: 24,
+                      ),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -828,6 +861,10 @@ class _VariantSelectionBottomSheetState extends State<VariantSelectionBottomShee
                           ),
                         ),
                       ),
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: _buildRemainderText(variant, localizations),
+                    ),
                   ],
                 ),
               ),
@@ -843,4 +880,20 @@ class _VariantSelectionBottomSheetState extends State<VariantSelectionBottomShee
     );
   }
 
+  Widget _buildRemainderText(Variant variant, AppLocalizations localizations) {
+    final remainder = variant.remainder;
+    final hasStock = remainder != null && remainder > 0;
+    final quantityText = localizations.translate('quantity');
+    final outOfStockText = localizations.translate('out_of_stock');
+
+    return Text(
+      hasStock ? '$quantityText: $remainder' : outOfStockText,
+      style: TextStyle(
+        fontSize: 12,
+        fontFamily: 'Gilroy',
+        fontWeight: FontWeight.w500,
+        color: hasStock ? const Color(0xff99A4BA) : const Color(0xffff5722),
+      ),
+    );
+  }
 }

@@ -45,7 +45,7 @@ class _DebtorsFilterScreenState extends State<DebtorsFilterScreen> {
   DateTime? _fromDate;
   DateTime? _toDate;
   bool _isLeadSelected = true;
-  
+
   final TextEditingController _amountFromController = TextEditingController();
   final TextEditingController _amountToController = TextEditingController();
   List<SupplierData> suppliersList = [];
@@ -71,11 +71,16 @@ class _DebtorsFilterScreenState extends State<DebtorsFilterScreen> {
       final fromDateMillis = prefs.getInt('debtors_from_date');
       final toDateMillis = prefs.getInt('debtors_to_date');
       _isLeadSelected = prefs.getBool('filter_is_lead') ?? true;
-      
-      if (fromDateMillis != null) _fromDate = DateTime.fromMillisecondsSinceEpoch(fromDateMillis);
-      if (toDateMillis != null) _toDate = DateTime.fromMillisecondsSinceEpoch(toDateMillis);
-      _amountFromController.text = prefs.getString('debtors_amount_from') ?? widget.initialAmountFrom ?? '';
-      _amountToController.text = prefs.getString('debtors_amount_to') ?? widget.initialAmountTo ?? '';
+
+      if (fromDateMillis != null)
+        _fromDate = DateTime.fromMillisecondsSinceEpoch(fromDateMillis);
+      if (toDateMillis != null)
+        _toDate = DateTime.fromMillisecondsSinceEpoch(toDateMillis);
+      _amountFromController.text = prefs.getString('debtors_amount_from') ??
+          widget.initialAmountFrom ??
+          '';
+      _amountToController.text =
+          prefs.getString('debtors_amount_to') ?? widget.initialAmountTo ?? '';
 
       // Load lead from SharedPreferences
       final leadId = prefs.getInt('debtors_lead_id');
@@ -83,7 +88,9 @@ class _DebtorsFilterScreenState extends State<DebtorsFilterScreen> {
       if (leadId != null && leadName != null) {
         _selectedLead = LeadData(id: leadId, name: leadName);
       } else if (widget.initialLead != null) {
-        _selectedLead = LeadData(id: int.tryParse(widget.initialLead!) ?? 0, name: widget.initialLead!);
+        _selectedLead = LeadData(
+            id: int.tryParse(widget.initialLead!) ?? 0,
+            name: widget.initialLead!);
       }
 
       // Load supplier from SharedPreferences
@@ -92,7 +99,9 @@ class _DebtorsFilterScreenState extends State<DebtorsFilterScreen> {
       if (supplierId != null && supplierName != null) {
         _selectedSupplier = SupplierData(id: supplierId, name: supplierName);
       } else if (widget.initialSupplier != null) {
-        _selectedSupplier = SupplierData(id: int.tryParse(widget.initialSupplier!) ?? 0, name: widget.initialSupplier!);
+        _selectedSupplier = SupplierData(
+            id: int.tryParse(widget.initialSupplier!) ?? 0,
+            name: widget.initialSupplier!);
       }
     });
 
@@ -104,9 +113,10 @@ class _DebtorsFilterScreenState extends State<DebtorsFilterScreen> {
   Future<void> _saveFilterState() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('filter_is_lead', _isLeadSelected);
-    
+
     if (_fromDate != null) {
-      await prefs.setInt('debtors_from_date', _fromDate!.millisecondsSinceEpoch);
+      await prefs.setInt(
+          'debtors_from_date', _fromDate!.millisecondsSinceEpoch);
     } else {
       await prefs.remove('debtors_from_date');
     }
@@ -154,7 +164,9 @@ class _DebtorsFilterScreenState extends State<DebtorsFilterScreen> {
       context: context,
       firstDate: DateTime(2000),
       lastDate: DateTime(2101),
-      initialDateRange: _fromDate != null && _toDate != null ? DateTimeRange(start: _fromDate!, end: _toDate!) : null,
+      initialDateRange: _fromDate != null && _toDate != null
+          ? DateTimeRange(start: _fromDate!, end: _toDate!)
+          : null,
       builder: (BuildContext context, Widget? child) {
         return Theme(
           data: ThemeData.light().copyWith(
@@ -193,14 +205,16 @@ class _DebtorsFilterScreenState extends State<DebtorsFilterScreen> {
 
   double? _parseAmount(String text) {
     if (text.isEmpty) return null;
-    final parsed = double.tryParse(text.replaceAll(',', '')); // Handle commas if needed
+    final parsed =
+        double.tryParse(text.replaceAll(',', '')); // Handle commas if needed
     return parsed;
   }
 
   void _applyFilters() async {
     await _saveFilterState();
 
-    debugPrint("selectedLead: $_selectedLead, selectedSupplier: $_selectedSupplier");
+    debugPrint(
+        "selectedLead: $_selectedLead, selectedSupplier: $_selectedSupplier");
 
     if (!_isAnyFilterSelected()) {
       widget.onResetFilters?.call();
@@ -209,10 +223,12 @@ class _DebtorsFilterScreenState extends State<DebtorsFilterScreen> {
       DateTime? toDateWithTime = _toDate;
 
       if (fromDateWithTime != null) {
-        fromDateWithTime = DateTime(fromDateWithTime.year, fromDateWithTime.month, fromDateWithTime.day, 0, 0, 0);
+        fromDateWithTime = DateTime(fromDateWithTime.year,
+            fromDateWithTime.month, fromDateWithTime.day, 0, 0, 0);
       }
       if (toDateWithTime != null) {
-        toDateWithTime = DateTime(toDateWithTime.year, toDateWithTime.month, toDateWithTime.day, 23, 59, 59);
+        toDateWithTime = DateTime(toDateWithTime.year, toDateWithTime.month,
+            toDateWithTime.day, 23, 59, 59);
       }
 
       var filters = {
@@ -245,7 +261,8 @@ class _DebtorsFilterScreenState extends State<DebtorsFilterScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              AppLocalizations.of(context)!.translate('filter_type') ?? 'Тип фильтра',
+              AppLocalizations.of(context)!.translate('filter_type') ??
+                  'Тип фильтра',
               style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
@@ -271,21 +288,29 @@ class _DebtorsFilterScreenState extends State<DebtorsFilterScreen> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(vertical: 8),
                       decoration: BoxDecoration(
-                        color: _isLeadSelected ? Colors.blueAccent : const Color(0xFFF4F7FD),
+                        color: _isLeadSelected
+                            ? Colors.blueAccent
+                            : const Color(0xFFF4F7FD),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: _isLeadSelected ? Colors.blueAccent : Colors.transparent,
+                          color: _isLeadSelected
+                              ? Colors.blueAccent
+                              : Colors.transparent,
                           width: 1.5,
                         ),
                       ),
                       child: Center(
                         child: Text(
-                          AppLocalizations.of(context)!.translate('filter_by_client') ?? 'По клиенту',
+                          AppLocalizations.of(context)!
+                                  .translate('filter_by_client') ??
+                              'По клиенту',
                           style: TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w600,
                             fontFamily: 'Gilroy',
-                            color: _isLeadSelected ? Colors.white : const Color(0xFF1E2E52),
+                            color: _isLeadSelected
+                                ? Colors.white
+                                : const Color(0xFF1E2E52),
                           ),
                         ),
                       ),
@@ -308,21 +333,29 @@ class _DebtorsFilterScreenState extends State<DebtorsFilterScreen> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(vertical: 8),
                       decoration: BoxDecoration(
-                        color: !_isLeadSelected ? Colors.blueAccent : const Color(0xFFF4F7FD),
+                        color: !_isLeadSelected
+                            ? Colors.blueAccent
+                            : const Color(0xFFF4F7FD),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: !_isLeadSelected ? Colors.blueAccent : Colors.transparent,
+                          color: !_isLeadSelected
+                              ? Colors.blueAccent
+                              : Colors.transparent,
                           width: 1.5,
                         ),
                       ),
                       child: Center(
                         child: Text(
-                          AppLocalizations.of(context)!.translate('filter_by_supplier') ?? 'По поставщику',
+                          AppLocalizations.of(context)!
+                                  .translate('filter_by_supplier') ??
+                              'По поставщику',
                           style: TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w600,
                             fontFamily: 'Gilroy',
-                            color: !_isLeadSelected ? Colors.white : const Color(0xFF1E2E52),
+                            color: !_isLeadSelected
+                                ? Colors.white
+                                : const Color(0xFF1E2E52),
                           ),
                         ),
                       ),
@@ -347,7 +380,8 @@ class _DebtorsFilterScreenState extends State<DebtorsFilterScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              AppLocalizations.of(context)!.translate('supplier') ?? 'Поставщик',
+              AppLocalizations.of(context)!.translate('supplier') ??
+                  'Поставщик',
               style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
@@ -365,7 +399,8 @@ class _DebtorsFilterScreenState extends State<DebtorsFilterScreen> {
                 }
               },
               builder: (context, state) {
-                if (state is GetAllSupplierInitial || (state is GetAllSupplierSuccess && suppliersList.isEmpty)) {
+                if (state is GetAllSupplierInitial ||
+                    (state is GetAllSupplierSuccess && suppliersList.isEmpty)) {
                   context.read<GetAllSupplierBloc>().add(GetAllSupplierEv());
                   return const DropdownLoadingState();
                 }
@@ -381,12 +416,20 @@ class _DebtorsFilterScreenState extends State<DebtorsFilterScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Text('Ошибка загрузки', style: TextStyle(color: Colors.red, fontSize: 12)),
+                        Text(
+                            AppLocalizations.of(context)!
+                                .translate('error_loading_dialog'),
+                            style: TextStyle(color: Colors.red, fontSize: 12)),
                         TextButton(
                           onPressed: () {
-                            context.read<GetAllSupplierBloc>().add(GetAllSupplierEv());
+                            context
+                                .read<GetAllSupplierBloc>()
+                                .add(GetAllSupplierEv());
                           },
-                          child: Text('Повторить', style: TextStyle(fontSize: 12)),
+                          child: Text(
+                              AppLocalizations.of(context)!
+                                  .translate('retry_dialog'),
+                              style: TextStyle(fontSize: 12)),
                         ),
                       ],
                     ),
@@ -403,7 +446,9 @@ class _DebtorsFilterScreenState extends State<DebtorsFilterScreen> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
-                      AppLocalizations.of(context)!.translate('select_supplier') ?? 'Выберите поставщика',
+                      AppLocalizations.of(context)!
+                              .translate('select_supplier') ??
+                          'Выберите поставщика',
                       style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
@@ -417,15 +462,19 @@ class _DebtorsFilterScreenState extends State<DebtorsFilterScreen> {
                 return CustomDropdown<SupplierData>.search(
                   key: _supplierDropdownKey,
                   items: suppliersList,
-                  searchHintText: AppLocalizations.of(context)!.translate('search') ?? 'Поиск',
+                  searchHintText:
+                      AppLocalizations.of(context)!.translate('search') ??
+                          'Поиск',
                   overlayHeight: 300,
                   enabled: true,
                   decoration: CustomDropdownDecoration(
                     closedFillColor: const Color(0xffF4F7FD),
                     expandedFillColor: Colors.white,
-                    closedBorder: Border.all(color: const Color(0xffF4F7FD), width: 1),
+                    closedBorder:
+                        Border.all(color: const Color(0xffF4F7FD), width: 1),
                     closedBorderRadius: BorderRadius.circular(12),
-                    expandedBorder: Border.all(color: const Color(0xffF4F7FD), width: 1),
+                    expandedBorder:
+                        Border.all(color: const Color(0xffF4F7FD), width: 1),
                     expandedBorderRadius: BorderRadius.circular(12),
                   ),
                   listItemBuilder: (context, item, isSelected, onItemSelect) {
@@ -441,7 +490,10 @@ class _DebtorsFilterScreenState extends State<DebtorsFilterScreen> {
                   },
                   headerBuilder: (context, selectedItem, enabled) {
                     return Text(
-                      selectedItem?.name ?? AppLocalizations.of(context)!.translate('select_supplier') ?? 'Выберите поставщика',
+                      selectedItem?.name ??
+                          AppLocalizations.of(context)!
+                              .translate('select_supplier') ??
+                          'Выберите поставщика',
                       style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
@@ -451,7 +503,9 @@ class _DebtorsFilterScreenState extends State<DebtorsFilterScreen> {
                     );
                   },
                   hintBuilder: (context, hint, enabled) => Text(
-                    AppLocalizations.of(context)!.translate('select_supplier') ?? 'Выберите поставщика',
+                    AppLocalizations.of(context)!
+                            .translate('select_supplier') ??
+                        'Выберите поставщика',
                     style: const TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
@@ -459,8 +513,11 @@ class _DebtorsFilterScreenState extends State<DebtorsFilterScreen> {
                       color: Color(0xff1E2E52),
                     ),
                   ),
-                  initialItem: _selectedSupplier != null && suppliersList.any((s) => s.id == _selectedSupplier!.id)
-                      ? suppliersList.firstWhere((s) => s.id == _selectedSupplier!.id)
+                  initialItem: _selectedSupplier != null &&
+                          suppliersList
+                              .any((s) => s.id == _selectedSupplier!.id)
+                      ? suppliersList
+                          .firstWhere((s) => s.id == _selectedSupplier!.id)
                       : null,
                   onChanged: (value) {
                     if (value != null && mounted) {
@@ -507,7 +564,8 @@ class _DebtorsFilterScreenState extends State<DebtorsFilterScreen> {
                 }
               },
               builder: (context, state) {
-                if (state is GetAllLeadInitial || (state is GetAllLeadSuccess && leadsList.isEmpty)) {
+                if (state is GetAllLeadInitial ||
+                    (state is GetAllLeadSuccess && leadsList.isEmpty)) {
                   context.read<GetAllLeadBloc>().add(GetAllLeadEv());
                   return const DropdownLoadingState();
                 }
@@ -523,12 +581,18 @@ class _DebtorsFilterScreenState extends State<DebtorsFilterScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Text('Ошибка загрузки', style: TextStyle(color: Colors.red, fontSize: 12)),
+                        Text(
+                            AppLocalizations.of(context)!
+                                .translate('error_loading_dialog'),
+                            style: TextStyle(color: Colors.red, fontSize: 12)),
                         TextButton(
                           onPressed: () {
                             context.read<GetAllLeadBloc>().add(GetAllLeadEv());
                           },
-                          child: Text('Повторить', style: TextStyle(fontSize: 12)),
+                          child: Text(
+                              AppLocalizations.of(context)!
+                                  .translate('retry_dialog'),
+                              style: TextStyle(fontSize: 12)),
                         ),
                       ],
                     ),
@@ -545,7 +609,9 @@ class _DebtorsFilterScreenState extends State<DebtorsFilterScreen> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
-                      AppLocalizations.of(context)!.translate('select_client') ?? 'Выберите клиента',
+                      AppLocalizations.of(context)!
+                              .translate('select_client') ??
+                          'Выберите клиента',
                       style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
@@ -559,15 +625,19 @@ class _DebtorsFilterScreenState extends State<DebtorsFilterScreen> {
                 return CustomDropdown<LeadData>.search(
                   key: _leadDropdownKey,
                   items: leadsList,
-                  searchHintText: AppLocalizations.of(context)!.translate('search') ?? 'Поиск',
+                  searchHintText:
+                      AppLocalizations.of(context)!.translate('search') ??
+                          'Поиск',
                   overlayHeight: 300,
                   enabled: true,
                   decoration: CustomDropdownDecoration(
                     closedFillColor: const Color(0xffF4F7FD),
                     expandedFillColor: Colors.white,
-                    closedBorder: Border.all(color: const Color(0xffF4F7FD), width: 1),
+                    closedBorder:
+                        Border.all(color: const Color(0xffF4F7FD), width: 1),
                     closedBorderRadius: BorderRadius.circular(12),
-                    expandedBorder: Border.all(color: const Color(0xffF4F7FD), width: 1),
+                    expandedBorder:
+                        Border.all(color: const Color(0xffF4F7FD), width: 1),
                     expandedBorderRadius: BorderRadius.circular(12),
                   ),
                   listItemBuilder: (context, item, isSelected, onItemSelect) {
@@ -583,7 +653,10 @@ class _DebtorsFilterScreenState extends State<DebtorsFilterScreen> {
                   },
                   headerBuilder: (context, selectedItem, enabled) {
                     return Text(
-                      selectedItem?.name ?? AppLocalizations.of(context)!.translate('select_client') ?? 'Выберите клиента',
+                      selectedItem?.name ??
+                          AppLocalizations.of(context)!
+                              .translate('select_client') ??
+                          'Выберите клиента',
                       style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
@@ -593,7 +666,8 @@ class _DebtorsFilterScreenState extends State<DebtorsFilterScreen> {
                     );
                   },
                   hintBuilder: (context, hint, enabled) => Text(
-                    AppLocalizations.of(context)!.translate('select_client') ?? 'Выберите клиента',
+                    AppLocalizations.of(context)!.translate('select_client') ??
+                        'Выберите клиента',
                     style: const TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
@@ -601,7 +675,8 @@ class _DebtorsFilterScreenState extends State<DebtorsFilterScreen> {
                       color: Color(0xff1E2E52),
                     ),
                   ),
-                  initialItem: _selectedLead != null && leadsList.any((c) => c.id == _selectedLead!.id)
+                  initialItem: _selectedLead != null &&
+                          leadsList.any((c) => c.id == _selectedLead!.id)
                       ? leadsList.firstWhere((c) => c.id == _selectedLead!.id)
                       : null,
                   onChanged: (value) {
@@ -694,7 +769,8 @@ class _DebtorsFilterScreenState extends State<DebtorsFilterScreen> {
                   children: [
                     // Date Range Card
                     Card(
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
                       color: Colors.white,
                       child: GestureDetector(
                         onTap: _selectDateRange,
@@ -710,14 +786,18 @@ class _DebtorsFilterScreenState extends State<DebtorsFilterScreen> {
                               Text(
                                 _fromDate != null && _toDate != null
                                     ? "${_fromDate!.day.toString().padLeft(2, '0')}.${_fromDate!.month.toString().padLeft(2, '0')}.${_fromDate!.year} - ${_toDate!.day.toString().padLeft(2, '0')}.${_toDate!.month.toString().padLeft(2, '0')}.${_toDate!.year}"
-                                    : AppLocalizations.of(context)!.translate('select_date_range'),
+                                    : AppLocalizations.of(context)!
+                                        .translate('select_date_range'),
                                 style: TextStyle(
                                   fontFamily: 'Gilroy',
-                                  color: _fromDate != null && _toDate != null ? Colors.black : const Color(0xff99A4BA),
+                                  color: _fromDate != null && _toDate != null
+                                      ? Colors.black
+                                      : const Color(0xff99A4BA),
                                   fontSize: 14,
                                 ),
                               ),
-                              const Icon(Icons.calendar_today, color: Color(0xff99A4BA)),
+                              const Icon(Icons.calendar_today,
+                                  color: Color(0xff99A4BA)),
                             ],
                           ),
                         ),
@@ -726,7 +806,8 @@ class _DebtorsFilterScreenState extends State<DebtorsFilterScreen> {
                     const SizedBox(height: 8),
 
                     Card(
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
                       color: Colors.white,
                       child: Padding(
                         padding: const EdgeInsets.all(8),
@@ -736,8 +817,12 @@ class _DebtorsFilterScreenState extends State<DebtorsFilterScreen> {
                             CustomTextField(
                               controller: _amountFromController,
                               keyboardType: TextInputType.number,
-                              hintText: AppLocalizations.of(context)!.translate('enter_minimum_amount') ?? 'Введите минимальную сумму',
-                              label: AppLocalizations.of(context)!.translate('amount_from') ?? 'Сумма от',
+                              hintText: AppLocalizations.of(context)!
+                                      .translate('enter_minimum_amount') ??
+                                  'Введите минимальную сумму',
+                              label: AppLocalizations.of(context)!
+                                      .translate('amount_from') ??
+                                  'Сумма от',
                             ),
                           ],
                         ),
@@ -746,7 +831,8 @@ class _DebtorsFilterScreenState extends State<DebtorsFilterScreen> {
                     const SizedBox(height: 8),
 
                     Card(
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
                       color: Colors.white,
                       child: Padding(
                         padding: const EdgeInsets.all(8),
@@ -756,8 +842,12 @@ class _DebtorsFilterScreenState extends State<DebtorsFilterScreen> {
                             CustomTextField(
                               controller: _amountToController,
                               keyboardType: TextInputType.number,
-                              hintText: AppLocalizations.of(context)!.translate('enter_maximum_amount') ?? 'Введите максимальную сумму',
-                              label: AppLocalizations.of(context)!.translate('amount_to') ?? 'Сумма до',
+                              hintText: AppLocalizations.of(context)!
+                                      .translate('enter_maximum_amount') ??
+                                  'Введите максимальную сумму',
+                              label: AppLocalizations.of(context)!
+                                      .translate('amount_to') ??
+                                  'Сумма до',
                             ),
                           ],
                         ),
@@ -770,7 +860,9 @@ class _DebtorsFilterScreenState extends State<DebtorsFilterScreen> {
                     const SizedBox(height: 8),
 
                     // Dynamic widget
-                    _isLeadSelected ? _buildLeadWidget() : _buildSupplierWidget(),
+                    _isLeadSelected
+                        ? _buildLeadWidget()
+                        : _buildSupplierWidget(),
                     const SizedBox(height: 16),
                   ],
                 ),

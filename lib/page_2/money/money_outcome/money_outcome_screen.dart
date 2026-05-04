@@ -14,9 +14,11 @@ import '../../../widgets/snackbar_widget.dart';
 import '../../widgets/document_confirm_dialog.dart';
 import 'add/add_money_outcome_from_client.dart';
 import 'add/add_money_outcome_other_outcome.dart';
+import 'add/add_money_outcome_salary_payment.dart';
 import 'add/add_money_outcome_supplier_return.dart';
 import 'edit/edit_money_outcome_from_client.dart';
 import 'edit/edit_money_outcome_other_outcome.dart';
+import 'edit/edit_money_outcome_salary_payment.dart';
 import 'edit/edit_money_outcome_supplier_return.dart';
 import 'money_outcome_operation_type.dart';
 
@@ -52,16 +54,20 @@ class _MoneyOutcomeScreenState extends State<MoneyOutcomeScreen> {
   void initState() {
     super.initState();
     _checkPermissions();
-    _moneyOutcomeBloc = MoneyOutcomeBloc()..add(const FetchMoneyOutcome(forceRefresh: true));
+    _moneyOutcomeBloc = MoneyOutcomeBloc()
+      ..add(const FetchMoneyOutcome(forceRefresh: true));
     _scrollController.addListener(_onScroll);
   }
 
   // НОВОЕ: Проверка прав доступа
   Future<void> _checkPermissions() async {
     try {
-      final create = await _apiService.hasPermission('checking_account_rko.create');
-      final update = await _apiService.hasPermission('checking_account_rko.update');
-      final delete = await _apiService.hasPermission('checking_account_rko.delete');
+      final create =
+          await _apiService.hasPermission('checking_account_rko.create');
+      final update =
+          await _apiService.hasPermission('checking_account_rko.update');
+      final delete =
+          await _apiService.hasPermission('checking_account_rko.delete');
 
       if (mounted) {
         setState(() {
@@ -118,7 +124,8 @@ class _MoneyOutcomeScreenState extends State<MoneyOutcomeScreen> {
   }
 
   void _onScroll() {
-    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200 &&
+    if (_scrollController.position.pixels >=
+            _scrollController.position.maxScrollExtent - 200 &&
         !_isLoadingMore &&
         !_hasReachedMax) {
       setState(() {
@@ -150,7 +157,8 @@ class _MoneyOutcomeScreenState extends State<MoneyOutcomeScreen> {
     await Future.delayed(const Duration(milliseconds: 500));
   }
 
-  Future<void> _navigateToEditScreen(BuildContext context, Document document) async {
+  Future<void> _navigateToEditScreen(
+      BuildContext context, Document document) async {
     if (!mounted) return;
 
     final operationType = getOperationTypeFromString(document.operationType);
@@ -170,6 +178,9 @@ class _MoneyOutcomeScreenState extends State<MoneyOutcomeScreen> {
         break;
       case MoneyOutcomeOperationType.supplier_payment:
         targetScreen = EditMoneyOutcomeSupplierReturn(document: document);
+        break;
+      case MoneyOutcomeOperationType.salary_payment:
+        targetScreen = EditMoneyOutcomeSalaryPayment(document: document);
         break;
     }
 
@@ -201,92 +212,102 @@ class _MoneyOutcomeScreenState extends State<MoneyOutcomeScreen> {
             automaticallyImplyLeading: !_selectionMode,
             title: _selectionMode
                 ? BlocBuilder<MoneyOutcomeBloc, MoneyOutcomeState>(
-              builder: (context, state) {
-                if (state is MoneyOutcomeLoaded) {
-                  bool showApprove = state.selectedData!.any((doc) => doc.approved == false && doc.deletedAt == null);
-                  bool showDisapprove = state.selectedData!.any((doc) => doc.approved == true && doc.deletedAt == null);
-                  // ИЗМЕНЕНО: Показываем кнопку удаления только если есть право
-                  bool showDelete = _hasDeletePermission && state.selectedData!.any((doc) => doc.deletedAt == null);
-                  bool showRestore = state.selectedData!.any((doc) => doc.deletedAt != null);
+                    builder: (context, state) {
+                      if (state is MoneyOutcomeLoaded) {
+                        bool showApprove = state.selectedData!.any((doc) =>
+                            doc.approved == false && doc.deletedAt == null);
+                        bool showDisapprove = state.selectedData!.any((doc) =>
+                            doc.approved == true && doc.deletedAt == null);
+                        // ИЗМЕНЕНО: Показываем кнопку удаления только если есть право
+                        bool showDelete = _hasDeletePermission &&
+                            state.selectedData!
+                                .any((doc) => doc.deletedAt == null);
+                        bool showRestore = state.selectedData!
+                            .any((doc) => doc.deletedAt != null);
 
-                  return AppBarSelectionMode(
-                    title: localizations.translate('appbar_money_outcome'),
-                    onDismiss: () {
-                      setState(() {
-                        _selectionMode = false;
-                      });
-                      _moneyOutcomeBloc.add(UnselectAllDocuments());
-                    },
-                    onApprove: () {
-                      setState(() {
-                        _selectionMode = false;
-                      });
-                      _moneyOutcomeBloc.add(MassApproveMoneyOutcomeDocuments());
-                    },
-                    onDisapprove: () {
-                      setState(() {
-                        _selectionMode = false;
-                      });
-                      _moneyOutcomeBloc.add(MassDisapproveMoneyOutcomeDocuments());
-                    },
-                    onDelete: () {
-                      setState(() {
-                        _selectionMode = false;
-                      });
-                      _moneyOutcomeBloc.add(MassDeleteMoneyOutcomeDocuments());
-                    },
-                    onRestore: () {
-                      setState(() {
-                        _selectionMode = false;
-                      });
-                      _moneyOutcomeBloc.add(MassRestoreMoneyOutcomeDocuments());
-                    },
-                    showApprove: showApprove,
-                    showDelete: showDelete,
-                    showDisapprove: showDisapprove,
-                    showRestore: showRestore,
-                  );
-                }
+                        return AppBarSelectionMode(
+                          title:
+                              localizations.translate('appbar_money_outcome'),
+                          onDismiss: () {
+                            setState(() {
+                              _selectionMode = false;
+                            });
+                            _moneyOutcomeBloc.add(UnselectAllDocuments());
+                          },
+                          onApprove: () {
+                            setState(() {
+                              _selectionMode = false;
+                            });
+                            _moneyOutcomeBloc
+                                .add(MassApproveMoneyOutcomeDocuments());
+                          },
+                          onDisapprove: () {
+                            setState(() {
+                              _selectionMode = false;
+                            });
+                            _moneyOutcomeBloc
+                                .add(MassDisapproveMoneyOutcomeDocuments());
+                          },
+                          onDelete: () {
+                            setState(() {
+                              _selectionMode = false;
+                            });
+                            _moneyOutcomeBloc
+                                .add(MassDeleteMoneyOutcomeDocuments());
+                          },
+                          onRestore: () {
+                            setState(() {
+                              _selectionMode = false;
+                            });
+                            _moneyOutcomeBloc
+                                .add(MassRestoreMoneyOutcomeDocuments());
+                          },
+                          showApprove: showApprove,
+                          showDelete: showDelete,
+                          showDisapprove: showDisapprove,
+                          showRestore: showRestore,
+                        );
+                      }
 
-                return AppBarSelectionMode(
-                  title: localizations.translate('appbar_money_outcome'),
-                  onDismiss: () {
-                    setState(() {
-                      _selectionMode = false;
-                    });
-                    _moneyOutcomeBloc.add(UnselectAllDocuments());
-                  },
-                );
-              },
-            )
+                      return AppBarSelectionMode(
+                        title: localizations.translate('appbar_money_outcome'),
+                        onDismiss: () {
+                          setState(() {
+                            _selectionMode = false;
+                          });
+                          _moneyOutcomeBloc.add(UnselectAllDocuments());
+                        },
+                      );
+                    },
+                  )
                 : CustomAppBarPage2(
-              title: localizations.translate('appbar_money_outcome'),
-              showSearchIcon: true,
-              showFilterIcon: false,
-              showFilterOrderIcon: false,
-              showFilterIncomeIcon: true,
-              onFilterIncomeSelected: _onFilterSelected,
-              onIncomeResetFilters: _onResetFilters,
-              onChangedSearchInput: _onSearch,
-              textEditingController: _searchController,
-              focusNode: _focusNode,
-              clearButtonClick: (value) {
-                if (!value) {
-                  setState(() {
-                    _isSearching = false;
-                    _searchController.clear();
-                    _search = null;
-                  });
-                  _moneyOutcomeBloc.add(FetchMoneyOutcome(
-                    forceRefresh: true,
-                    filters: _currentFilters,
-                  ));
-                }
-              },
-              onClickProfileAvatar: () {},
-              clearButtonClickFiltr: (bool p1) {},
-              currentFilters: _currentFilters,
-            ),
+                    title: localizations.translate('appbar_money_outcome'),
+                    showSearchIcon: true,
+                    showFilterIcon: false,
+                    showFilterOrderIcon: false,
+                    showFilterIncomeIcon: true,
+                    onFilterIncomeSelected: _onFilterSelected,
+                    onIncomeResetFilters: _onResetFilters,
+                    onChangedSearchInput: _onSearch,
+                    textEditingController: _searchController,
+                    focusNode: _focusNode,
+                    clearButtonClick: (value) {
+                      if (!value) {
+                        setState(() {
+                          _isSearching = false;
+                          _searchController.clear();
+                          _search = null;
+                        });
+                        _moneyOutcomeBloc.add(FetchMoneyOutcome(
+                          forceRefresh: true,
+                          filters: _currentFilters,
+                        ));
+                      }
+                    },
+                    onClickProfileAvatar: () {},
+                    clearButtonClickFiltr: (bool p1) {},
+                    currentFilters: _currentFilters,
+                  ),
           ),
           body: BlocListener<MoneyOutcomeBloc, MoneyOutcomeState>(
             listener: (context, state) {
@@ -301,80 +322,130 @@ class _MoneyOutcomeScreenState extends State<MoneyOutcomeScreen> {
                 setState(() {
                   _isLoadingMore = false;
                 });
-                showCustomSnackBar(context: context, message: state.message, isSuccess: false);
+                showCustomSnackBar(
+                    context: context, message: state.message, isSuccess: false);
               } else if (state is MoneyOutcomeCreateSuccess) {
-                showCustomSnackBar(context: context, message: state.message, isSuccess: true);
+                showCustomSnackBar(
+                    context: context, message: state.message, isSuccess: true);
               } else if (state is MoneyOutcomeCreateError) {
                 if (state.statusCode == 409) {
-                  showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', state.message);
+                  showSimpleErrorDialog(
+                      context,
+                      localizations.translate('error') ?? 'Ошибка',
+                      state.message);
                   return;
                 }
-                showCustomSnackBar(context: context, message: state.message, isSuccess: false);
+                showCustomSnackBar(
+                    context: context, message: state.message, isSuccess: false);
               } else if (state is MoneyOutcomeUpdateSuccess) {
-                showCustomSnackBar(context: context, message: state.message, isSuccess: true);
+                showCustomSnackBar(
+                    context: context, message: state.message, isSuccess: true);
               } else if (state is MoneyOutcomeUpdateError) {
                 if (state.statusCode == 409) {
-                  showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', state.message);
+                  showSimpleErrorDialog(
+                      context,
+                      localizations.translate('error') ?? 'Ошибка',
+                      state.message);
                   return;
                 }
-                showCustomSnackBar(context: context, message: state.message, isSuccess: false);
+                showCustomSnackBar(
+                    context: context, message: state.message, isSuccess: false);
               } else if (state is MoneyOutcomeToggleOneApproveSuccess) {
-                showCustomSnackBar(context: context, message: state.message, isSuccess: true);
-                _moneyOutcomeBloc.add(const FetchMoneyOutcome(forceRefresh: true));
+                showCustomSnackBar(
+                    context: context, message: state.message, isSuccess: true);
+                _moneyOutcomeBloc
+                    .add(const FetchMoneyOutcome(forceRefresh: true));
               } else if (state is MoneyOutcomeToggleOneApproveError) {
                 if (state.statusCode == 409) {
-                  showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', state.message);
+                  showSimpleErrorDialog(
+                      context,
+                      localizations.translate('error') ?? 'Ошибка',
+                      state.message);
                   return;
                 }
-                showCustomSnackBar(context: context, message: state.message, isSuccess: false);
+                showCustomSnackBar(
+                    context: context, message: state.message, isSuccess: false);
               } else if (state is MoneyOutcomeDeleteSuccess) {
-                showCustomSnackBar(context: context, message: state.message, isSuccess: true);
-                _moneyOutcomeBloc.add(const FetchMoneyOutcome(forceRefresh: true));
+                showCustomSnackBar(
+                    context: context, message: state.message, isSuccess: true);
+                _moneyOutcomeBloc
+                    .add(const FetchMoneyOutcome(forceRefresh: true));
               } else if (state is MoneyOutcomeDeleteError) {
                 if (state.statusCode == 409) {
-                  showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', state.message);
+                  showSimpleErrorDialog(
+                      context,
+                      localizations.translate('error') ?? 'Ошибка',
+                      state.message);
                   return;
                 }
-                showCustomSnackBar(context: context, message: state.message, isSuccess: false);
+                showCustomSnackBar(
+                    context: context, message: state.message, isSuccess: false);
               } else if (state is MoneyOutcomeApproveMassSuccess) {
-                showCustomSnackBar(context: context, message: state.message, isSuccess: true);
-                _moneyOutcomeBloc.add(const FetchMoneyOutcome(forceRefresh: true));
+                showCustomSnackBar(
+                    context: context, message: state.message, isSuccess: true);
+                _moneyOutcomeBloc
+                    .add(const FetchMoneyOutcome(forceRefresh: true));
               } else if (state is MoneyOutcomeApproveMassError) {
                 if (state.statusCode == 409) {
-                  showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', state.message);
+                  showSimpleErrorDialog(
+                      context,
+                      localizations.translate('error') ?? 'Ошибка',
+                      state.message);
                   return;
                 }
-                showCustomSnackBar(context: context, message: state.message, isSuccess: false);
+                showCustomSnackBar(
+                    context: context, message: state.message, isSuccess: false);
               } else if (state is MoneyOutcomeDisapproveMassSuccess) {
-                showCustomSnackBar(context: context, message: state.message, isSuccess: true);
-                _moneyOutcomeBloc.add(const FetchMoneyOutcome(forceRefresh: true));
+                showCustomSnackBar(
+                    context: context, message: state.message, isSuccess: true);
+                _moneyOutcomeBloc
+                    .add(const FetchMoneyOutcome(forceRefresh: true));
               } else if (state is MoneyOutcomeDisapproveMassError) {
                 if (state.statusCode == 409) {
-                  showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', state.message);
+                  showSimpleErrorDialog(
+                      context,
+                      localizations.translate('error') ?? 'Ошибка',
+                      state.message);
                   return;
                 }
-                showCustomSnackBar(context: context, message: state.message, isSuccess: false);
+                showCustomSnackBar(
+                    context: context, message: state.message, isSuccess: false);
               } else if (state is MoneyOutcomeDeleteMassSuccess) {
-                showCustomSnackBar(context: context, message: state.message, isSuccess: true);
-                _moneyOutcomeBloc.add(const FetchMoneyOutcome(forceRefresh: true));
+                showCustomSnackBar(
+                    context: context, message: state.message, isSuccess: true);
+                _moneyOutcomeBloc
+                    .add(const FetchMoneyOutcome(forceRefresh: true));
               } else if (state is MoneyOutcomeDeleteMassError) {
                 if (state.statusCode == 409) {
-                  showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', state.message);
+                  showSimpleErrorDialog(
+                      context,
+                      localizations.translate('error') ?? 'Ошибка',
+                      state.message);
                   return;
                 }
-                showCustomSnackBar(context: context, message: state.message, isSuccess: false);
+                showCustomSnackBar(
+                    context: context, message: state.message, isSuccess: false);
               } else if (state is MoneyOutcomeRestoreMassSuccess) {
-                showCustomSnackBar(context: context, message: state.message, isSuccess: true);
-                _moneyOutcomeBloc.add(const FetchMoneyOutcome(forceRefresh: true));
+                showCustomSnackBar(
+                    context: context, message: state.message, isSuccess: true);
+                _moneyOutcomeBloc
+                    .add(const FetchMoneyOutcome(forceRefresh: true));
               } else if (state is MoneyOutcomeRestoreMassError) {
                 if (state.statusCode == 409) {
-                  showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', state.message);
+                  showSimpleErrorDialog(
+                      context,
+                      localizations.translate('error') ?? 'Ошибка',
+                      state.message);
                   return;
                 }
-                showCustomSnackBar(context: context, message: state.message, isSuccess: false);
-              } else if (state is MoneyOutcomeUpdateThenToggleOneApproveSuccess) {
-                showCustomSnackBar(context: context, message: state.message, isSuccess: true);
-                _moneyOutcomeBloc.add(const FetchMoneyOutcome(forceRefresh: true));
+                showCustomSnackBar(
+                    context: context, message: state.message, isSuccess: false);
+              } else if (state
+                  is MoneyOutcomeUpdateThenToggleOneApproveSuccess) {
+                showCustomSnackBar(
+                    context: context, message: state.message, isSuccess: true);
+                _moneyOutcomeBloc
+                    .add(const FetchMoneyOutcome(forceRefresh: true));
               }
             },
             child: BlocBuilder<MoneyOutcomeBloc, MoneyOutcomeState>(
@@ -392,12 +463,15 @@ class _MoneyOutcomeScreenState extends State<MoneyOutcomeScreen> {
                   );
                 }
 
-                final List<Document> currentData = state is MoneyOutcomeLoaded ? state.data : [];
+                final List<Document> currentData =
+                    state is MoneyOutcomeLoaded ? state.data : [];
 
                 if (currentData.isEmpty) {
                   return Center(
                     child: Text(
-                      _isSearching ? localizations.translate('nothing_found') : localizations.translate('no_money_outcome'),
+                      _isSearching
+                          ? localizations.translate('nothing_found')
+                          : localizations.translate('no_money_outcome'),
                       style: const TextStyle(
                         fontSize: 18,
                         fontFamily: 'Gilroy',
@@ -413,7 +487,8 @@ class _MoneyOutcomeScreenState extends State<MoneyOutcomeScreen> {
                   backgroundColor: Colors.white,
                   onRefresh: _onRefresh,
                   child: ListView.separated(
-                    separatorBuilder: (context, index) => const SizedBox(height: 12),
+                    separatorBuilder: (context, index) =>
+                        const SizedBox(height: 12),
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     controller: _scrollController,
                     physics: const AlwaysScrollableScrollPhysics(),
@@ -422,14 +497,14 @@ class _MoneyOutcomeScreenState extends State<MoneyOutcomeScreen> {
                       if (index >= currentData.length) {
                         return _isLoadingMore
                             ? Padding(
-                          padding: const EdgeInsets.all(16.0),
-                          child: Center(
-                            child: PlayStoreImageLoading(
-                              size: 80.0,
-                              duration: const Duration(milliseconds: 500),
-                            ),
-                          ),
-                        )
+                                padding: const EdgeInsets.all(16.0),
+                                child: Center(
+                                  child: PlayStoreImageLoading(
+                                    size: 80.0,
+                                    duration: const Duration(milliseconds: 500),
+                                  ),
+                                ),
+                              )
                             : const SizedBox.shrink();
                       }
 
@@ -441,10 +516,14 @@ class _MoneyOutcomeScreenState extends State<MoneyOutcomeScreen> {
                               key: Key(document.id.toString()),
                               direction: DismissDirection.endToStart,
                               background: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 16),
-                                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 16),
+                                margin: const EdgeInsets.symmetric(
+                                    horizontal: 16, vertical: 8),
                                 decoration: BoxDecoration(
-                                  color: document.deletedAt == null ? Colors.red : const Color(0xFF2196F3),
+                                  color: document.deletedAt == null
+                                      ? Colors.red
+                                      : const Color(0xFF2196F3),
                                   borderRadius: BorderRadius.circular(12),
                                   boxShadow: [
                                     BoxShadow(
@@ -456,8 +535,8 @@ class _MoneyOutcomeScreenState extends State<MoneyOutcomeScreen> {
                                 ),
                                 alignment: Alignment.centerRight,
                                 child: Icon(
-                                  document.deletedAt == null 
-                                      ? Icons.delete 
+                                  document.deletedAt == null
+                                      ? Icons.delete
                                       : Icons.restore_from_trash,
                                   color: Colors.white,
                                   size: 24,
@@ -468,12 +547,14 @@ class _MoneyOutcomeScreenState extends State<MoneyOutcomeScreen> {
                                 final docNumber = document.docNumber ?? 'N/A';
 
                                 if (isDeleted) {
-                                  return await DocumentConfirmDialog.showRestoreConfirmation(
+                                  return await DocumentConfirmDialog
+                                      .showRestoreConfirmation(
                                     context,
                                     docNumber,
                                   );
                                 } else {
-                                  return await DocumentConfirmDialog.showDeleteConfirmation(
+                                  return await DocumentConfirmDialog
+                                      .showDeleteConfirmation(
                                     context,
                                     docNumber,
                                   );
@@ -481,18 +562,22 @@ class _MoneyOutcomeScreenState extends State<MoneyOutcomeScreen> {
                               },
                               onDismissed: (direction) {
                                 final isDeleted = document.deletedAt != null;
-                                
+
                                 if (isDeleted) {
                                   // RESTORE - для удалённых документов
-                                  debugPrint("♻️ [UI] Восстановление документа ID: ${document.id}");
-                                  _moneyOutcomeBloc.add(RestoreMoneyOutcome(document.id!));
+                                  debugPrint(
+                                      "♻️ [UI] Восстановление документа ID: ${document.id}");
+                                  _moneyOutcomeBloc
+                                      .add(RestoreMoneyOutcome(document.id!));
                                 } else {
                                   // DELETE - для активных документов
-                                  debugPrint("🗑️ [UI] Удаление документа ID: ${document.id}");
+                                  debugPrint(
+                                      "🗑️ [UI] Удаление документа ID: ${document.id}");
                                   setState(() {
                                     currentData.removeAt(index);
                                   });
-                                  _moneyOutcomeBloc.add(DeleteMoneyOutcome(document));
+                                  _moneyOutcomeBloc
+                                      .add(DeleteMoneyOutcome(document));
                                 }
                               },
                               child: _buildMoneyOutcomeCard(document, state),
@@ -507,130 +592,163 @@ class _MoneyOutcomeScreenState extends State<MoneyOutcomeScreen> {
           // ИЗМЕНЕНО: Показываем FAB только если есть право на создание
           floatingActionButton: _hasCreatePermission
               ? PopupMenuButton<String>(
-            key: const Key('create_money_outcome_button'),
-            onSelected: (String value) async {
-              if (!mounted) return;
+                  key: const Key('create_money_outcome_button'),
+                  onSelected: (String value) async {
+                    if (!mounted) return;
 
-              Widget targetScreen;
+                    Widget targetScreen;
 
-              if (value == MoneyOutcomeOperationType.client_return.name) {
-                targetScreen = const AddMoneyOutcomeFromClient();
-              } else if (value == MoneyOutcomeOperationType.other_expenses.name) {
-                targetScreen = const AddMoneyOutcomeOtherOutcome();
-              } else if (value == MoneyOutcomeOperationType.supplier_payment.name) {
-                targetScreen = const AddMoneyOutcomeSupplierReturn();
-              } else {
-                return;
-              }
+                    if (value == MoneyOutcomeOperationType.client_return.name) {
+                      targetScreen = const AddMoneyOutcomeFromClient();
+                    } else if (value ==
+                        MoneyOutcomeOperationType.other_expenses.name) {
+                      targetScreen = const AddMoneyOutcomeOtherOutcome();
+                    } else if (value ==
+                        MoneyOutcomeOperationType.supplier_payment.name) {
+                      targetScreen = const AddMoneyOutcomeSupplierReturn();
+                    } else if (value ==
+                        MoneyOutcomeOperationType.salary_payment.name) {
+                      targetScreen = const AddMoneyOutcomeSalaryPayment();
+                    } else {
+                      return;
+                    }
 
-              final result = await Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => BlocProvider.value(
-                    value: _moneyOutcomeBloc,
-                    child: targetScreen,
-                  ),
-                ),
-              );
-
-              if (result == true && mounted) {
-                _moneyOutcomeBloc.add(const FetchMoneyOutcome(forceRefresh: true));
-              }
-            },
-            itemBuilder: (BuildContext context) {
-              return [
-                PopupMenuItem<String>(
-                  value: MoneyOutcomeOperationType.client_return.name,
-                  child: Row(
-                    children: [
-                      const Icon(
-                        Icons.person,
-                        color: Color(0xff1E2E52),
-                        size: 20,
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          localizations.translate(MoneyOutcomeOperationType.client_return.name),
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontFamily: 'Gilroy',
-                            fontWeight: FontWeight.w500,
-                            color: Color(0xff1E2E52),
-                          ),
+                    final result = await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => BlocProvider.value(
+                          value: _moneyOutcomeBloc,
+                          child: targetScreen,
                         ),
                       ),
-                    ],
-                  ),
-                ),
-                PopupMenuItem<String>(
-                  value: MoneyOutcomeOperationType.other_expenses.name,
-                  child: Row(
-                    children: [
-                      const Icon(
-                        Icons.add_circle_outline,
-                        color: Color(0xff1E2E52),
-                        size: 20,
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          localizations.translate(MoneyOutcomeOperationType.other_expenses.name),
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontFamily: 'Gilroy',
-                            fontWeight: FontWeight.w500,
-                            color: Color(0xff1E2E52),
-                          ),
+                    );
+                    if (result == true && mounted) {
+                      _moneyOutcomeBloc
+                          .add(const FetchMoneyOutcome(forceRefresh: true));
+                    }
+                  },
+                  itemBuilder: (BuildContext context) {
+                    return [
+                      PopupMenuItem<String>(
+                        value: MoneyOutcomeOperationType.supplier_payment.name,
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.keyboard_return,
+                              color: Color(0xff1E2E52),
+                              size: 20,
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                localizations.translate('supplier_payment'),
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  fontFamily: 'Gilroy',
+                                  fontWeight: FontWeight.w500,
+                                  color: Color(0xff1E2E52),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                    ],
-                  ),
-                ),
-                PopupMenuItem<String>(
-                  value: MoneyOutcomeOperationType.supplier_payment.name,
-                  child: Row(
-                    children: [
-                      const Icon(
-                        Icons.keyboard_return,
-                        color: Color(0xff1E2E52),
-                        size: 20,
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          localizations.translate('supplier_return'),
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontFamily: 'Gilroy',
-                            fontWeight: FontWeight.w500,
-                            color: Color(0xff1E2E52),
-                          ),
+                      PopupMenuItem<String>(
+                        value: MoneyOutcomeOperationType.other_expenses.name,
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.add_circle_outline,
+                              color: Color(0xff1E2E52),
+                              size: 20,
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                localizations.translate(
+                                    MoneyOutcomeOperationType
+                                        .other_expenses.name),
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  fontFamily: 'Gilroy',
+                                  fontWeight: FontWeight.w500,
+                                  color: Color(0xff1E2E52),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                    ],
+                      PopupMenuItem<String>(
+                        value: MoneyOutcomeOperationType.client_return.name,
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.person,
+                              color: Color(0xff1E2E52),
+                              size: 20,
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                localizations.translate('clientreturn'),
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  fontFamily: 'Gilroy',
+                                  fontWeight: FontWeight.w500,
+                                  color: Color(0xff1E2E52),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      PopupMenuItem<String>(
+                        value: MoneyOutcomeOperationType.salary_payment.name,
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.badge_outlined,
+                              color: Color(0xff1E2E52),
+                              size: 20,
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                localizations.translate('salary_payment'),
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  fontFamily: 'Gilroy',
+                                  fontWeight: FontWeight.w500,
+                                  color: Color(0xff1E2E52),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ];
+                  },
+                  offset: const Offset(0, -170),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                ),
-              ];
-            },
-            offset: const Offset(0, -170),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            color: Colors.white,
-            elevation: 8,
-            shadowColor: Colors.black.withOpacity(0.1),
-            child: Container(
-              width: 56,
-              height: 56,
-              decoration: const BoxDecoration(color: Color(0xff1E2E52), borderRadius: BorderRadius.all(Radius.circular(18))),
-              child: const Icon(
-                Icons.add,
-                color: Colors.white,
-                size: 24,
-              ),
-            ),
-          )
+                  color: Colors.white,
+                  elevation: 8,
+                  shadowColor: Colors.black.withOpacity(0.1),
+                  child: Container(
+                    width: 56,
+                    height: 56,
+                    decoration: const BoxDecoration(
+                        color: Color(0xff1E2E52),
+                        borderRadius: BorderRadius.all(Radius.circular(18))),
+                    child: const Icon(
+                      Icons.add,
+                      color: Colors.white,
+                      size: 24,
+                    ),
+                  ),
+                )
               : null),
     );
   }
@@ -640,7 +758,9 @@ class _MoneyOutcomeScreenState extends State<MoneyOutcomeScreen> {
       borderRadius: BorderRadius.circular(12),
       child: MoneyOutcomeCard(
         isSelectionMode: _selectionMode,
-        isSelected: (state as MoneyOutcomeLoaded).selectedData?.contains(document) ?? false,
+        isSelected:
+            (state as MoneyOutcomeLoaded).selectedData?.contains(document) ??
+                false,
         document: document,
         // ИЗМЕНЕНО: Разрешаем долгое нажатие только если есть право на удаление
         onLongPress: _hasDeletePermission
@@ -657,7 +777,8 @@ class _MoneyOutcomeScreenState extends State<MoneyOutcomeScreen> {
             final currentState = _moneyOutcomeBloc.state;
             if (currentState is MoneyOutcomeLoaded) {
               final selectedCount = currentState.selectedData?.length ?? 0;
-              if (selectedCount <= 1 && currentState.selectedData?.contains(document) == true) {
+              if (selectedCount <= 1 &&
+                  currentState.selectedData?.contains(document) == true) {
                 setState(() {
                   _selectionMode = false;
                 });

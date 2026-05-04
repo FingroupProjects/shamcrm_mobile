@@ -226,7 +226,7 @@ class _SubCategoryDetailsScreenState extends State<SubCategoryDetailsScreen> {
                           fit: BoxFit.contain,
                         )
                             : Image.network(
-                          '$baseUrl/${_currentCategory.image!}',
+                          '${_currentCategory.image!}',
                           width: double.infinity,
                           height: 200,
                           fit: BoxFit.contain,
@@ -342,7 +342,7 @@ class _SubCategoryDetailsScreenState extends State<SubCategoryDetailsScreen> {
                     ? ClipRRect(
                   borderRadius: BorderRadius.circular(8),
                   child: Image.network(
-                    '$baseUrl/${category.image}',
+                    '${category.image}',
                     fit: BoxFit.cover,
                     errorBuilder: (_, __, ___) => _buildNoPhotoPlaceholder(),
                   ),

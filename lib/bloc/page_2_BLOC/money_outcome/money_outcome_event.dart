@@ -31,6 +31,9 @@ class UpdateMoneyOutcome extends MoneyOutcomeEvent {
   final int? cashRegisterId;
   final int? senderCashRegisterId;
   final int? supplierId;
+  final int? employeeId;
+  final String? month;
+  final double? exchangeRate;
 
   UpdateMoneyOutcome({
     this.id,
@@ -43,22 +46,28 @@ class UpdateMoneyOutcome extends MoneyOutcomeEvent {
     this.cashRegisterId,
     this.senderCashRegisterId,
     this.supplierId,
+    this.employeeId,
+    this.month,
+    this.exchangeRate,
   });
 
   @override
   List<Object> get props => [
-    id ?? 0,
-    date,
-    amount,
-    operationType,
-    movementType,
-    leadId ?? 0,
-    articleId ?? 0,
-    comment,
-    cashRegisterId ?? '',
-    senderCashRegisterId ?? '',
-    supplierId ?? 0,
-  ];
+        id ?? 0,
+        date,
+        amount,
+        operationType,
+        movementType,
+        leadId ?? 0,
+        articleId ?? 0,
+        comment,
+        cashRegisterId ?? '',
+        senderCashRegisterId ?? '',
+        supplierId ?? 0,
+        employeeId ?? 0,
+        month ?? '',
+        exchangeRate ?? -1,
+      ];
 }
 
 class DeleteMoneyOutcome extends MoneyOutcomeEvent {
@@ -90,7 +99,10 @@ class CreateMoneyOutcome extends MoneyOutcomeEvent {
   final int? cashRegisterId;
   final int? senderCashRegisterId;
   final int? supplierId;
+  final int? employeeId;
+  final String? month;
   final bool approve;
+  final double? exchangeRate;
 
   CreateMoneyOutcome({
     required this.date,
@@ -102,46 +114,47 @@ class CreateMoneyOutcome extends MoneyOutcomeEvent {
     this.cashRegisterId,
     this.senderCashRegisterId,
     this.supplierId,
+    this.employeeId,
+    this.month,
     required this.approve,
+    this.exchangeRate,
   });
 
   @override
   List<Object> get props => [
-    date,
-    amount,
-    operationType,
-    movementType,
-    leadId ?? 0,
-    articleId ?? 0,
-    comment,
-    cashRegisterId ?? '',
-    senderCashRegisterId ?? '',
-    supplierId ?? 0,
-    approve,
-  ];
+        date,
+        amount,
+        operationType,
+        movementType,
+        leadId ?? 0,
+        articleId ?? 0,
+        comment,
+        cashRegisterId ?? '',
+        senderCashRegisterId ?? '',
+        supplierId ?? 0,
+        employeeId ?? 0,
+        month ?? '',
+        approve,
+        exchangeRate ?? -1,
+      ];
 }
 
-
 class MassApproveMoneyOutcomeDocuments extends MoneyOutcomeEvent {
-
   @override
   List<Object> get props => [];
 }
 
 class MassDisapproveMoneyOutcomeDocuments extends MoneyOutcomeEvent {
-
   @override
   List<Object> get props => [];
 }
 
 class MassDeleteMoneyOutcomeDocuments extends MoneyOutcomeEvent {
-
   @override
   List<Object> get props => [];
 }
 
 class MassRestoreMoneyOutcomeDocuments extends MoneyOutcomeEvent {
-
   @override
   List<Object> get props => [];
 }
@@ -168,7 +181,10 @@ class UpdateThenToggleOneMoneyOutcomeDocument extends MoneyOutcomeEvent {
   final int? cashRegisterId;
   final int? senderCashRegisterId;
   final int? supplierId;
+  final int? employeeId;
+  final String? month;
   final bool approve;
+  final double? exchangeRate;
 
   UpdateThenToggleOneMoneyOutcomeDocument({
     required this.id,
@@ -181,24 +197,30 @@ class UpdateThenToggleOneMoneyOutcomeDocument extends MoneyOutcomeEvent {
     this.cashRegisterId,
     this.senderCashRegisterId,
     this.supplierId,
+    this.employeeId,
+    this.month,
     required this.approve,
+    this.exchangeRate,
   });
 
   @override
   List<Object> get props => [
-    id,
-    date,
-    amount,
-    operationType,
-    movementType,
-    leadId ?? 0,
-    articleId ?? 0,
-    comment,
-    cashRegisterId ?? '',
-    senderCashRegisterId ?? '',
-    supplierId ?? 0,
-    approve,
-  ];
+        id,
+        date,
+        amount,
+        operationType,
+        movementType,
+        leadId ?? 0,
+        articleId ?? 0,
+        comment,
+        cashRegisterId ?? '',
+        senderCashRegisterId ?? '',
+        supplierId ?? 0,
+        employeeId ?? 0,
+        month ?? '',
+        approve,
+        exchangeRate ?? -1,
+      ];
 }
 
 class RemoveLocalFromList extends MoneyOutcomeEvent {

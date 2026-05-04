@@ -21,7 +21,8 @@ class FetchClientSales extends ClientSaleEvent {
   });
 
   @override
-  List<Object> get props => [forceRefresh, filters ?? {}, status ?? 0, search ?? ''];
+  List<Object> get props =>
+      [forceRefresh, filters ?? {}, status ?? 0, search ?? ''];
 }
 
 class DeleteClientSale extends ClientSaleEvent {
@@ -29,7 +30,8 @@ class DeleteClientSale extends ClientSaleEvent {
   final AppLocalizations localizations;
   final bool shouldReload;
 
-  const DeleteClientSale(this.documentId, this.localizations, {this.shouldReload = true});
+  const DeleteClientSale(this.documentId, this.localizations,
+      {this.shouldReload = true});
 
   @override
   List<Object> get props => [documentId, localizations];
@@ -54,6 +56,7 @@ class CreateClientSalesDocument extends ClientSaleEvent {
   final int organizationId;
   final int salesFunnelId;
   final bool approve;
+  final double? exchangeRate;
 
   const CreateClientSalesDocument({
     required this.date,
@@ -64,6 +67,7 @@ class CreateClientSalesDocument extends ClientSaleEvent {
     required this.organizationId,
     required this.salesFunnelId,
     this.approve = false,
+    this.exchangeRate,
   });
 
   @override
@@ -76,6 +80,7 @@ class CreateClientSalesDocument extends ClientSaleEvent {
         organizationId,
         salesFunnelId,
         approve,
+        exchangeRate ?? -1,
       ];
 }
 
@@ -88,6 +93,7 @@ class UpdateClientSalesDocument extends ClientSaleEvent {
   final List<Map<String, dynamic>> documentGoods;
   final int organizationId;
   final int salesFunnelId;
+  final double? exchangeRate;
 
   const UpdateClientSalesDocument({
     required this.documentId,
@@ -98,10 +104,21 @@ class UpdateClientSalesDocument extends ClientSaleEvent {
     required this.documentGoods,
     required this.organizationId,
     required this.salesFunnelId,
+    this.exchangeRate,
   });
 
   @override
-  List<Object> get props => [documentId, date, storageId, comment, counterpartyId, documentGoods, organizationId, salesFunnelId];
+  List<Object> get props => [
+        documentId,
+        date,
+        storageId,
+        comment,
+        counterpartyId,
+        documentGoods,
+        organizationId,
+        salesFunnelId,
+        exchangeRate ?? -1
+      ];
 }
 
 class MassApproveClientSaleDocuments extends ClientSaleEvent {

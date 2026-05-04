@@ -1,6 +1,36 @@
 abstract class OrderEvent {}
 
-class FetchOrderStatuses extends OrderEvent {}
+class FetchOrderStatuses extends OrderEvent {
+  final bool forceRefresh;
+
+  FetchOrderStatuses({this.forceRefresh = false});
+}
+
+class FetchOrderStatusesWithFilters extends OrderEvent {
+  final List<String>? managerIds;
+  final List<String>? regionsIds;
+  final List<String>? leadIds;
+  final DateTime? fromDate;
+  final DateTime? toDate;
+  final String? status;
+  final String? paymentMethod;
+  final String? deliveryType;
+  final List<int>? reasonForRefusalIds;
+  final Map<String, List<String>>? customFieldFilters;
+
+  FetchOrderStatusesWithFilters({
+    this.managerIds,
+    this.regionsIds,
+    this.leadIds,
+    this.fromDate,
+    this.toDate,
+    this.status,
+    this.paymentMethod,
+    this.deliveryType,
+    this.reasonForRefusalIds,
+    this.customFieldFilters,
+  });
+}
 
 class FetchOrders extends OrderEvent {
   final int? statusId;
@@ -9,11 +39,15 @@ class FetchOrders extends OrderEvent {
   final String? query;
   final bool forceRefresh;
   final List<String>? managerIds;
+  final List<String>? regionsIds;
   final List<String>? leadIds;
   final DateTime? fromDate;
   final DateTime? toDate;
   final String? status;
   final String? paymentMethod;
+  final String? deliveryType;
+  final List<int>? reasonForRefusalIds;
+  final Map<String, List<String>>? customFieldFilters;
 
   FetchOrders({
     this.statusId,
@@ -22,13 +56,18 @@ class FetchOrders extends OrderEvent {
     this.query,
     this.forceRefresh = false,
     this.managerIds,
+    this.regionsIds,
     this.leadIds,
     this.fromDate,
     this.toDate,
     this.status,
     this.paymentMethod,
+    this.deliveryType,
+    this.reasonForRefusalIds,
+    this.customFieldFilters,
   });
 }
+
 class FetchMoreOrders extends OrderEvent {
   final int? statusId;
   final int page;
@@ -51,7 +90,8 @@ class FetchOrderDetails extends OrderEvent {
 
 class CreateOrder extends OrderEvent {
   final String phone;
-  final int leadId;
+  final int? leadId;
+  final int? dealId;
   final bool delivery;
   final String? deliveryAddress;
   final int? deliveryAddressId;
@@ -61,10 +101,15 @@ class CreateOrder extends OrderEvent {
   final int? branchId;
   final String? commentToCourier;
   final int? managerId; // Новое поле
+  final int? integrationId;
+  final double sum;
+  final List<Map<String, dynamic>>? customFields;
+  final List<Map<String, int>>? directoryValues;
 
   CreateOrder({
     required this.phone,
-    required this.leadId,
+    this.leadId,
+    this.dealId,
     required this.delivery,
     this.deliveryAddress,
     this.deliveryAddressId,
@@ -74,12 +119,18 @@ class CreateOrder extends OrderEvent {
     this.branchId,
     this.commentToCourier,
     this.managerId, // Добавляем в конструктор
+    this.integrationId,
+    required this.sum,
+    this.customFields,
+    this.directoryValues,
   });
 }
+
 class UpdateOrder extends OrderEvent {
   final int orderId;
   final String phone;
-  final int leadId;
+  final int? leadId;
+  final int? dealId;
   final bool delivery;
   final String? deliveryAddress;
   final int? deliveryAddressId;
@@ -88,12 +139,17 @@ class UpdateOrder extends OrderEvent {
   final int? branchId;
   final String? commentToCourier;
   final int? managerId; // Новое поле
+  final int? integrationId;
   final int? statusId; // Добавлено для обновления списка
+  final double sum;
+  final List<Map<String, dynamic>>? customFields;
+  final List<Map<String, int>>? directoryValues;
 
   UpdateOrder({
     required this.orderId,
     required this.phone,
-    required this.leadId,
+    this.leadId,
+    this.dealId,
     required this.delivery,
     this.deliveryAddress,
     this.deliveryAddressId,
@@ -102,9 +158,14 @@ class UpdateOrder extends OrderEvent {
     this.branchId,
     this.commentToCourier,
     this.managerId,
+    this.integrationId,
     this.statusId,
+    required this.sum,
+    this.customFields,
+    this.directoryValues,
   });
 }
+
 class DeleteOrder extends OrderEvent {
   final int orderId;
   final int? organizationId;
@@ -119,11 +180,15 @@ class ChangeOrderStatus extends OrderEvent {
   final int orderId;
   final int statusId;
   final int? organizationId;
+  final int? reasonForRefusalId;
+  final String? reasonForRefusal;
 
   ChangeOrderStatus({
     required this.orderId,
     required this.statusId,
     this.organizationId,
+    this.reasonForRefusalId,
+    this.reasonForRefusal,
   });
 }
 
@@ -165,10 +230,12 @@ class DeleteOrderStatus extends OrderEvent {
 
 class AddMiniAppAddress extends OrderEvent {
   final String address;
-  final int leadId;
+  final int? leadId;
+  final int? dealId;
 
   AddMiniAppAddress({
     required this.address,
-    required this.leadId,
+    this.leadId,
+    this.dealId,
   });
 }

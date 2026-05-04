@@ -24,7 +24,8 @@ if (flutterVersionName == null) {
 
 android {
     namespace "com.softtech.crm_task_manager"
-    compileSdk 35
+    compileSdk 36
+    buildToolsVersion "36.0.0"
     ndkVersion "26.1.10909125"
 
     compileOptions {
@@ -44,7 +45,7 @@ android {
     defaultConfig {
         applicationId "com.softtech.crm_task_manager"
         minSdkVersion flutter.minSdkVersion
-        targetSdkVersion 35
+        targetSdkVersion 36
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
         ndk {
@@ -64,6 +65,7 @@ android {
     buildTypes {
         release {
             signingConfig signingConfigs.release
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
 
@@ -79,4 +81,11 @@ flutter {
 dependencies {
     coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.0.4'
     implementation 'com.google.zxing:core:3.5.2'  // Явно добавить ZXing для qr_code_scanner
+    implementation 'com.google.android.play:app-update:2.1.0'
+    implementation 'com.google.android.play:app-update-ktx:2.1.0'
+    implementation 'androidx.security:security-crypto:1.1.0-alpha06'
+    implementation 'org.linphone:linphone-sdk-android:5.4.106'
+    // WorkManager — надёжный резервный механизм перезапуска SIP-сервиса
+    // Использует JobScheduler (системный API), Xiaomi не может его блокировать
+    implementation 'androidx.work:work-runtime-ktx:2.9.0'
 }

@@ -24,6 +24,7 @@ class GoodUnitsDropdown extends StatefulWidget {
 class _GoodUnitsDropdownState extends State<GoodUnitsDropdown> {
   List<VariantUnit> unitsList = [];
   VariantUnit? selectedUnitData;
+  String? _autoSelectedUnitId;
 
   @override
   void initState() {
@@ -78,6 +79,20 @@ class _GoodUnitsDropdownState extends State<GoodUnitsDropdown> {
       }
     } else {
       selectedUnitData = null;
+    }
+
+    if (unitsList.length == 1 &&
+        (widget.selectedUnitId == null || selectedUnitData == null) &&
+        _autoSelectedUnitId != unitsList.first.id.toString()) {
+      final singleUnit = unitsList.first;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        widget.onUnitSelected(singleUnit.id.toString());
+        setState(() {
+          selectedUnitData = singleUnit;
+          _autoSelectedUnitId = singleUnit.id.toString();
+        });
+      });
     }
   }
 
@@ -285,4 +300,3 @@ class _GoodUnitsDropdownState extends State<GoodUnitsDropdown> {
     );
   }
 }
-

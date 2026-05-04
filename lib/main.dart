@@ -1,18 +1,21 @@
+import 'dart:async';
+
 import 'package:app_tracking_transparency/app_tracking_transparency.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/api/service/firebase_api.dart';
-import 'package:crm_task_manager/api/service/internet_monitor_service.dart';
 import 'package:crm_task_manager/api/service/secure_storage_service.dart';
 import 'package:crm_task_manager/api/service/widget_service.dart';
 import 'package:crm_task_manager/bloc/My-Task_Status_Name/statusName_bloc.dart';
 import 'package:crm_task_manager/bloc/Task_Status_Name/statusName_bloc.dart';
 import 'package:crm_task_manager/bloc/auth_bloc_pin/forgot_auth_bloc.dart';
 import 'package:crm_task_manager/bloc/auth_domain/domain_bloc.dart';
+import 'package:crm_task_manager/bloc/advertising_campaign_list/advertising_campaign_bloc.dart';
 import 'package:crm_task_manager/bloc/author/get_all_author_bloc.dart';
 import 'package:crm_task_manager/bloc/calendar/calendar_bloc.dart';
 import 'package:crm_task_manager/bloc/call_bloc/call_center_bloc.dart';
 import 'package:crm_task_manager/bloc/call_bloc/operator_bloc/operator_bloc.dart';
 import 'package:crm_task_manager/bloc/cash_desk/cash_desk_bloc.dart';
+import 'package:crm_task_manager/bloc/city_list/city_bloc.dart';
 import 'package:crm_task_manager/bloc/chats/chat_profile/chats_profile_task_bloc.dart';
 import 'package:crm_task_manager/bloc/chats/delete_message/delete_message_bloc.dart';
 import 'package:crm_task_manager/bloc/chats/groupe_chat/group_chat_bloc.dart';
@@ -58,6 +61,7 @@ import 'package:crm_task_manager/bloc/history_deal/deal_history_bloc.dart';
 import 'package:crm_task_manager/bloc/history_lead/history_bloc.dart';
 import 'package:crm_task_manager/bloc/history_task/task_history_bloc.dart';
 import 'package:crm_task_manager/bloc/lead/lead_bloc.dart';
+import 'package:crm_task_manager/bloc/lead_channel_list/lead_channel_bloc.dart';
 import 'package:crm_task_manager/bloc/lead_by_id/leadById_bloc.dart';
 import 'package:crm_task_manager/bloc/lead_deal/lead_deal_bloc.dart';
 import 'package:crm_task_manager/bloc/login/login_bloc.dart';
@@ -89,6 +93,7 @@ import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/storage_bloc
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/units_bloc/units_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/measure_units/measure_units_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/movement/movement_bloc.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/document/manufacture/manufacture_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/price_type/bloc/price_type_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/storage/bloc/storage_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/supplier_return/supplier_return_bloc.dart';
@@ -116,11 +121,14 @@ import 'package:crm_task_manager/bloc/source_list/source_bloc.dart';
 import 'package:crm_task_manager/bloc/task/task_bloc.dart';
 import 'package:crm_task_manager/bloc/task_add_from_deal/task_add_from_deal_bloc.dart';
 import 'package:crm_task_manager/bloc/task_by_id/taskById_bloc.dart';
+import 'package:crm_task_manager/bloc/task_overdue_history/task_overdue_history_bloc.dart';
 import 'package:crm_task_manager/bloc/task_status_add/task_bloc.dart';
 import 'package:crm_task_manager/bloc/user/client/get_all_client_bloc.dart';
 import 'package:crm_task_manager/bloc/user/create_cleant/create_client_bloc.dart';
 import 'package:crm_task_manager/bloc/user/user_bloc.dart';
 import 'package:crm_task_manager/firebase_options.dart';
+import 'package:crm_task_manager/offline/core/core_outbox_executors.dart';
+import 'package:crm_task_manager/offline/core/offline_bootstrap.dart';
 import 'package:crm_task_manager/screens/auth/pin_screen.dart';
 import 'package:crm_task_manager/screens/chats/chats_screen.dart';
 import 'package:crm_task_manager/screens/auth/pin_setup_screen.dart';
@@ -128,11 +136,17 @@ import 'package:crm_task_manager/screens/auth/auth_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/profile/languages/local_manager_lang.dart';
 import 'package:crm_task_manager/screens/profile/profile_screen.dart';
+import 'package:crm_task_manager/screens/sip/sip_call_overlay_host.dart';
+import 'package:crm_task_manager/screens/sip/sip_service.dart';
 import 'package:crm_task_manager/update_dialog.dart';
-import 'package:crm_task_manager/widgets/internet_aware_wrapper.dart';
+import 'package:crm_task_manager/widgets/native_internet_aware_wrapper_WITH_GAME.dart';
+import 'package:crm_task_manager/widgets/native_internet_monitor_simple.dart';
+import 'package:crm_task_manager/widgets/http_inspector_fab.dart';
+import 'package:crm_task_manager/widgets/in_app_update_corner_indicator.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:new_version_plus/new_version_plus.dart';
@@ -148,16 +162,16 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
     GlobalKey<ScaffoldMessengerState>();
+
 void main() async {
   try {
     WidgetsFlutterBinding.ensureInitialized();
-    WidgetService.initialize();
-        await InternetMonitorService().initialize();
-
-    await _initializeFirebase();
 
     final apiService = ApiService();
     final authService = AuthService();
+
+    await _safeInitializeOfflineRuntime();
+    await _safeInitializeFirebase();
 
     final sessionValidation = await _validateApplicationSession(apiService);
 
@@ -171,37 +185,17 @@ void main() async {
       isDomainChecked = await apiService.isDomainChecked();
 
       if (isDomainChecked) {
-        await apiService.initialize();
+        await _safeInitializeApiService(apiService);
+        _safeRegisterOutboxExecutors(apiService);
       }
     } else {
       await _clearAllApplicationData(apiService, authService);
     }
     
-    await AppTrackingTransparency.requestTrackingAuthorization();
-    await _initializeFirebaseMessaging(apiService);
-    
-    RemoteMessage? initialMessage;
-    try {
-      if (Firebase.apps.isNotEmpty) {
-        initialMessage = await FirebaseMessaging.instance.getInitialMessage();
-      }
-    } catch (e) {
-      //print('main: Ошибка получения initial message: $e');
-    }
-
-    SystemChrome.setSystemUIOverlayStyle(
-      const SystemUiOverlayStyle(
-        statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.dark,
-        systemNavigationBarColor: Colors.white,
-      ),
-    );
-
-    final String? savedLanguageCode = await LanguageManager.getLanguage();
-    final Locale savedLocale = savedLanguageCode != null
-        ? Locale(savedLanguageCode)
-        : const Locale('ru');
-
+    final initialMessage = await _safeLoadInitialMessage();
+    _safeConfigureSystemUi();
+    final savedLocale = await _safeLoadLocale();
+    await _safeInitializeSipRuntime();
     runApp(MyApp(
       apiService: apiService,
       authService: authService,
@@ -213,8 +207,97 @@ void main() async {
       sessionValid: sessionValidation.isValid,
     ));
   } catch (e, stackTrace) {
+    debugPrint('main: startup error: $e');
+    debugPrint('main: startup stackTrace: $stackTrace');
     runApp(ErrorApp(error: e.toString()));
   }
+}
+
+Future<void> _safeInitializeSipRuntime() async {
+  try {
+    await SipService().initialize();
+  } catch (e, stackTrace) {
+    debugPrint('main: SipService initialize error: $e');
+    debugPrint('main: SipService initialize stackTrace: $stackTrace');
+  }
+}
+
+Future<void> _safeInitializeOfflineRuntime() async {
+  try {
+    await OfflineBootstrap.initialize();
+  } catch (e, stackTrace) {
+    debugPrint('main: OfflineBootstrap initialize error: $e');
+    debugPrint('main: OfflineBootstrap stackTrace: $stackTrace');
+  }
+}
+
+Future<void> _safeInitializeFirebase() async {
+  try {
+    await _initializeFirebase();
+  } catch (e, stackTrace) {
+    debugPrint('main: Firebase initialize error: $e');
+    debugPrint('main: Firebase initialize stackTrace: $stackTrace');
+  }
+}
+
+Future<void> _safeInitializeApiService(ApiService apiService) async {
+  try {
+    await apiService.initialize();
+  } catch (e, stackTrace) {
+    debugPrint('main: ApiService initialize error: $e');
+    debugPrint('main: ApiService initialize stackTrace: $stackTrace');
+  }
+}
+
+void _safeRegisterOutboxExecutors(ApiService apiService) {
+  try {
+    CoreOutboxExecutors.register(apiService);
+  } catch (e, stackTrace) {
+    debugPrint('main: CoreOutboxExecutors register error: $e');
+    debugPrint('main: CoreOutboxExecutors register stackTrace: $stackTrace');
+  }
+}
+
+Future<RemoteMessage?> _safeLoadInitialMessage() async {
+  try {
+    if (Firebase.apps.isNotEmpty) {
+      return await FirebaseMessaging.instance.getInitialMessage();
+    }
+  } catch (e, stackTrace) {
+    debugPrint('main: initial message error: $e');
+    debugPrint('main: initial message stackTrace: $stackTrace');
+  }
+
+  return null;
+}
+
+void _safeConfigureSystemUi() {
+  try {
+    SystemChrome.setSystemUIOverlayStyle(
+      const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.dark,
+        systemNavigationBarColor: Colors.white,
+      ),
+    );
+  } catch (e, stackTrace) {
+    debugPrint('main: System UI configuration error: $e');
+    debugPrint('main: System UI configuration stackTrace: $stackTrace');
+  }
+}
+
+Future<Locale> _safeLoadLocale() async {
+  try {
+    final String? savedLanguageCode = await LanguageManager.getLanguage();
+    if (savedLanguageCode != null && savedLanguageCode.isNotEmpty) {
+      return Locale(savedLanguageCode);
+    }
+  } catch (e, stackTrace) {
+    debugPrint('main: locale load error: $e');
+    debugPrint('main: locale load stackTrace: $stackTrace');
+  }
+
+  return const Locale('ru');
 }
 
 Future<void> _initializeFirebase() async {
@@ -231,7 +314,7 @@ Future<void> _initializeFirebase() async {
         await Future.delayed(const Duration(milliseconds: 500));
       }
     }
-    
+
     try {
       Firebase.app();
     } catch (e) {
@@ -239,8 +322,8 @@ Future<void> _initializeFirebase() async {
     }
   } catch (e) {
     final errorString = e.toString();
-    
-    if (errorString.contains('already exists') || 
+
+    if (errorString.contains('already exists') ||
         errorString.contains('duplicate app')) {
       await Future.delayed(const Duration(milliseconds: 500));
       try {
@@ -264,7 +347,7 @@ Future<void> _initializeFirebaseMessaging(ApiService apiService) async {
 
     await Future.delayed(const Duration(milliseconds: 500));
 
-    final settings = await FirebaseMessaging.instance.requestPermission(
+    await FirebaseMessaging.instance.requestPermission(
       alert: true,
       badge: true,
       sound: true,
@@ -276,14 +359,17 @@ Future<void> _initializeFirebaseMessaging(ApiService apiService) async {
     // ✅ Обработка foreground сообщений
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       debugPrint('_initializeFirebaseMessaging: onMessage: ${message.data}');
-      debugPrint('Push-уведомление получено в foreground: {id: ${message.data['id']}, type: ${message.data['type']}}');
+      debugPrint(
+          'Push-уведомление получено в foreground: {id: ${message.data['id']}, type: ${message.data['type']}}');
     });
 
     // ✅ КРИТИЧНО: Обработка background tap
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-      debugPrint('_initializeFirebaseMessaging: onMessageOpenedApp: ${message.data}');
-      debugPrint('Push-уведомление открыто из background: {id: ${message.data['id']}, type: ${message.data['type']}}');
-      
+      debugPrint(
+          '_initializeFirebaseMessaging: onMessageOpenedApp: ${message.data}');
+      debugPrint(
+          'Push-уведомление открыто из background: {id: ${message.data['id']}, type: ${message.data['type']}}');
+
       // ⚠️ НЕ вызываем handleMessage здесь - пусть HomeScreen обработает!
       // FirebaseApi().handleMessage(message); - УДАЛЕНО
     });
@@ -296,25 +382,23 @@ Future<void> _initializeFirebaseMessaging(ApiService apiService) async {
     } catch (e) {
       debugPrint('Firebase Messaging: Ошибка: $e');
     }
-    
   } catch (e) {
     final errorString = e.toString();
-    
-    if (!errorString.contains('already exists') && 
+
+    if (!errorString.contains('already exists') &&
         !errorString.contains('duplicate')) {
       debugPrint('Firebase Messaging: Ошибка: $e');
     }
   }
 }
 
-
 // // ✅ НОВЫЙ МЕТОД: Обработка initial message
 // Future<void> _handleInitialMessage(RemoteMessage message) async {
 //   debugPrint('_handleInitialMessage: ${message.data}');
-  
+
 //   // Ждем инициализации приложения
 //   await Future.delayed(Duration(seconds: 2));
-  
+
 //   try {
 //     await FirebaseApi().handleMessage(message);
 //   } catch (e) {
@@ -333,7 +417,7 @@ Future<void> _initializeFirebaseMessaging(ApiService apiService) async {
 //     }
 
 //     final String? fcmToken = await FirebaseMessaging.instance.getToken();
-    
+
 //     if (fcmToken != null && fcmToken.isNotEmpty) {
 //       try {
 //         await apiService.sendDeviceToken(fcmToken);
@@ -341,7 +425,7 @@ Future<void> _initializeFirebaseMessaging(ApiService apiService) async {
 //         //print('FCM Token: Ошибка отправки: $e');
 //       }
 //     }
-    
+
 //   } catch (e) {
 //     //print('FCM Token: Ошибка: $e');
 //   }
@@ -414,7 +498,7 @@ Future<void> _clearAllApplicationData(
 class ErrorApp extends StatelessWidget {
   final String error;
 
-  const ErrorApp({Key? key, required this.error}) : super(key: key);
+  const ErrorApp({super.key, required this.error});
 
   @override
   Widget build(BuildContext context) {
@@ -476,6 +560,7 @@ class MyApp extends StatefulWidget {
   final bool sessionValid;
 
   const MyApp({
+    super.key,
     required this.apiService,
     required this.authService,
     required this.isDomainChecked,
@@ -492,37 +577,83 @@ class MyApp extends StatefulWidget {
   }
 
   @override
-  _MyAppState createState() => _MyAppState();
+  State<MyApp> createState() => _MyAppState();
 }
 
 class _MyAppState extends State<MyApp> {
   Locale? _locale;
-
+  bool _platformServicesInitialized = false;
+  bool _deferredStartupInitialized = false;
+  
   @override
   void initState() {
     super.initState();
     _locale = widget.initialLocale;
-    // ✅ УБРАНА ИНИЦИАЛИЗАЦИЯ - не нужна!
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initializePlatformServices();
+    });
   }
 
+  Future<void> _initializePlatformServices() async {
+    if (_platformServicesInitialized) {
+      return;
+    }
+    _platformServicesInitialized = true;
+
+    WidgetService.initialize();
+    await NativeInternetMonitor().initialize();
+    if (widget.sessionValid) {
+      unawaited(SipService().initialize());
+    }
+    _initializeDeferredStartup();
+  }
+
+  Future<void> _initializeDeferredStartup() async {
+    if (_deferredStartupInitialized) {
+      return;
+    }
+    _deferredStartupInitialized = true;
+
+    unawaited(AppTrackingTransparency.requestTrackingAuthorization());
+    unawaited(_initializeFirebaseMessaging(widget.apiService));
+    if (widget.isDomainChecked && widget.sessionValid) {
+      unawaited(widget.apiService.ensureSelectedSalesFunnelInitialized());
+    }
+  }
+
+//1
   Future<void> checkForNewVersion(BuildContext context) async {
-    // TODO remove on building ipa or apk files
-    return;
     try {
       final newVersionPlus = NewVersionPlus();
       final status = await newVersionPlus.getVersionStatus();
-      debugPrint("APP_VERSION: Current: ${status?.localVersion}, Store: ${status?.storeVersion}, CanUpdate: ${status?.canUpdate}");
-      
-      if (!mounted || !context.mounted || status == null || status.canUpdate == false) return;
+      debugPrint(
+          "APP_VERSION: Current: ${status?.localVersion}, Store: ${status?.storeVersion}, CanUpdate: ${status?.canUpdate}");
+
+      if (!mounted ||
+          !context.mounted ||
+          status == null ||
+          status.canUpdate == false) {
+        return;
+      }
 
       final localizations = AppLocalizations.of(context);
 
       await UpdateDialog.show(
         context: context,
         status: status,
-        title: localizations?.translate('app_update_available_title') ?? 'Обновление',
-        message: localizations?.translate('app_update_available_message') ?? 'Доступна новая версия приложения',
-        updateButton: localizations?.translate('app_update_button') ?? 'Обновить',
+        title: localizations?.translate('app_update_available_title') ??
+            'Обновление',
+        message: localizations?.translate('app_update_available_message') ??
+            'Доступна новая версия приложения',
+        updateButton:
+            localizations?.translate('app_update_button') ?? 'Обновить',
+        laterButton:
+            localizations?.translate('later') ?? 'Позже', // ← Добавь перевод
+        onLaterPressed: () {
+          // Опционально: можно сохранить, что пользователь отложил обновление
+          // Например: SharedPreferences.setBool('update_later_shown', true);
+          debugPrint('Пользователь отложил обновление');
+        },
       );
     } catch (e) {
       // print('MyApp: Error checking version: $e');
@@ -536,10 +667,9 @@ class _MyAppState extends State<MyApp> {
   }
 
   @override
-Widget build(BuildContext context) {
-  return MultiProvider(
-    providers: [
-
+  Widget build(BuildContext context) {
+    return MultiProvider(
+      providers: [
         Provider<ApiService>.value(value: widget.apiService),
         Provider<AuthService>.value(value: widget.authService),
         BlocProvider(create: (context) => DomainBloc(widget.apiService)),
@@ -549,8 +679,12 @@ Widget build(BuildContext context) {
         BlocProvider(create: (context) => NotesBloc(widget.apiService)),
         BlocProvider(create: (context) => GetAllManagerBloc()),
         BlocProvider(create: (context) => GetAllRegionBloc()),
+        BlocProvider(create: (context) => GetAllCityBloc()),
         BlocProvider(create: (context) => GetAllSourceBloc()),
-        BlocProvider(create: (context) => GetAllLeadBloc()),
+        BlocProvider(create: (context) => GetAllLeadChannelBloc()),
+        BlocProvider(create: (context) => GetAllAdvertisingCampaignBloc()),
+        BlocProvider(
+            create: (context) => GetAllLeadBloc(apiService: widget.apiService)),
         BlocProvider(create: (context) => GetAllCashRegisterBloc()),
         BlocProvider(create: (context) => GetAllIncomeCategoryBloc()),
         BlocProvider(create: (context) => GetAllSupplierBloc()),
@@ -563,56 +697,79 @@ Widget build(BuildContext context) {
         BlocProvider(create: (context) => GetAllProjectBloc()),
         BlocProvider(create: (context) => UserTaskBloc(widget.apiService)),
         BlocProvider(create: (context) => HistoryBlocTask(widget.apiService)),
+        BlocProvider(
+            create: (context) => TaskOverdueHistoryBloc(widget.apiService)),
         BlocProvider(create: (context) => HistoryLeadsBloc(widget.apiService)),
         BlocProvider(create: (context) => HistoryBlocMyTask(widget.apiService)),
         BlocProvider(create: (context) => RoleBloc(widget.apiService)),
-        BlocProvider(create: (context) => TaskStatusNameBloc(widget.apiService)),
-        BlocProvider(create: (context) => MyTaskMyStatusNameBloc(widget.apiService)),
+        BlocProvider(
+            create: (context) => TaskStatusNameBloc(widget.apiService)),
+        BlocProvider(
+            create: (context) => MyTaskMyStatusNameBloc(widget.apiService)),
         BlocProvider(create: (context) => LeadByIdBloc(widget.apiService)),
         BlocProvider(create: (context) => DealByIdBloc(widget.apiService)),
         BlocProvider(create: (context) => TaskByIdBloc(widget.apiService)),
         BlocProvider(create: (context) => MyTaskByIdBloc(widget.apiService)),
         BlocProvider(create: (context) => DealHistoryBloc(widget.apiService)),
-        BlocProvider(create: (context) => GetAllClientBloc(apiService: widget.apiService)),
-        BlocProvider(create: (context) => GetAllAuthorBloc(apiService: widget.apiService)),
+        BlocProvider(
+            create: (context) =>
+                GetAllClientBloc(apiService: widget.apiService)),
+        BlocProvider(
+            create: (context) =>
+                GetAllAuthorBloc(apiService: widget.apiService)),
         BlocProvider(create: (context) => CreateClientBloc()),
         BlocProvider(create: (context) => GroupChatBloc(widget.apiService)),
         BlocProvider(create: (context) => DeleteMessageBloc(ApiService())),
         BlocProvider(create: (context) => ListenSenderTextCubit()),
         BlocProvider(create: (context) => ListenSenderVoiceCubit()),
         BlocProvider(create: (context) => ListenSenderFileCubit()),
-        BlocProvider(create: (context) => ChatsBloc(ApiService()), ),
+        BlocProvider(
+          create: (context) => ChatsBloc(widget.apiService),
+        ),
         BlocProvider(create: (context) => TaskStatusBloc(ApiService())),
         BlocProvider(create: (context) => MyTaskStatusBloc(ApiService())),
         BlocProvider(create: (context) => OrganizationBloc(ApiService())),
         BlocProvider(create: (context) => NotificationBloc(ApiService())),
-        BlocProvider(create: (context) => ChatsBloc(ApiService()),),
+        BlocProvider(
+          create: (context) => ChatsBloc(widget.apiService),
+        ),
         BlocProvider(create: (context) => TaskStatusBloc(ApiService())),
         BlocProvider(create: (context) => DashboardChartBloc(ApiService())),
-        BlocProvider(create: (context) => DashboardChartBlocManager(ApiService())),
-        BlocProvider(create: (context) => DashboardConversionBloc(ApiService())),
-        BlocProvider(create: (context) => DashboardConversionBlocManager(ApiService())),
+        BlocProvider(
+            create: (context) => DashboardChartBlocManager(ApiService())),
+        BlocProvider(
+            create: (context) => DashboardConversionBloc(ApiService())),
+        BlocProvider(
+            create: (context) => DashboardConversionBlocManager(ApiService())),
         BlocProvider(create: (context) => UserBlocManager(ApiService())),
         BlocProvider(create: (context) => DealStatsBloc(ApiService())),
         BlocProvider(create: (context) => DealStatsManagerBloc(ApiService())),
         BlocProvider(create: (context) => DashboardTaskChartBloc(ApiService())),
-        BlocProvider(create: (context) => DashboardTaskChartBlocManager(ApiService())),
+        BlocProvider(
+            create: (context) => DashboardTaskChartBlocManager(ApiService())),
         BlocProvider(create: (context) => LeadDealsBloc(ApiService())),
         BlocProvider(create: (context) => DealTasksBloc(ApiService())),
-        BlocProvider(create: (context) => ProcessSpeedBlocManager(ApiService())),
+        BlocProvider(
+            create: (context) => ProcessSpeedBlocManager(ApiService())),
         BlocProvider(create: (context) => ContactPersonBloc(ApiService())),
         BlocProvider(create: (context) => LeadToChatBloc(widget.apiService)),
         BlocProvider(create: (context) => ChatProfileBloc(ApiService())),
         BlocProvider(create: (context) => TaskProfileBloc(ApiService())),
         BlocProvider(create: (context) => PermissionsBloc(ApiService())),
-        BlocProvider(create: (context) => ForgotPinBloc(apiService: ApiService())),
+        BlocProvider(
+            create: (context) => ForgotPinBloc(apiService: ApiService())),
         BlocProvider(create: (context) => SourceLeadBloc(widget.apiService)),
-        BlocProvider(create: (context) => LeadToCBloc(apiService: widget.apiService)),
-        BlocProvider(create: (context) => Data1CBloc(apiService: widget.apiService)),
-        BlocProvider(create: (context) => ProfileBloc(apiService: widget.apiService)),
+        BlocProvider(
+            create: (context) => LeadToCBloc(apiService: widget.apiService)),
+        BlocProvider(
+            create: (context) => Data1CBloc(apiService: widget.apiService)),
+        BlocProvider(
+            create: (context) => ProfileBloc(apiService: widget.apiService)),
         BlocProvider(create: (context) => ProcessSpeedBloc(widget.apiService)),
-        BlocProvider(create: (context) => TaskCompletionBloc(widget.apiService)),
-        BlocProvider(create: (context) => TaskAddFromDealBloc(apiService: ApiService())),
+        BlocProvider(
+            create: (context) => TaskCompletionBloc(widget.apiService)),
+        BlocProvider(
+            create: (context) => TaskAddFromDealBloc(apiService: ApiService())),
         BlocProvider(create: (context) => EventBloc(widget.apiService)),
         BlocProvider(create: (context) => NoticeBloc(widget.apiService)),
         BlocProvider(create: (context) => GetAllSubjectBloc()),
@@ -623,7 +780,8 @@ Widget build(BuildContext context) {
         BlocProvider(create: (context) => GoodsBloc(widget.apiService)),
         BlocProvider(create: (context) => GoodsByIdBloc(widget.apiService)),
         BlocProvider(create: (context) => BranchBloc(widget.apiService)),
-        BlocProvider(create: (context) => DeliveryAddressBloc(widget.apiService)),
+        BlocProvider(
+            create: (context) => DeliveryAddressBloc(widget.apiService)),
         BlocProvider(create: (context) => LeadOrderBloc(widget.apiService)),
         BlocProvider(create: (context) => CalendarBloc(widget.apiService)),
         BlocProvider(create: (context) => OrderHistoryBloc(widget.apiService)),
@@ -632,117 +790,154 @@ Widget build(BuildContext context) {
         BlocProvider(create: (context) => PriceTypeBloc(widget.apiService)),
         BlocProvider(create: (context) => LabelBloc(widget.apiService)),
         BlocProvider(create: (context) => VariantBloc(widget.apiService)),
-        BlocProvider(create: (context) => VariantBottomSheetBloc(widget.apiService)),
-        BlocProvider(create: (context) => CallCenterBloc(ApiService()), ),
+        BlocProvider(
+            create: (context) => VariantBottomSheetBloc(widget.apiService)),
+        BlocProvider(
+          create: (context) => CallCenterBloc(ApiService()),
+        ),
         BlocProvider(create: (context) => SalesFunnelBloc(ApiService())),
         BlocProvider(create: (context) => OperatorBloc(ApiService())),
         BlocProvider(create: (context) => TemplateBloc(ApiService())),
-        BlocProvider(create: (context) => LeadStatusForFilterBloc(widget.apiService)),
+        BlocProvider(
+            create: (context) => LeadStatusForFilterBloc(widget.apiService)),
         BlocProvider(create: (context) => IncomingBloc(widget.apiService)),
-        BlocProvider<StorageBloc>(create: (context) => StorageBloc(widget.apiService),),
-        BlocProvider<UnitsBloc>(create: (context) => UnitsBloc(widget.apiService), ),
-        BlocProvider<ExpenseArticleBloc>( create: (context) => ExpenseArticleBloc(widget.apiService),),
-        BlocProvider<SupplierBloc>( create: (context) => SupplierBloc(widget.apiService), ),
-        BlocProvider<ClientSaleBloc>(  create: (context) => ClientSaleBloc(widget.apiService), ),
-        BlocProvider<ClientSaleDocumentHistoryBloc>(  create: (context) => ClientSaleDocumentHistoryBloc(widget.apiService),),
-        BlocProvider<IncomingDocumentHistoryBloc>(  create: (context) => IncomingDocumentHistoryBloc(context.read<ApiService>()),),
+        BlocProvider<StorageBloc>(
+          create: (context) => StorageBloc(widget.apiService),
+        ),
+        BlocProvider<UnitsBloc>(
+          create: (context) => UnitsBloc(widget.apiService),
+        ),
+        BlocProvider<ExpenseArticleBloc>(
+          create: (context) => ExpenseArticleBloc(widget.apiService),
+        ),
+        BlocProvider<SupplierBloc>(
+          create: (context) => SupplierBloc(widget.apiService),
+        ),
+        BlocProvider<ClientSaleBloc>(
+          create: (context) => ClientSaleBloc(widget.apiService),
+        ),
+        BlocProvider<ClientSaleDocumentHistoryBloc>(
+          create: (context) => ClientSaleDocumentHistoryBloc(widget.apiService),
+        ),
+        BlocProvider<IncomingDocumentHistoryBloc>(
+          create: (context) =>
+              IncomingDocumentHistoryBloc(context.read<ApiService>()),
+        ),
         BlocProvider(create: (context) => ClientReturnBloc(widget.apiService)),
         BlocProvider(create: (context) => SupplierBloc(widget.apiService)),
         BlocProvider(create: (context) => MeasureUnitsBloc(widget.apiService)),
         BlocProvider(create: (context) => WareHouseBloc(widget.apiService)),
-        BlocProvider(create: (context) => PriceTypeScreenBloc(widget.apiService)),
-        BlocProvider(create: (context) => SupplierReturnBloc(widget.apiService)),
+        BlocProvider(
+            create: (context) => PriceTypeScreenBloc(widget.apiService)),
+        BlocProvider(
+            create: (context) => SupplierReturnBloc(widget.apiService)),
         BlocProvider(create: (context) => WriteOffBloc(widget.apiService)),
         BlocProvider(create: (context) => MovementBloc(widget.apiService)),
+        BlocProvider(create: (context) => ManufactureBloc(widget.apiService)),
         BlocProvider(create: (context) => CashDeskBloc()),
         BlocProvider(create: (context) => ExpenseBloc()),
         BlocProvider(create: (context) => IncomeBloc()),
-        BlocProvider(create: (context) => CategoryDashboardWarehouseBloc(widget.apiService)),
-        BlocProvider(create: (context) => GoodDashboardWarehouseBloc(widget.apiService)),
+        BlocProvider(
+            create: (context) =>
+                CategoryDashboardWarehouseBloc(widget.apiService)),
+        BlocProvider(
+            create: (context) => GoodDashboardWarehouseBloc(widget.apiService)),
         BlocProvider(create: (context) => SalesDashboardBloc()),
         BlocProvider(create: (context) => SalesDashboardGoodsBloc()),
         BlocProvider(create: (context) => SalesDashboardCashBalanceBloc()),
         BlocProvider(create: (context) => SalesDashboardCreditorsBloc()),
         BlocProvider(create: (context) => SalesDashboardDebtorsBloc()),
-        BlocProvider(create: (context) => FieldConfigurationBloc(widget.apiService)),
-     ],
-    child: MaterialApp(  // ✅ MaterialApp БЕЗ обертки
-      locale: _locale ?? const Locale('ru'),
-      color: Colors.white,
-      debugShowCheckedModeBanner: false,
-      title: 'shamCRM',
-      navigatorKey: navigatorKey,
-      scaffoldMessengerKey: scaffoldMessengerKey,
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-        scaffoldBackgroundColor: Colors.white,
-      ),
-      localizationsDelegates: [
-        AppLocalizations.delegate,
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
+        BlocProvider(
+            create: (context) => FieldConfigurationBloc(widget.apiService)),
       ],
-      supportedLocales: [
-        const Locale('ru', ''),
-        const Locale('en', ''),
-        const Locale('uz', ''),
-      ],
-      localeResolutionCallback: (locale, supportedLocales) {
-        for (var supportedLocale in supportedLocales) {
-          if (supportedLocale.languageCode == locale?.languageCode) {
-            return supportedLocale;
+      child: MaterialApp(
+        // ✅ MaterialApp БЕЗ обертки
+        locale: _locale ?? const Locale('ru'),
+        color: Colors.white,
+        debugShowCheckedModeBanner: false,
+        title: 'shamCRM',
+        navigatorKey: navigatorKey,
+        scaffoldMessengerKey: scaffoldMessengerKey,
+        theme: ThemeData(
+          primarySwatch: Colors.blue,
+          scaffoldBackgroundColor: Colors.white,
+        ),
+        localizationsDelegates: [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: [
+          const Locale('ru', ''),
+          const Locale('en', ''),
+          const Locale('uz', ''),
+        ],
+        localeResolutionCallback: (locale, supportedLocales) {
+          for (var supportedLocale in supportedLocales) {
+            if (supportedLocale.languageCode == locale?.languageCode) {
+              return supportedLocale;
+            }
           }
-        }
-        return supportedLocales.first;
-      },
-      // ✅ InternetAwareWrapper ЗДЕСЬ, в builder MaterialApp
-      builder: (context, child) {
-        return InternetAwareWrapper(
-          child: child ?? const SizedBox.shrink(),
-        );
-      },
-      home: Builder(
-        builder: (context) {
-          if (!widget.sessionValid) {
-            WidgetsBinding.instance.addPostFrameCallback((_) async {
-              if (mounted) {
-                await checkForNewVersion(context);
-              }
-            });
-            return AuthScreen();
-          }
+          return supportedLocales.first;
+        },
+        // ✅ ДОБАВЬТЕ/РАСКОММЕНТИРУЙТЕ builder
+        builder: (context, child) {
+          return SipCallOverlayHost(
+            child: Stack(
+              children: [
+                NativeInternetAwareWrapper(
+                  // ← НОВОЕ ИМЯ
+                  child: child ?? const SizedBox.shrink(),
+                ),
+                const InAppUpdateCornerIndicator(),
+                if (kDebugMode) const HttpInspectorFab(),
+              ],
+            ),
+          );
+        },
+        home: Builder(
+          builder: (context) {
+            if (!widget.sessionValid) {
+              WidgetsBinding.instance.addPostFrameCallback((_) async {
+                if (mounted) {
+                  await checkForNewVersion(context);
+                }
+              });
+              return AuthScreen();
+            }
 
-          if (widget.token == null) {
-            WidgetsBinding.instance.addPostFrameCallback((_) async {
-              if (mounted) {
-                await checkForNewVersion(context);
-              }
-            });
-            return AuthScreen();
-          } else if (widget.pin == null) {
-            WidgetsBinding.instance.addPostFrameCallback((_) async {
-              if (mounted) {
-                await checkForNewVersion(context);
-              }
-            });
-            return PinSetupScreen();
-          } else {
-            return PinScreen(
-              initialMessage: widget.initialMessage,
-            );
-          }
+            if (widget.token == null) {
+              WidgetsBinding.instance.addPostFrameCallback((_) async {
+                if (mounted) {
+                  await checkForNewVersion(context);
+                }
+              });
+              return AuthScreen();
+            } else if (widget.pin == null) {
+              WidgetsBinding.instance.addPostFrameCallback((_) async {
+                if (mounted) {
+                  await checkForNewVersion(context);
+                }
+              });
+              return PinSetupScreen();
+            } else {
+              return PinScreen(
+                initialMessage: widget.initialMessage,
+              );
+            }
+          },
+        ),
+        routes: {
+          '/local_auth': (context) => AuthScreen(),
+          '/login': (context) => LoginScreen(),
+          '/home': (context) => HomeScreen(),
+          '/chats': (context) => ChatsScreen(),
+          '/pin_setup': (context) => PinSetupScreen(),
+          '/pin_screen': (context) => PinScreen(),
+          '/profile': (context) => ProfileScreen(),
         },
       ),
-      routes: {
-        '/local_auth': (context) => AuthScreen(),
-        '/login': (context) => LoginScreen(),
-        '/home': (context) => HomeScreen(),
-        '/chats': (context) => ChatsScreen(),
-        '/pin_setup': (context) => PinSetupScreen(),
-        '/pin_screen': (context) => PinScreen(),
-        '/profile': (context) => ProfileScreen(),
-      },
-    ),
-  );
-}}
+    );
+  }
+}

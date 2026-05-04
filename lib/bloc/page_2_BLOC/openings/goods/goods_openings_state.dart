@@ -9,16 +9,20 @@ class GoodsOpeningsLoading extends GoodsOpeningsState {}
 
 class GoodsOpeningsLoaded extends GoodsOpeningsState {
   final List<GoodsOpeningDocument> goods;
+  final String? search;
 
   GoodsOpeningsLoaded({
     required this.goods,
+    this.search,
   });
 
   GoodsOpeningsLoaded copyWith({
     List<GoodsOpeningDocument>? goods,
+    String? search,
   }) {
     return GoodsOpeningsLoaded(
       goods: goods ?? this.goods,
+      search: search ?? this.search,
     );
   }
 }

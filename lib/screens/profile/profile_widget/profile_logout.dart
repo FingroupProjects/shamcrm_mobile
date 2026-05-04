@@ -1,9 +1,9 @@
 import 'dart:io';
 
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/api/service/secure_storage_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:restart_app/restart_app.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 
@@ -16,35 +16,30 @@ class LogoutButtonWidget extends StatelessWidget {
 
     return GestureDetector(
       onTap: () async {
-   ApiService apiService = ApiService();
-    await apiService.logoutAccount();
-        // Очистка SharedPreferences
-        SharedPreferences prefs = await SharedPreferences.getInstance();
-        String? token = prefs.getString('token') ?? '';
-        //print('------=-=--=-==--=-=-=-=-=-=-TOKEN LOGOUT =-=-=-==--=-=-=-=-==--==-=-');
-        //print(token);
-        await prefs.clear();
+        try {
+          final apiService = ApiService();
+          final authService = AuthService();
 
+          // Вызов API для выхода из аккаунта
+          await apiService.logoutAccount();
 
-        await apiService.logout();
+          // Полная очистка SharedPreferences
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.clear();
 
+          // Очистка локальных auth-данных и внутренних состояний API
+          await authService.clearAllAuthData();
+          await apiService.logout();
+          await apiService.reset();
 
-      //  await Future.delayed(Duration(seconds: 2)); // Задержка в 2 секунды
+          // Небольшая задержка для завершения асинхронных операций
+          await Future.delayed(const Duration(milliseconds: 300));
 
-        // Navigator.pushAndRemoveUntil(
-        //   context,
-        //   MaterialPageRoute(builder: (context) => AuthScreen()),
-        //   (Route<dynamic> route) => false,
-        // );
-   Restart.restartApp();
-
-       
-    exit(0);
-
-             
-      //  ui.window.onBeginFrame = null;
-      //   ui.window.onDrawFrame = null;
-        // main();
+          _terminateApplication();
+        } catch (e) {
+          debugPrint('Ошибка при выходе: $e');
+          _terminateApplication();
+        }
       },
       child: _buildProfileOption(
         iconPath: 'assets/icons/Profile/logout.png',
@@ -88,5 +83,15 @@ class LogoutButtonWidget extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  void _terminateApplication() {
+    if (Platform.isAndroid) {
+      // SystemNavigator иногда только сворачивает задачу, поэтому завершаем процесс.
+      exit(0);
+    } else {
+      // На iOS принудительное завершение не рекомендуется, оставляем системное закрытие.
+      SystemNavigator.pop();
+    }
   }
 }

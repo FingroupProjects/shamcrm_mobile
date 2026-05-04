@@ -9,19 +9,20 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 class TaskStatusEditWidget extends StatefulWidget {
   final String? selectedStatus;
   final Function(TaskStatus) onSelectStatus;
+  final bool hasError;
 
   TaskStatusEditWidget({
     Key? key,
     required this.onSelectStatus,
     this.selectedStatus,
+    this.hasError = false,
   }) : super(key: key);
 
   @override
   State<TaskStatusEditWidget> createState() => _TaskStatusEditWidgetState();
 }
 
-class _TaskStatusEditWidgetState
-    extends State<TaskStatusEditWidget> {
+class _TaskStatusEditWidgetState extends State<TaskStatusEditWidget> {
   List<TaskStatus> statusList = [];
   TaskStatus? selectedStatusData;
 
@@ -35,7 +36,6 @@ class _TaskStatusEditWidgetState
   @override
   void initState() {
     super.initState();
-    // context.read<TaskBloc>().add(FetchTaskStatuses());
   }
 
   @override
@@ -53,12 +53,12 @@ class _TaskStatusEditWidgetState
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text(
-                  AppLocalizations.of(context)!.translate(state.message),
+                      AppLocalizations.of(context)!.translate(state.message),
                       style: statusTextStyle.copyWith(color: Colors.white),
                     ),
                     behavior: SnackBarBehavior.floating,
-                    margin: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 8),
+                    margin:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -97,8 +97,9 @@ class _TaskStatusEditWidgetState
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    AppLocalizations.of(context)!.translate('task_statuses'),
-                    style: statusTextStyle.copyWith(fontWeight: FontWeight.w400),
+                    AppLocalizations.of(context)!.translate('task_status'),
+                    style:
+                        statusTextStyle.copyWith(fontWeight: FontWeight.w400),
                   ),
                   const SizedBox(height: 4),
                   Container(
@@ -106,26 +107,33 @@ class _TaskStatusEditWidgetState
                       color: const Color(0xFFF4F7FD),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        width: 1,
-                        color: const Color(0xFFF4F7FD),
+                        width: 1.5,
+                        color: widget.hasError
+                            ? Colors.red
+                            : const Color(0xFFF4F7FD),
                       ),
                     ),
                     child: CustomDropdown<TaskStatus>.search(
                       closeDropDownOnClearFilterSearch: true,
                       items: statusList,
-                      searchHintText: AppLocalizations.of(context)!.translate('search'),
+                      searchHintText:
+                          AppLocalizations.of(context)!.translate('search'),
                       overlayHeight: 400,
                       decoration: CustomDropdownDecoration(
                         closedFillColor: const Color(0xffF4F7FD),
                         expandedFillColor: Colors.white,
                         closedBorder: Border.all(
-                          color: const Color(0xffF4F7FD),
-                          width: 1,
+                          color: widget.hasError
+                              ? Colors.red
+                              : const Color(0xffF4F7FD),
+                          width: 1.5,
                         ),
                         closedBorderRadius: BorderRadius.circular(12),
                         expandedBorder: Border.all(
-                          color: const Color(0xffF4F7FD),
-                          width: 1,
+                          color: widget.hasError
+                              ? Colors.red
+                              : const Color(0xffF4F7FD),
+                          width: 1.5,
                         ),
                         expandedBorderRadius: BorderRadius.circular(12),
                       ),
@@ -138,16 +146,30 @@ class _TaskStatusEditWidgetState
                       },
                       headerBuilder: (context, selectedItem, enabled) {
                         return Text(
-                          selectedItem?.taskStatus?.name ?? AppLocalizations.of(context)!.translate('select_status'),
-                          style: statusTextStyle,
+                          selectedItem?.taskStatus?.name ??
+                              AppLocalizations.of(context)!
+                                  .translate('select_status'),
+                          style: statusTextStyle.copyWith(
+                            color: widget.hasError && selectedItem == null
+                                ? Colors.red.withOpacity(0.7)
+                                : const Color(0xff1E2E52),
+                          ),
                         );
                       },
                       hintBuilder: (context, hint, enabled) => Text(
-                        AppLocalizations.of(context)!.translate('select_status'),
-                        style: statusTextStyle.copyWith(fontSize: 14),
+                        AppLocalizations.of(context)!
+                            .translate('select_status'),
+                        style: statusTextStyle.copyWith(
+                          fontSize: 14,
+                          color: widget.hasError
+                              ? Colors.red.withOpacity(0.7)
+                              : const Color(0xff1E2E52),
+                        ),
                       ),
                       excludeSelected: false,
-                      initialItem: statusList.contains(selectedStatusData) ? selectedStatusData : null,
+                      initialItem: statusList.contains(selectedStatusData)
+                          ? selectedStatusData
+                          : null,
                       onChanged: (value) {
                         if (value != null) {
                           widget.onSelectStatus(value);

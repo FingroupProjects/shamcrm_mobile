@@ -6,7 +6,6 @@ import 'package:crm_task_manager/screens/profile/languages/app_localizations.dar
 import '../../../../models/page_2/dashboard/top_selling_model.dart';
 import '../../../../bloc/page_2_BLOC/dashboard/sales_dashboard_bloc.dart';
 import '../../detailed_report/detailed_report_screen.dart';
-import 'download_popup_menu.dart';
 
 class TopSellingProductsChart extends StatefulWidget {
   const TopSellingProductsChart(this.allTopSellingData, {super.key});
@@ -14,10 +13,18 @@ class TopSellingProductsChart extends StatefulWidget {
   final List<AllTopSellingData> allTopSellingData;
 
   @override
-  State<TopSellingProductsChart> createState() => _TopSellingProductsChartState();
+  State<TopSellingProductsChart> createState() =>
+      _TopSellingProductsChartState();
 }
 
 class _TopSellingProductsChartState extends State<TopSellingProductsChart> {
+  static const double _barWidth = 16;
+  static const double _groupsSpace = 12;
+  static const double _chartHeight = 280;
+  static const double _bottomTitlesReservedSize = 96;
+  static const double _leftTitlesReservedSize = 48;
+  static const double _labelWidth = 84;
+
   TopSellingTimePeriod selectedPeriod = TopSellingTimePeriod.year;
 
   List<TopSellingData> _getDataForSelectedPeriod() {
@@ -33,35 +40,31 @@ class _TopSellingProductsChartState extends State<TopSellingProductsChart> {
 
   void onPeriodChanged(TopSellingTimePeriod period) {
     if (selectedPeriod != period) {
-      setState(() {
-        selectedPeriod = period;
-      });
-      
-      // Вызываем перезагрузку данных через Bloc
+      setState(() => selectedPeriod = period);
       context.read<SalesDashboardBloc>().add(ReloadTopSellingData(period));
     }
   }
 
   String getPeriodText(BuildContext context, TopSellingTimePeriod period) {
-    final localizations = AppLocalizations.of(context)!;
+    final l = AppLocalizations.of(context)!;
     switch (period) {
       case TopSellingTimePeriod.day:
-        return localizations.translate('day');
+        return l.translate('day');
       case TopSellingTimePeriod.week:
-        return localizations.translate('week');
+        return l.translate('week');
       case TopSellingTimePeriod.month:
-        return localizations.translate('month');
+        return l.translate('month');
       case TopSellingTimePeriod.year:
-        return localizations.translate('year');
+        return l.translate('year');
     }
   }
 
-  Widget buildPeriodButton(TopSellingTimePeriod period) {
+  Widget _periodButton(TopSellingTimePeriod period) {
     final isSelected = selectedPeriod == period;
     return GestureDetector(
       onTap: () => onPeriodChanged(period),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
         decoration: BoxDecoration(
           color: isSelected ? const Color(0xFF3935E7) : Colors.grey[200],
           borderRadius: BorderRadius.circular(20),
@@ -70,7 +73,7 @@ class _TopSellingProductsChartState extends State<TopSellingProductsChart> {
           getPeriodText(context, period),
           style: TextStyle(
             fontFamily: 'Gilroy',
-            fontSize: 14,
+            fontSize: 13,
             fontWeight: FontWeight.w500,
             color: isSelected ? Colors.white : Colors.black54,
           ),
@@ -79,127 +82,209 @@ class _TopSellingProductsChartState extends State<TopSellingProductsChart> {
     );
   }
 
-  Widget _buildMockChart(BuildContext context) {
-    final localizations = AppLocalizations.of(context)!;
-    
-    // Mock data for empty state visualization
-    final List<double> mockData = [45, 30, 65, 25, 55, 35];
-    final List<String> mockNames = [
-      localizations.translate('product') + ' A',
-      localizations.translate('product') + ' B',
-      localizations.translate('product') + ' C',
-      localizations.translate('product') + ' D',
-      localizations.translate('product') + ' E',
-      localizations.translate('product') + ' F',
-    ];
-    
-    return Stack(
-      alignment: Alignment.center,
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(right: 16, top: 16),
-          child: BarChart(
-            BarChartData(
-              alignment: BarChartAlignment.spaceAround,
-              maxY: 80,
-              minY: 0,
-              groupsSpace: 20,
-              backgroundColor: Colors.transparent,
-              barTouchData: BarTouchData(enabled: false),
-              titlesData: FlTitlesData(
-                show: true,
-                bottomTitles: AxisTitles(
-                  sideTitles: SideTitles(
-                    showTitles: true,
-                    getTitlesWidget: (value, meta) {
-                      if (value < 0 || value >= mockNames.length) {
-                        return const SizedBox.shrink();
-                      }
-                      return Padding(
-                        padding: const EdgeInsets.only(top: 8),
-                        child: Transform.rotate(
-                          angle: -0.5,
-                          child: Text(
-                            mockNames[value.toInt()],
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(
-                              fontFamily: 'Gilroy',
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.black54,
-                            ),
-                          ),
-                        ),
-                      );
-                    },
-                    reservedSize: 50,
+  Widget _bottomTitle(double value, TitleMeta meta, List<String> names) {
+    final index = value.toInt();
+    if (value < 0 || index < 0 || index >= names.length) {
+      return const SizedBox.shrink();
+    }
+
+    return SideTitleWidget(
+      axisSide: meta.axisSide,
+      space: 6,
+      child: RotatedBox(
+        quarterTurns: 3,
+        child: SizedBox(
+          width: _labelWidth,
+          child: Text(
+            _normalizeLabel(names[index]),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontFamily: 'Gilroy',
+              fontSize: 10,
+              fontWeight: FontWeight.w500,
+              color: Colors.black54,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  String _normalizeLabel(String label) {
+    return label.trim().replaceAll(RegExp(r'\s+'), ' ');
+  }
+
+  List<BarChartGroupData> _buildBarGroups(List<TopSellingData> productsData) {
+    return List.generate(
+      productsData.length,
+      (i) => BarChartGroupData(
+        x: i,
+        barRods: [
+          BarChartRodData(
+            toY: productsData[i].totalQuantity.toDouble(),
+            color: const Color(0xFF3935E7),
+            width: _barWidth,
+            borderRadius: const BorderRadius.vertical(
+              top: Radius.circular(6),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildChartViewport(List<TopSellingData> productsData) {
+    return _buildChart(
+      barGroups: _buildBarGroups(productsData),
+      maxY: _getMaxY(productsData),
+      interval: _getInterval(productsData),
+      names: productsData.map((e) => e.name).toList(),
+      touchEnabled: true,
+      getTooltipItem: (group, gi, rod, ri) {
+        final p = productsData[gi];
+        return BarTooltipItem(
+          '${p.name}\n',
+          const TextStyle(
+            fontFamily: 'Gilroy',
+            fontSize: 11,
+            fontWeight: FontWeight.w500,
+            color: Colors.white,
+          ),
+          children: [
+            TextSpan(
+              text: rod.toY.toStringAsFixed(0),
+              style: const TextStyle(
+                fontFamily: 'Gilroy',
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: Colors.white,
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  BarChart _buildChart({
+    required List<BarChartGroupData> barGroups,
+    required double maxY,
+    required double interval,
+    required List<String> names,
+    required bool touchEnabled,
+    BarTooltipItem? Function(BarChartGroupData, int, BarChartRodData, int)?
+        getTooltipItem,
+  }) {
+    return BarChart(
+      BarChartData(
+        alignment: BarChartAlignment.spaceAround,
+        maxY: maxY,
+        minY: 0,
+        groupsSpace: _groupsSpace,
+        backgroundColor: Colors.transparent,
+        barTouchData: touchEnabled
+            ? BarTouchData(
+                enabled: true,
+                touchTooltipData: BarTouchTooltipData(
+                  tooltipRoundedRadius: 8,
+                  tooltipPadding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  tooltipMargin: 6,
+                  fitInsideVertically: true,
+                  fitInsideHorizontally: true,
+                  getTooltipItem: getTooltipItem,
+                ),
+              )
+            : BarTouchData(enabled: false),
+        titlesData: FlTitlesData(
+          show: true,
+          bottomTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              reservedSize: _bottomTitlesReservedSize,
+              getTitlesWidget: (v, m) => _bottomTitle(v, m, names),
+            ),
+          ),
+          leftTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              reservedSize: _leftTitlesReservedSize,
+              interval: interval,
+              getTitlesWidget: (value, meta) => SideTitleWidget(
+                axisSide: meta.axisSide,
+                space: 6,
+                child: Text(
+                  _formatAxisValue(value),
+                  style: const TextStyle(
+                    fontFamily: 'Gilroy',
+                    fontSize: 10,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.black54,
                   ),
-                ),
-                leftTitles: AxisTitles(
-                  sideTitles: SideTitles(
-                    showTitles: true,
-                    getTitlesWidget: (value, meta) {
-                      return Text(
-                        value.toInt().toString(),
-                        style: const TextStyle(
-                          fontFamily: 'Gilroy',
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.black54,
-                        ),
-                      );
-                    },
-                    reservedSize: 40,
-                    interval: 20,
-                  ),
-                ),
-                rightTitles: const AxisTitles(
-                  sideTitles: SideTitles(showTitles: false),
-                ),
-                topTitles: const AxisTitles(
-                  sideTitles: SideTitles(showTitles: false),
-                ),
-              ),
-              gridData: FlGridData(
-                show: true,
-                drawHorizontalLine: true,
-                drawVerticalLine: false,
-                horizontalInterval: 20,
-                getDrawingHorizontalLine: (value) {
-                  return FlLine(
-                    color: Colors.grey.withOpacity(0.2),
-                    strokeWidth: 1,
-                  );
-                },
-              ),
-              borderData: FlBorderData(
-                show: false,
-              ),
-              barGroups: List.generate(
-                mockData.length,
-                (index) => BarChartGroupData(
-                  x: index,
-                  barRods: [
-                    BarChartRodData(
-                      toY: mockData[index],
-                      color: Colors.grey[300],
-                      width: 28,
-                      borderRadius: const BorderRadius.only(
-                        topLeft: Radius.circular(8),
-                        topRight: Radius.circular(8),
-                      ),
-                    ),
-                  ],
                 ),
               ),
             ),
           ),
+          rightTitles:
+              const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          topTitles:
+              const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+        ),
+        gridData: FlGridData(
+          show: true,
+          drawHorizontalLine: true,
+          drawVerticalLine: false,
+          horizontalInterval: interval,
+          checkToShowHorizontalLine: (v) => v % interval == 0,
+          getDrawingHorizontalLine: (_) => FlLine(
+            color: Colors.grey.withValues(alpha: 0.2),
+            strokeWidth: 1,
+          ),
+        ),
+        borderData: FlBorderData(show: false),
+        barGroups: barGroups,
+      ),
+    );
+  }
+
+  Widget _mockChart(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
+    final mockData = [45.0, 30, 65, 25, 55, 35];
+    final mockNames = List.generate(
+      mockData.length,
+      (i) => '${l.translate('product')} ${'ABCDEF'[i]}',
+    );
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        _buildChart(
+          barGroups: List.generate(
+            mockData.length,
+            (i) => BarChartGroupData(
+              x: i,
+              barRods: [
+                BarChartRodData(
+                  toY: mockData[i].toDouble(),
+                  color: Colors.grey[300],
+                  width: _barWidth,
+                  borderRadius:
+                      const BorderRadius.vertical(top: Radius.circular(6)),
+                ),
+              ],
+            ),
+          ),
+          maxY: 80,
+          interval: 20,
+          names: mockNames,
+          touchEnabled: false,
         ),
         Text(
-          AppLocalizations.of(context)!.translate('no_data_to_display'),
+          l.translate('no_data_to_display'),
           style: const TextStyle(
-            fontSize: 16,
-            fontFamily: "Gilroy",
+            fontSize: 15,
+            fontFamily: 'Gilroy',
             fontWeight: FontWeight.w500,
             color: Colors.black54,
           ),
@@ -210,7 +295,7 @@ class _TopSellingProductsChartState extends State<TopSellingProductsChart> {
 
   @override
   Widget build(BuildContext context) {
-    final localizations = AppLocalizations.of(context)!;
+    final l = AppLocalizations.of(context)!;
     final productsData = _getDataForSelectedPeriod();
 
     return Container(
@@ -220,7 +305,7 @@ class _TopSellingProductsChartState extends State<TopSellingProductsChart> {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -229,197 +314,48 @@ class _TopSellingProductsChartState extends State<TopSellingProductsChart> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: Text(
-                  localizations.translate('top_selling_products'),
-                  style: const TextStyle(
-                    fontFamily: 'Gilroy',
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.black,
-                  ),
-                ),
-              ),
-              // Transform.translate(
-              //   offset: const Offset(16, 0),
-              //   child: DownloadPopupMenu(onDownload: (DownloadFormat type) {}),
-              // ),
-            ],
+          Text(
+            l.translate('top_selling_products'),
+            style: const TextStyle(
+              fontFamily: 'Gilroy',
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              color: Colors.black,
+            ),
           ),
-
-          const SizedBox(height: 16),
-
-          // Period selector buttons
+          const SizedBox(height: 12),
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
               children: [
-                buildPeriodButton(TopSellingTimePeriod.day),
+                _periodButton(TopSellingTimePeriod.day),
                 const SizedBox(width: 8),
-                buildPeriodButton(TopSellingTimePeriod.week),
+                _periodButton(TopSellingTimePeriod.week),
                 const SizedBox(width: 8),
-                buildPeriodButton(TopSellingTimePeriod.month),
+                _periodButton(TopSellingTimePeriod.month),
                 const SizedBox(width: 8),
-                buildPeriodButton(TopSellingTimePeriod.year),
+                _periodButton(TopSellingTimePeriod.year),
               ],
             ),
           ),
-
-          const SizedBox(height: 24),
-
-          // Chart content
+          const SizedBox(height: 12),
           SizedBox(
-            height: 300,
+            height: _chartHeight,
             child: productsData.isEmpty
-                ? _buildMockChart(context)
-                : Padding(
-                    padding: const EdgeInsets.only(right: 16, top: 16),
-                    child: BarChart(
-                      BarChartData(
-                        alignment: BarChartAlignment.spaceAround,
-                        maxY: productsData.map((e) => double.parse(e.totalQuantity.toString())).reduce((a, b) => a > b ? a : b) *
-                            1.2,
-                        minY: 0,
-                        groupsSpace: 20,
-                        backgroundColor: Colors.transparent,
-                        barTouchData: BarTouchData(
-                          enabled: true,
-                          touchTooltipData: BarTouchTooltipData(
-                            tooltipRoundedRadius: 8,
-                            tooltipPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                            tooltipMargin: 8,
-                            fitInsideVertically: true,
-                            fitInsideHorizontally: true,
-                            getTooltipItem: (group, groupIndex, rod, rodIndex) {
-                              final product = productsData[groupIndex];
-                              return BarTooltipItem(
-                                '${product.name}\n',
-                                const TextStyle(
-                                  fontFamily: 'Gilroy',
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w500,
-                                  color: Colors.white,
-                                ),
-                                children: [
-                                  TextSpan(
-                                    text: '${rod.toY.toStringAsFixed(2)}',
-                                    style: const TextStyle(
-                                      fontFamily: 'Gilroy',
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                ],
-                              );
-                            },
-                          ),
-                        ),
-                        titlesData: FlTitlesData(
-                          show: true,
-                          bottomTitles: AxisTitles(
-                            sideTitles: SideTitles(
-                              showTitles: true,
-                              getTitlesWidget: (value, meta) {
-                                if (value < 0 || value >= productsData.length) {
-                                  return const SizedBox.shrink();
-                                }
-                                return Padding(
-                                  padding: const EdgeInsets.only(top: 8),
-                                  child: Transform.rotate(
-                                    angle: -0.5,
-                                    child: Text(
-                                      productsData[value.toInt()].name,
-                                      textAlign: TextAlign.center,
-                                      style: const TextStyle(
-                                        fontFamily: 'Gilroy',
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w500,
-                                        color: Colors.black54,
-                                      ),
-                                    ),
-                                  ),
-                                );
-                              },
-                              reservedSize: 50,
-                            ),
-                          ),
-                          leftTitles: AxisTitles(
-                            sideTitles: SideTitles(
-                              showTitles: true,
-                              getTitlesWidget: (value, meta) {
-                                return Text(
-                                  value.toInt().toString(),
-                                  style: const TextStyle(
-                                    fontFamily: 'Gilroy',
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w500,
-                                    color: Colors.black54,
-                                  ),
-                                );
-                              },
-                              reservedSize: 40,
-                              interval: _getIntervalForPeriod(),
-                            ),
-                          ),
-                          rightTitles: const AxisTitles(
-                            sideTitles: SideTitles(showTitles: false),
-                          ),
-                          topTitles: const AxisTitles(
-                            sideTitles: SideTitles(showTitles: false),
-                          ),
-                        ),
-                        gridData: FlGridData(
-                          show: true,
-                          drawHorizontalLine: true,
-                          drawVerticalLine: false,
-                          horizontalInterval: _getIntervalForPeriod(),
-                          getDrawingHorizontalLine: (value) {
-                            return FlLine(
-                              color: Colors.grey.withOpacity(0.2),
-                              strokeWidth: 1,
-                            );
-                          },
-                        ),
-                        borderData: FlBorderData(
-                          show: false,
-                        ),
-                        barGroups: List.generate(
-                          productsData.length,
-                          (index) => BarChartGroupData(
-                            x: index,
-                            barRods: [
-                              BarChartRodData(
-                                toY: double.parse(productsData[index].totalQuantity.toString()),
-                                color: const Color(0xFF3935E7),
-                                width: 28,
-                                borderRadius: const BorderRadius.only(
-                                  topLeft: Radius.circular(8),
-                                  topRight: Radius.circular(8),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
+                ? _mockChart(context)
+                : _buildChartViewport(productsData),
           ),
-
-          const SizedBox(height: 16),
-
+          const SizedBox(height: 4),
           Align(
             alignment: Alignment.centerRight,
             child: GestureDetector(
               onTap: () {
-                debugPrint("Подробнее pressed");
-                Navigator.of(context).push(MaterialPageRoute(builder: (context) => DetailedReportScreen(currentTabIndex: 5)));
+                Navigator.of(context).push(MaterialPageRoute(
+                  builder: (_) => DetailedReportScreen(currentTabIndex: 5),
+                ));
               },
               child: Text(
-                localizations.translate('more_details'),
+                l.translate('more_details'),
                 style: const TextStyle(
                   fontFamily: 'Gilroy',
                   fontSize: 14,
@@ -434,24 +370,55 @@ class _TopSellingProductsChartState extends State<TopSellingProductsChart> {
     );
   }
 
-  double _getIntervalForPeriod() {
-    final productsData = _getDataForSelectedPeriod();
-    if (productsData.isEmpty) return 1;
+  double _getInterval(List<TopSellingData> data) {
+    if (data.isEmpty) return 1;
+    final max = data
+        .map((e) => e.totalQuantity.toDouble())
+        .reduce((a, b) => a > b ? a : b);
+    return _niceInterval(max);
+  }
 
-    final maxValue = productsData.map((e) => e.totalQuantity.toDouble()).reduce((a, b) => a > b ? a : b);
+  double _getMaxY(List<TopSellingData> data) {
+    if (data.isEmpty) return 10;
+    final max = data
+        .map((e) => e.totalQuantity.toDouble())
+        .reduce((a, b) => a > b ? a : b);
+    if (max <= 0) return 10;
+    final interval = _niceInterval(max);
+    return (max / interval).ceil() * interval;
+  }
 
-    // Более детальные интервалы для красивого UI
-    if (maxValue <= 5) return 1;
-    if (maxValue <= 10) return 2;
-    if (maxValue <= 20) return 5;
-    if (maxValue <= 50) return 10;
-    if (maxValue <= 100) return 20;
-    if (maxValue <= 200) return 25;
-    if (maxValue <= 500) return 50;
-    if (maxValue <= 1000) return 100;
-    if (maxValue <= 2000) return 200;
-    if (maxValue <= 5000) return 500;
-    if (maxValue <= 10000) return 1000;
-    return 2000;
+  String _formatAxisValue(double value) {
+    if (value >= 1000000) {
+      return '${(value / 1000000).toStringAsFixed(value % 1000000 == 0 ? 0 : 1)}M';
+    }
+    if (value >= 1000) {
+      return '${(value / 1000).toStringAsFixed(value % 1000 == 0 ? 0 : 1)}K';
+    }
+    return value.toInt().toString();
+  }
+
+  double _niceInterval(double maxValue) {
+    if (maxValue <= 0) return 1;
+    final step = maxValue / 4;
+    final mag = _pow10(step);
+    final n = step / mag;
+    if (n <= 1) return mag;
+    if (n <= 2) return 2 * mag;
+    if (n <= 5) return 5 * mag;
+    return 10 * mag;
+  }
+
+  double _pow10(double value) {
+    var m = 1.0;
+    while (value >= 10) {
+      value /= 10;
+      m *= 10;
+    }
+    while (value > 0 && value < 1) {
+      value *= 10;
+      m /= 10;
+    }
+    return m;
   }
 }

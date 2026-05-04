@@ -19,6 +19,7 @@ class ArticleWidget extends StatefulWidget {
 
 class _ArticleWidgetState extends State<ArticleWidget> {
   ArticleGood? selectedArticleData;
+  String? _autoSelectedArticleId;
 
   @override
   void initState() {
@@ -71,6 +72,20 @@ class _ArticleWidgetState extends State<ArticleWidget> {
               } catch (e) {
                 selectedArticleData = null;
               }
+            }
+
+            if (articleList.length == 1 &&
+                (widget.selectedArticle == null || selectedArticleData == null) &&
+                _autoSelectedArticleId != articleList.first.id.toString()) {
+              final singleArticle = articleList.first;
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (!mounted) return;
+                widget.onChanged(singleArticle.id.toString());
+                setState(() {
+                  selectedArticleData = singleArticle;
+                  _autoSelectedArticleId = singleArticle.id.toString();
+                });
+              });
             }
           }
 
@@ -231,4 +246,3 @@ class _ArticleWidgetState extends State<ArticleWidget> {
     );
   }
 }
-

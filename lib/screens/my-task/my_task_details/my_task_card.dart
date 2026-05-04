@@ -1,11 +1,14 @@
 import 'package:crm_task_manager/custom_widget/custom_card_my-tasks_tabBar.dart';
 import 'package:crm_task_manager/custom_widget/custom_card_tasks_tabBar.dart';
+import 'package:crm_task_manager/bloc/my-task/my-task_bloc.dart';
+import 'package:crm_task_manager/bloc/my-task/my-task_event.dart';
 import 'package:crm_task_manager/models/my-task_model.dart';
 import 'package:crm_task_manager/screens/my-task/my_task_details/my_task_details_screen.dart';
 import 'package:crm_task_manager/screens/my-task/my_task_details/my_task_dropdown_bottom_dialog.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
-import 'package:flutter/material.dart'; 
-import 'package:intl/intl.dart'; 
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
 
 class MyTaskCard extends StatefulWidget {
   final MyTask task;
@@ -65,32 +68,38 @@ class _MyTaskCardState extends State<MyTaskCard> {
 
   @override
   Widget build(BuildContext context) {
-
     int overdueDays = _getOverdueDays(widget.task.endDate);
 
     return GestureDetector(
-      onTap: () {
-        Navigator.push(
+      onTap: () async {
+        final result = await Navigator.push(
           context,
           MaterialPageRoute(
             builder: (context) => MyTaskDetailsScreen(
               taskId: widget.task.id.toString(),
-              taskName: widget.task.name ?? AppLocalizations.of(context)!.translate('no_name'),
+              taskName: widget.task.name ??
+                  AppLocalizations.of(context)!.translate('no_name'),
               startDate: widget.task.startDate,
               taskNumber: widget.task.taskNumber,
-              endDate: widget.task.endDate, 
-              taskStatus: dropdownValue, 
-              statusId: widget.statusId, 
-              description: widget.task.description, 
+              endDate: widget.task.endDate,
+              taskStatus: dropdownValue,
+              statusId: widget.statusId,
+              description: widget.task.description,
             ),
           ),
         );
+
+        if (result is Map<String, dynamic> && result['refresh'] == true) {
+          final newStatusId = result['newStatusId'] as int? ?? widget.statusId;
+          context.read<MyTaskBloc>().add(FetchMyTaskStatuses());
+          widget.onStatusUpdated();
+          widget.onStatusId(newStatusId);
+        }
       },
       child: Container(
         padding: const EdgeInsets.all(12),
         margin: const EdgeInsets.symmetric(vertical: 0, horizontal: 0),
-        decoration:
-            MyTaskCardStyles.taskCardDecoration, 
+        decoration: MyTaskCardStyles.taskCardDecoration,
         child: Stack(
           children: [
             Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -100,7 +109,8 @@ class _MyTaskCardState extends State<MyTaskCard> {
                   Expanded(
                     child: Text.rich(
                       TextSpan(
-                        text: widget.task.name ?? AppLocalizations.of(context)!.translate('no_name'),
+                        text: widget.task.name ??
+                            AppLocalizations.of(context)!.translate('no_name'),
                         style: MyTaskCardStyles.titleStyle,
                         children: const <TextSpan>[
                           TextSpan(
@@ -119,7 +129,7 @@ class _MyTaskCardState extends State<MyTaskCard> {
               Row(
                 children: [
                   Text(
-                    AppLocalizations.of(context)!.translate('column'), 
+                    AppLocalizations.of(context)!.translate('column'),
                     style: TextStyle(
                       fontSize: 16,
                       fontFamily: 'Gilroy',
@@ -152,11 +162,12 @@ class _MyTaskCardState extends State<MyTaskCard> {
                           ),
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        padding: const EdgeInsets.symmetric( horizontal: 8, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
                         child: Row(
                           children: [
                             Container(
-                              constraints: BoxConstraints( maxWidth: 200), 
+                              constraints: BoxConstraints(maxWidth: 200),
                               child: Text(
                                 dropdownValue,
                                 style: const TextStyle(
@@ -184,7 +195,7 @@ class _MyTaskCardState extends State<MyTaskCard> {
               Padding(
                 padding: const EdgeInsets.all(2),
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween, 
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.center,
@@ -221,7 +232,7 @@ class _MyTaskCardState extends State<MyTaskCard> {
                     ),
                     if (widget.task.overdue != null && widget.task.overdue! > 0)
                       Container(
-                        margin: const EdgeInsets.only(right: 10), 
+                        margin: const EdgeInsets.only(right: 10),
                         width: 24,
                         height: 24,
                         decoration: const BoxDecoration(
@@ -234,9 +245,9 @@ class _MyTaskCardState extends State<MyTaskCard> {
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: 12,
-                              fontFamily: 'Gilroy', 
-                              fontWeight: FontWeight.w500, 
-                              height: 1.0, 
+                              fontFamily: 'Gilroy',
+                              fontWeight: FontWeight.w500,
+                              height: 1.0,
                             ),
                             textAlign: TextAlign.center,
                           ),

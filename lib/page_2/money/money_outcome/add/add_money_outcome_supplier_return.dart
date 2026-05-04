@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/bloc/supplier_list/supplier_list_bloc.dart';
+import 'package:crm_task_manager/api/service/localization_service.dart';
 import 'package:crm_task_manager/bloc/supplier_list/supplier_list_event.dart';
 import 'package:crm_task_manager/bloc/supplier_list/supplier_list_state.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
@@ -9,6 +10,7 @@ import 'package:crm_task_manager/models/supplier_list_model.dart';
 import 'package:crm_task_manager/page_2/money/widgets/cash_register_radio_group.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/utils/global_fun.dart';
+import 'package:crm_task_manager/custom_widget/price_input_formatter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
@@ -20,29 +22,75 @@ class AddMoneyOutcomeSupplierReturn extends StatefulWidget {
   const AddMoneyOutcomeSupplierReturn({super.key});
 
   @override
-  _AddMoneyOutcomeSupplierReturnState createState() => _AddMoneyOutcomeSupplierReturnState();
+  _AddMoneyOutcomeSupplierReturnState createState() =>
+      _AddMoneyOutcomeSupplierReturnState();
 }
 
-class _AddMoneyOutcomeSupplierReturnState extends State<AddMoneyOutcomeSupplierReturn> {
+class _AddMoneyOutcomeSupplierReturnState
+    extends State<AddMoneyOutcomeSupplierReturn> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _dateController = TextEditingController();
   final TextEditingController _commentController = TextEditingController();
   final TextEditingController _amountController = TextEditingController();
+  final TextEditingController _exchangeRateController = TextEditingController();
 
   SupplierData? _selectedSupplier;
   CashRegisterData? selectedCashRegister;
   List<SupplierData> suppliersList = [];
   bool _isLoading = false;
+  bool _isSupplierInvalid = false; // Флаг для отображения ошибки валидации
+  String? _autoSelectedSupplierId;
+  int? _organizationCurrencyId;
+  String? _exchangeRateErrorText;
 
   @override
   void initState() {
     super.initState();
-    _dateController.text = DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now());
+    _dateController.text =
+        DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now());
 
     // Предзагружаем данные если их еще нет
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _preloadDataIfNeeded();
     });
+    _loadOrganizationCurrency();
+  }
+
+  Future<void> _loadOrganizationCurrency() async {
+    final currencyId = await LocalizationService.getCurrencyId();
+    if (!mounted) return;
+    setState(() {
+      _organizationCurrencyId = currencyId;
+    });
+  }
+
+  int? get _selectedSupplierCurrencyId =>
+      _selectedSupplier?.currency?.id ?? _selectedSupplier?.currencyId;
+  String? get _selectedSupplierCurrencyName =>
+      _selectedSupplier?.currency?.name;
+
+  bool get _isExchangeRateRequired {
+    if (_organizationCurrencyId == null ||
+        _selectedSupplierCurrencyId == null) {
+      return false;
+    }
+    return _organizationCurrencyId != _selectedSupplierCurrencyId;
+  }
+
+  double? get _exchangeRateValue =>
+      double.tryParse(_exchangeRateController.text.replaceAll(',', '.'));
+
+  double get _amountValue =>
+      double.tryParse(_amountController.text.replaceAll(',', '.')) ?? 0;
+
+  double get _totalByCurrency => _amountValue * (_exchangeRateValue ?? 0);
+
+  String _totalByCurrencyLabel(AppLocalizations localizations) {
+    final base =
+        localizations.translate('total_by_currency') ?? 'Итого по валюте';
+    final currencyName = _selectedSupplierCurrencyName;
+    if (currencyName == null || currencyName.isEmpty) return base;
+    return '$base: $currencyName';
   }
 
   void _preloadDataIfNeeded() {
@@ -54,14 +102,42 @@ class _AddMoneyOutcomeSupplierReturnState extends State<AddMoneyOutcomeSupplierR
   }
 
   void _createDocument({bool approve = false}) {
-    if (!_formKey.currentState!.validate()) return;
+    final isFormValid = _formKey.currentState?.validate() ?? false;
+    final isSupplierInvalid = _selectedSupplier == null;
 
-    if (_selectedSupplier == null) {
-      _showSnackBar(
-        AppLocalizations.of(context)!.translate('select_supplier') ?? 'Пожалуйста, выберите поставщика',
-        false,
-      );
+    if (_isSupplierInvalid != isSupplierInvalid) {
+      setState(() {
+        _isSupplierInvalid = isSupplierInvalid;
+      });
+    }
+
+    if (!isFormValid || isSupplierInvalid) {
+      if (isSupplierInvalid) {
+        _showSnackBar(
+          AppLocalizations.of(context)!.translate('select_supplier') ??
+              'Пожалуйста, выберите поставщика',
+          false,
+        );
+      }
       return;
+    }
+
+    if (approve && _isExchangeRateRequired) {
+      final rate = _exchangeRateValue;
+      if (rate == null || rate <= 0) {
+        setState(() {
+          _exchangeRateErrorText = AppLocalizations.of(context)!
+                  .translate('fill_valid_exchange_rate') ??
+              'Заполните корректный курс валюты';
+        });
+        return;
+      }
+    }
+
+    if (_exchangeRateErrorText != null) {
+      setState(() {
+        _exchangeRateErrorText = null;
+      });
     }
 
     setState(() => _isLoading = true);
@@ -69,12 +145,14 @@ class _AddMoneyOutcomeSupplierReturnState extends State<AddMoneyOutcomeSupplierR
     String? isoDate;
 
     try {
-      DateTime? parsedDate = DateFormat('dd/MM/yyyy HH:mm').parse(_dateController.text);
+      DateTime? parsedDate =
+          DateFormat('dd/MM/yyyy HH:mm').parse(_dateController.text);
       isoDate = DateFormat("yyyy-MM-ddTHH:mm:ss.SSS'Z'").format(parsedDate);
     } catch (e) {
       setState(() => _isLoading = false);
       _showSnackBar(
-        AppLocalizations.of(context)!.translate('enter_valid_datetime') ?? 'Введите корректную дату и время',
+        AppLocalizations.of(context)!.translate('enter_valid_datetime') ??
+            'Введите корректную дату и время',
         false,
       );
       return;
@@ -83,7 +161,8 @@ class _AddMoneyOutcomeSupplierReturnState extends State<AddMoneyOutcomeSupplierR
     if (selectedCashRegister == null) {
       setState(() => _isLoading = false);
       _showSnackBar(
-        AppLocalizations.of(context)!.translate('select_cash_register') ?? 'Пожалуйста, выберите кассу',
+        AppLocalizations.of(context)!.translate('select_cash_register') ??
+            'Пожалуйста, выберите кассу',
         false,
       );
       return;
@@ -98,12 +177,15 @@ class _AddMoneyOutcomeSupplierReturnState extends State<AddMoneyOutcomeSupplierR
         comment: _commentController.text.trim(),
         operationType: MoneyOutcomeOperationType.supplier_payment.name,
         cashRegisterId: selectedCashRegister?.id,
+        exchangeRate: _exchangeRateValue,
         approve: approve,
       ));
     } catch (e) {
       setState(() => _isLoading = false);
       _showSnackBar(
-          AppLocalizations.of(context)!.translate('error_creating_document')?.replaceAll('{error}', e.toString()) ??
+          AppLocalizations.of(context)!
+                  .translate('error_creating_document')
+                  ?.replaceAll('{error}', e.toString()) ??
               'Ошибка создания документа: $e',
           false);
     }
@@ -157,7 +239,8 @@ class _AddMoneyOutcomeSupplierReturnState extends State<AddMoneyOutcomeSupplierR
             }
           },
           builder: (context, state) {
-            if (state is GetAllSupplierInitial || (state is GetAllSupplierSuccess && suppliersList.isEmpty)) {
+            if (state is GetAllSupplierInitial ||
+                (state is GetAllSupplierSuccess && suppliersList.isEmpty)) {
               context.read<GetAllSupplierBloc>().add(GetAllSupplierEv());
               return const DropdownLoadingState();
             }
@@ -173,13 +256,21 @@ class _AddMoneyOutcomeSupplierReturnState extends State<AddMoneyOutcomeSupplierR
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text(AppLocalizations.of(context)!.translate('error_loading_suppliers') ?? 'Ошибка загрузки поставщиков',
-                        style: const TextStyle(color: Colors.red, fontSize: 12)),
+                    Text(
+                        AppLocalizations.of(context)!
+                                .translate('error_loading_suppliers') ??
+                            'Ошибка загрузки поставщиков',
+                        style:
+                            const TextStyle(color: Colors.red, fontSize: 12)),
                     TextButton(
                       onPressed: () {
-                        context.read<GetAllSupplierBloc>().add(GetAllSupplierEv());
+                        context
+                            .read<GetAllSupplierBloc>()
+                            .add(GetAllSupplierEv());
                       },
-                      child: Text(AppLocalizations.of(context)!.translate('retry') ?? 'Повторить',
+                      child: Text(
+                          AppLocalizations.of(context)!.translate('retry') ??
+                              'Повторить',
                           style: const TextStyle(fontSize: 12)),
                     ),
                   ],
@@ -197,7 +288,8 @@ class _AddMoneyOutcomeSupplierReturnState extends State<AddMoneyOutcomeSupplierR
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
-                  AppLocalizations.of(context)!.translate('select_supplier') ?? 'Выберите поставщика',
+                  AppLocalizations.of(context)!.translate('select_supplier') ??
+                      'Выберите поставщика',
                   style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
@@ -208,17 +300,42 @@ class _AddMoneyOutcomeSupplierReturnState extends State<AddMoneyOutcomeSupplierR
               );
             }
 
+            if (state is GetAllSupplierSuccess &&
+                suppliersList.length == 1 &&
+                _selectedSupplier == null &&
+                _autoSelectedSupplierId != suppliersList.first.id.toString()) {
+              final singleSupplier = suppliersList.first;
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (!mounted) return;
+                setState(() {
+                  _selectedSupplier = singleSupplier;
+                  _autoSelectedSupplierId = singleSupplier.id.toString();
+                  _isSupplierInvalid = false;
+                  _exchangeRateErrorText = null;
+                  if (!_isExchangeRateRequired) {
+                    _exchangeRateController.clear();
+                  }
+                });
+              });
+            }
+
             return CustomDropdown<SupplierData>.search(
               items: suppliersList,
-              searchHintText: AppLocalizations.of(context)!.translate('search') ?? 'Поиск',
+              searchHintText:
+                  AppLocalizations.of(context)!.translate('search') ?? 'Поиск',
               overlayHeight: 300,
               enabled: true,
               decoration: CustomDropdownDecoration(
                 closedFillColor: const Color(0xffF4F7FD),
                 expandedFillColor: Colors.white,
-                closedBorder: Border.all(color: const Color(0xffF4F7FD), width: 1),
+                closedBorder: Border.all(
+                  color:
+                      _isSupplierInvalid ? Colors.red : const Color(0xffF4F7FD),
+                  width: _isSupplierInvalid ? 2 : 1,
+                ),
                 closedBorderRadius: BorderRadius.circular(12),
-                expandedBorder: Border.all(color: const Color(0xffF4F7FD), width: 1),
+                expandedBorder:
+                    Border.all(color: const Color(0xffF4F7FD), width: 1),
                 expandedBorderRadius: BorderRadius.circular(12),
               ),
               listItemBuilder: (context, item, isSelected, onItemSelect) {
@@ -244,7 +361,8 @@ class _AddMoneyOutcomeSupplierReturnState extends State<AddMoneyOutcomeSupplierR
                 );
               },
               hintBuilder: (context, hint, enabled) => Text(
-                AppLocalizations.of(context)!.translate('select_supplier') ?? 'Выберите поставщика',
+                AppLocalizations.of(context)!.translate('select_supplier') ??
+                    'Выберите поставщика',
                 style: const TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
@@ -252,13 +370,20 @@ class _AddMoneyOutcomeSupplierReturnState extends State<AddMoneyOutcomeSupplierR
                   color: Color(0xff1E2E52),
                 ),
               ),
-              initialItem: _selectedSupplier != null && suppliersList.any((s) => s.id == _selectedSupplier!.id)
-                  ? suppliersList.firstWhere((s) => s.id == _selectedSupplier!.id)
+              initialItem: _selectedSupplier != null &&
+                      suppliersList.any((s) => s.id == _selectedSupplier!.id)
+                  ? suppliersList
+                      .firstWhere((s) => s.id == _selectedSupplier!.id)
                   : null,
               onChanged: (value) {
                 if (value != null && mounted) {
                   setState(() {
                     _selectedSupplier = value;
+                    _isSupplierInvalid = false; // Сбрасываем ошибку при выборе
+                    _exchangeRateErrorText = null;
+                    if (!_isExchangeRateRequired) {
+                      _exchangeRateController.clear();
+                    }
                   });
                   FocusScope.of(context).unfocus();
                 }
@@ -266,6 +391,19 @@ class _AddMoneyOutcomeSupplierReturnState extends State<AddMoneyOutcomeSupplierR
             );
           },
         ),
+        if (_isSupplierInvalid)
+          Padding(
+            padding: const EdgeInsets.only(left: 12, top: 8),
+            child: Text(
+              AppLocalizations.of(context)!.translate('field_required') ??
+                  'Поле обязательно для заполнения',
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w400,
+                color: Colors.red,
+              ),
+            ),
+          ),
       ],
     );
   }
@@ -284,7 +422,6 @@ class _AddMoneyOutcomeSupplierReturnState extends State<AddMoneyOutcomeSupplierR
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 if (!mounted) return;
 
-
                 if (state is MoneyOutcomeCreateSuccess) {
                   setState(() => _isLoading = false);
                   Navigator.pop(context, true);
@@ -298,7 +435,11 @@ class _AddMoneyOutcomeSupplierReturnState extends State<AddMoneyOutcomeSupplierR
             listener: (context, state) {
               if (state is GetAllSupplierError && mounted) {
                 debugPrint('Supplier loading error: ${state.toString()}');
-                _showSnackBar(AppLocalizations.of(context)!.translate('error_loading_suppliers') ?? 'Ошибка загрузки поставщиков', false);
+                _showSnackBar(
+                    AppLocalizations.of(context)!
+                            .translate('error_loading_suppliers') ??
+                        'Ошибка загрузки поставщиков',
+                    false);
               }
             },
           ),
@@ -309,7 +450,8 @@ class _AddMoneyOutcomeSupplierReturnState extends State<AddMoneyOutcomeSupplierR
             children: [
               Expanded(
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -319,8 +461,10 @@ class _AddMoneyOutcomeSupplierReturnState extends State<AddMoneyOutcomeSupplierR
                       _buildDateField(localizations),
                       const SizedBox(height: 16),
                       CashRegisterGroupWidget(
-                        selectedCashRegisterId: selectedCashRegister?.id.toString(),
-                        onSelectCashRegister: (CashRegisterData selectedRegionData) {
+                        selectedCashRegisterId:
+                            selectedCashRegister?.id.toString(),
+                        onSelectCashRegister:
+                            (CashRegisterData selectedRegionData) {
                           try {
                             setState(() {
                               selectedCashRegister = selectedRegionData;
@@ -328,13 +472,21 @@ class _AddMoneyOutcomeSupplierReturnState extends State<AddMoneyOutcomeSupplierR
                           } catch (e) {
                             debugPrint('Error selecting cash register: $e');
                             _showSnackBar(
-                                AppLocalizations.of(context)!.translate('error_selecting_cash_register') ?? 'Ошибка выбора кассы',
+                                AppLocalizations.of(context)!.translate(
+                                        'error_selecting_cash_register') ??
+                                    'Ошибка выбора кассы',
                                 false);
                           }
                         },
                       ),
                       const SizedBox(height: 16),
                       _buildAmountField(localizations),
+                      if (_isExchangeRateRequired) ...[
+                        const SizedBox(height: 16),
+                        _buildExchangeRateField(localizations),
+                        const SizedBox(height: 16),
+                        _buildTotalByCurrencyWidget(localizations),
+                      ],
                       const SizedBox(height: 16),
                       _buildCommentField(localizations),
                       const SizedBox(height: 16),
@@ -356,11 +508,13 @@ class _AddMoneyOutcomeSupplierReturnState extends State<AddMoneyOutcomeSupplierR
       forceMaterialTransparency: true,
       elevation: 0,
       leading: IconButton(
-        icon: const Icon(Icons.arrow_back_ios, color: Color(0xff1E2E52), size: 24),
+        icon: const Icon(Icons.arrow_back_ios,
+            color: Color(0xff1E2E52), size: 24),
         onPressed: () => Navigator.pop(context),
       ),
       title: Text(
-        AppLocalizations.of(context)!.translate('create_outcoming_document') ?? 'Создать расход',
+        AppLocalizations.of(context)!.translate('create_outcoming_document') ??
+            'Создать расход',
         style: const TextStyle(
           fontSize: 20,
           fontFamily: 'Gilroy',
@@ -390,8 +544,10 @@ class _AddMoneyOutcomeSupplierReturnState extends State<AddMoneyOutcomeSupplierR
   Widget _buildCommentField(AppLocalizations localizations) {
     return CustomTextField(
       controller: _commentController,
-      label: AppLocalizations.of(context)!.translate('comment') ?? 'Комментарий',
-      hintText: AppLocalizations.of(context)!.translate('enter_comment') ?? 'Введите комментарий',
+      label:
+          AppLocalizations.of(context)!.translate('comment') ?? 'Комментарий',
+      hintText: AppLocalizations.of(context)!.translate('enter_comment') ??
+          'Введите комментарий',
       maxLines: 3,
       keyboardType: TextInputType.multiline,
     );
@@ -400,29 +556,88 @@ class _AddMoneyOutcomeSupplierReturnState extends State<AddMoneyOutcomeSupplierR
   Widget _buildAmountField(AppLocalizations localizations) {
     return CustomTextField(
         inputFormatters: [
-          MoneyInputFormatter(),
+          PriceInputFormatter(),
         ],
         controller: _amountController,
         label: AppLocalizations.of(context)!.translate('amount') ?? 'Сумма',
-        hintText: AppLocalizations.of(context)!.translate('enter_amount') ?? 'Введите сумму',
+        hintText: AppLocalizations.of(context)!.translate('enter_amount') ??
+            'Введите сумму',
         maxLines: 1,
-        keyboardType: TextInputType.number,
+        keyboardType: const TextInputType.numberWithOptions(decimal: true),
         validator: (value) {
           if (value == null || value.isEmpty) {
-            return AppLocalizations.of(context)!.translate('enter_amount') ?? 'Введите сумму';
+            return AppLocalizations.of(context)!.translate('field_required') ??
+                'Введите сумму';
           }
 
           final doubleValue = double.tryParse(value.trim());
           if (doubleValue == null) {
-            return AppLocalizations.of(context)!.translate('enter_valid_amount') ?? 'Введите корректную сумму';
+            return AppLocalizations.of(context)!
+                    .translate('enter_valid_amount') ??
+                'Введите корректную сумму';
           }
 
           if (doubleValue <= 0) {
-            return AppLocalizations.of(context)!.translate('amount_must_be_greater_than_zero') ?? 'Сумма должна быть больше нуля';
+            return AppLocalizations.of(context)!
+                    .translate('amount_must_be_greater_than_zero') ??
+                'Сумма должна быть больше нуля';
           }
 
           return null;
-        });
+        },
+        onChanged: (_) => setState(() {}));
+  }
+
+  Widget _buildExchangeRateField(AppLocalizations localizations) {
+    return CustomTextField(
+      controller: _exchangeRateController,
+      inputFormatters: [PriceInputFormatter()],
+      label: localizations.translate('exchange_rate') ?? 'Курс валюты',
+      hintText: localizations.translate('enter_value') ?? 'Введите значение',
+      maxLines: 1,
+      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+      errorText: _exchangeRateErrorText,
+      onChanged: (_) {
+        setState(() {});
+        if (_exchangeRateErrorText != null) {
+          setState(() => _exchangeRateErrorText = null);
+        }
+      },
+    );
+  }
+
+  Widget _buildTotalByCurrencyWidget(AppLocalizations localizations) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+      decoration: BoxDecoration(
+        color: const Color(0xffF4F7FD),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            _totalByCurrencyLabel(localizations),
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              fontFamily: 'Gilroy',
+              color: Color(0xff1E2E52),
+            ),
+          ),
+          Text(
+            parseNumberToString(_totalByCurrency),
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              fontFamily: 'Gilroy',
+              color: Color(0xff1E2E52),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   // Новый метод для сохранения и проведения
@@ -472,16 +687,21 @@ class _AddMoneyOutcomeSupplierReturnState extends State<AddMoneyOutcomeSupplierR
                       Icon(
                         Icons.check_circle_outline,
                         size: 20,
-                        color: _isLoading ? const Color(0xff99A4BA) : const Color(0xff4CAF50),
+                        color: _isLoading
+                            ? const Color(0xff99A4BA)
+                            : const Color(0xff4CAF50),
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        localizations.translate('save_and_approve') ?? 'Сохранить и провести',
+                        localizations.translate('save_and_approve') ??
+                            'Сохранить и провести',
                         style: TextStyle(
                           fontSize: 16,
                           fontFamily: 'Gilroy',
                           fontWeight: FontWeight.w600,
-                          color: _isLoading ? const Color(0xff99A4BA) : const Color(0xff4CAF50),
+                          color: _isLoading
+                              ? const Color(0xff99A4BA)
+                              : const Color(0xff4CAF50),
                         ),
                       ),
                     ],
@@ -529,22 +749,23 @@ class _AddMoneyOutcomeSupplierReturnState extends State<AddMoneyOutcomeSupplierR
                   ),
                   child: _isLoading
                       ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                    ),
-                  )
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor:
+                                AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        )
                       : Text(
-                    localizations.translate('save') ?? 'Сохранить',
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w500,
-                      color: Colors.white,
-                    ),
-                  ),
+                          localizations.translate('save') ?? 'Сохранить',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontFamily: 'Gilroy',
+                            fontWeight: FontWeight.w500,
+                            color: Colors.white,
+                          ),
+                        ),
                 ),
               ),
             ],
@@ -559,6 +780,7 @@ class _AddMoneyOutcomeSupplierReturnState extends State<AddMoneyOutcomeSupplierR
     _dateController.dispose();
     _commentController.dispose();
     _amountController.dispose();
+    _exchangeRateController.dispose();
     super.dispose();
   }
 }

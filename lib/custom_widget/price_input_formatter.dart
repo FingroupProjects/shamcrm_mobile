@@ -1,11 +1,31 @@
 import 'package:flutter/services.dart';
 
-/// Форматтер для ввода цены
+/// Форматтер для конвертации запятой в точку (для iOS локалей)
+/// Автоматически заменяет запятую на точку при вводе
+class CommaToDoFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    // Заменяем запятую на точку
+    final newText = newValue.text.replaceAll(',', '.');
+    
+    // Возвращаем новое значение с заменённым текстом
+    return TextEditingValue(
+      text: newText,
+      selection: TextSelection.collapsed(offset: newText.length),
+    );
+  }
+}
+
+/// Форматтер для ввода цены с поддержкой запятой
 /// Разрешает:
 /// - Целые числа: 1, 2, 10, 100, и т.д.
 /// - Десятичные числа с максимум 3 цифрами после точки: 1.234, 10.5, и т.д.
 /// - Одиночный ноль: 0
 /// - Ноль с десятичной частью: 0.5, 0.123
+/// - Запятую (автоматически конвертируется в точку)
 /// 
 /// Запрещает:
 /// - Несколько нулей в начале: 0000, 00, 01, и т.д.
@@ -28,11 +48,15 @@ class PriceInputFormatter extends TextInputFormatter {
       TextEditingValue oldValue,
       TextEditingValue newValue,
       ) {
-    final newText = newValue.text;
+    // Сначала заменяем запятую на точку
+    String newText = newValue.text.replaceAll(',', '.');
 
     // Разрешаем пустую строку (при очистке поля)
     if (newText.isEmpty) {
-      return newValue;
+      return TextEditingValue(
+        text: newText,
+        selection: TextSelection.collapsed(offset: newText.length),
+      );
     }
 
     // Проверяем, что строка содержит только цифры и точку
@@ -69,6 +93,9 @@ class PriceInputFormatter extends TextInputFormatter {
     }
 
     // Если все проверки пройдены, принимаем новое значение
-    return newValue;
+    return TextEditingValue(
+      text: newText,
+      selection: TextSelection.collapsed(offset: newText.length),
+    );
   }
 }

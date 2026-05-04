@@ -45,7 +45,7 @@ class _WareHouseCardState extends State<WareHouseCard> {
   @override
   Widget build(BuildContext context) {
     final localization = AppLocalizations.of(context);
-    
+
     return GestureDetector(
       // ИЗМЕНЕНО: Открываем редактирование только если есть право
       onTap: widget.hasUpdatePermission

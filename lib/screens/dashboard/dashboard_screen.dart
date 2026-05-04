@@ -42,11 +42,13 @@ import 'package:crm_task_manager/screens/dashboard_for_manager/lead_conversion.d
 import 'package:crm_task_manager/screens/dashboard_for_manager/process_speed.dart';
 import 'package:crm_task_manager/screens/dashboard_for_manager/task_chart.dart';
 import 'package:crm_task_manager/screens/dashboard_for_manager/users_chart.dart';
+import 'package:crm_task_manager/screens/analytics/analytics_screen.dart';
 import 'package:crm_task_manager/page_2/dashboard/widgets/charts/top_selling_products_chart.dart';
 import 'package:crm_task_manager/page_2/dashboard/widgets/charts/sales_dynamics_line_chart.dart';
 import 'package:crm_task_manager/page_2/dashboard/widgets/charts/net_profit_chart.dart';
 import 'package:crm_task_manager/page_2/dashboard/widgets/charts/expense_structure_chart.dart';
 import 'package:crm_task_manager/page_2/dashboard/widgets/charts/order_quantity_chart.dart';
+import 'package:crm_task_manager/page_2/dashboard/widgets/charts/chart_error_widget.dart';
 import 'package:crm_task_manager/screens/profile/profile_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/utils/TutorialStyleWidget.dart';
@@ -70,13 +72,8 @@ import '../../page_2/dashboard/widgets/dialogs/dialog_products_info.dart';
 import '../../page_2/dashboard/widgets/stat_card.dart';
 import '../../widgets/snackbar_widget.dart';
 
-
-
 // Enum для типов дашборда
-enum DashboardType {
-  crm,
-  accounting
-}
+enum DashboardType { crm, accounting }
 
 class DashboardScreen extends StatefulWidget {
   @override
@@ -88,9 +85,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
   List<String> userRoles = [];
   bool isLoading = true;
   bool isRefreshing = false;
-  
+
   DashboardType _activeDashboard = DashboardType.crm;
-  
+
   // НОВОЕ: Флаг для проверки прав на дашборд учёта
   bool _hasAccountingDashboardPermission = false;
 
@@ -109,6 +106,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Map<String, dynamic>? tutorialProgress;
   bool _hasDashboardIndexPermission = false;
   bool _isPermissionsChecked = false;
+  int _analyticsFilterTrigger = 0;
+  int _analyticsChartSettingsTrigger = 0;
 
   final ScrollController _scrollController = ScrollController();
   final ApiService _apiService = ApiService();
@@ -124,6 +123,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
       setState(() {
         isLoading = true;
       });
+
+      // КРИТИЧНО: при первом входе в Dashboard гарантируем сохранённую воронку.
+      await _apiService.ensureSelectedSalesFunnelInitialized();
 
       SharedPreferences prefs = await SharedPreferences.getInstance();
       bool isFirstTime = prefs.getBool('isFirstTime') ?? true;
@@ -159,7 +161,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
   // НОВОЕ: Метод для проверки права на дашборд учёта
   Future<void> _checkAccountingDashboardPermission() async {
     try {
-      final hasPermission = await _apiService.hasPermission('accounting_dashboard');
+      final hasPermission =
+          await _apiService.hasPermission('accounting_dashboard');
       if (mounted) {
         setState(() {
           _hasAccountingDashboardPermission = hasPermission;
@@ -541,7 +544,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
       colorShadow: Color(0xff1E2E52),
       onSkip: () {
         prefs.setBool('isTutorialShownDashboard', true).then((_) {
-          _apiService.markPageCompleted("dashboard", "index").catchError((e) {});
+          _apiService
+              .markPageCompleted("dashboard", "index")
+              .catchError((e) {});
         });
         setState(() {
           _isTutorialShown = true;
@@ -592,7 +597,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
       await Future.wait([
         _loadUserRoles(),
-        Future.delayed(const Duration(seconds: 1)), // Reduced delay for better UX
+        Future.delayed(
+            const Duration(seconds: 1)), // Reduced delay for better UX
       ]);
 
       if (mounted) {
@@ -639,86 +645,110 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context);
-    
+
     return Scaffold(
-        backgroundColor: Colors.white,
-        appBar: AppBar(
-          forceMaterialTransparency: true,
-          title: CustomAppBar(
-            title: isClickAvatarIcon
-                ? localizations!.translate('appbar_settings')
-                : localizations!.translate('appbar_dashboard'),
-            onClickProfileAvatar: () {
-              setState(() {
-                isClickAvatarIcon = !isClickAvatarIcon;
-              });
-            },
-            onChangedSearchInput: (input) {},
-            textEditingController: TextEditingController(),
-            focusNode: FocusNode(),
-            clearButtonClick: (isSearching) {},
-            showSearchIcon: false,
-            showFilterTaskIcon: false,
-            showFilterIcon: false,
-            showMyTaskIcon: true,
-            showCallCenter: true,
-            showEvent: false,
-            showSeparateMyTasks: true,
-            showMenuIcon: false,
-            showCalendarDashboard: true,
-            clearButtonClickFiltr: (bool) {},
-            NotificationIconKey: keyNotificationIcon,
-            MyTaskIconKey: keyMyTaskIcon,
-          ),
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        forceMaterialTransparency: true,
+        title: CustomAppBar(
+          title: isClickAvatarIcon
+              ? localizations!.translate('appbar_settings')
+              : localizations!.translate('appbar_dashboard'),
+          onClickProfileAvatar: () {
+            setState(() {
+              isClickAvatarIcon = !isClickAvatarIcon;
+            });
+          },
+          onChangedSearchInput: (input) {},
+          textEditingController: TextEditingController(),
+          focusNode: FocusNode(),
+          clearButtonClick: (isSearching) {},
+          showSearchIcon: false,
+          showFilterTaskIcon: false,
+          showFilterIcon: false,
+          showFilterIconDeal: false,
+          showMyTaskIcon: true,
+          showCallCenter: true,
+          showNotification: true,
+          showEvent: false,
+          showSeparateMyTasks: false,
+          showMenuIcon: true,
+          showCalendarDashboard: false,
+          showCalendar: true,
+          showDashboardFilterMenuItem:
+              !isClickAvatarIcon && _activeDashboard == DashboardType.crm,
+          hasActiveDashboardFilters: false,
+          onDashboardFilterPressed: () {
+            setState(() {
+              _analyticsFilterTrigger++;
+            });
+          },
+          showDashboardChartSettingsMenuItem:
+              !isClickAvatarIcon && _activeDashboard == DashboardType.crm,
+          onDashboardChartSettingsPressed: () {
+            setState(() {
+              _analyticsChartSettingsTrigger++;
+            });
+          },
+          clearButtonClickFiltr: (bool) {},
+          NotificationIconKey: keyNotificationIcon,
+          MyTaskIconKey: keyMyTaskIcon,
         ),
-        body: isClickAvatarIcon
-            ? ProfileScreen()
-            : Stack(
-                children: [
-                  Column(
-                    children: [
-                      // ИЗМЕНЕНО: Показываем переключатель только если есть право
-                      if (_hasAccountingDashboardPermission)
-                        DashboardSwitcher(
-                          activeDashboard: _activeDashboard,
-                          onDashboardChanged: (type) {
-                            setState(() {
-                              _activeDashboard = type;
-                            });
-                          },
-                        ),
-                      Expanded(
-                        child: RefreshIndicator(
-                          color: const Color(0xff1E2E52),
-                          backgroundColor: Colors.white,
-                          onRefresh: _onRefresh,
-                          child: SingleChildScrollView(
-                            controller: _scrollController,
-                            physics: const AlwaysScrollableScrollPhysics(),
-                            padding: const EdgeInsets.all(16),
-                            child: Column(
-                              // ИЗМЕНЕНО: Показываем дашборд учёта только если есть право
-                              children: (_hasAccountingDashboardPermission && _activeDashboard == DashboardType.accounting)
-                                  ? _buildAccountingDashboard()
-                                  : _buildDashboardContent(),
-                            ),
-                          ),
-                        ),
+      ),
+      body: isClickAvatarIcon
+          ? ProfileScreen()
+          : Stack(
+              children: [
+                Column(
+                  children: [
+                    // ИЗМЕНЕНО: Показываем переключатель только если есть право
+                    if (_hasAccountingDashboardPermission)
+                      DashboardSwitcher(
+                        activeDashboard: _activeDashboard,
+                        onDashboardChanged: (type) {
+                          setState(() {
+                            _activeDashboard = type;
+                          });
+                        },
                       ),
-                    ],
-                  ),
-                  if (isLoading || isRefreshing)
-                    Container(
-                      color: Colors.white,
-                      child: const Center(
-                        child: PlayStoreImageLoading(
-                          size: 80.0,
-                          duration: Duration(milliseconds: 1000),
-                        ),
+                    Expanded(
+                      child: _activeDashboard == DashboardType.crm
+                          ? AnalyticsScreen(
+                              key: const ValueKey('dashboard_crm_analytics'),
+                              showAppBar: false,
+                              filterTrigger: _analyticsFilterTrigger,
+                              chartSettingsTrigger:
+                                  _analyticsChartSettingsTrigger,
+                              showStatistics: userRoles.contains('admin'),
+                            )
+                          : RefreshIndicator(
+                              color: const Color(0xff1E2E52),
+                              backgroundColor: Colors.white,
+                              onRefresh: _onRefresh,
+                              child: SingleChildScrollView(
+                                controller: _scrollController,
+                                physics: const AlwaysScrollableScrollPhysics(),
+                                padding: const EdgeInsets.all(16),
+                                child: Column(
+                                  children: _buildAccountingDashboard(),
+                                ),
+                              ),
+                            ),
+                    ),
+                  ],
+                ),
+                if (isLoading)
+                  Container(
+                    color: Colors.white,
+                    child: const Center(
+                      child: PlayStoreImageLoading(
+                        size: 80.0,
+                        duration: Duration(milliseconds: 1000),
                       ),
                     ),
-                ],
-              ),
+                  ),
+              ],
+            ),
     );
   }
 
@@ -759,6 +789,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ];
     }
   }
+
   List<Widget> _buildAccountingDashboard() {
     return [
       BlocConsumer<SalesDashboardBloc, SalesDashboardState>(
@@ -803,7 +834,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
                 // Fade-in animation for Wave 1 charts
                 _FadeInWidget(
-                  child: TopSellingProductsChart(state.topSellingData),
+                  child: state.graphErrors.containsKey('topSelling')
+                      ? ChartErrorWidget(
+                          errorMessage: state.graphErrors['topSelling'])
+                      : TopSellingProductsChart(state.topSellingData),
                 ),
                 const SizedBox(height: 16),
 
@@ -865,7 +899,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 TopPart(
                   state: SalesDashboardLoaded(
                     salesDashboardTopPart: state.salesDashboardTopPart,
-                    salesData: state.salesData, // TopPart не использует salesData
+                    salesData:
+                        state.salesData, // TopPart не использует salesData
                     netProfitData: state.netProfitData,
                     orderDashboardData: state.orderDashboardData,
                     expenseStructureData: state.expenseStructureData,
@@ -875,36 +910,56 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                 ),
                 const SizedBox(height: 16),
-                TopSellingProductsChart(state.topSellingData),
+                state.graphErrors.containsKey('topSelling')
+                    ? ChartErrorWidget(
+                        errorMessage: state.graphErrors['topSelling'])
+                    : TopSellingProductsChart(state.topSellingData),
                 const SizedBox(height: 16),
 
                 // Wave 2 data with fade-in animation
                 _FadeInWidget(
-                  child: SalesDynamicsLineChart(state.salesData),
+                  child: state.graphErrors.containsKey('salesDynamics')
+                      ? ChartErrorWidget(
+                          errorMessage: state.graphErrors['salesDynamics'])
+                      : SalesDynamicsLineChart(state.salesData),
                 ),
                 const SizedBox(height: 16),
 
                 _FadeInWidget(
                   delay: const Duration(milliseconds: 100),
-                  child: NetProfitChart(state.netProfitData),
+                  child: state.graphErrors.containsKey('netProfit')
+                      ? ChartErrorWidget(
+                          errorMessage: state.graphErrors['netProfit'])
+                      : NetProfitChart(state.netProfitData),
                 ),
                 const SizedBox(height: 16),
 
                 _FadeInWidget(
                   delay: const Duration(milliseconds: 200),
-                  child: ProfitabilityChart(profitabilityData: state.profitabilityData),
+                  child: state.graphErrors.containsKey('profitability')
+                      ? ChartErrorWidget(
+                          errorMessage: state.graphErrors['profitability'])
+                      : ProfitabilityChart(
+                          profitabilityData: state.profitabilityData),
                 ),
                 const SizedBox(height: 16),
 
                 _FadeInWidget(
                   delay: const Duration(milliseconds: 300),
-                  child: ExpenseStructureChart(state.expenseStructureData),
+                  child: state.graphErrors.containsKey('expenseStructure')
+                      ? ChartErrorWidget(
+                          errorMessage: state.graphErrors['expenseStructure'])
+                      : ExpenseStructureChart(state.expenseStructureData),
                 ),
                 const SizedBox(height: 16),
 
                 _FadeInWidget(
                   delay: const Duration(milliseconds: 400),
-                  child: OrderQuantityChart(orderDashboardData: state.orderDashboardData),
+                  child: state.graphErrors.containsKey('orderDashboard')
+                      ? ChartErrorWidget(
+                          errorMessage: state.graphErrors['orderDashboard'])
+                      : OrderQuantityChart(
+                          orderDashboardData: state.orderDashboardData),
                 ),
                 const SizedBox(height: 16),
               ],
@@ -929,7 +984,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 const SizedBox(height: 16),
                 ExpenseStructureChart(state.expenseStructureData),
                 const SizedBox(height: 16),
-                OrderQuantityChart(orderDashboardData: state.orderDashboardData),
+                OrderQuantityChart(
+                    orderDashboardData: state.orderDashboardData),
                 const SizedBox(height: 16),
               ],
             );
@@ -1013,7 +1069,9 @@ class DashboardSwitcher extends StatelessWidget {
           Expanded(
             child: _buildTab(
               context: context,
-              label: AppLocalizations.of(context)!.translate('accounting_title') ?? 'Учёт',
+              label:
+                  AppLocalizations.of(context)!.translate('accounting_title') ??
+                      'Учёт',
               icon: Icons.analytics_rounded,
               isActive: activeDashboard == DashboardType.accounting,
               onTap: () => onDashboardChanged(DashboardType.accounting),
@@ -1084,8 +1142,11 @@ class TopPart extends StatelessWidget {
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
 
-    final DashboardTopPart? salesDashboardTopPart = (state as SalesDashboardLoaded).salesDashboardTopPart; // widgets: 2, 3, 4
-    final IlliquidGoodsResponse illiquidGoodsData = (state as SalesDashboardLoaded).illiquidGoodsData; // widget 1
+    final DashboardTopPart? salesDashboardTopPart =
+        (state as SalesDashboardLoaded)
+            .salesDashboardTopPart; // widgets: 2, 3, 4
+    final IlliquidGoodsResponse illiquidGoodsData =
+        (state as SalesDashboardLoaded).illiquidGoodsData; // widget 1
 
     return Column(
       children: [
@@ -1097,12 +1158,16 @@ class TopPart extends StatelessWidget {
                   showSimpleInfoDialog(context);
                 },
                 accentColor: Colors.orange,
-                title: localizations.translate('illiquid_goods') ?? 'ТОВАРЫ/НЕЛИКВИДНЫМИ ТОВАРЫ',
+                title: localizations.translate('illiquid_goods') ??
+                    'ТОВАРЫ/НЕЛИКВИДНЫМИ ТОВАРЫ',
                 leading: const Icon(Icons.inventory_2, color: Colors.orange),
                 amountText: "${illiquidGoodsData.result?.liquidGoods ?? 0}",
                 showCurrencySymbol: false,
-                isUp: illiquidGoodsData.result?.liquidChangeFormatted?.startsWith("+") ?? true,
-                trendText: illiquidGoodsData.result?.liquidChangeFormatted ?? '0.0%',
+                isUp: illiquidGoodsData.result?.liquidChangeFormatted
+                        ?.startsWith("+") ??
+                    true,
+                trendText:
+                    illiquidGoodsData.result?.liquidChangeFormatted ?? '0.0%',
               ),
             ),
             const SizedBox(width: 16),
@@ -1112,13 +1177,25 @@ class TopPart extends StatelessWidget {
                   showCashBalanceDialog(context);
                 },
                 accentColor: Colors.blue,
-                title: localizations.translate('cash_balance') ?? 'ОСТАТОК КАССЫ',
-                leading: const Icon(Icons.account_balance_wallet, color: Colors.blue),
-                amount: salesDashboardTopPart?.result?.cashBalance?.totalBalance ?? 0,
-                showCurrencySymbol: salesDashboardTopPart?.result?.cashBalance?.currency != null,
-                currencySymbol: salesDashboardTopPart?.result?.cashBalance?.currency ?? '₽',
-                isUp: salesDashboardTopPart?.result?.cashBalance?.isPositiveChange ?? true,
-                trendText: salesDashboardTopPart?.result?.cashBalance?.percentageChange.toString() ?? '0.0%',
+                title:
+                    localizations.translate('cash_balance') ?? 'ОСТАТОК КАССЫ',
+                leading: const Icon(Icons.account_balance_wallet,
+                    color: Colors.blue),
+                amount:
+                    salesDashboardTopPart?.result?.cashBalance?.totalBalance ??
+                        0,
+                showCurrencySymbol:
+                    salesDashboardTopPart?.result?.cashBalance?.currency !=
+                        null,
+                currencySymbol:
+                    salesDashboardTopPart?.result?.cashBalance?.currency ?? '₽',
+                isUp: salesDashboardTopPart
+                        ?.result?.cashBalance?.isPositiveChange ??
+                    true,
+                trendText: salesDashboardTopPart
+                        ?.result?.cashBalance?.percentageChange
+                        .toString() ??
+                    '0.0%',
               ),
             ),
           ],
@@ -1134,11 +1211,17 @@ class TopPart extends StatelessWidget {
                 accentColor: Colors.red,
                 title: localizations.translate('our_debts') ?? 'НАШИ ДОЛГИ',
                 leading: const Icon(Icons.trending_down, color: Colors.red),
-                amount: salesDashboardTopPart?.result?.ourDebts?.currentDebts ?? 0,
+                amount:
+                    salesDashboardTopPart?.result?.ourDebts?.currentDebts ?? 0,
                 showCurrencySymbol: false,
                 currencySymbol: '₽',
-                isUp: salesDashboardTopPart?.result?.ourDebts?.isPositiveChange ?? false,
-                trendText: salesDashboardTopPart?.result?.ourDebts?.percentageChange.toString() ?? '',
+                isUp:
+                    salesDashboardTopPart?.result?.ourDebts?.isPositiveChange ??
+                        false,
+                trendText: salesDashboardTopPart
+                        ?.result?.ourDebts?.percentageChange
+                        .toString() ??
+                    '',
               ),
             ),
             const SizedBox(width: 16),
@@ -1150,10 +1233,15 @@ class TopPart extends StatelessWidget {
                 accentColor: Colors.green,
                 title: localizations.translate('owed_to_us') ?? 'НАМ ДОЛЖНЫ',
                 leading: const Icon(Icons.trending_up, color: Colors.green),
-                amount: salesDashboardTopPart?.result?.debtsToUs?.totalDebtsToUs ?? 0,
+                amount:
+                    salesDashboardTopPart?.result?.debtsToUs?.totalDebtsToUs ??
+                        0,
                 showCurrencySymbol: false,
-                isUp: salesDashboardTopPart?.result?.debtsToUs?.isPositiveChange ?? false,
-                trendText: '${salesDashboardTopPart?.result?.debtsToUs?.percentageChange ?? 'n/a'}',
+                isUp: salesDashboardTopPart
+                        ?.result?.debtsToUs?.isPositiveChange ??
+                    false,
+                trendText:
+                    '${salesDashboardTopPart?.result?.debtsToUs?.percentageChange ?? 'n/a'}',
               ),
             ),
           ],
@@ -1162,7 +1250,6 @@ class TopPart extends StatelessWidget {
     );
   }
 }
-
 
 /// Widget with fade-in animation
 class _FadeInWidget extends StatefulWidget {

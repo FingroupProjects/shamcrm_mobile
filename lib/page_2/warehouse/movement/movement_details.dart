@@ -35,10 +35,12 @@ class MovementDocumentDetailsScreen extends StatefulWidget {
   });
 
   @override
-  _MovementDocumentDetailsScreenState createState() => _MovementDocumentDetailsScreenState();
+  _MovementDocumentDetailsScreenState createState() =>
+      _MovementDocumentDetailsScreenState();
 }
 
-class _MovementDocumentDetailsScreenState extends State<MovementDocumentDetailsScreen> {
+class _MovementDocumentDetailsScreenState
+    extends State<MovementDocumentDetailsScreen> {
   final ApiService _apiService = ApiService();
   IncomingDocument? currentDocument;
   List<Map<String, dynamic>> details = [];
@@ -47,7 +49,10 @@ class _MovementDocumentDetailsScreenState extends State<MovementDocumentDetailsS
   String? baseUrl;
   bool _documentUpdated = false;
   bool _goodMeasurementEnabled = true;
-  
+
+  // ✅ НОВОЕ: Флаг разрешения на проведение документа
+  bool _hasApprovePermission = false;
+
   final Map<int, String> _unitMap = {
     23: 'шт',
   };
@@ -58,6 +63,27 @@ class _MovementDocumentDetailsScreenState extends State<MovementDocumentDetailsS
     _initializeBaseUrl();
     _fetchDocumentDetails();
     _loadGoodMeasurementSetting();
+    _checkApprovePermission();
+  }
+
+  // ✅ НОВОЕ: Проверка разрешения на проведение документа
+  Future<void> _checkApprovePermission() async {
+    try {
+      final hasPermission =
+          await _apiService.hasPermission('movement_document.approve');
+      if (mounted) {
+        setState(() {
+          _hasApprovePermission = hasPermission;
+        });
+      }
+    } catch (e) {
+      debugPrint('Ошибка при проверке права на проведение документа: $e');
+      if (mounted) {
+        setState(() {
+          _hasApprovePermission = false;
+        });
+      }
+    }
   }
 
   Future<void> _loadGoodMeasurementSetting() async {
@@ -84,9 +110,10 @@ class _MovementDocumentDetailsScreenState extends State<MovementDocumentDetailsS
     setState(() {
       _isLoading = true;
     });
-    
+
     try {
-      final document = await _apiService.getMovementDocumentById(widget.documentId);
+      final document =
+          await _apiService.getMovementDocumentById(widget.documentId);
       setState(() {
         currentDocument = document;
         _updateDetails(document);
@@ -98,11 +125,15 @@ class _MovementDocumentDetailsScreenState extends State<MovementDocumentDetailsS
       });
       if (e is ApiException && e.statusCode == 409) {
         final localizations = AppLocalizations.of(context)!;
-        showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', e.message, errorDialogEnum: ErrorDialogEnum.goodsMovementDelete);
+        showSimpleErrorDialog(
+            context, localizations.translate('error') ?? 'Ошибка', e.message,
+            errorDialogEnum: ErrorDialogEnum.goodsMovementDelete);
         return;
       }
       final localizations = AppLocalizations.of(context)!;
-      _showSnackBar('${localizations.translate('error_loading_document') ?? 'Ошибка загрузки документа'}: $e', false);
+      _showSnackBar(
+          '${localizations.translate('error_loading_document') ?? 'Ошибка загрузки документа'}: $e',
+          false);
     }
   }
 
@@ -114,36 +145,45 @@ class _MovementDocumentDetailsScreenState extends State<MovementDocumentDetailsS
 
     details = [
       {
-        'label': '${AppLocalizations.of(context)!.translate('document_number') ?? 'Номер документа'}:',
-        'value': document.docNumber ?? '',
+        'label':
+            '${AppLocalizations.of(context)!.translate('document_number') ?? 'Документ'}:',
+        'value': "№${document.docNumber ?? ''}",
       },
       {
         'label': '${AppLocalizations.of(context)!.translate('date') ?? 'Дата'}',
-        'value': document.date != null ? DateFormat('dd.MM.yyyy HH:mm').format(document.date!) : '',
+        'value': document.date != null
+            ? DateFormat('dd.MM.yyyy HH:mm').format(document.date!)
+            : '',
       },
       {
-        'label': '${AppLocalizations.of(context)!.translate('sender_storage') ?? 'Склад отправитель'}:',
+        'label':
+            '${AppLocalizations.of(context)!.translate('sender_storage') ?? 'Склад отправитель'}:',
         'value': document.sender_storage_id?.name ?? '',
       },
       {
-        'label': '${AppLocalizations.of(context)!.translate('recipient_storage') ?? 'Склад получатель'}:',
+        'label':
+            '${AppLocalizations.of(context)!.translate('recipient_storage') ?? 'Склад получатель'}:',
         'value': document.recipient_storage_id?.name ?? '',
       },
       {
-        'label': AppLocalizations.of(context)!.translate('comment') ?? 'Комментарий',
+        'label':
+            AppLocalizations.of(context)!.translate('comment') ?? 'Комментарий',
         'value': document.comment ?? '',
       },
       {
-        'label': '${AppLocalizations.of(context)!.translate('total_quantity') ?? 'Общее количество'}:',
+        'label':
+            '${AppLocalizations.of(context)!.translate('total_quantity') ?? 'Общее количество'}:',
         'value': document.totalQuantity.toString(),
       },
       {
-        'label': '${AppLocalizations.of(context)!.translate('status') ?? 'Статус'}:',
+        'label':
+            '${AppLocalizations.of(context)!.translate('status') ?? 'Статус'}:',
         'value': _getLocalizedStatus(document),
       },
       if (document.deletedAt != null)
         {
-          'label': '${AppLocalizations.of(context)!.translate('deleted_at') ?? 'Дата удаления'}:',
+          'label':
+              '${AppLocalizations.of(context)!.translate('deleted_at') ?? 'Дата удаления'}:',
           'value': DateFormat('dd.MM.yyyy HH:mm').format(document.deletedAt!),
         },
     ];
@@ -205,15 +245,21 @@ class _MovementDocumentDetailsScreenState extends State<MovementDocumentDetailsS
       });
       _updateStatusOnly();
       final localizations = AppLocalizations.of(context)!;
-      _showSnackBar(localizations.translate('document_approved') ?? 'Документ проведен', true);
+      _showSnackBar(
+          localizations.translate('document_approved') ?? 'Документ проведен',
+          true);
     } catch (e) {
       if (e is ApiException && e.statusCode == 409) {
         final localizations = AppLocalizations.of(context)!;
-        showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', e.message, errorDialogEnum: ErrorDialogEnum.goodsMovementApprove);
+        showSimpleErrorDialog(
+            context, localizations.translate('error') ?? 'Ошибка', e.message,
+            errorDialogEnum: ErrorDialogEnum.goodsMovementApprove);
         return;
       }
       final localizations = AppLocalizations.of(context)!;
-      _showSnackBar('${localizations.translate('error_approving_document') ?? 'Ошибка при проведении документа'}: $e', false);
+      _showSnackBar(
+          '${localizations.translate('error_approving_document') ?? 'Ошибка при проведении документа'}: $e',
+          false);
     } finally {
       setState(() {
         _isButtonLoading = false;
@@ -233,15 +279,22 @@ class _MovementDocumentDetailsScreenState extends State<MovementDocumentDetailsS
       });
       _updateStatusOnly();
       final localizations = AppLocalizations.of(context)!;
-      _showSnackBar(localizations.translate('document_unapproved') ?? 'Проведение документа отменено', true);
+      _showSnackBar(
+          localizations.translate('document_unapproved') ??
+              'Проведение документа отменено',
+          true);
     } catch (e) {
       if (e is ApiException && e.statusCode == 409) {
         final localizations = AppLocalizations.of(context)!;
-        showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', e.message, errorDialogEnum: ErrorDialogEnum.goodsMovementUnapprove);
+        showSimpleErrorDialog(
+            context, localizations.translate('error') ?? 'Ошибка', e.message,
+            errorDialogEnum: ErrorDialogEnum.goodsMovementUnapprove);
         return;
       }
       final localizations = AppLocalizations.of(context)!;
-      _showSnackBar('${localizations.translate('error_unapproving_document') ?? 'Ошибка при отмене проведения документа'}: $e', false);
+      _showSnackBar(
+          '${localizations.translate('error_unapproving_document') ?? 'Ошибка при отмене проведения документа'}: $e',
+          false);
     } finally {
       setState(() {
         _isButtonLoading = false;
@@ -261,15 +314,22 @@ class _MovementDocumentDetailsScreenState extends State<MovementDocumentDetailsS
       });
       _updateStatusOnly();
       final localizations = AppLocalizations.of(context)!;
-      _showSnackBar(localizations.translate('document_restored') ?? 'Документ восстановлен', true);
+      _showSnackBar(
+          localizations.translate('document_restored') ??
+              'Документ восстановлен',
+          true);
     } catch (e) {
       if (e is ApiException && e.statusCode == 409) {
         final localizations = AppLocalizations.of(context)!;
-        showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', e.message, errorDialogEnum: ErrorDialogEnum.goodsMovementRestore);
+        showSimpleErrorDialog(
+            context, localizations.translate('error') ?? 'Ошибка', e.message,
+            errorDialogEnum: ErrorDialogEnum.goodsMovementRestore);
         return;
       }
       final localizations = AppLocalizations.of(context)!;
-      _showSnackBar('${localizations.translate('error_restoring_document') ?? 'Ошибка при восстановлении документа'}: $e', false);
+      _showSnackBar(
+          '${localizations.translate('error_restoring_document') ?? 'Ошибка при восстановлении документа'}: $e',
+          false);
     } finally {
       setState(() {
         _isButtonLoading = false;
@@ -304,7 +364,8 @@ class _MovementDocumentDetailsScreenState extends State<MovementDocumentDetailsS
     // НОВОЕ: Если документ удалён - показываем кнопку восстановления
     if (currentDocument!.deletedAt != null) {
       return StyledActionButton(
-        text: AppLocalizations.of(context)!.translate('restore_document') ?? 'Восстановить',
+        text: AppLocalizations.of(context)!.translate('restore_document') ??
+            'Восстановить',
         icon: Icons.restore,
         color: const Color(0xFF2196F3),
         onPressed: _restoreDocument,
@@ -316,9 +377,15 @@ class _MovementDocumentDetailsScreenState extends State<MovementDocumentDetailsS
       return const SizedBox.shrink();
     }
 
+    // ✅ НОВОЕ: Дополнительная проверка разрешения на проведение
+    if (!_hasApprovePermission) {
+      return const SizedBox.shrink();
+    }
+
     if (currentDocument!.approved == 0) {
       return StyledActionButton(
-        text: AppLocalizations.of(context)!.translate('approve_document') ?? 'Провести',
+        text: AppLocalizations.of(context)!.translate('approve_document') ??
+            'Провести',
         icon: Icons.check_circle_outline,
         color: const Color(0xFF4CAF50),
         onPressed: _approveDocument,
@@ -326,7 +393,8 @@ class _MovementDocumentDetailsScreenState extends State<MovementDocumentDetailsS
     }
 
     return StyledActionButton(
-      text: AppLocalizations.of(context)!.translate('unapprove_document') ?? 'Отменить проведение',
+      text: AppLocalizations.of(context)!.translate('unapprove_document') ??
+          'Отменить проведение',
       icon: Icons.cancel_outlined,
       color: const Color(0xFFFFA500),
       onPressed: _unApproveDocument,
@@ -376,7 +444,8 @@ class _MovementDocumentDetailsScreenState extends State<MovementDocumentDetailsS
               Padding(
                 padding: const EdgeInsets.all(16),
                 child: StyledActionButton(
-                  text: AppLocalizations.of(context)!.translate('close') ?? 'Закрыть',
+                  text: AppLocalizations.of(context)!.translate('close') ??
+                      'Закрыть',
                   icon: Icons.close,
                   color: const Color(0xff1E2E52),
                   onPressed: () => Navigator.pop(context),
@@ -410,7 +479,9 @@ class _MovementDocumentDetailsScreenState extends State<MovementDocumentDetailsS
             : currentDocument == null
                 ? Center(
                     child: Text(
-                      AppLocalizations.of(context)!.translate('document_data_unavailable') ?? 'Данные документа недоступны',
+                      AppLocalizations.of(context)!
+                              .translate('document_data_unavailable') ??
+                          'Данные документа недоступны',
                       style: const TextStyle(
                         fontSize: 18,
                         fontFamily: 'Gilroy',
@@ -420,7 +491,8 @@ class _MovementDocumentDetailsScreenState extends State<MovementDocumentDetailsS
                     ),
                   )
                 : Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16.0, vertical: 8.0),
                     child: ListView(
                       children: [
                         Padding(
@@ -429,7 +501,8 @@ class _MovementDocumentDetailsScreenState extends State<MovementDocumentDetailsS
                         ),
                         _buildDetailsList(),
                         const SizedBox(height: 16),
-                        if (currentDocument!.documentGoods != null && currentDocument!.documentGoods!.isNotEmpty) ...[
+                        if (currentDocument!.documentGoods != null &&
+                            currentDocument!.documentGoods!.isNotEmpty) ...[
                           _buildGoodsList(currentDocument!.documentGoods!),
                           const SizedBox(height: 16),
                         ],
@@ -442,8 +515,8 @@ class _MovementDocumentDetailsScreenState extends State<MovementDocumentDetailsS
 
   AppBar _buildAppBar(BuildContext context) {
     // ИЗМЕНЕНО: Показываем кнопки только если есть права И документ не удалён
-    final showActions = currentDocument?.deletedAt == null && 
-                        (widget.hasUpdatePermission || widget.hasDeletePermission);
+    final showActions = currentDocument?.deletedAt == null &&
+        (widget.hasUpdatePermission || widget.hasDeletePermission);
 
     return AppBar(
       backgroundColor: Colors.white,
@@ -468,7 +541,7 @@ class _MovementDocumentDetailsScreenState extends State<MovementDocumentDetailsS
       title: Transform.translate(
         offset: const Offset(-10, 0),
         child: Text(
-          "${AppLocalizations.of(context)!.translate('view_document') ?? 'Просмотр документа'} №${widget.docNumber}",
+          "${AppLocalizations.of(context)!.translate('transfer') ?? 'Перемещение'} №${widget.docNumber}",
           style: const TextStyle(
             fontSize: 20,
             fontFamily: 'Gilroy',
@@ -528,7 +601,8 @@ class _MovementDocumentDetailsScreenState extends State<MovementDocumentDetailsS
                           builder: (BuildContext context) {
                             return BlocProvider.value(
                               value: BlocProvider.of<MovementBloc>(context),
-                              child: MovementDeleteDocumentDialog(documentId: widget.documentId),
+                              child: MovementDeleteDocumentDialog(
+                                  documentId: widget.documentId),
                             );
                           },
                         );
@@ -582,7 +656,8 @@ class _MovementDocumentDetailsScreenState extends State<MovementDocumentDetailsS
                   fontFamily: 'Gilroy',
                   fontWeight: FontWeight.w500,
                   color: const Color(0xff1E2E52),
-                  decoration: value.isNotEmpty ? TextDecoration.underline : null,
+                  decoration:
+                      value.isNotEmpty ? TextDecoration.underline : null,
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -606,7 +681,8 @@ class _MovementDocumentDetailsScreenState extends State<MovementDocumentDetailsS
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildTitleRow(AppLocalizations.of(context)!.translate('goods') ?? 'Товары'),
+        _buildTitleRow(
+            AppLocalizations.of(context)!.translate('goods') ?? 'Товары'),
         const SizedBox(height: 8),
         if (goods.isEmpty)
           Padding(
@@ -617,7 +693,8 @@ class _MovementDocumentDetailsScreenState extends State<MovementDocumentDetailsS
                 child: Padding(
                   padding: const EdgeInsets.all(16),
                   child: Text(
-                    AppLocalizations.of(context)!.translate('empty') ?? 'Нет товаров',
+                    AppLocalizations.of(context)!.translate('empty') ??
+                        'Нет товаров',
                     style: const TextStyle(
                       fontSize: 16,
                       fontFamily: 'Gilroy',
@@ -644,7 +721,8 @@ class _MovementDocumentDetailsScreenState extends State<MovementDocumentDetailsS
   }
 
   Widget _buildGoodsItem(DocumentGood good) {
-    final selectedUnit = good.good?.unit ?? Unit(id: null, name: '', shortName: '');
+    final selectedUnit =
+        good.good?.unit ?? Unit(id: null, name: '', shortName: '');
     final amount = selectedUnit.amount ?? 1.0;
     final unitShortName = selectedUnit.shortName ?? selectedUnit.name ?? '';
 
@@ -659,7 +737,8 @@ class _MovementDocumentDetailsScreenState extends State<MovementDocumentDetailsS
         child: Container(
           decoration: TaskCardStyles.taskCardDecoration,
           child: Padding(
-            padding: const EdgeInsets.only(left: 16, right: 16, top: 12, bottom: 12),
+            padding:
+                const EdgeInsets.only(left: 16, right: 16, top: 12, bottom: 12),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -685,7 +764,9 @@ class _MovementDocumentDetailsScreenState extends State<MovementDocumentDetailsS
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    AppLocalizations.of(context)!.translate('unit') ?? 'Ед.',
+                                    AppLocalizations.of(context)!
+                                            .translate('unit') ??
+                                        'Ед.',
                                     style: const TextStyle(
                                       fontSize: 10,
                                       fontFamily: 'Gilroy',
@@ -712,7 +793,9 @@ class _MovementDocumentDetailsScreenState extends State<MovementDocumentDetailsS
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  AppLocalizations.of(context)!.translate('quantity') ?? 'Кол-во',
+                                  AppLocalizations.of(context)!
+                                          .translate('quantity') ??
+                                      'Кол-во',
                                   style: const TextStyle(
                                     fontSize: 10,
                                     fontFamily: 'Gilroy',
@@ -806,9 +889,11 @@ class _MovementDocumentDetailsScreenState extends State<MovementDocumentDetailsS
     );
   }
 
-
   Widget _buildImageWidget(DocumentGood good) {
-    if (baseUrl == null || good.good == null || good.good!.files == null || good.good!.files!.isEmpty) {
+    if (baseUrl == null ||
+        good.good == null ||
+        good.good!.files == null ||
+        good.good!.files!.isEmpty) {
       return _buildPlaceholderImage();
     }
 
@@ -839,7 +924,8 @@ class _MovementDocumentDetailsScreenState extends State<MovementDocumentDetailsS
         borderRadius: BorderRadius.circular(8),
       ),
       child: const Center(
-        child: Icon(Icons.image_not_supported, size: 40, color: Color(0xff99A4BA)),
+        child:
+            Icon(Icons.image_not_supported, size: 40, color: Color(0xff99A4BA)),
       ),
     );
   }
@@ -848,7 +934,10 @@ class _MovementDocumentDetailsScreenState extends State<MovementDocumentDetailsS
     final goodId = good.good?.id;
     if (goodId == null || goodId == 0) {
       final localizations = AppLocalizations.of(context)!;
-      _showSnackBar(localizations.translate('error_no_good_id') ?? 'Ошибка: Не удалось определить ID товара', false);
+      _showSnackBar(
+          localizations.translate('error_no_good_id') ??
+              'Ошибка: Не удалось определить ID товара',
+          false);
       return;
     }
 

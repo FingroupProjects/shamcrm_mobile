@@ -18,7 +18,8 @@ class OrderByLeadBloc extends Bloc<OrderByLeadEvent, OrderByLeadState> {
     emit(OrderByLeadLoading());
     try {
       final orderResponse = await apiService.getOrdersByLead(
-        leadId: event.leadId,
+        leadId: event.entityId,
+        relationType: event.relationType,
         page: event.page,
         perPage: event.perPage,
       );

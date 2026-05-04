@@ -23,6 +23,8 @@ class ExpenseScreen extends StatefulWidget {
 
 class _ExpenseScreenState extends State<ExpenseScreen> {
   final ScrollController _scrollController = ScrollController();
+  final TextEditingController _searchController = TextEditingController();
+  final FocusNode _searchFocusNode = FocusNode();
   bool isClickAvatarIcon = false;
 
   // НОВОЕ: Флаги прав доступа
@@ -61,6 +63,8 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
   @override
   void dispose() {
     _scrollController.dispose();
+    _searchController.dispose();
+    _searchFocusNode.dispose();
     super.dispose();
   }
 
@@ -75,6 +79,11 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
     final maxScroll = _scrollController.position.maxScrollExtent;
     final currentScroll = _scrollController.offset;
     return currentScroll >= (maxScroll * 0.9);
+  }
+
+  void _onSearch(String input) {
+    final query = input.trim().isEmpty ? null : input.trim();
+    context.read<ExpenseBloc>().add(SearchExpenses(query: query));
   }
 
   @override
@@ -92,13 +101,20 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
             });
           },
           clearButtonClickFiltr: (isSearching) {},
-          showSearchIcon: false,
+          showSearchIcon: !isClickAvatarIcon,
           showFilterIcon: false,
           showFilterOrderIcon: false,
-          onChangedSearchInput: (input) {},
-          textEditingController: TextEditingController(),
-          focusNode: FocusNode(),
-          clearButtonClick: (isSearching) {},
+          onChangedSearchInput: _onSearch,
+          textEditingController: _searchController,
+          focusNode: _searchFocusNode,
+          clearButtonClick: (isSearching) {
+            if (!isSearching) {
+              setState(() {
+                _searchController.clear();
+              });
+              context.read<ExpenseBloc>().add(const SearchExpenses(query: null));
+            }
+          },
           currentFilters: {},
         ),
       ),
@@ -130,7 +146,10 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
                         const SizedBox(height: 16),
                         ElevatedButton(
                           onPressed: () {
-                            context.read<ExpenseBloc>().add(const FetchExpenses());
+                            // Сохраняем текущий поисковый запрос при повторной попытке
+                            final currentState = context.read<ExpenseBloc>().state;
+                            final currentQuery = currentState.searchQuery;
+                            context.read<ExpenseBloc>().add(FetchExpenses(query: currentQuery));
                           },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xff1E2E52),
@@ -163,7 +182,10 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
                     color: const Color(0xff1E2E52),
                     backgroundColor: Colors.white,
                     onRefresh: () async {
-                      context.read<ExpenseBloc>().add(const FetchExpenses());
+                      // Сохраняем текущий поисковый запрос при обновлении
+                      final currentState = context.read<ExpenseBloc>().state;
+                      final currentQuery = currentState.searchQuery;
+                      context.read<ExpenseBloc>().add(FetchExpenses(query: currentQuery));
                     },
                     child: ListView.builder(
                       controller: _scrollController,
@@ -272,7 +294,10 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
     );
 
     if (result == true) {
-      context.read<ExpenseBloc>().add(const FetchExpenses());
+      // Сохраняем текущий поисковый запрос
+      final currentState = context.read<ExpenseBloc>().state;
+      final currentQuery = currentState.searchQuery;
+      context.read<ExpenseBloc>().add(FetchExpenses(query: currentQuery));
     }
   }
 
@@ -290,7 +315,10 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
     );
 
     if (result == true) {
-      context.read<ExpenseBloc>().add(const FetchExpenses());
+      // Сохраняем текущий поисковый запрос
+      final currentState = context.read<ExpenseBloc>().state;
+      final currentQuery = currentState.searchQuery;
+      context.read<ExpenseBloc>().add(FetchExpenses(query: currentQuery));
     }
   }
 

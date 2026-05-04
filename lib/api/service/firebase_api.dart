@@ -1,9 +1,9 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/messaging/messaging_cubit.dart';
 import 'package:crm_task_manager/main.dart';
 import 'package:crm_task_manager/models/chats_model.dart';
-import 'package:crm_task_manager/models/deal_model.dart';
 import 'package:crm_task_manager/models/page_2/order_card.dart';
 import 'package:crm_task_manager/page_2/order/order_details/order_details_screen.dart';
 import 'package:crm_task_manager/screens/chats/chat_sms_screen.dart';
@@ -23,10 +23,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   try {
     if (Firebase.apps.isEmpty) {
-      debugPrint("Firebase не инициализирован, инициализируем... FirebaseApi.Line.26");
+      debugPrint(
+          "Firebase не инициализирован, инициализируем... FirebaseApi.Line.26");
       await Firebase.initializeApp();
     }
-    
+
     debugPrint('Фоновое уведомление: ${message.messageId}');
     if (message.data.isNotEmpty) {
       message.data.forEach((key, value) {
@@ -46,19 +47,20 @@ class FirebaseApi {
   static final FirebaseApi _instance = FirebaseApi._internal();
   factory FirebaseApi() => _instance;
   FirebaseApi._internal();
-  
+
   final _firebaseMessaging = FirebaseMessaging.instance;
+  final ApiService _apiService = ApiService();
   RemoteMessage? _initialMessage;
   bool _isInitialized = false;
-
-  // ✅ КРИТИЧНО: Единственный экземпляр ApiService
-  late final ApiService _apiService;
+  bool _backgroundHandlerRegistered = false;
+  StreamSubscription<String>? _tokenRefreshSubscription;
 
   Future<void> initNotifications() async {
     try {
       // КРИТИЧЕСКАЯ ПРОВЕРКА: Firebase должен быть инициализирован
       if (Firebase.apps.isEmpty) {
-        debugPrint('FirebaseApi: Firebase не инициализирован, пропускаем настройку уведомлений');
+        debugPrint(
+            'FirebaseApi: Firebase не инициализирован, пропускаем настройку уведомлений');
         return;
       }
 
@@ -70,18 +72,13 @@ class FirebaseApi {
         return;
       }
 
-      if (_isInitialized) {
-        debugPrint('FirebaseApi уже инициализирован');
-        return;
-      }
-
-      // ✅ КРИТИЧНО: Инициализируем ApiService ОДИН РАЗ
-      _apiService = ApiService();
       await _apiService.initialize();
-      debugPrint('FirebaseApi: ApiService initialized with baseUrl: ${_apiService.baseUrl}');
+      debugPrint(
+          'FirebaseApi: ApiService initialized with baseUrl: ${_apiService.baseUrl}');
 
       // Запрашиваем разрешение на уведомления
-      NotificationSettings settings = await _firebaseMessaging.requestPermission(
+      NotificationSettings settings =
+          await _firebaseMessaging.requestPermission(
         alert: true,
         badge: true,
         sound: true,
@@ -92,45 +89,98 @@ class FirebaseApi {
         return;
       }
 
-      // Проверяем APNS-токен (только для iOS/iPadOS)
-      if (Platform.isIOS) {
-        String? apnsToken = await _firebaseMessaging.getAPNSToken();
-        if (apnsToken == null) {
-          debugPrint('APNS token is not available yet. Skipping FCM token retrieval.');
-          return;
-        }
+      await syncCurrentTokenWithServer();
+
+      if (_isInitialized) {
+        debugPrint(
+            'FirebaseApi уже инициализирован, токен пересинхронизирован');
+        return;
       }
 
-      // Получаем FCM-токен
-      final fcmToken = await _firebaseMessaging.getToken();
-      if (fcmToken != null) {
-        debugPrint('FCM Token: $fcmToken');
-      } else {
-        debugPrint('Failed to get FCM token');
-      }
-
-      // Безопасная регистрация background handler
-      try {
-        if (Firebase.apps.isNotEmpty) {
-          FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
-          debugPrint('Background message handler зарегистрирован');
-        }
-      } catch (e) {
-        if (e.toString().contains('already')) {
-          debugPrint('Background handler уже зарегистрирован');
-        } else {
-          debugPrint('Ошибка регистрации background handler: $e');
-        }
-      }
-
+      _registerBackgroundHandler();
+      _registerTokenRefreshListener();
       await initPushNotification();
       _isInitialized = true;
       debugPrint('FirebaseApi успешно инициализирован');
-
     } catch (e) {
       debugPrint('Error initializing notifications: $e');
       // НЕ пробрасываем ошибку дальше
     }
+  }
+
+  Future<void> syncCurrentTokenWithServer() async {
+    try {
+      final fcmToken = await _getCurrentFcmToken();
+      if (fcmToken == null || fcmToken.isEmpty) {
+        debugPrint(
+            'FirebaseApi: Не удалось получить актуальный FCM токен для синхронизации');
+        return;
+      }
+
+      await _syncTokenWithBackend(fcmToken, source: 'manual-sync');
+    } catch (e) {
+      debugPrint('FirebaseApi: Ошибка ручной синхронизации FCM токена: $e');
+    }
+  }
+
+  Future<String?> _getCurrentFcmToken() async {
+    if (Platform.isIOS) {
+      final apnsToken = await _firebaseMessaging.getAPNSToken();
+      if (apnsToken == null) {
+        debugPrint(
+            'FirebaseApi: APNS token is not available yet. Skipping FCM token retrieval.');
+        return null;
+      }
+    }
+
+    return _firebaseMessaging.getToken();
+  }
+
+  Future<void> _syncTokenWithBackend(
+    String fcmToken, {
+    required String source,
+  }) async {
+    final preview =
+        fcmToken.length > 20 ? '${fcmToken.substring(0, 20)}...' : fcmToken;
+    debugPrint('FirebaseApi: [$source] FCM token: $preview');
+    await _apiService.sendDeviceToken(fcmToken);
+  }
+
+  void _registerBackgroundHandler() {
+    if (_backgroundHandlerRegistered) {
+      return;
+    }
+
+    try {
+      if (Firebase.apps.isNotEmpty) {
+        FirebaseMessaging.onBackgroundMessage(
+            firebaseMessagingBackgroundHandler);
+        _backgroundHandlerRegistered = true;
+        debugPrint('Background message handler зарегистрирован');
+      }
+    } catch (e) {
+      if (e.toString().contains('already')) {
+        _backgroundHandlerRegistered = true;
+        debugPrint('Background handler уже зарегистрирован');
+      } else {
+        debugPrint('Ошибка регистрации background handler: $e');
+      }
+    }
+  }
+
+  void _registerTokenRefreshListener() {
+    if (_tokenRefreshSubscription != null) {
+      return;
+    }
+
+    _tokenRefreshSubscription = _firebaseMessaging.onTokenRefresh.listen(
+      (newToken) {
+        unawaited(_syncTokenWithBackend(newToken, source: 'token-refresh'));
+      },
+      onError: (Object error) {
+        debugPrint('FirebaseApi: Ошибка onTokenRefresh: $error');
+      },
+    );
   }
 
   Future<void> initPushNotification() async {
@@ -143,7 +193,8 @@ class FirebaseApi {
       });
 
       FirebaseMessaging.onMessage.listen((message) {
-        debugPrint('Уведомление при активном приложении: ${message.notification?.title}');
+        debugPrint(
+            'Уведомление при активном приложении: ${message.notification?.title}');
         _printCustomData(message);
       });
     } catch (e) {
@@ -165,284 +216,293 @@ class FirebaseApi {
     }
   }
 
-Future<void> handleMessage(RemoteMessage? message) async {
-  try {
-    debugPrint('════════════════════════════════════════════════════════');
-    debugPrint('🔔 FIREBASE API: PUSH NOTIFICATION RECEIVED');
-    debugPrint('════════════════════════════════════════════════════════');
+  Future<void> handleMessage(RemoteMessage? message) async {
+    try {
+      debugPrint('════════════════════════════════════════════════════════');
+      debugPrint('🔔 FIREBASE API: PUSH NOTIFICATION RECEIVED');
+      debugPrint('════════════════════════════════════════════════════════');
 
-    if (message == null) {
-      debugPrint('❌ Message is NULL');
-      return;
+      if (message == null) {
+        debugPrint('❌ Message is NULL');
+        return;
+      }
+
+      debugPrint('📦 Message Data: ${message.data}');
+
+      if (message.data.isEmpty) {
+        debugPrint('❌ Message data is EMPTY');
+        return;
+      }
+
+      final type = message.data['type'];
+      final id = message.data['id'];
+
+      debugPrint('🎯 Notification Type: $type');
+      debugPrint('🎯 Notification ID: $id');
+
+      if (type == null || id == null) {
+        debugPrint('❌ Type or ID is NULL');
+        return;
+      }
+
+      // ✅ КРИТИЧНО: Ждем готовность навигатора
+      debugPrint('⏳ Waiting for Navigator...');
+      int attempts = 0;
+      while (navigatorKey.currentState == null && attempts < 20) {
+        await Future.delayed(Duration(milliseconds: 300));
+        attempts++;
+      }
+
+      if (navigatorKey.currentState == null) {
+        debugPrint('❌ Navigator STILL NULL after waiting');
+        return;
+      }
+      debugPrint('✅ Navigator is READY');
+
+      // ✅ Проверяем домены и ApiService
+      await _ensureDomainsConfigured();
+
+      if (!_isInitialized) {
+        await _apiService.initialize();
+      }
+
+      // ✅ ИСПРАВЛЕНИЕ: СРАЗУ открываем нужный экран, БЕЗ перехода на /home
+      debugPrint('🎯 Opening specific screen directly for type: $type');
+      await navigateToSpecificScreen(type, id, message);
+
+      debugPrint('════════════════════════════════════════════════════════');
+      debugPrint('✅ PUSH NOTIFICATION HANDLED SUCCESSFULLY');
+      debugPrint('════════════════════════════════════════════════════════');
+    } catch (e, stackTrace) {
+      debugPrint('════════════════════════════════════════════════════════');
+      debugPrint('❌ CRITICAL ERROR IN handleMessage');
+      debugPrint('════════════════════════════════════════════════════════');
+      debugPrint('Error: $e');
+      debugPrint('StackTrace: $stackTrace');
+      debugPrint('════════════════════════════════════════════════════════');
     }
-
-    debugPrint('📦 Message Data: ${message.data}');
-
-    if (message.data.isEmpty) {
-      debugPrint('❌ Message data is EMPTY');
-      return;
-    }
-
-    final type = message.data['type'];
-    final id = message.data['id'];
-
-    debugPrint('🎯 Notification Type: $type');
-    debugPrint('🎯 Notification ID: $id');
-
-    if (type == null || id == null) {
-      debugPrint('❌ Type or ID is NULL');
-      return;
-    }
-
-    // ✅ КРИТИЧНО: Ждем готовность навигатора
-    debugPrint('⏳ Waiting for Navigator...');
-    int attempts = 0;
-    while (navigatorKey.currentState == null && attempts < 20) {
-      await Future.delayed(Duration(milliseconds: 300));
-      attempts++;
-    }
-
-    if (navigatorKey.currentState == null) {
-      debugPrint('❌ Navigator STILL NULL after waiting');
-      return;
-    }
-    debugPrint('✅ Navigator is READY');
-
-    // ✅ Проверяем домены и ApiService
-    await _ensureDomainsConfigured();
-
-    if (!_isInitialized) {
-      await _apiService.initialize();
-    }
-
-    // ✅ ИСПРАВЛЕНИЕ: СРАЗУ открываем нужный экран, БЕЗ перехода на /home
-    debugPrint('🎯 Opening specific screen directly for type: $type');
-    await navigateToSpecificScreen(type, id, message);
-    
-    debugPrint('════════════════════════════════════════════════════════');
-    debugPrint('✅ PUSH NOTIFICATION HANDLED SUCCESSFULLY');
-    debugPrint('════════════════════════════════════════════════════════');
-  } catch (e, stackTrace) {
-    debugPrint('════════════════════════════════════════════════════════');
-    debugPrint('❌ CRITICAL ERROR IN handleMessage');
-    debugPrint('════════════════════════════════════════════════════════');
-    debugPrint('Error: $e');
-    debugPrint('StackTrace: $stackTrace');
-    debugPrint('════════════════════════════════════════════════════════');
   }
-}
 
 // ✅ ИСПРАВЛЕНИЕ: Упрощенная навигация - СРАЗУ на нужный экран
-Future<void> navigateToSpecificScreen(String type, String id, RemoteMessage message) async {
-  try {
-    debugPrint('🚀 navigateToSpecificScreen: type=$type, id=$id');
-    
-    switch (type) {
-      case 'message':
-        await navigateToChatScreen(id, message);
-        break;
-      case 'task':
-      case 'taskFinished':
-      case 'taskOutDated':
-        await navigateToTaskScreen(id, message);
-        break;
-      case 'lead':
-      case 'notice':
-      case 'updateLeadStatus':
-        await navigateToLeadScreen(id, message);
-        break;
-      case 'myTaskOutDated':
-        await navigateToMyTaskScreen(id, message);
-        break;
-      case 'eventId':
-        await navigateToEventScreen(id, message);
-        break;
-      case 'dealDeadLineNotification':
-        await navigateToDealScreen(id, message);
-        break;
-      case 'orders':
-        await navigateToOrdersScreen(id, message);
-        break;
-      default:
-        debugPrint('❓ Unknown type: $type');
+  Future<void> navigateToSpecificScreen(
+      String type, String id, RemoteMessage message) async {
+    try {
+      debugPrint('🚀 navigateToSpecificScreen: type=$type, id=$id');
+
+      switch (type) {
+        case 'message':
+          await navigateToChatScreen(id, message);
+          break;
+        case 'task':
+        case 'taskFinished':
+        case 'taskOutDated':
+          await navigateToTaskScreen(id, message);
+          break;
+        case 'lead':
+        case 'notice':
+        case 'updateLeadStatus':
+          await navigateToLeadScreen(id, message);
+          break;
+        case 'myTaskOutDated':
+          await navigateToMyTaskScreen(id, message);
+          break;
+        case 'eventId':
+          await navigateToEventScreen(id, message);
+          break;
+        case 'dealDeadLineNotification':
+          await navigateToDealScreen(id, message);
+          break;
+        case 'orders':
+          await navigateToOrdersScreen(id, message);
+          break;
+        default:
+          debugPrint('❓ Unknown type: $type');
+      }
+    } catch (e, stackTrace) {
+      debugPrint('navigateToSpecificScreen: ERROR: $e');
+      debugPrint('StackTrace: $stackTrace');
     }
-  } catch (e, stackTrace) {
-    debugPrint('navigateToSpecificScreen: ERROR: $e');
-    debugPrint('StackTrace: $stackTrace');
-  }
-}
-Future<void> navigateToChatScreen(String id, RemoteMessage message) async {
-  debugPrint('═══════════════════════════════════════════════════════');
-  debugPrint('💬 NAVIGATE TO CHAT SCREEN');
-  debugPrint('═══════════════════════════════════════════════════════');
-  
-  final chatId = int.tryParse(id) ?? 0;
-  
-  if (chatId == 0 || navigatorKey.currentState == null) {
-    debugPrint('❌ Invalid chatId or navigator');
-    return;
   }
 
-  // ✅ ПОКАЗЫВАЕМ ОДИН ЛОАДЕР
-  showDialog(
-    context: navigatorKey.currentContext!,
-    barrierDismissible: false,
-    barrierColor: Colors.black26,
-    builder: (context) => Center(
-      child: Container(
-        padding: EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: CircularProgressIndicator(
-          color: Color(0xff1E2E52),
+  Future<void> navigateToChatScreen(String id, RemoteMessage message) async {
+    debugPrint('═══════════════════════════════════════════════════════');
+    debugPrint('💬 NAVIGATE TO CHAT SCREEN');
+    debugPrint('═══════════════════════════════════════════════════════');
+
+    final chatId = int.tryParse(id) ?? 0;
+
+    if (chatId == 0 || navigatorKey.currentState == null) {
+      debugPrint('❌ Invalid chatId or navigator');
+      return;
+    }
+
+    // ✅ ПОКАЗЫВАЕМ ОДИН ЛОАДЕР
+    showDialog(
+      context: navigatorKey.currentContext!,
+      barrierDismissible: false,
+      barrierColor: Colors.black26,
+      builder: (context) => Center(
+        child: Container(
+          padding: EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: CircularProgressIndicator(
+            color: Color(0xff1E2E52),
+          ),
         ),
       ),
-    ),
-  );
+    );
 
-  try {
-    debugPrint('📡 Loading chat data...');
-    final getChatById = await _apiService.getChatById(chatId);
-    
-    debugPrint('✅ Chat loaded: ${getChatById.type}');
-    
-    String? chatName;
-    Widget screen;
+    try {
+      debugPrint('📡 Loading chat data...');
+      final getChatById = await _apiService.getChatById(chatId);
 
-    switch (getChatById.type) {
-      case 'lead':
-        chatName = getChatById.name;
-        break;
-        
-      case 'task':
-        final chatProfileTask = await _apiService.getTaskProfile(chatId);
-        chatName = chatProfileTask.name;
-        break;
-        
-      case 'corporate':
-        final prefs = await SharedPreferences.getInstance();
-        String userId = prefs.getString('userID').toString();
+      debugPrint('✅ Chat loaded: ${getChatById.type}');
 
-        if (getChatById.group != null) {
-          chatName = getChatById.group!.name;
-        } else {
-          if (getChatById.chatUsers.isEmpty) {
-            if (message.data.containsKey('sender_name')) {
-              chatName = message.data['sender_name'];
+      String? chatName;
+      Widget screen;
+
+      switch (getChatById.type) {
+        case 'lead':
+          chatName = getChatById.name;
+          break;
+
+        case 'task':
+          final chatProfileTask = await _apiService.getTaskProfile(chatId);
+          chatName = chatProfileTask.name;
+          break;
+
+        case 'corporate':
+          final prefs = await SharedPreferences.getInstance();
+          String userId = prefs.getString('userID').toString();
+
+          if (getChatById.group != null) {
+            chatName = getChatById.group!.name;
+          } else {
+            if (getChatById.chatUsers.isEmpty) {
+              if (message.data.containsKey('sender_name')) {
+                chatName = message.data['sender_name'];
+              } else {
+                try {
+                  final allChatsResponse =
+                      await _apiService.getAllChats('corporate', 1);
+                  final allChats = allChatsResponse.data ?? [];
+                  final targetChat = allChats.firstWhere(
+                      (chat) => chat.id == chatId,
+                      orElse: () => throw Exception('Chat not found'));
+                  chatName = targetChat.name;
+                } catch (e) {
+                  chatName = getChatById.name ?? 'Чат #$chatId';
+                }
+              }
+            } else if (getChatById.chatUsers.length == 1) {
+              chatName = getChatById.chatUsers[0].participant.name;
             } else {
-              try {
-                final allChatsResponse = await _apiService.getAllChats('corporate', 1);
-                final allChats = allChatsResponse.data ?? [];
-                final targetChat = allChats.firstWhere(
-                  (chat) => chat.id == chatId,
-                  orElse: () => throw Exception('Chat not found')
-                );
-                chatName = targetChat.name;
-              } catch (e) {
-                chatName = getChatById.name ?? 'Чат #$chatId';
+              int userIndex = getChatById.chatUsers.indexWhere(
+                  (user) => user.participant.id.toString() == userId);
+              if (userIndex != -1) {
+                int otherUserIndex = (userIndex == 0) ? 1 : 0;
+                chatName =
+                    getChatById.chatUsers[otherUserIndex].participant.name;
+              } else {
+                chatName = getChatById.chatUsers[0].participant.name;
               }
             }
-          } else if (getChatById.chatUsers.length == 1) {
-            chatName = getChatById.chatUsers[0].participant.name;
-          } else {
-            int userIndex = getChatById.chatUsers.indexWhere(
-                (user) => user.participant.id.toString() == userId);
-            if (userIndex != -1) {
-              int otherUserIndex = (userIndex == 0) ? 1 : 0;
-              chatName = getChatById.chatUsers[otherUserIndex].participant.name;
-            } else {
-              chatName = getChatById.chatUsers[0].participant.name;
-            }
           }
-        }
-        break;
-        
-      default:
-        debugPrint('❌ Unknown chat type: ${getChatById.type}');
-        Navigator.of(navigatorKey.currentContext!).pop(); // Закрываем лоадер
-        return;
-    }
+          break;
 
-    screen = ChatSmsScreen(
-      chatItem: Chats(
-        id: chatId,
-        name: chatName ?? 'Чат #$chatId',
+        default:
+          debugPrint('❌ Unknown chat type: ${getChatById.type}');
+          Navigator.of(navigatorKey.currentContext!).pop(); // Закрываем лоадер
+          return;
+      }
+
+      screen = ChatSmsScreen(
+        chatItem: Chats(
+          id: chatId,
+          uniqueId: getChatById.uniqueId,
+          name: chatName ?? 'Чат #$chatId',
+          canSendMessage: getChatById.canSendMessage,
+          image: '',
+          channel: '',
+          lastMessage: '',
+          createDate: '',
+          unreadCount: 1,
+          chatUsers: [],
+        ).toChatItem(),
+        chatId: chatId,
+        chatUniqueId: getChatById.uniqueId,
+        endPointInTab: getChatById.type.toString(),
         canSendMessage: getChatById.canSendMessage,
-        image: '',
-        channel: '',
-        lastMessage: '',
-        createDate: '',
-        unreadCount: 1,
-        chatUsers: [],
-      ).toChatItem(),
-      chatId: chatId,
-      endPointInTab: getChatById.type.toString(),
-      canSendMessage: getChatById.canSendMessage,
-    );
+      );
 
-    // ✅ ЗАКРЫВАЕМ ЛОАДЕР
-    Navigator.of(navigatorKey.currentContext!).pop();
-
-    // ✅ ОТКРЫВАЕМ ЭКРАН
-    await navigatorKey.currentState!.push(
-      MaterialPageRoute(
-        builder: (context) => BlocProvider(
-          create: (context) => MessagingCubit(ApiService()),
-          child: screen,
-        ),
-      ),
-    );
-    
-    debugPrint('✅ Chat screen opened');
-    debugPrint('═══════════════════════════════════════════════════════');
-  } catch (e, stackTrace) {
-    // ✅ ЗАКРЫВАЕМ ЛОАДЕР при ошибке
-    try {
+      // ✅ ЗАКРЫВАЕМ ЛОАДЕР
       Navigator.of(navigatorKey.currentContext!).pop();
-    } catch (_) {}
-    
-    debugPrint('❌ ERROR: $e');
-    debugPrint('StackTrace: $stackTrace');
+
+      // ✅ ОТКРЫВАЕМ ЭКРАН
+      await navigatorKey.currentState!.push(
+        MaterialPageRoute(
+          builder: (context) => BlocProvider(
+            create: (context) => MessagingCubit(ApiService()),
+            child: screen,
+          ),
+        ),
+      );
+
+      debugPrint('✅ Chat screen opened');
+      debugPrint('═══════════════════════════════════════════════════════');
+    } catch (e, stackTrace) {
+      // ✅ ЗАКРЫВАЕМ ЛОАДЕР при ошибке
+      try {
+        Navigator.of(navigatorKey.currentContext!).pop();
+      } catch (_) {}
+
+      debugPrint('❌ ERROR: $e');
+      debugPrint('StackTrace: $stackTrace');
+    }
   }
-}
+
   // ✅ НОВЫЙ МЕТОД: Проверка и настройка доменов
   Future<void> _ensureDomainsConfigured() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      
+
       // Проверяем текущие домены
       final enteredDomainMap = await _apiService.getEnteredDomain();
       String? enteredMainDomain = enteredDomainMap['enteredMainDomain'];
       String? enteredDomain = enteredDomainMap['enteredDomain'];
-      
+
       // Проверяем email верификацию
       String? verifiedDomain = await _apiService.getVerifiedDomain();
-      
-      debugPrint('_ensureDomainsConfigured: enteredMainDomain=$enteredMainDomain, enteredDomain=$enteredDomain, verifiedDomain=$verifiedDomain');
-      
+
+      debugPrint(
+          '_ensureDomainsConfigured: enteredMainDomain=$enteredMainDomain, enteredDomain=$enteredDomain, verifiedDomain=$verifiedDomain');
+
       // Если домены не настроены, используем verifiedDomain
-      if ((enteredMainDomain == null || enteredDomain == null) && verifiedDomain != null) {
+      if ((enteredMainDomain == null || enteredDomain == null) &&
+          verifiedDomain != null) {
         if (verifiedDomain.contains('-back.')) {
           final parts = verifiedDomain.split('-back.');
           enteredDomain = parts[0];
           enteredMainDomain = parts[1];
-          
+
           await prefs.setString('enteredMainDomain', enteredMainDomain);
           await prefs.setString('enteredDomain', enteredDomain);
-          
-          debugPrint('_ensureDomainsConfigured: Configured from verifiedDomain');
+
+          debugPrint(
+              '_ensureDomainsConfigured: Configured from verifiedDomain');
         }
       }
-      
+
       // Если все еще нет доменов, пробуем QR данные
       if (enteredMainDomain == null || enteredDomain == null) {
         final qrData = await _apiService.getQrData();
         if (qrData['domain'] != null && qrData['mainDomain'] != null) {
           await prefs.setString('enteredDomain', qrData['domain']!);
           await prefs.setString('enteredMainDomain', qrData['mainDomain']!);
-          
+
           debugPrint('_ensureDomainsConfigured: Configured from QR data');
         }
       }
@@ -456,7 +516,7 @@ Future<void> navigateToChatScreen(String id, RemoteMessage message) async {
   //   try {
   //     debugPrint('=== START navigateToScreen ===');
   //     debugPrint('navigateToScreen: screenIndex=$screenIndex, id=$id, type=$type');
-      
+
   //     // ✅ Сбрасываем флаг уведомлений
   //     SharedPreferences.getInstance().then((prefs) {
   //       prefs.setBool('hasNewNotification', false);
@@ -478,7 +538,7 @@ Future<void> navigateToChatScreen(String id, RemoteMessage message) async {
   //     if (navigatorKey.currentState == null) {
   //       debugPrint('navigateToScreen: Navigator is null, waiting...');
   //       await Future.delayed(Duration(seconds: 1));
-        
+
   //       if (navigatorKey.currentState == null) {
   //         debugPrint('navigateToScreen: Navigator still null after delay, aborting');
   //         return;
@@ -523,7 +583,7 @@ Future<void> navigateToChatScreen(String id, RemoteMessage message) async {
   //       default:
   //         debugPrint('navigateToScreen: Unknown type: $type');
   //     }
-      
+
   //     debugPrint('=== END navigateToScreen ===');
   //   } catch (e, stackTrace) {
   //     debugPrint('navigateToScreen: ERROR: $e');
@@ -536,10 +596,10 @@ Future<void> navigateToChatScreen(String id, RemoteMessage message) async {
 //   debugPrint('💬 NAVIGATE TO CHAT SCREEN');
 //   debugPrint('════════════════════════════════════════════════════════');
 //   debugPrint('Chat ID (string): $id');
-  
+
 //   final chatId = int.tryParse(id) ?? 0;
 //   debugPrint('Chat ID (parsed): $chatId');
-  
+
 //   if (chatId == 0) {
 //     debugPrint('❌ Invalid chatId: $chatId');
 //     return;
@@ -547,7 +607,7 @@ Future<void> navigateToChatScreen(String id, RemoteMessage message) async {
 
 //   try {
 //     debugPrint('🔍 Loading chat data for chatId: $chatId');
-    
+
 //     if (navigatorKey.currentState == null) {
 //       debugPrint('❌ Navigator not ready');
 //       return;
@@ -555,7 +615,7 @@ Future<void> navigateToChatScreen(String id, RemoteMessage message) async {
 
 //     debugPrint('📡 Calling _apiService.getChatById($chatId)...');
 //     final getChatById = await _apiService.getChatById(chatId);
-    
+
 //     debugPrint('✅ Chat data received:');
 //     debugPrint('  - Chat Type: ${getChatById.type}');
 //     debugPrint('  - Chat Name: ${getChatById.name}');
@@ -565,7 +625,7 @@ Future<void> navigateToChatScreen(String id, RemoteMessage message) async {
 //     if (getChatById.group != null) {
 //       debugPrint('  - Group Name: ${getChatById.group!.name}');
 //     }
-    
+
 //     Widget screen;
 //     String? chatName;
 
@@ -575,7 +635,7 @@ Future<void> navigateToChatScreen(String id, RemoteMessage message) async {
 //         chatName = getChatById.name;
 //         debugPrint('  - Chat Name: $chatName');
 //         break;
-        
+
 //       case 'task':
 //         debugPrint('🎯 Chat type: TASK');
 //         debugPrint('📡 Calling _apiService.getTaskProfile($chatId)...');
@@ -583,7 +643,7 @@ Future<void> navigateToChatScreen(String id, RemoteMessage message) async {
 //         chatName = chatProfileTask.name;
 //         debugPrint('  - Task Name: $chatName');
 //         break;
-        
+
 //       case 'corporate':
 //         debugPrint('🎯 Chat type: CORPORATE');
 //         final prefs = await SharedPreferences.getInstance();
@@ -597,7 +657,7 @@ Future<void> navigateToChatScreen(String id, RemoteMessage message) async {
 //         } else {
 //           debugPrint('  - This is a DIRECT chat (1-on-1)');
 //           debugPrint('  - Chat Users: ${getChatById.chatUsers.length}');
-          
+
 //           // ✅ КРИТИЧЕСКАЯ ПРОВЕРКА
 //           if (getChatById.chatUsers.isEmpty) {
 //             debugPrint('❌ ERROR: chatUsers list is EMPTY!');
@@ -612,7 +672,7 @@ Future<void> navigateToChatScreen(String id, RemoteMessage message) async {
 //             int userIndex = getChatById.chatUsers.indexWhere(
 //                 (user) => user.participant.id.toString() == userId);
 //             debugPrint('  - Current user index: $userIndex');
-            
+
 //             if (userIndex != -1) {
 //               int otherUserIndex = (userIndex == 0) ? 1 : 0;
 //               debugPrint('  - Other user index: $otherUserIndex');
@@ -626,7 +686,7 @@ Future<void> navigateToChatScreen(String id, RemoteMessage message) async {
 //           }
 //         }
 //         break;
-        
+
 //       default:
 //         debugPrint('❌ Unknown chat type: ${getChatById.type}');
 //         return;
@@ -664,7 +724,7 @@ Future<void> navigateToChatScreen(String id, RemoteMessage message) async {
 //         ),
 //       ),
 //     );
-    
+
 //     debugPrint('✅ Chat screen pushed successfully');
 //     debugPrint('════════════════════════════════════════════════════════');
 //   } catch (e, stackTrace) {
@@ -679,196 +739,192 @@ Future<void> navigateToChatScreen(String id, RemoteMessage message) async {
 
   // ✅ АНАЛОГИЧНО для остальных методов навигации - используем _apiService
 
- Future<void> navigateToTaskScreen(String id, RemoteMessage message) async {
-  try {
-    debugPrint('📋 NAVIGATE TO TASK SCREEN: id=$id');
-
-    final taskId = message.data['id'];
-    final taskNumber = int.tryParse(message.data['taskNumber'] ?? '');
-
-    if (taskId == null || navigatorKey.currentState == null) {
-      debugPrint('❌ Invalid taskId or navigator');
-      return;
-    }
-
-    // ✅ ПОКАЗЫВАЕМ ОДИН ЛОАДЕР
-    showDialog(
-      context: navigatorKey.currentContext!,
-      barrierDismissible: false,
-      barrierColor: Colors.black26,
-      builder: (context) => Center(
-        child: Container(
-          padding: EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: CircularProgressIndicator(
-            color: Color(0xff1E2E52),
-          ),
-        ),
-      ),
-    );
-
+  Future<void> navigateToTaskScreen(String id, RemoteMessage message) async {
     try {
-      debugPrint('📡 Loading task details...');
-      final taskDetails = await _apiService.getTaskById(int.parse(taskId));
-      
-      // ✅ ЗАКРЫВАЕМ ЛОАДЕР
-      Navigator.of(navigatorKey.currentContext!).pop();
+      debugPrint('📋 NAVIGATE TO TASK SCREEN: id=$id');
 
-      // ✅ ОТКРЫВАЕМ ЭКРАН
-      await navigatorKey.currentState!.push(
-        MaterialPageRoute(
-          builder: (context) => TaskDetailsScreen(
-            taskId: taskId,
-            taskName: taskDetails.name,
-            taskStatus: '',
-            statusId: 1,
-            taskNumber: taskNumber,
-            taskCustomFields: [],
+      final taskId = message.data['id'];
+      final taskNumber = int.tryParse(message.data['taskNumber'] ?? '');
+
+      if (taskId == null || navigatorKey.currentState == null) {
+        debugPrint('❌ Invalid taskId or navigator');
+        return;
+      }
+
+      // ✅ ПОКАЗЫВАЕМ ОДИН ЛОАДЕР
+      showDialog(
+        context: navigatorKey.currentContext!,
+        barrierDismissible: false,
+        barrierColor: Colors.black26,
+        builder: (context) => Center(
+          child: Container(
+            padding: EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: CircularProgressIndicator(
+              color: Color(0xff1E2E52),
+            ),
           ),
         ),
       );
-      
-      debugPrint('✅ Task screen opened');
-    } catch (e) {
-      // ✅ ЗАКРЫВАЕМ ЛОАДЕР при ошибке
+
       try {
+        debugPrint('📡 Loading task details...');
+        final taskDetails = await _apiService.getTaskById(int.parse(taskId));
+
+        // ✅ ЗАКРЫВАЕМ ЛОАДЕР
         Navigator.of(navigatorKey.currentContext!).pop();
-      } catch (_) {}
-      debugPrint('❌ Error loading task: $e');
+
+        // ✅ ОТКРЫВАЕМ ЭКРАН
+        await navigatorKey.currentState!.push(
+          MaterialPageRoute(
+            builder: (context) => TaskDetailsScreen(
+              taskId: taskId,
+              taskName: taskDetails.name,
+              taskStatus: '',
+              statusId: 1,
+              taskNumber: taskNumber,
+              customFields: [],
+            ),
+          ),
+        );
+
+        debugPrint('✅ Task screen opened');
+      } catch (e) {
+        // ✅ ЗАКРЫВАЕМ ЛОАДЕР при ошибке
+        try {
+          Navigator.of(navigatorKey.currentContext!).pop();
+        } catch (_) {}
+        debugPrint('❌ Error loading task: $e');
+      }
+    } catch (e, stackTrace) {
+      debugPrint('❌ ERROR: $e');
+      debugPrint('StackTrace: $stackTrace');
     }
-  } catch (e, stackTrace) {
-    debugPrint('❌ ERROR: $e');
-    debugPrint('StackTrace: $stackTrace');
   }
-}
 
- Future<void> navigateToLeadScreen(String id, RemoteMessage message) async {
-  try {
-    debugPrint('👤 NAVIGATE TO LEAD SCREEN: id=$id');
+  Future<void> navigateToLeadScreen(String id, RemoteMessage message) async {
+    try {
+      debugPrint('👤 NAVIGATE TO LEAD SCREEN: id=$id');
 
-    final leadId = message.data['id'];
-    
-    if (leadId == null || navigatorKey.currentState == null) {
-      debugPrint('❌ Invalid leadId or navigator');
-      return;
-    }
+      final leadId = message.data['id'];
 
-    // ✅ БЕЗ ЛОАДЕРА - Lead экран быстро загружается
-    await navigatorKey.currentState!.push(
-      MaterialPageRoute(
-        builder: (context) => LeadDetailsScreen(
-          leadId: leadId.toString(),
-          leadName: '',
-          leadStatus: '',
-          statusId: 0,
+      if (leadId == null || navigatorKey.currentState == null) {
+        debugPrint('❌ Invalid leadId or navigator');
+        return;
+      }
+
+      // ✅ БЕЗ ЛОАДЕРА - Lead экран быстро загружается
+      await navigatorKey.currentState!.push(
+        MaterialPageRoute(
+          builder: (context) => LeadDetailsScreen(
+            leadId: leadId.toString(),
+            leadName: '',
+            leadStatus: '',
+            statusId: 0,
+          ),
         ),
-      ),
-    );
-    
-    debugPrint('✅ Lead screen opened');
-  } catch (e, stackTrace) {
-    debugPrint('❌ ERROR: $e');
-    debugPrint('StackTrace: $stackTrace');
+      );
+
+      debugPrint('✅ Lead screen opened');
+    } catch (e, stackTrace) {
+      debugPrint('❌ ERROR: $e');
+      debugPrint('StackTrace: $stackTrace');
+    }
   }
-}
+
   Future<void> navigateToMyTaskScreen(String id, RemoteMessage message) async {
-  try {
-    final myTaskId = message.data['id'];
-    final taskNumber = int.tryParse(message.data['task_number'] ?? '');
+    try {
+      final myTaskId = message.data['id'];
+      final taskNumber = int.tryParse(message.data['task_number'] ?? '');
 
-    if (myTaskId != null && navigatorKey.currentState != null) {
-      await navigatorKey.currentState!.push(
-        MaterialPageRoute(
-          builder: (context) => MyTaskDetailsScreen(
-            taskId: myTaskId.toString(),
-            taskName: '',
-            taskStatus: '',
-            statusId: 1,
-            taskNumber: taskNumber,
+      if (myTaskId != null && navigatorKey.currentState != null) {
+        await navigatorKey.currentState!.push(
+          MaterialPageRoute(
+            builder: (context) => MyTaskDetailsScreen(
+              taskId: myTaskId.toString(),
+              taskName: '',
+              taskStatus: '',
+              statusId: 1,
+              taskNumber: taskNumber,
+            ),
           ),
-        ),
-      );
-      debugPrint('✅ MyTask screen opened');
+        );
+        debugPrint('✅ MyTask screen opened');
+      }
+    } catch (e, stackTrace) {
+      debugPrint('❌ ERROR: $e');
     }
-  } catch (e, stackTrace) {
-    debugPrint('❌ ERROR: $e');
   }
-}
 
-Future<void> navigateToEventScreen(String id, RemoteMessage message) async {
-  try {
-    final eventId = message.data['id'];
-    if (eventId != null && navigatorKey.currentState != null) {
-      await navigatorKey.currentState!.push(
-        MaterialPageRoute(
-          builder: (context) => EventDetailsScreen(
-            noticeId: eventId,
+  Future<void> navigateToEventScreen(String id, RemoteMessage message) async {
+    try {
+      final eventId = message.data['id'];
+      if (eventId != null && navigatorKey.currentState != null) {
+        await navigatorKey.currentState!.push(
+          MaterialPageRoute(
+            builder: (context) => EventDetailsScreen(
+              noticeId: eventId,
+            ),
           ),
-        ),
-      );
-      debugPrint('✅ Event screen opened');
+        );
+        debugPrint('✅ Event screen opened');
+      }
+    } catch (e, stackTrace) {
+      debugPrint('❌ ERROR: $e');
     }
-  } catch (e, stackTrace) {
-    debugPrint('❌ ERROR: $e');
   }
-}
 
-Future<void> navigateToDealScreen(String id, RemoteMessage message) async {
-  try {
-    final dealId = message.data['id'];
-    if (dealId != null && navigatorKey.currentState != null) {
-      await navigatorKey.currentState!.push(
-        MaterialPageRoute(
-          builder: (context) => DealDetailsScreen(
-            dealId: dealId.toString(),
-            dealName: '',
-            sum: '',
-            dealStatus: '',
-            statusId: 1,
-            dealCustomFields: [
-              DealCustomField(id: 1, key: '', value: ''),
-              DealCustomField(id: 2, key: '', value: '')
-            ],
+  Future<void> navigateToDealScreen(String id, RemoteMessage message) async {
+    try {
+      final dealId = message.data['id'];
+      if (dealId != null && navigatorKey.currentState != null) {
+        await navigatorKey.currentState!.push(
+          MaterialPageRoute(
+            builder: (context) => DealDetailsScreen(
+              dealId: dealId.toString(),
+              dealName: '',
+              sum: '',
+              dealStatus: '',
+              statusId: 1,
+            ),
           ),
-        ),
-      );
-      debugPrint('✅ Deal screen opened');
+        );
+        debugPrint('✅ Deal screen opened');
+      }
+    } catch (e, stackTrace) {
+      debugPrint('❌ ERROR: $e');
     }
-  } catch (e, stackTrace) {
-    debugPrint('❌ ERROR: $e');
   }
-}
 
-Future<void> navigateToOrdersScreen(String id, RemoteMessage message) async {
-  try {
-    final orderId = int.tryParse(message.data['id'] ?? '');
-    if (orderId != null && navigatorKey.currentState != null) {
-      await navigatorKey.currentState!.push(
-        MaterialPageRoute(
-          builder: (context) => OrderDetailsScreen(
-            orderId: orderId,
-            order: Order(
-                id: orderId,
-                phone: '',
-                orderNumber: '',
-                delivery: false,
-                lead: OrderLead(id: 0, name: '', phone: '', channels: []),
-                orderStatus: OrderStatusName(id: 0, name: ''),
-                goods: []),
-            categoryName: '',
+  Future<void> navigateToOrdersScreen(String id, RemoteMessage message) async {
+    try {
+      final orderId = int.tryParse(message.data['id'] ?? '');
+      if (orderId != null && navigatorKey.currentState != null) {
+        await navigatorKey.currentState!.push(
+          MaterialPageRoute(
+            builder: (context) => OrderDetailsScreen(
+              orderId: orderId,
+              order: Order(
+                  id: orderId,
+                  phone: '',
+                  orderNumber: '',
+                  delivery: false,
+                  lead: OrderLead(id: 0, name: '', phone: '', channels: []),
+                  orderStatus: OrderStatusName(id: 0, name: ''),
+                  goods: []),
+              categoryName: '',
+            ),
           ),
-        ),
-      );
-      debugPrint('✅ Order screen opened');
+        );
+        debugPrint('✅ Order screen opened');
+      }
+    } catch (e, stackTrace) {
+      debugPrint('❌ ERROR: $e');
     }
-  } catch (e, stackTrace) {
-    debugPrint('❌ ERROR: $e');
   }
-}
- 
 
   // Получение FCM токена с безопасной обработкой
   Future<String?> getFCMToken() async {
@@ -892,10 +948,11 @@ Future<void> navigateToOrdersScreen(String id, RemoteMessage message) async {
   Future<void> subscribeToTopic(String topic) async {
     try {
       if (Firebase.apps.isEmpty) {
-        debugPrint('Firebase не инициализирован, не можем подписаться на топик');
+        debugPrint(
+            'Firebase не инициализирован, не можем подписаться на топик');
         return;
       }
-      
+
       await _firebaseMessaging.subscribeToTopic(topic);
       debugPrint('Подписались на топик: $topic');
     } catch (e) {
@@ -906,10 +963,11 @@ Future<void> navigateToOrdersScreen(String id, RemoteMessage message) async {
   Future<void> unsubscribeFromTopic(String topic) async {
     try {
       if (Firebase.apps.isEmpty) {
-        debugPrint('Firebase не инициализирован, не можем отписаться от топика');
+        debugPrint(
+            'Firebase не инициализирован, не можем отписаться от топика');
         return;
       }
-      
+
       await _firebaseMessaging.unsubscribeFromTopic(topic);
       debugPrint('Отписались от топика: $topic');
     } catch (e) {
@@ -918,7 +976,10 @@ Future<void> navigateToOrdersScreen(String id, RemoteMessage message) async {
   }
 
   void dispose() {
+    _tokenRefreshSubscription?.cancel();
+    _tokenRefreshSubscription = null;
     _isInitialized = false;
     _initialMessage = null;
+    _backgroundHandlerRegistered = false;
   }
 }

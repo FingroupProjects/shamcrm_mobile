@@ -1,4 +1,5 @@
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
+import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/supplier_list/supplier_list_bloc.dart';
 import 'package:crm_task_manager/bloc/supplier_list/supplier_list_event.dart';
 import 'package:crm_task_manager/bloc/supplier_list/supplier_list_state.dart';
@@ -22,8 +23,11 @@ class SupplierGroupWidget extends StatefulWidget {
 }
 
 class _SupplierGroupWidgetState extends State<SupplierGroupWidget> {
+  static const int _pageSize = 20;
+  final ApiService _apiService = ApiService();
   List<SupplierData> suppliersList = [];
   SupplierData? selectedSupplierData;
+  String? _autoSelectedSupplierId;
 
   @override
   void initState() {
@@ -46,7 +50,7 @@ class _SupplierGroupWidgetState extends State<SupplierGroupWidget> {
     if (widget.selectedSupplierId != null && suppliersList.isNotEmpty) {
       try {
         selectedSupplierData = suppliersList.firstWhere(
-              (supplier) => supplier.id.toString() == widget.selectedSupplierId,
+          (supplier) => supplier.id.toString() == widget.selectedSupplierId,
         );
         if (selectedSupplierData?.id != null) {
           widget.onSelectSupplier(selectedSupplierData!);
@@ -55,6 +59,23 @@ class _SupplierGroupWidgetState extends State<SupplierGroupWidget> {
         // selectedSupplierData = null;
       }
     }
+  }
+
+  Future<CustomDropdownPaginatedResponse<SupplierData>> _searchSuppliers(
+    String query,
+    int page,
+  ) async {
+    final response = await _apiService.getAllSuppliers(
+      search: query,
+      page: page,
+      perPage: _pageSize,
+    );
+    final items = response.result ?? <SupplierData>[];
+
+    return CustomDropdownPaginatedResponse<SupplierData>(
+      items: items,
+      hasMore: items.length >= _pageSize,
+    );
   }
 
   @override
@@ -77,9 +98,27 @@ class _SupplierGroupWidgetState extends State<SupplierGroupWidget> {
             if (state is GetAllSupplierSuccess) {
               suppliersList = state.dataSuppliers.result ?? [];
               _updateSelectedSupplierData();
+
+              if (suppliersList.length == 1 &&
+                  (widget.selectedSupplierId == null ||
+                      selectedSupplierData == null) &&
+                  _autoSelectedSupplierId !=
+                      suppliersList.first.id.toString()) {
+                final singleSupplier = suppliersList.first;
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (!mounted) return;
+                  widget.onSelectSupplier(singleSupplier);
+                  setState(() {
+                    selectedSupplierData = singleSupplier;
+                    _autoSelectedSupplierId = singleSupplier.id.toString();
+                  });
+                });
+              }
             }
 
-            return CustomDropdown<SupplierData>.search(
+            return CustomDropdown<SupplierData>.searchRequestPaginated(
+              paginatedRequest: _searchSuppliers,
+              futureRequestDelay: const Duration(milliseconds: 350),
               closeDropDownOnClearFilterSearch: true,
               items: suppliersList,
               searchHintText: AppLocalizations.of(context)!.translate('search'),
@@ -123,8 +162,7 @@ class _SupplierGroupWidgetState extends State<SupplierGroupWidget> {
                   );
                 }
                 return Text(
-                  selectedItem?.name ??
-                      AppLocalizations.of(context)!.translate('select_supplier'),
+                  selectedItem.name,
                   style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,

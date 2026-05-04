@@ -17,8 +17,8 @@ class MoneyOutcomeDocumentModel extends Equatable {
   }
 
   Map<String, dynamic> toJson() => {
-    "result": result?.toJson(),
-  };
+        "result": result?.toJson(),
+      };
 
   @override
   List<Object?> get props => [result];
@@ -34,9 +34,7 @@ class Result extends Equatable {
     try {
       return Result(
         data: json['data'] != null
-            ? (json['data'] as List)
-            .map((e) => Document.fromJson(e))
-            .toList()
+            ? (json['data'] as List).map((e) => Document.fromJson(e)).toList()
             : null,
         pagination: json['pagination'] != null
             ? Pagination.fromJson(json['pagination'])
@@ -49,9 +47,9 @@ class Result extends Equatable {
   }
 
   Map<String, dynamic> toJson() => {
-    "data": data?.map((e) => e.toJson()).toList(),
-    "pagination": pagination?.toJson(),
-  };
+        "data": data?.map((e) => e.toJson()).toList(),
+        "pagination": pagination?.toJson(),
+      };
 
   @override
   List<Object?> get props => [data, pagination];
@@ -158,25 +156,25 @@ class MoneyOrganization extends Equatable {
 
   @override
   List<Object?> get props => [
-    id,
-    name,
-    usersCount,
-    instagram,
-    facebook,
-    tgNick,
-    whatsapp,
-    tgId,
-    hasClientBot,
-    taskBotToken,
-    osonSms,
-    last1cUpdate,
-    integration1c,
-    telegramMiniAppBot,
-    hasTelegramB2B,
-    integrationEmail,
-    telephony,
-    autoResponder,
-  ];
+        id,
+        name,
+        usersCount,
+        instagram,
+        facebook,
+        tgNick,
+        whatsapp,
+        tgId,
+        hasClientBot,
+        taskBotToken,
+        osonSms,
+        last1cUpdate,
+        integration1c,
+        telegramMiniAppBot,
+        hasTelegramB2B,
+        integrationEmail,
+        telephony,
+        autoResponder,
+      ];
 }
 
 class Document extends Equatable {
@@ -184,13 +182,17 @@ class Document extends Equatable {
   final String? docNumber;
   final String? date;
   final MoneyOrganization? organization;
+  final ExchangeRate? exchangeRate;
   final CashRegister? cashRegister;
   final CashRegister? senderCashregister;
   final Article? article;
   final String? amount;
   final Model? model;
+  final int? employeeId;
+  final Employee? employee;
   final String? comment;
   final String? operationType;
+  final String? month;
   final Author? author;
   final bool? approved;
   final String? createdAt;
@@ -201,13 +203,17 @@ class Document extends Equatable {
     this.docNumber,
     this.date,
     this.organization,
+    this.exchangeRate,
     this.cashRegister,
     this.senderCashregister,
     this.article,
     this.amount,
     this.model,
+    this.employeeId,
+    this.employee,
     this.comment,
     this.operationType,
+    this.month,
     this.author,
     this.approved,
     this.createdAt,
@@ -223,17 +229,28 @@ class Document extends Equatable {
         organization: json['organization'] != null
             ? MoneyOrganization.fromJson(json['organization'])
             : null,
+        exchangeRate: json['exchangeRate'] != null
+            ? ExchangeRate.fromJson(json['exchangeRate'])
+            : (json['exchange_rate'] != null
+                ? ExchangeRate.fromJson(json['exchange_rate'])
+                : null),
         cashRegister: json['cash_register'] != null
             ? CashRegister.fromJson(json['cash_register'])
             : null,
         senderCashregister: json['sender_cashregister'] != null
             ? CashRegister.fromJson(json['sender_cashregister'])
             : null,
-        article: json['article'] != null ? Article.fromJson(json['article']) : null,
+        article:
+            json['article'] != null ? Article.fromJson(json['article']) : null,
         amount: _parseString(json['amount']),
         model: json['model'] != null ? Model.fromJson(json['model']) : null,
+        employeeId: json['employee_id'],
+        employee: json['employee'] != null
+            ? Employee.fromJson(json['employee'])
+            : null,
         comment: _parseString(json['comment']),
         operationType: _parseString(json['operation_type']),
+        month: _parseString(json['month']),
         author: json['author'] != null ? Author.fromJson(json['author']) : null,
         approved: json['approved'],
         createdAt: _parseString(json['created_at']),
@@ -253,35 +270,43 @@ class Document extends Equatable {
   }
 
   Map<String, dynamic> toJson() => {
-    "id": id,
-    "doc_number": docNumber,
-    "date": date,
-    "organization": organization?.toJson(),
-    "cash_register": cashRegister?.toJson(),
-    "sender_cashregister": senderCashregister?.toJson(),
-    "article": article?.toJson(),
-    "amount": amount,
-    "model": model?.toJson(),
-    "comment": comment,
-    "operation_type": operationType,
-    "author": author?.toJson(),
-    "approved": approved,
-    "created_at": createdAt,
-    "deleted_at": deletedAt,
-  };
+        "id": id,
+        "doc_number": docNumber,
+        "date": date,
+        "organization": organization?.toJson(),
+        "exchangeRate": exchangeRate?.toJson(),
+        "cash_register": cashRegister?.toJson(),
+        "sender_cashregister": senderCashregister?.toJson(),
+        "article": article?.toJson(),
+        "amount": amount,
+        "model": model?.toJson(),
+        "employee_id": employeeId,
+        "employee": employee?.toJson(),
+        "comment": comment,
+        "operation_type": operationType,
+        "month": month,
+        "author": author?.toJson(),
+        "approved": approved,
+        "created_at": createdAt,
+        "deleted_at": deletedAt,
+      };
 
   Document copyWith({
     int? id,
     String? docNumber,
     String? date,
     MoneyOrganization? organization,
+    ExchangeRate? exchangeRate,
     CashRegister? cashRegister,
     CashRegister? senderCashregister,
     Article? article,
     String? amount,
     Model? model,
+    int? employeeId,
+    Employee? employee,
     String? comment,
     String? operationType,
+    String? month,
     Author? author,
     bool? approved,
     String? createdAt,
@@ -292,13 +317,17 @@ class Document extends Equatable {
       docNumber: docNumber ?? this.docNumber,
       date: date ?? this.date,
       organization: organization ?? this.organization,
+      exchangeRate: exchangeRate ?? this.exchangeRate,
       cashRegister: cashRegister ?? this.cashRegister,
       senderCashregister: senderCashregister ?? this.senderCashregister,
       article: article ?? this.article,
       amount: amount ?? this.amount,
       model: model ?? this.model,
+      employeeId: employeeId ?? this.employeeId,
+      employee: employee ?? this.employee,
       comment: comment ?? this.comment,
       operationType: operationType ?? this.operationType,
+      month: month ?? this.month,
       author: author ?? this.author,
       approved: approved ?? this.approved,
       createdAt: createdAt ?? this.createdAt,
@@ -308,22 +337,78 @@ class Document extends Equatable {
 
   @override
   List<Object?> get props => [
-    id,
-    docNumber,
-    date,
-    organization,
-    cashRegister,
-    senderCashregister,
-    article,
-    amount,
-    model,
-    comment,
-    operationType,
-    author,
-    approved,
-    createdAt,
-    deletedAt,
-  ];
+        id,
+        docNumber,
+        date,
+        organization,
+        exchangeRate,
+        cashRegister,
+        senderCashregister,
+        article,
+        amount,
+        model,
+        employeeId,
+        employee,
+        comment,
+        operationType,
+        month,
+        author,
+        approved,
+        createdAt,
+        deletedAt,
+      ];
+}
+
+class ExchangeRate extends Equatable {
+  final int? id;
+  final String? date;
+  final int? currencyId;
+  final String? value;
+  final String? deletedAt;
+  final String? createdAt;
+  final String? updatedAt;
+
+  const ExchangeRate({
+    this.id,
+    this.date,
+    this.currencyId,
+    this.value,
+    this.deletedAt,
+    this.createdAt,
+    this.updatedAt,
+  });
+
+  factory ExchangeRate.fromJson(Map<String, dynamic> json) {
+    return ExchangeRate(
+      id: json['id'],
+      date: _parseString(json['date']),
+      currencyId: json['currency_id'],
+      value: _parseString(json['value']),
+      deletedAt: _parseString(json['deleted_at']),
+      createdAt: _parseString(json['created_at']),
+      updatedAt: _parseString(json['updated_at']),
+    );
+  }
+
+  static String? _parseString(dynamic value) {
+    if (value == null) return null;
+    if (value is String) return value;
+    return value.toString();
+  }
+
+  Map<String, dynamic> toJson() => {
+        "id": id,
+        "date": date,
+        "currency_id": currencyId,
+        "value": value,
+        "deleted_at": deletedAt,
+        "created_at": createdAt,
+        "updated_at": updatedAt,
+      };
+
+  @override
+  List<Object?> get props =>
+      [id, date, currencyId, value, deletedAt, createdAt, updatedAt];
 }
 
 class CashRegister extends Equatable {
@@ -360,11 +445,11 @@ class CashRegister extends Equatable {
   }
 
   Map<String, dynamic> toJson() => {
-    "id": id,
-    "name": name,
-    "created_at": createdAt,
-    "updated_at": updatedAt,
-  };
+        "id": id,
+        "name": name,
+        "created_at": createdAt,
+        "updated_at": updatedAt,
+      };
 
   @override
   List<Object?> get props => [id, name, createdAt, updatedAt];
@@ -407,12 +492,12 @@ class Article extends Equatable {
   }
 
   Map<String, dynamic> toJson() => {
-    "id": id,
-    "name": name,
-    "type": type,
-    "created_at": createdAt,
-    "updated_at": updatedAt,
-  };
+        "id": id,
+        "name": name,
+        "type": type,
+        "created_at": createdAt,
+        "updated_at": updatedAt,
+      };
 
   @override
   List<Object?> get props => [id, name, type, createdAt, updatedAt];
@@ -421,6 +506,7 @@ class Article extends Equatable {
 class Model extends Equatable {
   final int? id;
   final int? leadId;
+  final int? currencyId;
   final String? name;
   final int? sourceId;
   final String? facebookId;
@@ -465,6 +551,7 @@ class Model extends Equatable {
   const Model({
     this.id,
     this.leadId,
+    this.currencyId,
     this.name,
     this.sourceId,
     this.facebookId,
@@ -512,6 +599,7 @@ class Model extends Equatable {
       return Model(
         id: json['id'],
         leadId: json['lead_id'],
+        currencyId: json['currency_id'],
         name: _parseString(json['name']),
         sourceId: json['source_id'],
         facebookId: _parseString(json['facebook_id']),
@@ -566,95 +654,97 @@ class Model extends Equatable {
   }
 
   Map<String, dynamic> toJson() => {
-    "id": id,
-    "lead_id": leadId,
-    "name": name,
-    "source_id": sourceId,
-    "facebook_id": facebookId,
-    "facebook_login": facebookLogin,
-    "insta_id": instaId,
-    "insta_login": instaLogin,
-    "tg_nick": tgNick,
-    "tg_id": tgId,
-    "region_id": regionId,
-    "birthday": birthday,
-    "description": description,
-    "lead_status_id": leadStatusId,
-    "position": position,
-    "manager_id": managerId,
-    "wa_name": waName,
-    "wa_phone": waPhone,
-    "address": address,
-    "phone": phone,
-    "lead": lead,
-    "email": email,
-    "dialog_state": dialogState,
-    "organization_id": organizationId,
-    "sent_to_1c": sentTo1c,
-    "created_at": createdAt,
-    "updated_at": updatedAt,
-    "instagram_platform_id_id": instagramPlatformIdId,
-    "deleted_at": deletedAt,
-    "author_id": authorId,
-    "processing_speed": processingSpeed,
-    "is_client": isClient,
-    "messageStatus": messageStatus,
-    "first_response_at": firstResponseAt,
-    "sham_id": shamId,
-    "price_type_id": priceTypeId,
-    "verification_code": verificationCode,
-    "phone_verified_at": phoneVerifiedAt,
-    "bonus": bonus,
-    "sales_funnel_id": salesFunnelId,
-    "active_scenario_execution_id": activeScenarioExecutionId,
-    "tiktok_commenter_id": tiktokCommenterId,
-  };
+        "id": id,
+        "lead_id": leadId,
+        "currency_id": currencyId,
+        "name": name,
+        "source_id": sourceId,
+        "facebook_id": facebookId,
+        "facebook_login": facebookLogin,
+        "insta_id": instaId,
+        "insta_login": instaLogin,
+        "tg_nick": tgNick,
+        "tg_id": tgId,
+        "region_id": regionId,
+        "birthday": birthday,
+        "description": description,
+        "lead_status_id": leadStatusId,
+        "position": position,
+        "manager_id": managerId,
+        "wa_name": waName,
+        "wa_phone": waPhone,
+        "address": address,
+        "phone": phone,
+        "lead": lead,
+        "email": email,
+        "dialog_state": dialogState,
+        "organization_id": organizationId,
+        "sent_to_1c": sentTo1c,
+        "created_at": createdAt,
+        "updated_at": updatedAt,
+        "instagram_platform_id_id": instagramPlatformIdId,
+        "deleted_at": deletedAt,
+        "author_id": authorId,
+        "processing_speed": processingSpeed,
+        "is_client": isClient,
+        "messageStatus": messageStatus,
+        "first_response_at": firstResponseAt,
+        "sham_id": shamId,
+        "price_type_id": priceTypeId,
+        "verification_code": verificationCode,
+        "phone_verified_at": phoneVerifiedAt,
+        "bonus": bonus,
+        "sales_funnel_id": salesFunnelId,
+        "active_scenario_execution_id": activeScenarioExecutionId,
+        "tiktok_commenter_id": tiktokCommenterId,
+      };
 
   @override
   List<Object?> get props => [
-    id,
-    leadId,
-    name,
-    sourceId,
-    facebookId,
-    facebookLogin,
-    instaId,
-    instaLogin,
-    tgNick,
-    tgId,
-    regionId,
-    birthday,
-    description,
-    leadStatusId,
-    position,
-    managerId,
-    waName,
-    waPhone,
-    address,
-    phone,
-    lead,
-    email,
-    dialogState,
-    organizationId,
-    sentTo1c,
-    createdAt,
-    updatedAt,
-    instagramPlatformIdId,
-    deletedAt,
-    authorId,
-    processingSpeed,
-    isClient,
-    messageStatus,
-    firstResponseAt,
-    shamId,
-    priceTypeId,
-    verificationCode,
-    phoneVerifiedAt,
-    bonus,
-    salesFunnelId,
-    activeScenarioExecutionId,
-    tiktokCommenterId,
-  ];
+        id,
+        leadId,
+        currencyId,
+        name,
+        sourceId,
+        facebookId,
+        facebookLogin,
+        instaId,
+        instaLogin,
+        tgNick,
+        tgId,
+        regionId,
+        birthday,
+        description,
+        leadStatusId,
+        position,
+        managerId,
+        waName,
+        waPhone,
+        address,
+        phone,
+        lead,
+        email,
+        dialogState,
+        organizationId,
+        sentTo1c,
+        createdAt,
+        updatedAt,
+        instagramPlatformIdId,
+        deletedAt,
+        authorId,
+        processingSpeed,
+        isClient,
+        messageStatus,
+        firstResponseAt,
+        shamId,
+        priceTypeId,
+        verificationCode,
+        phoneVerifiedAt,
+        bonus,
+        salesFunnelId,
+        activeScenarioExecutionId,
+        tiktokCommenterId,
+      ];
 }
 
 class Author extends Equatable {
@@ -724,41 +814,80 @@ class Author extends Equatable {
   }
 
   Map<String, dynamic> toJson() => {
-    "id": id,
-    "name": name,
-    "lastname": lastname,
-    "login": login,
-    "email": email,
-    "phone": phone,
-    "image": image,
-    "last_seen": lastSeen,
-    "deleted_at": deletedAt,
-    "telegram_user_id": telegramUserId,
-    "job_title": jobTitle,
-    "online": online,
-    "full_name": fullName,
-    "is_first_login": isFirstLogin,
-    "unique_id": uniqueId,
-  };
+        "id": id,
+        "name": name,
+        "lastname": lastname,
+        "login": login,
+        "email": email,
+        "phone": phone,
+        "image": image,
+        "last_seen": lastSeen,
+        "deleted_at": deletedAt,
+        "telegram_user_id": telegramUserId,
+        "job_title": jobTitle,
+        "online": online,
+        "full_name": fullName,
+        "is_first_login": isFirstLogin,
+        "unique_id": uniqueId,
+      };
 
   @override
   List<Object?> get props => [
-    id,
-    name,
-    lastname,
-    login,
-    email,
-    phone,
-    image,
-    lastSeen,
-    deletedAt,
-    telegramUserId,
-    jobTitle,
-    online,
-    fullName,
-    isFirstLogin,
-    uniqueId,
-  ];
+        id,
+        name,
+        lastname,
+        login,
+        email,
+        phone,
+        image,
+        lastSeen,
+        deletedAt,
+        telegramUserId,
+        jobTitle,
+        online,
+        fullName,
+        isFirstLogin,
+        uniqueId,
+      ];
+}
+
+class Employee extends Equatable {
+  final int? id;
+  final String? fullName;
+  final String? phone;
+  final String? salary;
+
+  const Employee({
+    this.id,
+    this.fullName,
+    this.phone,
+    this.salary,
+  });
+
+  factory Employee.fromJson(Map<String, dynamic> json) {
+    return Employee(
+      id: json['id'],
+      fullName: _parseValue(json['full_name']),
+      phone: _parseValue(json['phone']),
+      salary: _parseValue(json['salary']),
+    );
+  }
+
+  static String? _parseValue(dynamic value) {
+    if (value == null) return null;
+    if (value is String) return value;
+    return value.toString();
+  }
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'full_name': fullName,
+        'phone': phone,
+        'salary': salary,
+      };
+
+  @override
+  List<Object?> get props => [id, fullName, phone, salary];
 }
 
 class Pagination extends Equatable {
@@ -787,12 +916,12 @@ class Pagination extends Equatable {
   }
 
   Map<String, dynamic> toJson() => {
-    "total": total,
-    "count": count,
-    "per_page": perPage,
-    "current_page": currentPage,
-    "total_pages": totalPages,
-  };
+        "total": total,
+        "count": count,
+        "per_page": perPage,
+        "current_page": currentPage,
+        "total_pages": totalPages,
+      };
 
   @override
   List<Object?> get props => [total, count, perPage, currentPage, totalPages];

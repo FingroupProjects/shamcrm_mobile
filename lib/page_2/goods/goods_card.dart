@@ -99,7 +99,7 @@ class _GoodsCardState extends State<GoodsCard> {
     //print('🔧 [GoodsCard] baseUrl: "$baseUrl"');
     //print('🔧 [GoodsCard] file.path: "${file.path}"');
     
-    final imageUrl = baseUrl != null ? '$baseUrl/${file.path}' : null;
+    final imageUrl = baseUrl != null ? '${file.path}' : null;
     
     //print('🌐 [GoodsCard] Финальный imageUrl: "$imageUrl"');
     

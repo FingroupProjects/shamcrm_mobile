@@ -281,6 +281,7 @@ class ParticipantProfileScreen extends StatelessWidget {
                             chatId: state.chatId,
                             endPointInTab: 'corporate',
                             canSendMessage: true,
+                            initialChannelName: '',
                           ),
                         ),
                       ),

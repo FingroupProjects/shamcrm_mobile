@@ -25,7 +25,7 @@ class CreateCashRegisterOpeningDialog extends StatelessWidget {
   }
 }
 
-class CashRegisterLeadsDialog extends StatelessWidget {
+class CashRegisterLeadsDialog extends StatefulWidget {
   final CashRegisterOpeningsBloc cashRegisterOpeningsBloc;
   
   const CashRegisterLeadsDialog({
@@ -33,9 +33,30 @@ class CashRegisterLeadsDialog extends StatelessWidget {
     required this.cashRegisterOpeningsBloc,
   });
 
+  @override
+  State<CashRegisterLeadsDialog> createState() => _CashRegisterLeadsDialogState();
+}
+
+class _CashRegisterLeadsDialogState extends State<CashRegisterLeadsDialog> {
+  // ЗАКОММЕНТИРОВАНО: Поиск в модальном окне выбора кассы отключен
+  // final TextEditingController _searchController = TextEditingController();
+  // bool _isSearching = false;
+
+  @override
+  void dispose() {
+    // _searchController.dispose(); // ЗАКОММЕНТИРОВАНО: Поиск отключен
+    super.dispose();
+  }
+
   String _translate(BuildContext context, String key, String fallback) {
     return AppLocalizations.of(context)?.translate(key) ?? fallback;
   }
+
+  // ЗАКОММЕНТИРОВАНО: Поиск в модальном окне выбора кассы отключен
+  // void _onSearch(String input) {
+  //   final query = input.trim().isEmpty ? null : input.trim();
+  //   context.read<CashRegisterDialogBloc>().add(SearchCashRegistersForDialog(search: query));
+  // }
 
   Widget _buildCashRegistersList(BuildContext context, List<CashRegister> cashRegisters) {
     if (cashRegisters.isEmpty) {
@@ -73,7 +94,7 @@ class CashRegisterLeadsDialog extends StatelessWidget {
           context,
           MaterialPageRoute(
             builder: (newContext) => BlocProvider.value(
-              value: cashRegisterOpeningsBloc,
+              value: widget.cashRegisterOpeningsBloc,
               child: AddCashRegisterOpeningScreen(
                 cashRegisterName: cashRegister.name ?? '',
                 cashRegisterId: cashRegister.id ?? 0,
@@ -150,35 +171,86 @@ class CashRegisterLeadsDialog extends StatelessWidget {
                   topRight: Radius.circular(20),
                 ),
               ),
-              child: Row(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Icon(
-                      Icons.info_outline,
-                      color: Colors.white,
-                      size: 20,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      _translate(context, 'choose_cash_register', 'Выберите кассу'),
-                      style: const TextStyle(
-                        fontFamily: 'Gilroy',
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white,
-                        letterSpacing: 0.3,
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(
+                          Icons.info_outline,
+                          color: Colors.white,
+                          size: 20,
+                        ),
                       ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          _translate(context, 'choose_cash_register', 'Выберите кассу'),
+                          style: const TextStyle(
+                            fontFamily: 'Gilroy',
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                            letterSpacing: 0.3,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      // ЗАКОММЕНТИРОВАНО: Иконка поиска в модальном окне выбора кассы отключена
+                      // IconButton(
+                      //   icon: Icon(
+                      //     _isSearching ? Icons.close : Icons.search,
+                      //     color: Colors.white,
+                      //     size: 24,
+                      //   ),
+                      //   onPressed: () {
+                      //     setState(() {
+                      //       _isSearching = !_isSearching;
+                      //       if (!_isSearching) {
+                      //         _searchController.clear();
+                      //         context.read<CashRegisterDialogBloc>().add(LoadCashRegistersForDialog(search: null));
+                      //       }
+                      //     });
+                      //   },
+                      // ),
+                    ],
                   ),
+                  // ЗАКОММЕНТИРОВАНО: Поле поиска в модальном окне выбора кассы отключено
+                  // if (_isSearching) ...[
+                  //   const SizedBox(height: 12),
+                  //   TextField(
+                  //     controller: _searchController,
+                  //     autofocus: true,
+                  //     style: const TextStyle(
+                  //       fontFamily: 'Gilroy',
+                  //       fontSize: 16,
+                  //       color: Colors.white,
+                  //     ),
+                  //     decoration: InputDecoration(
+                  //       hintText: _translate(context, 'search', 'Поиск...'),
+                  //       hintStyle: TextStyle(
+                  //         fontFamily: 'Gilroy',
+                  //         fontSize: 16,
+                  //         color: Colors.white.withOpacity(0.7),
+                  //       ),
+                  //       filled: true,
+                  //       fillColor: Colors.white.withOpacity(0.2),
+                  //       border: OutlineInputBorder(
+                  //         borderRadius: BorderRadius.circular(12),
+                  //         borderSide: BorderSide.none,
+                  //       ),
+                  //       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  //     ),
+                  //     onChanged: _onSearch,
+                  //   ),
+                  // ],
                 ],
               ),
             ),

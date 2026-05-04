@@ -18,6 +18,7 @@ class AnimatedTextField extends StatefulWidget {
   final int maxVisibleLines;
   final double lineHeight;
   final String? htmlContent; // HTML контент для форматирования
+  final VoidCallback? onLongPress; // Callback для долгого нажатия
 
   const AnimatedTextField({
     Key? key,
@@ -33,6 +34,7 @@ class AnimatedTextField extends StatefulWidget {
     this.maxVisibleLines = 6,
     this.lineHeight = 20.0,
     this.htmlContent,
+    this.onLongPress,
   }) : super(key: key);
 
   @override
@@ -48,6 +50,7 @@ class _AnimatedTextFieldState extends State<AnimatedTextField>
   late double _maxHeight;
   final ScrollController _scrollController = ScrollController();
   Timer? _updateTimer;
+  Timer? _longPressTimer;
 
   @override
   void initState() {
@@ -260,17 +263,40 @@ class _AnimatedTextFieldState extends State<AnimatedTextField>
     return TextSpan(children: spans);
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _heightAnimation,
-      builder: (context, child) {
-        return Container(
-          height: _heightAnimation.value,
-          decoration: BoxDecoration(
-            color: widget.fillColor,
-            borderRadius: widget.borderRadius,
-          ),
+  void _handlePointerDown(PointerDownEvent event) {
+    if (widget.onLongPress != null) {
+      _longPressTimer?.cancel();
+      _longPressTimer = Timer(const Duration(milliseconds: 500), () {
+        widget.onLongPress?.call();
+      });
+    }
+  }
+
+  void _handlePointerUp(PointerUpEvent event) {
+    _longPressTimer?.cancel();
+  }
+
+  void _handlePointerCancel(PointerCancelEvent event) {
+    _longPressTimer?.cancel();
+  }
+
+ @override
+Widget build(BuildContext context) {
+  return AnimatedBuilder(
+    animation: _heightAnimation,
+    builder: (context, child) {
+      return Container(
+        height: _heightAnimation.value,
+        decoration: widget.fillColor != null && widget.fillColor != Colors.transparent
+            ? BoxDecoration(
+                color: widget.fillColor,
+                borderRadius: widget.borderRadius,
+              )
+            : null,
+        child: Listener(
+          onPointerDown: _handlePointerDown,
+          onPointerUp: _handlePointerUp,
+          onPointerCancel: _handlePointerCancel,
           child: TextField(
             controller: widget.controller,
             focusNode: widget.focusNode,
@@ -278,10 +304,9 @@ class _AnimatedTextFieldState extends State<AnimatedTextField>
             onChanged: widget.onChanged,
             maxLines: null,
             style: widget.style,
-            // ВАЖНО: Кастомный билдер для TextSpan с форматированием
+            textAlignVertical: TextAlignVertical.center, // ✅ ДОБАВЛЕНО: Центрирует текст вертикально
             inputFormatters: [
               TextInputFormatter.withFunction((oldValue, newValue) {
-                // Apply custom formatting logic here if needed
                 return newValue;
               }),
             ],
@@ -291,6 +316,7 @@ class _AnimatedTextFieldState extends State<AnimatedTextField>
               border: InputBorder.none,
               contentPadding: widget.contentPadding,
               isDense: true,
+              isCollapsed: false, // ✅ ДОБАВЛЕНО: Позволяет использовать textAlignVertical
             ),
             keyboardType: TextInputType.multiline,
             textInputAction: TextInputAction.newline,
@@ -299,14 +325,17 @@ class _AnimatedTextFieldState extends State<AnimatedTextField>
               return const SizedBox.shrink();
             },
           ),
-        );
-      },
-    );
-  }
+        ),
+      );
+    },
+  );
+}
+
 
   @override
   void dispose() {
     _updateTimer?.cancel();
+    _longPressTimer?.cancel();
     widget.controller.removeListener(_onTextChanged);
     _animationController.dispose();
     _scrollController.dispose();

@@ -1,18 +1,17 @@
 import 'package:crm_task_manager/models/integration_model.dart';
 import 'package:crm_task_manager/models/task_model.dart';
+import 'package:crm_task_manager/models/message_reaction_model.dart'; // Из ветки reaction
 import 'package:crm_task_manager/screens/chats/chats_widgets/chats_items.dart';
-import 'package:flutter/material.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/utils/global_value.dart';
+import 'package:crm_task_manager/main.dart';
 
 class Integration {
   final int? id;
   final String? name;
   final String? username;
 
-  Integration({
-    this.id,
-    this.name,
-    this.username,
-  });
+  Integration({this.id, this.name, this.username});
 
   factory Integration.fromJson(Map<String, dynamic> json) {
     return Integration(
@@ -25,12 +24,13 @@ class Integration {
 
 class Chats {
   final int id;
+  final String? uniqueId;
   final String name;
   final String image;
   final String? taskFrom;
   final String? taskTo;
   final String? description;
-  final String channel; // Это поле будет содержать channel.name
+  final String channel;
   final String lastMessage;
   final String? messageType;
   final String createDate;
@@ -43,11 +43,12 @@ class Chats {
   final ChatUser? user;
   final String? customName;
   final String? customImage;
-  final Channel? channelObj; // Новое поле для полного объекта Channel
-  final Integration? integration; // Новое поле для объекта Integration
+  final Channel? channelObj;
+  final Integration? integration;
 
   Chats({
     required this.id,
+    this.uniqueId,
     required this.name,
     required this.image,
     this.taskFrom,
@@ -70,11 +71,8 @@ class Chats {
     this.integration,
   });
 
-  factory Chats.fromJson(
-    Map<String, dynamic> json, {
-    String? supportChatName,
-    String? supportChatImage,
-  }) {
+  factory Chats.fromJson(Map<String, dynamic> json,
+      {String? supportChatName, String? supportChatImage}) {
     List<ChatUser> users = [];
     if (json['chatUsers'] != null) {
       for (var userJson in json['chatUsers']) {
@@ -83,9 +81,7 @@ class Chats {
     }
 
     Group? group;
-    if (json['group'] != null) {
-      group = Group.fromJson(json['group']);
-    }
+    if (json['group'] != null) group = Group.fromJson(json['group']);
 
     Task? task;
     if (json['task'] != null) {
@@ -93,9 +89,8 @@ class Chats {
     }
 
     ChatUser? user;
-    if (json['user'] != null) {
+    if (json['user'] != null)
       user = ChatUser.fromJson({'participant': json['user']});
-    }
 
     String? customName;
     String? customImage;
@@ -106,6 +101,7 @@ class Chats {
 
     return Chats(
       id: json['id'] ?? 0,
+      uniqueId: json['unique_id'] as String?,
       name: json['user'] != null
           ? json['user']['name'] ?? 'Без имени'
           : json['task'] != null
@@ -123,60 +119,83 @@ class Chats {
       unreadCount: json['unread_count'] ?? 0,
       taskFrom: json['task'] != null ? json['task']['from'] ?? '' : '',
       taskTo: json['task'] != null ? json['task']['to'] ?? '' : '',
-      description: json['task'] != null ? json['task']['description'] ?? '' : '',
+      description:
+          json['task'] != null ? json['task']['description'] ?? '' : '',
       channel: json['channel'] != null ? json['channel']['name'] ?? '' : '',
       lastMessage: json['lastMessage'] != null
           ? _getLastMessageText(json['lastMessage'])
           : '',
-      messageType: json['lastMessage'] != null ? json['lastMessage']['type'] ?? '' : '',
+      messageType:
+          json['lastMessage'] != null ? json['lastMessage']['type'] ?? '' : '',
       canSendMessage: json['can_send_message'] ?? false,
       type: json['type'],
       chatUsers: users,
       group: group,
       task: task,
-      channelObj: json['channel'] != null ? Channel.fromJson(json['channel']) : null,
-      integration: json['integration'] != null ? Integration.fromJson(json['integration']) : null,
+      channelObj:
+          json['channel'] != null ? Channel.fromJson(json['channel']) : null,
+      integration: json['integration'] != null
+          ? Integration.fromJson(json['integration'])
+          : null,
     );
   }
 
   String? get displayName {
-    if (type == 'support' && customName != null) {
-      return customName;
-    } else if (group != null && group!.name.isNotEmpty) {
-      return group!.name;
-    } else if (task != null && task!.name!.isNotEmpty) {
-      return task!.name;
-    } else {
-      return name;
-    }
+    if (type == 'support' && customName != null) return customName;
+    if (group != null && group!.name.isNotEmpty) return group!.name;
+    if (task != null && task!.name!.isNotEmpty) return task!.name;
+    return name;
   }
 
   static String _getLastMessageText(Map<String, dynamic> lastMessage) {
     final isMyMessage = lastMessage['is_my_message'] ?? false;
+    final text = lastMessage['text']?.toString() ?? '';
+    final hasGeoInText =
+        Message.extractLocationCoordinatesFromText(text) != null;
+    final context = navigatorKey.currentContext;
+    final localizations = context != null ? AppLocalizations.of(context) : null;
     switch (lastMessage['type']) {
       case 'text':
-        return lastMessage['text'] ?? 'Текстовое сообщение';
+        if (hasGeoInText) {
+          return isMyMessage
+              ? (localizations?.translate('you_sent_geolocation') ??
+                  'Вы отправили геолокацию')
+              : (localizations?.translate('received_geolocation') ??
+                  'Вам пришла геолокация');
+        }
+        return lastMessage['text'] ??
+            (localizations?.translate('text_message') ?? 'Текстовое сообщение');
       case 'voice':
         return isMyMessage
-            ? 'Отправлено голосовое сообщение'
-            : 'Вам пришло голосовое сообщение';
+            ? (localizations?.translate('sent_voice_message') ??
+                'Отправлено голосовое сообщение')
+            : (localizations?.translate('received_voice_message') ??
+                'Вам пришло голосовое сообщение');
       case 'file':
-        return 'Файл: неизвестное имя';
+        return localizations?.translate('file_message') ??
+            'Файл: неизвестное имя';
       case 'image':
-        return 'Изображение';
+        return localizations?.translate('image_message') ?? 'Изображение';
       case 'video':
-        return 'Вам пришло видео сообщение';
+        return localizations?.translate('video_message') ??
+            'Вам пришло видео сообщение';
       case 'location':
-        return 'Вам пришло местоположение: ${lastMessage['location'] ?? 'неизвестно'}';
+        return isMyMessage
+            ? (localizations?.translate('you_sent_geolocation') ??
+                'Вы отправили геолокацию')
+            : (localizations?.translate('received_geolocation') ??
+                'Вам пришла геолокация');
       case 'sticker':
-        return 'Вам пришел стикер';
+        return localizations?.translate('sticker_message') ??
+            'Вам пришел стикер';
       default:
-        return 'Новое сообщение';
+        return localizations?.translate('new_message') ?? 'Новое сообщение';
     }
   }
 
   Chats copyWith({
     int? id,
+    String? uniqueId,
     String? name,
     String? image,
     String? taskFrom,
@@ -200,6 +219,7 @@ class Chats {
   }) {
     return Chats(
       id: id ?? this.id,
+      uniqueId: uniqueId ?? this.uniqueId,
       name: name ?? this.name,
       image: image ?? this.image,
       taskFrom: taskFrom ?? this.taskFrom,
@@ -232,11 +252,9 @@ class Chats {
     } else if (chatUsers.isNotEmpty) {
       int currentUserId = user?.id ?? 0;
       if (chatUsers.length > 1) {
-        if (chatUsers[1].id == currentUserId) {
-          avatar = chatUsers[1].image;
-        } else {
-          avatar = chatUsers[0].image;
-        }
+        avatar = (chatUsers[1].id == currentUserId)
+            ? chatUsers[1].image
+            : chatUsers[0].image;
       } else {
         avatar = chatUsers[0].image;
       }
@@ -255,21 +273,25 @@ class Chats {
   }
 
   String _mapChannelToIcon(String channel) {
+    final normalized = channel.replaceAll('channel-', '');
     const channelIconMap = {
+      'mini_app': 'assets/icons/leads/telegram.png',
       'telegram_bot': 'assets/icons/leads/telegram.png',
       'telegram_account': 'assets/icons/leads/telegram.png',
       'whatsapp': 'assets/icons/leads/whatsapp.png',
+      'green_api': 'assets/icons/leads/whatsapp.png',
       'instagram': 'assets/icons/leads/instagram.png',
+      'instagram_comment': 'assets/icons/leads/instagram.png',
       'facebook': 'assets/icons/leads/messenger.png',
       'messenger': 'assets/icons/leads/messenger.png',
       'phone': 'assets/icons/leads/telefon.png',
       'email': 'assets/icons/leads/email.png',
+      'site': '', // Используется Flutter иконка Icons.language
     };
-    return channelIconMap[channel] ?? 'assets/icons/leads/default.png';
+    return channelIconMap[normalized] ?? 'assets/icons/leads/default.png';
   }
 }
 
-// New ChatUser class
 class ChatUser {
   final int id;
   final String name;
@@ -279,15 +301,14 @@ class ChatUser {
   final String image;
   final String? lastSeen;
 
-  ChatUser({
-    required this.id,
-    required this.name,
-    required this.login,
-    required this.email,
-    required this.phone,
-    required this.image,
-    this.lastSeen,
-  });
+  ChatUser(
+      {required this.id,
+      required this.name,
+      required this.login,
+      required this.email,
+      required this.phone,
+      required this.image,
+      this.lastSeen});
 
   factory ChatUser.fromJson(Map<String, dynamic> json) {
     return ChatUser(
@@ -306,11 +327,6 @@ class ChatUser {
           json['participant'] != null ? json['participant']['last_seen'] : null,
     );
   }
-
-  @override
-  String toString() {
-    return 'ChatUser{id: $id, name: $name, login: $login, email!mail, phone: $phone, image: $image, lastSeen: $lastSeen}';
-  }
 }
 
 class Group {
@@ -322,15 +338,14 @@ class Group {
   final String updatedAt;
   final int organizationId;
 
-  Group({
-    required this.id,
-    required this.name,
-    this.imgUrl,
-    required this.authorId,
-    required this.createdAt,
-    required this.updatedAt,
-    required this.organizationId,
-  });
+  Group(
+      {required this.id,
+      required this.name,
+      this.imgUrl,
+      required this.authorId,
+      required this.createdAt,
+      required this.updatedAt,
+      required this.organizationId});
 
   factory Group.fromJson(Map<String, dynamic> json) {
     return Group(
@@ -343,18 +358,20 @@ class Group {
       organizationId: json['organization_id'] ?? 0,
     );
   }
-
-  @override
-  String toString() {
-    return 'Group{id: $id, name: $name, imgUrl: $imgUrl, authorId: $authorId, createdAt: $createdAt, updatedAt: $updatedAt, organizationId: $organizationId}';
-  }
 }
 
 class Message {
+  static final RegExp _googleMapsQueryRegExp = RegExp(
+    r"""https?:\/\/(?:www\.)?google\.com\/maps(?:\/search\/)?(?:\?[^'"\s>]*?(?:q|query)=)([-+]?\d+(?:\.\d+)?),([-+]?\d+(?:\.\d+)?)""",
+    caseSensitive: false,
+  );
+
   final int id;
   final String text;
   final String type;
   final String? filePath;
+  final double? latitude;
+  final double? longitude;
   final bool isMyMessage;
   final String createMessateTime;
   bool isPlaying;
@@ -363,18 +380,22 @@ class Message {
   Duration duration;
   Duration position;
   final ForwardedMessage? forwardedMessage;
+  final Post? post;
   bool isPinned;
   bool isChanged;
   bool isRead;
   final bool isNote; // Новое поле
   final ReadStatus? readStatus;
   final String? referralBody;
+  final List<MessageReaction> reactions; // Сохранено из ветки reaction
 
   Message({
     required this.id,
     required this.text,
     required this.type,
     this.filePath,
+    this.latitude,
+    this.longitude,
     required this.isMyMessage,
     required this.createMessateTime,
     required this.senderName,
@@ -383,20 +404,23 @@ class Message {
     this.duration = const Duration(),
     this.position = const Duration(),
     this.forwardedMessage,
+    this.post,
     this.isPinned = false,
     this.isChanged = false,
-    this.isNote = false, // Инициализация по умолчанию
+    this.isNote = false,
     this.isRead = false,
     this.readStatus,
     this.referralBody,
+    this.reactions = const [], // Сохранено из ветки reaction
   });
 
-  // Метод copyWith
   Message copyWith({
     int? id,
     String? text,
     String? type,
     String? filePath,
+    double? latitude,
+    double? longitude,
     bool? isMyMessage,
     String? createMessateTime,
     bool? isPlaying,
@@ -405,18 +429,22 @@ class Message {
     Duration? duration,
     Duration? position,
     ForwardedMessage? forwardedMessage,
+    Post? post,
     bool? isPinned,
     bool? isChanged,
     bool? isRead,
     bool? isNote, // Новое поле
 
     ReadStatus? readStatus,
+    List<MessageReaction>? reactions, // Сохранено из ветки reaction
   }) {
     return Message(
       id: id ?? this.id,
       text: text ?? this.text,
       type: type ?? this.type,
       filePath: filePath ?? this.filePath,
+      latitude: latitude ?? this.latitude,
+      longitude: longitude ?? this.longitude,
       isMyMessage: isMyMessage ?? this.isMyMessage,
       createMessateTime: createMessateTime ?? this.createMessateTime,
       isPlaying: isPlaying ?? this.isPlaying,
@@ -425,62 +453,213 @@ class Message {
       duration: duration ?? this.duration,
       position: position ?? this.position,
       forwardedMessage: forwardedMessage ?? this.forwardedMessage,
+      post: post ?? this.post,
       isPinned: isPinned ?? this.isPinned,
       isChanged: isChanged ?? this.isChanged,
       isRead: isRead ?? this.isRead,
       readStatus: readStatus ?? this.readStatus,
-      isNote: isNote ?? this.isNote, // Новое поле
+      isNote: isNote ?? this.isNote,
+      reactions: reactions ?? this.reactions,
     );
   }
 
-  factory Message.fromJson(Map<String, dynamic> json) {
-    String text;
-    if (json['type'] == 'file') {
-      text = json['text'] ?? 'unknown_file';
-    } else {
-      text = json['text'] ?? '';
-    }
-    ForwardedMessage? forwardedMessage;
-    if (json['forwarded_message'] != null) {
-      forwardedMessage = ForwardedMessage.fromJson(json['forwarded_message']);
-    }
+  static Map<String, double>? extractLocationCoordinatesFromText(String text) {
+    if (text.isEmpty) return null;
+
+    final match = _googleMapsQueryRegExp.firstMatch(text);
+    if (match == null) return null;
+
+    final latitude = _parseDouble(match.group(1));
+    final longitude = _parseDouble(match.group(2));
+    if (latitude == null || longitude == null) return null;
+
+    return {
+      'latitude': latitude,
+      'longitude': longitude,
+    };
+  }
+
+  static String resolveIncomingType(
+    String? rawType,
+    String text, {
+    double? latitude,
+    double? longitude,
+  }) {
+    final normalizedType = (rawType ?? 'text').toLowerCase();
+    if (normalizedType == 'location') return 'location';
+    if (latitude != null && longitude != null) return 'location';
+    if (extractLocationCoordinatesFromText(text) != null) return 'location';
+    return normalizedType;
+  }
+
+  factory Message.fromJson(Map<String, dynamic> json, {String? chatType}) {
+    String text = (json['type'] == 'file')
+        ? (json['text'] ?? 'unknown_file')
+        : (json['text'] ?? '');
+    final location = json['location'];
+    double? latitude = _parseDouble(json['lattitude'] ??
+        json['latitude'] ??
+        (location is Map
+            ? location['lattitude'] ?? location['latitude']
+            : null));
+    double? longitude = _parseDouble(
+        json['longitude'] ?? (location is Map ? location['longitude'] : null));
+    final inferredLocation = extractLocationCoordinatesFromText(text);
+    latitude ??= inferredLocation?['latitude'];
+    longitude ??= inferredLocation?['longitude'];
+    final resolvedType = resolveIncomingType(
+      json['type']?.toString(),
+      text,
+      latitude: latitude,
+      longitude: longitude,
+    );
+
     ReadStatus? readStatus;
     try {
-      if (json['read_status'] != null) {
+      if (json['read_status'] != null)
         readStatus = ReadStatus.fromJson(json['read_status']);
-      }
     } catch (e) {
-      debugPrint('Error parsing read_status: $e');
       readStatus = null;
     }
+
+    // ✅ ЛОГИКА ОПРЕДЕЛЕНИЯ СТОРОНЫ СООБЩЕНИЯ
+    bool isMyMessage = false;
+    final effectiveChatType = chatType ?? json['chat']?['type']?.toString();
+    final senderType = json['sender']?['type']?.toString().toLowerCase();
+    final senderId = json['sender']?['id']?.toString();
+    final myUserId = userID.value;
+
+    // Для lead-чата определяем строго по sender.type
+    if (effectiveChatType == 'lead' && senderType != null) {
+      if (senderType == 'lead') {
+        isMyMessage = false;
+      } else if (senderType == 'user') {
+        isMyMessage = true;
+      } else {
+        isMyMessage = json['is_my_message'] ?? false;
+      }
+    } else if (senderId != null && senderId.isNotEmpty && myUserId.isNotEmpty) {
+      isMyMessage = (senderId == myUserId);
+    } else {
+      if (json['sender'] != null && json['sender']['type'] != null) {
+        if (senderType == 'lead') {
+          isMyMessage = false;
+        } else if (senderType == 'user' && effectiveChatType == 'lead') {
+          isMyMessage = true;
+        } else {
+          isMyMessage = json['is_my_message'] ?? false;
+        }
+      } else {
+        isMyMessage = json['is_my_message'] ?? false;
+      }
+    }
+
+    // ✅ ПЕРЕСЫЛКА ИЗ ВЕТКИ 1 (с очисткой HTML)
+    ForwardedMessage? forwardedMessage;
+    if (json['forwarded_message'] != null) {
+      try {
+        forwardedMessage = ForwardedMessage.fromJson(json['forwarded_message']);
+      } catch (_) {
+        try {
+          final fJson = json['forwarded_message'];
+          forwardedMessage = ForwardedMessage(
+            id: fJson['id'] ?? 0,
+            text: _stripHtmlTags(fJson['text'] ?? ''),
+            type: fJson['type'] ?? 'text',
+            senderName: fJson['sender']?['name'] ?? 'Без имени',
+          );
+        } catch (_) {}
+      }
+    }
+
+    Post? post;
+    if (json['post'] != null) {
+      try {
+        post = Post.fromJson(json['post']);
+      } catch (_) {}
+    }
+
+    // ✅ РЕАКЦИИ: поддержка как List, так и Map (emoji -> {count, users})
+    List<MessageReaction> reactionsList = [];
+    final rawReactions = json['reactions'];
+    if (rawReactions is List) {
+      for (var reactionJson in rawReactions) {
+        if (reactionJson is Map<String, dynamic>) {
+          reactionsList.add(MessageReaction.fromJson(reactionJson));
+        }
+      }
+    } else if (rawReactions is Map) {
+      rawReactions.forEach((emojiKey, reactionData) {
+        if (reactionData is! Map) return;
+
+        final emoji = emojiKey.toString();
+        final countRaw = reactionData['count'];
+        final count = countRaw is int
+            ? countRaw
+            : int.tryParse(countRaw?.toString() ?? '') ?? 0;
+
+        final usersRaw = reactionData['users'];
+        final List<ReactionUser> users = [];
+        if (usersRaw is List) {
+          for (final user in usersRaw) {
+            if (user is Map) {
+              users.add(ReactionUser.fromJson(Map<String, dynamic>.from(user)));
+            } else if (user is String) {
+              users.add(ReactionUser(id: 0, name: user));
+            }
+          }
+        }
+
+        reactionsList.add(
+          MessageReaction(
+            emoji: emoji,
+            count: count,
+            users: users,
+            isMyReaction: reactionData['is_my_reaction'] == true,
+          ),
+        );
+      });
+    }
+
     return Message(
-        id: json['id'],
-        text: text,
-        type: json['type'],
-        senderName: json['sender'] == null
-            ? 'Без имени'
-            : json['sender']['name'] ?? 'Без имени',
-        referralBody: json['chat']?['referral_body'],
-        createMessateTime: json['created_at'] ?? '',
-        filePath: json['file_path'],
-        isPinned: json['is_pinned'] ?? false,
-        isChanged: json['is_changed'] ?? false,
-        isMyMessage: json['is_my_message'] ?? false,
-        forwardedMessage: forwardedMessage,
-        isRead: json['is_read'] ?? false,
-        readStatus: readStatus,
-        isNote: json['is_note'] ?? false, // Парсинг is_note
-        duration: Duration(
-          seconds: json['voice_duration'] != null
-              ? double.tryParse(json['voice_duration'].toString())?.round() ?? 0
-              : 20,
-        ));
+      id: json['id'],
+      text: text,
+      type: resolvedType,
+      senderName: json['sender'] == null
+          ? 'Без имени'
+          : json['sender']['name'] ?? 'Без имени',
+      referralBody: json['chat']?['referral_body'],
+      createMessateTime: json['created_at'] ?? '',
+      filePath: json['file_path'],
+      latitude: latitude,
+      longitude: longitude,
+      isPinned: json['is_pinned'] ?? false,
+      isChanged: json['is_changed'] ?? false,
+      isMyMessage: isMyMessage,
+      forwardedMessage: forwardedMessage,
+      post: post,
+      isRead: json['is_read'] ?? false,
+      readStatus: readStatus,
+      isNote: json['is_note'] ?? false,
+      reactions: reactionsList,
+      duration: Duration(
+        seconds: json['voice_duration'] != null
+            ? double.tryParse(json['voice_duration'].toString())?.round() ?? 0
+            : 20,
+      ),
+    );
   }
 
   @override
   String toString() {
-    return 'Message{id: $id, text: $text, type: $type, filePath: $filePath, isMyMessage: $isMyMessage, isPlaying: $isPlaying, isPause: $isPause, duration: $duration, position: $position, forwardedMessage: $forwardedMessage, isPinned: $isPinned, isChanged: $isChanged, isRead: $isRead, readStatus: $readStatus}';
+    return 'Message{id: $id, text: $text, type: $type, filePath: $filePath, latitude: $latitude, longitude: $longitude, isMyMessage: $isMyMessage, isPlaying: $isPlaying, isPause: $isPause, duration: $duration, position: $position, forwardedMessage: $forwardedMessage, isPinned: $isPinned, isChanged: $isChanged, isRead: $isRead, readStatus: $readStatus}';
   }
+}
+
+double? _parseDouble(dynamic value) {
+  if (value == null) return null;
+  if (value is num) return value.toDouble();
+  return double.tryParse(value.toString());
 }
 
 class ForwardedMessage {
@@ -489,36 +668,55 @@ class ForwardedMessage {
   final String type;
   final String? senderName;
 
-  ForwardedMessage({
-    required this.id,
-    required this.text,
-    required this.type,
-    this.senderName,
-  });
+  ForwardedMessage(
+      {required this.id,
+      required this.text,
+      required this.type,
+      this.senderName});
 
   factory ForwardedMessage.fromJson(Map<String, dynamic> json) {
     return ForwardedMessage(
-      id: json['id'],
+      id: json['id'] ?? 0,
       text: json['text'] ?? '',
-      type: json['type'],
+      type: json['type'] ?? 'text',
       senderName: json['sender']?['name'] ?? 'Без имени',
     );
   }
-
   @override
   String toString() {
     return 'ForwardedMessage{id: $id, text: $text, type: $type, senderName: $senderName}';
   }
 }
 
+class Post {
+  final int id;
+  final String caption;
+  final String? mediaUrl;
+
+  Post({
+    required this.id,
+    required this.caption,
+    this.mediaUrl,
+  });
+
+  factory Post.fromJson(Map<String, dynamic> json) {
+    return Post(
+      id: json['id'] ?? 0,
+      caption: json['caption']?.toString() ?? '',
+      mediaUrl: json['media_url']?.toString(),
+    );
+  }
+
+  @override
+  String toString() {
+    return 'Post{id: $id, caption: $caption, mediaUrl: $mediaUrl}';
+  }
+}
+
 class ReadStatus {
   final List<User> read;
   final List<User> unread;
-
-  ReadStatus({
-    required this.read,
-    required this.unread,
-  });
+  ReadStatus({required this.read, required this.unread});
 
   factory ReadStatus.fromJson(Map<String, dynamic> json) {
     return ReadStatus(
@@ -536,23 +734,6 @@ class ReadStatus {
   }
 }
 
-class ReadUser {
-  final int userId;
-  final String readAt;
-  final User user;
-
-  ReadUser({
-    required this.userId,
-    required this.readAt,
-    required this.user,
-  });
-
-  @override
-  String toString() {
-    return 'ReadUser{userId: $userId, readAt: $readAt, user: $user}';
-  }
-}
-
 class User {
   final int id;
   final String name;
@@ -562,63 +743,46 @@ class User {
   final String? phone;
   final String? image;
   final DateTime? lastSeen;
-  final DateTime? deletedAt;
-  final String? telegramUserId;
-  final String? jobTitle;
-  final bool? online;
   final String fullName;
   final DateTime? readAt;
 
-  User({
-    required this.id,
-    required this.name,
-    required this.lastname,
-    required this.login,
-    required this.email,
-    required this.phone,
-    required this.image,
-    required this.lastSeen,
-    this.deletedAt,
-    this.telegramUserId,
-    this.jobTitle,
-    this.online,
-    required this.fullName,
-    this.readAt,
-  });
+  User(
+      {required this.id,
+      required this.name,
+      required this.lastname,
+      this.login,
+      this.email,
+      this.phone,
+      this.image,
+      this.lastSeen,
+      required this.fullName,
+      this.readAt});
 
   factory User.fromJson(Map json, [DateTime? readAt]) {
-    DateTime? parsedReadAt;
-
-    if (json['read_at'] != null) {
-      parsedReadAt = DateTime.tryParse(json['read_at']) ?? readAt;
-    } else if (readAt != null) {
-      parsedReadAt = readAt;
-    }
-
     return User(
       id: json['id'] ?? 0,
       name: json['name'] ?? '',
       lastname: json['lastname'] ?? '',
-      login: json['login'] ?? '',
-      email: json['email'] ?? '',
-      phone: json['phone'] ?? '',
-      image: json['image'] ?? '',
+      login: json['login'],
+      email: json['email'],
+      phone: json['phone'],
+      image: json['image'],
       lastSeen: json['last_seen'] != null
           ? DateTime.parse(json['last_seen'])
           : DateTime.now(),
-      deletedAt: json['deleted_at'] != null
-          ? DateTime.parse(json['deleted_at'])
-          : null,
-      telegramUserId: json['telegram_user_id'],
-      jobTitle: json['job_title'],
-      online: json['online'] ?? false,
       fullName: json['full_name'] ?? 'Без имени',
-      readAt: parsedReadAt,
+      readAt:
+          json['read_at'] != null ? DateTime.tryParse(json['read_at']) : readAt,
     );
   }
+}
 
-  @override
-  String toString() {
-    return 'User{id: $id, name: $name, lastname: $lastname, login: $login, email: $email, phone: $phone, image: $image, lastSeen: $lastSeen, deletedAt: $deletedAt, telegramUserId: $telegramUserId, jobTitle: $jobTitle, online: $online, fullName: $fullName,readAt: $readAt}';
+// ✅ ВСПОМОГАТЕЛЬНАЯ ФУНКЦИЯ ИЗ ВЕТКИ 1
+String _stripHtmlTags(String html) {
+  if (!html.contains('<') || !html.contains('>')) return html;
+  try {
+    return html.replaceAll(RegExp(r'<[^>]*>'), '').trim();
+  } catch (e) {
+    return html;
   }
 }

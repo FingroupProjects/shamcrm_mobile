@@ -55,14 +55,14 @@ class TopSellingResult {
   factory TopSellingResult.fromJson(Map<String, dynamic> json) {
     return TopSellingResult(
       currentPage: json['current_page'] as int?,
-      data: (json['data'] as List<dynamic>)
+      data: (json['data'] as List<dynamic>? ?? [])
           .map((item) => TopSellingData.fromJson(item as Map<String, dynamic>))
           .toList(),
       firstPageUrl: json['first_page_url'] as String? ?? '',
       from: json['from'] as int? ?? 0, // Default to 0 if null
       lastPage: json['last_page'] as int? ?? 0, // Default to 0 if null
       lastPageUrl: json['last_page_url'] as String? ?? '',
-      links: (json['links'] as List<dynamic>)
+      links: (json['links'] as List<dynamic>? ?? [])
           .map((item) => Link.fromJson(item as Map<String, dynamic>))
           .toList(),
       nextPageUrl: json['next_page_url'] as String?,

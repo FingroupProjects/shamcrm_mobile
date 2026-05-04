@@ -423,20 +423,16 @@ Widget _buildFileIcon(String fileName, String fileExtension) {
       isSubmitted = true; 
     });
     
-  if (_formKey.currentState!.validate() && _selectedStatuses != null) {
-    _createMyTask();
-  } else {
-    String errorMessage = _selectedStatuses == null
-        ? AppLocalizations.of(context)!.translate('Выберете статус')
-        : AppLocalizations.of(context)!.translate('fill_required_fields');
-
-  showCustomSnackBar(
-       context: context,
-       message: AppLocalizations.of(context)!.translate(errorMessage),
-       isSuccess: false,
-     );
+    if (_formKey.currentState!.validate() && _selectedStatuses != null) {
+      _createMyTask();
+    } else {
+      showCustomSnackBar(
+        context: context,
+        message: 'fill_required_fields',
+        isSuccess: false,
+      );
+    }
   }
-}
 
   void _createMyTask() {
     final String name = nameController.text;

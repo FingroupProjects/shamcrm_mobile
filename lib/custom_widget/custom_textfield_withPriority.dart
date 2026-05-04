@@ -43,101 +43,100 @@ class CustomTextFieldWithPriority extends StatefulWidget {
   });
 
   @override
-  _CustomTextFieldWithPriorityState createState() => _CustomTextFieldWithPriorityState();
+  _CustomTextFieldWithPriorityState createState() =>
+      _CustomTextFieldWithPriorityState();
 }
 
-
-class _CustomTextFieldWithPriorityState extends State<CustomTextFieldWithPriority> 
+class _CustomTextFieldWithPriorityState
+    extends State<CustomTextFieldWithPriority>
     with SingleTickerProviderStateMixin {
   bool _isPasswordVisible = false;
   late AnimationController _animationController;
   late Animation<double> _fillAnimation;
 
- @override
-void initState() {
-  super.initState();
-  _animationController = AnimationController(
-    duration: const Duration(milliseconds: 800),
-    vsync: this,
-  );
-  _fillAnimation = Tween<double>(
-    begin: 0.0,
-    end: 1.0,
-  ).animate(CurvedAnimation(
-    parent: _animationController,
-    curve: Curves.easeInOut,
-  ));
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 800),
+      vsync: this,
+    );
+    _fillAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeInOut,
+    ));
 
-  // Если данные приходят уже включёнными, то сразу показываем цветную иконку
-  if (widget.isPrioritySelected) {
-    _animationController.value = 1.0;
-  } else {
-    _animationController.value = 0.0;
+    // Если данные приходят уже включёнными, то сразу показываем цветную иконку
+    if (widget.isPrioritySelected) {
+      _animationController.value = 1.0;
+    } else {
+      _animationController.value = 0.0;
+    }
   }
-}
-
 
   @override
   void dispose() {
     _animationController.dispose();
     super.dispose();
   }
-@override
-void didUpdateWidget(CustomTextFieldWithPriority oldWidget) {
-  super.didUpdateWidget(oldWidget);
-  if (widget.isPrioritySelected != oldWidget.isPrioritySelected) {
-    if (widget.isPrioritySelected) {
-      _animationController.forward();
-    } else {
-      _animationController.reverse();
+
+  @override
+  void didUpdateWidget(CustomTextFieldWithPriority oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isPrioritySelected != oldWidget.isPrioritySelected) {
+      if (widget.isPrioritySelected) {
+        _animationController.forward();
+      } else {
+        _animationController.reverse();
+      }
     }
   }
-}
 
-
-Widget _buildAnimatedFireIcon() {
-  return SizedBox(
-    width: 20,
-    height: 20,
-    child: Stack(
-      children: [
-        // Базовая иконка для выключенного состояния
-        Image.asset(
-          'assets/icons/icon-fire-no-color.png',
-          width: 20,
-          height: 20,
-        ),
-        // Анимированная цветная иконка
-        AnimatedBuilder(
-          animation: _fillAnimation,
-          builder: (context, child) {
-            return ShaderMask(
-              shaderCallback: (Rect bounds) {
-                return LinearGradient(
-                  begin: Alignment.bottomCenter,
-                  end: Alignment.topCenter,
-                  // Используем две остановки с одинаковым значением для резкого перехода
-                  stops: [_fillAnimation.value, _fillAnimation.value],
-                  colors: [
-                    Colors.white,
-                    Colors.transparent,
-                  ],
-                ).createShader(bounds);
-              },
-              blendMode: BlendMode.dstIn,
-              child: Image.asset(
-                'assets/icons/icon-fire-color.png',
-                width: 20,
-                height: 20,
-              ),
-            );
-          },
-        ),
-      ],
-    ),
-  );
-}
-
+  Widget _buildAnimatedFireIcon() {
+    return SizedBox(
+      width: 20,
+      height: 20,
+      child: Stack(
+        children: [
+          // Базовая иконка для выключенного состояния
+          Image.asset(
+            'assets/icons/icon-fire-no-color.png',
+            width: 20,
+            height: 20,
+          ),
+          // Анимированная цветная иконка
+          AnimatedBuilder(
+            animation: _fillAnimation,
+            builder: (context, child) {
+              return ShaderMask(
+                shaderCallback: (Rect bounds) {
+                  return LinearGradient(
+                    begin: Alignment.bottomCenter,
+                    end: Alignment.topCenter,
+                    // Используем две остановки с одинаковым значением для резкого перехода
+                    stops: [_fillAnimation.value, _fillAnimation.value],
+                    colors: [
+                      Colors.white,
+                      Colors.transparent,
+                    ],
+                  ).createShader(bounds);
+                },
+                blendMode: BlendMode.dstIn,
+                child: Image.asset(
+                  'assets/icons/icon-fire-color.png',
+                  width: 20,
+                  height: 20,
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
 
   Widget _buildPrioritySection() {
     if (!widget.showPriority) return const SizedBox.shrink();
@@ -167,7 +166,8 @@ Widget _buildAnimatedFireIcon() {
 
   @override
   Widget build(BuildContext context) {
-    final hasError = widget.errorText != null && widget.errorText!.isNotEmpty || widget.hasError;
+    final hasError = widget.errorText != null && widget.errorText!.isNotEmpty ||
+        widget.hasError;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -238,6 +238,7 @@ Widget _buildAnimatedFireIcon() {
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(
                 color: hasError ? Colors.red : Colors.transparent,
+                width: 1.5,
               ),
             ),
             errorBorder: OutlineInputBorder(

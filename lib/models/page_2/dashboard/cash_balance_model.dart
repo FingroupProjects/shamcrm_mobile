@@ -10,9 +10,9 @@ class CashBalanceResponse {
   }
 
   Map<String, dynamic> toJson() => {
-    if (result != null) 'result': result!.toJson(),
-    'errors': errors,
-  };
+        if (result != null) 'result': result!.toJson(),
+        'errors': errors,
+      };
 }
 
 class Result {
@@ -31,11 +31,11 @@ class Result {
   }
 
   Map<String, dynamic> toJson() => {
-    if (cashBalanceSummary != null)
-      'cash_balance_summary': cashBalanceSummary!.toJson(),
-    if (checkingAccounts != null)
-      'checking_accounts': checkingAccounts!.toJson(),
-  };
+        if (cashBalanceSummary != null)
+          'cash_balance_summary': cashBalanceSummary!.toJson(),
+        if (checkingAccounts != null)
+          'checking_accounts': checkingAccounts!.toJson(),
+      };
 }
 
 class CashBalanceSummary {
@@ -70,25 +70,26 @@ class CashBalanceSummary {
           .toList();
     }
     if (json['movements'] != null) {
-      movements =
-          (json['movements'] as List).map((v) => Movements.fromJson(v)).toList();
+      movements = (json['movements'] as List)
+          .map((v) => Movements.fromJson(v))
+          .toList();
     }
     comparisonPeriod = json['comparison_period'];
     period = json['period'] != null ? Period.fromJson(json['period']) : null;
   }
 
   Map<String, dynamic> toJson() => {
-    'total_balance': totalBalance,
-    'previous_balance': previousBalance,
-    'percentage_change': percentageChange,
-    'is_positive_change': isPositiveChange,
-    if (cashRegisters != null)
-      'cash_registers': cashRegisters!.map((v) => v.toJson()).toList(),
-    if (movements != null)
-      'movements': movements!.map((v) => v.toJson()).toList(),
-    'comparison_period': comparisonPeriod,
-    if (period != null) 'period': period!.toJson(),
-  };
+        'total_balance': totalBalance,
+        'previous_balance': previousBalance,
+        'percentage_change': percentageChange,
+        'is_positive_change': isPositiveChange,
+        if (cashRegisters != null)
+          'cash_registers': cashRegisters!.map((v) => v.toJson()).toList(),
+        if (movements != null)
+          'movements': movements!.map((v) => v.toJson()).toList(),
+        'comparison_period': comparisonPeriod,
+        if (period != null) 'period': period!.toJson(),
+      };
 }
 
 class CashRegisters {
@@ -96,22 +97,33 @@ class CashRegisters {
   String? name;
   num? balance;
   String? updatedAt;
+  String? currencyName;
 
-  CashRegisters({this.id, this.name, this.balance, this.updatedAt});
+  CashRegisters({
+    this.id,
+    this.name,
+    this.balance,
+    this.updatedAt,
+    this.currencyName,
+  });
 
   CashRegisters.fromJson(Map<String, dynamic> json) {
     id = json['id'];
     name = json['name'];
     balance = json['balance'];
     updatedAt = json['updated_at'];
+    currencyName = json['currency'] is Map<String, dynamic>
+        ? json['currency']['name']?.toString()
+        : null;
   }
 
   Map<String, dynamic> toJson() => {
-    'id': id,
-    'name': name,
-    'balance': balance,
-    'updated_at': updatedAt,
-  };
+        'id': id,
+        'name': name,
+        'balance': balance,
+        'updated_at': updatedAt,
+        'currency_name': currencyName,
+      };
 }
 
 class Movements {
@@ -153,17 +165,17 @@ class Movements {
   }
 
   Map<String, dynamic> toJson() => {
-    'id': id,
-    'date': date,
-    'time': time,
-    'operation': operation,
-    'counterparty': counterparty,
-    'amount': amount,
-    'formatted_amount': formattedAmount,
-    'method': method,
-    'operation_type': operationType,
-    'is_income': isIncome,
-  };
+        'id': id,
+        'date': date,
+        'time': time,
+        'operation': operation,
+        'counterparty': counterparty,
+        'amount': amount,
+        'formatted_amount': formattedAmount,
+        'method': method,
+        'operation_type': operationType,
+        'is_income': isIncome,
+      };
 }
 
 class Period {
@@ -174,15 +186,15 @@ class Period {
 
   Period.fromJson(Map<String, dynamic> json) {
     current =
-    json['current'] != null ? Current.fromJson(json['current']) : null;
+        json['current'] != null ? Current.fromJson(json['current']) : null;
     previous =
-    json['previous'] != null ? Current.fromJson(json['previous']) : null;
+        json['previous'] != null ? Current.fromJson(json['previous']) : null;
   }
 
   Map<String, dynamic> toJson() => {
-    if (current != null) 'current': current!.toJson(),
-    if (previous != null) 'previous': previous!.toJson(),
-  };
+        if (current != null) 'current': current!.toJson(),
+        if (previous != null) 'previous': previous!.toJson(),
+      };
 }
 
 class Current {
@@ -197,9 +209,9 @@ class Current {
   }
 
   Map<String, dynamic> toJson() => {
-    'from': from,
-    'to': to,
-  };
+        'from': from,
+        'to': to,
+      };
 }
 
 class CheckingAccounts {
@@ -254,20 +266,20 @@ class CheckingAccounts {
   }
 
   Map<String, dynamic> toJson() => {
-    'current_page': currentPage,
-    if (data != null) 'data': data!.map((v) => v.toJson()).toList(),
-    'first_page_url': firstPageUrl,
-    'from': from,
-    'last_page': lastPage,
-    'last_page_url': lastPageUrl,
-    if (links != null) 'links': links!.map((v) => v.toJson()).toList(),
-    'next_page_url': nextPageUrl,
-    'path': path,
-    'per_page': perPage,
-    'prev_page_url': prevPageUrl,
-    'to': to,
-    'total': total,
-  };
+        'current_page': currentPage,
+        if (data != null) 'data': data!.map((v) => v.toJson()).toList(),
+        'first_page_url': firstPageUrl,
+        'from': from,
+        'last_page': lastPage,
+        'last_page_url': lastPageUrl,
+        if (links != null) 'links': links!.map((v) => v.toJson()).toList(),
+        'next_page_url': nextPageUrl,
+        'path': path,
+        'per_page': perPage,
+        'prev_page_url': prevPageUrl,
+        'to': to,
+        'total': total,
+      };
 }
 
 // Add this new class for Article
@@ -283,9 +295,9 @@ class Article {
   }
 
   Map<String, dynamic> toJson() => {
-    'id': id,
-    'name': name,
-  };
+        'id': id,
+        'name': name,
+      };
 }
 
 // Updated Data class
@@ -300,7 +312,7 @@ class Data {
   bool? approved;
   String? createdAt;
   CashRegister? cashRegister;
-  Article? article;  // Changed from String? to Article?
+  Article? article; // Changed from String? to Article?
   Counterparty? counterparty;
   bool? isIncome;
 
@@ -334,7 +346,7 @@ class Data {
         ? CashRegister.fromJson(json['cash_register'])
         : null;
     article = json['article'] != null
-        ? Article.fromJson(json['article'])  // Changed parsing logic
+        ? Article.fromJson(json['article']) // Changed parsing logic
         : null;
     counterparty = json['counterparty'] != null
         ? Counterparty.fromJson(json['counterparty'])
@@ -343,20 +355,21 @@ class Data {
   }
 
   Map<String, dynamic> toJson() => {
-    'id': id,
-    'doc_number': docNumber,
-    'date': date,
-    'amount': amount,
-    'formatted_amount': formattedAmount,
-    'operation_type': operationType,
-    'comment': comment,
-    'approved': approved,
-    'created_at': createdAt,
-    if (cashRegister != null) 'cash_register': cashRegister!.toJson(),
-    if (article != null) 'article': article!.toJson(),  // Changed serialization
-    if (counterparty != null) 'counterparty': counterparty!.toJson(),
-    'is_income': isIncome,
-  };
+        'id': id,
+        'doc_number': docNumber,
+        'date': date,
+        'amount': amount,
+        'formatted_amount': formattedAmount,
+        'operation_type': operationType,
+        'comment': comment,
+        'approved': approved,
+        'created_at': createdAt,
+        if (cashRegister != null) 'cash_register': cashRegister!.toJson(),
+        if (article != null)
+          'article': article!.toJson(), // Changed serialization
+        if (counterparty != null) 'counterparty': counterparty!.toJson(),
+        'is_income': isIncome,
+      };
 }
 
 class CashRegister {
@@ -373,10 +386,10 @@ class CashRegister {
   }
 
   Map<String, dynamic> toJson() => {
-    'id': id,
-    'name': name,
-    'type': type,
-  };
+        'id': id,
+        'name': name,
+        'type': type,
+      };
 }
 
 class Counterparty {
@@ -397,12 +410,12 @@ class Counterparty {
   }
 
   Map<String, dynamic> toJson() => {
-    'type': type,
-    'id': id,
-    'name': name,
-    'phone': phone,
-    'inn': inn,
-  };
+        'type': type,
+        'id': id,
+        'name': name,
+        'phone': phone,
+        'inn': inn,
+      };
 }
 
 class Links {
@@ -419,8 +432,8 @@ class Links {
   }
 
   Map<String, dynamic> toJson() => {
-    'url': url,
-    'label': label,
-    'active': active,
-  };
+        'url': url,
+        'label': label,
+        'active': active,
+      };
 }

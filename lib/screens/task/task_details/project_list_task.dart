@@ -1,4 +1,5 @@
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
+import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/project_task/project_task_bloc.dart';
 import 'package:crm_task_manager/bloc/project_task/project_task_event.dart';
 import 'package:crm_task_manager/bloc/project_task/project_task_state.dart';
@@ -10,11 +11,13 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 class ProjectTaskGroupWidget extends StatefulWidget {
   final String? selectedProject;
   final Function(ProjectTask) onSelectProject;
+  final String? errorText;
 
-  ProjectTaskGroupWidget({
+  const ProjectTaskGroupWidget({
     super.key,
     required this.onSelectProject,
     this.selectedProject,
+    this.errorText,
   });
 
   @override
@@ -22,10 +25,11 @@ class ProjectTaskGroupWidget extends StatefulWidget {
 }
 
 class _ProjectTaskGroupWidgetState extends State<ProjectTaskGroupWidget> {
+  static const int _pageSize = 20;
+  final ApiService _apiService = ApiService();
   List<ProjectTask> projectsList = [];
   ProjectTask? selectedProjectData;
   bool _hasAutoSelected = false;
-  bool _isLoadingMore = false;
 
   final TextStyle projectTextStyle = const TextStyle(
     fontSize: 16,
@@ -38,69 +42,6 @@ class _ProjectTaskGroupWidgetState extends State<ProjectTaskGroupWidget> {
   void initState() {
     super.initState();
     context.read<GetTaskProjectBloc>().add(GetTaskProjectEv());
-  }
-
-  void _loadAllRemainingPages(GetTaskProjectSuccess initialState) async {
-    // Загружаем все оставшиеся страницы последовательно, пока не достигнем конца
-    if (initialState.hasReachedMax || _isLoadingMore) {
-      return;
-    }
-
-    if (!mounted) return;
-
-    setState(() {
-      _isLoadingMore = true;
-    });
-
-    int nextPage = initialState.currentPage + 1;
-    int totalPages = initialState.totalPages;
-
-    // Загружаем все страницы последовательно
-    while (nextPage <= totalPages && mounted) {
-      try {
-        // Ждем немного между запросами, чтобы не перегружать сервер
-        await Future.delayed(const Duration(milliseconds: 100));
-
-        context.read<GetTaskProjectBloc>().add(
-          GetTaskProjectMoreEv(page: nextPage),
-        );
-
-        // Ждем обновления состояния (максимум 5 секунд на запрос)
-        GetTaskProjectSuccess? updatedState;
-        try {
-          updatedState = await context.read<GetTaskProjectBloc>().stream
-              .where((newState) => newState is GetTaskProjectSuccess)
-              .map((newState) => newState as GetTaskProjectSuccess)
-              .first
-              .timeout(const Duration(seconds: 5));
-        } catch (e) {
-          // При таймауте или ошибке прекращаем загрузку
-          break;
-        }
-
-        if (!mounted) {
-          break;
-        }
-
-        // Проверяем, достигли ли мы конца
-        if (updatedState.hasReachedMax) {
-          break;
-        }
-
-        // Обновляем счетчики для следующей итерации
-        nextPage = updatedState.currentPage + 1;
-        totalPages = updatedState.totalPages;
-      } catch (e) {
-        // При ошибке прекращаем загрузку
-        break;
-      }
-    }
-
-    if (mounted) {
-      setState(() {
-        _isLoadingMore = false;
-      });
-    }
   }
 
   void _handleProjectSelection(List<ProjectTask> projects) {
@@ -119,7 +60,7 @@ class _ProjectTaskGroupWidgetState extends State<ProjectTaskGroupWidget> {
     } else if (widget.selectedProject != null && projects.isNotEmpty) {
       try {
         final foundProject = projects.firstWhere(
-              (projectTask) => projectTask.id.toString() == widget.selectedProject,
+          (projectTask) => projectTask.id.toString() == widget.selectedProject,
         );
         if (selectedProjectData != foundProject) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -146,11 +87,31 @@ class _ProjectTaskGroupWidgetState extends State<ProjectTaskGroupWidget> {
 
     // Проверяем, содержится ли selectedProjectData в текущем списке проектов
     try {
-      return projects.firstWhere((project) => project.id == selectedProjectData!.id);
+      return projects
+          .firstWhere((project) => project.id == selectedProjectData!.id);
     } catch (e) {
       // Если не найден, возвращаем null
       return null;
     }
+  }
+
+  Future<CustomDropdownPaginatedResponse<ProjectTask>> _searchProjects(
+    String query,
+    int page,
+  ) async {
+    final response = await _apiService.getTaskProject(
+      page: page,
+      perPage: _pageSize,
+      search: query,
+    );
+    final items = response.result ?? <ProjectTask>[];
+
+    return CustomDropdownPaginatedResponse<ProjectTask>(
+      items: items,
+      hasMore: (response.pagination?.currentPage ?? page) <
+          (response.pagination?.totalPages ??
+              (items.length >= _pageSize ? page + 1 : page)),
+    );
   }
 
   @override
@@ -158,7 +119,8 @@ class _ProjectTaskGroupWidgetState extends State<ProjectTaskGroupWidget> {
     return FormField<ProjectTask>(
       validator: (value) {
         if (selectedProjectData == null) {
-          return AppLocalizations.of(context)!.translate('field_required_project');
+          return AppLocalizations.of(context)!
+              .translate('field_required_project');
         }
         return null;
       },
@@ -173,26 +135,19 @@ class _ProjectTaskGroupWidgetState extends State<ProjectTaskGroupWidget> {
                 fontSize: 16,
               ),
             ),
+            const SizedBox(height: 8),
             Container(
               decoration: BoxDecoration(
                 color: const Color(0xFFF4F7FD),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  width: 1,
-                  color: field.hasError ? Colors.red : Colors.white,
+                  width: 1.5,
+                  color: widget.errorText != null
+                      ? Colors.red
+                      : Colors.transparent,
                 ),
               ),
-              child: BlocConsumer<GetTaskProjectBloc, GetTaskProjectState>(
-                listener: (context, state) {
-                  if (state is GetTaskProjectSuccess) {
-                    // Загружаем все оставшиеся страницы сразу после первой загрузки
-                    if (state.currentPage == 1 && !state.hasReachedMax && !_isLoadingMore) {
-                      WidgetsBinding.instance.addPostFrameCallback((_) {
-                        _loadAllRemainingPages(state);
-                      });
-                    }
-                  }
-                },
+              child: BlocBuilder<GetTaskProjectBloc, GetTaskProjectState>(
                 builder: (context, state) {
                   if (state is GetTaskProjectSuccess) {
                     projectsList = state.dataProject.result ?? [];
@@ -201,10 +156,13 @@ class _ProjectTaskGroupWidgetState extends State<ProjectTaskGroupWidget> {
                     _handleProjectSelection(projectsList);
                   }
 
-                  return CustomDropdown<ProjectTask>.search(
+                  return CustomDropdown<ProjectTask>.searchRequestPaginated(
+                    paginatedRequest: _searchProjects,
+                    futureRequestDelay: const Duration(milliseconds: 350),
                     closeDropDownOnClearFilterSearch: true,
                     items: projectsList,
-                    searchHintText: AppLocalizations.of(context)!.translate('search'),
+                    searchHintText:
+                        AppLocalizations.of(context)!.translate('search'),
                     overlayHeight: 400,
                     decoration: CustomDropdownDecoration(
                       closedFillColor: const Color(0xffF4F7FD),
@@ -261,15 +219,16 @@ class _ProjectTaskGroupWidgetState extends State<ProjectTaskGroupWidget> {
                 },
               ),
             ),
-            if (field.hasError)
+            if (widget.errorText != null)
               Padding(
                 padding: const EdgeInsets.only(top: 4, left: 0),
                 child: Text(
-                  field.errorText!,
+                  widget.errorText!,
                   style: const TextStyle(
                     color: Colors.red,
                     fontSize: 14,
                     fontWeight: FontWeight.w400,
+                    fontFamily: 'Gilroy',
                   ),
                 ),
               ),

@@ -30,7 +30,7 @@ class _SourcesMultiSelectWidgetState extends State<SourcesMultiSelectWidget> {
     fontFamily: 'Gilroy',
     color: Color(0xff1E2E52),
   );
-
+  
   @override
   void initState() {
     super.initState();

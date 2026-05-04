@@ -19,11 +19,11 @@
         android:paddingTop="10dp"
         android:paddingBottom="10dp">
 
-        <!-- Header -->
         <ImageView
             android:layout_width="wrap_content"
             android:layout_height="@dimen/widget_logo_compact_size"
             android:layout_gravity="start"
+            android:adjustViewBounds="true"
             android:scaleType="fitCenter"
             android:src="@drawable/sham_crm_logo" />
 
@@ -81,7 +81,8 @@
                     android:layout_marginTop="4dp"
                     android:text="Продажа"
                     android:textSize="@dimen/widget_text_compact_size"
-                    android:textColor="#1E2E52"
+android:textStyle="bold"
+                    android:textColor="#FFFFFF"
                     android:maxLines="1"
                     android:ellipsize="end" />
             </LinearLayout>
@@ -113,7 +114,8 @@
                     android:layout_marginTop="4dp"
                     android:text="Возврат от клиента"
                     android:textSize="@dimen/widget_text_compact_size"
-                    android:textColor="#1E2E52"
+android:textStyle="bold"
+                    android:textColor="#FFFFFF"
                     android:maxLines="1"
                     android:ellipsize="end" />
             </LinearLayout>
@@ -145,7 +147,8 @@
                     android:layout_marginTop="4dp"
                     android:text="Приход товаров"
                     android:textSize="@dimen/widget_text_compact_size"
-                    android:textColor="#1E2E52"
+android:textStyle="bold"
+                    android:textColor="#FFFFFF"
                     android:maxLines="1"
                     android:ellipsize="end" />
             </LinearLayout>
@@ -177,7 +180,8 @@
                     android:layout_marginTop="4dp"
                     android:text="Перемещение"
                     android:textSize="@dimen/widget_text_compact_size"
-                    android:textColor="#1E2E52"
+android:textStyle="bold"
+                    android:textColor="#FFFFFF"
                     android:maxLines="1"
                     android:ellipsize="end" />
             </LinearLayout>

@@ -1,7 +1,9 @@
 abstract class CashRegisterOpeningsEvent {}
 
 class LoadCashRegisterOpenings extends CashRegisterOpeningsEvent {
-  LoadCashRegisterOpenings();
+  final String? search;
+  
+  LoadCashRegisterOpenings({this.search});
 }
 
 class RefreshCashRegisterOpenings extends CashRegisterOpeningsEvent {

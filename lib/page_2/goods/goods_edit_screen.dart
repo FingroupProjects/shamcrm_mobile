@@ -11,6 +11,7 @@ import 'package:crm_task_manager/models/page_2/subCategoryAttribute_model.dart'
     as subCatAttr;
 import 'package:crm_task_manager/page_2/goods/goods_details/image_list_poput.dart';
 import 'package:crm_task_manager/page_2/goods/goods_details/label_list.dart';
+import 'package:crm_task_manager/page_2/warehouse/incoming/variant_selection_bottom_sheet.dart';
 import 'package:crm_task_manager/page_2/warehouse/incoming/units_widget.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
@@ -19,9 +20,11 @@ import 'package:flutter/material.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/custom_widget/custom_chat_styles.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
+import 'package:crm_task_manager/custom_widget/price_input_formatter.dart';
 import 'package:crm_task_manager/page_2/goods/category_list.dart';
 import 'package:reorderables/reorderables.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class GoodsEditScreen extends StatefulWidget {
   final Goods goods;
@@ -61,6 +64,12 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
   final ImagePicker _picker = ImagePicker();
   int? mainImageIndex;
   late bool isService;
+  bool _hasManufacture = false;
+  bool _manufactureLoaded = false;
+  String _productionType = 'raw';
+  final List<Map<String, dynamic>> _materialGoods = [];
+  final List<Map<String, dynamic>> _relatedGoods = [];
+  final Map<int, TextEditingController> _materialNormControllers = {};
 
   @override
   void initState() {
@@ -72,53 +81,80 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
     });
   }
 
- void _initializeFieldsWithDefaults() {
-  goodsNameController = TextEditingController(text: widget.goods.name ?? '');
-  goodsDescriptionController = TextEditingController(
-    text: (widget.goods.description ?? '') == 'null'
-        ? ''
-        : (widget.goods.description ?? ''),
-  );
-  discountPriceController = TextEditingController(
-      text: widget.goods.discountPrice?.toString() ?? '');
-  stockQuantityController =
-      TextEditingController(text: widget.goods.quantity?.toString() ?? '');
-  commentsController.text = widget.goods.comments ?? '';
-  //debugPrint('GoodsEditScreen: Initializing selectlabel with value: ${widget.goods.label?.id?.toString()}');
-  selectlabel = widget.goods.label?.id?.toString(); // Исправлено
-  isActive = widget.goods.isActive ?? false;
-  selectedUnit = widget.goods.unit?.id?.toString();
-  _imagePaths =
-      widget.sortedFiles.map((file) => '$baseUrl/${file.path}').toList();
-  mainImageIndex = widget.initialMainImageIndex ?? 0;
-  isService = widget.goods.isService ?? false;
-
-}
+  void _initializeFieldsWithDefaults() {
+    goodsNameController = TextEditingController(text: widget.goods.name ?? '');
+    goodsDescriptionController = TextEditingController(
+      text: (widget.goods.description ?? '') == 'null'
+          ? ''
+          : (widget.goods.description ?? ''),
+    );
+    discountPriceController = TextEditingController(
+        text: widget.goods.discountPrice?.toString() ?? '');
+    stockQuantityController =
+        TextEditingController(text: widget.goods.quantity?.toString() ?? '');
+    commentsController.text = widget.goods.comments ?? '';
+    //debugPrint('GoodsEditScreen: Initializing selectlabel with value: ${widget.goods.label?.id?.toString()}');
+    selectlabel = widget.goods.label?.id?.toString(); // Исправлено
+    isActive = widget.goods.isActive ?? false;
+    selectedUnit = widget.goods.unit?.id?.toString();
+    _imagePaths = widget.sortedFiles.map((file) => '${file.path}').toList();
+    mainImageIndex = widget.initialMainImageIndex ?? 0;
+    isService = widget.goods.isService ?? false;
+    _productionType = widget.goods.productionType ?? 'raw';
+    _materialGoods
+      ..clear()
+      ..addAll((widget.goods.materialGoods ?? const [])
+          .where((item) => item.goodId != null)
+          .map((item) => {
+                'good_id': item.goodId,
+                'variant_id': item.id,
+                'name': item.displayName,
+                'unit_name': item.displayUnit?.name ?? '',
+                'norm': item.pivot?.norm ?? 0,
+              }));
+    _relatedGoods
+      ..clear()
+      ..addAll((widget.goods.relatedGoods ?? const [])
+          .where((item) => item.variantId != null)
+          .map((item) => {
+                'variant_id': item.variantId,
+                'name': item.displayName,
+                'is_required': item.isRequired,
+              }));
+    for (final material in _materialGoods) {
+      final goodId = material['good_id'] as int?;
+      if (goodId != null) {
+        _materialNormControllers[goodId] = TextEditingController(
+          text: material['norm']?.toString() ?? '0',
+        );
+      }
+    }
+  }
 
   Future<void> _initializeBaseUrl() async {
-  try {
-    final staticBaseUrl = await _apiService.getStaticBaseUrl();
-    setState(() {
-      baseUrl = staticBaseUrl;
-    });
-  } catch (error) {
-    setState(() {
-      baseUrl = 'https://shamcrm.com/storage';
-    });
+    try {
+      final staticBaseUrl = await _apiService.getStaticBaseUrl();
+      setState(() {
+        baseUrl = staticBaseUrl;
+      });
+    } catch (error) {
+      setState(() {
+        baseUrl = 'https://shamcrm.com/storage';
+      });
+    }
   }
-}
 
   Future<void> _loadAllDataSequentially() async {
     if (!mounted) return;
     setState(() => isLoading = true);
 
     try {
+      await _loadManufactureSettings();
       await _initializeBaseUrl();
       if (mounted && widget.sortedFiles.isNotEmpty) {
         setState(() {
-          _imagePaths = widget.sortedFiles
-              .map((file) => '$baseUrl/${file.path}')
-              .toList();
+          _imagePaths =
+              widget.sortedFiles.map((file) => '${file.path}').toList();
         });
       }
       await fetchSubCategories();
@@ -139,6 +175,117 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
         setState(() => isLoading = false);
       }
     }
+  }
+
+  Future<void> _loadManufactureSettings() async {
+    try {
+      final settings = await _apiService.getSettings(null);
+      final result = settings['result'] as Map<String, dynamic>?;
+      final hasManufacture =
+          result?['has_manufacture'] == true || result?['has_manufacture'] == 1;
+      if (!mounted) return;
+      setState(() {
+        _hasManufacture = hasManufacture;
+        _manufactureLoaded = true;
+      });
+    } catch (_) {
+      final prefs = await SharedPreferences.getInstance();
+      if (!mounted) return;
+      setState(() {
+        _hasManufacture = prefs.getBool('has_manufacture') ?? false;
+        _manufactureLoaded = true;
+      });
+    }
+  }
+
+  void _setProductionType(String type) {
+    setState(() {
+      _productionType = type;
+      if (type != 'produced') {
+        _materialGoods.clear();
+      }
+    });
+  }
+
+  Future<void> _selectMaterialGood() async {
+    final selected = await showModalBottomSheet<Map<String, dynamic>>(
+      context: context,
+      backgroundColor: Colors.white,
+      isScrollControlled: true,
+      builder: (context) => VariantSelectionBottomSheet(
+        existingItems: _materialGoods
+            .map((item) => {'variantId': item['variant_id']})
+            .toList(),
+        isService: false,
+      ),
+    );
+
+    if (selected == null || selected['id'] == null) return;
+
+    setState(() {
+      _materialGoods.add({
+        'good_id': selected['id'],
+        'variant_id': selected['variantId'],
+        'name': selected['name'],
+        'unit_name': selected['selectedUnit'] ?? '',
+        'norm': 1,
+      });
+      _materialNormControllers[selected['id'] as int] =
+          TextEditingController(text: '1');
+    });
+  }
+
+  void _removeMaterialGood(int index) {
+    setState(() {
+      final material = _materialGoods.removeAt(index);
+      final goodId = material['good_id'] as int?;
+      if (goodId != null) {
+        _materialNormControllers.remove(goodId)?.dispose();
+      }
+    });
+  }
+
+  void _updateMaterialNorm(int index, String value) {
+    final norm = num.tryParse(value.replaceAll(',', '.'));
+    setState(() {
+      _materialGoods[index]['norm'] = norm ?? 0;
+    });
+  }
+
+  Future<void> _selectRelatedGood() async {
+    final selected = await showModalBottomSheet<Map<String, dynamic>>(
+      context: context,
+      backgroundColor: Colors.white,
+      isScrollControlled: true,
+      builder: (context) => VariantSelectionBottomSheet(
+        existingItems: _relatedGoods
+            .map((item) => {'variantId': item['variant_id']})
+            .toList(),
+        isService: false,
+      ),
+    );
+
+    if (selected == null || selected['variantId'] == null) return;
+
+    setState(() {
+      _relatedGoods.add({
+        'variant_id': selected['variantId'],
+        'name': selected['name'],
+        'is_required': false,
+      });
+    });
+  }
+
+  void _removeRelatedGood(int index) {
+    setState(() {
+      _relatedGoods.removeAt(index);
+    });
+  }
+
+  void _toggleRelatedGoodRequired(int index, bool value) {
+    setState(() {
+      _relatedGoods[index]['is_required'] = value;
+    });
   }
 
   void _initializeFieldsWithData() {
@@ -239,13 +386,13 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
 
         if (selectedCategory!.hasPriceCharacteristics) {
           newRow['price'] = TextEditingController(
-            text: variant.price.toString() ?? '0.0', // NEW FIELD for price instead of old variantPrice
+            text: variant.price.toString() ??
+                '0.0', // NEW FIELD for price instead of old variantPrice
           );
         }
 
         newRow['images'] =
-            variant.files?.map((file) => '$baseUrl/${file.path}').toList() ??
-                [];
+            variant.files?.map((file) => '${file.path}').toList() ?? [];
         tableAttributes.add(newRow);
       }
     } else {
@@ -257,7 +404,8 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
     try {
       debugPrint('🔍 Fetching subcategories...');
       final categories = await _apiService.getSubCategoryAttributes();
-      debugPrint('✅ Subcategories fetched successfully: ${categories.length} categories');
+      debugPrint(
+          '✅ Subcategories fetched successfully: ${categories.length} categories');
       if (mounted) {
         setState(() {
           subCategories = categories;
@@ -474,6 +622,560 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
     }
   }
 
+  Widget _buildProductionTypeSection() {
+    if (!_manufactureLoaded || !_hasManufacture) {
+      return const SizedBox.shrink();
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 12),
+        const Text(
+          'Тип товара',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            fontFamily: 'Gilroy',
+            color: Color(0xff1E2E52),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: _buildProductionTypeOption(
+                label: 'Сырье',
+                value: 'raw',
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildProductionTypeOption(
+                label: 'Производимый',
+                value: 'produced',
+              ),
+            ),
+          ],
+        ),
+        if (_productionType == 'produced') ...[
+          const SizedBox(height: 16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Сырье',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  fontFamily: 'Gilroy',
+                  color: Color(0xff1E2E52),
+                ),
+              ),
+              ElevatedButton.icon(
+                onPressed: _selectMaterialGood,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xff4759FF),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                icon: const Icon(Icons.add, color: Colors.white, size: 18),
+                label: const Text(
+                  'Добавить',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    fontFamily: 'Gilroy',
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          _buildMaterialGoodsTable(),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildProductionTypeOption({
+    required String label,
+    required String value,
+  }) {
+    final isSelected = _productionType == value;
+    return InkWell(
+      onTap: () => _setProductionType(value),
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color:
+                isSelected ? const Color(0xff4759FF) : const Color(0xFFDCE4F2),
+            width: 1.5,
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              isSelected ? Icons.radio_button_checked : Icons.radio_button_off,
+              color: isSelected
+                  ? const Color(0xff4759FF)
+                  : const Color(0xff99A4BA),
+              size: 20,
+            ),
+            const SizedBox(width: 10),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                fontFamily: 'Gilroy',
+                color: isSelected
+                    ? const Color(0xff4759FF)
+                    : const Color(0xff1E2E52),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMaterialGoodsTable() {
+    if (_materialGoods.isEmpty) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 18),
+        decoration: BoxDecoration(
+          color: const Color(0xFFE9F1FF),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: const Text(
+          'Пусто',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 16,
+            fontFamily: 'Gilroy',
+            color: Color(0xff5C6F91),
+          ),
+        ),
+      );
+    }
+
+    return Column(
+      children: [
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          decoration: BoxDecoration(
+            color: const Color(0xFFE9F1FF),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: const Row(
+            children: [
+              Expanded(
+                flex: 1,
+                child: Text(
+                  '#',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontFamily: 'Gilroy',
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xff5C6F91),
+                  ),
+                ),
+              ),
+              Expanded(
+                flex: 5,
+                child: Text(
+                  'Название',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontFamily: 'Gilroy',
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xff5C6F91),
+                  ),
+                ),
+              ),
+              Expanded(
+                flex: 3,
+                child: Text(
+                  'Ед.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontFamily: 'Gilroy',
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xff5C6F91),
+                  ),
+                ),
+              ),
+              Expanded(
+                flex: 3,
+                child: Text(
+                  'Норма',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontFamily: 'Gilroy',
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xff5C6F91),
+                  ),
+                ),
+              ),
+              Expanded(
+                flex: 2,
+                child: Text(
+                  '',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontFamily: 'Gilroy',
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xff5C6F91),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
+        ..._materialGoods.asMap().entries.map((entry) {
+          final index = entry.key;
+          final item = entry.value;
+          final goodId = item['good_id'] as int;
+          final controller = _materialNormControllers.putIfAbsent(
+            goodId,
+            () => TextEditingController(
+              text: item['norm']?.toString() ?? '0',
+            ),
+          );
+          return Container(
+            margin: const EdgeInsets.only(bottom: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFFE5E7EB)),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  flex: 1,
+                  child: Text(
+                    '${index + 1}',
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xff1E2E52),
+                    ),
+                  ),
+                ),
+                Expanded(
+                  flex: 5,
+                  child: Text(
+                    item['name']?.toString() ?? '',
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w500,
+                      color: Color(0xff1E2E52),
+                    ),
+                  ),
+                ),
+                Expanded(
+                  flex: 3,
+                  child: Text(
+                    item['unit_name']?.toString() ?? '',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontFamily: 'Gilroy',
+                      color: Color(0xff5C6F91),
+                    ),
+                  ),
+                ),
+                Expanded(
+                  flex: 3,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    child: TextField(
+                      controller: controller,
+                      onChanged: (value) => _updateMaterialNorm(index, value),
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      inputFormatters: [PriceInputFormatter()],
+                      textAlign: TextAlign.center,
+                      decoration: InputDecoration(
+                        filled: true,
+                        fillColor: const Color(0xFFF4F7FD),
+                        isDense: true,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 10,
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: BorderSide.none,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                Expanded(
+                  flex: 2,
+                  child: IconButton(
+                    onPressed: () => _removeMaterialGood(index),
+                    icon: const Icon(
+                      Icons.delete_outline,
+                      color: Color(0xff1E2E52),
+                      size: 20,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        }),
+      ],
+    );
+  }
+
+  Widget _buildRelatedGoodsSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 16),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Expanded(
+              child: Text(
+                'Сопутствующие товары',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  fontFamily: 'Gilroy',
+                  color: Color(0xff1E2E52),
+                ),
+              ),
+            ),
+            ElevatedButton.icon(
+              onPressed: _selectRelatedGood,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xff4759FF),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              icon: const Icon(Icons.add, color: Colors.white, size: 18),
+              label: const Text(
+                'Добавить',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  fontFamily: 'Gilroy',
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        _buildRelatedGoodsTable(),
+      ],
+    );
+  }
+
+  Widget _buildRelatedGoodsTable() {
+    if (_relatedGoods.isEmpty) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 18),
+        decoration: BoxDecoration(
+          color: const Color(0xFFE9F1FF),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: const Text(
+          'Пусто',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 16,
+            fontFamily: 'Gilroy',
+            color: Color(0xff5C6F91),
+          ),
+        ),
+      );
+    }
+
+    return Column(
+      children: [
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          decoration: BoxDecoration(
+            color: const Color(0xFFE9F1FF),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: const Row(
+            children: [
+              Expanded(
+                flex: 1,
+                child: Text(
+                  '#',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontFamily: 'Gilroy',
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xff5C6F91),
+                  ),
+                ),
+              ),
+              Expanded(
+                flex: 5,
+                child: Text(
+                  'Название',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontFamily: 'Gilroy',
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xff5C6F91),
+                  ),
+                ),
+              ),
+              Expanded(
+                flex: 3,
+                child: Text(
+                  'Обязательный',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontFamily: 'Gilroy',
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xff5C6F91),
+                  ),
+                ),
+              ),
+              Expanded(
+                flex: 2,
+                child: Text(
+                  '',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontFamily: 'Gilroy',
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xff5C6F91),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
+        ..._relatedGoods.asMap().entries.map((entry) {
+          final index = entry.key;
+          final item = entry.value;
+          final isRequired = item['is_required'] == true;
+
+          return Container(
+            margin: const EdgeInsets.only(bottom: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFFE5E7EB)),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  flex: 1,
+                  child: Text(
+                    '${index + 1}',
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xff1E2E52),
+                    ),
+                  ),
+                ),
+                Expanded(
+                  flex: 5,
+                  child: Text(
+                    item['name']?.toString() ?? '',
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w500,
+                      color: Color(0xff1E2E52),
+                    ),
+                  ),
+                ),
+                Expanded(
+                  flex: 3,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Checkbox(
+                        value: isRequired,
+                        onChanged: (value) =>
+                            _toggleRelatedGoodRequired(index, value ?? false),
+                        fillColor: WidgetStateProperty.resolveWith<Color>(
+                          (states) => states.contains(WidgetState.selected)
+                              ? const Color(0xff4759FF)
+                              : Colors.white,
+                        ),
+                        checkColor: Colors.white,
+                        side: const BorderSide(
+                          color: Color(0xff99A4BA),
+                          width: 1.4,
+                        ),
+                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        visualDensity: VisualDensity.compact,
+                      ),
+                      const SizedBox(width: 4),
+                      const Text(
+                        'Да',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontFamily: 'Gilroy',
+                          color: Color(0xff1E2E52),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  flex: 2,
+                  child: IconButton(
+                    onPressed: () => _removeRelatedGood(index),
+                    icon: const Icon(
+                      Icons.delete_outline,
+                      color: Color(0xff1E2E52),
+                      size: 20,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        }),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -521,8 +1223,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                             .translate('field_required')
                         : null,
                   ),
-
-                   const SizedBox(height: 8),
+                  const SizedBox(height: 8),
                   CustomTextField(
                     controller: goodsDescriptionController,
                     hintText: AppLocalizations.of(context)!
@@ -587,6 +1288,8 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                       });
                     },
                   ),
+                  _buildProductionTypeSection(),
+                  _buildRelatedGoodsSection(),
                   const SizedBox(height: 8),
                   subCategories.isEmpty
                       ? Center(
@@ -603,7 +1306,8 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                               selectedCategory: selectedCategory?.name,
                               onSelectCategory: (category) {
                                 setState(() {
-                                  selectedCategory = category as subCatAttr.SubCategoryAttributesData?;
+                                  selectedCategory = category
+                                      as subCatAttr.SubCategoryAttributesData?;
                                   isCategoryValid = category != null;
                                   attributeControllers.clear();
                                   tableAttributes.clear();
@@ -1030,10 +1734,12 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Icon(Icons.camera_alt, color: Color(0xff99A4BA), size: 40),
+                                  Icon(Icons.camera_alt,
+                                      color: Color(0xff99A4BA), size: 40),
                                   const SizedBox(height: 8),
                                   Text(
-                                    AppLocalizations.of(context)!.translate('select_image'),
+                                    AppLocalizations.of(context)!
+                                        .translate('select_image'),
                                     style: TextStyle(
                                       fontSize: 14,
                                       fontWeight: FontWeight.w500,
@@ -1061,11 +1767,18 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                           width: 100,
                                           height: 100,
                                           decoration: BoxDecoration(
-                                            borderRadius: BorderRadius.circular(12),
-                                            border: mainImageIndex == index ? Border.all(color: Colors.blue, width: 2) : null,
+                                            borderRadius:
+                                                BorderRadius.circular(12),
+                                            border: mainImageIndex == index
+                                                ? Border.all(
+                                                    color: Colors.blue,
+                                                    width: 2)
+                                                : null,
                                             image: DecorationImage(
-                                              image: imagePath.startsWith('http')
-                                                  ? NetworkImage(imagePath) as ImageProvider
+                                              image: imagePath
+                                                      .startsWith('http')
+                                                  ? NetworkImage(imagePath)
+                                                      as ImageProvider
                                                   : FileImage(File(imagePath)),
                                               fit: BoxFit.cover,
                                             ),
@@ -1076,11 +1789,14 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                                 top: 4,
                                                 right: 4,
                                                 child: GestureDetector(
-                                                  onTap: () => _removeImage(imagePath),
+                                                  onTap: () =>
+                                                      _removeImage(imagePath),
                                                   child: Container(
-                                                    padding: const EdgeInsets.all(4),
+                                                    padding:
+                                                        const EdgeInsets.all(4),
                                                     decoration: BoxDecoration(
-                                                      color: Colors.black.withOpacity(0.5),
+                                                      color: Colors.black
+                                                          .withOpacity(0.5),
                                                       shape: BoxShape.circle,
                                                     ),
                                                     child: Icon(
@@ -1096,10 +1812,14 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                                 right: 4,
                                                 child: mainImageIndex == index
                                                     ? Container(
-                                                        padding: const EdgeInsets.all(4),
-                                                        decoration: BoxDecoration(
+                                                        padding:
+                                                            const EdgeInsets
+                                                                .all(4),
+                                                        decoration:
+                                                            BoxDecoration(
                                                           color: Colors.blue,
-                                                          shape: BoxShape.circle,
+                                                          shape:
+                                                              BoxShape.circle,
                                                         ),
                                                         child: Icon(
                                                           Icons.check,
@@ -1121,16 +1841,22 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                         height: 100,
                                         decoration: BoxDecoration(
                                           color: Color(0xffF4F7FD),
-                                          borderRadius: BorderRadius.circular(12),
-                                          border: Border.all(color: Color(0xffF4F7FD)),
+                                          borderRadius:
+                                              BorderRadius.circular(12),
+                                          border: Border.all(
+                                              color: Color(0xffF4F7FD)),
                                         ),
                                         child: Column(
-                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
                                           children: [
-                                            Icon(Icons.add_a_photo, color: Color(0xff99A4BA), size: 40),
+                                            Icon(Icons.add_a_photo,
+                                                color: Color(0xff99A4BA),
+                                                size: 40),
                                             SizedBox(height: 4),
                                             Text(
-                                              AppLocalizations.of(context)!.translate('add_image'),
+                                              AppLocalizations.of(context)!
+                                                  .translate('add_image'),
                                               style: TextStyle(
                                                 fontSize: 10,
                                                 color: Color(0xff99A4BA),
@@ -1143,14 +1869,17 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                   ],
                                   onReorder: (int oldIndex, int newIndex) {
                                     setState(() {
-                                      final item = _imagePaths.removeAt(oldIndex);
+                                      final item =
+                                          _imagePaths.removeAt(oldIndex);
                                       _imagePaths.insert(newIndex, item);
                                       if (mainImageIndex != null) {
                                         if (mainImageIndex == oldIndex) {
                                           mainImageIndex = newIndex;
-                                        } else if (oldIndex < mainImageIndex! && newIndex >= mainImageIndex!) {
+                                        } else if (oldIndex < mainImageIndex! &&
+                                            newIndex >= mainImageIndex!) {
                                           mainImageIndex = mainImageIndex! - 1;
-                                        } else if (oldIndex > mainImageIndex! && newIndex <= mainImageIndex!) {
+                                        } else if (oldIndex > mainImageIndex! &&
+                                            newIndex <= mainImageIndex!) {
                                           mainImageIndex = mainImageIndex! + 1;
                                         }
                                       } else if (_imagePaths.isNotEmpty) {
@@ -1164,7 +1893,8 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                   left: 8,
                                   child: IgnorePointer(
                                     child: Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 8, vertical: 4),
                                       decoration: BoxDecoration(
                                         color: Colors.black.withOpacity(0.5),
                                         borderRadius: BorderRadius.circular(12),
@@ -1321,6 +2051,18 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
   void _updateProduct() async {
     setState(() => isLoading = true);
     try {
+      if (_hasManufacture &&
+          _productionType == 'produced' &&
+          _materialGoods.isEmpty) {
+        setState(() => isLoading = false);
+        showCustomSnackBar(
+          context: context,
+          message: 'Добавьте сырье для производимого товара',
+          isSuccess: false,
+        );
+        return;
+      }
+
       List<Map<String, dynamic>> attributes = [];
       List<Map<String, dynamic>> variants = [];
 
@@ -1408,7 +2150,9 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
         }
       }
 
-      int? labelId = selectlabel != null ? int.tryParse(selectlabel!) : null; // Преобразуем selectlabel в labelId
+      int? labelId = selectlabel != null
+          ? int.tryParse(selectlabel!)
+          : null; // Преобразуем selectlabel в labelId
 
       final response = await _apiService.updateGoods(
         isService: isService,
@@ -1416,7 +2160,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
         name: goodsNameController.text.trim(),
         parentId: selectedCategory!.id,
         description: goodsDescriptionController.text.trim(),
-        quantity: int.tryParse(stockQuantityController.text) ?? 0,
+        quantity: int.tryParse(stockQuantityController.text),
         unitId: selectedUnit != null ? int.tryParse(selectedUnit!) : null,
         attributes: attributes,
         variants: variants,
@@ -1430,6 +2174,24 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
         comments: commentsController.text.trim(),
         mainImageIndex: mainImageIndex ?? 0,
         labelId: labelId, // Передаём labelId
+        productionType: _hasManufacture ? _productionType : null,
+        materialGoods: _productionType == 'produced'
+            ? _materialGoods
+                .where((item) =>
+                    item['good_id'] != null && (item['norm'] as num? ?? 0) > 0)
+                .map((item) => {
+                      'good_id': item['good_id'],
+                      'norm': item['norm'],
+                    })
+                .toList()
+            : const [],
+        relatedGoods: _relatedGoods
+            .where((item) => item['variant_id'] != null)
+            .map((item) => {
+                  'variant_id': item['variant_id'],
+                  'is_required': item['is_required'] == true ? 1 : 0,
+                })
+            .toList(),
       );
 
       if (response['success'] == true) {
@@ -1474,6 +2236,9 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
           attr.dispose();
         }
       }
+    }
+    for (final controller in _materialNormControllers.values) {
+      controller.dispose();
     }
     super.dispose();
   }

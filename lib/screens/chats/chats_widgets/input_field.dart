@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:crm_task_manager/utils/global_fun.dart';
 import 'package:crm_task_manager/bloc/chats/template_bloc/template_bloc.dart';
 import 'package:crm_task_manager/bloc/chats/template_bloc/template_event.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/animated_text_field.dart';
@@ -56,11 +57,9 @@ class _InputFieldState extends State<InputField>
   String _htmlContent = '';
   String _displayText = '';
   bool _wasKeyboardVisible = false;
+  bool _hasText = false;
 
-  // НОВОЕ: Таймеры для дебаунсинга
   Timer? _selectionDebounce;
-  Timer? _longPressTimer;
-  bool _isLongPressing = false;
 
   @override
   void initState() {
@@ -75,8 +74,11 @@ class _InputFieldState extends State<InputField>
     );
 
     widget.messageController.addListener(_handleSelectionChange);
+    widget.messageController.addListener(_updateTextState);
+
     _htmlContent = widget.messageController.text;
     _displayText = _htmlToDisplayText(_htmlContent);
+    _hasText = widget.messageController.text.isNotEmpty;
 
     WidgetsBinding.instance.addObserver(this);
   }
@@ -86,11 +88,20 @@ class _InputFieldState extends State<InputField>
     _removeOverlay();
     _removeFormattingOverlay();
     _animationController.dispose();
-    _selectionDebounce?.cancel(); // НОВОЕ
-    _longPressTimer?.cancel(); // НОВОЕ
+    _selectionDebounce?.cancel();
     widget.messageController.removeListener(_handleSelectionChange);
+    widget.messageController.removeListener(_updateTextState);
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
+  }
+
+  void _updateTextState() {
+    final hasText = widget.messageController.text.trim().isNotEmpty;
+    if (_hasText != hasText) {
+      setState(() {
+        _hasText = hasText;
+      });
+    }
   }
 
   @override
@@ -144,7 +155,6 @@ class _InputFieldState extends State<InputField>
     });
   }
 
-  // ОПТИМИЗИРОВАННЫЙ метод с дебаунсингом
   void _handleSelectionChange() {
     final selection = widget.messageController.selection;
 
@@ -152,11 +162,9 @@ class _InputFieldState extends State<InputField>
 
     if (selection.isValid &&
         selection.start != selection.end &&
-        widget.focusNode.hasFocus &&
-        !_isLongPressing) {
+        widget.focusNode.hasFocus) {
       _selectionDebounce = Timer(const Duration(milliseconds: 100), () {
         if (mounted) {
-          // ИСПРАВЛЕНО: Скрываем только системный тулбар, НЕ клавиатуру
           SystemChannels.textInput.invokeMethod('TextInput.hideToolbar');
 
           setState(() {
@@ -171,13 +179,11 @@ class _InputFieldState extends State<InputField>
     }
   }
 
-  // Метод для показа панели при долгом нажатии
   void _showFormattingPanelOnLongPress() {
-    // ИСПРАВЛЕНО: hideToolbar вместо hide
     SystemChannels.textInput.invokeMethod('TextInput.hideToolbar');
+    _showFormattingPanel = true;
+    _updateFormattingOverlay();
     setState(() {
-      _showFormattingPanel = true;
-      _updateFormattingOverlay();
       _animationController.forward();
     });
   }
@@ -244,7 +250,7 @@ class _InputFieldState extends State<InputField>
             child: Container(
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(16), // Скруглённые углы
+                borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withOpacity(0.15),
@@ -286,53 +292,54 @@ class _InputFieldState extends State<InputField>
 
     final selection = widget.messageController.selection;
     final hasSelection = selection.isValid && selection.start != selection.end;
+    final localizations = AppLocalizations.of(context);
 
     final buttons = [
       _buildFormattingButton(
         icon: Icons.copy_rounded,
-        label: 'Копировать',
+        label: localizations?.translate('copy') ?? 'Копировать',
         onTap: _copy,
         isEnabled: hasSelection,
       ),
       _buildFormattingButton(
         icon: Icons.content_cut_rounded,
-        label: 'Вырезать',
+        label: localizations?.translate('cut') ?? 'Вырезать',
         onTap: _cut,
         isEnabled: hasSelection,
       ),
       _buildFormattingButton(
         icon: Icons.content_paste_rounded,
-        label: 'Вставить',
+        label: localizations?.translate('paste') ?? 'Вставить',
         onTap: _paste,
         isEnabled: true,
       ),
       _buildFormattingButton(
         icon: Icons.select_all_rounded,
-        label: 'Выбрать все',
+        label: localizations?.translate('select_all') ?? 'Выбрать все',
         onTap: _selectAll,
         isEnabled: widget.messageController.text.isNotEmpty,
       ),
       _buildFormattingButton(
         icon: Icons.format_bold_rounded,
-        label: 'Жирный',
+        label: localizations?.translate('bold') ?? 'Жирный',
         onTap: () => _applyFormatting('bold'),
         isEnabled: hasSelection,
       ),
       _buildFormattingButton(
         icon: Icons.format_italic_rounded,
-        label: 'Курсив',
+        label: localizations?.translate('italic') ?? 'Курсив',
         onTap: () => _applyFormatting('italic'),
         isEnabled: hasSelection,
       ),
       _buildFormattingButton(
         icon: Icons.link_rounded,
-        label: 'Ссылка',
+        label: localizations?.translate('link') ?? 'Ссылка',
         onTap: () => _applyLinkFormatting(context),
         isEnabled: hasSelection,
       ),
       _buildFormattingButton(
         icon: Icons.strikethrough_s_rounded,
-        label: 'Зачеркнутый',
+        label: localizations?.translate('strikethrough') ?? 'Зачеркнутый',
         onTap: () => _applyFormatting('strikethrough'),
         isEnabled: hasSelection,
       ),
@@ -340,9 +347,9 @@ class _InputFieldState extends State<InputField>
 
     return OverlayEntry(
       builder: (context) => Positioned(
-        left: offset.dx + 8, // Отступ от краёв
+        left: offset.dx + 8,
         right: MediaQuery.of(context).size.width - (offset.dx + size.width - 8),
-        top: offset.dy - 70, // Немного выше
+        top: offset.dy - 70,
         child: FadeTransition(
           opacity: _fadeAnimation,
           child: Material(
@@ -350,8 +357,7 @@ class _InputFieldState extends State<InputField>
             child: Container(
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius:
-                    BorderRadius.circular(16), // Более скруглённые углы
+                borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withOpacity(0.15),
@@ -392,7 +398,7 @@ class _InputFieldState extends State<InputField>
       color: Colors.transparent,
       child: InkWell(
         onTap: isEnabled ? onTap : null,
-        borderRadius: BorderRadius.circular(12), // Скруглённые углы
+        borderRadius: BorderRadius.circular(12),
         child: Container(
           padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           decoration: BoxDecoration(
@@ -487,6 +493,7 @@ class _InputFieldState extends State<InputField>
 
     final text = widget.messageController.text;
     final selectedText = text.substring(selection.start, selection.end);
+    final localizations = AppLocalizations.of(context);
 
     final urlController = TextEditingController();
     String? url;
@@ -510,7 +517,8 @@ class _InputFieldState extends State<InputField>
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Вставьте ссылку',
+                localizations?.translate('paste_link_title') ??
+                    'Вставьте ссылку',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
@@ -559,7 +567,7 @@ class _InputFieldState extends State<InputField>
                           EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     ),
                     child: Text(
-                      'Отмена',
+                      localizations?.translate('cancel') ?? 'Отмена',
                       style: TextStyle(
                         color: Colors.grey.shade600,
                         fontSize: 14,
@@ -584,7 +592,7 @@ class _InputFieldState extends State<InputField>
                       elevation: 0,
                     ),
                     child: Text(
-                      'Добавить',
+                      localizations?.translate('add') ?? 'Добавить',
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: 14,
@@ -778,7 +786,7 @@ class _InputFieldState extends State<InputField>
                             replyingToMessage.type == 'voice'
                                 ? AppLocalizations.of(context)!
                                     .translate('voice_message')
-                                : replyingToMessage.text,
+                                : stripHtmlTags(replyingToMessage.text),
                             style: TextStyle(
                               fontSize: 14,
                               color: Colors.black,
@@ -856,195 +864,254 @@ class _InputFieldState extends State<InputField>
                   ],
                 ),
               ),
-            Row(
-              children: [
-                Expanded(
-                  child: Stack(
-                    alignment: Alignment.centerRight,
-                    children: [
-                      (context.watch<ListenSenderFileCubit>().state)
-                          ? Padding(
-                              padding: const EdgeInsets.all(8.0),
-                              child: CircularProgressIndicator(
-                                  color: Color(0xff1E2E52)),
-                            )
-                          : GestureDetector(
-                              // НОВОЕ: Обработка долгого нажатия
-                              onLongPressStart: (_) {
-                                _isLongPressing = true;
-                                _longPressTimer = Timer(
-                                    const Duration(milliseconds: 500), () {
-                                  _showFormattingPanelOnLongPress();
-                                });
-                              },
-                              onLongPressEnd: (_) {
-                                _isLongPressing = false;
-                                _longPressTimer?.cancel();
-                              },
-                              onLongPressCancel: () {
-                                _isLongPressing = false;
-                                _longPressTimer?.cancel();
-                              },
-                              child: Container(
-                                padding: const EdgeInsets.only(left: 16),
+
+            // ✅ ИСПРАВЛЕННАЯ СТРУКТУРА СО STACK - БЕЗ OVERFLOW
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: (context.watch<ListenSenderFileCubit>().state)
+                  ? Container(
+                      height: 42,
+                      alignment: Alignment.center,
+                      child: CircularProgressIndicator(
+                        color: Color(0xff1E2E52),
+                        strokeWidth: 2.5,
+                      ),
+                    )
+                  : Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        // Основной контейнер с полями ввода
+                        Container(
+                          decoration: ChatSmsStyles.inputFieldDecoration,
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              // Кнопка меню
+                              if (widget.isLeadChat)
+                                IconButton(
+                                  icon: Image.asset(
+                                    'assets/icons/chats/menu-button.png',
+                                    width: 20,
+                                    height: 20,
+                                  ),
+                                  iconSize: 20,
+                                  padding: EdgeInsets.all(8),
+                                  constraints: BoxConstraints(
+                                    minWidth: 36,
+                                    minHeight: 36,
+                                  ),
+                                  onPressed: () {
+                                    _showTemplatesPanel(context);
+                                  },
+                                ),
+
+                              // Текстовое поле
+                              Expanded(
                                 child: AnimatedTextField(
                                   controller: widget.messageController,
                                   focusNode: widget.focusNode,
                                   onChanged: _handleTextChange,
-                                  htmlContent:
-                                      _htmlContent, // ДОБАВЬ ЭТУ СТРОКУ
+                                  htmlContent: _htmlContent,
+                                  onLongPress: _showFormattingPanelOnLongPress,
                                   hintText: AppLocalizations.of(context)!
                                       .translate('enter_your_sms'),
-                                  style: ChatSmsStyles.messageTextStyle,
-                                  hintStyle: TextStyle(
-                                    fontSize: 14,
-                                    color: ChatSmsStyles.hintTextColor,
-                                    fontWeight: FontWeight.w500,
-                                    fontFamily: 'Gilroy',
+                                  style:
+                                      ChatSmsStyles.messageTextStyle.copyWith(
+                                    color: const Color(0xFF1A202C),
+                                    fontSize: 15,
+                                    height: 1.3,
                                   ),
-                                  fillColor: ChatSmsStyles.inputBackgroundColor,
+                                  hintStyle: TextStyle(
+                                    fontSize: 15,
+                                    color: ChatSmsStyles.hintTextColor,
+                                    fontWeight: FontWeight.w400,
+                                    fontFamily: 'Gilroy',
+                                    height: 1.3,
+                                  ),
+                                  fillColor: Colors.transparent,
                                   borderRadius: ChatSmsStyles.inputBorderRadius,
-                                  contentPadding: widget.isLeadChat
-                                      ? EdgeInsets.only(
-                                          left: 10,
-                                          right: 65,
-                                          top: 12,
-                                          bottom: 12)
-                                      : EdgeInsets.only(
-                                          left: 10,
-                                          right: 40,
-                                          top: 12,
-                                          bottom: 12),
-                                  maxVisibleLines: 6,
+                                  contentPadding: EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 15,
+                                  ),
+                                  maxVisibleLines: 5,
                                   lineHeight: 20.0,
                                 ),
                               ),
+
+                              // Кнопка файла
+                              IconButton(
+                                icon: Image.asset(
+                                  'assets/icons/chats/file.png',
+                                  width: 20,
+                                  height: 20,
+                                ),
+                                iconSize: 20,
+                                padding: EdgeInsets.all(8),
+                                constraints: BoxConstraints(
+                                  minWidth: 36,
+                                  minHeight: 36,
+                                ),
+                                onPressed: widget.onAttachFile,
+                              ),
+
+                              // Динамическая кнопка (голос/отправить)
+                              AnimatedSwitcher(
+                                duration: Duration(milliseconds: 250),
+                                transitionBuilder: (Widget child,
+                                    Animation<double> animation) {
+                                  return FadeTransition(
+                                    opacity: animation,
+                                    child: ScaleTransition(
+                                      scale: animation,
+                                      child: child,
+                                    ),
+                                  );
+                                },
+                                child: _hasText
+                                    ? _buildSendButton(messagingCubit,
+                                        editingMessage, replyMsgId)
+                                    : SizedBox(
+                                        key: ValueKey('voice_placeholder'),
+                                        width: 36,
+                                        height: 36,
+                                      ),
+                              ),
+
+                              SizedBox(width: 4),
+                            ],
+                          ),
+                        ),
+
+                        // Голосовой рекордер поверх всего
+                        if (!_hasText)
+                          Positioned(
+                            right: 4,
+                            top: 8,
+                            bottom: 0,
+                            child: Center(
+                              child: _buildVoiceRecorder(),
                             ),
-                      if (widget.isLeadChat)
-                        Positioned(
-                          right: 35,
-                          child: IconButton(
-                            icon: Image.asset(
-                                'assets/icons/chats/menu-button.png',
-                                width: 24,
-                                height: 24),
-                            onPressed: () {
-                              _showTemplatesPanel(context);
-                            },
                           ),
-                        ),
-                      Positioned(
-                        right: widget.isLeadChat ? 0 : 0,
-                        child: IconButton(
-                          icon: Image.asset('assets/icons/chats/file.png',
-                              width: 24, height: 24),
-                          onPressed: widget.onAttachFile,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                SizedBox(width: 8),
-                (context.watch<ListenSenderVoiceCubit>().state)
-                    ? Row(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.all(8),
-                            child: CircularProgressIndicator(
-                                color: Color(0xff1E2E52)),
-                          ),
-                        ],
-                      )
-                    : MediaQuery(
-                        data: MediaQueryData(size: Size(330, 400)),
-                        child: SocialMediaRecorder(
-                          maxRecordTimeInSecond: 180,
-                          initRecordPackageWidth: 48,
-                          fullRecordPackageHeight: 48,
-                          startRecording: () {},
-                          stopRecording: (_time) {},
-                          sendRequestFunction: widget.sendRequestFunction,
-                          cancelText:
-                              AppLocalizations.of(context)!.translate('cancel'),
-                          cancelTextStyle: TextStyle(
-                            fontSize: 16,
-                            fontFamily: 'Gilroy',
-                            fontWeight: FontWeight.w500,
-                          ),
-                          slideToCancelText: AppLocalizations.of(context)!
-                              .translate('cancel_chat_sms'),
-                          slideToCancelTextStyle: TextStyle(
-                            fontSize: 16,
-                            fontFamily: 'Gilroy',
-                            fontWeight: FontWeight.w500,
-                          ),
-                          recordIconBackGroundColor: Color(0xfff4F40EC),
-                          counterTextStyle: TextStyle(
-                            fontSize: 14,
-                            fontFamily: 'Gilroy',
-                            fontWeight: FontWeight.w500,
-                          ),
-                          encode: AudioEncoderType.AAC,
-                          radius: BorderRadius.circular(8),
-                        ),
-                      ),
-                (context.watch<ListenSenderTextCubit>().state)
-                    ? Row(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.all(8.0),
-                            child: CircularProgressIndicator(
-                                color: Color(0xff1E2E52)),
-                          ),
-                        ],
-                      )
-                    : IconButton(
-                        icon: Container(
-                          width: 48,
-                          height: 48,
-                          decoration: BoxDecoration(
-                            color: const Color(0xfff4F40EC),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          padding: const EdgeInsets.all(12),
-                          child: Image.asset(
-                            'assets/icons/chats/send.png',
-                            width: 20,
-                            height: 20,
-                          ),
-                        ),
-                        onPressed: () {
-                          if (widget.messageController.text.isNotEmpty) {
-                            if (editingMessage != null) {
-                              messagingCubit.editMessage(_getHtmlContent());
-                            } else {
-                              widget.onSend(_getHtmlContent(), replyMsgId);
-                              messagingCubit.clearReplyMessage();
-                            }
-                            widget.messageController.clear();
-                            _htmlContent = '';
-                            _displayText = '';
-                            setState(() {
-                              _showTemplates = false;
-                              _showFormattingPanel = false;
-                              _animationController.reverse().then((_) {
-                                _removeOverlay();
-                                _removeFormattingOverlay();
-                              });
-                            });
-                          }
-                        },
-                      ),
-              ],
+                      ],
+                    ),
             ),
           ],
         ),
       ),
     );
+  }
+
+  // Кнопка отправки
+  Widget _buildSendButton(
+      MessagingCubit messagingCubit, editingMessage, String? replyMsgId) {
+    return (context.watch<ListenSenderTextCubit>().state)
+        ? Container(
+            key: ValueKey('loading'),
+            width: 36,
+            height: 36,
+            alignment: Alignment.center,
+            child: SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(
+                color: Color(0xff1E2E52),
+                strokeWidth: 2,
+              ),
+            ),
+          )
+        : Material(
+            key: ValueKey('send'),
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () {
+                if (widget.messageController.text.isNotEmpty) {
+                  if (editingMessage != null) {
+                    messagingCubit.editMessage(_getHtmlContent());
+                  } else {
+                    widget.onSend(_getHtmlContent(), replyMsgId);
+                    messagingCubit.clearReplyMessage();
+                  }
+                  widget.messageController.clear();
+                  _htmlContent = '';
+                  _displayText = '';
+                  setState(() {
+                    _showTemplates = false;
+                    _showFormattingPanel = false;
+                    _animationController.reverse().then((_) {
+                      _removeOverlay();
+                      _removeFormattingOverlay();
+                    });
+                  });
+                }
+              },
+              borderRadius: BorderRadius.circular(18),
+              child: Ink(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: const Color(0xfff4F40EC),
+                  borderRadius: BorderRadius.circular(18),
+                ),
+                child: Center(
+                  child: Image.asset(
+                    'assets/icons/chats/send.png',
+                    width: 18,
+                    height: 18,
+                  ),
+                ),
+              ),
+            ),
+          );
+  }
+
+  // ✅ ФИНАЛЬНАЯ версия кнопки записи голоса без overflow
+  Widget _buildVoiceRecorder() {
+    return (context.watch<ListenSenderVoiceCubit>().state)
+        ? Container(
+            key: ValueKey('voice_loading'),
+            width: 36,
+            height: 36,
+            alignment: Alignment.center,
+            child: SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(
+                color: Color(0xff1E2E52),
+                strokeWidth: 2,
+              ),
+            ),
+          )
+        : SocialMediaRecorder(
+            key: ValueKey('voice_recorder'),
+            maxRecordTimeInSecond: 180,
+            initRecordPackageWidth: 36,
+            fullRecordPackageHeight: 36,
+            startRecording: () {},
+            stopRecording: (_time) {},
+            sendRequestFunction: widget.sendRequestFunction,
+            cancelText: AppLocalizations.of(context)!.translate('cancel'),
+            cancelTextStyle: TextStyle(
+              fontSize: 14,
+              fontFamily: 'Gilroy',
+              fontWeight: FontWeight.w500,
+            ),
+            slideToCancelText:
+                AppLocalizations.of(context)!.translate('cancel_chat_sms'),
+            slideToCancelTextStyle: TextStyle(
+              fontSize: 14,
+              fontFamily: 'Gilroy',
+              fontWeight: FontWeight.w500,
+            ),
+            recordIconBackGroundColor: Color(0xfff4F40EC),
+            counterTextStyle: TextStyle(
+              fontSize: 12,
+              fontFamily: 'Gilroy',
+              fontWeight: FontWeight.w500,
+            ),
+            encode: AudioEncoderType.AAC,
+            radius: BorderRadius.circular(18),
+          );
   }
 
   void _showTemplatesPanel(BuildContext context) {

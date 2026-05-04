@@ -82,7 +82,8 @@ class BackgroundDataLoaderService {
       await prefs.remove('userRoles');
 
       // Загружаем полный профиль пользователя
-      UserByIdProfile userProfile = await _apiService.getUserById(int.parse(userId));
+      UserByIdProfile userProfile =
+          await _apiService.getUserById(int.parse(userId));
 
       // Сохраняем данные пользователя
       if (userProfile.name != null) {
@@ -134,7 +135,8 @@ class BackgroundDataLoaderService {
 
       if (settingsList.isNotEmpty) {
         final settings = settingsList.first;
-        await prefs.setString('mini_app_settings', json.encode(settings.toJson()));
+        await prefs.setString(
+            'mini_app_settings', json.encode(settings.toJson()));
         await prefs.setInt('currency_id', settings.currencyId);
         await prefs.setString('store_name', settings.name);
         await prefs.setString('store_phone', settings.phone);
@@ -177,80 +179,129 @@ class BackgroundDataLoaderService {
     return false;
   }
 
- Future<void> _loadSettings() async {
-  try {
-    debugPrint('BackgroundLoader: Загрузка Settings');
-
-    final prefs = await SharedPreferences.getInstance();
-    final organizationId = await _apiService.getSelectedOrganization();
-
-    final response = await _apiService.getSettings(organizationId);
-
-    if (response['result'] != null) {
-      // Сохраняем localization
-      String? localization = response['result']['localization'];
-      
-      // Логика: если localization == null, используем "+992"
-      String defaultDialCode = (localization != null && localization.isNotEmpty) 
-          ? localization 
-          : '+992';
-      
-      await prefs.setString('default_dial_code', defaultDialCode);
-      
-      await prefs.setBool(
-        'department_enabled',
-        _toBool(response['result']['department'])
-      );
-
-      await prefs.setBool(
-        'integration_with_1C',
-        _toBool(response['result']['integration_with_1C'])
-      );
-
-      await prefs.setBool(
-        'good_measurement',
-        _toBool(response['result']['good_measurement'])
-      );
-
-      await prefs.setBool(
-        'managing_deal_status_visibility',
-        _toBool(response['result']['managing_deal_status_visibility'])
-      );
-
-      await prefs.setBool(
-        'has_deal_users',
-        _toBool(response['result']['has_deal_users'])
-      );
-
-      // ✅ НОВОЕ: Сохраняем change_deal_to_multiple_statuses
-      await prefs.setBool(
-        'change_deal_to_multiple_statuses',
-        _toBool(response['result']['change_deal_to_multiple_statuses'])
-      );
-
-      debugPrint('BackgroundLoader: Settings сохранены');
-      debugPrint('  - default_dial_code = $defaultDialCode');
-      debugPrint('  - managing_deal_status_visibility = ${_toBool(response['result']['managing_deal_status_visibility'])}');
-      debugPrint('  - change_deal_to_multiple_statuses = ${_toBool(response['result']['change_deal_to_multiple_statuses'])}');
-      debugPrint('  - has_deal_users = ${_toBool(response['result']['has_deal_users'])}');
-    }
-  } catch (e) {
-    debugPrint('BackgroundLoader: Ошибка загрузки Settings: $e');
-
-    // Устанавливаем значения по умолчанию
+  Future<void> _loadSettings() async {
     try {
+      debugPrint('BackgroundLoader: Загрузка Settings');
+
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool('integration_with_1C', false);
-      await prefs.setBool('good_measurement', false);
-      await prefs.setBool('managing_deal_status_visibility', false);
-      await prefs.setBool('has_deal_users', false);
-      await prefs.setBool('change_deal_to_multiple_statuses', false); // ✅ НОВОЕ
-      await prefs.setString('default_dial_code', '+992');
-    } catch (prefsError) {
-      debugPrint('BackgroundLoader: Ошибка установки значений по умолчанию: $prefsError');
+      final organizationId = await _apiService.getSelectedOrganization();
+
+      final response = await _apiService.getSettings(organizationId);
+
+      if (response['result'] != null) {
+        // Сохраняем localization
+        String? localization = response['result']['localization'];
+
+        // Логика: если localization == null, используем "+992"
+        String defaultDialCode =
+            (localization != null && localization.isNotEmpty)
+                ? localization
+                : '+992';
+
+        await prefs.setString('default_dial_code', defaultDialCode);
+
+        await prefs.setBool(
+            'department_enabled', _toBool(response['result']['department']));
+
+        await prefs.setBool('integration_with_1C',
+            _toBool(response['result']['integration_with_1C']));
+
+        await prefs.setBool('good_measurement',
+            _toBool(response['result']['good_measurement']));
+
+        await prefs.setBool('managing_deal_status_visibility',
+            _toBool(response['result']['managing_deal_status_visibility']));
+
+        await prefs.setBool(
+            'has_deal_users', _toBool(response['result']['has_deal_users']));
+
+        // ✅ НОВОЕ: Сохраняем change_deal_to_multiple_statuses
+        await prefs.setBool('change_deal_to_multiple_statuses',
+            _toBool(response['result']['change_deal_to_multiple_statuses']));
+
+        await prefs.setBool('push_status_change_enabled',
+            _toBool(response['result']['push_status_change_enabled']));
+
+        await prefs.setBool('push_to_lead_author',
+            _toBool(response['result']['push_to_lead_author']));
+
+        await prefs.setBool('push_to_lead_manager',
+            _toBool(response['result']['push_to_lead_manager']));
+
+        await prefs.setBool(
+            'notify_user', _toBool(response['result']['notify_user']));
+
+        await prefs.setBool('managing_lead_status_visibility',
+            _toBool(response['result']['managing_lead_status_visibility']));
+
+        await prefs.setBool('create_order_from_deal',
+            _toBool(response['result']['create_order_from_deal']));
+
+        await prefs.setBool('create_task_in_deal',
+            _toBool(response['result']['create_task_in_deal']));
+
+        await prefs.setBool('show_chat_in_deals',
+            _toBool(response['result']['show_chat_in_deals']));
+
+        await prefs.setBool('show_accept_button',
+            _toBool(response['result']['show_accept_button']));
+
+        await prefs.setBool('show_accept_decline_button',
+            _toBool(response['result']['show_accept_decline_button']));
+
+        await prefs.setBool('ask_reason_for_refusal',
+            _toBool(response['result']['ask_reason_for_refusal']));
+
+        await prefs.setInt(
+            'accept_lead_status_id',
+            response['result']['accept_lead_status_id'] is int
+                ? response['result']['accept_lead_status_id'] as int
+                : int.tryParse(
+                        '${response['result']['accept_lead_status_id']}') ??
+                    0);
+
+        debugPrint('BackgroundLoader: Settings сохранены');
+        debugPrint('  - default_dial_code = $defaultDialCode');
+        debugPrint(
+            '  - managing_deal_status_visibility = ${_toBool(response['result']['managing_deal_status_visibility'])}');
+        debugPrint(
+            '  - change_deal_to_multiple_statuses = ${_toBool(response['result']['change_deal_to_multiple_statuses'])}');
+        debugPrint(
+            '  - has_deal_users = ${_toBool(response['result']['has_deal_users'])}');
+        debugPrint(
+            '  - ask_reason_for_refusal = ${_toBool(response['result']['ask_reason_for_refusal'])}');
+      }
+    } catch (e) {
+      debugPrint('BackgroundLoader: Ошибка загрузки Settings: $e');
+
+      // Устанавливаем значения по умолчанию
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setBool('integration_with_1C', false);
+        await prefs.setBool('good_measurement', false);
+        await prefs.setBool('managing_deal_status_visibility', false);
+        await prefs.setBool('has_deal_users', false);
+        await prefs.setBool(
+            'change_deal_to_multiple_statuses', false); // ✅ НОВОЕ
+        await prefs.setBool('push_status_change_enabled', false);
+        await prefs.setBool('push_to_lead_author', false);
+        await prefs.setBool('push_to_lead_manager', false);
+        await prefs.setBool('notify_user', false);
+        await prefs.setBool('managing_lead_status_visibility', false);
+        await prefs.setBool('create_order_from_deal', false);
+        await prefs.setBool('create_task_in_deal', false);
+        await prefs.setBool('show_chat_in_deals', false);
+        await prefs.setBool('show_accept_button', false);
+        await prefs.setBool('show_accept_decline_button', false);
+        await prefs.setBool('ask_reason_for_refusal', false);
+        await prefs.setInt('accept_lead_status_id', 0);
+        await prefs.setString('default_dial_code', '+992');
+      } catch (prefsError) {
+        debugPrint(
+            'BackgroundLoader: Ошибка установки значений по умолчанию: $prefsError');
+      }
     }
   }
-}
 
   // ==========================================================================
   // ЗАГРУЗКА TUTORIAL PROGRESS
@@ -263,7 +314,8 @@ class BackgroundDataLoaderService {
       final prefs = await SharedPreferences.getInstance();
       final progress = await _apiService.getTutorialProgress();
 
-      await prefs.setString('tutorial_progress', json.encode(progress['result']));
+      await prefs.setString(
+          'tutorial_progress', json.encode(progress['result']));
       //debugPrint('BackgroundLoader: TutorialProgress обновлён с сервера');
     } catch (e) {
       //debugPrint('BackgroundLoader: Ошибка загрузки TutorialProgress: $e');

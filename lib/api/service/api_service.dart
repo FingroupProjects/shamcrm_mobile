@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:collection';
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/services.dart';
@@ -6,6 +7,9 @@ import 'package:crm_task_manager/models/LeadStatusForFilter.dart';
 import 'package:crm_task_manager/models/api_exception_model.dart';
 import 'package:crm_task_manager/models/author_data_response.dart';
 import 'package:crm_task_manager/models/calendar_model.dart';
+import 'package:crm_task_manager/models/file_helper.dart';
+import 'package:crm_task_manager/models/localization_model.dart';
+import 'package:crm_task_manager/models/task_overdue_history_model.dart';
 import 'package:crm_task_manager/models/money/add_cash_desk_model.dart';
 import 'package:crm_task_manager/models/money/cash_register_model.dart';
 import 'package:crm_task_manager/models/money/expense_model.dart';
@@ -13,8 +17,10 @@ import 'package:crm_task_manager/models/money/add_expense_model.dart';
 import 'package:crm_task_manager/models/money/income_model.dart';
 import 'package:crm_task_manager/models/money/add_income_model.dart';
 import 'package:crm_task_manager/models/chatById_model.dart';
+import 'package:crm_task_manager/models/chat_messages_page.dart';
 import 'package:crm_task_manager/models/chatGetId_model.dart';
 import 'package:crm_task_manager/models/chatTaskProfile_model.dart';
+import 'package:crm_task_manager/models/city_model.dart';
 import 'package:crm_task_manager/models/contact_person_model.dart';
 import 'package:crm_task_manager/models/dashboard_charts_models/deal_stats_model.dart';
 import 'package:crm_task_manager/models/dashboard_charts_models/lead_conversion_model.dart';
@@ -34,9 +40,11 @@ import 'package:crm_task_manager/models/directory_link_model.dart';
 import 'package:crm_task_manager/models/directory_model.dart';
 import 'package:crm_task_manager/models/event_by_Id_model.dart';
 import 'package:crm_task_manager/models/event_model.dart';
+import 'package:crm_task_manager/utils/global_value.dart';
 import 'package:crm_task_manager/models/history_model_my-task.dart';
 import 'package:crm_task_manager/models/integration_model.dart';
 import 'package:crm_task_manager/models/lead_deal_model.dart';
+import 'package:crm_task_manager/models/lead_filter_channel_model.dart';
 import 'package:crm_task_manager/models/lead_list_model.dart';
 import 'package:crm_task_manager/models/lead_multi_model.dart' hide LeadData;
 import 'package:crm_task_manager/models/lead_navigate_to_chat.dart'
@@ -51,6 +59,27 @@ import 'package:crm_task_manager/models/notice_history_model.dart';
 import 'package:crm_task_manager/models/notice_subject_model.dart';
 import 'package:crm_task_manager/models/notifications_model.dart';
 import 'package:crm_task_manager/models/dashboard_charts_models/task_chart_model.dart';
+import 'package:crm_task_manager/screens/analytics/models/dashboard_statistics_model.dart';
+import 'package:crm_task_manager/screens/analytics/models/deals_by_managers_model.dart';
+import 'package:crm_task_manager/screens/analytics/models/lead_chart_model.dart';
+import 'package:crm_task_manager/screens/analytics/models/lead_conversion_by_statuses_model.dart';
+import 'package:crm_task_manager/screens/analytics/models/lead_process_speed_model.dart';
+import 'package:crm_task_manager/screens/analytics/models/lead_channels_model.dart';
+import 'package:crm_task_manager/screens/analytics/models/message_stats_model.dart';
+import 'package:crm_task_manager/screens/analytics/models/online_store_orders_model.dart';
+import 'package:crm_task_manager/screens/analytics/models/source_of_leads_model.dart';
+import 'package:crm_task_manager/screens/analytics/models/task_chart_v2_model.dart';
+import 'package:crm_task_manager/screens/analytics/models/top_selling_products_model.dart';
+import 'package:crm_task_manager/screens/analytics/models/users_chart_model.dart';
+import 'package:crm_task_manager/screens/analytics/models/completed_tasks_model.dart';
+import 'package:crm_task_manager/screens/analytics/models/telephony_events_model.dart';
+import 'package:crm_task_manager/screens/analytics/models/replies_messages_model.dart';
+import 'package:crm_task_manager/screens/analytics/models/task_stats_by_project_model.dart';
+import 'package:crm_task_manager/screens/analytics/models/connected_accounts_model.dart';
+import 'package:crm_task_manager/screens/analytics/models/advertising_roi_model.dart';
+import 'package:crm_task_manager/screens/analytics/models/telephony_by_hour_model.dart';
+import 'package:crm_task_manager/screens/analytics/models/targeted_ads_model.dart';
+import 'package:crm_task_manager/screens/analytics/models/dashboard_setting_item.dart';
 import 'package:crm_task_manager/models/organization_model.dart';
 import 'package:crm_task_manager/models/overdue_task_response.dart';
 import 'package:crm_task_manager/models/page_2/branch_model.dart';
@@ -61,10 +90,14 @@ import 'package:crm_task_manager/models/page_2/call_statistics1_model.dart';
 import 'package:crm_task_manager/models/page_2/call_summary_stats_model.dart';
 import 'package:crm_task_manager/models/page_2/category_dashboard_warehouse_model.dart';
 import 'package:crm_task_manager/models/field_configuration.dart';
-import 'package:crm_task_manager/models/page_2/expense_details_document_model.dart' as expDoc;
-import 'package:crm_task_manager/models/page_2/expense_document_model.dart' as expense;
-import 'package:crm_task_manager/models/page_2/opening_supplier_model.dart' as opening_supplier;
-import 'package:crm_task_manager/models/page_2/openings/client_dialog_model.dart' as opening_lead;
+import 'package:crm_task_manager/models/page_2/expense_details_document_model.dart'
+    as expDoc;
+import 'package:crm_task_manager/models/page_2/expense_document_model.dart'
+    as expense;
+import 'package:crm_task_manager/models/page_2/opening_supplier_model.dart'
+    as opening_supplier;
+import 'package:crm_task_manager/models/page_2/openings/client_dialog_model.dart'
+    as opening_lead;
 import 'package:crm_task_manager/models/page_2/order_status_warehouse_model.dart';
 import 'package:crm_task_manager/models/page_2/expense_article_dashboard_warehouse_model.dart';
 import 'package:crm_task_manager/models/page_2/category_model.dart';
@@ -75,8 +108,11 @@ import 'package:crm_task_manager/models/page_2/dashboard/dashboard_top.dart';
 import 'package:crm_task_manager/models/page_2/dashboard/debtors_model.dart';
 import 'package:crm_task_manager/models/page_2/dashboard/creditors_model.dart';
 import 'package:crm_task_manager/models/page_2/dashboard/illiquids_model.dart';
+import 'package:crm_task_manager/models/page_2/dashboard/manufacture_report_model.dart';
+import 'package:crm_task_manager/models/page_2/dashboard/salary_report_model.dart';
 import 'package:crm_task_manager/models/page_2/delivery_address_model.dart';
-import 'package:crm_task_manager/models/page_2/good_dashboard_warehouse_model.dart' as dgrmodel;
+import 'package:crm_task_manager/models/page_2/good_dashboard_warehouse_model.dart'
+    as dgrmodel;
 import 'package:crm_task_manager/models/page_2/goods_model.dart';
 import 'package:crm_task_manager/models/page_2/incoming_document_history_model.dart';
 import 'package:crm_task_manager/models/page_2/incoming_document_model.dart';
@@ -87,6 +123,7 @@ import 'package:crm_task_manager/models/page_2/monthly_call_stats.dart';
 import 'package:crm_task_manager/models/page_2/operator_model.dart';
 import 'package:crm_task_manager/models/page_2/order_card.dart';
 import 'package:crm_task_manager/models/page_2/order_history_model.dart';
+import 'package:crm_task_manager/models/page_2/order_internet_store_model.dart';
 import 'package:crm_task_manager/models/page_2/order_status_model.dart';
 import 'package:crm_task_manager/models/page_2/price_type_model.dart';
 import 'package:crm_task_manager/models/page_2/storage_model.dart';
@@ -97,12 +134,14 @@ import 'package:crm_task_manager/models/page_2/variant_model.dart';
 import 'package:crm_task_manager/models/page_2/openings/goods_openings_model.dart';
 import 'package:crm_task_manager/models/page_2/openings/supplier_openings_model.dart';
 import 'package:crm_task_manager/models/page_2/openings/client_openings_model.dart';
-import 'package:crm_task_manager/models/page_2/openings/cash_register_openings_model.dart' as openings;
+import 'package:crm_task_manager/models/page_2/openings/cash_register_openings_model.dart'
+    as openings;
 import 'package:crm_task_manager/models/page_2/good_variants_model.dart';
 import 'package:crm_task_manager/models/price_type_model.dart';
 import 'package:crm_task_manager/models/project_task_model.dart';
 import 'package:crm_task_manager/models/sales_funnel_model.dart';
 import 'package:crm_task_manager/models/source_list_model.dart';
+import 'package:crm_task_manager/models/advertising_campaign_model.dart';
 import 'package:crm_task_manager/models/source_model.dart';
 import 'package:crm_task_manager/models/supplier_list_model.dart';
 import 'package:crm_task_manager/models/task_Status_Name_model.dart';
@@ -118,6 +157,7 @@ import 'package:crm_task_manager/models/notes_model.dart';
 import 'package:crm_task_manager/models/pagination_dto.dart';
 import 'package:crm_task_manager/models/project_model.dart';
 import 'package:crm_task_manager/models/region_model.dart';
+import 'package:crm_task_manager/models/reason_for_refusal_model.dart';
 import 'package:crm_task_manager/models/role_model.dart';
 import 'package:crm_task_manager/models/task_model.dart';
 import 'package:crm_task_manager/models/taskbyId_model.dart' hide ChatById;
@@ -128,6 +168,7 @@ import 'package:crm_task_manager/models/user_model.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_dropdown_bottom_dialog.dart';
 import 'package:crm_task_manager/screens/lead/lead_cache.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_dropdown_bottom_dialog.dart';
+import 'package:crm_task_manager/screens/lead/tabBar/lead_edit_screen.dart';
 import 'package:crm_task_manager/screens/my-task/my_task_details/my_task_dropdown_bottom_dialog.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/task/task_details/task_dropdown_bottom_dialog.dart';
@@ -145,6 +186,7 @@ import '../../models/domain_check.dart';
 import '../../models/income_categories_data_response.dart';
 import '../../models/login_model.dart';
 import '../../models/money/money_income_document_model.dart';
+import '../../models/money/employee_remaining_model.dart';
 import '../../models/money/money_outcome_document_model.dart';
 import '../../models/outcome_categories_data_response.dart';
 import '../../models/page_2/dashboard/act_of_reconciliation_model.dart';
@@ -160,12 +202,19 @@ import '../../models/page_2/dashboard/expense_structure_content.dart';
 import '../../models/page_2/dashboard/top_selling_card_model.dart';
 import '../../models/page_2/dashboard/top_selling_model.dart';
 
+// HTTP Inspector imports (только для DEBUG)
+import 'http_logger.dart';
+import 'http_log_model.dart';
+import 'dio_client.dart';
+
 // final String baseUrl = 'https://fingroup-back.shamcrm.com/api';
 // final String baseUrl = 'https://ede8-95-142-94-22.ngrok-free.app';
 
 // final String baseUrlSocket ='https://fingroup-back.shamcrm.com/broadcasting/auth';
 
 class ApiService {
+  static const Duration _defaultRequestTimeout = Duration(seconds: 20);
+
   String? baseUrl;
   String? baseUrlSocket;
   static final GlobalKey<NavigatorState> navigatorKey =
@@ -177,19 +226,179 @@ class ApiService {
     '/checkDomain',
     // '/add-fcm-token',
   ];
+  // Актуальные фильтры аналитики, применяемые ко всем графикам.
+  static Map<String, dynamic>? _analyticsFilters;
+  // In-memory cache аналитических GET-запросов (живет до перезапуска приложения).
+  static final Map<String, String> _analyticsResponseCache = {};
+
+  static void setAnalyticsFilters(Map<String, dynamic>? filters) {
+    if (filters == null) {
+      _analyticsFilters = null;
+      return;
+    }
+    _analyticsFilters = Map<String, dynamic>.from(filters);
+  }
+
+  static void clearAnalyticsFilters() {
+    _analyticsFilters = null;
+  }
+
+  static void clearAnalyticsResponseCache() {
+    _analyticsResponseCache.clear();
+  }
+
+  String _appendAnalyticsFiltersToPath(String path) {
+    final filters = _analyticsFilters;
+    if (filters == null || filters.isEmpty) {
+      if (kDebugMode) {
+        debugPrint(
+            '🟡 _appendAnalyticsFiltersToPath: No filters to apply to $path');
+      }
+      return path;
+    }
+
+    try {
+      final uri = Uri.parse(path);
+      // Create mutable copies of the lists to avoid "Cannot add to an unmodifiable list" error
+      final params = uri.queryParametersAll.map(
+        (key, value) => MapEntry(key, List<String>.from(value)),
+      );
+
+      bool hasParamKey(String key) {
+        return params.containsKey(key) || params.containsKey('$key[]');
+      }
+
+      void addValue(String key, dynamic value) {
+        if (value == null) {
+          if (key == 'channel') {
+            if (!hasParamKey(key)) {
+              params.putIfAbsent(key, () => []).add('');
+            }
+          }
+          return;
+        }
+        if (value is String && value.isEmpty) return;
+
+        if (value is Iterable) {
+          final arrayKey = '$key[]';
+          if (params.containsKey(arrayKey) || params.containsKey(key)) {
+            return;
+          }
+          for (final item in value) {
+            if (item == null) continue;
+            final stringValue = item.toString();
+            if (stringValue.isEmpty) continue;
+            // Use bracket notation for arrays: managers[] instead of managers[0]
+            params.putIfAbsent(arrayKey, () => []).add(stringValue);
+          }
+          return;
+        }
+
+        final stringValue = value.toString();
+        if (stringValue.isEmpty) return;
+        if (!hasParamKey(key)) {
+          params.putIfAbsent(key, () => []).add(stringValue);
+        }
+      }
+
+      filters.forEach(addValue);
+
+      final queryParts = <String>[];
+      params.forEach((key, values) {
+        for (final value in values) {
+          queryParts
+              .add('${Uri.encodeComponent(key)}=${Uri.encodeComponent(value)}');
+        }
+      });
+
+      final queryString =
+          queryParts.isNotEmpty ? '?${queryParts.join('&')}' : '';
+      final result = '${uri.path}$queryString';
+
+      if (kDebugMode) {
+        debugPrint(
+            '🟢 _appendAnalyticsFiltersToPath: Applied filters to $path');
+        debugPrint('   Filters: $filters');
+        debugPrint('   Result: $result');
+      }
+
+      return result;
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('🔴 _appendAnalyticsFiltersToPath: Exception caught: $e');
+        debugPrint('   Original path: $path');
+      }
+      return path;
+    }
+  }
+
+  // ОПТИМИЗАЦИЯ: Флаги для предотвращения повторной инициализации
+  bool _isInitializing = false;
+  bool _isInitialized = false;
+
   ApiService() {
     _initializeIfDomainExists();
   }
 
-
 // Новый метод для получения message из body ответа
-String? _extractErrorMessageFromResponse(http.Response response) {
-  final body = jsonDecode(response.body) as Map<String, dynamic>;
-  final rawMessage = body['message'] ?? body['error'] ?? body['errors'];
-  final message = jsonDecode(jsonEncode(rawMessage));
+  String? _extractErrorMessageFromResponse(http.Response response) {
+    try {
+      final body = jsonDecode(response.body);
+      if (body is Map<String, dynamic>) {
+        final rawMessage = body['message'] ?? body['error'] ?? body['errors'];
+        if (rawMessage == null) {
+          return null;
+        }
+        if (rawMessage is String) {
+          return rawMessage;
+        }
+        if (rawMessage is List) {
+          return rawMessage.map((item) => item.toString()).join('\n');
+        }
+        if (rawMessage is Map) {
+          final parts = <String>[];
+          rawMessage.forEach((key, value) {
+            if (value is List) {
+              parts.add(value.map((item) => item.toString()).join('\n'));
+            } else if (value != null) {
+              parts.add(value.toString());
+            }
+          });
+          return parts.where((item) => item.trim().isNotEmpty).join('\n');
+        }
+        return rawMessage.toString();
+      }
+      return body?.toString();
+    } catch (_) {
+      return response.body.isEmpty ? null : response.body;
+    }
+  }
 
-  return message;
-}
+  String? _extractPrimaryMessageFromResponse(http.Response response) {
+    try {
+      final body = jsonDecode(response.body);
+      if (body is Map<String, dynamic>) {
+        final rawMessage = body['message'];
+        if (rawMessage == null) {
+          return null;
+        }
+        if (rawMessage is String) {
+          return rawMessage.trim().isEmpty ? null : rawMessage.trim();
+        }
+        return rawMessage.toString().trim().isEmpty
+            ? null
+            : rawMessage.toString().trim();
+      }
+      return null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  String _getOrderStatusChangeErrorMessage(http.Response response) {
+    return _extractErrorMessageFromResponse(response) ??
+        'Вы не можете переместить заказ на этот статус';
+  }
 
   // Также нужно обновить метод _initializeIfDomainExists
   // Обновленный метод инициализации с проверкой сессии
@@ -231,56 +440,80 @@ String? _extractErrorMessageFromResponse(http.Response response) {
     }
   }
 
- Future<void> initialize() async {
-  try {
-    debugPrint('ApiService: Starting initialization');
-
-    // Получаем базовый URL
-    String dynamicBaseUrl = await getDynamicBaseUrl();
-
-    // Проверяем что URL валидный
-    if (dynamicBaseUrl.isEmpty || dynamicBaseUrl.contains('null')) {
-      throw Exception('Получен недействительный базовый URL: $dynamicBaseUrl');
+  Future<void> initialize() async {
+    // ОПТИМИЗАЦИЯ: Пропускаем если уже инициализирован
+    if (_isInitialized && baseUrl != null) {
+      return;
     }
 
-    baseUrl = dynamicBaseUrl;
-    debugPrint('ApiService: Initialized with baseUrl: $baseUrl');
+    // ОПТИМИЗАЦИЯ: Пропускаем если уже идет инициализация
+    if (_isInitializing) {
+      // Ждем завершения текущей инициализации
+      while (_isInitializing) {
+        await Future.delayed(Duration(milliseconds: 50));
+      }
+      return;
+    }
 
-  } catch (e) {
-    debugPrint('ApiService: initialize error: $e');
+    _isInitializing = true;
 
-    // Пытаемся установить fallback значения
     try {
-      await _setFallbackDomain();
-      baseUrl = await getDynamicBaseUrl();
-      debugPrint('ApiService: Fallback initialization successful: $baseUrl');
-    } catch (fallbackError) {
-      debugPrint('ApiService: Fallback initialization failed: $fallbackError');
-      throw Exception('Не удалось инициализировать ApiService: $e');
+      debugPrint('ApiService: Starting initialization');
+
+      // Получаем базовый URL
+      String dynamicBaseUrl = await getDynamicBaseUrl();
+
+      // Проверяем что URL валидный
+      if (dynamicBaseUrl.isEmpty || dynamicBaseUrl.contains('null')) {
+        throw Exception(
+            'Получен недействительный базовый URL: $dynamicBaseUrl');
+      }
+
+      baseUrl = dynamicBaseUrl;
+      _isInitialized = true;
+      debugPrint('ApiService: Initialized with baseUrl: $baseUrl');
+    } catch (e) {
+      debugPrint('ApiService: initialize error: $e');
+
+      // Пытаемся установить fallback значения
+      try {
+        await _setFallbackDomain();
+        baseUrl = await getDynamicBaseUrl();
+        _isInitialized = true;
+        debugPrint('ApiService: Fallback initialization successful: $baseUrl');
+      } catch (fallbackError) {
+        debugPrint(
+            'ApiService: Fallback initialization failed: $fallbackError');
+        throw Exception('Не удалось инициализировать ApiService: $e');
+      }
+    } finally {
+      _isInitializing = false;
     }
   }
-}
+
 // Вспомогательный метод для установки резервного домена
-Future<void> _setFallbackDomain() async {
-  SharedPreferences prefs = await SharedPreferences.getInstance();
+  Future<void> _setFallbackDomain() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
 
-  // Проверяем, есть ли сохраненные данные пользователя
-  String? userId = prefs.getString('userID');
-  String? token = prefs.getString('token');
+    // Проверяем, есть ли сохраненные данные пользователя
+    String? userId = prefs.getString('userID');
+    String? token = prefs.getString('token');
 
-  if (userId != null && token != null) {
-    // Используем базовые значения для восстановления подключения
-    String fallbackMainDomain = 'shamcrm.com';
-    String fallbackDomain = 'default'; // Замените на реальный домен организации
+    if (userId != null && token != null) {
+      // Используем базовые значения для восстановления подключения
+      String fallbackMainDomain = 'shamcrm.com';
+      String fallbackDomain =
+          'default'; // Замените на реальный домен организации
 
-    await prefs.setString('enteredMainDomain', fallbackMainDomain);
-    await prefs.setString('enteredDomain', fallbackDomain);
+      await prefs.setString('enteredMainDomain', fallbackMainDomain);
+      await prefs.setString('enteredDomain', fallbackDomain);
 
-    debugPrint('ApiService: Set fallback domain: $fallbackDomain-back.$fallbackMainDomain');
-  } else {
-    throw Exception('Нет данных для восстановления подключения');
+      debugPrint(
+          'ApiService: Set fallback domain: $fallbackDomain-back.$fallbackMainDomain');
+    } else {
+      throw Exception('Нет данных для восстановления подключения');
+    }
   }
-}
 
   // Инициализация API с доменом из QR-кода
   Future<void> initializeWithDomain(String domain, String mainDomain) async {
@@ -293,36 +526,43 @@ Future<void> _setFallbackDomain() async {
     await prefs.setString('mainDomain', mainDomain);
   }
 
-Future<String> getDynamicBaseUrl() async {
-  try {
-    // Сначала пробуем новую логику с email
-    String? verifiedDomain = await getVerifiedDomain();
-    if (verifiedDomain != null && verifiedDomain.isNotEmpty && verifiedDomain != 'null') {
-      return 'https://$verifiedDomain/api';
-    }
+  Future<String> getDynamicBaseUrl() async {
+    try {
+      // Сначала пробуем новую логику с email
+      String? verifiedDomain = await getVerifiedDomain();
+      if (verifiedDomain != null &&
+          verifiedDomain.isNotEmpty &&
+          verifiedDomain != 'null') {
+        return 'https://$verifiedDomain/api';
+      }
 
-    // Проверяем QR данные
-    String? qrDomain = await _getQrDomain();
-    if (qrDomain != null && qrDomain.isNotEmpty && qrDomain != 'null') {
-      return 'https://$qrDomain/api';
-    }
+      // Проверяем QR данные
+      String? qrDomain = await _getQrDomain();
+      if (qrDomain != null && qrDomain.isNotEmpty && qrDomain != 'null') {
+        return 'https://$qrDomain/api';
+      }
 
-    // Используем старую логику для обратной совместимости
-    Map<String, String?> domains = await getEnteredDomain();
-    String? mainDomain = domains['enteredMainDomain'];
-    String? domain = domains['enteredDomain'];
+      // Используем старую логику для обратной совместимости
+      Map<String, String?> domains = await getEnteredDomain();
+      String? mainDomain = domains['enteredMainDomain'];
+      String? domain = domains['enteredDomain'];
 
-    if (domain != null && domain.isNotEmpty && domain != 'null' &&
-        mainDomain != null && mainDomain.isNotEmpty && mainDomain != 'null') {
-      return 'https://$domain-back.$mainDomain/api';
-    } else {
-      throw Exception('Домен не установлен или содержит недействительные значения');
+      if (domain != null &&
+          domain.isNotEmpty &&
+          domain != 'null' &&
+          mainDomain != null &&
+          mainDomain.isNotEmpty &&
+          mainDomain != 'null') {
+        return 'https://$domain-back.$mainDomain/api';
+      } else {
+        throw Exception(
+            'Домен не установлен или содержит недействительные значения');
+      }
+    } catch (e) {
+      debugPrint('getDynamicBaseUrl error: $e');
+      throw Exception('Не удалось определить базовый URL: $e');
     }
-  } catch (e) {
-    debugPrint('getDynamicBaseUrl error: $e');
-    throw Exception('Не удалось определить базовый URL: $e');
   }
-}
 
   Future<String> getSocketBaseUrl() async {
     // Сначала пробуем новую логику с email
@@ -344,7 +584,7 @@ Future<String> getDynamicBaseUrl() async {
   }
 
   // Общая обработка ответа от сервера 401
-    Future<http.Response> _handleResponse(http.Response response) async {
+  Future<http.Response> _handleResponse(http.Response response) async {
     if (response.statusCode == 401) {
       // debugPrint('ApiService: Received 401, forcing logout and redirect');
       await _forceLogoutAndRedirect();
@@ -404,11 +644,11 @@ Future<String> getDynamicBaseUrl() async {
 
     // Очищаем новые данные email-flow
     await clearEmailVerificationData();
-    
+
     // Clear widget permissions on iOS (via App Groups)
     await _clearWidgetPermissions();
   }
-  
+
   // Clear widget permissions on logout
   Future<void> _clearWidgetPermissions() async {
     try {
@@ -501,7 +741,8 @@ Future<String> getDynamicBaseUrl() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     final verifiedDomain = prefs.getString('verifiedDomain');
     if (kDebugMode) {
-      debugPrint('ApiService: getVerifiedDomain - verifiedDomain: $verifiedDomain');
+      debugPrint(
+          'ApiService: getVerifiedDomain - verifiedDomain: $verifiedDomain');
     }
     return verifiedDomain;
   }
@@ -546,7 +787,7 @@ Future<String> getDynamicBaseUrl() async {
 
   //_________________________________ START___API__METHOD__GET__POST__PATCH__DELETE____________________________________________//
 
-   Future<http.Response> _getRequest(String path) async {
+  Future<http.Response> _getRequest(String path) async {
     // Проверяем сессию перед каждым запросом
     if (!await _isSessionValid()) {
       await _forceLogoutAndRedirect();
@@ -562,56 +803,266 @@ Future<String> getDynamicBaseUrl() async {
 
     final token = await getToken();
     final updatedPath = await _appendQueryParams(path);
-    final response = await http.get(
-      Uri.parse('$baseUrl$updatedPath'),
-      headers: {
+    final fullUrl = '$baseUrl$updatedPath';
+
+    // HTTP Inspector: Создаем лог запроса (только в DEBUG)
+    String? logId;
+    if (kDebugMode) {
+      logId = DateTime.now().millisecondsSinceEpoch.toString();
+      final headers = {
         'Authorization': 'Bearer $token',
         'Content-Type': 'application/json',
         'Accept': 'application/json',
         'Device': 'mobile'
-      },
-    );
-    return _handleResponse(response);
+      };
+      String? requestPayload;
+      try {
+        final query = Uri.parse(fullUrl).queryParametersAll;
+        if (query.isNotEmpty) {
+          requestPayload = json.encode(
+            query.map((k, v) => MapEntry(k, v.length == 1 ? v.first : v)),
+          );
+        }
+      } catch (_) {
+        requestPayload = null;
+      }
+      HttpLogger().addLog(HttpLogModel(
+        id: logId,
+        timestamp: DateTime.now(),
+        method: 'GET',
+        url: fullUrl,
+        requestHeaders: headers,
+        requestBody: requestPayload,
+      ));
+    }
+
+    final startTime = DateTime.now();
+    try {
+      final response = await http.get(
+        Uri.parse(fullUrl),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Device': 'mobile'
+        },
+      ).timeout(
+        _defaultRequestTimeout,
+        onTimeout: () => throw TimeoutException(
+          'Превышено время ожидания ответа сервера',
+          _defaultRequestTimeout,
+        ),
+      );
+
+      // HTTP Inspector: Обновляем лог с ответом (только в DEBUG)
+      if (kDebugMode && logId != null) {
+        final duration = DateTime.now().difference(startTime);
+        final existingLog = HttpLogger().getLogById(logId);
+        if (existingLog != null) {
+          HttpLogger().updateLog(
+            logId,
+            existingLog.copyWith(
+              statusCode: response.statusCode,
+              responseHeaders: response.headers,
+              responseBody: response.body,
+              duration: duration,
+            ),
+          );
+        }
+      }
+
+      return _handleResponse(response);
+    } catch (e) {
+      // HTTP Inspector: Логируем ошибку (только в DEBUG)
+      if (kDebugMode && logId != null) {
+        final duration = DateTime.now().difference(startTime);
+        final existingLog = HttpLogger().getLogById(logId);
+        if (existingLog != null) {
+          HttpLogger().updateLog(
+            logId,
+            existingLog.copyWith(
+              error: e.toString(),
+              duration: duration,
+            ),
+          );
+        }
+      }
+      rethrow;
+    }
   }
 
   Future<http.Response> _postRequest(
-    String path, Map<String, dynamic> body) async {
-  // Проверяем сессию только если эндпоинт требует этого
-  if (!_noSessionCheckEndpoints.any((endpoint) => path.contains(endpoint))) {
-    if (!await _isSessionValid()) {
-      await _forceLogoutAndRedirect();
-      throw Exception('Session is invalid');
+      String path, Map<String, dynamic> body) async {
+    // Проверяем сессию только если эндпоинт требует этого
+    if (!_noSessionCheckEndpoints.any((endpoint) => path.contains(endpoint))) {
+      if (!await _isSessionValid()) {
+        await _forceLogoutAndRedirect();
+        throw Exception('Session is invalid');
+      }
     }
-  }
 
-  if (baseUrl == null) {
-    await _initializeIfDomainExists();
     if (baseUrl == null) {
-      debugPrint('Error: baseUrl is null');
-      throw Exception('Base URL is not initialized');
+      await _initializeIfDomainExists();
+      if (baseUrl == null) {
+        debugPrint('Error: baseUrl is null');
+        throw Exception('Base URL is not initialized');
+      }
+    }
+
+    final token = await getToken();
+    final updatedPath = await _appendQueryParams(path);
+    final fullUrl = '$baseUrl$updatedPath';
+    debugPrint('ApiService: _postRequest with updatedPath: $fullUrl');
+    debugPrint('ApiService: Request body: ${json.encode(body)}');
+
+    // HTTP Inspector: Создаем лог запроса (только в DEBUG)
+    String? logId;
+    if (kDebugMode) {
+      logId = DateTime.now().millisecondsSinceEpoch.toString();
+      final headers = {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        if (token != null) 'Authorization': 'Bearer $token',
+        'Device': 'mobile'
+      };
+      HttpLogger().addLog(HttpLogModel(
+        id: logId,
+        timestamp: DateTime.now(),
+        method: 'POST',
+        url: fullUrl,
+        requestHeaders: headers,
+        requestBody: json.encode(body),
+      ));
+    }
+
+    final startTime = DateTime.now();
+    try {
+      final response = await http.post(
+        Uri.parse(fullUrl),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          if (token != null) 'Authorization': 'Bearer $token',
+          'Device': 'mobile'
+        },
+        body: json.encode(body),
+      );
+
+      debugPrint(
+          'ApiService: _postRequest response status: ${response.statusCode}');
+      debugPrint('ApiService: _postRequest response body: ${response.body}');
+
+      // HTTP Inspector: Обновляем лог с ответом (только в DEBUG)
+      if (kDebugMode && logId != null) {
+        final duration = DateTime.now().difference(startTime);
+        final existingLog = HttpLogger().getLogById(logId);
+        if (existingLog != null) {
+          HttpLogger().updateLog(
+            logId,
+            existingLog.copyWith(
+              statusCode: response.statusCode,
+              responseHeaders: response.headers,
+              responseBody: response.body,
+              duration: duration,
+            ),
+          );
+        }
+      }
+
+      return _handleResponse(response);
+    } catch (e) {
+      // HTTP Inspector: Логируем ошибку (только в DEBUG)
+      if (kDebugMode && logId != null) {
+        final duration = DateTime.now().difference(startTime);
+        final existingLog = HttpLogger().getLogById(logId);
+        if (existingLog != null) {
+          HttpLogger().updateLog(
+            logId,
+            existingLog.copyWith(
+              error: e.toString(),
+              duration: duration,
+            ),
+          );
+        }
+      }
+      rethrow;
     }
   }
 
-  final token = await getToken();
-  final updatedPath = await _appendQueryParams(path);
-  debugPrint('ApiService: _postRequest with updatedPath: $baseUrl$updatedPath');
-  debugPrint('ApiService: Request body: ${json.encode(body)}');
+  Future<http.Response> _analyticsRequest(
+    String path, {
+    bool bypassCache = false,
+  }) async {
+    if (kDebugMode) {
+      debugPrint('🔵 _analyticsRequest called with path: $path');
+      debugPrint('   Current _analyticsFilters: $_analyticsFilters');
+    }
+    final filteredPath = _appendAnalyticsFiltersToPath(path);
+    if (kDebugMode) {
+      debugPrint('🔵 _analyticsRequest filtered path: $filteredPath');
+    }
+    final cachedBody = _analyticsResponseCache[filteredPath];
+    if (!bypassCache && cachedBody != null) {
+      if (kDebugMode) {
+        debugPrint('🟢 _analyticsRequest cache HIT: $filteredPath');
+      }
+      return http.Response(
+        cachedBody,
+        200,
+        headers: const {'x-analytics-cache': 'HIT'},
+      );
+    }
 
-  final response = await http.post(
-    Uri.parse('$baseUrl$updatedPath'),
-    headers: {
-      'Content-Type': 'application/json',
-      'Accept': 'application/json',
-      if (token != null) 'Authorization': 'Bearer $token',
-      'Device': 'mobile'
-    },
-    body: json.encode(body),
-  );
+    if (bypassCache && kDebugMode) {
+      debugPrint('🟠 _analyticsRequest cache BYPASS: $filteredPath');
+    }
 
-  debugPrint('ApiService: _postRequest response status: ${response.statusCode}');
-  debugPrint('ApiService: _postRequest response body: ${response.body}');
-  return _handleResponse(response);
-}
+    final response = await _getRequest(filteredPath);
+    if (response.statusCode == 200) {
+      _analyticsResponseCache[filteredPath] = response.body;
+      if (kDebugMode) {
+        debugPrint('🟢 _analyticsRequest cache SAVE: $filteredPath');
+      }
+    }
+    return response;
+  }
+
+  Never _throwAnalyticsChartApiError(
+    http.Response response,
+    String fallbackMessage,
+  ) {
+    final message = _extractErrorMessageFromResponse(response);
+    throw ApiException(message ?? fallbackMessage, response.statusCode);
+  }
+
+  Future<Map<String, dynamic>> _getAnalyticsChartJsonMap(
+    String path, {
+    required String debugLabel,
+    required String fallbackMessage,
+  }) async {
+    try {
+      final response = await _analyticsRequest(path);
+
+      if (response.statusCode != 200) {
+        _throwAnalyticsChartApiError(response, fallbackMessage);
+      }
+
+      final decoded = json.decode(response.body);
+      if (decoded is Map<String, dynamic>) {
+        return decoded;
+      }
+      if (decoded is Map) {
+        return Map<String, dynamic>.from(decoded);
+      }
+
+      throw Exception('Неожиданный формат ответа API');
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('ApiService: $debugLabel error: $e');
+      }
+      rethrow;
+    }
+  }
 
   /// Новый метод для обработки MultipartRequest
   Future<http.Response> _multipartPostRequest(
@@ -625,8 +1076,49 @@ Future<String> getDynamicBaseUrl() async {
 
     //debugPrint('ApiService: _multipartPostRequest with path: ${request.url}');
 
+    // HTTP Inspector: логируем multipart запрос/ответ (только в DEBUG)
+    String? logId;
+    if (kDebugMode) {
+      logId = DateTime.now().millisecondsSinceEpoch.toString();
+      final multipartPayload = <String, dynamic>{
+        'fields': request.fields,
+        'files': request.files
+            .map((file) => {
+                  'field': file.field,
+                  'filename': file.filename,
+                  'length': file.length,
+                  'contentType': file.contentType.toString(),
+                })
+            .toList(),
+      };
+      HttpLogger().addLog(HttpLogModel(
+        id: logId,
+        timestamp: DateTime.now(),
+        method: 'POST',
+        url: request.url.toString(),
+        requestHeaders: request.headers,
+        requestBody: json.encode(multipartPayload),
+      ));
+    }
+
+    final startTime = DateTime.now();
     final streamedResponse = await request.send();
     final response = await http.Response.fromStream(streamedResponse);
+
+    if (kDebugMode && logId != null) {
+      final existingLog = HttpLogger().getLogById(logId);
+      if (existingLog != null) {
+        HttpLogger().updateLog(
+          logId,
+          existingLog.copyWith(
+            statusCode: response.statusCode,
+            responseHeaders: response.headers,
+            responseBody: response.body,
+            duration: DateTime.now().difference(startTime),
+          ),
+        );
+      }
+    }
 
     //debugPrint(
     // 'ApiService: _multipartPostRequest response status: ${response.statusCode}');
@@ -634,7 +1126,160 @@ Future<String> getDynamicBaseUrl() async {
     return _handleResponse(response);
   }
 
-Future<http.Response> _patchRequest(
+  String _boolToMultipartFlag(dynamic value) {
+    if (value is bool) {
+      return value ? '1' : '0';
+    }
+    if (value is int) {
+      return value == 1 ? '1' : '0';
+    }
+    if (value is String) {
+      final normalized = value.trim().toLowerCase();
+      return (normalized == '1' || normalized == 'true') ? '1' : '0';
+    }
+    return '0';
+  }
+
+  Future<bool> _goodsRequestHasFiles(
+    List<File> images,
+    List<Map<String, dynamic>> variants,
+  ) async {
+    for (final image in images) {
+      if (await image.exists()) {
+        return true;
+      }
+    }
+
+    for (final variant in variants) {
+      final variantFiles = variant['files'];
+      if (variantFiles is! List) continue;
+
+      for (final file in variantFiles) {
+        if (file is File && await file.exists()) {
+          return true;
+        }
+      }
+    }
+
+    return false;
+  }
+
+  Future<Map<String, dynamic>> _buildGoodsRequestBody({
+    required bool isService,
+    required String name,
+    required int parentId,
+    required String description,
+    required int? quantity,
+    required int? unitId,
+    required List<Map<String, dynamic>> attributes,
+    required List<Map<String, dynamic>> variants,
+    required bool isActive,
+    required double? price,
+    required int? storageId,
+    required int? labelId,
+    required String? productionType,
+    required List<Map<String, dynamic>> materialGoods,
+    required List<Map<String, dynamic>> relatedGoods,
+    String? comments,
+  }) async {
+    final organizationId = await getSelectedOrganization();
+    final salesFunnelId = await getSelectedSalesFunnel();
+
+    final body = <String, dynamic>{
+      'name': name,
+      'category_id': parentId.toString(),
+      'label_id': labelId?.toString(),
+      'quantity': quantity?.toString() ?? 'null',
+      'description': description,
+      'unit_id': unitId?.toString(),
+      'is_active': isActive ? '1' : '0',
+      'is_popular': '0',
+      'is_new': '0',
+      'is_sale': '0',
+      'is_service': isService ? '1' : '0',
+      'is_subscription': '0',
+      'price': (price ?? 0).toString(),
+      'organization_id': organizationId ?? '1',
+      'sales_funnel_id': salesFunnelId ?? '1',
+    };
+
+    if (productionType != null && productionType.isNotEmpty) {
+      body['production_type'] = productionType;
+    }
+
+    if (storageId != null) {
+      body['storage_id'] = storageId.toString();
+      body['branch_id'] = storageId.toString();
+    }
+
+    if (comments != null && comments.isNotEmpty) {
+      body['comments'] = comments;
+    }
+
+    if (attributes.isNotEmpty) {
+      body['attributes'] = attributes
+          .map((attribute) => {
+                'category_attribute_id':
+                    attribute['category_attribute_id']?.toString(),
+                'value': attribute['value']?.toString(),
+              })
+          .toList();
+    }
+
+    if (variants.isNotEmpty) {
+      body['variants'] = variants.map((variant) {
+        final item = <String, dynamic>{
+          'is_active': _boolToMultipartFlag(variant['is_active']),
+          'price': (variant['price'] ?? 0).toString(),
+        };
+
+        if (variant['id'] != null) {
+          item['id'] = variant['id'].toString();
+        }
+
+        final variantAttributes =
+            (variant['variant_attributes'] as List<dynamic>? ?? []).map((attr) {
+          final map = <String, dynamic>{
+            'category_attribute_id': attr['category_attribute_id']?.toString(),
+            'value': attr['value']?.toString(),
+          };
+
+          if (attr['id'] != null) {
+            map['id'] = attr['id'].toString();
+          }
+
+          return map;
+        }).toList();
+
+        if (variantAttributes.isNotEmpty) {
+          item['variant_attributes'] = variantAttributes;
+        }
+
+        return item;
+      }).toList();
+    }
+
+    if (materialGoods.isNotEmpty) {
+      body['good_ids'] = materialGoods
+          .map((material) => {
+                'good_id': material['good_id']?.toString(),
+                'norm': material['norm']?.toString(),
+              })
+          .toList();
+    }
+
+    body['related_goods'] = relatedGoods
+        .where((related) => related['variant_id'] != null)
+        .map((related) => {
+              'variant_id': related['variant_id']?.toString(),
+              'is_required': _boolToMultipartFlag(related['is_required']),
+            })
+        .toList();
+
+    return body;
+  }
+
+  Future<http.Response> _patchRequest(
       String path, Map<String, dynamic> body) async {
     if (!await _isSessionValid()) {
       await _forceLogoutAndRedirect();
@@ -643,17 +1288,60 @@ Future<http.Response> _patchRequest(
 
     final token = await getToken();
     final updatedPath = await _appendQueryParams(path);
-    final response = await http.patch(
-      Uri.parse('$baseUrl$updatedPath'),
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        if (token != null) 'Authorization': 'Bearer $token',
-        'Device': 'mobile'
-      },
-      body: json.encode(body),
-    );
-    return _handleResponse(response);
+    final fullUrl = '$baseUrl$updatedPath';
+
+    // HTTP Inspector: Создаем лог запроса (только в DEBUG)
+    String? logId;
+    if (kDebugMode) {
+      logId = DateTime.now().millisecondsSinceEpoch.toString();
+      HttpLogger().addLog(HttpLogModel(
+        id: logId,
+        timestamp: DateTime.now(),
+        method: 'PATCH',
+        url: fullUrl,
+        requestBody: json.encode(body),
+      ));
+    }
+
+    final startTime = DateTime.now();
+    try {
+      final response = await http.patch(
+        Uri.parse(fullUrl),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          if (token != null) 'Authorization': 'Bearer $token',
+          'Device': 'mobile'
+        },
+        body: json.encode(body),
+      );
+
+      // HTTP Inspector: Обновляем лог с ответом (только в DEBUG)
+      if (kDebugMode && logId != null) {
+        final existingLog = HttpLogger().getLogById(logId);
+        if (existingLog != null) {
+          HttpLogger().updateLog(
+            logId,
+            existingLog.copyWith(
+              statusCode: response.statusCode,
+              responseBody: response.body,
+              duration: DateTime.now().difference(startTime),
+            ),
+          );
+        }
+      }
+
+      return _handleResponse(response);
+    } catch (e) {
+      if (kDebugMode && logId != null) {
+        final existingLog = HttpLogger().getLogById(logId);
+        if (existingLog != null) {
+          HttpLogger()
+              .updateLog(logId, existingLog.copyWith(error: e.toString()));
+        }
+      }
+      rethrow;
+    }
   }
 
   Future<http.Response> _putRequest(
@@ -665,17 +1353,60 @@ Future<http.Response> _patchRequest(
 
     final token = await getToken();
     final updatedPath = await _appendQueryParams(path);
-    final response = await http.put(
-      Uri.parse('$baseUrl$updatedPath'),
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        if (token != null) 'Authorization': 'Bearer $token',
-        'Device': 'mobile'
-      },
-      body: json.encode(body),
-    );
-    return _handleResponse(response);
+    final fullUrl = '$baseUrl$updatedPath';
+
+    // HTTP Inspector: Создаем лог запроса (только в DEBUG)
+    String? logId;
+    if (kDebugMode) {
+      logId = DateTime.now().millisecondsSinceEpoch.toString();
+      HttpLogger().addLog(HttpLogModel(
+        id: logId,
+        timestamp: DateTime.now(),
+        method: 'PUT',
+        url: fullUrl,
+        requestBody: json.encode(body),
+      ));
+    }
+
+    final startTime = DateTime.now();
+    try {
+      final response = await http.put(
+        Uri.parse(fullUrl),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          if (token != null) 'Authorization': 'Bearer $token',
+          'Device': 'mobile'
+        },
+        body: json.encode(body),
+      );
+
+      // HTTP Inspector: Обновляем лог с ответом (только в DEBUG)
+      if (kDebugMode && logId != null) {
+        final existingLog = HttpLogger().getLogById(logId);
+        if (existingLog != null) {
+          HttpLogger().updateLog(
+            logId,
+            existingLog.copyWith(
+              statusCode: response.statusCode,
+              responseBody: response.body,
+              duration: DateTime.now().difference(startTime),
+            ),
+          );
+        }
+      }
+
+      return _handleResponse(response);
+    } catch (e) {
+      if (kDebugMode && logId != null) {
+        final existingLog = HttpLogger().getLogById(logId);
+        if (existingLog != null) {
+          HttpLogger()
+              .updateLog(logId, existingLog.copyWith(error: e.toString()));
+        }
+      }
+      rethrow;
+    }
   }
 
   Future<http.Response> _deleteRequest(String path) async {
@@ -686,16 +1417,58 @@ Future<http.Response> _patchRequest(
 
     final token = await getToken();
     final updatedPath = await _appendQueryParams(path);
-    final response = await http.delete(
-      Uri.parse('$baseUrl$updatedPath'),
-      headers: {
-        'Authorization': 'Bearer $token',
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'Device': 'mobile'
-      },
-    );
-    return _handleResponse(response);
+    final fullUrl = '$baseUrl$updatedPath';
+
+    // HTTP Inspector: Создаем лог запроса (только в DEBUG)
+    String? logId;
+    if (kDebugMode) {
+      logId = DateTime.now().millisecondsSinceEpoch.toString();
+      HttpLogger().addLog(HttpLogModel(
+        id: logId,
+        timestamp: DateTime.now(),
+        method: 'DELETE',
+        url: fullUrl,
+      ));
+    }
+
+    final startTime = DateTime.now();
+    try {
+      final response = await http.delete(
+        Uri.parse(fullUrl),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Device': 'mobile'
+        },
+      );
+
+      // HTTP Inspector: Обновляем лог с ответом (только в DEBUG)
+      if (kDebugMode && logId != null) {
+        final existingLog = HttpLogger().getLogById(logId);
+        if (existingLog != null) {
+          HttpLogger().updateLog(
+            logId,
+            existingLog.copyWith(
+              statusCode: response.statusCode,
+              responseBody: response.body,
+              duration: DateTime.now().difference(startTime),
+            ),
+          );
+        }
+      }
+
+      return _handleResponse(response);
+    } catch (e) {
+      if (kDebugMode && logId != null) {
+        final existingLog = HttpLogger().getLogById(logId);
+        if (existingLog != null) {
+          HttpLogger()
+              .updateLog(logId, existingLog.copyWith(error: e.toString()));
+        }
+      }
+      rethrow;
+    }
   }
 
   //delete with body
@@ -712,56 +1485,93 @@ Future<http.Response> _patchRequest(
     });
     request.body = json.encode(body);
 
-    final streamedResponse = await request.send();
-    final response = await http.Response.fromStream(streamedResponse);
-    return _handleResponse(response);
-  }
-// Новый метод для проверки валидности сессии
-  Future<bool> _isSessionValid() async {
-  try {
-    // Проверяем токен
-    final token = await getToken();
-    if (token == null || token.isEmpty) {
-      debugPrint('ApiService: Token is null or empty');
-      return false;
+    // HTTP Inspector: логируем DELETE с body (только в DEBUG)
+    String? logId;
+    if (kDebugMode) {
+      logId = DateTime.now().millisecondsSinceEpoch.toString();
+      HttpLogger().addLog(HttpLogModel(
+        id: logId,
+        timestamp: DateTime.now(),
+        method: 'DELETE',
+        url: request.url.toString(),
+        requestHeaders:
+            request.headers.map((k, v) => MapEntry(k, v.toString())),
+        requestBody: json.encode(body),
+      ));
     }
 
-    // Проверяем домен
-    String? domain = await getVerifiedDomain();
-    if (domain == null || domain.isEmpty) {
-      // Пробуем QR данные
-      Map<String, String?> qrData = await getQrData();
-      String? qrDomain = qrData['domain'];
-      String? qrMainDomain = qrData['mainDomain'];
+    final startTime = DateTime.now();
+    final streamedResponse = await request.send();
+    final response = await http.Response.fromStream(streamedResponse);
 
-      if (qrDomain == null || qrDomain.isEmpty ||
-          qrMainDomain == null || qrMainDomain.isEmpty) {
-        // Пробуем старую логику
-        Map<String, String?> domains = await getEnteredDomain();
-        String? enteredDomain = domains['enteredDomain'];
-        String? enteredMainDomain = domains['enteredMainDomain'];
-
-        if (enteredDomain == null || enteredDomain.isEmpty ||
-            enteredMainDomain == null || enteredMainDomain.isEmpty) {
-          debugPrint('ApiService: No valid domain found');
-          return false;
-        }
+    if (kDebugMode && logId != null) {
+      final existingLog = HttpLogger().getLogById(logId);
+      if (existingLog != null) {
+        HttpLogger().updateLog(
+          logId,
+          existingLog.copyWith(
+            statusCode: response.statusCode,
+            responseHeaders: response.headers,
+            responseBody: response.body,
+            duration: DateTime.now().difference(startTime),
+          ),
+        );
       }
     }
 
-    // Проверяем организацию
-    final organizationId = await getSelectedOrganization();
-    if (organizationId == null || organizationId.isEmpty) {
-      debugPrint('ApiService: Organization ID is null or empty');
+    return _handleResponse(response);
+  }
+
+// Новый метод для проверки валидности сессии
+  Future<bool> _isSessionValid() async {
+    try {
+      // Проверяем токен
+      final token = await getToken();
+      if (token == null || token.isEmpty) {
+        debugPrint('ApiService: Token is null or empty');
+        return false;
+      }
+
+      // Проверяем домен
+      String? domain = await getVerifiedDomain();
+      if (domain == null || domain.isEmpty) {
+        // Пробуем QR данные
+        Map<String, String?> qrData = await getQrData();
+        String? qrDomain = qrData['domain'];
+        String? qrMainDomain = qrData['mainDomain'];
+
+        if (qrDomain == null ||
+            qrDomain.isEmpty ||
+            qrMainDomain == null ||
+            qrMainDomain.isEmpty) {
+          // Пробуем старую логику
+          Map<String, String?> domains = await getEnteredDomain();
+          String? enteredDomain = domains['enteredDomain'];
+          String? enteredMainDomain = domains['enteredMainDomain'];
+
+          if (enteredDomain == null ||
+              enteredDomain.isEmpty ||
+              enteredMainDomain == null ||
+              enteredMainDomain.isEmpty) {
+            debugPrint('ApiService: No valid domain found');
+            return false;
+          }
+        }
+      }
+
+      // Проверяем организацию
+      final organizationId = await getSelectedOrganization();
+      if (organizationId == null || organizationId.isEmpty) {
+        debugPrint('ApiService: Organization ID is null or empty');
+        return false;
+      }
+
+      return true;
+    } catch (e) {
+      debugPrint('ApiService: Error checking session validity: $e');
       return false;
     }
-
-    return true;
-  } catch (e) {
-    debugPrint('ApiService: Error checking session validity: $e');
-    return false;
   }
-}
 
   // Новый метод для принудительного сброса к начальному экрану
   Future<void> _forceLogoutAndRedirect() async {
@@ -809,7 +1619,8 @@ Future<http.Response> _patchRequest(
       // 1. Ждём, пока всё инициализировано
       await ensureInitialized();
       if (baseUrl == null || baseUrl!.isEmpty) {
-        debugPrint('sendDeviceToken: baseUrl не готов → сохраняем как отложенный');
+        debugPrint(
+            'sendDeviceToken: baseUrl не готов → сохраняем как отложенный');
         await _savePendingToken(deviceToken);
         return;
       }
@@ -822,7 +1633,8 @@ Future<http.Response> _patchRequest(
       }
 
       final organizationId = await getSelectedOrganization();
-      final url = '$baseUrl/add-fcm-token${organizationId != null ? '?organization_id=$organizationId' : ''}';
+      final url =
+          '$baseUrl/add-fcm-token${organizationId != null ? '?organization_id=$organizationId' : ''}';
 
       debugPrint('sendDeviceToken: URL: $url');
 
@@ -840,13 +1652,15 @@ Future<http.Response> _patchRequest(
         }),
       );
 
-      debugPrint('sendDeviceToken: Ответ: ${response.statusCode} ${response.body}');
+      debugPrint(
+          'sendDeviceToken: Ответ: ${response.statusCode} ${response.body}');
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         debugPrint('sendDeviceToken: УСПЕШНО отправлен');
         await _removePendingToken(); // Удаляем только при успехе
       } else {
-        debugPrint('sendDeviceToken: Ошибка ${response.statusCode} → отложенный');
+        debugPrint(
+            'sendDeviceToken: Ошибка ${response.statusCode} → отложенный');
         await _savePendingToken(deviceToken);
       }
     } catch (e, s) {
@@ -882,7 +1696,8 @@ Future<http.Response> _patchRequest(
       return;
     }
 
-    debugPrint('sendPendingFCMTokenIfNeeded: Найден отложенный токен → отправляем');
+    debugPrint(
+        'sendPendingFCMTokenIfNeeded: Найден отложенный токен → отправляем');
     await sendDeviceToken(pending); // ← внутри уже всё обработается
     // НЕ удаляем здесь! Удаление только в sendDeviceToken при успехе
   }
@@ -925,7 +1740,8 @@ Future<http.Response> _patchRequest(
         mainDomain.isNotEmpty) {
       baseUrl = 'https://$domain-back.$mainDomain/api';
       baseUrlSocket = 'https://$domain-back.$mainDomain/broadcasting/auth';
-      debugPrint('Initialized baseUrl: $baseUrl, baseUrlSocket: $baseUrlSocket');
+      debugPrint(
+          'Initialized baseUrl: $baseUrl, baseUrlSocket: $baseUrlSocket');
       debugPrint('Saved domain: $domain, mainDomain: $mainDomain');
     } else {
       throw Exception('QR данные не найдены в SharedPreferences');
@@ -1055,54 +1871,56 @@ Future<http.Response> _patchRequest(
     };
   }
 
-Future<String> getStaticBaseUrl() async {
-  debugPrint('🔍 [ApiService] Начинаем получение StaticBaseUrl...');
-  
-  // Сначала пробуем новую логику с email
-  String? verifiedDomain = await getVerifiedDomain();
-  debugPrint('🔍 [ApiService] verifiedDomain: "$verifiedDomain"');
-  
-  if (verifiedDomain != null && verifiedDomain.isNotEmpty) {
-    final result = 'https://$verifiedDomain/storage';
-    debugPrint('✅ [ApiService] Используем verifiedDomain: "$result"');
-    return result;
+  Future<String> getStaticBaseUrl() async {
+    debugPrint('🔍 [ApiService] Начинаем получение StaticBaseUrl...');
+
+    // Сначала пробуем новую логику с email
+    String? verifiedDomain = await getVerifiedDomain();
+    debugPrint('🔍 [ApiService] verifiedDomain: "$verifiedDomain"');
+
+    if (verifiedDomain != null && verifiedDomain.isNotEmpty) {
+      final result = 'https://$verifiedDomain/storage';
+      debugPrint('✅ [ApiService] Используем verifiedDomain: "$result"');
+      return result;
+    }
+
+    // Проверяем QR данные
+    Map<String, String?> qrData = await getQrData();
+    String? qrDomain = qrData['domain'];
+    String? qrMainDomain = qrData['mainDomain'];
+    debugPrint(
+        '🔍 [ApiService] qrDomain: "$qrDomain", qrMainDomain: "$qrMainDomain"');
+
+    if (qrDomain != null &&
+        qrDomain.isNotEmpty &&
+        qrMainDomain != null &&
+        qrMainDomain.isNotEmpty) {
+      final result = 'https://$qrDomain-back.$qrMainDomain/storage';
+      debugPrint('✅ [ApiService] Используем QR данные: "$result"');
+      return result;
+    }
+
+    // Если нет, используем старую логику для обратной совместимости
+    Map<String, String?> domains = await getEnteredDomain();
+    String? mainDomain = domains['enteredMainDomain'];
+    String? domain = domains['enteredDomain'];
+    debugPrint(
+        '🔍 [ApiService] enteredDomain: "$domain", enteredMainDomain: "$mainDomain"');
+
+    if (domain != null &&
+        domain.isNotEmpty &&
+        mainDomain != null &&
+        mainDomain.isNotEmpty) {
+      final result = 'https://$domain-back.$mainDomain/storage';
+      debugPrint('✅ [ApiService] Используем entered domains: "$result"');
+      return result;
+    } else {
+      // Fallback на дефолтный домен, если ничего не найдено
+      const result = 'https://shamcrm.com/storage';
+      debugPrint('⚠️ [ApiService] Используем fallback URL: "$result"');
+      return result;
+    }
   }
-
-  // Проверяем QR данные
-  Map<String, String?> qrData = await getQrData();
-  String? qrDomain = qrData['domain'];
-  String? qrMainDomain = qrData['mainDomain'];
-  debugPrint('🔍 [ApiService] qrDomain: "$qrDomain", qrMainDomain: "$qrMainDomain"');
-
-  if (qrDomain != null &&
-      qrDomain.isNotEmpty &&
-      qrMainDomain != null &&
-      qrMainDomain.isNotEmpty) {
-    final result = 'https://$qrDomain-back.$qrMainDomain/storage';
-    debugPrint('✅ [ApiService] Используем QR данные: "$result"');
-    return result;
-  }
-
-  // Если нет, используем старую логику для обратной совместимости
-  Map<String, String?> domains = await getEnteredDomain();
-  String? mainDomain = domains['enteredMainDomain'];
-  String? domain = domains['enteredDomain'];
-  debugPrint('🔍 [ApiService] enteredDomain: "$domain", enteredMainDomain: "$mainDomain"');
-
-  if (domain != null &&
-      domain.isNotEmpty &&
-      mainDomain != null &&
-      mainDomain.isNotEmpty) {
-    final result = 'https://$domain-back.$mainDomain/storage';
-    debugPrint('✅ [ApiService] Используем entered domains: "$result"');
-    return result;
-  } else {
-    // Fallback на дефолтный домен, если ничего не найдено
-    const result = 'https://shamcrm.com/storage';
-    debugPrint('⚠️ [ApiService] Используем fallback URL: "$result"');
-    return result;
-  }
-}
 
 // Метод для получения полного URL файла
   Future<String> getFileUrl(String filePath) async {
@@ -1120,116 +1938,125 @@ Future<String> getStaticBaseUrl() async {
 //_________________________________ START___API__LOGIN____________________________________________//
 
 // Метод для проверки логина и пароля
- Future<LoginResponse> login(LoginModel loginModel) async {
-  debugPrint('ApiService: Starting login process');
-  debugPrint('ApiService: Login model: ${json.encode(loginModel.toJson())}');
+  Future<LoginResponse> login(LoginModel loginModel) async {
+    debugPrint('ApiService: Starting login process');
+    debugPrint('ApiService: Login model: ${json.encode(loginModel.toJson())}');
 
-  final organizationId = await getSelectedOrganization();
-  debugPrint('ApiService: Using organization_id: $organizationId');
+    final organizationId = await getSelectedOrganization();
+    debugPrint('ApiService: Using organization_id: $organizationId');
 
-  // Проверяем baseUrl перед запросом
-  if (baseUrl == null) {
-    debugPrint('ApiService: baseUrl is null, trying to initialize');
-    await _initializeIfDomainExists();
+    // Проверяем baseUrl перед запросом
     if (baseUrl == null) {
-      throw Exception('Failed to initialize baseUrl for login');
+      debugPrint('ApiService: baseUrl is null, trying to initialize');
+      await _initializeIfDomainExists();
+      if (baseUrl == null) {
+        throw Exception('Failed to initialize baseUrl for login');
+      }
     }
-  }
-  debugPrint('ApiService: Current baseUrl: $baseUrl');
+    debugPrint('ApiService: Current baseUrl: $baseUrl');
 
-  final response = await _postRequest(
-    '/login${organizationId != null ? '?organization_id=$organizationId' : ''}',
-    loginModel.toJson(),
-  );
+    final response = await _postRequest(
+      '/login${organizationId != null ? '?organization_id=$organizationId' : ''}',
+      loginModel.toJson(),
+    );
 
-  if (kDebugMode) {
-    debugPrint('ApiService: login - Response: ${response.body}');
-  }
+    if (kDebugMode) {
+      debugPrint('ApiService: login - Response: ${response.body}');
+    }
 
-  if (response.statusCode == 200) {
-    final data = json.decode(response.body);
-    final loginResponse = LoginResponse.fromJson(data);
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      final loginResponse = LoginResponse.fromJson(data);
 
-    await _saveToken(loginResponse.token);
-    await savePermissions(loginResponse.permissions);
+      await _saveToken(loginResponse.token);
+      await savePermissions(loginResponse.permissions);
 
-    // Проверяем organization_id из ответа
-    String? effectiveOrgId = loginResponse.organizationId;
-    if (effectiveOrgId != null && effectiveOrgId.isNotEmpty) {
-      await saveSelectedOrganization(effectiveOrgId);
-      if (kDebugMode) {
-        debugPrint('ApiService: login - Saved organization_id from response: $effectiveOrgId');
-      }
-    } else {
-      if (kDebugMode) {
-        debugPrint('ApiService: login - Warning: organization_id is null, trying /organization');
-      }
-      // Пробуем получить organization_id из /organization
-      try {
-        final organizationsResponse = await _getRequest('/organization');
-        if (organizationsResponse.statusCode == 200) {
-          final organizations = json.decode(organizationsResponse.body);
-          if (kDebugMode) {
-            debugPrint('ApiService: login - /organization response: $organizations');
-          }
-          if (organizations is List && organizations.isNotEmpty) {
-            effectiveOrgId = organizations[0]['id']?.toString();
-            if (effectiveOrgId != null && effectiveOrgId.isNotEmpty) {
-              await saveSelectedOrganization(effectiveOrgId);
-              if (kDebugMode) {
-                debugPrint('ApiService: login - Saved organization_id from /organization: $effectiveOrgId');
+      // Проверяем organization_id из ответа
+      String? effectiveOrgId = loginResponse.organizationId;
+      if (effectiveOrgId != null && effectiveOrgId.isNotEmpty) {
+        await saveSelectedOrganization(effectiveOrgId);
+        if (kDebugMode) {
+          debugPrint(
+              'ApiService: login - Saved organization_id from response: $effectiveOrgId');
+        }
+      } else {
+        if (kDebugMode) {
+          debugPrint(
+              'ApiService: login - Warning: organization_id is null, trying /organization');
+        }
+        // Пробуем получить organization_id из /organization
+        try {
+          final organizationsResponse = await _getRequest('/organization');
+          if (organizationsResponse.statusCode == 200) {
+            final organizations = json.decode(organizationsResponse.body);
+            if (kDebugMode) {
+              debugPrint(
+                  'ApiService: login - /organization response: $organizations');
+            }
+            if (organizations is List && organizations.isNotEmpty) {
+              effectiveOrgId = organizations[0]['id']?.toString();
+              if (effectiveOrgId != null && effectiveOrgId.isNotEmpty) {
+                await saveSelectedOrganization(effectiveOrgId);
+                if (kDebugMode) {
+                  debugPrint(
+                      'ApiService: login - Saved organization_id from /organization: $effectiveOrgId');
+                }
+              } else {
+                effectiveOrgId = '1'; // Дефолт id = 1
+                await saveSelectedOrganization(effectiveOrgId);
+                if (kDebugMode) {
+                  debugPrint(
+                      'ApiService: login - No valid organization_id, using default: $effectiveOrgId');
+                }
               }
             } else {
               effectiveOrgId = '1'; // Дефолт id = 1
               await saveSelectedOrganization(effectiveOrgId);
               if (kDebugMode) {
-                debugPrint('ApiService: login - No valid organization_id, using default: $effectiveOrgId');
+                debugPrint(
+                    'ApiService: login - Empty organizations list, using default: $effectiveOrgId');
               }
             }
           } else {
             effectiveOrgId = '1'; // Дефолт id = 1
             await saveSelectedOrganization(effectiveOrgId);
             if (kDebugMode) {
-              debugPrint('ApiService: login - Empty organizations list, using default: $effectiveOrgId');
+              debugPrint(
+                  'ApiService: login - Failed to fetch /organization, using default: $effectiveOrgId');
             }
           }
-        } else {
+        } catch (e) {
           effectiveOrgId = '1'; // Дефолт id = 1
           await saveSelectedOrganization(effectiveOrgId);
           if (kDebugMode) {
-            debugPrint('ApiService: login - Failed to fetch /organization, using default: $effectiveOrgId');
+            debugPrint(
+                'ApiService: login - Exception fetching /organization: $e, using default: $effectiveOrgId');
           }
         }
-      } catch (e) {
-        effectiveOrgId = '1'; // Дефолт id = 1
-        await saveSelectedOrganization(effectiveOrgId);
-        if (kDebugMode) {
-          debugPrint('ApiService: login - Exception fetching /organization: $e, using default: $effectiveOrgId');
+      }
+
+      debugPrint('ApiService: Login successful, token saved');
+      return loginResponse;
+    } else {
+      if (kDebugMode) {
+        debugPrint(
+            'ApiService: login - Error: Status ${response.statusCode}, Body: ${response.body}');
+      }
+
+      // Извлекаем сообщение об ошибке из ответа сервера
+      String errorMessage = 'Неправильный Логин или Пароль!';
+      try {
+        final errorData = json.decode(response.body);
+        if (errorData['message'] != null) {
+          errorMessage = errorData['message'].toString();
         }
+      } catch (e) {
+        debugPrint('ApiService: login - Error parsing error response: $e');
       }
-    }
 
-    debugPrint('ApiService: Login successful, token saved');
-    return loginResponse;
-  } else {
-    if (kDebugMode) {
-      debugPrint('ApiService: login - Error: Status ${response.statusCode}, Body: ${response.body}');
+      throw Exception('$errorMessage Status: ${response.statusCode}');
     }
-
-    // Извлекаем сообщение об ошибке из ответа сервера
-    String errorMessage = 'Неправильный Логин или Пароль!';
-    try {
-      final errorData = json.decode(response.body);
-      if (errorData['message'] != null) {
-        errorMessage = errorData['message'].toString();
-      }
-    } catch (e) {
-      debugPrint('ApiService: login - Error parsing error response: $e');
-    }
-
-    throw Exception('$errorMessage Status: ${response.statusCode}');
   }
-}
 
 // Сохранение прав доступа в SharedPreferences
   Future<void> savePermissions(List<String> permissions) async {
@@ -1261,7 +2088,10 @@ Future<String> getStaticBaseUrl() async {
     }
 
     try {
-      final response = await _getRequest(path);
+      final response = await _analyticsRequest(
+        path,
+        bypassCache: true,
+      );
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -1284,66 +2114,68 @@ Future<String> getStaticBaseUrl() async {
   }
 
 //_________________________________ END___API__LOGIN____________________________________________//
-Future<ForgotPinResponse> forgotPin(LoginModel loginModel) async {
-  try {
-    final organizationId = await getSelectedOrganization();
-    final url = '/forgotPin${organizationId != null ? '?organization_id=$organizationId' : ''}';
+  Future<ForgotPinResponse> forgotPin(LoginModel loginModel) async {
+    try {
+      final organizationId = await getSelectedOrganization();
+      final url =
+          '/forgotPin${organizationId != null ? '?organization_id=$organizationId' : ''}';
 
-    final response = await _postRequest(
-      url,
-      {
-        'login': loginModel.login,
-        'password': loginModel.password,
-      },
-    );
+      final response = await _postRequest(
+        url,
+        {
+          'login': loginModel.login,
+          'password': loginModel.password,
+        },
+      );
 
-    // ✅ Успешный ответ
-    if (response.statusCode == 200) {
-      final Map<String, dynamic> decodedJson = json.decode(response.body);
+      // ✅ Успешный ответ
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> decodedJson = json.decode(response.body);
 
-      if (decodedJson['result'] != null) {
-        return ForgotPinResponse.fromJson(decodedJson['result']);
-      } else {
-        throw Exception('Не удалось получить временный PIN.');
-      }
-    } 
-    // 🔴 Ошибка валидации (422)
-    else if (response.statusCode == 422) {
-      final Map<String, dynamic> decodedJson = json.decode(response.body);
-      
-      // Приоритет 1: message
-      if (decodedJson['message'] != null && decodedJson['message'].toString().isNotEmpty) {
-        throw Exception(decodedJson['message']);
-      } 
-      // Приоритет 2: errors.login[0]
-      else if (decodedJson['errors'] != null) {
-        if (decodedJson['errors']['login'] != null) {
-          final loginErrors = decodedJson['errors']['login'] as List;
-          if (loginErrors.isNotEmpty) {
-            throw Exception(loginErrors[0]);
-          }
+        if (decodedJson['result'] != null) {
+          return ForgotPinResponse.fromJson(decodedJson['result']);
+        } else {
+          throw Exception('Не удалось получить временный PIN.');
         }
-        // Общая ошибка из errors
-        throw Exception('Проверьте введённые данные');
-      } 
-      // Fallback
-      else {
-        throw Exception('Неверный логин или пользователь не найден');
       }
+      // 🔴 Ошибка валидации (422)
+      else if (response.statusCode == 422) {
+        final Map<String, dynamic> decodedJson = json.decode(response.body);
+
+        // Приоритет 1: message
+        if (decodedJson['message'] != null &&
+            decodedJson['message'].toString().isNotEmpty) {
+          throw Exception(decodedJson['message']);
+        }
+        // Приоритет 2: errors.login[0]
+        else if (decodedJson['errors'] != null) {
+          if (decodedJson['errors']['login'] != null) {
+            final loginErrors = decodedJson['errors']['login'] as List;
+            if (loginErrors.isNotEmpty) {
+              throw Exception(loginErrors[0]);
+            }
+          }
+          // Общая ошибка из errors
+          throw Exception('Проверьте введённые данные');
+        }
+        // Fallback
+        else {
+          throw Exception('Неверный логин или пользователь не найден');
+        }
+      }
+      // 🔴 Некорректный запрос (400)
+      else if (response.statusCode == 400) {
+        throw Exception('Некорректные данные запроса');
+      }
+      // 🔴 Другие ошибки
+      else {
+        throw Exception('Ошибка сервера (${response.statusCode})');
+      }
+    } catch (e) {
+      // Пробрасываем исключение для обработки в BLoC
+      rethrow;
     }
-    // 🔴 Некорректный запрос (400)
-    else if (response.statusCode == 400) {
-      throw Exception('Некорректные данные запроса');
-    } 
-    // 🔴 Другие ошибки
-    else {
-      throw Exception('Ошибка сервера (${response.statusCode})');
-    }
-  } catch (e) {
-    // Пробрасываем исключение для обработки в BLoC
-    rethrow;
   }
-}
 
 //_________________________________ START_____API__SCREEN__LEAD____________________________________________//
 
@@ -1353,7 +2185,7 @@ Future<ForgotPinResponse> forgotPin(LoginModel loginModel) async {
       final path = await _appendQueryParams('/lead/$leadId');
       //debugPrint('ApiService: getLeadById - Generated path: $path');
 
-      final response = await _getRequest(path);
+      final response = await _analyticsRequest(path, bypassCache: true);
       if (response.statusCode == 200) {
         final Map<String, dynamic> decodedJson = json.decode(response.body);
         final Map<String, dynamic> jsonLead = decodedJson['result'];
@@ -1367,6 +2199,63 @@ Future<ForgotPinResponse> forgotPin(LoginModel loginModel) async {
     }
   }
 
+  Future<Map<String, dynamic>> acceptLead(int leadId) async {
+    try {
+      final path = await _appendQueryParams('/lead/accept/$leadId');
+      final response = await _postRequest(path, {});
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return json.decode(response.body) as Map<String, dynamic>;
+      }
+
+      if (response.statusCode == 422) {
+        final data = json.decode(response.body);
+        final message = (data is Map<String, dynamic> ? data['message'] : null)
+                ?.toString() ??
+            'Ошибка валидации при создании сделки';
+        throw Exception(message);
+      }
+
+      throw Exception('Ошибка создания сделки из лида');
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>> declineLead(
+    int leadId, {
+    int? reasonForRefusalId,
+    String? reasonForRefusal,
+  }) async {
+    try {
+      final path = await _appendQueryParams('/lead/decline/$leadId');
+      final payload = <String, dynamic>{
+        if (reasonForRefusalId != null)
+          'reason_for_refusal_id': reasonForRefusalId,
+        if (reasonForRefusal != null && reasonForRefusal.trim().isNotEmpty)
+          'reason_for_refusal': reasonForRefusal.trim(),
+      };
+
+      final response = await _postRequest(path, payload);
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return json.decode(response.body) as Map<String, dynamic>;
+      }
+
+      if (response.statusCode == 422) {
+        final data = json.decode(response.body);
+        final message = (data is Map<String, dynamic> ? data['message'] : null)
+                ?.toString() ??
+            'Ошибка валидации при отказе лида';
+        throw LeadStatusUpdateException(422, message);
+      }
+
+      throw Exception('Ошибка отказа от лида');
+    } catch (e) {
+      rethrow;
+    }
+  }
+
 // Метод для получения списка Лидов с пагинацией
   Future<List<Lead>> getLeads(
     int? leadStatusId, {
@@ -1375,7 +2264,12 @@ Future<ForgotPinResponse> forgotPin(LoginModel loginModel) async {
     String? search,
     List<int>? managers,
     List<int>? regions,
+    int? regionId,
+    List<int>? cityIds,
     List<int>? sources,
+    List<int>? channelIds,
+    List<int>? advertisingCampaignIds,
+    List<int>? reasonForRefusalIds,
     int? statuses,
     DateTime? fromDate,
     DateTime? toDate,
@@ -1388,10 +2282,13 @@ Future<ForgotPinResponse> forgotPin(LoginModel loginModel) async {
     bool? hasDeal,
     bool? hasOrders,
     int? daysWithoutActivity,
+    int? numberOfDaysDeal,
     bool? hasNoReplies,
     bool? hasUnreadMessages,
     List<Map<String, dynamic>>? directoryValues,
+    Map<String, List<String>>? customFieldFilters,
     int? salesFunnelId, // Новый параметр
+    bool bypassAnalyticsCache = false,
   }) async {
     // Формируем базовый путь
     String path = '/lead?page=$page&per_page=$perPage';
@@ -1401,15 +2298,20 @@ Future<ForgotPinResponse> forgotPin(LoginModel loginModel) async {
       //debugPrint('ApiService: getLeads - After _appendQueryParams: $path');
     }
 
-    // Добавляем sales_funnel_id из аргумента, если он передан
-    if (salesFunnelId != null) {
-      path += '&sales_funnel_id=$salesFunnelId';
-    }
+    // // Добавляем sales_funnel_id из аргумента, если он передан
+    // if (salesFunnelId != null) {
+    //   path += '&sales_funnel_id=$salesFunnelId';
+    // }
 
     bool hasFilters = (search != null && search.isNotEmpty) ||
         (managers != null && managers.isNotEmpty) ||
         (regions != null && regions.isNotEmpty) ||
+        (regionId != null) ||
+        (cityIds != null && cityIds.isNotEmpty) ||
         (sources != null && sources.isNotEmpty) ||
+        (channelIds != null && channelIds.isNotEmpty) ||
+        (advertisingCampaignIds != null && advertisingCampaignIds.isNotEmpty) ||
+        (reasonForRefusalIds != null && reasonForRefusalIds.isNotEmpty) ||
         (fromDate != null) ||
         (toDate != null) ||
         (hasSuccessDeals == true) ||
@@ -1423,8 +2325,10 @@ Future<ForgotPinResponse> forgotPin(LoginModel loginModel) async {
         (hasNoReplies == true) ||
         (hasUnreadMessages == true) ||
         (daysWithoutActivity != null) ||
+        (numberOfDaysDeal != null) ||
         (statuses != null) ||
-        (directoryValues != null && directoryValues.isNotEmpty);
+        (directoryValues != null && directoryValues.isNotEmpty) ||
+        (customFieldFilters != null && customFieldFilters.isNotEmpty);
 
     if (leadStatusId != null && !hasFilters) {
       path += '&lead_status_id=$leadStatusId';
@@ -1444,9 +2348,32 @@ Future<ForgotPinResponse> forgotPin(LoginModel loginModel) async {
         path += '&regions[$i]=${regions[i]}';
       }
     }
+    if (regionId != null) {
+      path += '&region_id=$regionId';
+    }
+    if (cityIds != null && cityIds.isNotEmpty) {
+      for (int i = 0; i < cityIds.length; i++) {
+        path += '&city_id[$i]=${cityIds[i]}';
+      }
+    }
     if (sources != null && sources.isNotEmpty) {
       for (int i = 0; i < sources.length; i++) {
         path += '&sources[$i]=${sources[i]}';
+      }
+    }
+    if (channelIds != null && channelIds.isNotEmpty) {
+      for (int i = 0; i < channelIds.length; i++) {
+        path += '&channels[$i]=${channelIds[i]}';
+      }
+    }
+    if (advertisingCampaignIds != null && advertisingCampaignIds.isNotEmpty) {
+      for (int i = 0; i < advertisingCampaignIds.length; i++) {
+        path += '&campaign[$i]=${advertisingCampaignIds[i]}';
+      }
+    }
+    if (reasonForRefusalIds != null && reasonForRefusalIds.isNotEmpty) {
+      for (int i = 0; i < reasonForRefusalIds.length; i++) {
+        path += '&reason_for_refusals[$i]=${reasonForRefusalIds[i]}';
       }
     }
     if (hasNoReplies == true) {
@@ -1490,19 +2417,86 @@ Future<ForgotPinResponse> forgotPin(LoginModel loginModel) async {
     if (daysWithoutActivity != null) {
       path += '&lastUpdate=$daysWithoutActivity';
     }
+    if (numberOfDaysDeal != null) {
+      path += '&numberOfDaysDeal=$numberOfDaysDeal';
+    }
     if (directoryValues != null && directoryValues.isNotEmpty) {
-      for (int i = 0; i < directoryValues.length; i++) {
-        final directoryId = directoryValues[i]['directory_id'];
-        final entryId = directoryValues[i]['entry_id'];
-        path += '&directory_values[$i][directory_id]=$directoryId';
-        path += '&directory_values[$i][entry_id]=$entryId';
+      final Map<String, LinkedHashSet<String>> groupedDirectoryValues = {};
+
+      for (final dynamic rawValue in directoryValues) {
+        if (rawValue is! Map) {
+          continue;
+        }
+
+        final Map value = rawValue;
+        final directoryIdRaw = value['directory_id'];
+        final entryIdRaw = value['entry_id'];
+
+        if (directoryIdRaw == null || entryIdRaw == null) {
+          continue;
+        }
+
+        final directoryId = directoryIdRaw.toString();
+        final Iterable<String> entryIds = entryIdRaw is List
+            ? entryIdRaw
+                .where((entry) => entry != null && entry.toString().isNotEmpty)
+                .map((entry) => entry.toString())
+            : [entryIdRaw.toString()];
+
+        if (entryIds.isEmpty) {
+          continue;
+        }
+
+        final entries = groupedDirectoryValues.putIfAbsent(
+          directoryId,
+          () => LinkedHashSet<String>(),
+        );
+        entries.addAll(entryIds);
       }
+
+      if (groupedDirectoryValues.isNotEmpty) {
+        var directoryIndex = 0;
+        groupedDirectoryValues.forEach((directoryId, entryIds) {
+          if (entryIds.isEmpty) {
+            return;
+          }
+          path +=
+              '&directory_values[$directoryIndex][directory_id]=$directoryId';
+
+          var entryIndex = 0;
+          for (final entryId in entryIds) {
+            path +=
+                '&directory_values[$directoryIndex][entry_id][$entryIndex]=$entryId';
+            entryIndex++;
+          }
+
+          directoryIndex++;
+        });
+      }
+    }
+    if (customFieldFilters != null && customFieldFilters.isNotEmpty) {
+      int index = 0;
+      customFieldFilters.forEach((fieldKey, values) {
+        if (values.isEmpty) {
+          return;
+        }
+        final encodedKey = Uri.encodeQueryComponent(fieldKey);
+        path += '&custom_fields[$index][key]=$encodedKey';
+        for (int i = 0; i < values.length; i++) {
+          final encodedValue = Uri.encodeQueryComponent(values[i]);
+          path += '&custom_fields[$index][value][$i]=$encodedValue';
+        }
+        index++;
+      });
     }
 
     if (kDebugMode) {
       debugPrint('ApiService: getLeads - Final path: $path');
     }
-    final response = await _getRequest(path);
+    final response = await _analyticsRequest(
+      path,
+      bypassCache: bypassAnalyticsCache,
+    );
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
       if (data['result']['data'] != null) {
@@ -1518,159 +2512,197 @@ Future<ForgotPinResponse> forgotPin(LoginModel loginModel) async {
     }
   }
 
-Future<List<LeadStatus>> getLeadStatuses() async {
-  final SharedPreferences prefs = await SharedPreferences.getInstance();
-  final organizationId = await getSelectedOrganization();
-  final salesFunnelId = await getSelectedSalesFunnel();
+  Future<List<LeadStatus>> getLeadStatuses({
+    List<int>? managers,
+    List<int>? regions,
+    int? regionId,
+    List<int>? cityIds,
+    List<int>? sources,
+    List<int>? channelIds,
+    List<int>? advertisingCampaignIds,
+    List<int>? reasonForRefusalIds,
+    DateTime? fromDate,
+    DateTime? toDate,
+    bool? hasSuccessDeals,
+    bool? hasInProgressDeals,
+    bool? hasFailureDeals,
+    bool? hasNotices,
+    bool? hasContact,
+    bool? hasChat,
+    bool? hasNoReplies,
+    bool? hasUnreadMessages,
+    bool? hasDeal,
+    bool? hasOrders,
+    int? daysWithoutActivity,
+    int? numberOfDaysDeal,
+    List<Map<String, dynamic>>? directoryValues,
+    bool bypassAnalyticsCache = false,
+  }) async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    final organizationId = await getSelectedOrganization();
+    final salesFunnelId = await getSelectedSalesFunnel();
 
-  // ⚠️ КРИТИЧНО: Проверяем наличие обязательного параметра
-  if (organizationId == null || organizationId.isEmpty || organizationId == 'null') {
-    throw Exception('Organization ID is required but missing');
-  }
-
-  if (kDebugMode) {
-    debugPrint('🔍 getLeadStatuses - START');
-    debugPrint('🔍 getLeadStatuses - organizationId: $organizationId');
-    debugPrint('🔍 getLeadStatuses - salesFunnelId: ${salesFunnelId ?? "NULL"}');
-  }
-
-  // Формируем ключ кэша с учётом воронки
-  final cacheKey = 'cachedLeadStatuses_${organizationId}_funnel_${salesFunnelId ?? "null"}';
-  
-  if (kDebugMode) {
-    debugPrint('🔍 getLeadStatuses - cacheKey: $cacheKey');
-  }
-
-  try {
-    // КРИТИЧНО: Формируем путь ЯВНО с гарантией параметров
-    String path = '/lead/statuses?organization_id=$organizationId';
-    
-    // КРИТИЧНО: ВСЕГДА добавляем sales_funnel_id (даже если null)
-    if (salesFunnelId != null && salesFunnelId.isNotEmpty && salesFunnelId != 'null') {
-      path += '&sales_funnel_id=$salesFunnelId';
-      if (kDebugMode) {
-        debugPrint('✅ getLeadStatuses - Added sales_funnel_id: $salesFunnelId');
-      }
-    } else {
-      if (kDebugMode) {
-        debugPrint('⚠️ getLeadStatuses - No funnel selected, will load ALL statuses from backend');
-      }
-      // ОПЦИОНАЛЬНО: Если бэкенд требует явного значения:
-      // path += '&sales_funnel_id=0';
+    if (organizationId == null ||
+        organizationId.isEmpty ||
+        organizationId == 'null') {
+      throw Exception('Organization ID is required but missing');
     }
 
     if (kDebugMode) {
-      debugPrint('📤 getLeadStatuses - Final path: $path');
+      debugPrint('🔍 getLeadStatuses - START WITH FILTERS');
+      debugPrint('🔍 getLeadStatuses - organizationId: $organizationId');
+      debugPrint(
+          '🔍 getLeadStatuses - salesFunnelId: ${salesFunnelId ?? "NULL"}');
     }
 
-    final response = await _getRequest(path);
+    final cacheKey =
+        'cachedLeadStatuses_${organizationId}_funnel_${salesFunnelId ?? "null"}';
 
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      
-      if (kDebugMode) {
-        debugPrint('✅ getLeadStatuses - Response received');
-        debugPrint('🔍 getLeadStatuses - Response type: ${data.runtimeType}');
+    try {
+      String path = '/lead/statuses?organization_id=$organizationId';
+
+      if (salesFunnelId != null &&
+          salesFunnelId.isNotEmpty &&
+          salesFunnelId != 'null') {
+        path += '&sales_funnel_id=$salesFunnelId';
       }
 
+      // Добавляем фильтры к запросу статусов
+      if (managers != null && managers.isNotEmpty) {
+        for (int i = 0; i < managers.length; i++) {
+          path += '&managers[$i]=${managers[i]}';
+        }
+      }
+      if (regions != null && regions.isNotEmpty) {
+        for (int i = 0; i < regions.length; i++) {
+          path += '&regions[$i]=${regions[i]}';
+        }
+      }
+      if (regionId != null) {
+        path += '&region_id=$regionId';
+      }
+      if (cityIds != null && cityIds.isNotEmpty) {
+        for (int i = 0; i < cityIds.length; i++) {
+          path += '&city_id[$i]=${cityIds[i]}';
+        }
+      }
+      if (sources != null && sources.isNotEmpty) {
+        for (int i = 0; i < sources.length; i++) {
+          path += '&sources[$i]=${sources[i]}';
+        }
+      }
+      if (channelIds != null && channelIds.isNotEmpty) {
+        for (int i = 0; i < channelIds.length; i++) {
+          path += '&channels[$i]=${channelIds[i]}';
+        }
+      }
+      if (advertisingCampaignIds != null && advertisingCampaignIds.isNotEmpty) {
+        for (int i = 0; i < advertisingCampaignIds.length; i++) {
+          path += '&campaign[$i]=${advertisingCampaignIds[i]}';
+        }
+      }
+      if (reasonForRefusalIds != null && reasonForRefusalIds.isNotEmpty) {
+        for (int i = 0; i < reasonForRefusalIds.length; i++) {
+          path += '&reason_for_refusals[$i]=${reasonForRefusalIds[i]}';
+        }
+      }
+      if (fromDate != null && toDate != null) {
+        final formattedFromDate = DateFormat('yyyy-MM-dd').format(fromDate);
+        final formattedToDate = DateFormat('yyyy-MM-dd').format(toDate);
+        path += '&from=$formattedFromDate&to=$formattedToDate';
+      }
+      if (hasSuccessDeals == true) path += '&hasSuccessDeals=1';
+      if (hasInProgressDeals == true) path += '&hasInProgressDeals=1';
+      if (hasFailureDeals == true) path += '&hasFailureDeals=1';
+      if (hasNotices == true) path += '&hasNotices=1';
+      if (hasContact == true) path += '&hasContact=1';
+      if (hasChat == true) path += '&hasChat=1';
+      if (hasNoReplies == true) path += '&hasNoReplies=1';
+      if (hasUnreadMessages == true) path += '&hasUnreadMessages=1';
+      if (hasDeal == true) path += '&withoutDeal=1';
+      if (hasOrders == true) path += '&hasOrders=1';
+      if (daysWithoutActivity != null)
+        path += '&lastUpdate=$daysWithoutActivity';
+      if (numberOfDaysDeal != null)
+        path += '&numberOfDaysDeal=$numberOfDaysDeal';
+      if (directoryValues != null && directoryValues.isNotEmpty) {
+        for (int i = 0; i < directoryValues.length; i++) {
+          final directoryId = directoryValues[i]['directory_id'];
+          final entryId = directoryValues[i]['entry_id'];
+          path += '&directory_values[$i][directory_id]=$directoryId';
+          path += '&directory_values[$i][entry_id]=$entryId';
+        }
+      }
+
+      if (kDebugMode) {
+        debugPrint('📤 getLeadStatuses WITH FILTERS - Final path: $path');
+      }
+
+      final response = await _analyticsRequest(
+        path,
+        bypassCache: bypassAnalyticsCache,
+      );
+
+      if (response.statusCode != 200) {
+        throw Exception('Ошибка ${response.statusCode}!');
+      }
+
+      final dynamic data = json.decode(response.body);
       List<dynamic>? statusList;
 
-      // Определяем структуру ответа
       if (data is List) {
         statusList = data;
-        if (kDebugMode) {
-          debugPrint('✅ getLeadStatuses - Data is direct List');
-        }
-      } else if (data is Map) {
-        if (data['result'] != null) {
+      } else if (data is Map<String, dynamic>) {
+        if (data['result'] is List) {
           statusList = data['result'] as List;
-          if (kDebugMode) {
-            debugPrint('✅ getLeadStatuses - Data found in "result" field');
-          }
-        } else if (data['data'] != null) {
+        } else if (data['data'] is List) {
           statusList = data['data'] as List;
-          if (kDebugMode) {
-            debugPrint('✅ getLeadStatuses - Data found in "data" field');
-          }
-        } else if (data['statuses'] != null) {
+        } else if (data['statuses'] is List) {
           statusList = data['statuses'] as List;
-          if (kDebugMode) {
-            debugPrint('✅ getLeadStatuses - Data found in "statuses" field');
-          }
+        } else if (data['result'] is Map<String, dynamic> &&
+            (data['result'] as Map<String, dynamic>)['statuses'] is List) {
+          statusList =
+              (data['result'] as Map<String, dynamic>)['statuses'] as List;
         }
       }
 
-      // Обрабатываем найденные данные
-      if (statusList != null && statusList.isNotEmpty) {
-        // Проверяем старый кэш
-        final cachedStatuses = prefs.getString(cacheKey);
-        if (cachedStatuses != null && kDebugMode) {
-          debugPrint('⚠️ getLeadStatuses - Old cache data found, will be replaced');
-        }
-
-        // Обновляем кэш новыми данными
-        await prefs.setString(cacheKey, json.encode(statusList));
-
-        if (kDebugMode) {
-          debugPrint('✅ getLeadStatuses - Cached ${statusList.length} statuses with key: $cacheKey');
-        }
-
-        // Парсим статусы
-        final statuses = statusList
-            .map((status) => LeadStatus.fromJson(status))
-            .toList();
-
-        // КРИТИЧНО: Обновляем постоянные счетчики
-        await LeadCache.updatePersistentCountsFromStatuses(statuses);
-        
-        if (kDebugMode) {
-          debugPrint('✅ getLeadStatuses - Updated persistent counts from API');
-          for (var status in statuses) {
-            debugPrint('   Status ID: ${status.id}, Count: ${status.leadsCount}');
-          }
-        }
-
-        return statuses;
-      } else {
-        if (kDebugMode) {
-          debugPrint('❌ getLeadStatuses - No valid data in response');
-          debugPrint('   Available keys: ${data is Map ? data.keys.toList() : "N/A"}');
-        }
+      if (statusList == null || statusList.isEmpty) {
         throw Exception('Результат отсутствует в ответе или пустой');
       }
-    } else {
-      if (kDebugMode) {
-        debugPrint('❌ getLeadStatuses - Failed with status code: ${response.statusCode}');
-      }
-      throw Exception('Ошибка ${response.statusCode}!');
-    }
-  } catch (e) {
-    if (kDebugMode) {
-      debugPrint('⚠️ getLeadStatuses - Error occurred: $e');
-      debugPrint('⚠️ getLeadStatuses - Trying to load from cache');
-    }
 
-    // Пытаемся загрузить из кэша
-    final cachedStatuses = prefs.getString(cacheKey);
-    if (cachedStatuses != null) {
-      final decodedData = json.decode(cachedStatuses);
-      final cachedList = (decodedData as List)
-          .map((status) => LeadStatus.fromJson(status))
+      await prefs.setString(cacheKey, json.encode(statusList));
+
+      final statuses = statusList
+          .whereType<Map<String, dynamic>>()
+          .map(LeadStatus.fromJson)
           .toList();
 
+      await LeadCache.updatePersistentCountsFromStatuses(statuses);
+
       if (kDebugMode) {
-        debugPrint('✅ getLeadStatuses - Loaded ${cachedList.length} statuses from cache');
+        debugPrint(
+            '✅ getLeadStatuses WITH FILTERS - Got ${statuses.length} statuses');
       }
-      return cachedList;
-    } else {
+
+      return statuses;
+    } catch (e) {
       if (kDebugMode) {
-        debugPrint('❌ getLeadStatuses - No cache data available');
+        debugPrint('❌ getLeadStatuses WITH FILTERS - Error: $e');
       }
-      throw Exception(
-          'Ошибка загрузки статусов лидов и отсутствуют кэшированные данные!');
+
+      final cachedStatuses = prefs.getString(cacheKey);
+      if (cachedStatuses != null) {
+        final decodedData = json.decode(cachedStatuses);
+        final cachedList = (decodedData as List)
+            .map((status) => LeadStatus.fromJson(status))
+            .toList();
+        return cachedList;
+      } else {
+        throw Exception(
+            'Ошибка загрузки статусов лидов и отсутствуют кэшированные данные!');
+      }
     }
   }
-}
 
   Future<bool> checkIfStatusHasLeads(int leadStatusId) async {
     try {
@@ -1688,7 +2720,12 @@ Future<List<LeadStatus>> getLeadStatuses() async {
 
 // Метод для создания Cтатуса Лида
   Future<Map<String, dynamic>> createLeadStatus(
-      String title, String color, bool? isFailure, bool? isSuccess) async {
+    String title,
+    String color,
+    bool? isFailure,
+    bool? isSuccess,
+    bool isUnassembled,
+  ) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/lead-status');
     if (kDebugMode) {
@@ -1700,6 +2737,7 @@ Future<List<LeadStatus>> getLeadStatuses() async {
       'color': color,
       "is_success": isSuccess == true ? 1 : 0,
       "is_failure": isFailure == true ? 1 : 0,
+      "is_unassembled": isUnassembled,
     });
 
     if (response.statusCode == 200 || response.statusCode == 201) {
@@ -1710,26 +2748,39 @@ Future<List<LeadStatus>> getLeadStatuses() async {
   }
 
 //Обновление статуса карточки Лида в колонке
-  Future<void> updateLeadStatus(int leadId, int position, int statusId) async {
+  Future<void> updateLeadStatus(
+    int leadId,
+    int position,
+    int statusId, {
+    int? reasonForRefusalId,
+    String? reasonForRefusal,
+  }) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/lead/changeStatus/$leadId');
     if (kDebugMode) {
       //debugPrint('ApiService: updateLeadStatus - Generated path: $path');
     }
 
-    final response = await _postRequest(
-      path,
-      {
-        'position': position,
-        'status_id': statusId,
-      },
-    );
+    final payload = <String, dynamic>{
+      'position': position,
+      'status_id': statusId,
+      if (reasonForRefusalId != null)
+        'reason_for_refusal_id': reasonForRefusalId,
+      if (reasonForRefusal != null && reasonForRefusal.trim().isNotEmpty)
+        'reason_for_refusal': reasonForRefusal.trim(),
+    };
+
+    final response = await _postRequest(path, payload);
 
     if (response.statusCode == 200) {
       ////debugPrint('Статус задачи успешно обновлен');
     } else if (response.statusCode == 422) {
       final responseData = jsonDecode(response.body);
-      final errorMessage = responseData['message'];
+      final errorMessage = (responseData is Map<String, dynamic>
+                  ? responseData['message']
+                  : null)
+              ?.toString() ??
+          'Вы не можете переместить лид на этот статус';
 
       throw LeadStatusUpdateException(422, errorMessage);
     } else {
@@ -1746,7 +2797,7 @@ Future<List<LeadStatus>> getLeadStatuses() async {
         //debugPrint('ApiService: getLeadHistory - Generated path: $path');
       }
 
-      final response = await _getRequest(path);
+      final response = await _analyticsRequest(path);
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> decodedJson = json.decode(response.body);
@@ -1771,7 +2822,7 @@ Future<List<LeadStatus>> getLeadStatuses() async {
         //debugPrint('ApiService: getNoticeHistory - Generated path: $path');
       }
 
-      final response = await _getRequest(path);
+      final response = await _analyticsRequest(path);
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> decodedJson = json.decode(response.body);
@@ -1793,7 +2844,7 @@ Future<List<LeadStatus>> getLeadStatuses() async {
         //debugPrint('ApiService: getDealHistoryLead - Generated path: $path');
       }
 
-      final response = await _getRequest(path);
+      final response = await _analyticsRequest(path);
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> decodedJson = json.decode(response.body);
@@ -1817,6 +2868,7 @@ Future<List<LeadStatus>> getLeadStatuses() async {
       //debugPrint('ApiService: getLeadNotes - Generated path: $path');
     }
 
+    // Для заметок лида нужен актуальный ответ, без analytics-cache.
     final response = await _getRequest(path);
 
     if (response.statusCode == 200) {
@@ -1829,10 +2881,29 @@ Future<List<LeadStatus>> getLeadStatuses() async {
     }
   }
 
+  Future<List<Notes>> getDealNotes(int dealId,
+      {int page = 1, int perPage = 20}) async {
+    final basePath =
+        '/notices/get-by-deal/$dealId?page=$page&per_page=$perPage';
+    final path = await _appendQueryParams(basePath);
+
+    final response = await _getRequest(path);
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      return (data['result']['data'] as List)
+          .map((note) => Notes.fromJson(note))
+          .toList();
+    } else {
+      throw Exception('Ошибка загрузки заметок сделки');
+    }
+  }
+
   Future<Map<String, dynamic>> createNotes({
     required String title,
     required String body,
     required int leadId,
+    int? dealId,
     DateTime? date,
     required List<int> users,
     List<String>? filePaths, // Новое поле для файлов
@@ -1858,6 +2929,9 @@ Future<List<LeadStatus>> getLeadStatuses() async {
       request.fields['title'] = title;
       request.fields['body'] = body;
       request.fields['lead_id'] = leadId.toString();
+      if (dealId != null) {
+        request.fields['deal_id'] = dealId.toString();
+      }
       if (date != null) {
         request.fields['date'] = DateFormat('yyyy-MM-dd HH:mm').format(date);
       }
@@ -1875,8 +2949,7 @@ Future<List<LeadStatus>> getLeadStatuses() async {
         }
       }
 
-      final streamedResponse = await request.send();
-      final response = await http.Response.fromStream(streamedResponse);
+      final response = await _multipartPostRequest('', request);
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         return {'success': true, 'message': 'note_created_successfully'};
@@ -1897,6 +2970,59 @@ Future<List<LeadStatus>> getLeadStatuses() async {
       } else {
         return {'success': false, 'message': 'error_create_note'};
       }
+    } catch (e) {
+      return {'success': false, 'message': 'error_create_note'};
+    }
+  }
+
+  Future<Map<String, dynamic>> createDealNotice({
+    String? title,
+    required String body,
+    required int leadId,
+    required int dealId,
+    DateTime? date,
+    List<int>? users,
+  }) async {
+    try {
+      final token = await getToken();
+      final path = await _appendQueryParams('/notices');
+      final uri = Uri.parse('$baseUrl$path');
+
+      final request = http.MultipartRequest('POST', uri);
+      request.headers.addAll({
+        'Authorization': 'Bearer $token',
+        'Accept': 'application/json',
+        'Device': 'mobile',
+      });
+
+      if (title != null && title.trim().isNotEmpty) {
+        request.fields['title'] = title.trim();
+      }
+      request.fields['body'] = body;
+      request.fields['lead_id'] = leadId.toString();
+      request.fields['deal_id'] = dealId.toString();
+      if (date != null) {
+        request.fields['date'] = DateFormat('yyyy/MM/dd HH:mm').format(date);
+      }
+      if (users != null && users.isNotEmpty) {
+        for (int i = 0; i < users.length; i++) {
+          request.fields['users[$i]'] = users[i].toString();
+        }
+      }
+
+      final response = await _multipartPostRequest('', request);
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return {'success': true, 'message': 'note_created_successfully'};
+      }
+      if (response.statusCode == 422) {
+        final data = json.decode(response.body);
+        final message = (data is Map<String, dynamic> ? data['message'] : null)
+                ?.toString() ??
+            'Ошибка валидации';
+        return {'success': false, 'message': message};
+      }
+      return {'success': false, 'message': 'error_create_note'};
     } catch (e) {
       return {'success': false, 'message': 'error_create_note'};
     }
@@ -1970,6 +3096,7 @@ Future<List<LeadStatus>> getLeadStatuses() async {
       //debugPrint('ApiService: getLeadDeals - Generated path: $path');
     }
 
+    // Для списка сделок лида нужен актуальный ответ, без analytics-cache.
     final response = await _getRequest(path);
 
     if (response.statusCode == 200) {
@@ -1983,135 +3110,164 @@ Future<List<LeadStatus>> getLeadStatuses() async {
   }
 
 // Обновленный метод createLead
- Future<Map<String, dynamic>> createLeadWithData(
-  Map<String, dynamic> data, {
-  List<String>? filePaths,
-}) async {
-  // Формируем путь с query-параметрами
-  final updatedPath = await _appendQueryParams('/lead');
-  if (kDebugMode) {
-    debugPrint('ApiService: createLeadWithData - Generated path: $updatedPath');
-  }
-  
-  final token = await getToken();
-  var request = http.MultipartRequest('POST', Uri.parse('$baseUrl$updatedPath'));
-  
-  request.headers.addAll({
-    'Authorization': 'Bearer $token',
-    'Accept': 'application/json',
-    'Device': 'mobile',
-  });
+  Future<Map<String, dynamic>> createLeadWithData(
+      Map<String, dynamic> data) async {
+    // Формируем путь с query-параметрами
+    final updatedPath = await _appendQueryParams('/lead');
+    if (kDebugMode) {
+      debugPrint(
+          'ApiService: createLeadWithData - Generated path: $updatedPath');
+    }
 
-  // Добавляем обычные поля
-  data.forEach((key, value) {
-    // Пропускаем массивы - их обработаем отдельно
-    if (key != 'lead_custom_fields' && key != 'directory_values') {
-      if (value != null) {
-        request.fields[key] = value.toString();
+    final token = await getToken();
+    var request =
+        http.MultipartRequest('POST', Uri.parse('$baseUrl$updatedPath'));
+
+    request.headers.addAll({
+      'Authorization': 'Bearer $token',
+      'Accept': 'application/json',
+      'Device': 'mobile',
+    });
+
+    // Добавляем обычные поля
+    data.forEach((key, value) {
+      // Пропускаем массивы - их обработаем отдельно
+      if (key != 'lead_custom_fields' && key != 'directory_values') {
+        if (value != null) {
+          request.fields[key] = value.toString();
+        }
+      }
+    });
+
+    // Обрабатываем lead_custom_fields как массив объектов
+    if (data['lead_custom_fields'] != null &&
+        data['lead_custom_fields'] is List &&
+        (data['lead_custom_fields'] as List).isNotEmpty) {
+      List<Map<String, dynamic>> customFields =
+          List<Map<String, dynamic>>.from(data['lead_custom_fields']);
+      for (int i = 0; i < customFields.length; i++) {
+        request.fields['lead_custom_fields[$i][key]'] =
+            customFields[i]['key']?.toString() ?? '';
+        request.fields['lead_custom_fields[$i][value]'] =
+            customFields[i]['value']?.toString() ?? '';
+        request.fields['lead_custom_fields[$i][type]'] =
+            customFields[i]['type']?.toString() ?? 'string';
       }
     }
-  });
 
-  // Обрабатываем lead_custom_fields как массив объектов
-  if (data['lead_custom_fields'] != null &&
-      data['lead_custom_fields'] is List &&
-      (data['lead_custom_fields'] as List).isNotEmpty) {
-    List<Map<String, dynamic>> customFields =
-        List<Map<String, dynamic>>.from(data['lead_custom_fields']);
-    for (int i = 0; i < customFields.length; i++) {
-      request.fields['lead_custom_fields[$i][key]'] =
-          customFields[i]['key']?.toString() ?? '';
-      request.fields['lead_custom_fields[$i][value]'] =
-          customFields[i]['value']?.toString() ?? '';
-      request.fields['lead_custom_fields[$i][type]'] =
-          customFields[i]['type']?.toString() ?? 'string';
+    // ВАЖНО: Обрабатываем directory_values как массив объектов
+    if (data['directory_values'] != null &&
+        data['directory_values'] is List &&
+        (data['directory_values'] as List).isNotEmpty) {
+      List<Map<String, dynamic>> directoryValues =
+          List<Map<String, dynamic>>.from(data['directory_values']);
+      for (int i = 0; i < directoryValues.length; i++) {
+        request.fields['directory_values[$i][directory_id]'] =
+            directoryValues[i]['directory_id'].toString();
+        request.fields['directory_values[$i][entry_id]'] =
+            directoryValues[i]['entry_id'].toString();
+      }
+    }
+    // Добавляем файлы
+    if (data['files'] != null && (data['files'] as List).isNotEmpty) {
+      final filesList = data['files'] as List<FileHelper>;
+      for (var fileData in filesList) {
+        try {
+          final file = await http.MultipartFile.fromPath(
+            'files[]',
+            fileData.path,
+            filename: fileData.name,
+          );
+          request.files.add(file);
+        } catch (e) {
+          debugPrint("Error adding file ${fileData.name}: $e");
+        }
+      }
+    }
+
+    if (data['price_type_id'] != null) {
+      request.fields['price_type_id'] = data['price_type_id'].toString();
+    }
+
+    if (kDebugMode) {
+      debugPrint('ApiService: createLeadWithData - Request fields:');
+      request.fields.forEach((key, value) {
+        debugPrint('  $key: $value');
+      });
+    }
+
+    final response = await _multipartPostRequest(updatedPath, request);
+
+    if (kDebugMode) {
+      debugPrint(
+          'ApiService: createLeadWithData - Response status: ${response.statusCode}');
+      debugPrint(
+          'ApiService: createLeadWithData - Response body: ${response.body}');
+    }
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return {'success': true, 'message': 'lead_created_successfully'};
+    } else if (response.statusCode == 422) {
+      final serverMessage = _extractPrimaryMessageFromResponse(response);
+
+      if (response.body.contains('The phone has already been taken.')) {
+        return {'success': false, 'message': 'phone_already_exists'};
+      }
+      if (response.body.contains('validation.phone')) {
+        return {'success': false, 'message': 'invalid_phone_format'};
+      }
+      if (response.body
+          .contains('The email field must be a valid email address.')) {
+        return {'success': false, 'message': 'error_enter_email'};
+      }
+      if (response.body.contains('name')) {
+        return {'success': false, 'message': 'invalid_name_length'};
+      }
+      if (response.body.contains('insta_login')) {
+        return {'success': false, 'message': 'instagram_login_exists'};
+      }
+      if (response.body.contains('facebook_login')) {
+        return {'success': false, 'message': 'facebook_login_exists'};
+      }
+      if (response.body.contains('tg_nick')) {
+        return {'success': false, 'message': 'telegram_nick_exists'};
+      }
+      if (response.body.contains('birthday')) {
+        return {'success': false, 'message': 'invalid_birthday'};
+      }
+      if (response.body.contains('wa_phone')) {
+        return {'success': false, 'message': 'whatsapp_number_exists'};
+      }
+      if (response.body.contains('type')) {
+        return {'success': false, 'message': 'invalid_field_type'};
+      }
+      if (response.body.contains('lead_custom_fields')) {
+        return {'success': false, 'message': 'invalid_custom_fields'};
+      }
+      if (response.body.contains('price_type_id')) {
+        return {'success': false, 'message': 'invalid_price_type_id'};
+      }
+      if (response.body.contains('directory_values')) {
+        return {'success': false, 'message': 'invalid_directory_values'};
+      }
+      return {
+        'success': false,
+        'message': serverMessage?.trim().isNotEmpty == true
+            ? serverMessage!.trim()
+            : 'unknown_error'
+      };
+    } else if (response.statusCode == 500) {
+      return {'success': false, 'message': 'error_server_text'};
+    } else {
+      final serverMessage = _extractPrimaryMessageFromResponse(response);
+      return {
+        'success': false,
+        'message': serverMessage?.trim().isNotEmpty == true
+            ? serverMessage!.trim()
+            : 'lead_creation_error'
+      };
     }
   }
-
-  // ВАЖНО: Обрабатываем directory_values как массив объектов
-  if (data['directory_values'] != null &&
-      data['directory_values'] is List &&
-      (data['directory_values'] as List).isNotEmpty) {
-    List<Map<String, dynamic>> directoryValues =
-        List<Map<String, dynamic>>.from(data['directory_values']);
-    for (int i = 0; i < directoryValues.length; i++) {
-      request.fields['directory_values[$i][directory_id]'] =
-          directoryValues[i]['directory_id'].toString();
-      request.fields['directory_values[$i][entry_id]'] =
-          directoryValues[i]['entry_id'].toString();
-    }
-  }
-
-  // Добавляем файлы
-  if (filePaths != null && filePaths.isNotEmpty) {
-    for (var filePath in filePaths) {
-      final file = await http.MultipartFile.fromPath('files[]', filePath);
-      request.files.add(file);
-    }
-  }
-
-  if (kDebugMode) {
-    debugPrint('ApiService: createLeadWithData - Request fields:');
-    request.fields.forEach((key, value) {
-      debugPrint('  $key: $value');
-    });
-  }
-
-  final streamedResponse = await request.send();
-  final response = await http.Response.fromStream(streamedResponse);
-
-  if (kDebugMode) {
-    debugPrint('ApiService: createLeadWithData - Response status: ${response.statusCode}');
-    debugPrint('ApiService: createLeadWithData - Response body: ${response.body}');
-  }
-
-  if (response.statusCode == 200 || response.statusCode == 201) {
-    return {'success': true, 'message': 'lead_created_successfully'};
-  } else if (response.statusCode == 422) {
-    if (response.body.contains('The phone has already been taken.')) {
-      return {'success': false, 'message': 'phone_already_exists'};
-    }
-    if (response.body.contains('validation.phone')) {
-      return {'success': false, 'message': 'invalid_phone_format'};
-    }
-    if (response.body
-        .contains('The email field must be a valid email address.')) {
-      return {'success': false, 'message': 'error_enter_email'};
-    }
-    if (response.body.contains('name')) {
-      return {'success': false, 'message': 'invalid_name_length'};
-    }
-    if (response.body.contains('insta_login')) {
-      return {'success': false, 'message': 'instagram_login_exists'};
-    }
-    if (response.body.contains('facebook_login')) {
-      return {'success': false, 'message': 'facebook_login_exists'};
-    }
-    if (response.body.contains('tg_nick')) {
-      return {'success': false, 'message': 'telegram_nick_exists'};
-    }
-    if (response.body.contains('birthday')) {
-      return {'success': false, 'message': 'invalid_birthday'};
-    }
-    if (response.body.contains('wa_phone')) {
-      return {'success': false, 'message': 'whatsapp_number_exists'};
-    }
-    if (response.body.contains('type')) {
-      return {'success': false, 'message': 'invalid_field_type'};
-    }
-    if (response.body.contains('lead_custom_fields')) {
-      return {'success': false, 'message': 'invalid_custom_fields'};
-    }
-    if (response.body.contains('directory_values')) {
-      return {'success': false, 'message': 'invalid_directory_values'};
-    }
-    return {'success': false, 'message': 'unknown_error'};
-  } else if (response.statusCode == 500) {
-    return {'success': false, 'message': 'error_server_text'};
-  } else {
-    return {'success': false, 'message': 'lead_creation_error'};
-  }
-}
 
   Future<Map<String, dynamic>> updateLead({
     required int leadId,
@@ -2210,7 +3366,6 @@ Future<List<LeadStatus>> getLeadStatuses() async {
   Future<Map<String, dynamic>> updateLeadWithData({
     required int leadId,
     required Map<String, dynamic> data,
-    List<String>? filePaths,
   }) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/lead/$leadId');
@@ -2265,9 +3420,30 @@ Future<List<LeadStatus>> getLeadStatuses() async {
       request.fields['price_type_id'] =
           data['price_type_id'].toString(); // Добавляем price_type_id
     }
-    if (data['existing_file_ids'] != null) {
-      request.fields['existing_files'] = jsonEncode(data['existing_file_ids']);
+
+    if (data['files'] != null && (data['files'] as List).isNotEmpty) {
+      final filesList = data['files'] as List<FileHelper>;
+      for (var fileData in filesList) {
+        try {
+          if (fileData.path.startsWith('http')) {
+            // If it's a URL, you need to download it first or send as URL
+            // For now, skip URLs
+            debugPrint("Skipping URL file: ${fileData.path}");
+            continue;
+          }
+
+          final file = await http.MultipartFile.fromPath(
+            'files[]',
+            fileData.path,
+            filename: fileData.name,
+          );
+          request.files.add(file);
+        } catch (e) {
+          debugPrint("Error adding file ${fileData.name}: $e");
+        }
+      }
     }
+
     // Добавляем sales_funnel_id из данных, если он присутствует
     if (data['sales_funnel_id'] != null) {
       request.fields['sales_funnel_id'] = data['sales_funnel_id'].toString();
@@ -2275,6 +3451,15 @@ Future<List<LeadStatus>> getLeadStatuses() async {
     if (data['duplicate'] != null) {
       request.fields['duplicate'] =
           data['duplicate'].toString(); // Добавляем duplicate
+    }
+    if (data['reason_for_refusal_id'] != null) {
+      request.fields['reason_for_refusal_id'] =
+          data['reason_for_refusal_id'].toString();
+    }
+    if (data['reason_for_refusal'] != null &&
+        data['reason_for_refusal'].toString().trim().isNotEmpty) {
+      request.fields['reason_for_refusal'] =
+          data['reason_for_refusal'].toString().trim();
     }
     // Обрабатываем lead_custom_fields
     final customFields = data['lead_custom_fields'] as List<dynamic>? ?? [];
@@ -2302,15 +3487,7 @@ Future<List<LeadStatus>> getLeadStatuses() async {
       }
     }
 
-    if (filePaths != null && filePaths.isNotEmpty) {
-      for (var filePath in filePaths) {
-        final file = await http.MultipartFile.fromPath('files[]', filePath);
-        request.files.add(file);
-      }
-    }
-
-    final streamedResponse = await request.send();
-    final response = await http.Response.fromStream(streamedResponse);
+    final response = await _multipartPostRequest(path, request);
 
     if (response.statusCode == 200 || response.statusCode == 201) {
       return {'success': true, 'message': 'lead_updated_successfully'};
@@ -2364,14 +3541,23 @@ Future<List<LeadStatus>> getLeadStatuses() async {
   }
 
 // Api Service
-  Future<DealNameDataResponse> getAllDealNames() async {
+  Future<DealNameDataResponse> getAllDealNames({
+    String? search,
+    int page = 1,
+    int perPage = 20,
+  }) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
-    final path = await _appendQueryParams('/service/by-sales-funnel-id');
+    String path = await _appendQueryParams(
+      '/service/by-sales-funnel-id?page=$page&per_page=$perPage',
+    );
+    if (search != null && search.trim().isNotEmpty) {
+      path += '&search=${Uri.encodeComponent(search.trim())}';
+    }
     if (kDebugMode) {
       //debugPrint('ApiService: getAllDealNames - Generated path: $path');
     }
 
-    final response = await _getRequest(path);
+    final response = await _analyticsRequest(path);
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
@@ -2382,9 +3568,12 @@ Future<List<LeadStatus>> getLeadStatuses() async {
   }
 
 //Метод для получения региона
-  Future<RegionsDataResponse> getAllRegion() async {
+  Future<RegionsDataResponse> getAllRegion({String? search}) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
-    final path = await _appendQueryParams('/region');
+    String path = await _appendQueryParams('/region');
+    if (search != null && search.trim().isNotEmpty) {
+      path += '&search=${Uri.encodeComponent(search.trim())}';
+    }
     if (kDebugMode) {
       //debugPrint('ApiService: getAllRegion - Generated path: $path');
     }
@@ -2412,6 +3601,70 @@ Future<List<LeadStatus>> getLeadStatuses() async {
     return dataRegion;
   }
 
+  Future<RegionsDataResponse> getAllState({String? search}) async {
+    String path = await _appendQueryParams('/region?type=state');
+    if (search != null && search.trim().isNotEmpty) {
+      path += '&search=${Uri.encodeComponent(search.trim())}';
+    }
+
+    final response = await _getRequest(path);
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+
+      if (data['result'] != null) {
+        return RegionsDataResponse.fromJson(data);
+      } else {
+        throw Exception('Результат отсутствует в ответе');
+      }
+    } else {
+      throw Exception('Ошибка при получении областей!');
+    }
+  }
+
+  Future<CitiesDataResponse> getAllCity({String? search, int? parentId}) async {
+    String path = await _appendQueryParams('/region?type=city');
+    if (search != null && search.trim().isNotEmpty) {
+      path += '&search=${Uri.encodeComponent(search.trim())}';
+    }
+    if (parentId != null) {
+      path += '&parent_id=$parentId';
+    }
+
+    final response = await _getRequest(path);
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+
+      if (data['result'] != null) {
+        return CitiesDataResponse.fromJson(data);
+      } else {
+        throw Exception('Результат отсутствует в ответе');
+      }
+    } else {
+      throw Exception('Ошибка при получении городов!');
+    }
+  }
+
+  Future<List<ReasonForRefusalData>> getReasonsForRefusal({
+    required String type,
+    int perPage = 100,
+  }) async {
+    final safeType = type.trim().isEmpty ? 'lead' : type.trim();
+    final basePath = '/reason-for-refusal?type=$safeType&per_page=$perPage';
+    final path = await _appendQueryParams(basePath);
+
+    final response = await _getRequest(path);
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body) as Map<String, dynamic>;
+      final parsed = ReasonForRefusalResponse.fromJson(data);
+      return parsed.data;
+    } else {
+      throw Exception('Ошибка при получении причин отказа!');
+    }
+  }
+
 //Метод для получения региона
   Future<List<SourceData>> getAllSource() async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
@@ -2436,10 +3689,93 @@ Future<List<LeadStatus>> getLeadStatuses() async {
     }
   }
 
+  Future<List<LeadFilterChannelData>> getLeadFilterChannels() async {
+    final path =
+        await _appendQueryParams('/integrations/get-by-category/messenger');
+
+    final response = await _getRequest(path);
+
+    if (response.statusCode != 200) {
+      throw Exception('Ошибка загрузки каналов!');
+    }
+
+    final data = json.decode(response.body);
+    final result = data['result'];
+    if (result is! List) {
+      return [];
+    }
+
+    return result
+        .whereType<Map<String, dynamic>>()
+        .map(LeadFilterChannelData.fromJson)
+        .toList();
+  }
+
+  Future<List<AdvertisingCampaignData>> getAllAdvertisingCampaigns() async {
+    final organizationId = await getSelectedOrganization();
+    if (organizationId == null ||
+        organizationId.isEmpty ||
+        organizationId == 'null') {
+      throw Exception('Organization ID is required but missing');
+    }
+
+    if (!await _isSessionValid()) {
+      await _forceLogoutAndRedirect();
+      throw Exception('Session is invalid');
+    }
+
+    if (baseUrl == null) {
+      await _initializeIfDomainExists();
+      if (baseUrl == null) {
+        throw Exception('Base URL is not initialized');
+      }
+    }
+
+    final token = await getToken();
+    final uri = Uri.parse(
+      '$baseUrl/advertising-campaigns?organization_id=$organizationId&per_page=1000',
+    );
+
+    final response = await http.get(
+      uri,
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Device': 'mobile',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body) as Map<String, dynamic>;
+      final result = data['result'] as Map<String, dynamic>?;
+      final campaigns = result?['data'] as List<dynamic>?;
+
+      if (campaigns == null) {
+        return <AdvertisingCampaignData>[];
+      }
+
+      return campaigns
+          .map((campaign) => AdvertisingCampaignData.fromJson(
+              campaign as Map<String, dynamic>))
+          .toList();
+    } else {
+      throw Exception('Ошибка при получении рекламных кампаний!');
+    }
+  }
+
 //Метод для получения Менеджера
-  Future<ManagersDataResponse> getAllManager() async {
+  Future<ManagersDataResponse> getAllManager({
+    String? search,
+    int page = 1,
+    int perPage = 20,
+  }) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
-    final path = await _appendQueryParams('/manager');
+    String path =
+        await _appendQueryParams('/manager?page=$page&per_page=$perPage');
+    if (search != null && search.trim().isNotEmpty) {
+      path += '&search=${Uri.encodeComponent(search.trim())}';
+    }
     if (kDebugMode) {
       //debugPrint('ApiService: getAllManager - Generated path: $path');
     }
@@ -2497,7 +3833,11 @@ Future<List<LeadStatus>> getLeadStatuses() async {
   }
 
 // Метод для получения Лидов с Пагинацией
-  Future<LeadsDataResponse> getLeadPage(int page, {bool showDebt = false}) async {
+  Future<LeadsDataResponse> getLeadPage(
+    int page, {
+    bool showDebt = false,
+    String? search,
+  }) async {
     try {
       // Формируем путь с параметром страницы
       String basePath = '/lead?page=$page';
@@ -2505,6 +3845,10 @@ Future<List<LeadStatus>> getLeadStatuses() async {
       // Добавляем параметр show_debt если нужно
       if (showDebt) {
         basePath += '&show_debt=1';
+      }
+
+      if (search != null && search.trim().isNotEmpty) {
+        basePath += '&search=${Uri.encodeComponent(search.trim())}';
       }
 
       // Добавляем остальные query параметры (язык, токен и т.д.)
@@ -2515,7 +3859,7 @@ Future<List<LeadStatus>> getLeadStatuses() async {
       }
 
       // Выполняем GET запрос
-      final response = await _getRequest(path);
+      final response = await _analyticsRequest(path);
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -2525,23 +3869,22 @@ Future<List<LeadStatus>> getLeadStatuses() async {
           final pageResponse = LeadsDataResponse.fromJson(data);
 
           if (kDebugMode) {
-            debugPrint('ApiService: Page $page loaded successfully with ${pageResponse.result?.length ?? 0} items');
+            debugPrint(
+                'ApiService: Page $page loaded successfully with ${pageResponse.result?.length ?? 0} items');
             if (pageResponse.pagination != null) {
-              debugPrint('ApiService: Pagination - current: ${pageResponse.pagination!.currentPage}, total pages: ${pageResponse.pagination!.totalPages}');
+              debugPrint(
+                  'ApiService: Pagination - current: ${pageResponse.pagination!.currentPage}, total pages: ${pageResponse.pagination!.totalPages}');
             }
           }
 
           return pageResponse;
         } else {
           // Если result пустой, возвращаем пустой response
-          return LeadsDataResponse(
-              result: [],
-              errors: null,
-              pagination: null
-          );
+          return LeadsDataResponse(result: [], errors: null, pagination: null);
         }
       } else {
-        throw Exception('Ошибка при получении данных со страницы $page! Статус: ${response.statusCode}');
+        throw Exception(
+            'Ошибка при получении данных со страницы $page! Статус: ${response.statusCode}');
       }
     } catch (e) {
       if (kDebugMode) {
@@ -2570,7 +3913,12 @@ Future<List<LeadStatus>> getLeadStatuses() async {
 
 // Метод для изменения статуса лида в ApiService
   Future<Map<String, dynamic>> updateLeadStatusEdit(
-      int leadStatusId, String title, bool isSuccess, bool isFailure) async {
+    int leadStatusId,
+    String title,
+    bool isSuccess,
+    bool isFailure,
+    bool isUnassembled,
+  ) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/lead-status/$leadStatusId');
     if (kDebugMode) {
@@ -2581,6 +3929,7 @@ Future<List<LeadStatus>> getLeadStatuses() async {
       "title": title,
       "is_success": isSuccess ? 1 : 0,
       "is_failure": isFailure ? 1 : 0,
+      "is_unassembled": isUnassembled,
       "organization_id": await getSelectedOrganization(),
     };
 
@@ -2607,10 +3956,25 @@ Future<List<LeadStatus>> getLeadStatuses() async {
     final response = await _deleteRequest(path);
 
     if (response.statusCode == 200) {
-      return {'result': 'Success'};
-    } else {
-      throw Exception('Failed to delete lead!');
+      return {'success': true, 'result': 'Success'};
     }
+
+    String message = 'error_delete_lead';
+    try {
+      final decoded = json.decode(response.body);
+      if (decoded is Map<String, dynamic> &&
+          decoded['message'] is String &&
+          (decoded['message'] as String).trim().isNotEmpty) {
+        message = decoded['message'] as String;
+      }
+    } catch (_) {}
+
+    return {
+      'success': false,
+      'result': 'Error',
+      'message': message,
+      'status_code': response.statusCode,
+    };
   }
 
 // Метод для Получения Сделки в Окно Лида
@@ -2759,9 +4123,12 @@ Future<List<LeadStatus>> getLeadStatuses() async {
   }
 
 // Метод для получения Источников
-  Future<List<SourceLead>> getSourceLead() async {
+  Future<List<SourceLead>> getSourceLead({String? search}) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
-    final path = await _appendQueryParams('/source');
+    String path = await _appendQueryParams('/source');
+    if (search != null && search.trim().isNotEmpty) {
+      path += '&search=${Uri.encodeComponent(search.trim())}';
+    }
     if (kDebugMode) {
       //debugPrint('ApiService: getSourceLead - Generated path: $path');
     }
@@ -2936,10 +4303,6 @@ Future<List<LeadStatus>> getLeadStatuses() async {
     return responseData;
   }
 
-
-
-
-
   //_________________________________ END_____API__SCREEN__LEAD____________________________________________//
 
   //_________________________________ START___API__SCREEN__DEAL____________________________________________//
@@ -2953,7 +4316,8 @@ Future<List<LeadStatus>> getLeadStatuses() async {
         debugPrint('ApiService: getDealById - Generated path: $path');
       }
 
-      final response = await _getRequest(path);
+      // Детали сделки должны приходить всегда актуальными, без in-memory analytics cache.
+      final response = await _analyticsRequest(path, bypassCache: true);
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> decodedJson = json.decode(response.body);
@@ -2973,260 +4337,402 @@ Future<List<LeadStatus>> getLeadStatuses() async {
   }
 
   // Метод для получения списка Сделок с пагинацией
-Future<List<Deal>> getDeals(
-  int? dealStatusId, {
-  int page = 1,
-  int perPage = 20,
-  String? search,
-  List<int>? managers,
-  List<int>? leads,
-  int? statuses,
-  DateTime? fromDate,
-  DateTime? toDate,
-  int? daysWithoutActivity,
-  bool? hasTasks,
-  List<Map<String, dynamic>>? directoryValues,
-  List<String>? names,
-  int? salesFunnelId, // ← КРИТИЧНО: Явный параметр
-}) async {
-  // ✅ КРИТИЧНО: Формируем базовый путь БЕЗ _appendQueryParams
-  String path = '/deal?page=$page&per_page=$perPage';
-  
-  // ✅ ПЕРВЫМ делом добавляем organization_id
-  final organizationId = await getSelectedOrganization();
-  if (organizationId != null && organizationId.isNotEmpty && organizationId != 'null') {
-    path += '&organization_id=$organizationId';
-  }
+  Future<List<Deal>> getDeals(
+    int? dealStatusId, {
+    int page = 1,
+    int perPage = 20,
+    String? search,
+    List<int>? managers,
+    List<int>? regions,
+    int? regionId,
+    List<int>? cityIds,
+    List<int>? executorIds,
+    List<int>? sources,
+    List<int>? leads,
+    int? statuses,
+    DateTime? fromDate,
+    DateTime? toDate,
+    int? daysWithoutActivity,
+    bool? hasTasks,
+    bool? withoutNotices,
+    bool? overdueNotices,
+    List<int>? leadStatuses,
+    List<int>? reasonForRefusalIds,
+    List<Map<String, dynamic>>? directoryValues,
+    List<String>? names,
+    int? salesFunnelId, // ← КРИТИЧНО: Явный параметр
+    Map<String, List<String>>? customFieldFilters,
+  }) async {
+    // ✅ КРИТИЧНО: Формируем базовый путь БЕЗ _appendQueryParams
+    String path = '/deal?page=$page&per_page=$perPage';
 
-  // ✅ ВТОРЫМ добавляем sales_funnel_id (если есть)
-  if (salesFunnelId != null) {
-    path += '&sales_funnel_id=$salesFunnelId';
-    debugPrint('ApiService: getDeals - Added salesFunnelId: $salesFunnelId');
-  } else {
-    // Fallback: пробуем получить из SharedPreferences
-    final savedFunnelId = await getSelectedDealSalesFunnel();
-    if (savedFunnelId != null && savedFunnelId.isNotEmpty && savedFunnelId != 'null') {
-      path += '&sales_funnel_id=$savedFunnelId';
-      debugPrint('ApiService: getDeals - Added savedFunnelId: $savedFunnelId');
+    // ✅ ПЕРВЫМ делом добавляем organization_id
+    final organizationId = await getSelectedOrganization();
+    if (organizationId != null &&
+        organizationId.isNotEmpty &&
+        organizationId != 'null') {
+      path += '&organization_id=$organizationId';
     }
-  }
 
-  // Проверяем наличие фильтров
-  bool hasFilters = (search != null && search.isNotEmpty) ||
-      (managers != null && managers.isNotEmpty) ||
-      (leads != null && leads.isNotEmpty) ||
-      (fromDate != null) ||
-      (toDate != null) ||
-      (daysWithoutActivity != null) ||
-      (hasTasks == true) ||
-      (statuses != null) ||
-      (directoryValues != null && directoryValues.isNotEmpty) ||
-      (names != null && names.isNotEmpty);
-
-  // ✅ Добавляем dealStatusId только если нет фильтров
-  if (dealStatusId != null && !hasFilters) {
-    path += '&deal_statuses=$dealStatusId';
-  }
-
-  // Добавляем остальные параметры
-  if (search != null && search.isNotEmpty) {
-    path += '&search=${Uri.encodeComponent(search)}';
-  }
-
-  if (managers != null && managers.isNotEmpty) {
-    for (int i = 0; i < managers.length; i++) {
-      path += '&managers[$i]=${managers[i]}';
-    }
-  }
-
-  if (leads != null && leads.isNotEmpty) {
-    for (int i = 0; i < leads.length; i++) {
-      path += '&clients[$i]=${leads[i]}';
-    }
-  }
-
-  if (daysWithoutActivity != null) {
-    path += '&lastUpdate=$daysWithoutActivity';
-  }
-
-  if (hasTasks == true) {
-    path += '&withTasks=1';
-  }
-
-  if (statuses != null) {
-    path += '&deal_statuses=$statuses';
-  }
-
-  if (fromDate != null && toDate != null) {
-    final formattedFromDate =
-        "${fromDate.day.toString().padLeft(2, '0')}.${fromDate.month.toString().padLeft(2, '0')}.${fromDate.year}";
-    final formattedToDate =
-        "${toDate.day.toString().padLeft(2, '0')}.${toDate.month.toString().padLeft(2, '0')}.${toDate.year}";
-    path += '&created_from=$formattedFromDate&created_to=$formattedToDate';
-  }
-
-  if (directoryValues != null && directoryValues.isNotEmpty) {
-    for (int i = 0; i < directoryValues.length; i++) {
-      path += '&directory_values[$i][directory_id]=${directoryValues[i]['directory_id']}';
-      path += '&directory_values[$i][entry_id]=${directoryValues[i]['entry_id']}';
-    }
-  }
-
-  if (names != null && names.isNotEmpty) {
-    for (int i = 0; i < names.length; i++) {
-      path += '&names[$i]=${Uri.encodeComponent(names[i])}';
-    }
-  }
-
-  debugPrint("ApiService: getDeals - Final path: $path");
-  
-  final response = await _getRequest(path);
-  debugPrint("ApiService: getDeals - Response status: ${response.statusCode}");
-
-  if (response.statusCode == 200) {
-    final data = json.decode(response.body);
-    
-    if (data['result'] != null && data['result']['data'] != null) {
-      final deals = (data['result']['data'] as List)
-          .map((json) => Deal.fromJson(json, dealStatusId ?? -1))
-          .toList();
-      
-      debugPrint("ApiService: getDeals - Loaded ${deals.length} deals");
-      return deals;
+    // ✅ ВТОРЫМ добавляем sales_funnel_id (если есть)
+    if (salesFunnelId != null) {
+      path += '&sales_funnel_id=$salesFunnelId';
+      debugPrint('ApiService: getDeals - Added salesFunnelId: $salesFunnelId');
     } else {
-      debugPrint("ApiService: getDeals - No data in response");
-      return []; // Возвращаем пустой массив вместо ошибки
-    }
-  } else {
-    debugPrint("ApiService: getDeals - Error ${response.statusCode}");
-    throw Exception('Ошибка загрузки сделок!');
-  }
-}
-// Метод для получения статусов Сделок
-// ✅ ИСПРАВЛЕННЫЙ метод getDealStatuses
-// Теперь ВСЕГДА использует явно переданный salesFunnelId
-Future<List<DealStatus>> getDealStatuses({
-  bool includeAll = false,
-  int? salesFunnelId, // ← КРИТИЧНО: Добавили явный параметр
-}) async {
-  final SharedPreferences prefs = await SharedPreferences.getInstance();
-  final organizationId = await getSelectedOrganization();
-
-  // ✅ ПРИОРИТЕТ: Сначала используем переданный параметр
-  String? funnelId = salesFunnelId?.toString();
-  
-  // ✅ FALLBACK: Если не передан - читаем из SharedPreferences
-  if (funnelId == null || funnelId.isEmpty || funnelId == 'null') {
-    funnelId = await getSelectedDealSalesFunnel();
-  }
-
-  // Проверка organizationId
-  if (organizationId == null || organizationId.isEmpty || organizationId == 'null') {
-    throw Exception('Organization ID is required but missing');
-  }
-
-  if (kDebugMode) {
-    debugPrint('🔍 getDealStatuses - START: includeAll=$includeAll');
-    debugPrint('🔍 getDealStatuses - organizationId: $organizationId');
-    debugPrint('🔍 getDealStatuses - salesFunnelId (параметр): $salesFunnelId');
-    debugPrint('🔍 getDealStatuses - funnelId (итоговый): $funnelId');
-  }
-
-  final basePath = includeAll ? '/deal/statuses/all' : '/deal/statuses';
-  final cacheKey = includeAll
-      ? 'cachedDealStatuses_all_${organizationId}_funnel_${funnelId ?? "null"}'
-      : 'cachedDealStatuses_${organizationId}_funnel_${funnelId ?? "null"}';
-
-  try {
-    // ✅ КРИТИЧНО: Формируем путь БЕЗ использования _appendQueryParams
-    // Потому что _appendQueryParams может перезаписать наш salesFunnelId
-    String path = '$basePath?organization_id=$organizationId';
-    
-    // ВСЕГДА добавляем sales_funnel_id если он есть
-    if (funnelId != null && funnelId.isNotEmpty && funnelId != 'null') {
-      path += '&sales_funnel_id=$funnelId';
-      if (kDebugMode) {
-        debugPrint('✅ getDealStatuses - Added sales_funnel_id: $funnelId');
-      }
-    } else {
-      if (kDebugMode) {
-        debugPrint('⚠️ getDealStatuses - No funnel selected, loading ALL deal statuses');
+      // Fallback: пробуем получить из SharedPreferences
+      final savedFunnelId = await getSelectedDealSalesFunnel();
+      if (savedFunnelId != null &&
+          savedFunnelId.isNotEmpty &&
+          savedFunnelId != 'null') {
+        path += '&sales_funnel_id=$savedFunnelId';
+        debugPrint(
+            'ApiService: getDeals - Added savedFunnelId: $savedFunnelId');
       }
     }
 
-    if (kDebugMode) {
-      debugPrint('📤 getDealStatuses - Final path: $path');
+    // Проверяем наличие фильтров
+    bool hasFilters = (search != null && search.isNotEmpty) ||
+        (managers != null && managers.isNotEmpty) ||
+        (regions != null && regions.isNotEmpty) ||
+        (regionId != null) ||
+        (cityIds != null && cityIds.isNotEmpty) ||
+        (executorIds != null && executorIds.isNotEmpty) ||
+        (sources != null && sources.isNotEmpty) ||
+        (leads != null && leads.isNotEmpty) ||
+        (fromDate != null) ||
+        (toDate != null) ||
+        (daysWithoutActivity != null) ||
+        (hasTasks == true) ||
+        (withoutNotices == true) ||
+        (overdueNotices == true) ||
+        (statuses != null) ||
+        (leadStatuses != null && leadStatuses.isNotEmpty) ||
+        (reasonForRefusalIds != null && reasonForRefusalIds.isNotEmpty) ||
+        (directoryValues != null && directoryValues.isNotEmpty) ||
+        (names != null && names.isNotEmpty) ||
+        (customFieldFilters != null &&
+            customFieldFilters.isNotEmpty); // Учитываем кастомные поля
+
+    // ✅ Добавляем dealStatusId только если нет фильтров
+    if (dealStatusId != null && !hasFilters) {
+      path += '&deal_statuses=$dealStatusId';
     }
+
+    // Добавляем остальные параметры
+    if (search != null && search.isNotEmpty) {
+      path += '&search=${Uri.encodeComponent(search)}';
+    }
+
+    if (managers != null && managers.isNotEmpty) {
+      for (int i = 0; i < managers.length; i++) {
+        path += '&managers[$i]=${managers[i]}';
+      }
+    }
+
+    if (regions != null && regions.isNotEmpty) {
+      for (int i = 0; i < regions.length; i++) {
+        path += '&regions[$i]=${regions[i]}';
+      }
+    }
+
+    if (regionId != null) {
+      path += '&region_id=$regionId';
+    }
+
+    if (cityIds != null && cityIds.isNotEmpty) {
+      for (int i = 0; i < cityIds.length; i++) {
+        path += '&city_id[$i]=${cityIds[i]}';
+      }
+    }
+
+    if (executorIds != null && executorIds.isNotEmpty) {
+      for (int i = 0; i < executorIds.length; i++) {
+        path += '&users[$i]=${executorIds[i]}';
+      }
+    }
+
+    if (sources != null && sources.isNotEmpty) {
+      for (int i = 0; i < sources.length; i++) {
+        path += '&sources[$i]=${sources[i]}';
+      }
+    }
+
+    if (leads != null && leads.isNotEmpty) {
+      for (int i = 0; i < leads.length; i++) {
+        path += '&clients[$i]=${leads[i]}';
+      }
+    }
+
+    if (daysWithoutActivity != null) {
+      path += '&lastUpdate=$daysWithoutActivity';
+    }
+
+    if (hasTasks == true) {
+      path += '&withTasks=1';
+    }
+
+    if (withoutNotices == true) {
+      path += '&without_notices=1';
+    }
+
+    if (overdueNotices == true) {
+      path += '&overdue_notices=1';
+    }
+
+    if (statuses != null) {
+      path += '&deal_statuses=$statuses';
+    }
+
+    if (leadStatuses != null && leadStatuses.isNotEmpty) {
+      for (int i = 0; i < leadStatuses.length; i++) {
+        path += '&lead_statuses[$i]=${leadStatuses[i]}';
+      }
+    }
+
+    if (reasonForRefusalIds != null && reasonForRefusalIds.isNotEmpty) {
+      for (int i = 0; i < reasonForRefusalIds.length; i++) {
+        path += '&reason_for_refusals[$i]=${reasonForRefusalIds[i]}';
+      }
+    }
+
+    if (fromDate != null && toDate != null) {
+      final formattedFromDate =
+          "${fromDate.day.toString().padLeft(2, '0')}.${fromDate.month.toString().padLeft(2, '0')}.${fromDate.year}";
+      final formattedToDate =
+          "${toDate.day.toString().padLeft(2, '0')}.${toDate.month.toString().padLeft(2, '0')}.${toDate.year}";
+      path += '&from=$formattedFromDate&to=$formattedToDate';
+    }
+
+    if (directoryValues != null && directoryValues.isNotEmpty) {
+      final Map<String, LinkedHashSet<String>> groupedDirectoryValues = {};
+
+      for (final dynamic rawValue in directoryValues) {
+        if (rawValue is! Map) {
+          continue;
+        }
+
+        final Map value = rawValue;
+        final directoryIdRaw = value['directory_id'];
+        final entryIdRaw = value['entry_id'];
+
+        if (directoryIdRaw == null || entryIdRaw == null) {
+          continue;
+        }
+
+        final directoryId = directoryIdRaw.toString();
+        final Iterable<String> entryIds = entryIdRaw is List
+            ? entryIdRaw
+                .where((entry) => entry != null && entry.toString().isNotEmpty)
+                .map((entry) => entry.toString())
+            : [entryIdRaw.toString()];
+
+        if (entryIds.isEmpty) {
+          continue;
+        }
+
+        final entries = groupedDirectoryValues.putIfAbsent(
+          directoryId,
+          () => LinkedHashSet<String>(),
+        );
+        entries.addAll(entryIds);
+      }
+
+      if (groupedDirectoryValues.isNotEmpty) {
+        var directoryIndex = 0;
+        groupedDirectoryValues.forEach((directoryId, entryIds) {
+          if (entryIds.isEmpty) {
+            return;
+          }
+          path +=
+              '&directory_values[$directoryIndex][directory_id]=$directoryId';
+
+          var entryIndex = 0;
+          for (final entryId in entryIds) {
+            path +=
+                '&directory_values[$directoryIndex][entry_id][$entryIndex]=$entryId';
+            entryIndex++;
+          }
+
+          directoryIndex++;
+        });
+      }
+    }
+
+    if (names != null && names.isNotEmpty) {
+      for (int i = 0; i < names.length; i++) {
+        path += '&names[$i]=${Uri.encodeComponent(names[i])}';
+      }
+    }
+
+    debugPrint("ApiService: getDeals - Final path: $path");
 
     final response = await _getRequest(path);
+    debugPrint(
+        "ApiService: getDeals - Response status: ${response.statusCode}");
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
 
-      if (kDebugMode) {
-        debugPrint('ApiService: getDealStatuses - Response: ${response.body}');
-      }
+      if (data['result'] != null && data['result']['data'] != null) {
+        final deals = (data['result']['data'] as List)
+            .map((json) => Deal.fromJson(json, dealStatusId ?? -1))
+            .toList();
 
-      List<dynamic>? statusList;
-
-      // Определяем структуру ответа
-      if (data is List) {
-        statusList = data;
-      } else if (data is Map) {
-        if (data['result'] != null) {
-          statusList = data['result'] is List 
-              ? data['result'] 
-              : (data['result']['data'] as List?);
-        } else if (data['data'] != null) {
-          statusList = data['data'] as List;
-        } else if (data['statuses'] != null) {
-          statusList = data['statuses'] as List;
-        }
-      }
-
-      // ✅ КРИТИЧНО: Обрабатываем ПУСТОЙ массив как валидный результат
-      if (statusList != null) {
-        if (statusList.isEmpty) {
-          debugPrint('⚠️ getDealStatuses - API вернул пустой массив статусов');
-          // Очищаем кэш для этой воронки
-          await prefs.remove(cacheKey);
-          return []; // Возвращаем пустой список (это не ошибка!)
-        }
-
-        // Обновляем кэш
-        await prefs.setString(cacheKey, json.encode(statusList));
-        
-        if (kDebugMode) {
-          debugPrint('✅ getDealStatuses - Loaded ${statusList.length} statuses');
-        }
-
-        return statusList.map((status) => DealStatus.fromJson(status)).toList();
+        debugPrint("ApiService: getDeals - Loaded ${deals.length} deals");
+        return deals;
       } else {
-        debugPrint("❌ getDealStatuses - No valid data in response");
-        throw Exception('Результат отсутствует в ответе');
+        debugPrint("ApiService: getDeals - No data in response");
+        return []; // Возвращаем пустой массив вместо ошибки
       }
     } else {
-      throw Exception('Ошибка ${response.statusCode}');
-    }
-  } catch (e) {
-    debugPrint('⚠️ getDealStatuses - Ошибка: $e');
-    debugPrint('⚠️ getDealStatuses - Используем кэш');
-
-    final cachedStatuses = prefs.getString(cacheKey);
-    if (cachedStatuses != null) {
-      final decodedData = json.decode(cachedStatuses);
-      final cachedList = (decodedData as List)
-          .map((status) => DealStatus.fromJson(status))
-          .toList();
-
-      debugPrint('✅ getDealStatuses - Загружено ${cachedList.length} статусов из кэша');
-      return cachedList;
-    } else {
-      debugPrint('❌ getDealStatuses - Нет кэшированных данных');
-      throw Exception('Ошибка загрузки статусов сделок и отсутствуют кэшированные данные!');
+      debugPrint("ApiService: getDeals - Error ${response.statusCode}");
+      throw Exception('Ошибка загрузки сделок!');
     }
   }
-}
+
+// Метод для получения статусов Сделок
+// ✅ ИСПРАВЛЕННЫЙ метод getDealStatuses
+// Теперь ВСЕГДА использует явно переданный salesFunnelId
+  Future<List<DealStatus>> getDealStatuses({
+    bool includeAll = false,
+    int? salesFunnelId, // ← КРИТИЧНО: Добавили явный параметр
+    List<int>? reasonForRefusalIds,
+  }) async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    final organizationId = await getSelectedOrganization();
+
+    // ✅ ПРИОРИТЕТ: Сначала используем переданный параметр
+    String? funnelId = salesFunnelId?.toString();
+
+    // ✅ FALLBACK: Если не передан - читаем из SharedPreferences
+    if (funnelId == null || funnelId.isEmpty || funnelId == 'null') {
+      funnelId = await getSelectedDealSalesFunnel();
+    }
+
+    // Проверка organizationId
+    if (organizationId == null ||
+        organizationId.isEmpty ||
+        organizationId == 'null') {
+      throw Exception('Organization ID is required but missing');
+    }
+
+    if (kDebugMode) {
+      debugPrint('🔍 getDealStatuses - START: includeAll=$includeAll');
+      debugPrint('🔍 getDealStatuses - organizationId: $organizationId');
+      debugPrint(
+          '🔍 getDealStatuses - salesFunnelId (параметр): $salesFunnelId');
+      debugPrint('🔍 getDealStatuses - funnelId (итоговый): $funnelId');
+    }
+
+    final basePath = includeAll ? '/deal/statuses/all' : '/deal/statuses';
+    final cacheKey = includeAll
+        ? 'cachedDealStatuses_all_${organizationId}_funnel_${funnelId ?? "null"}'
+        : 'cachedDealStatuses_${organizationId}_funnel_${funnelId ?? "null"}';
+
+    try {
+      // ✅ КРИТИЧНО: Формируем путь БЕЗ использования _appendQueryParams
+      // Потому что _appendQueryParams может перезаписать наш salesFunnelId
+      String path = '$basePath?organization_id=$organizationId';
+
+      // ВСЕГДА добавляем sales_funnel_id если он есть
+      if (funnelId != null && funnelId.isNotEmpty && funnelId != 'null') {
+        path += '&sales_funnel_id=$funnelId';
+        if (kDebugMode) {
+          debugPrint('✅ getDealStatuses - Added sales_funnel_id: $funnelId');
+        }
+      } else {
+        if (kDebugMode) {
+          debugPrint(
+              '⚠️ getDealStatuses - No funnel selected, loading ALL deal statuses');
+        }
+      }
+
+      if (reasonForRefusalIds != null && reasonForRefusalIds.isNotEmpty) {
+        for (int i = 0; i < reasonForRefusalIds.length; i++) {
+          path += '&reason_for_refusals[$i]=${reasonForRefusalIds[i]}';
+        }
+      }
+
+      if (kDebugMode) {
+        debugPrint('📤 getDealStatuses - Final path: $path');
+      }
+
+      final response = await _analyticsRequest(path);
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+
+        if (kDebugMode) {
+          debugPrint(
+              'ApiService: getDealStatuses - Response: ${response.body}');
+        }
+
+        List<dynamic>? statusList;
+
+        // Определяем структуру ответа
+        if (data is List) {
+          statusList = data;
+        } else if (data is Map) {
+          if (data['result'] != null) {
+            statusList = data['result'] is List
+                ? data['result']
+                : (data['result']['data'] as List?);
+          } else if (data['data'] != null) {
+            statusList = data['data'] as List;
+          } else if (data['statuses'] != null) {
+            statusList = data['statuses'] as List;
+          }
+        }
+
+        // ✅ КРИТИЧНО: Обрабатываем ПУСТОЙ массив как валидный результат
+        if (statusList != null) {
+          if (statusList.isEmpty) {
+            debugPrint(
+                '⚠️ getDealStatuses - API вернул пустой массив статусов');
+            // Очищаем кэш для этой воронки
+            await prefs.remove(cacheKey);
+            return []; // Возвращаем пустой список (это не ошибка!)
+          }
+
+          // Обновляем кэш
+          await prefs.setString(cacheKey, json.encode(statusList));
+
+          if (kDebugMode) {
+            debugPrint(
+                '✅ getDealStatuses - Loaded ${statusList.length} statuses');
+          }
+
+          return statusList
+              .map((status) => DealStatus.fromJson(status))
+              .toList();
+        } else {
+          debugPrint("❌ getDealStatuses - No valid data in response");
+          throw Exception('Результат отсутствует в ответе');
+        }
+      } else {
+        throw Exception('Ошибка ${response.statusCode}');
+      }
+    } catch (e) {
+      debugPrint('⚠️ getDealStatuses - Ошибка: $e');
+      debugPrint('⚠️ getDealStatuses - Используем кэш');
+
+      final cachedStatuses = prefs.getString(cacheKey);
+      if (cachedStatuses != null) {
+        final decodedData = json.decode(cachedStatuses);
+        final cachedList = (decodedData as List)
+            .map((status) => DealStatus.fromJson(status))
+            .toList();
+
+        debugPrint(
+            '✅ getDealStatuses - Загружено ${cachedList.length} статусов из кэша');
+        return cachedList;
+      } else {
+        debugPrint('❌ getDealStatuses - Нет кэшированных данных');
+        throw Exception(
+            'Ошибка загрузки статусов сделок и отсутствуют кэшированные данные!');
+      }
+    }
+  }
 
   Future<bool> checkIfStatusHasDeals(int dealStatusId) async {
     try {
@@ -3243,54 +4749,58 @@ Future<List<DealStatus>> getDealStatuses({
   }
 
 // Метод для создания Статуса Сделки
-Future<Map<String, dynamic>> createDealStatus(
-  String title,
-  String color,
-  int? day,
-  String? notificationMessage,
-  bool showOnMainPage,
-  bool isSuccess,
-  bool isFailure,
-  List<int>? userIds,
-  List<int>? changeStatusUserIds, // ✅ НОВОЕ
-) async {
-  final path = await _appendQueryParams('/deal/statuses');
-  
-  if (kDebugMode) {
-    debugPrint('ApiService: createDealStatus - userIds: $userIds');
-    debugPrint('ApiService: createDealStatus - changeStatusUserIds: $changeStatusUserIds'); // ✅ НОВОЕ
+  Future<Map<String, dynamic>> createDealStatus(
+    String title,
+    String color,
+    int? day,
+    String? notificationMessage,
+    bool showOnMainPage,
+    bool isSuccess,
+    bool isFailure,
+    bool isUnassembled,
+    List<int>? userIds,
+    List<int>? changeStatusUserIds, // ✅ НОВОЕ
+  ) async {
+    final path = await _appendQueryParams('/deal/statuses');
+
+    if (kDebugMode) {
+      debugPrint('ApiService: createDealStatus - userIds: $userIds');
+      debugPrint(
+          'ApiService: createDealStatus - changeStatusUserIds: $changeStatusUserIds'); // ✅ НОВОЕ
+    }
+
+    final organizationId = await getSelectedOrganization();
+    final salesFunnelId = await getSelectedSalesFunnel();
+
+    final body = {
+      'title': title,
+      'day': day,
+      'color': color,
+      'notification_message': notificationMessage,
+      'show_on_main_page': showOnMainPage ? 1 : 0,
+      'is_success': isSuccess ? 1 : 0,
+      'is_failure': isFailure ? 1 : 0,
+      'is_unassembled': isUnassembled,
+      'organization_id': organizationId?.toString() ?? '',
+      if (salesFunnelId != null) 'sales_funnel_id': salesFunnelId.toString(),
+      if (userIds != null && userIds.isNotEmpty) 'users': userIds,
+      if (changeStatusUserIds != null && changeStatusUserIds.isNotEmpty)
+        'change_status_users': changeStatusUserIds, // ✅ НОВОЕ
+    };
+
+    if (kDebugMode) {
+      debugPrint('ApiService: createDealStatus request body: $body');
+    }
+
+    final response = await _postRequest(path, body);
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return {'success': true, 'message': 'Статус сделки успешно создан'};
+    } else {
+      return {'success': false, 'message': 'Ошибка создания статуса сделки!'};
+    }
   }
-  
-  final organizationId = await getSelectedOrganization();
-  final salesFunnelId = await getSelectedSalesFunnel();
-  
-  final body = {
-    'title': title,
-    'day': day,
-    'color': color,
-    'notification_message': notificationMessage,
-    'show_on_main_page': showOnMainPage ? 1 : 0,
-    'is_success': isSuccess ? 1 : 0,
-    'is_failure': isFailure ? 1 : 0,
-    'organization_id': organizationId?.toString() ?? '',
-    if (salesFunnelId != null) 'sales_funnel_id': salesFunnelId.toString(),
-    if (userIds != null && userIds.isNotEmpty) 'users': userIds,
-    if (changeStatusUserIds != null && changeStatusUserIds.isNotEmpty) 
-      'change_status_users': changeStatusUserIds, // ✅ НОВОЕ
-  };
-  
-  if (kDebugMode) {
-    debugPrint('ApiService: createDealStatus request body: $body');
-  }
-  
-  final response = await _postRequest(path, body);
-  
-  if (response.statusCode == 200 || response.statusCode == 201) {
-    return {'success': true, 'message': 'Статус сделки успешно создан'};
-  } else {
-    return {'success': false, 'message': 'Ошибка создания статуса сделки!'};
-  }
-}
+
 // Метод для получения Истории Сделки
   Future<List<DealHistory>> getDealHistory(int dealId) async {
     try {
@@ -3300,7 +4810,7 @@ Future<Map<String, dynamic>> createDealStatus(
         //debugPrint('ApiService: getDealHistory - Generated path: $path');
       }
 
-      final response = await _getRequest(path);
+      final response = await _analyticsRequest(path);
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> decodedJson = json.decode(response.body);
@@ -3324,7 +4834,7 @@ Future<Map<String, dynamic>> createDealStatus(
         //debugPrint('ApiService: getOrderHistory - Generated path: $path');
       }
 
-      final response = await _getRequest(path);
+      final response = await _analyticsRequest(path);
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> decodedJson = json.decode(response.body);
@@ -3341,105 +4851,121 @@ Future<Map<String, dynamic>> createDealStatus(
   }
 
 // Обновление статуса карточки Сделки в колонке
- Future<void> updateDealStatus(
-  int dealId, 
-  int currentStatusId,  // from_status_id
-  List<int> statusIds,   // to_status_id (один или несколько)
-  {
-    bool isMultiSelect = false,  // новый параметр
+  Future<void> updateDealStatus(
+    int dealId,
+    int currentStatusId, // from_status_id
+    List<int> statusIds, // to_status_id (один или несколько)
+    {
+    bool isMultiSelect = false, // новый параметр
     String? organizationId,
     String? salesFunnelId,
-  }
-) async {
-  
-  if (isMultiSelect) {
-    // ============ МУЛЬТИВЫБОР (как было) ============
-    final path = await _appendQueryParams('/deal/change-multiple-status/$dealId');
-    if (kDebugMode) {
-      debugPrint('ApiService: MULTI-SELECT mode');
-      debugPrint('ApiService: Path: $path');
-      debugPrint('ApiService: Statuses: $statusIds');
-    }
-
-    final response = await _postRequest(
-      path,
-      {
-        'position': 1,
-        'statuses': statusIds,
-      },
-    );
-
-    if (response.statusCode == 200) {
+    int? reasonForRefusalId,
+    String? reasonForRefusal,
+  }) async {
+    if (isMultiSelect) {
+      // ============ МУЛЬТИВЫБОР (как было) ============
+      final path =
+          await _appendQueryParams('/deal/change-multiple-status/$dealId');
       if (kDebugMode) {
-        debugPrint('✅ Статусы успешно обновлены (multi-select)');
+        debugPrint('ApiService: MULTI-SELECT mode');
+        debugPrint('ApiService: Path: $path');
+        debugPrint('ApiService: Statuses: $statusIds');
       }
-    } else if (response.statusCode == 422) {
-      throw DealStatusUpdateException(
-        422,
-        'Вы не можете переместить задачу на эти статусы',
+
+      final response = await _postRequest(
+        path,
+        {
+          'position': 1,
+          'statuses': statusIds,
+        },
       );
+
+      if (response.statusCode == 200) {
+        if (kDebugMode) {
+          debugPrint('✅ Статусы успешно обновлены (multi-select)');
+        }
+      } else if (response.statusCode == 422) {
+        final responseData = jsonDecode(response.body);
+        final errorMessage = (responseData is Map<String, dynamic>
+                    ? responseData['message']
+                    : null)
+                ?.toString() ??
+            'Вы не можете переместить задачу на эти статусы';
+        throw DealStatusUpdateException(
+          422,
+          errorMessage,
+        );
+      } else {
+        throw Exception('Ошибка обновления статусов сделки!');
+      }
     } else {
-      throw Exception('Ошибка обновления статусов сделки!');
-    }
-    
-  } else {
-    // ============ ОДИНОЧНЫЙ ВЫБОР (новая логика) ============
-    if (statusIds.isEmpty) {
-      throw Exception('Не выбран статус для перемещения');
-    }
-    
-    final int toStatusId = statusIds.first; // берём первый (и единственный)
-    
-    // Формируем URL с query параметрами
-    String path = '/deal/changeStatus1/$dealId';
-    final queryParams = <String, String>{};
-    
-    if (organizationId != null) {
-      queryParams['organization_id'] = organizationId;
-    }
-    if (salesFunnelId != null) {
-      queryParams['sales_funnel_id'] = salesFunnelId;
-    }
-    
-    // Добавляем параметры через _appendQueryParams или вручную
-    if (queryParams.isNotEmpty) {
-      final query = queryParams.entries
-          .map((e) => '${e.key}=${e.value}')
-          .join('&');
-      path = '$path?$query';
-    }
-    
-    if (kDebugMode) {
-      debugPrint('ApiService: SINGLE-SELECT mode');
-      debugPrint('ApiService: Path: $path');
-      debugPrint('ApiService: from_status_id: $currentStatusId → to_status_id: $toStatusId');
-    }
+      // ============ ОДИНОЧНЫЙ ВЫБОР (новая логика) ============
+      if (statusIds.isEmpty) {
+        throw Exception('Не выбран статус для перемещения');
+      }
 
-    final response = await _postRequest(
-      path,
-      {
-        'from_status_id': currentStatusId,
-        'to_status_id': toStatusId,
-        'position': 1,
-        'organization_id': organizationId ?? '1',
-        'sales_funnel_id': salesFunnelId ?? '1',
-      },
-    );
+      final int toStatusId = statusIds.first; // берём первый (и единственный)
 
-    if (response.statusCode == 200) {
+      // Формируем URL с query параметрами
+      String path = '/deal/changeStatus1/$dealId';
+      final queryParams = <String, String>{};
+
+      if (organizationId != null) {
+        queryParams['organization_id'] = organizationId;
+      }
+      if (salesFunnelId != null) {
+        queryParams['sales_funnel_id'] = salesFunnelId;
+      }
+
+      // Добавляем параметры через _appendQueryParams или вручную
+      if (queryParams.isNotEmpty) {
+        final query =
+            queryParams.entries.map((e) => '${e.key}=${e.value}').join('&');
+        path = '$path?$query';
+      }
+
       if (kDebugMode) {
-        debugPrint('✅ Статус успешно обновлён (single-select)');
+        debugPrint('ApiService: SINGLE-SELECT mode');
+        debugPrint('ApiService: Path: $path');
+        debugPrint(
+            'ApiService: from_status_id: $currentStatusId → to_status_id: $toStatusId');
       }
-    } else if (response.statusCode == 422) {
-      throw DealStatusUpdateException(
-        422,
-        'Вы не можете переместить задачу на этот статус',
+
+      final response = await _postRequest(
+        path,
+        {
+          'from_status_id': currentStatusId,
+          'to_status_id': toStatusId,
+          'position': 1,
+          'organization_id': organizationId ?? '1',
+          'sales_funnel_id': salesFunnelId ?? '1',
+          if (reasonForRefusalId != null)
+            'reason_for_refusal_id': reasonForRefusalId,
+          if (reasonForRefusal != null && reasonForRefusal.trim().isNotEmpty)
+            'reason_for_refusal': reasonForRefusal.trim(),
+        },
       );
-    } else {
-      throw Exception('Ошибка обновления статуса сделки!');
+
+      if (response.statusCode == 200) {
+        if (kDebugMode) {
+          debugPrint('✅ Статус успешно обновлён (single-select)');
+        }
+      } else if (response.statusCode == 422) {
+        final responseData = jsonDecode(response.body);
+        final errorMessage = (responseData is Map<String, dynamic>
+                    ? responseData['message']
+                    : null)
+                ?.toString() ??
+            'Вы не можете переместить задачу на этот статус';
+        throw DealStatusUpdateException(
+          422,
+          errorMessage,
+        );
+      } else {
+        throw Exception('Ошибка обновления статуса сделки!');
+      }
     }
   }
-}
 
 // Метод для Получения Сделки в Окно Лида
   Future<List<DealTask>> getDealTasks(int dealId) async {
@@ -3462,55 +4988,188 @@ Future<Map<String, dynamic>> createDealStatus(
   }
 
 // Метод для создания Сделки
- Future<Map<String, dynamic>> createDeal({
-  required String name,
-  required int dealStatusId,
-  required int? managerId,
-  required DateTime? startDate,
-  required DateTime? endDate,
-  required String sum,
-  String? description,
-  int? dealtypeId,
-  int? leadId,
-  List<Map<String, dynamic>>? customFields,
-  List<Map<String, int>>? directoryValues,
-  List<String>? filePaths,
-  List<int>? userIds, // ✅ НОВОЕ
-}) async {
-  try {
-    final updatedPath = await _appendQueryParams('/deal');
-    if (kDebugMode) {
-      debugPrint('ApiService: createDeal - Generated path: $updatedPath');
-      debugPrint('ApiService: createDeal - userIds: $userIds'); // ✅ НОВОЕ
+  Future<Map<String, dynamic>> createDeal({
+    required String name,
+    required int dealStatusId,
+    required int? managerId,
+    required DateTime? startDate,
+    required DateTime? endDate,
+    required String sum,
+    String? description,
+    int? dealtypeId,
+    int? leadId,
+    List<Map<String, dynamic>>? customFields,
+    List<Map<String, int>>? directoryValues,
+    List<FileHelper>? files,
+    List<int>? userIds, // ✅ НОВОЕ
+  }) async {
+    try {
+      final updatedPath = await _appendQueryParams('/deal');
+      if (kDebugMode) {
+        debugPrint('ApiService: createDeal - Generated path: $updatedPath');
+        debugPrint('ApiService: createDeal - userIds: $userIds'); // ✅ НОВОЕ
+      }
+
+      var request =
+          http.MultipartRequest('POST', Uri.parse('$baseUrl$updatedPath'));
+
+      request.fields['name'] = name;
+      request.fields['deal_status_id'] = dealStatusId.toString();
+      request.fields['deal_status_ids[0]'] = dealStatusId.toString();
+      request.fields['position'] = '1';
+
+      if (managerId != null) {
+        request.fields['manager_id'] = managerId.toString();
+      }
+      if (startDate != null) {
+        request.fields['start_date'] =
+            DateFormat('yyyy-MM-dd').format(startDate);
+      }
+      if (endDate != null) {
+        request.fields['end_date'] = DateFormat('yyyy-MM-dd').format(endDate);
+      }
+
+      request.fields['sum'] = sum;
+
+      if (description != null) {
+        request.fields['description'] = description;
+      }
+      if (dealtypeId != null) {
+        request.fields['deal_type_id'] = dealtypeId.toString();
+      }
+      if (leadId != null) {
+        request.fields['lead_id'] = leadId.toString();
+      }
+
+      // ✅ НОВОЕ: Добавляем user_ids
+      if (userIds != null && userIds.isNotEmpty) {
+        for (int i = 0; i < userIds.length; i++) {
+          request.fields['users[$i]'] = userIds[i].toString();
+        }
+        debugPrint('ApiService: createDeal - Added user_ids: $userIds');
+      }
+
+      if (customFields != null && customFields.isNotEmpty) {
+        for (int i = 0; i < customFields.length; i++) {
+          var field = customFields[i];
+          request.fields['deal_custom_fields[$i][key]'] = field['key'] ?? '';
+          request.fields['deal_custom_fields[$i][value]'] =
+              field['value'] ?? '';
+          request.fields['deal_custom_fields[$i][type]'] =
+              field['type'] ?? 'string';
+        }
+      }
+
+      if (directoryValues != null && directoryValues.isNotEmpty) {
+        for (int i = 0; i < directoryValues.length; i++) {
+          var directoryValue = directoryValues[i];
+          request.fields['directory_values[$i][entry_id]'] =
+              directoryValue['entry_id'].toString();
+          request.fields['directory_values[$i][directory_id]'] =
+              directoryValue['directory_id'].toString();
+        }
+      }
+
+      if (files != null && files.isNotEmpty) {
+        for (var fileData in files) {
+          try {
+            final file = await http.MultipartFile.fromPath(
+              'files[]',
+              fileData.path,
+              filename: fileData.name,
+            );
+            request.files.add(file);
+          } catch (e) {
+            debugPrint("Error adding file ${fileData.name}: $e");
+          }
+        }
+      }
+
+      final response = await _multipartPostRequest('/deal', request);
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return {
+          'success': true,
+          'message': 'deal_created_successfully',
+        };
+      } else if (response.statusCode == 422) {
+        if (response.body.contains('name')) {
+          return {'success': false, 'message': 'invalid_name_length'};
+        }
+        if (response.body.contains('directory_values')) {
+          return {'success': false, 'message': 'error_directory_values'};
+        }
+        if (response.body.contains('type')) {
+          return {'success': false, 'message': 'invalid_field_type'};
+        }
+        if (response.body.contains('deal_custom_fields')) {
+          return {'success': false, 'message': 'invalid_deal_custom_fields'};
+        }
+        return {'success': false, 'message': 'unknown_error'};
+      } else if (response.statusCode == 500) {
+        return {'success': false, 'message': 'error_server_text'};
+      } else {
+        return {'success': false, 'message': 'error_deal_create_successfully'};
+      }
+    } catch (e) {
+      return {'success': false, 'message': 'error_deal_create_successfully'};
     }
-    
-    var request = http.MultipartRequest('POST', Uri.parse('$baseUrl$updatedPath'));
+  }
+
+  Future<Map<String, dynamic>> updateDeal({
+    required int dealId,
+    required String name,
+    required int dealStatusId,
+    required int? managerId,
+    required DateTime? startDate,
+    required DateTime? endDate,
+    required String sum,
+    String? description,
+    int? dealtypeId,
+    required int? leadId,
+    List<Map<String, dynamic>>? customFields,
+    List<Map<String, int>>? directoryValues,
+    List<FileHelper>? files,
+    List<int>? dealStatusIds, // ✅ НОВОЕ
+    List<int>? existingFiles, // ID существующих файлов
+    List<int>? userIds, // ✅ НОВОЕ: массив ID пользователей
+    int? reasonForRefusalId,
+    String? reasonForRefusal,
+  }) async {
+    // Формируем путь с query-параметрами
+    final updatedPath = await _appendQueryParams('/deal/$dealId');
+    if (kDebugMode) {
+      debugPrint('ApiService: updateDeal - Generated path: $updatedPath');
+      debugPrint('ApiService: updateDeal - userIds: $userIds'); // ✅ НОВОЕ
+    }
+    var request =
+        http.MultipartRequest('POST', Uri.parse('$baseUrl$updatedPath'));
 
     request.fields['name'] = name;
     request.fields['deal_status_id'] = dealStatusId.toString();
-    request.fields['deal_status_ids[0]'] = dealStatusId.toString();
-    request.fields['position'] = '1';
-    
-    if (managerId != null) {
-      request.fields['manager_id'] = managerId.toString();
-    }
-    if (startDate != null) {
+    if (managerId != null) request.fields['manager_id'] = managerId.toString();
+    if (startDate != null)
       request.fields['start_date'] = DateFormat('yyyy-MM-dd').format(startDate);
-    }
-    if (endDate != null) {
+    if (endDate != null)
       request.fields['end_date'] = DateFormat('yyyy-MM-dd').format(endDate);
-    }
-    
-    request.fields['sum'] = sum;
-    
-    if (description != null) {
-      request.fields['description'] = description;
-    }
-    if (dealtypeId != null) {
+    if (sum.isNotEmpty) request.fields['sum'] = sum;
+    if (description != null) request.fields['description'] = description;
+    if (dealtypeId != null)
       request.fields['deal_type_id'] = dealtypeId.toString();
+    if (leadId != null) request.fields['lead_id'] = leadId.toString();
+    if (reasonForRefusalId != null) {
+      request.fields['reason_for_refusal_id'] = reasonForRefusalId.toString();
     }
-    if (leadId != null) {
-      request.fields['lead_id'] = leadId.toString();
+    if (reasonForRefusal != null && reasonForRefusal.trim().isNotEmpty) {
+      request.fields['reason_for_refusal'] = reasonForRefusal.trim();
+    }
+
+    // Отправляем массив статусов
+    if (dealStatusIds != null && dealStatusIds.isNotEmpty) {
+      for (int i = 0; i < dealStatusIds.length; i++) {
+        request.fields['deal_status_ids[$i]'] = dealStatusIds[i].toString();
+      }
+      debugPrint('ApiService: Отправка deal_status_ids: $dealStatusIds');
     }
 
     // ✅ НОВОЕ: Добавляем user_ids
@@ -3518,179 +5177,82 @@ Future<Map<String, dynamic>> createDealStatus(
       for (int i = 0; i < userIds.length; i++) {
         request.fields['users[$i]'] = userIds[i].toString();
       }
-      debugPrint('ApiService: createDeal - Added user_ids: $userIds');
+      debugPrint('ApiService: updateDeal - Added user_ids: $userIds');
     }
 
-    if (customFields != null && customFields.isNotEmpty) {
-      for (int i = 0; i < customFields.length; i++) {
-        var field = customFields[i];
-        request.fields['deal_custom_fields[$i][key]'] = field['key'] ?? '';
-        request.fields['deal_custom_fields[$i][value]'] = field['value'] ?? '';
-        request.fields['deal_custom_fields[$i][type]'] = field['type'] ?? 'string';
+    final customFieldsList = customFields ?? [];
+    if (customFieldsList.isNotEmpty) {
+      for (int i = 0; i < customFieldsList.length; i++) {
+        var field = customFieldsList[i];
+        request.fields['deal_custom_fields[$i][key]'] =
+            field['key']!.toString();
+        request.fields['deal_custom_fields[$i][value]'] =
+            field['value']!.toString();
+        request.fields['deal_custom_fields[$i][type]'] =
+            field['type']?.toString() ?? 'string';
       }
     }
 
-    if (directoryValues != null && directoryValues.isNotEmpty) {
-      for (int i = 0; i < directoryValues.length; i++) {
-        var directoryValue = directoryValues[i];
-        request.fields['directory_values[$i][entry_id]'] = directoryValue['entry_id'].toString();
-        request.fields['directory_values[$i][directory_id]'] = directoryValue['directory_id'].toString();
+    final directoryValuesList = directoryValues ?? [];
+    if (directoryValuesList.isNotEmpty) {
+      for (int i = 0; i < directoryValuesList.length; i++) {
+        var value = directoryValuesList[i];
+        request.fields['directory_values[$i][directory_id]'] =
+            value['directory_id'].toString();
+        request.fields['directory_values[$i][entry_id]'] =
+            value['entry_id'].toString();
       }
     }
 
-    if (filePaths != null && filePaths.isNotEmpty) {
-      for (var filePath in filePaths) {
-        final file = await http.MultipartFile.fromPath('files[]', filePath);
-        request.files.add(file);
+    // Добавляем ID существующих файлов
+    if (existingFiles != null && existingFiles.isNotEmpty) {
+      for (int i = 0; i < existingFiles.length; i++) {
+        request.fields['existing_files[$i]'] = existingFiles[i].toString();
       }
     }
 
-    final response = await _multipartPostRequest('/deal', request);
+    // Отправляем только новые файлы (id == 0)
+    if (files != null && files.isNotEmpty) {
+      final newFiles = files.where((f) => f.id == 0).toList();
+      for (var fileData in newFiles) {
+        try {
+          final file = await http.MultipartFile.fromPath(
+            'files[]',
+            fileData.path,
+            filename: fileData.name,
+          );
+          request.files.add(file);
+        } catch (e) {
+          debugPrint("Error adding file ${fileData.name}: $e");
+        }
+      }
+    }
+
+    final response = await _multipartPostRequest('/deal/$dealId', request);
 
     if (response.statusCode == 200 || response.statusCode == 201) {
-      return {
-        'success': true,
-        'message': 'deal_created_successfully',
-      };
+      return {'success': true, 'message': 'deal_updated_successfully'};
     } else if (response.statusCode == 422) {
-      if (response.body.contains('name')) {
+      if (response.body.contains('"name"')) {
         return {'success': false, 'message': 'invalid_name_length'};
       }
-      if (response.body.contains('directory_values')) {
-        return {'success': false, 'message': 'error_directory_values'};
+      if (response.body.contains('sum')) {
+        return {'success': false, 'message': 'invalid_sum_format'};
       }
       if (response.body.contains('type')) {
         return {'success': false, 'message': 'invalid_field_type'};
       }
       if (response.body.contains('deal_custom_fields')) {
-        return {'success': false, 'message': 'invalid_deal_custom_fields'};
+        return {'success': false, 'message': 'invalid_custom_fields'};
       }
       return {'success': false, 'message': 'unknown_error'};
     } else if (response.statusCode == 500) {
       return {'success': false, 'message': 'error_server_text'};
     } else {
-      return {'success': false, 'message': 'error_deal_create_successfully'};
-    }
-  } catch (e) {
-    return {'success': false, 'message': 'error_deal_create_successfully'};
-  }
-}
-
-  Future<Map<String, dynamic>> updateDeal({
-  required int dealId,
-  required String name,
-  required int dealStatusId,
-  required int? managerId,
-  required DateTime? startDate,
-  required DateTime? endDate,
-  required String sum,
-  String? description,
-  int? dealtypeId,
-  required int? leadId,
-  List<Map<String, dynamic>>? customFields,
-  List<Map<String, int>>? directoryValues,
-  List<String>? filePaths,
-  List<int>? dealStatusIds,
-  List<DealFiles>? existingFiles,
-  List<int>? userIds, // ✅ НОВОЕ
-}) async {
-  final updatedPath = await _appendQueryParams('/deal/$dealId');
-  if (kDebugMode) {
-    debugPrint('ApiService: updateDeal - Generated path: $updatedPath');
-    debugPrint('ApiService: updateDeal - userIds: $userIds'); // ✅ НОВОЕ
-  }
-  
-  var request = http.MultipartRequest('POST', Uri.parse('$baseUrl$updatedPath'));
-
-  request.fields['name'] = name;
-  request.fields['deal_status_id'] = dealStatusId.toString();
-  if (managerId != null) request.fields['manager_id'] = managerId.toString();
-  if (startDate != null)
-    request.fields['start_date'] = DateFormat('yyyy-MM-dd').format(startDate);
-  if (endDate != null)
-    request.fields['end_date'] = DateFormat('yyyy-MM-dd').format(endDate);
-  if (sum.isNotEmpty) request.fields['sum'] = sum;
-  if (description != null) request.fields['description'] = description;
-  if (dealtypeId != null)
-    request.fields['deal_type_id'] = dealtypeId.toString();
-  if (leadId != null) request.fields['lead_id'] = leadId.toString();
-
-  // Отправляем массив статусов
-  if (dealStatusIds != null && dealStatusIds.isNotEmpty) {
-    for (int i = 0; i < dealStatusIds.length; i++) {
-      request.fields['deal_status_ids[$i]'] = dealStatusIds[i].toString();
-    }
-    debugPrint('ApiService: Отправка deal_status_ids: $dealStatusIds');
-  }
-
-  // ✅ НОВОЕ: Добавляем user_ids
-  if (userIds != null && userIds.isNotEmpty) {
-    for (int i = 0; i < userIds.length; i++) {
-      request.fields['users[$i]'] = userIds[i].toString();
-    }
-    debugPrint('ApiService: updateDeal - Added user_ids: $userIds');
-  }
-
-  final customFieldsList = customFields ?? [];
-  if (customFieldsList.isNotEmpty) {
-    for (int i = 0; i < customFieldsList.length; i++) {
-      var field = customFieldsList[i];
-      request.fields['deal_custom_fields[$i][key]'] =
-          field['key']!.toString();
-      request.fields['deal_custom_fields[$i][value]'] =
-          field['value']!.toString();
-      request.fields['deal_custom_fields[$i][type]'] =
-          field['type']?.toString() ?? 'string';
+      return {'success': false, 'message': 'error_deal_update'};
     }
   }
 
-  final directoryValuesList = directoryValues ?? [];
-  if (directoryValuesList.isNotEmpty) {
-    for (int i = 0; i < directoryValuesList.length; i++) {
-      var value = directoryValuesList[i];
-      request.fields['directory_values[$i][directory_id]'] =
-          value['directory_id'].toString();
-      request.fields['directory_values[$i][entry_id]'] =
-          value['entry_id'].toString();
-    }
-  }
-
-  if (existingFiles != null && existingFiles.isNotEmpty) {
-    final existingFileIds = existingFiles.map((file) => file.id).toList();
-    request.fields['existing_files'] = jsonEncode(existingFileIds);
-  }
-
-  if (filePaths != null && filePaths.isNotEmpty) {
-    for (var filePath in filePaths) {
-      final file = await http.MultipartFile.fromPath('files[]', filePath);
-      request.files.add(file);
-    }
-  }
-
-  final response = await _multipartPostRequest('/deal/$dealId', request);
-
-  if (response.statusCode == 200 || response.statusCode == 201) {
-    return {'success': true, 'message': 'deal_updated_successfully'};
-  } else if (response.statusCode == 422) {
-    if (response.body.contains('"name"')) {
-      return {'success': false, 'message': 'invalid_name_length'};
-    }
-    if (response.body.contains('sum')) {
-      return {'success': false, 'message': 'invalid_sum_format'};
-    }
-    if (response.body.contains('type')) {
-      return {'success': false, 'message': 'invalid_field_type'};
-    }
-    if (response.body.contains('deal_custom_fields')) {
-      return {'success': false, 'message': 'invalid_custom_fields'};
-    }
-    return {'success': false, 'message': 'unknown_error'};
-  } else if (response.statusCode == 500) {
-    return {'success': false, 'message': 'error_server_text'};
-  } else {
-    return {'success': false, 'message': 'error_deal_update'};
-  }
-}
 // Метод для Удаления Статуса Сделки
   Future<Map<String, dynamic>> deleteDealStatuses(int dealStatusId) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
@@ -3749,55 +5311,60 @@ Future<Map<String, dynamic>> createDealStatus(
   }
 
 // Метод для изменения статуса Сделки в ApiService
-Future<Map<String, dynamic>> updateDealStatusEdit(
-  int dealStatusId,
-  String title,
-  int day,
-  bool isSuccess,
-  bool isFailure,
-  String notificationMessage,
-  bool showOnMainPage,
-  List<int>? userIds, // пользователи, которые могут ВИДЕТЬ сделки
-  List<int>? changeStatusUserIds, // ✅ НОВОЕ: пользователи, которые могут ИЗМЕНЯТЬ статус
-) async {
-  final path = await _appendQueryParams('/deal/statuses/$dealStatusId');
-  
-  if (kDebugMode) {
-    debugPrint('ApiService: updateDealStatusEdit - userIds: $userIds');
-    debugPrint('ApiService: updateDealStatusEdit - changeStatusUserIds: $changeStatusUserIds'); // ✅ НОВОЕ
+  Future<Map<String, dynamic>> updateDealStatusEdit(
+    int dealStatusId,
+    String title,
+    int day,
+    bool isSuccess,
+    bool isFailure,
+    bool isUnassembled,
+    String notificationMessage,
+    bool showOnMainPage,
+    List<int>? userIds, // пользователи, которые могут ВИДЕТЬ сделки
+    List<int>?
+        changeStatusUserIds, // ✅ НОВОЕ: пользователи, которые могут ИЗМЕНЯТЬ статус
+  ) async {
+    final path = await _appendQueryParams('/deal/statuses/$dealStatusId');
+
+    if (kDebugMode) {
+      debugPrint('ApiService: updateDealStatusEdit - userIds: $userIds');
+      debugPrint(
+          'ApiService: updateDealStatusEdit - changeStatusUserIds: $changeStatusUserIds'); // ✅ НОВОЕ
+    }
+
+    final organizationId = await getSelectedOrganization();
+    final salesFunnelId = await getSelectedSalesFunnel();
+
+    final payload = {
+      "title": title,
+      "day": day,
+      "color": "#000",
+      "is_success": isSuccess ? 1 : 0,
+      "is_failure": isFailure ? 1 : 0,
+      "is_unassembled": isUnassembled,
+      "notification_message": notificationMessage,
+      "show_on_main_page": showOnMainPage ? 1 : 0,
+      "organization_id": organizationId?.toString() ?? '',
+      if (salesFunnelId != null) "sales_funnel_id": salesFunnelId.toString(),
+      // ✅ Добавляем оба массива пользователей
+      if (userIds != null && userIds.isNotEmpty) "users": userIds,
+      if (changeStatusUserIds != null && changeStatusUserIds.isNotEmpty)
+        "change_status_users": changeStatusUserIds, // ✅ НОВОЕ
+    };
+
+    if (kDebugMode) {
+      debugPrint('ApiService: updateDealStatusEdit payload: $payload');
+    }
+
+    final response = await _patchRequest(path, payload);
+
+    if (response.statusCode == 200) {
+      return {'result': 'Success'};
+    } else {
+      throw Exception('Failed to update dealStatus!');
+    }
   }
-  
-  final organizationId = await getSelectedOrganization();
-  final salesFunnelId = await getSelectedSalesFunnel();
-  
-  final payload = {
-    "title": title,
-    "day": day,
-    "color": "#000",
-    "is_success": isSuccess ? 1 : 0,
-    "is_failure": isFailure ? 1 : 0,
-    "notification_message": notificationMessage,
-    "show_on_main_page": showOnMainPage ? 1 : 0,
-    "organization_id": organizationId?.toString() ?? '',
-    if (salesFunnelId != null) "sales_funnel_id": salesFunnelId.toString(),
-    // ✅ Добавляем оба массива пользователей
-    if (userIds != null && userIds.isNotEmpty) "users": userIds,
-    if (changeStatusUserIds != null && changeStatusUserIds.isNotEmpty) 
-      "change_status_users": changeStatusUserIds, // ✅ НОВОЕ
-  };
-  
-  if (kDebugMode) {
-    debugPrint('ApiService: updateDealStatusEdit payload: $payload');
-  }
-  
-  final response = await _patchRequest(path, payload);
-  
-  if (response.statusCode == 200) {
-    return {'result': 'Success'};
-  } else {
-    throw Exception('Failed to update dealStatus!');
-  }
-}
+
   Future<DealStatus> getDealStatus(int dealStatusId) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/deal/statuses/$dealStatusId');
@@ -3827,7 +5394,7 @@ Future<Map<String, dynamic>> updateDealStatusEdit(
       // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
       final path = await _appendQueryParams('/task/$taskId');
       if (kDebugMode) {
-        //debugPrint('ApiService: getTaskById - Generated path: $path');
+        debugPrint('ApiService: getTaskById - Generated path: $path');
       }
 
       final response = await _getRequest(path);
@@ -3850,6 +5417,9 @@ Future<Map<String, dynamic>> updateDealStatusEdit(
         throw Exception('Ошибка загрузки task ID!');
       }
     } catch (e) {
+      if (kDebugMode) {
+        debugPrint('ApiService: getTaskById error: $e');
+      }
       throw Exception('Ошибка загрузки task ID');
     }
   }
@@ -3870,9 +5440,12 @@ Future<Map<String, dynamic>> updateDealStatusEdit(
     bool? urgent,
     DateTime? deadlinefromDate,
     DateTime? deadlinetoDate,
-    String? project,
+    DateTime? completedFromDate,
+    DateTime? completedToDate,
+    List<int>? projectIds,
     List<String>? authors,
     String? department,
+    List<int>? reasonForRefusalIds,
     List<Map<String, dynamic>>? directoryValues, // Добавляем directoryValues
   }) async {
     // Формируем базовый путь
@@ -3894,9 +5467,12 @@ Future<Map<String, dynamic>> updateDealStatusEdit(
         urgent == true ||
         (deadlinefromDate != null) ||
         (deadlinetoDate != null) ||
-        (project != null && project.isNotEmpty) ||
+        (completedFromDate != null) ||
+        (completedToDate != null) ||
+        (projectIds != null && projectIds.isNotEmpty) ||
         (authors != null && authors.isNotEmpty) ||
         (department != null && department.isNotEmpty) ||
+        (reasonForRefusalIds != null && reasonForRefusalIds.isNotEmpty) ||
         (directoryValues != null &&
             directoryValues.isNotEmpty); // Проверяем directoryValues
 
@@ -3937,8 +5513,18 @@ Future<Map<String, dynamic>> updateDealStatusEdit(
       final formattedToDate = DateFormat('yyyy-MM-dd').format(deadlinetoDate);
       path += '&deadline_from=$formattedFromDate&deadline_to=$formattedToDate';
     }
-    if (project != null && project.isNotEmpty) {
-      path += '&project=$project';
+    if (completedFromDate != null && completedToDate != null) {
+      final formattedCompletedFrom =
+          DateFormat('yyyy-MM-dd').format(completedFromDate);
+      final formattedCompletedTo =
+          DateFormat('yyyy-MM-dd').format(completedToDate);
+      path +=
+          '&completed_from=$formattedCompletedFrom&completed_to=$formattedCompletedTo';
+    }
+    if (projectIds != null && projectIds.isNotEmpty) {
+      for (int projectId in projectIds) {
+        path += '&project_ids[]=$projectId';
+      }
     }
     if (authors != null && authors.isNotEmpty) {
       for (int i = 0; i < authors.length; i++) {
@@ -3948,12 +5534,63 @@ Future<Map<String, dynamic>> updateDealStatusEdit(
     if (department != null && department.isNotEmpty) {
       path += '&department_id=$department';
     }
+    if (reasonForRefusalIds != null && reasonForRefusalIds.isNotEmpty) {
+      for (int i = 0; i < reasonForRefusalIds.length; i++) {
+        path += '&reason_for_refusals[$i]=${reasonForRefusalIds[i]}';
+      }
+    }
     if (directoryValues != null && directoryValues.isNotEmpty) {
-      for (int i = 0; i < directoryValues.length; i++) {
-        path +=
-            '&directory_values[$i][directory_id]=${directoryValues[i]['directory_id']}';
-        path +=
-            '&directory_values[$i][entry_id]=${directoryValues[i]['entry_id']}';
+      final Map<String, LinkedHashSet<String>> groupedDirectoryValues = {};
+
+      for (final dynamic rawValue in directoryValues) {
+        if (rawValue is! Map) {
+          continue;
+        }
+
+        final Map value = rawValue;
+        final directoryIdRaw = value['directory_id'];
+        final entryIdRaw = value['entry_id'];
+
+        if (directoryIdRaw == null || entryIdRaw == null) {
+          continue;
+        }
+
+        final directoryId = directoryIdRaw.toString();
+        final Iterable<String> entryIds = entryIdRaw is List
+            ? entryIdRaw
+                .where((entry) => entry != null && entry.toString().isNotEmpty)
+                .map((entry) => entry.toString())
+            : [entryIdRaw.toString()];
+
+        if (entryIds.isEmpty) {
+          continue;
+        }
+
+        final entries = groupedDirectoryValues.putIfAbsent(
+          directoryId,
+          () => LinkedHashSet<String>(),
+        );
+        entries.addAll(entryIds);
+      }
+
+      if (groupedDirectoryValues.isNotEmpty) {
+        var directoryIndex = 0;
+        groupedDirectoryValues.forEach((directoryId, entryIds) {
+          if (entryIds.isEmpty) {
+            return;
+          }
+          path +=
+              '&directory_values[$directoryIndex][directory_id]=$directoryId';
+
+          var entryIndex = 0;
+          for (final entryId in entryIds) {
+            path +=
+                '&directory_values[$directoryIndex][entry_id][$entryIndex]=$entryId';
+            entryIndex++;
+          }
+
+          directoryIndex++;
+        });
       }
     }
 
@@ -3974,44 +5611,138 @@ Future<Map<String, dynamic>> updateDealStatusEdit(
   }
 
 // Метод для получения статусов задач
-  Future<List<TaskStatus>> getTaskStatuses() async {
+  Future<List<TaskStatus>> getTaskStatuses({
+    List<int>? users,
+    int? statuses,
+    DateTime? fromDate,
+    DateTime? toDate,
+    bool? overdue,
+    bool? hasFile,
+    bool? hasDeal,
+    bool? urgent,
+    DateTime? deadlinefromDate,
+    DateTime? deadlinetoDate,
+    DateTime? completedFromDate,
+    DateTime? completedToDate,
+    List<int>? projectIds,
+    List<String>? authors,
+    String? department,
+    List<int>? reasonForRefusalIds,
+    List<Map<String, dynamic>>? directoryValues,
+    bool bypassCache = false,
+  }) async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
     final organizationId = await getSelectedOrganization();
 
+    if (kDebugMode) {
+      debugPrint('🔍 getTaskStatuses - START WITH FILTERS');
+      debugPrint('🔍 getTaskStatuses - organizationId: $organizationId');
+    }
+
     try {
-      // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
-      final path = await _appendQueryParams('/task-status');
-      if (kDebugMode) {
-        //debugPrint('ApiService: getTaskStatuses - Generated path: $path');
+      String path = '/task-status';
+      path = await _appendQueryParams(path);
+
+      // Добавляем фильтры к запросу статусов
+      if (users != null && users.isNotEmpty) {
+        for (int i = 0; i < users.length; i++) {
+          path += '&users[$i]=${users[i]}';
+        }
+      }
+      if (statuses != null) {
+        path += '&task_status_id=$statuses';
+      }
+      if (fromDate != null && toDate != null) {
+        final formattedFromDate = DateFormat('yyyy-MM-dd').format(fromDate);
+        final formattedToDate = DateFormat('yyyy-MM-dd').format(toDate);
+        path += '&from=$formattedFromDate&to=$formattedToDate';
+      }
+      if (overdue == true) path += '&overdue=1';
+      if (hasFile == true) path += '&hasFile=1';
+      if (hasDeal == true) path += '&hasDeal=1';
+      if (urgent == true) path += '&urgent=1';
+      if (deadlinefromDate != null && deadlinetoDate != null) {
+        final formattedDeadlineFrom =
+            DateFormat('yyyy-MM-dd').format(deadlinefromDate);
+        final formattedDeadlineTo =
+            DateFormat('yyyy-MM-dd').format(deadlinetoDate);
+        path +=
+            '&deadline_from=$formattedDeadlineFrom&deadline_to=$formattedDeadlineTo';
+      }
+      if (completedFromDate != null && completedToDate != null) {
+        final formattedCompletedFrom =
+            DateFormat('yyyy-MM-dd').format(completedFromDate);
+        final formattedCompletedTo =
+            DateFormat('yyyy-MM-dd').format(completedToDate);
+        path +=
+            '&completed_from=$formattedCompletedFrom&completed_to=$formattedCompletedTo';
+      }
+      if (projectIds != null && projectIds.isNotEmpty) {
+        for (int i = 0; i < projectIds.length; i++) {
+          path += '&project_ids[$i]=${projectIds[i]}';
+        }
+      }
+      if (authors != null && authors.isNotEmpty) {
+        for (int i = 0; i < authors.length; i++) {
+          path += '&authors[$i]=${Uri.encodeQueryComponent(authors[i])}';
+        }
+      }
+      if (department != null && department.isNotEmpty) {
+        path += '&department=${Uri.encodeQueryComponent(department)}';
+      }
+      if (reasonForRefusalIds != null && reasonForRefusalIds.isNotEmpty) {
+        for (int i = 0; i < reasonForRefusalIds.length; i++) {
+          path += '&reason_for_refusals[$i]=${reasonForRefusalIds[i]}';
+        }
+      }
+      if (directoryValues != null && directoryValues.isNotEmpty) {
+        for (int i = 0; i < directoryValues.length; i++) {
+          final directoryId = directoryValues[i]['directory_id'];
+          final entryId = directoryValues[i]['entry_id'];
+          path += '&directory_values[$i][directory_id]=$directoryId';
+          path += '&directory_values[$i][entry_id]=$entryId';
+        }
       }
 
-      final response = await _getRequest(path);
+      if (kDebugMode) {
+        debugPrint('📤 getTaskStatuses WITH FILTERS - Final path: $path');
+      }
+
+      final response = await _analyticsRequest(path, bypassCache: bypassCache);
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        if (data['result'] != null) {
-          // Принт старых кэшированных данных (если они есть)
-          final cachedStatuses =
-              prefs.getString('cachedTaskStatuses_$organizationId');
-          if (cachedStatuses != null) {
-            final decodedData = json.decode(cachedStatuses);
-            // ////debugPrint(
-            //     '------------------------------ Старые данные в кэше ------------------------------');
-            // ////debugPrint(decodedData); // Старые данные
+
+        List<dynamic>? statusList;
+
+        if (data is List) {
+          statusList = data;
+        } else if (data is Map) {
+          if (data['result'] != null) {
+            statusList = data['result'] as List;
+          } else if (data['data'] != null) {
+            statusList = data['data'] as List;
+          } else if (data['statuses'] != null) {
+            statusList = data['statuses'] as List;
+          }
+        }
+
+        if (statusList != null && statusList.isNotEmpty) {
+          // Обновляем кэш новыми данными
+          await prefs.setString(
+              'cachedTaskStatuses_$organizationId', json.encode(statusList));
+
+          final statuses =
+              statusList.map((status) => TaskStatus.fromJson(status)).toList();
+
+          if (kDebugMode) {
+            debugPrint(
+                '✅ getTaskStatuses WITH FILTERS - Got ${statuses.length} statuses');
           }
 
-          // Обновляем кэш новыми данными
-          await prefs.setString('cachedTaskStatuses_$organizationId',
-              json.encode(data['result']));
-          // ////debugPrint(
-          //     '------------------------------------ Новые данные, которые сохраняются в кэш ---------------------------------');
-          // ////debugPrint(data['result']); // Новые данные, которые будут сохранены в кэш
-
-          return (data['result'] as List)
-              .map((status) => TaskStatus.fromJson(status))
-              .toList();
+          return statuses;
         } else {
-          throw Exception('Результат отсутствует в ответе');
+          throw Exception('Результат отсутствует в ответе или пустой');
         }
       } else {
         throw Exception('Ошибка ${response.statusCode}!');
@@ -4049,30 +5780,41 @@ Future<Map<String, dynamic>> updateDealStatusEdit(
   }
 
 // Обновление статуса карточки Задачи в колонке
- Future<void> updateTaskStatus(int taskId, int position, int statusId) async {
-  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
-  final path = await _appendQueryParams('/task/changeStatus/$taskId');
-  if (kDebugMode) {
-    //debugPrint('ApiService: updateTaskStatus - Generated path: $path');
-  }
+  Future<void> updateTaskStatus(
+    int taskId,
+    int position,
+    int statusId, {
+    int? reasonForRefusalId,
+    String? reasonForRefusal,
+  }) async {
+    // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+    final path = await _appendQueryParams('/task/changeStatus/$taskId');
+    if (kDebugMode) {
+      //debugPrint('ApiService: updateTaskStatus - Generated path: $path');
+    }
 
-  final response = await _postRequest(path, {
-    'position': 1,
-    'status_id': statusId,
-  });
+    final response = await _postRequest(path, {
+      'position': 1,
+      'status_id': statusId,
+      if (reasonForRefusalId != null)
+        'reason_for_refusal_id': reasonForRefusalId,
+      if (reasonForRefusal != null && reasonForRefusal.trim().isNotEmpty)
+        'reason_for_refusal': reasonForRefusal.trim(),
+    });
 
-  if (response.statusCode == 200) {
-    ////debugPrint('Статус задачи успешно обновлен');
-  } else if (response.statusCode == 422) {
-    // ПАРСИМ JSON ОТВЕТ ОТ СЕРВЕРА
-    final jsonResponse = json.decode(response.body);
-    // БЕРЁМ message ИЗ ОТВЕТА СЕРВЕРА
-    final errorMessage = jsonResponse['message'] ?? 'Вы не можете переместить задачу на этот статус';
-    throw TaskStatusUpdateException(422, errorMessage);
-  } else {
-    throw Exception('Ошибка обновления задач сделки!');
+    if (response.statusCode == 200) {
+      ////debugPrint('Статус задачи успешно обновлен');
+    } else if (response.statusCode == 422) {
+      // ПАРСИМ JSON ОТВЕТ ОТ СЕРВЕРА
+      final jsonResponse = json.decode(response.body);
+      // БЕРЁМ message ИЗ ОТВЕТА СЕРВЕРА
+      final errorMessage = jsonResponse['message'] ??
+          'Вы не можете переместить задачу на этот статус';
+      throw TaskStatusUpdateException(422, errorMessage);
+    } else {
+      throw Exception('Ошибка обновления задач сделки!');
+    }
   }
-}
 
   Map<String, dynamic> _handleTaskResponse(
       http.Response response, String operation) {
@@ -4157,6 +5899,7 @@ Future<Map<String, dynamic>> updateDealStatusEdit(
     required bool needsPermission,
     List<int>? roleIds,
     bool? finalStep,
+    bool isUnassembled = false,
   }) async {
     try {
       // Формируем данные для запроса
@@ -4170,6 +5913,7 @@ Future<Map<String, dynamic>> updateDealStatusEdit(
       if (finalStep != null) {
         data['final_step'] = finalStep;
       }
+      data['is_unassembled'] = isUnassembled;
 
       // Обрабатываем список ролей, если он существует
       if (roleIds != null && roleIds.isNotEmpty) {
@@ -4322,8 +6066,7 @@ Future<Map<String, dynamic>> updateDealStatusEdit(
         }
       }
 
-      final streamedResponse = await request.send();
-      final response = await http.Response.fromStream(streamedResponse);
+      final response = await _multipartPostRequest('', request);
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         return {
@@ -4408,7 +6151,7 @@ Future<Map<String, dynamic>> updateDealStatusEdit(
     List<int>? userId,
     String? description,
     List<Map<String, dynamic>>? customFields,
-    List<String>? filePaths,
+    List<FileHelper>? files,
     List<Map<String, int>>? directoryValues,
     int position = 1,
   }) async {
@@ -4461,11 +6204,9 @@ Future<Map<String, dynamic>> updateDealStatusEdit(
       if (customFields != null && customFields.isNotEmpty) {
         for (int i = 0; i < customFields.length; i++) {
           var field = customFields[i];
-          request.fields['task_custom_fields[$i][key]'] = field['key'] ?? '';
-          request.fields['task_custom_fields[$i][value]'] =
-              field['value'] ?? '';
-          request.fields['task_custom_fields[$i][type]'] =
-              field['type'] ?? 'string';
+          request.fields['custom_fields[$i][key]'] = field['key'] ?? '';
+          request.fields['custom_fields[$i][value]'] = field['value'] ?? '';
+          request.fields['custom_fields[$i][type]'] = field['type'] ?? 'string';
         }
       }
 
@@ -4479,15 +6220,24 @@ Future<Map<String, dynamic>> updateDealStatusEdit(
         }
       }
 
-      if (filePaths != null && filePaths.isNotEmpty) {
-        for (var filePath in filePaths) {
-          final file = await http.MultipartFile.fromPath('files[]', filePath);
-          request.files.add(file);
+      // Отправляем файлы (все файлы при создании новые, id == 0)
+      if (files != null && files.isNotEmpty) {
+        final newFiles = files.where((f) => f.id == 0).toList();
+        for (var fileData in newFiles) {
+          try {
+            final file = await http.MultipartFile.fromPath(
+              'files[]',
+              fileData.path,
+              filename: fileData.name,
+            );
+            request.files.add(file);
+          } catch (e) {
+            debugPrint("Error adding file ${fileData.name}: $e");
+          }
         }
       }
 
-      final streamedResponse = await request.send();
-      final response = await http.Response.fromStream(streamedResponse);
+      final response = await _multipartPostRequest('', request);
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         return {
@@ -4575,6 +6325,8 @@ Future<Map<String, dynamic>> updateDealStatusEdit(
     List<Map<String, dynamic>>? customFields,
     List<TaskFiles>? existingFiles,
     List<Map<String, int>>? directoryValues,
+    int? reasonForRefusalId,
+    String? reasonForRefusal,
   }) async {
     try {
       final token = await getToken();
@@ -4616,6 +6368,12 @@ Future<Map<String, dynamic>> updateDealStatusEdit(
       if (description != null) {
         request.fields['description'] = description;
       }
+      if (reasonForRefusalId != null) {
+        request.fields['reason_for_refusal_id'] = reasonForRefusalId.toString();
+      }
+      if (reasonForRefusal != null && reasonForRefusal.trim().isNotEmpty) {
+        request.fields['reason_for_refusal'] = reasonForRefusal.trim();
+      }
 
       // Добавляем пользователей
       if (userId != null && userId.isNotEmpty) {
@@ -4628,11 +6386,10 @@ Future<Map<String, dynamic>> updateDealStatusEdit(
       if (customFields != null && customFields.isNotEmpty) {
         for (int i = 0; i < customFields.length; i++) {
           var field = customFields[i];
-          request.fields['task_custom_fields[$i][key]'] =
-              field['key']!.toString();
-          request.fields['task_custom_fields[$i][value]'] =
+          request.fields['custom_fields[$i][key]'] = field['key']!.toString();
+          request.fields['custom_fields[$i][value]'] =
               field['value']!.toString();
-          request.fields['task_custom_fields[$i][type]'] =
+          request.fields['custom_fields[$i][type]'] =
               field['type']?.toString() ?? 'string';
         }
       }
@@ -4659,8 +6416,7 @@ Future<Map<String, dynamic>> updateDealStatusEdit(
         }
       }
       // Отправляем запрос
-      final streamedResponse = await request.send();
-      final response = await http.Response.fromStream(streamedResponse);
+      final response = await _multipartPostRequest('', request);
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         return {
@@ -4731,7 +6487,7 @@ Future<Map<String, dynamic>> updateDealStatusEdit(
         //debugPrint('ApiService: getTaskHistory - Generated path: $path');
       }
 
-      final response = await _getRequest(path);
+      final response = await _analyticsRequest(path);
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> decodedJson = json.decode(response.body);
@@ -4747,10 +6503,61 @@ Future<Map<String, dynamic>> updateDealStatusEdit(
     }
   }
 
+  /// Получить историю выполнения задачи (overdue history)
+  /// GET /api/task/overdue-history/{taskId}?organization_id=1&sales_funnel_id=1
+  Future<TaskOverdueHistoryResponse?> getTaskOverdueHistory(int taskId) async {
+    try {
+      final path = await _appendQueryParams('/task/overdue-history/$taskId');
+      if (kDebugMode) {
+        debugPrint('ApiService: getTaskOverdueHistory - Path: $path');
+      }
+
+      final response = await _analyticsRequest(path);
+
+      if (kDebugMode) {
+        debugPrint(
+            'ApiService: getTaskOverdueHistory - Status: ${response.statusCode}');
+      }
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = json.decode(response.body);
+        final historyResponse = TaskOverdueHistoryResponse.fromJson(data);
+
+        if (kDebugMode) {
+          debugPrint(
+              'ApiService: История выполнения получена - ${historyResponse.result?.length ?? 0} записей');
+        }
+
+        return historyResponse;
+      } else {
+        if (kDebugMode) {
+          debugPrint(
+              'ApiService: Ошибка получения истории выполнения: ${response.statusCode}');
+        }
+        return null;
+      }
+    } catch (e, stackTrace) {
+      if (kDebugMode) {
+        debugPrint(
+            'ApiService: Исключение при получении истории выполнения: $e');
+        debugPrint('ApiService: StackTrace: $stackTrace');
+      }
+      return null;
+    }
+  }
+
 // Метод для получения Проекта
-  Future<ProjectsDataResponse> getAllProject() async {
+  Future<ProjectsDataResponse> getAllProject({
+    String? search,
+    int page = 1,
+    int perPage = 20,
+  }) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
-    final path = await _appendQueryParams('/project');
+    String path =
+        await _appendQueryParams('/project?page=$page&per_page=$perPage');
+    if (search != null && search.trim().isNotEmpty) {
+      path += '&search=${Uri.encodeComponent(search.trim())}';
+    }
     if (kDebugMode) {
       //debugPrint('ApiService: getAllProject - Generated path: $path');
     }
@@ -4777,9 +6584,16 @@ Future<Map<String, dynamic>> updateDealStatusEdit(
   }
 
   // Метод для получения Проекта
-  Future<ProjectTaskDataResponse> getTaskProject({int page = 1, int perPage = 20}) async {
+  Future<ProjectTaskDataResponse> getTaskProject({
+    int page = 1,
+    int perPage = 20,
+    String? search,
+  }) async {
     // Формируем базовый путь с параметрами пагинации
     String path = '/task/get/projects?page=$page&per_page=$perPage';
+    if (search != null && search.trim().isNotEmpty) {
+      path += '&search=${Uri.encodeComponent(search.trim())}';
+    }
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     path = await _appendQueryParams(path);
     if (kDebugMode) {
@@ -4823,7 +6637,7 @@ Future<Map<String, dynamic>> updateDealStatusEdit(
       }
 
       ////debugPrint('Отправка запроса на /user');
-      final response = await _getRequest(path);
+      final response = await _analyticsRequest(path);
       // ////debugPrint('Статус ответа!');
       // ////debugPrint('Тело ответа!');
 
@@ -5020,6 +6834,7 @@ Future<Map<String, dynamic>> updateDealStatusEdit(
     required bool needsPermission,
     required bool finalStep,
     required bool checkingStep,
+    bool isUnassembled = false,
     required List<int> roleIds,
   }) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
@@ -5035,6 +6850,7 @@ Future<Map<String, dynamic>> updateDealStatusEdit(
       "needs_permission": needsPermission ? 1 : 0,
       "final_step": finalStep ? 1 : 0,
       "checking_step": checkingStep ? 1 : 0,
+      "is_unassembled": isUnassembled,
       "roles": roles,
       "organization_id": await getSelectedOrganization(),
     };
@@ -5170,7 +6986,7 @@ Future<Map<String, dynamic>> updateDealStatusEdit(
       },
     );
 
-    if (response.statusCode != 200) {
+    if (response.statusCode != 200 && response.statusCode != 201) {
       throw ('Ошибка при связывании справочника: ${response.statusCode}');
     }
 
@@ -5266,7 +7082,7 @@ Future<Map<String, dynamic>> updateDealStatusEdit(
       //debugPrint('ApiService: getLeadChart - Generated path: $path');
     }
 
-    final response = await _getRequest(path);
+    final response = await _analyticsRequest(path);
 
     if (response.statusCode == 200) {
       final List<dynamic> data = json.decode(response.body);
@@ -5287,7 +7103,7 @@ Future<Map<String, dynamic>> updateDealStatusEdit(
       //debugPrint('ApiService: getLeadConversionData - Generated path: $path');
     }
 
-    final response = await _getRequest(path);
+    final response = await _analyticsRequest(path);
 
     if (response.statusCode == 200) {
       final Map<String, dynamic> data = json.decode(response.body);
@@ -5313,20 +7129,12 @@ Future<Map<String, dynamic>> updateDealStatusEdit(
       //debugPrint('ApiService: getDealStatsData - Generated path: $path');
     }
 
-    try {
-      final response = await _getRequest(path);
-      if (response.statusCode == 200) {
-        final jsonData = json.decode(response.body);
-        return DealStatsResponse.fromJson(jsonData);
-      } else if (response.statusCode == 500) {
-        throw Exception('Ошибка сервера!');
-      } else {
-        throw Exception('Ошибка загрузки данных!');
-      }
-    } catch (e) {
-      ////debugPrint('Ошибка запроса!');
-      throw ('');
-    }
+    final jsonData = await _getAnalyticsChartJsonMap(
+      path,
+      debugLabel: 'getDealStatsData',
+      fallbackMessage: 'Ошибка загрузки данных графика сделок!',
+    );
+    return DealStatsResponse.fromJson(jsonData);
   }
 
 // Метод для получения графика Задачи
@@ -5338,7 +7146,7 @@ Future<Map<String, dynamic>> updateDealStatusEdit(
     }
 
     try {
-      final response = await _getRequest(path);
+      final response = await _analyticsRequest(path);
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> jsonMap = json.decode(response.body);
@@ -5372,7 +7180,7 @@ Future<Map<String, dynamic>> updateDealStatusEdit(
       //debugPrint('ApiService: getProcessSpeedData - Generated path: $path');
     }
 
-    final response = await _getRequest(path);
+    final response = await _analyticsRequest(path);
 
     if (response.statusCode == 200) {
       final Map<String, dynamic> data = json.decode(response.body);
@@ -5397,7 +7205,7 @@ Future<Map<String, dynamic>> updateDealStatusEdit(
       //debugPrint('ApiService: getUsersChartData - Generated path: $path');
     }
 
-    final response = await _getRequest(path);
+    final response = await _analyticsRequest(path);
 
     if (response.statusCode == 200) {
       final Map<String, dynamic> data = json.decode(response.body);
@@ -5418,16 +7226,16 @@ Future<Map<String, dynamic>> updateDealStatusEdit(
   }
 
   Future<OverdueTasksResponse> getUsersOverdueTaskData(
-  {required int userId}
-      ) async {
+      {required int userId}) async {
     // Use _appendQueryParams to include organization_id, etc.
-    final path = await _appendQueryParams('/dashboard/user/$userId/overdue-tasks');
+    final path =
+        await _appendQueryParams('/dashboard/user/$userId/overdue-tasks');
 
     if (kDebugMode) {
       // debugPrint('ApiService: getUserOverdueTasksData - Generated path: $path');
     }
 
-    final response = await _getRequest(path);
+    final response = await _analyticsRequest(path);
 
     if (response.statusCode == 200) {
       final Map<String, dynamic> data = json.decode(response.body);
@@ -5444,6 +7252,522 @@ Future<Map<String, dynamic>> updateDealStatusEdit(
     }
   }
 
+  // ============ NEW ANALYTICS API METHODS ============
+
+  /// Получение графика лидов с датами
+  /// Endpoint: /api/dashboard/lead-chart?fromDate=YYYY-MM-DD&toDate=YYYY-MM-DD
+  Future<LeadChartResponse> getLeadChartWithDates({
+    required String fromDate,
+    required String toDate,
+  }) async {
+    final path = await _appendQueryParams(
+      '/dashboard/lead-chart?fromDate=$fromDate&toDate=$toDate',
+    );
+
+    if (kDebugMode) {
+      debugPrint('ApiService: getLeadChartWithDates - Generated path: $path');
+    }
+
+    final jsonData = await _getAnalyticsChartJsonMap(
+      path,
+      debugLabel: 'getLeadChartWithDates',
+      fallbackMessage: 'Ошибка загрузки данных графика лидов!',
+    );
+    return LeadChartResponse.fromJson(jsonData);
+  }
+
+  /// Получение конверсии по статусам
+  /// Endpoint: /api/v2/dashboard/leadConversion-by-statuses-chart
+  Future<LeadConversionByStatusesResponse> getLeadConversionByStatuses() async {
+    final path = await _appendQueryParams(
+        '/v2/dashboard/leadConversion-by-statuses-chart');
+
+    if (kDebugMode) {
+      debugPrint(
+          'ApiService: getLeadConversionByStatuses - Generated path: $path');
+    }
+
+    final jsonData = await _getAnalyticsChartJsonMap(
+      path,
+      debugLabel: 'getLeadConversionByStatuses',
+      fallbackMessage: 'Ошибка загрузки данных конверсии по статусам!',
+    );
+    return LeadConversionByStatusesResponse.fromJson(jsonData);
+  }
+
+  /// Получение скорости обработки лидов (V2)
+  /// Endpoint: /api/v2/dashboard/lead-process-speed
+  Future<LeadProcessSpeedResponse> getLeadProcessSpeedV2() async {
+    final path = await _appendQueryParams('/v2/dashboard/lead-process-speed');
+
+    if (kDebugMode) {
+      debugPrint('ApiService: getLeadProcessSpeedV2 - Generated path: $path');
+    }
+
+    final jsonData = await _getAnalyticsChartJsonMap(
+      path,
+      debugLabel: 'getLeadProcessSpeedV2',
+      fallbackMessage: 'Ошибка загрузки данных скорости обработки!',
+    );
+    return LeadProcessSpeedResponse.fromJson(jsonData);
+  }
+
+  Future<List<OrderInternetStore>> getOrderInternetStores() async {
+    var path = '/integrations?type=mini_app_telegram_bot';
+    path = await _appendQueryParams(path);
+
+    if (kDebugMode) {
+      debugPrint('ApiService: getOrderInternetStores - Generated path: $path');
+    }
+
+    final response = await _getRequest(path);
+    if (response.statusCode != 200) {
+      throw Exception('Ошибка загрузки интернет магазинов');
+    }
+
+    final Map<String, dynamic> data = json.decode(response.body);
+    final result = data['result'];
+    final rawList = <dynamic>[];
+
+    if (result is List) {
+      rawList.addAll(result);
+    } else if (result is Map<String, dynamic>) {
+      if (result['data'] is List) {
+        rawList.addAll(result['data'] as List<dynamic>);
+      } else if (result['integrations'] is List) {
+        rawList.addAll(result['integrations'] as List<dynamic>);
+      }
+    }
+
+    if (kDebugMode) {
+      debugPrint(
+          'ApiService: getOrderInternetStores - parsed items count: ${rawList.length}');
+      if (rawList.isEmpty) {
+        debugPrint(
+            'ApiService: getOrderInternetStores - empty body: ${response.body}');
+      }
+    }
+
+    return rawList
+        .whereType<Map<String, dynamic>>()
+        .map(OrderInternetStore.fromJson)
+        .where((item) => item.name.trim().isNotEmpty)
+        .toList();
+  }
+
+  /// Получение каналов привлечения лидов
+  /// Endpoint: /api/dashboard/lead-channels
+  Future<LeadChannelsResponse> getLeadChannels() async {
+    final path = await _appendQueryParams('/dashboard/lead-channels');
+
+    if (kDebugMode) {
+      debugPrint('ApiService: getLeadChannels - Generated path: $path');
+    }
+
+    final jsonData = await _getAnalyticsChartJsonMap(
+      path,
+      debugLabel: 'getLeadChannels',
+      fallbackMessage: 'Ошибка загрузки данных каналов!',
+    );
+    return LeadChannelsResponse.fromJson(jsonData);
+  }
+
+  /// Получение статистики сообщений
+  /// Endpoint: /api/dashboard/message-stats
+  Future<MessageStatsResponse> getMessageStats() async {
+    final path = await _appendQueryParams('/dashboard/message-stats');
+
+    if (kDebugMode) {
+      debugPrint('ApiService: getMessageStats - Generated path: $path');
+    }
+
+    final jsonData = await _getAnalyticsChartJsonMap(
+      path,
+      debugLabel: 'getMessageStats',
+      fallbackMessage: 'Ошибка загрузки статистики сообщений!',
+    );
+    return MessageStatsResponse.fromJson(jsonData);
+  }
+
+  /// Получение графика пользователей (V2)
+  /// Endpoint: /api/v2/dashboard/users-chart
+  Future<UsersChartResponse> getUsersChartV2() async {
+    final path = await _appendQueryParams('/v2/dashboard/users-chart');
+
+    if (kDebugMode) {
+      debugPrint('ApiService: getUsersChartV2 - Generated path: $path');
+    }
+
+    final jsonData = await _getAnalyticsChartJsonMap(
+      path,
+      debugLabel: 'getUsersChartV2',
+      fallbackMessage: 'Ошибка загрузки данных пользователей!',
+    );
+    return UsersChartResponse.fromJson(jsonData);
+  }
+
+  /// Получение статистики для 4 карточек (V2)
+  /// Endpoint: /api/v2/dashboard/statistics
+  Future<DashboardStatisticsResponse> getDashboardStatisticsV2() async {
+    final path = await _appendQueryParams('/v2/dashboard/statistics');
+
+    if (kDebugMode) {
+      debugPrint(
+          'ApiService: getDashboardStatisticsV2 - Generated path: $path');
+    }
+
+    try {
+      final response = await _analyticsRequest(path);
+
+      if (response.statusCode == 200) {
+        final jsonData = json.decode(response.body);
+        return DashboardStatisticsResponse.fromJson(jsonData);
+      } else {
+        throw Exception('Ошибка загрузки статистики!');
+      }
+    } catch (e) {
+      debugPrint('ApiService: getDashboardStatisticsV2 error: $e');
+      throw Exception('Ошибка получения статистики: $e');
+    }
+  }
+
+  /// Получение настроек/доступов графиков для аналитики (V2)
+  /// Endpoint: /api/v2/dashboard-settings
+  Future<List<DashboardSettingItem>> getDashboardSettingsV2() async {
+    final path = await _appendQueryParams('/v2/dashboard-settings');
+
+    if (kDebugMode) {
+      debugPrint('ApiService: getDashboardSettingsV2 - Generated path: $path');
+    }
+
+    try {
+      final response = await _analyticsRequest(path);
+
+      if (response.statusCode != 200) {
+        throw Exception(
+          'Ошибка загрузки настроек графиков! Код: ${response.statusCode}',
+        );
+      }
+
+      final dynamic jsonData = json.decode(response.body);
+      final dynamic result =
+          jsonData is Map<String, dynamic> ? jsonData['result'] : null;
+
+      if (result is! List) {
+        return [];
+      }
+
+      return result
+          .whereType<Map<String, dynamic>>()
+          .map(DashboardSettingItem.fromJson)
+          .where((item) => item.nameEn.isNotEmpty)
+          .toList();
+    } catch (e) {
+      debugPrint('ApiService: getDashboardSettingsV2 error: $e');
+      rethrow;
+    }
+  }
+
+  /// Применение фильтров аналитики (V2)
+  /// Endpoint: /api/v2/dashboard/filters
+  Future<void> applyAnalyticsFiltersV2(Map<String, dynamic> filters) async {
+    const path = '/v2/dashboard/filters';
+
+    if (kDebugMode) {
+      debugPrint('ApiService: applyAnalyticsFiltersV2 - Filters: $filters');
+    }
+
+    try {
+      final response = await _postRequest(path, filters);
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return;
+      }
+      throw Exception('Ошибка применения фильтров аналитики!');
+    } catch (e) {
+      debugPrint('ApiService: applyAnalyticsFiltersV2 error: $e');
+      throw Exception('Ошибка применения фильтров аналитики: $e');
+    }
+  }
+
+  /// Конверсия лидов (V2)
+  /// Endpoint: /api/v2/dashboard/leadConversion-chart
+  Future<LeadConversion> getLeadConversionDataV2() async {
+    final path = await _appendQueryParams('/v2/dashboard/leadConversion-chart');
+
+    if (kDebugMode) {
+      debugPrint('ApiService: getLeadConversionDataV2 - Generated path: $path');
+    }
+
+    final jsonData = await _getAnalyticsChartJsonMap(
+      path,
+      debugLabel: 'getLeadConversionDataV2',
+      fallbackMessage: 'Ошибка загрузки данных конверсии лидов!',
+    );
+
+    if (jsonData.isEmpty) {
+      throw Exception('Нет данных графика в ответе "Конверсия лидов"');
+    }
+
+    return LeadConversion.fromJson(jsonData);
+  }
+
+  /// Задачи (V2)
+  /// Endpoint: /api/v2/dashboard/task-chart
+  Future<TaskChartV2Response> getTaskChartDataV2() async {
+    final path = await _appendQueryParams('/v2/dashboard/task-chart');
+
+    if (kDebugMode) {
+      debugPrint('ApiService: getTaskChartDataV2 - Generated path: $path');
+    }
+
+    final jsonData = await _getAnalyticsChartJsonMap(
+      path,
+      debugLabel: 'getTaskChartDataV2',
+      fallbackMessage: 'Ошибка загрузки данных графика задач!',
+    );
+    return TaskChartV2Response.fromJson(jsonData);
+  }
+
+  /// Источники лидов (V2)
+  /// Endpoint: /api/v2/dashboard/source-of-leads-chart
+  Future<SourceOfLeadsChartResponse> getSourceOfLeadsChartV2() async {
+    final path =
+        await _appendQueryParams('/v2/dashboard/source-of-leads-chart');
+
+    if (kDebugMode) {
+      debugPrint('ApiService: getSourceOfLeadsChartV2 - Generated path: $path');
+    }
+
+    final jsonData = await _getAnalyticsChartJsonMap(
+      path,
+      debugLabel: 'getSourceOfLeadsChartV2',
+      fallbackMessage: 'Ошибка загрузки источников лидов!',
+    );
+    return SourceOfLeadsChartResponse.fromJson(jsonData);
+  }
+
+  /// Сделки по менеджерам (V2)
+  /// Endpoint: /api/v2/dashboard/deals-by-managers
+  Future<DealsByManagersResponse> getDealsByManagersV2() async {
+    final path = await _appendQueryParams('/v2/dashboard/deals-by-managers');
+
+    if (kDebugMode) {
+      debugPrint('ApiService: getDealsByManagersV2 - Generated path: $path');
+    }
+
+    final jsonData = await _getAnalyticsChartJsonMap(
+      path,
+      debugLabel: 'getDealsByManagersV2',
+      fallbackMessage: 'Ошибка загрузки данных менеджеров!',
+    );
+    return DealsByManagersResponse.fromJson(jsonData);
+  }
+
+  /// Заказы интернет-магазина (V2)
+  /// Endpoint: /api/v2/dashboard/online-store-orders-chart
+  Future<OnlineStoreOrdersResponse> getOnlineStoreOrdersChartV2() async {
+    final path =
+        await _appendQueryParams('/v2/dashboard/online-store-orders-chart');
+
+    if (kDebugMode) {
+      debugPrint(
+          'ApiService: getOnlineStoreOrdersChartV2 - Generated path: $path');
+    }
+
+    final jsonData = await _getAnalyticsChartJsonMap(
+      path,
+      debugLabel: 'getOnlineStoreOrdersChartV2',
+      fallbackMessage: 'Ошибка загрузки заказов интернет-магазина!',
+    );
+    return OnlineStoreOrdersResponse.fromJson(jsonData);
+  }
+
+  /// Выполненные задачи (график)
+  /// Endpoint: /api/v2/dashboard/completed-task-chart
+  Future<CompletedTasksChartResponse> getCompletedTasksChartV2() async {
+    final path = await _appendQueryParams('/v2/dashboard/completed-task-chart');
+
+    if (kDebugMode) {
+      debugPrint(
+          'ApiService: getCompletedTasksChartV2 - Generated path: $path');
+    }
+
+    final jsonData = await _getAnalyticsChartJsonMap(
+      path,
+      debugLabel: 'getCompletedTasksChartV2',
+      fallbackMessage: 'Ошибка загрузки выполненных задач!',
+    );
+    return CompletedTasksChartResponse.fromJson(jsonData);
+  }
+
+  /// Телефония и события (график)
+  /// Endpoint: /api/v2/dashboard/telephony-and-events-chart
+  Future<TelephonyEventsResponse> getTelephonyAndEventsChartV2() async {
+    final path =
+        await _appendQueryParams('/v2/dashboard/telephony-and-events-chart');
+
+    if (kDebugMode) {
+      debugPrint(
+          'ApiService: getTelephonyAndEventsChartV2 - Generated path: $path');
+    }
+
+    final jsonData = await _getAnalyticsChartJsonMap(
+      path,
+      debugLabel: 'getTelephonyAndEventsChartV2',
+      fallbackMessage: 'Ошибка загрузки телефонии и событий!',
+    );
+    return TelephonyEventsResponse.fromJson(jsonData);
+  }
+
+  /// Ответы на сообщения (график)
+  /// Endpoint: /api/v2/dashboard/replies-to-messages-chart
+  Future<RepliesToMessagesResponse> getRepliesToMessagesChartV2() async {
+    final path =
+        await _appendQueryParams('/v2/dashboard/replies-to-messages-chart');
+
+    if (kDebugMode) {
+      debugPrint(
+          'ApiService: getRepliesToMessagesChartV2 - Generated path: $path');
+    }
+
+    final jsonData = await _getAnalyticsChartJsonMap(
+      path,
+      debugLabel: 'getRepliesToMessagesChartV2',
+      fallbackMessage: 'Ошибка загрузки ответов на сообщения!',
+    );
+    return RepliesToMessagesResponse.fromJson(jsonData);
+  }
+
+  /// Статистика задач по проектам
+  /// Endpoint: /api/v2/dashboard/task-statistics-by-project-chart
+  Future<TaskStatsByProjectResponse> getTaskStatsByProjectChartV2() async {
+    final path = await _appendQueryParams(
+        '/v2/dashboard/task-statistics-by-project-chart');
+
+    if (kDebugMode) {
+      debugPrint(
+          'ApiService: getTaskStatsByProjectChartV2 - Generated path: $path');
+    }
+
+    final jsonData = await _getAnalyticsChartJsonMap(
+      path,
+      debugLabel: 'getTaskStatsByProjectChartV2',
+      fallbackMessage: 'Ошибка загрузки статистики задач по проектам!',
+    );
+    return TaskStatsByProjectResponse.fromJson(jsonData);
+  }
+
+  /// Подключенные аккаунты
+  /// Endpoint: /api/v2/dashboard/connected-accounts-chart
+  Future<ConnectedAccountsResponse> getConnectedAccountsChartV2(
+      {int? channel}) async {
+    var path =
+        await _appendQueryParams('/v2/dashboard/connected-accounts-chart');
+    if (channel != null) {
+      path += '&channel=$channel';
+    }
+
+    if (kDebugMode) {
+      debugPrint(
+          'ApiService: getConnectedAccountsChartV2 - Generated path: $path');
+    }
+
+    final jsonData = await _getAnalyticsChartJsonMap(
+      path,
+      debugLabel: 'getConnectedAccountsChartV2',
+      fallbackMessage: 'Ошибка загрузки подключенных аккаунтов!',
+    );
+    return ConnectedAccountsResponse.fromJson(jsonData);
+  }
+
+  /// ROI рекламы (график)
+  /// Endpoint: /api/v2/dashboard/advertising-ROI-chart
+  Future<AdvertisingRoiResponse> getAdvertisingRoiChartV2() async {
+    final path =
+        await _appendQueryParams('/v2/dashboard/advertising-ROI-chart');
+
+    if (kDebugMode) {
+      debugPrint(
+          'ApiService: getAdvertisingRoiChartV2 - Generated path: $path');
+    }
+
+    final jsonData = await _getAnalyticsChartJsonMap(
+      path,
+      debugLabel: 'getAdvertisingRoiChartV2',
+      fallbackMessage: 'Ошибка загрузки ROI рекламы!',
+    );
+    return AdvertisingRoiResponse.fromJson(jsonData);
+  }
+
+  /// Аналитика звонков по часам
+  /// Endpoint: /api/v2/dashboard/telephony-and-events-by-hour
+  Future<TelephonyByHourResponse> getTelephonyByHourChartV2({
+    DateTime? date,
+  }) async {
+    var path =
+        await _appendQueryParams('/v2/dashboard/telephony-and-events-by-hour');
+    if (date != null) {
+      final oneDay = DateFormat('yyyy/MM/dd').format(date);
+      final separator = path.contains('?') ? '&' : '?';
+      path +=
+          '${separator}date_from=${Uri.encodeComponent(oneDay)}&date_to=${Uri.encodeComponent(oneDay)}';
+    }
+
+    if (kDebugMode) {
+      debugPrint(
+          'ApiService: getTelephonyByHourChartV2 - Generated path: $path');
+    }
+
+    final jsonData = await _getAnalyticsChartJsonMap(
+      path,
+      debugLabel: 'getTelephonyByHourChartV2',
+      fallbackMessage: 'Ошибка загрузки аналитики звонков по часам!',
+    );
+    return TelephonyByHourResponse.fromJson(jsonData);
+  }
+
+  /// Таргетированная реклама (Meta Ads)
+  /// Endpoint: /api/v2/dashboard/targeted-advertising-chart
+  Future<TargetedAdsResponse> getTargetedAdvertisingChartV2(
+      {int? projectId}) async {
+    var path =
+        await _appendQueryParams('/v2/dashboard/targeted-advertising-chart');
+    if (projectId != null) {
+      path += '&project_id=$projectId';
+    }
+
+    if (kDebugMode) {
+      debugPrint(
+          'ApiService: getTargetedAdvertisingChartV2 - Generated path: $path');
+    }
+
+    final jsonData = await _getAnalyticsChartJsonMap(
+      path,
+      debugLabel: 'getTargetedAdvertisingChartV2',
+      fallbackMessage: 'Ошибка загрузки таргетированной рекламы!',
+    );
+    return TargetedAdsResponse.fromJson(jsonData);
+  }
+
+  /// ТОП продаваемых товаров (V2)
+  /// Endpoint: /api/v2/dashboard/top-selling-products-chart
+  Future<TopSellingProductsResponse> getTopSellingProductsChartV2() async {
+    final path =
+        await _appendQueryParams('/v2/dashboard/top-selling-products-chart');
+
+    if (kDebugMode) {
+      debugPrint(
+          'ApiService: getTopSellingProductsChartV2 - Generated path: $path');
+    }
+
+    final jsonData = await _getAnalyticsChartJsonMap(
+      path,
+      debugLabel: 'getTopSellingProductsChartV2',
+      fallbackMessage: 'Ошибка загрузки данных товаров!',
+    );
+    return TopSellingProductsResponse.fromJson(jsonData);
+  }
 
 //_________________________________ END_____API_SCREEN__DASHBOARD____________________________________________//
 
@@ -5458,7 +7782,7 @@ Future<Map<String, dynamic>> updateDealStatusEdit(
     }
 
     try {
-      final response = await _getRequest(path);
+      final response = await _analyticsRequest(path);
       if (response.statusCode == 200) {
         final jsonData = json.decode(response.body);
         return DealStatsResponseManager.fromJson(jsonData);
@@ -5481,7 +7805,7 @@ Future<Map<String, dynamic>> updateDealStatusEdit(
       //debugPrint('ApiService: getLeadChartManager - Generated path: $path');
     }
 
-    final response = await _getRequest(path);
+    final response = await _analyticsRequest(path);
 
     if (response.statusCode == 200) {
       final List<dynamic> data = json.decode(response.body);
@@ -5503,7 +7827,7 @@ Future<Map<String, dynamic>> updateDealStatusEdit(
       //debugPrint('ApiService: getLeadConversionDataManager - Generated path: $path');
     }
 
-    final response = await _getRequest(path);
+    final response = await _analyticsRequest(path);
 
     if (response.statusCode == 200) {
       final Map<String, dynamic> data = json.decode(response.body);
@@ -5529,7 +7853,7 @@ Future<Map<String, dynamic>> updateDealStatusEdit(
       //debugPrint('ApiService: getProcessSpeedDataManager - Generated path: $path');
     }
 
-    final response = await _getRequest(path);
+    final response = await _analyticsRequest(path);
 
     if (response.statusCode == 200) {
       final Map<String, dynamic> data = json.decode(response.body);
@@ -5556,7 +7880,7 @@ Future<Map<String, dynamic>> updateDealStatusEdit(
     }
 
     try {
-      final response = await _getRequest(path);
+      final response = await _analyticsRequest(path);
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> jsonMap = json.decode(response.body);
@@ -5585,7 +7909,7 @@ Future<Map<String, dynamic>> updateDealStatusEdit(
       //debugPrint('ApiService: getUserStatsManager - Generated path: $path');
     }
 
-    final response = await _getRequest(path);
+    final response = await _analyticsRequest(path);
 
     if (response.statusCode == 200) {
       final Map<String, dynamic> data = json.decode(response.body);
@@ -5606,197 +7930,258 @@ Future<Map<String, dynamic>> updateDealStatusEdit(
 
 //_________________________________ START_____API_SCREEN__CHATS____________________________________________//
 
-Future<PaginationDTO<Chats>> getAllChats(
-  String endPoint, [
-  int page = 1,
-  String? search,
-  int? salesFunnelId,
-  Map<String, dynamic>? filters,
-]) async {
-  final token = await getToken();
-  String path = '/v2/chat/getMyChats/$endPoint?page=$page';
+  Future<PaginationDTO<Chats>> getAllChats(
+    String endPoint, [
+    int page = 1,
+    String? search,
+    int? salesFunnelId,
+    Map<String, dynamic>? filters,
+  ]) async {
+    final token = await getToken();
+    String path = '/v2/chat/getMyChats/$endPoint?page=$page';
 
-  path = await _appendQueryParams(path);
+    path = await _appendQueryParams(path);
 
-  if (search != null && search.isNotEmpty) {
-    path += '&search=${Uri.encodeComponent(search)}';
-  }
+    if (search != null && search.isNotEmpty) {
+      path += '&search=${Uri.encodeComponent(search)}';
+    }
 
-  if (salesFunnelId != null && endPoint == 'lead') {
-    path += '&funnel_id=$salesFunnelId';
-  }
+    if (salesFunnelId != null && endPoint == 'lead') {
+      path += '&funnel_id=$salesFunnelId';
+    }
 
-  if (filters != null) {
-    if (endPoint == 'lead') {
-      // ИСПРАВЛЕНО: Менеджеры - поддержка Map и объектов
-      if (filters['managers'] != null &&
-          (filters['managers'] as List).isNotEmpty) {
-        List<int> managerIds = (filters['managers'] as List).map((m) {
-          if (m is Map) {
-            return m['id'] as int;
+    if (filters != null) {
+      if (endPoint == 'lead') {
+        // ИСПРАВЛЕНО: Менеджеры - поддержка Map и объектов
+        if (filters['managers'] != null &&
+            (filters['managers'] as List).isNotEmpty) {
+          List<int> managerIds = (filters['managers'] as List).map((m) {
+            if (m is Map) {
+              return m['id'] as int;
+            }
+            return m.id as int; // Для объектов ManagerData
+          }).toList();
+          for (int managerId in managerIds) {
+            path += '&managers[]=$managerId';
           }
-          return m.id as int; // Для объектов ManagerData
-        }).toList();
-        for (int managerId in managerIds) {
-          path += '&managers[]=$managerId';
         }
-      }
 
-      // ИСПРАВЛЕНО: Регионы - поддержка Map и объектов
-      if (filters['regions'] != null &&
-          (filters['regions'] as List).isNotEmpty) {
-        List<int> regionIds = (filters['regions'] as List).map((r) {
-          if (r is Map) {
-            return r['id'] as int;
+        // ИСПРАВЛЕНО: Регионы - поддержка Map и объектов
+        if (filters['regions'] != null &&
+            (filters['regions'] as List).isNotEmpty) {
+          List<int> regionIds = (filters['regions'] as List).map((r) {
+            if (r is Map) {
+              return r['id'] as int;
+            }
+            return r.id as int; // Для объектов RegionData
+          }).toList();
+          for (int regionId in regionIds) {
+            path += '&regions[]=$regionId';
           }
-          return r.id as int; // Для объектов RegionData
-        }).toList();
-        for (int regionId in regionIds) {
-          path += '&regions[]=$regionId';
         }
-      }
 
-      // ИСПРАВЛЕНО: Источники - поддержка Map и объектов
-      if (filters['sources'] != null &&
-          (filters['sources'] as List).isNotEmpty) {
-        List<int> sourceIds = (filters['sources'] as List).map((s) {
-          if (s is Map) {
-            return s['id'] as int;
+        // ИСПРАВЛЕНО: Источники - поддержка Map и объектов
+        if (filters['sources'] != null &&
+            (filters['sources'] as List).isNotEmpty) {
+          List<int> sourceIds = (filters['sources'] as List).map((s) {
+            if (s is Map) {
+              return s['id'] as int;
+            }
+            return s.id as int; // Для объектов SourceData
+          }).toList();
+          for (int sourceId in sourceIds) {
+            path += '&sources[]=$sourceId';
           }
-          return s.id as int; // Для объектов SourceData
-        }).toList();
-        for (int sourceId in sourceIds) {
-          path += '&sources[]=$sourceId';
         }
+
+        // Статусы (без изменений)
+        if (filters['statuses'] != null &&
+            (filters['statuses'] as List).isNotEmpty) {
+          List<String> statusIds = (filters['statuses'] as List).cast<String>();
+          for (String statusId in statusIds) {
+            path += '&leadStatus[]=$statusId';
+          }
+        }
+
+        // Даты (без изменений)
+        if (filters['fromDate'] != null) {
+          path += '&from_date=${filters['fromDate'].toIso8601String()}';
+        }
+        if (filters['toDate'] != null) {
+          path += '&to_date=${filters['toDate'].toIso8601String()}';
+        }
+
+        // Флаги (без изменений)
+        if (filters['hasSuccessDeals'] == true) {
+          path += '&has_success_deals=1';
+        }
+        if (filters['hasInProgressDeals'] == true) {
+          path += '&has_in_progress_deals=1';
+        }
+        if (filters['hasFailureDeals'] == true) {
+          path += '&has_failure_deals=1';
+        }
+        if (filters['hasNotices'] == true) {
+          path += '&has_notices=1';
+        }
+        if (filters['hasContact'] == true) {
+          path += '&has_contact=1';
+        }
+        if (filters['hasChat'] == true) {
+          path += '&has_chat=1';
+        }
+        if (filters['hasNoReplies'] == true) {
+          path += '&has_no_replies=1';
+        }
+        if (filters['hasUnreadMessages'] == true) {
+          path += '&unread_only=1';
+        }
+        if (filters['hasDeal'] == true) {
+          path += '&has_deal=1';
+        }
+        if (filters['unreadOnly'] == true) {
+          path += '&unread_only=1';
+        }
+        if (filters['daysWithoutActivity'] != null &&
+            filters['daysWithoutActivity'] > 0) {
+          path += '&days_without_activity=${filters['daysWithoutActivity']}';
+        }
+        if (filters['directory_values'] != null &&
+            (filters['directory_values'] as List).isNotEmpty) {
+          List<Map<String, dynamic>> directoryValues =
+              filters['directory_values'] as List<Map<String, dynamic>>;
+          for (var value in directoryValues) {
+            path +=
+                '&directory_values[${value['directory_id']}]=${value['entry_id']}';
+          }
+        }
+      } else if (endPoint == 'task') {
+        // Обработка фильтров для task (без изменений)
+        if (filters['task_number'] != null &&
+            filters['task_number'].isNotEmpty) {
+          path += '&task_number=${Uri.encodeComponent(filters['task_number'])}';
+        }
+        if (filters['department_id'] != null) {
+          path += '&department_id=${filters['department_id']}';
+        }
+        if (filters['task_created_from'] != null) {
+          path += '&task_created_from=${filters['task_created_from']}';
+        }
+        if (filters['task_created_to'] != null) {
+          path += '&task_created_to=${filters['task_created_to']}';
+        }
+        if (filters['deadline_from'] != null) {
+          path += '&deadline_from=${filters['deadline_from']}';
+        }
+        if (filters['deadline_to'] != null) {
+          path += '&deadline_to=${filters['deadline_to']}';
+        }
+        if (filters['executor_ids'] != null &&
+            (filters['executor_ids'] as List).isNotEmpty) {
+          List<String> executorIds = (filters['executor_ids'] as List)
+              .map((id) => id.toString())
+              .toList();
+          for (String executorId in executorIds) {
+            path += '&executor_ids[]=$executorId';
+          }
+        }
+        if (filters['author_ids'] != null &&
+            (filters['author_ids'] as List).isNotEmpty) {
+          List<int> authorIds = (filters['author_ids'] as List).cast<int>();
+          for (int authorId in authorIds) {
+            path += '&author_ids[]=$authorId';
+          }
+        }
+        if (filters['project_ids'] != null &&
+            (filters['project_ids'] as List).isNotEmpty) {
+          List<int> projectIds = (filters['project_ids'] as List).cast<int>();
+          for (int projectId in projectIds) {
+            path += '&project_ids[]=$projectId';
+          }
+        }
+        if (filters['task_status_ids'] != null &&
+            (filters['task_status_ids'] as List).isNotEmpty) {
+          List<int> taskStatusIds =
+              (filters['task_status_ids'] as List).cast<int>();
+          for (int statusId in taskStatusIds) {
+            path += '&task_status_ids[]=$statusId';
+          }
+        }
+        if (filters['unread_only'] == true) {
+          path += '&unread_only=1';
+        }
+      }
+    }
+
+    final fullUrl = '$baseUrl$path';
+
+    // ДОБАВЛЕНО: Отладочный вывод
+    debugPrint('ApiService.getAllChats: Final URL: $fullUrl');
+
+    try {
+      // ДОБАВЛЕНО: Timeout для диагностики медленных ответов бэкенда
+      final response = await http.get(
+        Uri.parse(fullUrl),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'User-Agent': 'FlutterApp/1.0',
+          'Cache-Control': 'no-cache',
+        },
+      ).timeout(const Duration(seconds: 30));
+
+      if (response.statusCode == 302) {
+        throw Exception('Получен редирект 302. Проверьте URL и авторизацию.');
       }
 
-      // Статусы (без изменений)
-      if (filters['statuses'] != null &&
-          (filters['statuses'] as List).isNotEmpty) {
-        List<String> statusIds = (filters['statuses'] as List).cast<String>();
-        for (String statusId in statusIds) {
-          path += '&leadStatus[]=$statusId';
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['result'] != null) {
+          final pagination = PaginationDTO<Chats>.fromJson(data['result'], (e) {
+            return Chats.fromJson(e);
+          });
+          return pagination;
+        } else {
+          throw Exception('Результат отсутствует в ответе');
         }
+      } else {
+        throw Exception('Ошибка ${response.statusCode}: ${response.body}');
       }
-
-      // Даты (без изменений)
-      if (filters['fromDate'] != null) {
-        path += '&from_date=${filters['fromDate'].toIso8601String()}';
-      }
-      if (filters['toDate'] != null) {
-        path += '&to_date=${filters['toDate'].toIso8601String()}';
-      }
-
-      // Флаги (без изменений)
-      if (filters['hasSuccessDeals'] == true) {
-        path += '&has_success_deals=1';
-      }
-      if (filters['hasInProgressDeals'] == true) {
-        path += '&has_in_progress_deals=1';
-      }
-      if (filters['hasFailureDeals'] == true) {
-        path += '&has_failure_deals=1';
-      }
-      if (filters['hasNotices'] == true) {
-        path += '&has_notices=1';
-      }
-      if (filters['hasContact'] == true) {
-        path += '&has_contact=1';
-      }
-      if (filters['hasChat'] == true) {
-        path += '&has_chat=1';
-      }
-      if (filters['hasNoReplies'] == true) {
-        path += '&has_no_replies=1';
-      }
-      if (filters['hasUnreadMessages'] == true) {
-        path += '&unread_only=1';
-      }
-      if (filters['hasDeal'] == true) {
-        path += '&has_deal=1';
-      }
-      if (filters['unreadOnly'] == true) {
-        path += '&unread_only=1';
-      }
-      if (filters['daysWithoutActivity'] != null &&
-          filters['daysWithoutActivity'] > 0) {
-        path += '&days_without_activity=${filters['daysWithoutActivity']}';
-      }
-      if (filters['directory_values'] != null &&
-          (filters['directory_values'] as List).isNotEmpty) {
-        List<Map<String, dynamic>> directoryValues =
-            filters['directory_values'] as List<Map<String, dynamic>>;
-        for (var value in directoryValues) {
-          path +=
-              '&directory_values[${value['directory_id']}]=${value['entry_id']}';
-        }
-      }
-    } else if (endPoint == 'task') {
-      // Обработка фильтров для task (без изменений)
-      if (filters['task_number'] != null &&
-          filters['task_number'].isNotEmpty) {
-        path += '&task_number=${Uri.encodeComponent(filters['task_number'])}';
-      }
-      if (filters['department_id'] != null) {
-        path += '&department_id=${filters['department_id']}';
-      }
-      if (filters['task_created_from'] != null) {
-        path += '&task_created_from=${filters['task_created_from']}';
-      }
-      if (filters['task_created_to'] != null) {
-        path += '&task_created_to=${filters['task_created_to']}';
-      }
-      if (filters['deadline_from'] != null) {
-        path += '&deadline_from=${filters['deadline_from']}';
-      }
-      if (filters['deadline_to'] != null) {
-        path += '&deadline_to=${filters['deadline_to']}';
-      }
-      if (filters['executor_ids'] != null &&
-          (filters['executor_ids'] as List).isNotEmpty) {
-        List<String> executorIds = (filters['executor_ids'] as List)
-            .map((id) => id.toString())
-            .toList();
-        for (String executorId in executorIds) {
-          path += '&executor_ids[]=$executorId';
-        }
-      }
-      if (filters['author_ids'] != null &&
-          (filters['author_ids'] as List).isNotEmpty) {
-        List<int> authorIds = (filters['author_ids'] as List).cast<int>();
-        for (int authorId in authorIds) {
-          path += '&author_ids[]=$authorId';
-        }
-      }
-      if (filters['project_ids'] != null &&
-          (filters['project_ids'] as List).isNotEmpty) {
-        List<int> projectIds = (filters['project_ids'] as List).cast<int>();
-        for (int projectId in projectIds) {
-          path += '&project_ids[]=$projectId';
-        }
-      }
-      if (filters['task_status_ids'] != null &&
-          (filters['task_status_ids'] as List).isNotEmpty) {
-        List<int> taskStatusIds =
-            (filters['task_status_ids'] as List).cast<int>();
-        for (int statusId in taskStatusIds) {
-          path += '&task_status_ids[]=$statusId';
-        }
-      }
-      if (filters['unread_only'] == true) {
-        path += '&unread_only=1';
-      }
+    } catch (e) {
+      debugPrint('ApiService.getAllChats: Error: $e');
+      rethrow;
     }
   }
 
-  final fullUrl = '$baseUrl$path';
-  
-  // ДОБАВЛЕНО: Отладочный вывод
-  debugPrint('ApiService.getAllChats: Final URL: $fullUrl');
+  Future<String> getDynamicBaseUrlFixed() async {
+    // Сначала проверяем кешированное значение
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? cachedBaseUrl = prefs.getString('cached_base_url');
 
-  try {
+    if (cachedBaseUrl != null &&
+        cachedBaseUrl.isNotEmpty &&
+        cachedBaseUrl != 'null') {
+      if (kDebugMode) {
+        debugPrint('ApiService: Using cached baseUrl: $cachedBaseUrl');
+      }
+      return cachedBaseUrl;
+    }
+
+    // Если кеша нет, используем старую логику
+    return await getDynamicBaseUrl();
+  }
+
+  Future<ChatsGetId> getChatById(int chatId) async {
+    final token = await getToken();
+    String path = '/v2/chat/$chatId';
+    path = await _appendQueryParams(path);
+
+    debugPrint('════════════════════════════════════════════════════════');
+    debugPrint('🔍 [getChatById] Requesting: $baseUrl$path');
+
     final response = await http.get(
-      Uri.parse(fullUrl),
+      Uri.parse('$baseUrl$path'),
       headers: {
         'Authorization': 'Bearer $token',
         'Content-Type': 'application/json',
@@ -5806,80 +8191,140 @@ Future<PaginationDTO<Chats>> getAllChats(
       },
     );
 
-    if (response.statusCode == 302) {
-      throw Exception('Получен редирект 302. Проверьте URL и авторизацию.');
-    }
+    debugPrint('📥 [getChatById] Status: ${response.statusCode}');
+    debugPrint('📥 [getChatById] Full Response: ${response.body}');
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
+
+      // ✅ ЛОГИРУЕМ СТРУКТУРУ ВЕРХНЕГО УРОВНЯ
+      debugPrint('📊 [getChatById] Top-level keys: ${data.keys.toList()}');
+
       if (data['result'] != null) {
-        final pagination = PaginationDTO<Chats>.fromJson(data['result'], (e) {
-          return Chats.fromJson(e);
-        });
-        return pagination;
+        final result = data['result'];
+
+        // ✅ ЛОГИРУЕМ СТРУКТУРУ result
+        debugPrint('📊 [getChatById] Result keys: ${result.keys.toList()}');
+        debugPrint('📊 [getChatById] Result type: ${result['type']}');
+        debugPrint('📊 [getChatById] Result name: "${result['name']}"');
+        debugPrint('📊 [getChatById] Result group: ${result['group']}');
+        debugPrint(
+            '📊 [getChatById] Result chatUsers type: ${result['chatUsers']?.runtimeType}');
+        debugPrint(
+            '📊 [getChatById] Result chatUsers length: ${result['chatUsers']?.length}');
+
+        if (result['chatUsers'] != null && result['chatUsers'] is List) {
+          debugPrint('📊 [getChatById] ChatUsers content:');
+          for (var i = 0; i < (result['chatUsers'] as List).length; i++) {
+            final user = result['chatUsers'][i];
+            debugPrint(
+                '   [$i] type: ${user['type']}, participant: ${user['participant']?['name']}');
+          }
+        }
+
+        debugPrint('════════════════════════════════════════════════════════');
+
+        return ChatsGetId.fromJson(result);
       } else {
         throw Exception('Результат отсутствует в ответе');
       }
     } else {
       throw Exception('Ошибка ${response.statusCode}: ${response.body}');
     }
-  } catch (e) {
-    debugPrint('ApiService.getAllChats: Error: $e');
-    rethrow;
   }
-}
-Future<String> getDynamicBaseUrlFixed() async {
-  // Сначала проверяем кешированное значение
-  SharedPreferences prefs = await SharedPreferences.getInstance();
-  String? cachedBaseUrl = prefs.getString('cached_base_url');
 
-  if (cachedBaseUrl != null && cachedBaseUrl.isNotEmpty && cachedBaseUrl != 'null') {
-    if (kDebugMode) {
-      debugPrint('ApiService: Using cached baseUrl: $cachedBaseUrl');
+  Future<int> getUnreadMessagesCount() async {
+    final token = await getToken();
+    String path = '/v2/chat/getUnreadMessagesCount';
+    path = await _appendQueryParams(path);
+
+    final response = await http.get(
+      Uri.parse('$baseUrl$path'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception(
+          'Ошибка ${response.statusCode} при получении общего счетчика чатов');
     }
-    return cachedBaseUrl;
-  }
 
-  // Если кеша нет, используем старую логику
-  return await getDynamicBaseUrl();
-}
-Future<ChatsGetId> getChatById(int chatId) async {
-  final token = await getToken();
-  String path = '/v2/chat/$chatId';
-  path = await _appendQueryParams(path);
-
-  if (kDebugMode) {
-    //debugPrint('ApiService.getChatById: Generated path: $path');
-  }
-
-  final response = await http.get(
-    Uri.parse('$baseUrl$path'),
-    headers: {
-      'Authorization': 'Bearer $token',
-      'Content-Type': 'application/json',
-      'Accept': 'application/json',
-      'User-Agent': 'FlutterApp/1.0',
-      'Cache-Control': 'no-cache',
-    },
-  );
-
-  if (kDebugMode) {
-    //debugPrint('ApiService.getChatById: Response status: ${response.statusCode}');
-    //debugPrint('ApiService.getChatById: Response body: ${response.body}');
-  }
-
-  if (response.statusCode == 200) {
     final data = json.decode(response.body);
-    if (data['result'] != null) {
-      // Передаём именно result в fromJson
-      return ChatsGetId.fromJson(data['result']);
-    } else {
-      throw Exception('Результат отсутствует в ответе');
-    }
-  } else {
-    throw Exception('Ошибка ${response.statusCode}: ${response.body}');
+    return _extractUnreadCountFromResponse(data);
   }
-}
+
+  Future<int> getUnreadMessagesCountByChatType(String type) async {
+    final token = await getToken();
+    String path = '/v2/chat/getUnreadMessagesCountByChatType/$type';
+    path = await _appendQueryParams(path);
+
+    final response = await http.get(
+      Uri.parse('$baseUrl$path'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception(
+          'Ошибка ${response.statusCode} при получении счетчика чатов типа $type');
+    }
+
+    final data = json.decode(response.body);
+    return _extractUnreadCountFromResponse(data);
+  }
+
+  int _extractUnreadCountFromResponse(dynamic data) {
+    if (data is int) {
+      return data;
+    }
+
+    if (data is String) {
+      return int.tryParse(data) ?? 0;
+    }
+
+    if (data is Map<String, dynamic>) {
+      final dynamic result = data['result'] ?? data['data'] ?? data;
+
+      if (result is int) {
+        return result;
+      }
+
+      if (result is String) {
+        return int.tryParse(result) ?? 0;
+      }
+
+      if (result is Map<String, dynamic>) {
+        const keys = [
+          'count',
+          'unread_count',
+          'unreadCount',
+          'total',
+          'messages_count',
+        ];
+
+        for (final key in keys) {
+          final value = result[key];
+          if (value is int) {
+            return value;
+          }
+          if (value is String) {
+            final parsed = int.tryParse(value);
+            if (parsed != null) {
+              return parsed;
+            }
+          }
+        }
+      }
+    }
+
+    return 0;
+  }
 
   Future<String> sendMessages(List<int> messageIds) async {
     final token = await getToken();
@@ -5911,68 +8356,77 @@ Future<ChatsGetId> getChatById(int chatId) async {
   }
 
 // Метод для получения сообщений по chatId
-Future<List<Message>> getMessages(
-  int chatId, {
-  String? search,
-}) async {
-  try {
-    final token = await getToken();
-
-    // Проверяем инициализацию baseUrl
-    if (baseUrl == null || baseUrl!.isEmpty || baseUrl == 'null') {
-      await initialize();
-      if (baseUrl == null || baseUrl!.isEmpty || baseUrl == 'null') {
-        throw Exception('Base URL не может быть инициализирован');
-      }
-    }
-
-    String path = '/v2/chat/getMessages/$chatId';
-    path = await _appendQueryParams(path);
-
-    if (search != null && search.isNotEmpty) {
-      path += '&search=${Uri.encodeComponent(search)}';
-    }
-
-    final response = await http.get(
-      Uri.parse('$baseUrl$path'),
-      headers: {
-        'Authorization': 'Bearer $token',
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      },
-    );
-
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      if (data['result'] != null) {
-        final List<dynamic> messagesList = data['result'] as List<dynamic>;
-        return messagesList.map((msgData) {
-          try {
-            return Message.fromJson(msgData as Map<String, dynamic>);
-          } catch (e) {
-            debugPrint('Error parsing message: $e, data: $msgData');
-            // Возвращаем пустое сообщение с базовыми полями
-            return Message(
-              id: msgData['id'] ?? -1,
-              text: msgData['text']?.toString() ?? 'Ошибка загрузки сообщения',
-              type: msgData['type']?.toString() ?? 'text',
-              createMessateTime: msgData['created_at']?.toString() ?? DateTime.now().toIso8601String(),
-              isMyMessage: false,
-              senderName: msgData['sender']?['name']?.toString() ?? 'Неизвестный отправитель',
-            );
+  Future<ChatMessagesPage> getMessagesPage(
+    int chatId, {
+    int page = 1,
+    String? search,
+    String? chatType, // Тип чата: 'lead', 'corporate', 'task'
+  }) async {
+    try {
+      final token = await getToken();
+      // ✅ Обновляем userID.value, чтобы Message.fromJson корректно определял isMyMessage
+      try {
+        if (userID.value.isEmpty) {
+          final prefs = await SharedPreferences.getInstance();
+          final storedUserId = prefs.getString('userID') ?? '';
+          if (storedUserId.isNotEmpty) {
+            userID.value = storedUserId;
           }
-        }).toList();
-      } else {
-        throw Exception('Результат отсутствует в ответе');
+        }
+      } catch (_) {}
+
+      // Проверяем инициализацию baseUrl
+      if (baseUrl == null || baseUrl!.isEmpty || baseUrl == 'null') {
+        await initialize();
+        if (baseUrl == null || baseUrl!.isEmpty || baseUrl == 'null') {
+          throw Exception('Base URL не может быть инициализирован');
+        }
       }
-    } else {
-      throw Exception('Ошибка ${response.statusCode}: ${response.body}');
+
+      String path = '/v3/chat/getMessages/$chatId?page=$page';
+      path = await _appendQueryParams(path);
+
+      if (search != null && search.isNotEmpty) {
+        path += '&search=${Uri.encodeComponent(search)}';
+      }
+
+      final response = await http.get(
+        Uri.parse('$baseUrl$path'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return ChatMessagesPage.fromJson(
+          Map<String, dynamic>.from(data as Map),
+          chatType: chatType,
+        );
+      } else {
+        throw Exception('Ошибка ${response.statusCode}: ${response.body}');
+      }
+    } catch (e) {
+      debugPrint('ApiService.getMessages error: $e');
+      rethrow;
     }
-  } catch (e) {
-    debugPrint('ApiService.getMessages error: $e');
-    rethrow;
   }
-}
+
+  Future<List<Message>> getMessages(
+    int chatId, {
+    String? search,
+    String? chatType,
+  }) async {
+    final page = await getMessagesPage(
+      chatId,
+      page: 1,
+      search: search,
+      chatType: chatType,
+    );
+    return page.data;
+  }
 
   Future<void> closeChatSocket(int chatId) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
@@ -6022,7 +8476,7 @@ Future<List<Message>> getMessages(
 
 // Метод для отправки текстового сообщения
   Future<void> sendMessage(int chatId, String message,
-      {String? replyMessageId}) async {
+      {String? replyMessageId, String? responseType}) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/v2/chat/sendMessage/$chatId');
     if (kDebugMode) {
@@ -6032,10 +8486,32 @@ Future<List<Message>> getMessages(
     final response = await _postRequest(path, {
       'message': message,
       if (replyMessageId != null) 'forwarded_message_id': replyMessageId,
+      if (responseType != null) 'response_type': responseType,
     });
 
     if (response.statusCode != 200) {
       throw Exception('Ошибка отправки сообщения!');
+    }
+  }
+
+  Future<void> sendLocation(
+    int chatId, {
+    required double latitude,
+    required double longitude,
+    String? responseType,
+  }) async {
+    final path = await _appendQueryParams('/v2/chat/sendLocation/$chatId');
+
+    final response = await _postRequest(path, {
+      'latitude': latitude,
+      // Some backend payloads in this project use the legacy "lattitude" key.
+      'lattitude': latitude,
+      'longitude': longitude,
+      if (responseType != null) 'response_type': responseType,
+    });
+
+    if (response.statusCode != 200) {
+      throw Exception('Ошибка отправки геопозиции!');
     }
   }
 
@@ -6084,7 +8560,8 @@ Future<List<Message>> getMessages(
   }
 
 // Метод для отправки audio file
-  Future<void> sendChatAudioFile(int chatId, File audio) async {
+  Future<void> sendChatAudioFile(int chatId, File audio,
+      {String? responseType}) async {
     final token = await getToken();
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/v2/chat/sendVoice/$chatId');
@@ -6094,11 +8571,14 @@ Future<List<Message>> getMessages(
 
     String requestUrl = '$baseUrl$path';
 
-    Dio dio = Dio();
+    Dio dio = LoggedDioClient.create();
     try {
       final voice = await MultipartFile.fromFile(audio.path,
           contentType: MediaType('audio', 'm4a'));
-      FormData formData = FormData.fromMap({'voice': voice});
+      FormData formData = FormData.fromMap({
+        'voice': voice,
+        if (responseType != null) 'response_type': responseType,
+      });
 
       var response = await dio.post(
         requestUrl,
@@ -6135,7 +8615,8 @@ Future<List<Message>> getMessages(
   }
 
 // Метод для отправки audio file
-  Future<void> sendChatFile(int chatId, String pathFile) async {
+  Future<void> sendChatFile(int chatId, String pathFile,
+      {String? responseType}) async {
     final token = await getToken();
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/v2/chat/sendFile/$chatId');
@@ -6145,10 +8626,12 @@ Future<List<Message>> getMessages(
 
     String requestUrl = '$baseUrl$path';
 
-    Dio dio = Dio();
+    Dio dio = LoggedDioClient.create();
     try {
-      FormData formData =
-          FormData.fromMap({'file': await MultipartFile.fromFile(pathFile)});
+      FormData formData = FormData.fromMap({
+        'file': await MultipartFile.fromFile(pathFile),
+        if (responseType != null) 'response_type': responseType,
+      });
 
       var response = await dio.post(
         requestUrl,
@@ -6183,7 +8666,7 @@ Future<List<Message>> getMessages(
       throw Exception('Failed to send audio message due to an exception!');
     }
   }
-  
+
 // Метод для отправки файла
   Future<void> sendFile(int chatId, String filePath) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
@@ -6292,9 +8775,18 @@ Future<List<Message>> getMessages(
   }
 
 // get all users
-  Future<UsersDataResponse> getAllUser() async {
+  Future<UsersDataResponse> getAllUser({
+    String? search,
+    int page = 1,
+    int perPage = 20,
+  }) async {
     final token = await getToken();
-    final path = await _appendQueryParams('/department/get/users');
+    String path = await _appendQueryParams(
+      '/department/get/users?page=$page&per_page=$perPage',
+    );
+    if (search != null && search.trim().isNotEmpty) {
+      path += '&search=${Uri.encodeComponent(search.trim())}';
+    }
     if (kDebugMode) {
       //debugPrint('ApiService: getAllUser - Generated path: $path');
     }
@@ -6323,6 +8815,37 @@ Future<List<Message>> getMessages(
     }
 
     return dataUser;
+  }
+
+  Future<UsersDataResponse> getDealExecutors({String? search}) async {
+    final token = await getToken();
+    String path = await _appendQueryParams('/department/get/users');
+    if (search != null && search.trim().isNotEmpty) {
+      path += '&search=${Uri.encodeComponent(search.trim())}';
+    }
+    if (kDebugMode) {
+      debugPrint('ApiService: getDealExecutors - Path: $path');
+    }
+
+    final response = await http.get(
+      Uri.parse('$baseUrl$path'),
+      headers: {
+        'Content-Type': 'application/json',
+        if (token != null) 'Authorization': 'Bearer $token',
+      },
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('Failed to load deal executors: ${response.statusCode}');
+    }
+
+    final data = json.decode(response.body) as Map<String, dynamic>;
+    if (kDebugMode) {
+      final result = data['result'];
+      final count = result is List ? result.length : 0;
+      debugPrint('ApiService: getDealExecutors - Loaded $count executors');
+    }
+    return UsersDataResponse.fromJson(data);
   }
 
   Future<UsersDataResponse> getAnotherUsers() async {
@@ -6474,7 +8997,8 @@ Future<List<Message>> getMessages(
         debugPrint('ApiService: createNewClient - Base URL: $baseUrl');
         debugPrint('ApiService: createNewClient - Generated path: $path');
         debugPrint('ApiService: createNewClient - Token: $token');
-        debugPrint('ApiService: createNewClient - Organization ID: $organizationId');
+        debugPrint(
+            'ApiService: createNewClient - Organization ID: $organizationId');
       }
 
       final response = await http.post(
@@ -6495,7 +9019,8 @@ Future<List<Message>> getMessages(
       if (kDebugMode) {
         debugPrint(
             'ApiService: createNewClient - Status code: ${response.statusCode}');
-        debugPrint('ApiService: createNewClient - Response body: ${response.body}');
+        debugPrint(
+            'ApiService: createNewClient - Response body: ${response.body}');
       }
 
       if (response.statusCode == 200) {
@@ -6696,6 +9221,15 @@ Future<List<Message>> getMessages(
 
   Future<TemplateResponse> getTemplates() async {
     final token = await getToken();
+
+    // Проверяем инициализацию baseUrl
+    if (baseUrl == null || baseUrl!.isEmpty || baseUrl == 'null') {
+      await initialize();
+      if (baseUrl == null || baseUrl!.isEmpty || baseUrl == 'null') {
+        throw Exception('Base URL не может быть инициализирован');
+      }
+    }
+
     final path = await _appendQueryParams('/v2/chat/templates');
     if (kDebugMode) {
       //debugPrint('ApiService: getTemplates - Generated path: $path');
@@ -6805,43 +9339,43 @@ Future<List<Message>> getMessages(
   } // Упрощённый метод для получения интеграции лида (теперь не нужен отдельный класс IntegrationForLead)
 
 // Новый метод для получения чата по ID с интеграцией
- Future<ChatsGetId> getChatByIdWithIntegration(int chatId) async {
-  try {
-    final token = await getToken();
+  Future<ChatsGetId> getChatByIdWithIntegration(int chatId) async {
+    try {
+      final token = await getToken();
 
-    if (baseUrl == null || baseUrl!.isEmpty || baseUrl == 'null') {
-      await initialize();
-    }
-
-    String path = '/v2/chat/$chatId';
-    path = await _appendQueryParams(path);
-
-    final response = await http.get(
-      Uri.parse('$baseUrl$path'),
-      headers: {
-        'Authorization': 'Bearer $token',
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'User-Agent': 'FlutterApp/1.0',
-        'Cache-Control': 'no-cache',
-      },
-    );
-
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      if (data['result'] != null) {
-        return ChatsGetId.fromJson(data['result']);
-      } else {
-        throw Exception('Результат отсутствует в ответе');
+      if (baseUrl == null || baseUrl!.isEmpty || baseUrl == 'null') {
+        await initialize();
       }
-    } else {
-      throw Exception('Ошибка ${response.statusCode}: ${response.body}');
+
+      String path = '/v2/chat/$chatId';
+      path = await _appendQueryParams(path);
+
+      final response = await http.get(
+        Uri.parse('$baseUrl$path'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'User-Agent': 'FlutterApp/1.0',
+          'Cache-Control': 'no-cache',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['result'] != null) {
+          return ChatsGetId.fromJson(data['result']);
+        } else {
+          throw Exception('Результат отсутствует в ответе');
+        }
+      } else {
+        throw Exception('Ошибка ${response.statusCode}: ${response.body}');
+      }
+    } catch (e) {
+      debugPrint('getChatByIdWithIntegration error: $e');
+      rethrow;
     }
-  } catch (e) {
-    debugPrint('getChatByIdWithIntegration error: $e');
-    rethrow;
   }
-}
 
   Future<String> readMessages(int chatId, int messageId) async {
     final token = await getToken();
@@ -6923,38 +9457,42 @@ Future<List<Message>> getMessages(
 
 // Сохранение выбранной организации
 // Исправленный метод для получения организации с fallback
-Future<String?> getSelectedOrganization() async {
-  try {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    String? organizationId = prefs.getString('selectedOrganization');
+  Future<String?> getSelectedOrganization() async {
+    try {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      String? organizationId = prefs.getString('selectedOrganization');
 
-    debugPrint('ApiService: getSelectedOrganization - orgId: $organizationId');
+      debugPrint(
+          'ApiService: getSelectedOrganization - orgId: $organizationId');
 
-    // Возвращаем null если организация не найдена или содержит 'null'
-    if (organizationId == null || organizationId.isEmpty || organizationId == 'null') {
-      debugPrint('ApiService: No valid organization found, using fallback');
-      return '1'; // Дефолтная организация
+      // Возвращаем null если организация не найдена или содержит 'null'
+      if (organizationId == null ||
+          organizationId.isEmpty ||
+          organizationId == 'null') {
+        debugPrint('ApiService: No valid organization found, using fallback');
+        return '1'; // Дефолтная организация
+      }
+
+      return organizationId;
+    } catch (e) {
+      debugPrint('getSelectedOrganization error: $e');
+      return '1'; // Fallback значение
     }
-
-    return organizationId;
-  } catch (e) {
-    debugPrint('getSelectedOrganization error: $e');
-    return '1'; // Fallback значение
   }
-}
 
-Future<void> saveSelectedOrganization(String organizationId) async {
-  SharedPreferences prefs = await SharedPreferences.getInstance();
-  await prefs.setString('selectedOrganization', organizationId);
-  if (kDebugMode) {
-    debugPrint('ApiService: saveSelectedOrganization - Saved: $organizationId');
+  Future<void> saveSelectedOrganization(String organizationId) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setString('selectedOrganization', organizationId);
+    if (kDebugMode) {
+      debugPrint(
+          'ApiService: saveSelectedOrganization - Saved: $organizationId');
+    }
   }
-}
 
-Future<void> _removeOrganizationId() async {
-  SharedPreferences prefs = await SharedPreferences.getInstance();
-  await prefs.remove('selectedOrganization');
-}
+  Future<void> _removeOrganizationId() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.remove('selectedOrganization');
+  }
 
   Future<void> logoutAccount() async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
@@ -6971,39 +9509,79 @@ Future<void> _removeOrganizationId() async {
   }
 
 // Существующий метод для получения выбранной воронки
- Future<String?> getSelectedSalesFunnel() async {
-  debugPrint('🔍 ApiService: Getting selected sales funnel from SharedPreferences');
-  final prefs = await SharedPreferences.getInstance();
-  final funnelId = prefs.getString('selected_sales_funnel');
-  
-  if (funnelId == null || funnelId.isEmpty || funnelId == 'null') {
-    debugPrint('⚠️ ApiService: No valid funnel ID found in SharedPreferences');
+  Future<String?> getSelectedSalesFunnel() async {
+    debugPrint(
+        '🔍 ApiService: Getting selected sales funnel from SharedPreferences');
+    final prefs = await SharedPreferences.getInstance();
+    final funnelId = prefs.getString('selected_sales_funnel');
+
+    if (funnelId == null || funnelId.isEmpty || funnelId == 'null') {
+      debugPrint(
+          '⚠️ ApiService: No valid funnel ID found in SharedPreferences');
+      return null;
+    }
+
+    debugPrint('✅ ApiService: Retrieved selected funnel ID: $funnelId');
+    return funnelId;
+  }
+
+  /// Гарантирует, что selected_sales_funnel сохранён до первых запросов Dashboard.
+  /// Порядок: SharedPreferences -> кэш воронок -> API /sales-funnel.
+  Future<String?> ensureSelectedSalesFunnelInitialized() async {
+    final existing = await getSelectedSalesFunnel();
+    if (existing != null && existing.isNotEmpty && existing != 'null') {
+      return existing;
+    }
+
+    try {
+      final cachedFunnels = await getCachedSalesFunnels();
+      if (cachedFunnels.isNotEmpty) {
+        final funnelId = cachedFunnels.first.id.toString();
+        await saveSelectedSalesFunnel(funnelId);
+        return funnelId;
+      }
+    } catch (e) {
+      debugPrint(
+          'ApiService: ensureSelectedSalesFunnelInitialized cache error: $e');
+    }
+
+    try {
+      final serverFunnels = await getSalesFunnels();
+      if (serverFunnels.isNotEmpty) {
+        final funnelId = serverFunnels.first.id.toString();
+        await saveSelectedSalesFunnel(funnelId);
+        return funnelId;
+      }
+    } catch (e) {
+      debugPrint(
+          'ApiService: ensureSelectedSalesFunnelInitialized API error: $e');
+    }
+
     return null;
   }
-  
-  debugPrint('✅ ApiService: Retrieved selected funnel ID: $funnelId');
-  return funnelId;
-}
+
 // Существующий метод для сохранения выбранной воронки
- Future<void> saveSelectedSalesFunnel(String funnelId) async {
-  debugPrint('🔧 ApiService: Saving selected sales funnel ID: $funnelId');
-  
-  if (funnelId.isEmpty || funnelId == 'null') {
-    debugPrint('⚠️ ApiService: Attempting to save invalid funnelId: $funnelId');
-    return;
+  Future<void> saveSelectedSalesFunnel(String funnelId) async {
+    debugPrint('🔧 ApiService: Saving selected sales funnel ID: $funnelId');
+    if (funnelId.isEmpty || funnelId == 'null') {
+      debugPrint(
+          '⚠️ ApiService: Attempting to save invalid funnelId: $funnelId');
+      return;
+    }
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('selected_sales_funnel', funnelId);
+
+    // Проверяем, что сохранилось
+    final saved = prefs.getString('selected_sales_funnel');
+    if (saved == funnelId) {
+      debugPrint(
+          '✅ ApiService: Selected sales funnel ID saved successfully: $funnelId');
+    } else {
+      debugPrint(
+          '❌ ApiService: Failed to save funnel ID. Expected: $funnelId, Got: $saved');
+    }
   }
-  
-  final prefs = await SharedPreferences.getInstance();
-  await prefs.setString('selected_sales_funnel', funnelId);
-  
-  // Проверяем, что сохранилось
-  final saved = prefs.getString('selected_sales_funnel');
-  if (saved == funnelId) {
-    debugPrint('✅ ApiService: Selected sales funnel ID saved successfully: $funnelId');
-  } else {
-    debugPrint('❌ ApiService: Failed to save funnel ID. Expected: $funnelId, Got: $saved');
-  }
-}
 
   Future<void> saveSelectedDealSalesFunnel(String funnelId) async {
     final prefs = await SharedPreferences.getInstance();
@@ -7148,52 +9726,53 @@ Future<void> _removeOrganizationId() async {
   ];
 
 // Централизованный метод для добавления query-параметров
-Future<String> _appendQueryParams(String path) async {
-  try {
-    // Парсим существующий URI
-    final uri = Uri.parse(path);
-    // Используем queryParametersAll для сохранения всех значений (включая повторяющиеся ключи)
-    final existingParamsAll = Map<String, List<String>>.from(uri.queryParametersAll);
-    
-    // Получаем ID из SharedPreferences
-    final organizationId = await getSelectedOrganization();
-    final salesFunnelId = await getSelectedSalesFunnel();
+  Future<String> _appendQueryParams(String path) async {
+    try {
+      // Парсим существующий URI
+      final uri = Uri.parse(path);
+      // Используем queryParametersAll для сохранения всех значений (включая повторяющиеся ключи)
+      final existingParamsAll =
+          Map<String, List<String>>.from(uri.queryParametersAll);
+      // Получаем ID из SharedPreferences
+      final organizationId = await getSelectedOrganization();
+      final salesFunnelId = await getSelectedSalesFunnel();
 
-    // ✅ Добавляем organization_id ТОЛЬКО если его нет
-    if (organizationId != null && 
-        organizationId.isNotEmpty && 
-        organizationId != 'null' &&
-        !existingParamsAll.containsKey('organization_id')) {
-      existingParamsAll['organization_id'] = [organizationId];
-    }
-
-    // ✅ Добавляем sales_funnel_id ТОЛЬКО если его нет
-    if (salesFunnelId != null && 
-        salesFunnelId.isNotEmpty && 
-        salesFunnelId != 'null' &&
-        !existingParamsAll.containsKey('sales_funnel_id')) {
-      existingParamsAll['sales_funnel_id'] = [salesFunnelId];
-    }
-
-    // Собираем query string вручную для сохранения всех значений
-    final queryParts = <String>[];
-    existingParamsAll.forEach((key, values) {
-      for (final value in values) {
-        queryParts.add('${Uri.encodeComponent(key)}=${Uri.encodeComponent(value)}');
+      // ✅ Добавляем organization_id ТОЛЬКО если его нет
+      if (organizationId != null &&
+          organizationId.isNotEmpty &&
+          organizationId != 'null' &&
+          !existingParamsAll.containsKey('organization_id')) {
+        existingParamsAll['organization_id'] = [organizationId];
       }
-    });
-    
-    final queryString = queryParts.isNotEmpty ? '?${queryParts.join('&')}' : '';
-    final result = '${uri.path}$queryString';
-    
-    debugPrint('✅ _appendQueryParams: $path → $result');
-    return result;
-    
-  } catch (e) {
-    debugPrint('❌ _appendQueryParams error: $e');
-    return path;
+
+      // ✅ Добавляем sales_funnel_id ТОЛЬКО если его нет
+      if (salesFunnelId != null &&
+          salesFunnelId.isNotEmpty &&
+          salesFunnelId != 'null' &&
+          !existingParamsAll.containsKey('sales_funnel_id')) {
+        existingParamsAll['sales_funnel_id'] = [salesFunnelId];
+      }
+
+      // Собираем query string вручную для сохранения всех значений
+      final queryParts = <String>[];
+      existingParamsAll.forEach((key, values) {
+        for (final value in values) {
+          queryParts
+              .add('${Uri.encodeComponent(key)}=${Uri.encodeComponent(value)}');
+        }
+      });
+
+      final queryString =
+          queryParts.isNotEmpty ? '?${queryParts.join('&')}' : '';
+      final result = '${uri.path}$queryString';
+
+      debugPrint('✅ _appendQueryParams: $path → $result');
+      return result;
+    } catch (e) {
+      debugPrint('❌ _appendQueryParams error: $e');
+      return path;
+    }
   }
-}
   //_________________________________ END_____API_SCREEN__PROFILE____________________________________________//
 
   //_________________________________ START_____API_SCREEN__NOTIFICATIONS____________________________________________//
@@ -7233,24 +9812,29 @@ Future<String> _appendQueryParams(String path) async {
     }
   }
 
-// Метод для прочтения всех Уведомлений
+// Замените метод DeleteAllNotifications на это:
+
   Future<int> DeleteAllNotifications() async {
-    // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+    // Используем эндпоинт /notification/readAll с POST методом
     String path = await _appendQueryParams('/notification/readAll');
+
     if (kDebugMode) {
-      //debugPrint('ApiService: DeleteAllNotifications - Generated path: $path');
+      debugPrint('ApiService: DeleteAllNotifications - Generated path: $path');
     }
 
-    ////debugPrint('Sending POST request to API with path: $path');
+    debugPrint('Sending POST request to API with path: $path');
 
+    // Используем POST метод как и раньше
     final response = await _postRequest(path, {});
 
-    // Успешные коды: 200, 201, 204, 429
     final successCodes = [200, 201, 204, 429];
     if (successCodes.contains(response.statusCode)) {
+      debugPrint(
+          '✅ All notifications deleted successfully. Status: ${response.statusCode}');
       return response.statusCode;
     } else {
-      throw Exception('Ошибка удаления уведомлений!');
+      throw Exception(
+          'Ошибка удаления уведомлений! Status: ${response.statusCode}');
     }
   }
 
@@ -7383,8 +9967,7 @@ Future<String> _appendQueryParams(String path) async {
       }
 
       // Отправляем запрос
-      final streamedResponse = await request.send();
-      final response = await http.Response.fromStream(streamedResponse);
+      final response = await _multipartPostRequest('', request);
 
       if (response.statusCode == 200) {
         return {'success': true, 'message': 'profile_updated_successfully'};
@@ -7803,7 +10386,8 @@ Future<String> _appendQueryParams(String path) async {
         for (int i = 0; i < customFields.length; i++) {
           final field = customFields[i];
           request.fields['custom_fields[$i][key]'] = field['key'].toString();
-          request.fields['custom_fields[$i][value]'] = field['value'].toString();
+          request.fields['custom_fields[$i][value]'] =
+              field['value'].toString();
           request.fields['custom_fields[$i][type]'] = field['type'].toString();
         }
       }
@@ -7812,14 +10396,15 @@ Future<String> _appendQueryParams(String path) async {
       if (directoryValues != null && directoryValues.isNotEmpty) {
         for (int i = 0; i < directoryValues.length; i++) {
           final directory = directoryValues[i];
-          request.fields['directories[$i][directory_id]'] = directory['directory_id'].toString();
-          request.fields['directories[$i][entry_id]'] = directory['entry_id'].toString();
+          request.fields['directories[$i][directory_id]'] =
+              directory['directory_id'].toString();
+          request.fields['directories[$i][entry_id]'] =
+              directory['entry_id'].toString();
         }
       }
 
       // Отправляем запрос
-      final streamedResponse = await request.send();
-      final response = await http.Response.fromStream(streamedResponse);
+      final response = await _multipartPostRequest('', request);
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         final responseData = json.decode(response.body);
@@ -7932,8 +10517,7 @@ Future<String> _appendQueryParams(String path) async {
       }
 
       // Отправляем запрос
-      final streamedResponse = await request.send();
-      final response = await http.Response.fromStream(streamedResponse);
+      final response = await _multipartPostRequest('', request);
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         final responseData = json.decode(response.body);
@@ -8346,6 +10930,7 @@ Future<String> _appendQueryParams(String path) async {
     String? title,
     required String body,
     required int leadId,
+    int? dealId,
     DateTime? date,
     required int sendNotification,
     required List<int> users,
@@ -8364,6 +10949,9 @@ Future<String> _appendQueryParams(String path) async {
     if (title != null) request.fields['title'] = title;
     request.fields['body'] = body;
     request.fields['lead_id'] = leadId.toString();
+    if (dealId != null) {
+      request.fields['deal_id'] = dealId.toString();
+    }
     if (date != null)
       request.fields['date'] = DateFormat('yyyy-MM-dd HH:mm').format(date);
     request.fields['send_notification'] = sendNotification.toString();
@@ -8440,9 +11028,18 @@ Future<String> _appendQueryParams(String path) async {
     }
   }
 
-  Future<SubjectDataResponse> getAllSubjects() async {
+  Future<SubjectDataResponse> getAllSubjects({
+    String? search,
+    int page = 1,
+    int perPage = 20,
+  }) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
-    final path = await _appendQueryParams('/noteSubject/by-sales-funnel-id');
+    String path = await _appendQueryParams(
+      '/noteSubject/by-sales-funnel-id?page=$page&per_page=$perPage',
+    );
+    if (search != null && search.trim().isNotEmpty) {
+      path += '&search=${Uri.encodeComponent(search.trim())}';
+    }
     if (kDebugMode) {
       //debugPrint('ApiService: getAllSubjects - Generated path: $path');
     }
@@ -8525,11 +11122,52 @@ Future<String> _appendQueryParams(String path) async {
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
-      return data;
+      return _normalizeTutorialProgressResponse(data);
     } else {
       throw Exception(
           'Failed to get tutorial progress: ${response.statusCode}');
     }
+  }
+
+  Map<String, dynamic> _normalizeTutorialProgressResponse(dynamic rawData) {
+    Map<String, dynamic> normalizeResult(dynamic value) {
+      if (value is Map<String, dynamic>) {
+        return value;
+      }
+      if (value is Map) {
+        return Map<String, dynamic>.from(value);
+      }
+      if (value is List) {
+        for (final item in value) {
+          if (item is Map<String, dynamic>) {
+            return item;
+          }
+          if (item is Map) {
+            return Map<String, dynamic>.from(item);
+          }
+        }
+      }
+      return <String, dynamic>{};
+    }
+
+    if (rawData is Map<String, dynamic>) {
+      return <String, dynamic>{
+        ...rawData,
+        'result': normalizeResult(rawData['result']),
+      };
+    }
+
+    if (rawData is Map) {
+      final data = Map<String, dynamic>.from(rawData);
+      return <String, dynamic>{
+        ...data,
+        'result': normalizeResult(data['result']),
+      };
+    }
+
+    return <String, dynamic>{
+      'result': normalizeResult(rawData),
+    };
   }
 
   Future<Map<String, dynamic>> getSettings(String? organizationId) async {
@@ -8562,14 +11200,32 @@ Future<String> _appendQueryParams(String path) async {
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
-      if (data['result'] != null && data['result'] is List) {
-        return (data['result'] as List)
-            .map((item) => MiniAppSettings.fromJson(item))
-            .toList();
-      } else {
-        throw Exception(
-            'Invalid response format: result is missing or not a list');
+      final rawList = <dynamic>[];
+      final result = data['result'];
+
+      if (result is List) {
+        rawList.addAll(result);
+      } else if (result is Map<String, dynamic>) {
+        if (result['data'] is List) {
+          rawList.addAll(result['data'] as List<dynamic>);
+        } else if (result['items'] is List) {
+          rawList.addAll(result['items'] as List<dynamic>);
+        }
       }
+
+      if (kDebugMode) {
+        debugPrint(
+            'ApiService: getMiniAppSettings - parsed items count: ${rawList.length}');
+        if (rawList.isEmpty) {
+          debugPrint(
+              'ApiService: getMiniAppSettings - empty body: ${response.body}');
+        }
+      }
+
+      return rawList
+          .whereType<Map<String, dynamic>>()
+          .map((item) => MiniAppSettings.fromJson(item))
+          .toList();
     } else {
       throw Exception(
           'Failed to get mini-app settings: ${response.statusCode}');
@@ -8719,8 +11375,7 @@ Future<String> _appendQueryParams(String path) async {
         request.files.add(imageFile);
       }
 
-      final streamedResponse = await request.send();
-      final response = await http.Response.fromStream(streamedResponse);
+      final response = await _multipartPostRequest('', request);
 
       final responseBody = json.decode(response.body);
 
@@ -8775,8 +11430,7 @@ Future<String> _appendQueryParams(String path) async {
         request.files.add(imageFile);
       }
 
-      final streamedResponse = await request.send();
-      final response = await http.Response.fromStream(streamedResponse);
+      final response = await _multipartPostRequest('', request);
       final responseBody = json.decode(response.body);
 
       if (response.statusCode == 200 || response.statusCode == 201) {
@@ -8858,8 +11512,7 @@ Future<String> _appendQueryParams(String path) async {
         request.files.add(imageFile);
       }
 
-      final streamedResponse = await request.send();
-      final response = await http.Response.fromStream(streamedResponse);
+      final response = await _multipartPostRequest('', request);
       final responseBody = json.decode(response.body);
 
       if (response.statusCode == 200 || response.statusCode == 201) {
@@ -8972,60 +11625,60 @@ Future<String> _appendQueryParams(String path) async {
   }
 
   Future<VariantResponse> getVariants({
-  int page = 1,
-  int perPage = 15,
-  String? search,
-  Map<String, dynamic>? filters,
+    int page = 1,
+    int perPage = 15,
+    String? search,
+    Map<String, dynamic>? filters,
     bool? isService,
-}) async {
-  String path = '/good/get/variant?page=$page&per_page=$perPage';
+  }) async {
+    String path = '/good/get/variant?page=$page&per_page=$perPage';
 
-  if (isService != null) {
-    path += '&is_service=${isService ? 1 : 0}';
-  }
-
-  if (search != null && search.isNotEmpty) {
-    path += '&search=$search';
-  }
-
-  if (filters != null) {
-    // Добавляем counterparty_id
-    if (filters.containsKey('counterparty_id')) {
-      path += '&counterparty_id=${filters['counterparty_id']}';
-    }
-    
-    // Добавляем storage_id
-    if (filters.containsKey('storage_id')) {
-      path += '&storage_id=${filters['storage_id']}';
+    if (isService != null) {
+      path += '&is_service=${isService ? 1 : 0}';
     }
 
-    if (filters.containsKey('category_id')) {
-      final categoryId = filters['category_id'];
-      if (categoryId is int) {
-        path += '&category_id=$categoryId';
+    if (search != null && search.isNotEmpty) {
+      path += '&search=$search';
+    }
+
+    if (filters != null) {
+      // Добавляем counterparty_id
+      if (filters.containsKey('counterparty_id')) {
+        path += '&counterparty_id=${filters['counterparty_id']}';
+      }
+
+      // Добавляем storage_id
+      if (filters.containsKey('storage_id')) {
+        path += '&storage_id=${filters['storage_id']}';
+      }
+
+      if (filters.containsKey('category_id')) {
+        final categoryId = filters['category_id'];
+        if (categoryId is int) {
+          path += '&category_id=$categoryId';
+        }
+      }
+
+      if (filters.containsKey('is_active')) {
+        path += '&is_active=${filters['is_active'] ? 1 : 0}';
       }
     }
 
-    if (filters.containsKey('is_active')) {
-      path += '&is_active=${filters['is_active'] ? 1 : 0}';
-    }
-  }
+    path = await _appendQueryParams(path);
 
-  path = await _appendQueryParams(path);
-  
-  final response = await _getRequest(path);
-  
-  if (response.statusCode == 200) {
-    final Map<String, dynamic> data = json.decode(response.body);
-    if (data.containsKey('result')) {
-      return VariantResponse.fromJson(data['result'] as Map<String, dynamic>);
+    final response = await _getRequest(path);
+
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> data = json.decode(response.body);
+      if (data.containsKey('result')) {
+        return VariantResponse.fromJson(data['result'] as Map<String, dynamic>);
+      } else {
+        throw Exception('Ошибка: Неверный формат данных');
+      }
     } else {
-      throw Exception('Ошибка: Неверный формат данных');
+      throw Exception('Ошибка загрузки вариантов: ${response.statusCode}');
     }
-  } else {
-    throw Exception('Ошибка загрузки вариантов: ${response.statusCode}');
   }
-}
 
   Future<List<Goods>> getGoodsById(int goodsId,
       {bool isFromOrder = false}) async {
@@ -9065,10 +11718,10 @@ Future<String> _appendQueryParams(String path) async {
 
     if (response.statusCode == 200) {
       final Map<String, dynamic> data = json.decode(response.body);
-      ////debugPrint('Response data: $data'); // Debug: //debugPrint the response
+      ////debugPrint('Response data: $data'); // Debug: //print the response
       if (data.containsKey('data')) {
         return (data['data'] as List).map((item) {
-          ////debugPrint('Item: $item'); // Debug: //debugPrint each item
+          ////debugPrint('Item: $item'); // Debug: //print each item
           return SubCategoryAttributesData.fromJson(
               item as Map<String, dynamic>);
         }).toList();
@@ -9086,7 +11739,7 @@ Future<String> _appendQueryParams(String path) async {
     required String name,
     required int parentId,
     required String description,
-    required int quantity,
+    required int? quantity,
     required int? unitId,
     required List<Map<String, dynamic>> attributes,
     required List<Map<String, dynamic>> variants,
@@ -9097,97 +11750,138 @@ Future<String> _appendQueryParams(String path) async {
     int? storageId,
     int? mainImageIndex,
     int? labelId, // Parameter for label ID
+    String? productionType,
+    List<Map<String, dynamic>> materialGoods = const [],
+    List<Map<String, dynamic>> relatedGoods = const [],
   }) async {
     try {
-      final token = await getToken();
-      // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
-      final path = await _appendQueryParams('/good');
-      if (kDebugMode) {
-        //debugPrint('ApiService: createGoods - Generated path: $path');
-      }
+      final requestBody = await _buildGoodsRequestBody(
+        isService: isService,
+        name: name,
+        parentId: parentId,
+        description: description,
+        quantity: quantity,
+        unitId: unitId,
+        attributes: attributes,
+        variants: variants,
+        isActive: isActive,
+        price: price,
+        storageId: storageId,
+        labelId: labelId,
+        productionType: productionType,
+        materialGoods: materialGoods,
+        relatedGoods: relatedGoods,
+      );
 
-      var uri = Uri.parse('$baseUrl$path');
-      var request = http.MultipartRequest('POST', uri);
-      request.headers.addAll({
-        'Authorization': 'Bearer $token',
-        'Accept': 'application/json',
-        'Device': 'mobile',
-        'Content-Type': 'multipart/form-data; charset=utf-8',
-      });
+      final hasFiles = await _goodsRequestHasFiles(images, variants);
 
-      request.fields['name'] = name;
-      request.fields['category_id'] = parentId.toString();
-      request.fields['description'] = description;
-      request.fields['quantity'] = quantity.toString();
-      request.fields['unit_id'] = unitId.toString();
-      request.fields['is_active'] = isActive ? '1' : '0';
-      request.fields['is_service'] = isService ? '1' : '0';
+      late final http.Response response;
 
-      // Pass the actual labelId if it exists
-      if (labelId != null) {
-        request.fields['label_id'] = labelId.toString();
-      }
+      if (!hasFiles) {
+        response = await _postRequest('/good', requestBody);
+      } else {
+        final token = await getToken();
+        final path = await _appendQueryParams('/good');
+        var uri = Uri.parse('$baseUrl$path');
+        var request = http.MultipartRequest('POST', uri);
+        request.headers.addAll({
+          'Authorization': 'Bearer $token',
+          'Accept': 'application/json',
+          'Device': 'mobile',
+          'Content-Type': 'multipart/form-data; charset=utf-8',
+        });
 
-      if (price != null) {
-        request.fields['price'] = price.toString();
-      }
+        request.fields['name'] = name;
+        request.fields['category_id'] = parentId.toString();
+        request.fields['description'] = description;
+        request.fields['quantity'] = quantity?.toString() ?? 'null';
+        request.fields['unit_id'] = unitId?.toString() ?? 'null';
+        request.fields['label_id'] = labelId?.toString() ?? '';
+        request.fields['is_active'] = isActive ? '1' : '0';
+        request.fields['is_popular'] = '0';
+        request.fields['is_new'] = '0';
+        request.fields['is_sale'] = '0';
+        request.fields['is_service'] = isService ? '1' : '0';
+        request.fields['is_subscription'] = '0';
+        request.fields['price'] = (price ?? 0).toString();
 
-      // if (discountPrice != null) {
-      //   request.fields['discount_price'] = discountPrice.toString();
-      // }
+        final organizationId = await getSelectedOrganization();
+        final salesFunnelId = await getSelectedSalesFunnel();
+        request.fields['organization_id'] = organizationId ?? '1';
+        request.fields['sales_funnel_id'] = salesFunnelId ?? '1';
 
-      if (storageId != null) {
-        request.fields['storage_id'] = storageId.toString();
-        request.fields['branch_id'] = storageId.toString();
-      }
-
-      for (int i = 0; i < attributes.length; i++) {
-        request.fields['attributes[$i][category_attribute_id]'] =
-            attributes[i]['category_attribute_id'].toString();
-        request.fields['attributes[$i][value]'] =
-            attributes[i]['value'].toString();
-      }
-
-      for (int i = 0; i < variants.length; i++) {
-        request.fields['variants[$i][is_active]'] =
-            variants[i]['is_active'] ? '1' : '0';
-        final variantPrice = variants[i]['price'] ?? 0.0;
-        request.fields['variants[$i][price]'] = variantPrice.toString();
-
-        List<dynamic> variantAttributes =
-            variants[i]['variant_attributes'] ?? [];
-        for (int j = 0; j < variantAttributes.length; j++) {
-          request.fields[
-                  'variants[$i][variant_attributes][$j][category_attribute_id]'] =
-              variantAttributes[j]['category_attribute_id'].toString();
-          request.fields['variants[$i][variant_attributes][$j][value]'] =
-              variantAttributes[j]['value'].toString();
+        if (productionType != null && productionType.isNotEmpty) {
+          request.fields['production_type'] = productionType;
         }
 
-        List<File> variantFiles = variants[i]['files'] ?? [];
-        for (int j = 0; j < variantFiles.length; j++) {
-          File file = variantFiles[j];
-          if (await file.exists()) {
-            final imageFile = await http.MultipartFile.fromPath(
-                'variants[$i][files][$j]', file.path);
-            request.files.add(imageFile);
+        if (storageId != null) {
+          request.fields['storage_id'] = storageId.toString();
+          request.fields['branch_id'] = storageId.toString();
+        }
+
+        for (int i = 0; i < materialGoods.length; i++) {
+          final material = materialGoods[i];
+          request.fields['good_ids[$i][good_id]'] =
+              material['good_id'].toString();
+          request.fields['good_ids[$i][norm]'] = material['norm'].toString();
+        }
+
+        for (int i = 0; i < relatedGoods.length; i++) {
+          final related = relatedGoods[i];
+          request.fields['related_goods[$i][variant_id]'] =
+              related['variant_id'].toString();
+          request.fields['related_goods[$i][is_required]'] =
+              _boolToMultipartFlag(related['is_required']);
+        }
+
+        for (int i = 0; i < attributes.length; i++) {
+          request.fields['attributes[$i][category_attribute_id]'] =
+              attributes[i]['category_attribute_id'].toString();
+          request.fields['attributes[$i][value]'] =
+              attributes[i]['value'].toString();
+        }
+
+        for (int i = 0; i < variants.length; i++) {
+          request.fields['variants[$i][is_active]'] =
+              variants[i]['is_active'] ? '1' : '0';
+          final variantPrice = variants[i]['price'] ?? 0.0;
+          request.fields['variants[$i][price]'] = variantPrice.toString();
+
+          List<dynamic> variantAttributes =
+              variants[i]['variant_attributes'] ?? [];
+          for (int j = 0; j < variantAttributes.length; j++) {
+            request.fields[
+                    'variants[$i][variant_attributes][$j][category_attribute_id]'] =
+                variantAttributes[j]['category_attribute_id'].toString();
+            request.fields['variants[$i][variant_attributes][$j][value]'] =
+                variantAttributes[j]['value'].toString();
+          }
+
+          List<File> variantFiles = variants[i]['files'] ?? [];
+          for (int j = 0; j < variantFiles.length; j++) {
+            File file = variantFiles[j];
+            if (await file.exists()) {
+              final imageFile = await http.MultipartFile.fromPath(
+                  'variants[$i][files][$j]', file.path);
+              request.files.add(imageFile);
+            }
           }
         }
-      }
 
-      for (int i = 0; i < images.length; i++) {
-        File file = images[i];
-        if (await file.exists()) {
-          final imageFile =
-              await http.MultipartFile.fromPath('files[$i][file]', file.path);
-          request.files.add(imageFile);
-          request.fields['files[$i][is_main]'] =
-              (i == (mainImageIndex ?? 0)) ? '1' : '0';
+        for (int i = 0; i < images.length; i++) {
+          File file = images[i];
+          if (await file.exists()) {
+            final imageFile =
+                await http.MultipartFile.fromPath('files[$i][file]', file.path);
+            request.files.add(imageFile);
+            request.fields['files[$i][is_main]'] =
+                (i == (mainImageIndex ?? 0)) ? '1' : '0';
+          }
         }
+
+        response = await _multipartPostRequest('', request);
       }
 
-      final streamedResponse = await request.send();
-      final response = await http.Response.fromStream(streamedResponse);
       final responseBody = json.decode(response.body);
 
       if (response.statusCode == 200 || response.statusCode == 201) {
@@ -9219,7 +11913,7 @@ Future<String> _appendQueryParams(String path) async {
     required String name,
     required int parentId,
     required String description,
-    required int quantity,
+    required int? quantity,
     int? unitId,
     required List<Map<String, dynamic>> attributes,
     required List<Map<String, dynamic>> variants,
@@ -9230,123 +11924,154 @@ Future<String> _appendQueryParams(String path) async {
     String? comments,
     int? mainImageIndex,
     int? labelId, // Добавляем параметр для ID метки
+    String? productionType,
+    List<Map<String, dynamic>> materialGoods = const [],
+    List<Map<String, dynamic>> relatedGoods = const [],
   }) async {
     try {
-      final token = await getToken();
-      // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
-      final path = await _appendQueryParams('/good/$goodId');
-      if (kDebugMode) {
-        //debugPrint('ApiService: updateGoods - Generated path: $path');
-      }
+      final requestBody = await _buildGoodsRequestBody(
+        isService: isService,
+        name: name,
+        parentId: parentId,
+        description: description,
+        quantity: quantity,
+        unitId: unitId,
+        attributes: attributes,
+        variants: variants,
+        isActive: isActive,
+        price: discountPrice,
+        storageId: storageId,
+        labelId: labelId,
+        productionType: productionType,
+        materialGoods: materialGoods,
+        relatedGoods: relatedGoods,
+        comments: comments,
+      );
 
-      var uri = Uri.parse('$baseUrl$path');
-      var request = http.MultipartRequest('POST', uri);
-      request.headers.addAll({
-        'Authorization': 'Bearer $token',
-        'Accept': 'application/json',
-        'Device': 'mobile',
-        'Content-Type': 'multipart/form-data; charset=utf-8',
-      });
+      final hasFiles = await _goodsRequestHasFiles(images, variants);
 
-      ////debugPrint('ApiService: Sending updateGoods request:');
-      ////debugPrint('ApiService: goodId: $goodId, name: $name, parentId: $parentId, description: $description');
-      ////debugPrint('ApiService: quantity: $quantity, isActive: $isActive, discountPrice: $discountPrice, branch: $branch, comments: $comments, mainImageIndex: $mainImageIndex');
-      ////debugPrint('ApiService: attributes: $attributes');
-      ////debugPrint('ApiService: variants: $variants');
-      ////debugPrint('ApiService: images: ${images.map((file) => file.path).toList()}');
+      late final http.Response response;
 
-      request.fields['name'] = name;
-      request.fields['category_id'] = parentId.toString();
-      request.fields['description'] = description;
-      request.fields['quantity'] = quantity.toString();
-      request.fields['is_active'] = isActive ? '1' : '0';
-      request.fields['label_id'] =
-          labelId != null ? labelId.toString() : ''; // Add label fields
-      request.fields['is_service'] = isService ? '1' : '0';
-      
-      if (unitId != null) {
-        request.fields['unit_id'] = unitId.toString();
-      }
+      if (!hasFiles) {
+        response = await _postRequest('/good/$goodId', requestBody);
+      } else {
+        final token = await getToken();
+        final path = await _appendQueryParams('/good/$goodId');
+        var uri = Uri.parse('$baseUrl$path');
+        var request = http.MultipartRequest('POST', uri);
+        request.headers.addAll({
+          'Authorization': 'Bearer $token',
+          'Accept': 'application/json',
+          'Device': 'mobile',
+          'Content-Type': 'multipart/form-data; charset=utf-8',
+        });
 
-      if (storageId != null) {
-        request.fields['branch_id'] = storageId.toString();
-        request.fields['storage_id'] = storageId.toString();
-        ////debugPrint('ApiService: Added branch: $branch');
-      }
-      if (comments != null && comments.isNotEmpty) {
-        request.fields['comments'] = comments;
-        ////debugPrint('ApiService: Added comments: $comments');
-      }
-      if (discountPrice != null) {
-        request.fields['price'] = discountPrice.toString();
-        ////debugPrint('ApiService: Added discount_price: $discountPrice');
-      }
+        request.fields['name'] = name;
+        request.fields['category_id'] = parentId.toString();
+        request.fields['description'] = description;
+        request.fields['quantity'] = quantity?.toString() ?? 'null';
+        request.fields['label_id'] = labelId?.toString() ?? '';
+        request.fields['is_active'] = isActive ? '1' : '0';
+        request.fields['is_popular'] = '0';
+        request.fields['is_new'] = '0';
+        request.fields['is_sale'] = '0';
+        request.fields['is_service'] = isService ? '1' : '0';
+        request.fields['is_subscription'] = '0';
+        request.fields['price'] = (discountPrice ?? 0).toString();
 
-      for (int i = 0; i < attributes.length; i++) {
-        request.fields['attributes[$i][category_attribute_id]'] =
-            attributes[i]['category_attribute_id'].toString();
-        request.fields['attributes[$i][value]'] =
-            attributes[i]['value'].toString();
-        ////debugPrint('ApiService: Added attribute $i: ${request.fields['attributes[$i][category_attribute_id]']}, ${request.fields['attributes[$i][value]']}');
-      }
+        final organizationId = await getSelectedOrganization();
+        final salesFunnelId = await getSelectedSalesFunnel();
+        request.fields['organization_id'] = organizationId ?? '1';
+        request.fields['sales_funnel_id'] = salesFunnelId ?? '1';
 
-      for (int i = 0; i < variants.length; i++) {
-        if (variants[i].containsKey('id')) {
-          request.fields['variants[$i][id]'] = variants[i]['id'].toString();
-          ////debugPrint('ApiService: Added variant ID $i: ${variants[i]['id']}');
-        }
-        request.fields['variants[$i][is_active]'] =
-            variants[i]['is_active'] ? '1' : '0';
-        request.fields['variants[$i][price]'] =
-            (variants[i]['price'] ?? 0.0).toString();
-        ////debugPrint('ApiService: Added variant $i: is_active=${variants[i]['is_active']}, price=${variants[i]['price']}');
-
-        List<dynamic> variantAttributes =
-            variants[i]['variant_attributes'] ?? [];
-        for (int j = 0; j < variantAttributes.length; j++) {
-          if (variantAttributes[j].containsKey('id')) {
-            request.fields['variants[$i][variant_attributes][$j][id]'] =
-                variantAttributes[j]['id'].toString();
-            ////debugPrint('ApiService: Added variant attribute ID $i-$j: ${variantAttributes[j]['id']}');
-          }
-          request.fields[
-                  'variants[$i][variant_attributes][$j][category_attribute_id]'] =
-              variantAttributes[j]['category_attribute_id'].toString();
-          request.fields['variants[$i][variant_attributes][$j][value]'] =
-              variantAttributes[j]['value'].toString();
-          ////debugPrint('ApiService: Added variant attribute $i-$j: ${variantAttributes[j]}');
+        if (productionType != null && productionType.isNotEmpty) {
+          request.fields['production_type'] = productionType;
         }
 
-        List<File> variantFiles = variants[i]['files'] ?? [];
-        for (int j = 0; j < variantFiles.length; j++) {
-          File file = variantFiles[j];
-          if (await file.exists()) {
-            final imageFile = await http.MultipartFile.fromPath(
-                'variants[$i][files][$j]', file.path);
-            request.files.add(imageFile);
-            ////debugPrint('ApiService: Added variant file $i-$j: ${file.path}');
-          } else {
-            ////debugPrint('ApiService: Variant file not found, skipping: ${file.path}');
-          }
-        }
-      }
-
-      for (int i = 0; i < images.length; i++) {
-        File file = images[i];
-        if (await file.exists()) {
-          final imageFile =
-              await http.MultipartFile.fromPath('files[$i][file]', file.path);
-          request.files.add(imageFile);
-          request.fields['files[$i][is_main]'] =
-              i == (mainImageIndex ?? 0) ? '1' : '0';
-          ////debugPrint('ApiService: Added general image $i: ${file.path}, is_main: ${request.fields['files[$i][is_main]']}');
+        if (unitId != null) {
+          request.fields['unit_id'] = unitId.toString();
         } else {
-          ////debugPrint('ApiService: General image not found, skipping: ${file.path}');
+          request.fields['unit_id'] = 'null';
         }
+
+        if (storageId != null) {
+          request.fields['branch_id'] = storageId.toString();
+          request.fields['storage_id'] = storageId.toString();
+        }
+        if (comments != null && comments.isNotEmpty) {
+          request.fields['comments'] = comments;
+        }
+
+        for (int i = 0; i < materialGoods.length; i++) {
+          final material = materialGoods[i];
+          request.fields['good_ids[$i][good_id]'] =
+              material['good_id'].toString();
+          request.fields['good_ids[$i][norm]'] = material['norm'].toString();
+        }
+
+        for (int i = 0; i < relatedGoods.length; i++) {
+          final related = relatedGoods[i];
+          request.fields['related_goods[$i][variant_id]'] =
+              related['variant_id'].toString();
+          request.fields['related_goods[$i][is_required]'] =
+              _boolToMultipartFlag(related['is_required']);
+        }
+
+        for (int i = 0; i < attributes.length; i++) {
+          request.fields['attributes[$i][category_attribute_id]'] =
+              attributes[i]['category_attribute_id'].toString();
+          request.fields['attributes[$i][value]'] =
+              attributes[i]['value'].toString();
+        }
+
+        for (int i = 0; i < variants.length; i++) {
+          if (variants[i].containsKey('id')) {
+            request.fields['variants[$i][id]'] = variants[i]['id'].toString();
+          }
+          request.fields['variants[$i][is_active]'] =
+              variants[i]['is_active'] ? '1' : '0';
+          request.fields['variants[$i][price]'] =
+              (variants[i]['price'] ?? 0.0).toString();
+
+          List<dynamic> variantAttributes =
+              variants[i]['variant_attributes'] ?? [];
+          for (int j = 0; j < variantAttributes.length; j++) {
+            if (variantAttributes[j].containsKey('id')) {
+              request.fields['variants[$i][variant_attributes][$j][id]'] =
+                  variantAttributes[j]['id'].toString();
+            }
+            request.fields[
+                    'variants[$i][variant_attributes][$j][category_attribute_id]'] =
+                variantAttributes[j]['category_attribute_id'].toString();
+            request.fields['variants[$i][variant_attributes][$j][value]'] =
+                variantAttributes[j]['value'].toString();
+          }
+
+          List<File> variantFiles = variants[i]['files'] ?? [];
+          for (int j = 0; j < variantFiles.length; j++) {
+            File file = variantFiles[j];
+            if (await file.exists()) {
+              final imageFile = await http.MultipartFile.fromPath(
+                  'variants[$i][files][$j]', file.path);
+              request.files.add(imageFile);
+            }
+          }
+        }
+
+        for (int i = 0; i < images.length; i++) {
+          File file = images[i];
+          if (await file.exists()) {
+            final imageFile =
+                await http.MultipartFile.fromPath('files[$i][file]', file.path);
+            request.files.add(imageFile);
+            request.fields['files[$i][is_main]'] =
+                i == (mainImageIndex ?? 0) ? '1' : '0';
+          }
+        }
+
+        response = await _multipartPostRequest('', request);
       }
 
-      final streamedResponse = await request.send();
-      final response = await http.Response.fromStream(streamedResponse);
       final responseBody = json.decode(response.body);
 
       ////debugPrint('ApiService: Response status: ${response.statusCode}');
@@ -9554,11 +12279,15 @@ Future<String> _appendQueryParams(String path) async {
     int? statusId,
     String? query,
     List<String>? managerIds,
+    List<String>? regionsIds,
     List<String>? leadIds,
     DateTime? fromDate,
     DateTime? toDate,
     String? status,
     String? paymentMethod,
+    String? deliveryType,
+    List<int>? reasonForRefusalIds,
+    Map<String, List<String>>? customFieldFilters,
   }) async {
     String url = '/order';
     url += '?page=$page&per_page=$perPage';
@@ -9571,6 +12300,11 @@ Future<String> _appendQueryParams(String path) async {
     if (managerIds != null && managerIds.isNotEmpty) {
       for (int i = 0; i < managerIds.length; i++) {
         url += '&managers[$i]=${managerIds[i]}';
+      }
+    }
+    if (regionsIds != null && regionsIds.isNotEmpty) {
+      for (int i = 0; i < regionsIds.length; i++) {
+        url += '&regions[$i]=${regionsIds[i]}';
       }
     }
     if (leadIds != null && leadIds.isNotEmpty) {
@@ -9589,6 +12323,27 @@ Future<String> _appendQueryParams(String path) async {
     }
     if (paymentMethod != null && paymentMethod.isNotEmpty) {
       url += '&payment_type=$paymentMethod';
+    }
+    if (deliveryType != null && deliveryType.isNotEmpty) {
+      url += '&delivery_type=${Uri.encodeComponent(deliveryType)}';
+    }
+    if (reasonForRefusalIds != null && reasonForRefusalIds.isNotEmpty) {
+      for (int i = 0; i < reasonForRefusalIds.length; i++) {
+        url += '&reason_for_refusals[$i]=${reasonForRefusalIds[i]}';
+      }
+    }
+    if (customFieldFilters != null && customFieldFilters.isNotEmpty) {
+      var index = 0;
+      customFieldFilters.forEach((fieldKey, values) {
+        if (values.isEmpty) return;
+        final encodedKey = Uri.encodeComponent(fieldKey);
+        url += '&custom_fields[$index][key]=$encodedKey';
+        for (int i = 0; i < values.length; i++) {
+          final encodedValue = Uri.encodeComponent(values[i]);
+          url += '&custom_fields[$index][value][$i]=$encodedValue';
+        }
+        index++;
+      });
     }
 
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
@@ -9609,6 +12364,50 @@ Future<String> _appendQueryParams(String path) async {
     } catch (e) {
       throw e;
     }
+  }
+
+  Future<List<String>> getOrderCustomFields() async {
+    final path = await _appendQueryParams('/field-position?table=orders');
+    final response = await _getRequest(path);
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      final resultList = data['result'] as List<dynamic>?;
+      return resultList
+              ?.where((e) =>
+                  (e['is_custom_field'] == true || e['is_custom_field'] == 1) &&
+                  (e['field_name']?.toString().isNotEmpty ?? false))
+              .map((e) => e['field_name'] as String)
+              .toList() ??
+          <String>[];
+    }
+
+    final message = _extractErrorMessageFromResponse(response);
+    throw ApiException(
+      message ?? 'Ошибка загрузки пользовательских полей заказов',
+      response.statusCode,
+    );
+  }
+
+  Future<List<String>> getOrderCustomFieldValues(String key) async {
+    final path =
+        await _appendQueryParams('/order/get/custom-field-values?key=$key');
+    final response = await _getRequest(path);
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      final resultList = data['result'] as List?;
+      if (resultList == null) {
+        return [];
+      }
+      return resultList.map((value) => value.toString()).toList();
+    }
+
+    final message = _extractErrorMessageFromResponse(response);
+    throw ApiException(
+      message ?? 'Ошибка загрузки значений пользовательского поля заказов',
+      response.statusCode,
+    );
   }
 
   Future<Order> getOrderDetails(int orderId) async {
@@ -9647,10 +12446,14 @@ Future<String> _appendQueryParams(String path) async {
 
   Future<OrderResponse> getOrdersByLead({
     required int leadId,
+    String relationType = 'lead',
     int page = 1,
     int perPage = 20,
   }) async {
-    String url = '/lead/get-orders/$leadId?page=$page&per_page=$perPage';
+    final normalizedRelation = relationType == 'deal' ? 'deal' : 'lead';
+    final String url = normalizedRelation == 'deal'
+        ? '/order/order-by-deal/$leadId'
+        : '/lead/get-orders/$leadId?page=$page&per_page=$perPage';
 
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams(url);
@@ -9668,6 +12471,19 @@ Future<String> _appendQueryParams(String path) async {
       if (response.statusCode == 200) {
         final rawData = json.decode(response.body);
         return OrderResponse.fromJson(rawData);
+      } else if (response.statusCode == 404 ||
+          response.statusCode == 204 ||
+          response.body.trim().isEmpty) {
+        return OrderResponse.fromJson({
+          'data': [],
+          'pagination': {
+            'total': 0,
+            'count': 0,
+            'per_page': perPage,
+            'current_page': page,
+            'total_pages': 1,
+          },
+        });
       } else {
         throw Exception('Ошибка сервера при загрузке заказов!');
       }
@@ -9681,7 +12497,8 @@ Future<String> _appendQueryParams(String path) async {
 
   Future<Map<String, dynamic>> createOrder({
     required String phone,
-    required int leadId,
+    int? leadId,
+    int? dealId,
     required bool delivery,
     String? deliveryAddress,
     int? deliveryAddressId,
@@ -9692,6 +12509,9 @@ Future<String> _appendQueryParams(String path) async {
     String? commentToCourier,
     int? managerId,
     int? integration,
+    required double sum,
+    List<Map<String, dynamic>>? customFields,
+    List<Map<String, int>>? directoryValues,
   }) async {
     try {
       final token = await getToken();
@@ -9706,7 +12526,6 @@ Future<String> _appendQueryParams(String path) async {
       final uri = Uri.parse('$baseUrl$path');
       final body = {
         'phone': phone,
-        'lead_id': leadId,
         'deliveryType': delivery ? 'delivery' : 'pickup',
         'goods': goods
             .map((item) => {
@@ -9720,18 +12539,33 @@ Future<String> _appendQueryParams(String path) async {
         'comment_to_courier': commentToCourier,
         'payment_type': 'cash',
         'manager_id': managerId,
-        'integration_id': null, //  otpravim null
+        'integration_id': integration,
+        'sum': sum,
       };
+
+      if (leadId != null) {
+        body['lead_id'] = leadId;
+      }
+      if (dealId != null) {
+        body['deal_id'] = dealId;
+      }
 
       if (delivery) {
         body['delivery_address_id'] = deliveryAddressId;
       } else {
         body['delivery_address_id'] = null;
       }
-      
+
       // Всегда отправляем branch_id, если он указан
       body['branch_id'] = branchId;
-    
+
+      if (customFields != null && customFields.isNotEmpty) {
+        body['custom_fields'] = customFields;
+      }
+
+      if (directoryValues != null && directoryValues.isNotEmpty) {
+        body['directory_values'] = directoryValues;
+      }
 
       ////debugPrint('ApiService: Тело запроса для создания заказа: ${jsonEncode(body)}');
 
@@ -9785,7 +12619,8 @@ Future<String> _appendQueryParams(String path) async {
   Future<Map<String, dynamic>> updateOrder({
     required int orderId,
     required String phone,
-    required int leadId,
+    int? leadId,
+    int? dealId,
     required bool delivery,
     String? deliveryAddress,
     int? deliveryAddressId,
@@ -9794,6 +12629,10 @@ Future<String> _appendQueryParams(String path) async {
     int? branchId,
     String? commentToCourier,
     int? managerId, // Новое поле
+    int? integration,
+    required double sum,
+    List<Map<String, dynamic>>? customFields,
+    List<Map<String, int>>? directoryValues,
   }) async {
     try {
       final token = await getToken();
@@ -9808,7 +12647,6 @@ Future<String> _appendQueryParams(String path) async {
       final uri = Uri.parse('$baseUrl$path');
       final body = {
         'phone': phone,
-        'lead_id': leadId,
         'deliveryType': delivery
             ? 'delivery'
             : 'pickup', // Исправлено: delivery=true -> "delivery"
@@ -9823,7 +12661,16 @@ Future<String> _appendQueryParams(String path) async {
         'comment_to_courier': commentToCourier,
         'payment_type': 'cash',
         'manager_id': managerId?.toString(),
+        'integration_id': integration,
+        'sum': sum,
       };
+
+      if (leadId != null) {
+        body['lead_id'] = leadId;
+      }
+      if (dealId != null) {
+        body['deal_id'] = dealId;
+      }
 
       if (delivery) {
         body['delivery_address'] = deliveryAddress;
@@ -9832,9 +12679,17 @@ Future<String> _appendQueryParams(String path) async {
         body['delivery_address'] = null;
         body['delivery_address_id'] = null;
       }
-      
+
       // Всегда отправляем branch_id, если он указан
       body['branch_id'] = branchId;
+
+      if (customFields != null && customFields.isNotEmpty) {
+        body['custom_fields'] = customFields;
+      }
+
+      if (directoryValues != null && directoryValues.isNotEmpty) {
+        body['directory_values'] = directoryValues;
+      }
 
       ////debugPrint('ApiService: Тело запроса для обновления заказа: ${jsonEncode(body)}');
 
@@ -9883,15 +12738,21 @@ Future<String> _appendQueryParams(String path) async {
   }
 
   Future<DeliveryAddressResponse> getDeliveryAddresses({
-    required int leadId,
+    int? leadId,
+    int? dealId,
   }) async {
     try {
       final token = await getToken();
       if (token == null) throw Exception('Токен не найден');
 
+      if (leadId == null && dealId == null) {
+        throw Exception('Не указан lead_id или deal_id');
+      }
+
       // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
-      final path =
-          await _appendQueryParams('/delivery-address?lead_id=$leadId');
+      final relationQuery =
+          dealId != null ? 'deal_id=$dealId' : 'lead_id=$leadId';
+      final path = await _appendQueryParams('/delivery-address?$relationQuery');
       if (kDebugMode) {
         //debugPrint('ApiService: getDeliveryAddresses - Generated path: $path');
       }
@@ -9912,26 +12773,46 @@ Future<String> _appendQueryParams(String path) async {
 
   Future<http.Response> createDeliveryAddress({
     required String address,
-    required int leadId,
+    int? leadId,
+    int? dealId,
   }) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/mini-app/delivery-address');
+    final organizationId = await getSelectedOrganization();
+    final salesFunnelId = await getSelectedSalesFunnel();
     if (kDebugMode) {
       debugPrint('ApiService: createDeliveryAddress - Generated path: $path');
     }
 
+    final body = <String, dynamic>{
+      'address': address,
+    };
+    if (dealId != null) {
+      body['deal_id'] = dealId;
+    } else {
+      body['lead_id'] = leadId;
+    }
+    if (organizationId != null &&
+        organizationId.isNotEmpty &&
+        organizationId != 'null') {
+      body['organization_id'] = organizationId;
+    }
+    if (salesFunnelId != null &&
+        salesFunnelId.isNotEmpty &&
+        salesFunnelId != 'null') {
+      body['sales_funnel_id'] = salesFunnelId;
+    }
+
     final response = await _postRequest(
       path,
-      {
-        'address': address,
-        'lead_id': leadId,
-      },
+      body,
     );
-    
+
     if (kDebugMode) {
-      debugPrint('ApiService: createDeliveryAddress - Response status: ${response.statusCode}');
+      debugPrint(
+          'ApiService: createDeliveryAddress - Response status: ${response.statusCode}');
     }
-    
+
     return response;
   }
 
@@ -10053,47 +12934,55 @@ Future<String> _appendQueryParams(String path) async {
     required int orderId,
     required int statusId,
     required int? organizationId,
+    int? reasonForRefusalId,
+    String? reasonForRefusal,
   }) async {
     try {
-      final token = await getToken();
-      if (token == null) throw Exception('Токен не найден');
-
-      // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
       final path = await _appendQueryParams('/order/changeStatus/$orderId');
       if (kDebugMode) {
-        //debugPrint('ApiService: changeOrderStatus - Generated path: $path');
+        debugPrint('ApiService: changeOrderStatus - Generated path: $path');
       }
 
-      final uri = Uri.parse('$baseUrl$path');
-      final response = await http.post(
-        uri,
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-          'Device': 'mobile',
-        },
-        body: jsonEncode({
+      final response = await _postRequest(
+        '/order/changeStatus/$orderId',
+        {
           'status_id': statusId,
-        }),
+          if (reasonForRefusalId != null)
+            'reason_for_refusal_id': reasonForRefusalId,
+          if (reasonForRefusal != null && reasonForRefusal.trim().isNotEmpty)
+            'reason_for_refusal': reasonForRefusal.trim(),
+        },
       );
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         return true;
+      } else if (response.statusCode == 422) {
+        throw OrderStatusUpdateException(
+          response.statusCode,
+          _getOrderStatusChangeErrorMessage(response),
+        );
       } else {
-        final jsonResponse = jsonDecode(response.body);
         throw Exception(
-            jsonResponse['message'] ?? 'Ошибка при смене статуса заказа');
+          _extractErrorMessageFromResponse(response) ??
+              'Ошибка при смене статуса заказа',
+        );
       }
+    } on OrderStatusUpdateException {
+      rethrow;
     } catch (e) {
-      ////debugPrint('Ошибка смены статуса заказа: ');
-      return false;
+      if (kDebugMode) {
+        debugPrint('ApiService: changeOrderStatus error: $e');
+      }
+      rethrow;
     }
   }
 
-  Future<List<Branch>> getBranches() async {
+  Future<List<Branch>> getBranches({String? search}) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
-    final path = await _appendQueryParams('/storage');
+    String path = await _appendQueryParams('/storage');
+    if (search != null && search.trim().isNotEmpty) {
+      path += '&search=${Uri.encodeComponent(search.trim())}';
+    }
     if (kDebugMode) {
       //debugPrint('ApiService: getBranches - Generated path: $path');
     }
@@ -10151,7 +13040,8 @@ Future<String> _appendQueryParams(String path) async {
 
     if (types != null && types.isNotEmpty) {
       if (kDebugMode) {
-        debugPrint('📅 Calendar types to send: $types (count: ${types.length})');
+        debugPrint(
+            '📅 Calendar types to send: $types (count: ${types.length})');
       }
       url += types.map((type) => '&type[]=${Uri.encodeComponent(type)}').join();
     }
@@ -10162,7 +13052,8 @@ Future<String> _appendQueryParams(String path) async {
 
     if (userIds != null && userIds.isNotEmpty) {
       url += userIds
-          .map((userId) => '&users[]=$userId')
+          // TODO check if users[] or user_id[]
+          .map((userId) => '&user_id[]=$userId')
           .join(); // Append user IDs
     }
 
@@ -10657,7 +13548,8 @@ Future<String> _appendQueryParams(String path) async {
         throw ('Ошибка загрузки данных статистики звонков');
       }
     } catch (e) {
-      throw ('Ошибка получения данных статистики звонков');
+      debugPrint('ApiService: getCallStatistics error: $e');
+      throw Exception('Ошибка получения данных статистики звонков: $e');
     }
   }
 
@@ -10685,7 +13577,8 @@ Future<String> _appendQueryParams(String path) async {
         throw ('Ошибка загрузки данных статистики звонков');
       }
     } catch (e) {
-      throw ('Ошибка получения данных статистики звонков');
+      debugPrint('ApiService: getCallAnalytics error: $e');
+      throw Exception('Ошибка получения данных статистики звонков: $e');
     }
   }
 
@@ -10818,15 +13711,13 @@ Future<String> _appendQueryParams(String path) async {
         throw ('Ошибка загрузки данных операторов');
       }
     } catch (e) {
-      throw ('Ошибка получения данных операторов');
+      debugPrint('ApiService: getOperators error: $e');
+      throw Exception('Ошибка получения данных операторов: $e');
     }
   }
 
 //________________________________  END_______API_SCREEN__CALLS____________________________________________//
 //________________________________  START_______API_SCREEN__DOCUMENTS____________________________________________//
-
-
-
 
 //______________________________start incoming documents____________________________//
   Future<IncomingResponse> getIncomingDocuments({
@@ -10891,9 +13782,7 @@ Future<String> _appendQueryParams(String path) async {
     }
   }
 
-
-
-Future<IncomingDocument> getIncomingDocumentById(int documentId) async {
+  Future<IncomingDocument> getIncomingDocumentById(int documentId) async {
     String url = '/income-documents/$documentId';
 
     final path = await _appendQueryParams(url);
@@ -10914,6 +13803,7 @@ Future<IncomingDocument> getIncomingDocumentById(int documentId) async {
       rethrow;
     }
   }
+
   Future<void> approveIncomingDocument(int documentId) async {
     const String url = '/income-documents/approve';
 
@@ -10947,21 +13837,21 @@ Future<IncomingDocument> getIncomingDocumentById(int documentId) async {
         }
       } else {
         final message = _extractErrorMessageFromResponse(response);
-        throw ApiException(message ?? 'Ошибка при проведении документа', response.statusCode);
+        throw ApiException(
+            message ?? 'Ошибка при проведении документа', response.statusCode);
       }
     } catch (e) {
       rethrow;
     }
   }
 
-
-
   Future<void> unApproveIncomingDocument(int documentId) async {
     const String url = '/income-documents/unApprove';
 
     final path = await _appendQueryParams(url);
     if (kDebugMode) {
-      debugPrint('ApiService: unApproveIncomingDocument - Generated path: $path');
+      debugPrint(
+          'ApiService: unApproveIncomingDocument - Generated path: $path');
     }
 
     try {
@@ -10989,7 +13879,8 @@ Future<IncomingDocument> getIncomingDocumentById(int documentId) async {
         }
       } else {
         final message = _extractErrorMessageFromResponse(response);
-        throw ApiException(message ?? 'Ошибка при отмене проведения документа', response.statusCode);
+        throw ApiException(message ?? 'Ошибка при отмене проведения документа',
+            response.statusCode);
       }
     } catch (e) {
       rethrow;
@@ -11001,7 +13892,8 @@ Future<IncomingDocument> getIncomingDocumentById(int documentId) async {
       final token = await getToken();
       if (token == null) throw 'Токен не найден';
 
-      final pathWithParams = await _appendQueryParams('/income-documents/restore');
+      final pathWithParams =
+          await _appendQueryParams('/income-documents/restore');
       final uri = Uri.parse('$baseUrl$pathWithParams');
 
       final body = jsonEncode({
@@ -11025,12 +13917,14 @@ Future<IncomingDocument> getIncomingDocumentById(int documentId) async {
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         if (kDebugMode) {
-          debugPrint('ApiService: restoreIncomingDocument - Document $documentId restored successfully');
+          debugPrint(
+              'ApiService: restoreIncomingDocument - Document $documentId restored successfully');
         }
         return {'result': 'Success'};
       } else {
         final message = _extractErrorMessageFromResponse(response);
-        throw ApiException(message ?? 'Ошибка при восстановлении документа', response.statusCode);
+        throw ApiException(message ?? 'Ошибка при восстановлении документа',
+            response.statusCode);
       }
     } catch (e) {
       rethrow;
@@ -11043,7 +13937,8 @@ Future<IncomingDocument> getIncomingDocumentById(int documentId) async {
 
     final path = await _appendQueryParams(url);
     if (kDebugMode) {
-      debugPrint('ApiService: getIncomingDocumentHistory - Generated path: $path');
+      debugPrint(
+          'ApiService: getIncomingDocumentHistory - Generated path: $path');
     }
 
     try {
@@ -11060,17 +13955,17 @@ Future<IncomingDocument> getIncomingDocumentById(int documentId) async {
     }
   }
 
-
   Future<void> createIncomingDocument({
-  required String date,
-  required int storageId,
-  required String comment,
-  required int counterpartyId,
-  required List<Map<String, dynamic>> documentGoods,
-  required int organizationId,
-  required int salesFunnelId,
-  bool approve = false, // Новый параметр
-}) async {
+    required String date,
+    required int storageId,
+    required String comment,
+    required int counterpartyId,
+    required List<Map<String, dynamic>> documentGoods,
+    required int organizationId,
+    required int salesFunnelId,
+    bool approve = false, // Новый параметр
+    double? exchangeRate,
+  }) async {
     try {
       final token = await getToken();
       if (token == null) throw 'Токен не найден';
@@ -11087,6 +13982,7 @@ Future<IncomingDocument> getIncomingDocumentById(int documentId) async {
         'organization_id': organizationId,
         'sales_funnel_id': salesFunnelId,
         'approve': approve, // Добавляем новый параметр
+        if (exchangeRate != null) 'exchange_rate': exchangeRate,
       });
 
       final response = await http.post(
@@ -11112,29 +14008,31 @@ Future<IncomingDocument> getIncomingDocumentById(int documentId) async {
   }
 
   Future<void> updateIncomingDocument({
-  required int documentId,
-  required String date,
-  required int storageId,
-  required String comment,
-  required int counterpartyId,
-  required List<Map<String, dynamic>> documentGoods,
-  required int organizationId,
-  required int salesFunnelId,
-}) async {
-  final token = await getToken();
-  if (token == null) throw 'Токен не найден';
+    required int documentId,
+    required String date,
+    required int storageId,
+    required String comment,
+    required int counterpartyId,
+    required List<Map<String, dynamic>> documentGoods,
+    required int organizationId,
+    required int salesFunnelId,
+    double? exchangeRate,
+  }) async {
+    final token = await getToken();
+    if (token == null) throw 'Токен не найден';
 
-  final path = await _appendQueryParams('/income-documents/$documentId');
-  final uri = Uri.parse('$baseUrl$path');
-  final body = jsonEncode({
-    'date': date,
-    'storage_id': storageId,
-    'comment': comment,
-    'counterparty_id': counterpartyId,
-    'document_goods': documentGoods,
-    'organization_id': organizationId,
-    'sales_funnel_id': salesFunnelId,
-  });
+    final path = await _appendQueryParams('/income-documents/$documentId');
+    final uri = Uri.parse('$baseUrl$path');
+    final body = jsonEncode({
+      'date': date,
+      'storage_id': storageId,
+      'comment': comment,
+      'counterparty_id': counterpartyId,
+      'document_goods': documentGoods,
+      'organization_id': organizationId,
+      'sales_funnel_id': salesFunnelId,
+      if (exchangeRate != null) 'exchange_rate': exchangeRate,
+    });
 
     try {
       final response = await http.put(
@@ -11150,30 +14048,31 @@ Future<IncomingDocument> getIncomingDocumentById(int documentId) async {
       );
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-      return;
-    } else {
-      final message = _extractErrorMessageFromResponse(response);
-      throw ApiException(message ?? 'Ошибка сервера', response.statusCode);
+        return;
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(message ?? 'Ошибка сервера', response.statusCode);
+      }
+    } catch (e) {
+      rethrow;
     }
-  } catch (e) {
-    rethrow;
   }
-}
-Future<Map<String, dynamic>> deleteIncomingDocument(int documentId) async {
+
+  Future<Map<String, dynamic>> deleteIncomingDocument(int documentId) async {
     try {
       final token = await getToken();
       if (token == null) throw 'Токен не найден';
 
       // Используем _appendQueryParams для получения параметров, но извлекаем их для тела запроса
-    final pathWithParams = await _appendQueryParams('/income-documents');
-    final uri = Uri.parse('$baseUrl$pathWithParams');
+      final pathWithParams = await _appendQueryParams('/income-documents');
+      final uri = Uri.parse('$baseUrl$pathWithParams');
 
       // Извлекаем organization_id и sales_funnel_id из query параметров
       final organizationId = uri.queryParameters['organization_id'];
       final salesFunnelId = uri.queryParameters['sales_funnel_id'];
 
       // Создаем чистый URI без параметров для DELETE запроса
-    final cleanUri = Uri.parse('$baseUrl/income-documents');
+      final cleanUri = Uri.parse('$baseUrl/income-documents');
 
       final body = jsonEncode({
         'ids': [documentId],
@@ -11182,8 +14081,8 @@ Future<Map<String, dynamic>> deleteIncomingDocument(int documentId) async {
       });
 
       if (kDebugMode) {
-      debugPrint('ApiService: deleteIncomingDocument - Request body: $body');
-    }
+        debugPrint('ApiService: deleteIncomingDocument - Request body: $body');
+      }
 
       final response = await http.delete(
         cleanUri,
@@ -11197,15 +14096,16 @@ Future<Map<String, dynamic>> deleteIncomingDocument(int documentId) async {
       );
 
       if (response.statusCode == 200 || response.statusCode == 204) {
-      return {'result': 'Success'};
-    } else {
-      final message = _extractErrorMessageFromResponse(response);
-      throw ApiException(message ?? 'Ошибка при удалении документа', response.statusCode);
+        return {'result': 'Success'};
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(
+            message ?? 'Ошибка при удалении документа', response.statusCode);
+      }
+    } catch (e) {
+      rethrow;
     }
-  } catch (e) {
-    rethrow;
   }
-}
 
   Future<void> massApproveIncomingDocuments(List<int> ids) async {
     final path = await _appendQueryParams('/income-documents/approve');
@@ -11242,7 +14142,8 @@ Future<Map<String, dynamic>> deleteIncomingDocument(int documentId) async {
       } else {
         final message = _extractErrorMessageFromResponse(response);
         throw ApiException(
-          message ?? 'Ошибка при массовом снятии проведения документов прихода!',
+          message ??
+              'Ошибка при массовом снятии проведения документов прихода!',
           response.statusCode,
         );
       }
@@ -11312,7 +14213,8 @@ Future<Map<String, dynamic>> deleteIncomingDocument(int documentId) async {
     int? authorId,
     int? storageId,
   }) async {
-    String url = '/expense-documents'; // Предполагаемый endpoint; подкорректируй если нужно
+    String url =
+        '/expense-documents'; // Предполагаемый endpoint; подкорректируй если нужно
     url += '?page=$page&per_page=$perPage';
     if (query != null && query.isNotEmpty) {
       url += '&search=$query';
@@ -11364,8 +14266,6 @@ Future<Map<String, dynamic>> deleteIncomingDocument(int documentId) async {
     }
   }
 
-
-
   Future<expDoc.ExpenseDocumentDetail> getClienSalesById(int documentId) async {
     String url = '/expense-documents/$documentId';
 
@@ -11387,6 +14287,7 @@ Future<Map<String, dynamic>> deleteIncomingDocument(int documentId) async {
       rethrow;
     }
   }
+
 //createClientSaleDocument
   Future<void> createClientSaleDocument({
     required String date,
@@ -11397,6 +14298,7 @@ Future<Map<String, dynamic>> deleteIncomingDocument(int documentId) async {
     required int organizationId,
     required int salesFunnelId,
     required bool approve,
+    double? exchangeRate,
   }) async {
     try {
       final token = await getToken();
@@ -11412,13 +14314,16 @@ Future<Map<String, dynamic>> deleteIncomingDocument(int documentId) async {
         'organization_id': organizationId,
         'sales_funnel_id': salesFunnelId,
         'approve': approve,
+        if (exchangeRate != null) 'exchange_rate': exchangeRate,
       });
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         return;
       } else {
         final message = _extractErrorMessageFromResponse(response);
-        throw ApiException(message ?? 'Неизвестная ошибка при создании документа', response.statusCode);
+        throw ApiException(
+            message ?? 'Неизвестная ошибка при создании документа',
+            response.statusCode);
       }
     } catch (e) {
       rethrow;
@@ -11449,7 +14354,8 @@ Future<Map<String, dynamic>> deleteIncomingDocument(int documentId) async {
       });
 
       if (kDebugMode) {
-        debugPrint('ApiService: deleteClientSaleDocument - Request body: $body');
+        debugPrint(
+            'ApiService: deleteClientSaleDocument - Request body: $body');
       }
 
       final response = await http.delete(
@@ -11467,24 +14373,26 @@ Future<Map<String, dynamic>> deleteIncomingDocument(int documentId) async {
         return {'result': 'Success'};
       } else {
         final message = _extractErrorMessageFromResponse(response);
-        throw ApiException(message ?? 'Ошибка при удалении документа', response.statusCode);
+        throw ApiException(
+            message ?? 'Ошибка при удалении документа', response.statusCode);
       }
     } catch (e) {
       rethrow;
     }
   }
 
-Future<void> updateClientSaleDocument({
-  required int documentId,
-  required String date,
-  required int storageId,
-  required String comment,
-  required int counterpartyId,
-  required List<Map<String, dynamic>> documentGoods,
-  required int organizationId,
-  required int salesFunnelId,
-}) async {
-  try {
+  Future<void> updateClientSaleDocument({
+    required int documentId,
+    required String date,
+    required int storageId,
+    required String comment,
+    required int counterpartyId,
+    required List<Map<String, dynamic>> documentGoods,
+    required int organizationId,
+    required int salesFunnelId,
+    double? exchangeRate,
+  }) async {
+    try {
       final token = await getToken();
       if (token == null) throw Exception('Токен не найден');
 
@@ -11499,6 +14407,7 @@ Future<void> updateClientSaleDocument({
         'document_goods': documentGoods,
         'organization_id': organizationId,
         'sales_funnel_id': salesFunnelId,
+        if (exchangeRate != null) 'exchange_rate': exchangeRate,
       });
 
       final response = await http.put(
@@ -11516,91 +14425,92 @@ Future<void> updateClientSaleDocument({
         return;
       } else {
         final message = _extractErrorMessageFromResponse(response);
-        throw ApiException(message ?? 'Ошибка обновления документа', response.statusCode);
+        throw ApiException(
+            message ?? 'Ошибка обновления документа', response.statusCode);
       }
     } catch (e) {
-    rethrow;
-  }
+      rethrow;
+    }
   }
 
 // Проведение документа реализации
-Future<void> approveClientSaleDocument(int documentId) async {
-  const String url = '/expense-documents/approve';
-  final path = await _appendQueryParams(url);
+  Future<void> approveClientSaleDocument(int documentId) async {
+    const String url = '/expense-documents/approve';
+    final path = await _appendQueryParams(url);
 
-  try {
-    final token = await getToken();
-    if (token == null) throw 'Токен не найден';
-
-    final uri = Uri.parse('$baseUrl$path');
-    final response = await http.post(
-      uri,
-      headers: {
-        'Authorization': 'Bearer $token',
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-        'Device': 'mobile',
-      },
-      body: jsonEncode({
-        'ids': [documentId]
-      }),
-    );
-
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      // Успешно проведен
-    } else {
-      final message = _extractErrorMessageFromResponse(response);
-      throw ApiException(
-          message ?? 'Ошибка при проведении документа',
-          response.statusCode
-      );
-    }
-  } catch (e) {
-    rethrow;
-  }
-}
-
-// Отмена проведения документа реализации
-Future<void> unApproveClientSaleDocument(int documentId) async {
-  const String url = '/expense-documents/unApprove';
-  final path = await _appendQueryParams(url);
-
-  try {
-    final token = await getToken();
-    if (token == null) throw Exception('Токен не найден');
-
-    final uri = Uri.parse('$baseUrl$path');
-    final response = await http.post(
-      uri,
-      headers: {
-        'Authorization': 'Bearer $token',
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-        'Device': 'mobile',
-      },
-      body: jsonEncode({
-        'ids': [documentId]
-      }),
-    );
-
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      // Успешно отменено
-    } else {
-      final message = _extractErrorMessageFromResponse(response);
-      throw ApiException(message ?? 'Ошибка при отмене проведения документа', response.statusCode);
-    }
-  } catch (e) {
-    rethrow;
-  }
-}
-
-// Восстановление документа реализации
-Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
-  try {
+    try {
       final token = await getToken();
       if (token == null) throw 'Токен не найден';
 
-      final pathWithParams = await _appendQueryParams('/expense-documents/restore');
+      final uri = Uri.parse('$baseUrl$path');
+      final response = await http.post(
+        uri,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'Device': 'mobile',
+        },
+        body: jsonEncode({
+          'ids': [documentId]
+        }),
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        // Успешно проведен
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(
+            message ?? 'Ошибка при проведении документа', response.statusCode);
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+// Отмена проведения документа реализации
+  Future<void> unApproveClientSaleDocument(int documentId) async {
+    const String url = '/expense-documents/unApprove';
+    final path = await _appendQueryParams(url);
+
+    try {
+      final token = await getToken();
+      if (token == null) throw Exception('Токен не найден');
+
+      final uri = Uri.parse('$baseUrl$path');
+      final response = await http.post(
+        uri,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'Device': 'mobile',
+        },
+        body: jsonEncode({
+          'ids': [documentId]
+        }),
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        // Успешно отменено
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(message ?? 'Ошибка при отмене проведения документа',
+            response.statusCode);
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+// Восстановление документа реализации
+  Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
+    try {
+      final token = await getToken();
+      if (token == null) throw 'Токен не найден';
+
+      final pathWithParams =
+          await _appendQueryParams('/expense-documents/restore');
       final uri = Uri.parse('$baseUrl$pathWithParams');
 
       final body = jsonEncode({
@@ -11622,11 +14532,12 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
         return {'result': 'Success'};
       } else {
         final message = _extractErrorMessageFromResponse(response);
-        throw ApiException(message ?? 'Ошибка при восстановлении документа', response.statusCode);
+        throw ApiException(message ?? 'Ошибка при восстановлении документа',
+            response.statusCode);
       }
     } catch (e) {
-    rethrow;
-  }
+      rethrow;
+    }
   }
 
   Future<void> massApproveClientSaleDocuments(List<int> ids) async {
@@ -11664,7 +14575,8 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
       } else {
         final message = _extractErrorMessageFromResponse(response);
         throw ApiException(
-          message ?? 'Ошибка при массовом снятии проведения документов реализации!',
+          message ??
+              'Ошибка при массовом снятии проведения документов реализации!',
           response.statusCode,
         );
       }
@@ -11708,7 +14620,8 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
       } else {
         final message = _extractErrorMessageFromResponse(response);
         throw ApiException(
-          message ?? 'Ошибка при массовом восстановлении документов реализации!',
+          message ??
+              'Ошибка при массовом восстановлении документов реализации!',
           response.statusCode,
         );
       }
@@ -11716,7 +14629,6 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
       rethrow;
     }
   }
-
 
 //______________________________end client sales____________________________//
 
@@ -11797,16 +14709,17 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
       return true;
     } else {
       final message = _extractErrorMessageFromResponse(response);
-      throw ApiException(message ?? 'Ошибка создания склада', response.statusCode);
+      throw ApiException(
+          message ?? 'Ошибка создания склада', response.statusCode);
     }
   }
 
   //updateStorage
-  Future<void> updateStorage(
-      {required WareHouse storage,
-      required int id,
-      required List<int> ids,
-      }) async {
+  Future<void> updateStorage({
+    required WareHouse storage,
+    required int id,
+    required List<int> ids,
+  }) async {
     final path = await _appendQueryParams('/storage/$id');
 
     if (kDebugMode) {
@@ -11830,8 +14743,8 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
         debugPrint("Склад обновлен успешно");
         return;
       } else {
-       final message = _extractErrorMessageFromResponse(response);
-       debugPrint('Ошибка обновления склада: $message');
+        final message = _extractErrorMessageFromResponse(response);
+        debugPrint('Ошибка обновления склада: $message');
         throw ApiException(message ?? 'Ошибка обновления', response.statusCode);
       }
     } else {
@@ -11882,21 +14795,22 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
       }
     } else {
       final message = _extractErrorMessageFromResponse(response);
-      throw ApiException(message ?? 'Ошибка загрузки единиц измерения', response.statusCode);
+      throw ApiException(
+          message ?? 'Ошибка загрузки единиц измерения', response.statusCode);
     }
   }
-
 
   //get measure units
   Future<List<MeasureUnitModel>> getMeasureUnits({String? search}) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     String path = await _appendQueryParams('/unit');
-    
+
     // Добавляем параметр поиска, если он передан
     if (search != null && search.isNotEmpty) {
-      path = path.contains('?') ? '$path&search=$search' : '$path?search=$search';
+      path =
+          path.contains('?') ? '$path&search=$search' : '$path?search=$search';
     }
-    
+
     if (kDebugMode) {
       //debugPrint('ApiService: getMeasureUnits - Generated path: $path');
     }
@@ -11913,7 +14827,8 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
       }
     } else {
       final message = _extractErrorMessageFromResponse(response);
-      throw ApiException(message ?? 'Ошибка загрузки единиц измерения', response.statusCode);
+      throw ApiException(
+          message ?? 'Ошибка загрузки единиц измерения', response.statusCode);
     }
   }
 
@@ -11940,7 +14855,8 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
       return;
     } else {
       final message = _extractErrorMessageFromResponse(response);
-      throw ApiException(message ?? 'Ошибка создания поставщика', response.statusCode);
+      throw ApiException(
+          message ?? 'Ошибка создания поставщика', response.statusCode);
     }
   }
 
@@ -11960,7 +14876,8 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
       return;
     } else {
       final message = _extractErrorMessageFromResponse(response);
-      throw ApiException(message ?? 'Ошибка удаления поставщика', response.statusCode);
+      throw ApiException(
+          message ?? 'Ошибка удаления поставщика', response.statusCode);
     }
   }
 
@@ -12000,12 +14917,13 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
   Future<List<PriceTypeModel>> getPriceTypes({String? search}) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     String path = await _appendQueryParams('/priceType');
-    
+
     // Добавляем параметр поиска, если он передан
     if (search != null && search.isNotEmpty) {
-      path = path.contains('?') ? '$path&search=$search' : '$path?search=$search';
+      path =
+          path.contains('?') ? '$path&search=$search' : '$path?search=$search';
     }
-    
+
     if (kDebugMode) {
       //debugPrint('ApiService: getPriceTypes - Generated path: $path');
     }
@@ -12022,14 +14940,14 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
       }
     } else {
       final message = _extractErrorMessageFromResponse(response);
-      throw ApiException(message ?? 'Ошибка загрузки типов цен', response.statusCode);
+      throw ApiException(
+          message ?? 'Ошибка загрузки типов цен', response.statusCode);
     }
   }
 
-
   Future<void> createPriceType(
-      PriceTypeModel unit,
-      ) async {
+    PriceTypeModel unit,
+  ) async {
     final path = await _appendQueryParams('/priceType');
     if (kDebugMode) {
       debugPrint('ApiService: createPriceType - Generated path: $path');
@@ -12051,14 +14969,13 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
       return;
     } else {
       final message = _extractErrorMessageFromResponse(response);
-      throw ApiException(message ?? 'Ошибка создания типа цены', response.statusCode);
+      throw ApiException(
+          message ?? 'Ошибка создания типа цены', response.statusCode);
     }
   }
 
-  Future<void> updatePriceType({
-    required PriceTypeModel priceType,
-    required int id
-  }) async {
+  Future<void> updatePriceType(
+      {required PriceTypeModel priceType, required int id}) async {
     final path = await _appendQueryParams('/priceType/$id');
     if (kDebugMode) {
       debugPrint('ApiService: updatePriceType - Generated path: $path');
@@ -12081,9 +14998,7 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     } else {
       final message = _extractErrorMessageFromResponse(response);
       throw ApiException(
-          message ?? 'Ошибка обновления типа цены',
-          response.statusCode
-      );
+          message ?? 'Ошибка обновления типа цены', response.statusCode);
     }
   }
 
@@ -12095,13 +15010,8 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
       debugPrint('ApiService: deletePriceType - Generated path: $path');
     }
 
-    final response = await _deleteRequestWithBody(
-        path,
-        {
-          "organization_id": organizationId,
-          "sales_funnel_id": salesFunnelId
-        }
-    );
+    final response = await _deleteRequestWithBody(path,
+        {"organization_id": organizationId, "sales_funnel_id": salesFunnelId});
 
     if (response.statusCode == 200 || response.statusCode == 204) {
       if (kDebugMode) {
@@ -12111,16 +15021,14 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     } else {
       final message = _extractErrorMessageFromResponse(response);
       throw ApiException(
-          message ?? 'Ошибка удаления типа цены',
-          response.statusCode
-      );
+          message ?? 'Ошибка удаления типа цены', response.statusCode);
     }
   }
+
 //----------------------------------------------SUPPLIER----------------------------------
   //createSupplier
   Future<void> createSupplier(
-      Supplier supplier,
-      String organizationId, String salesFunnelId) async {
+      Supplier supplier, String organizationId, String salesFunnelId) async {
     final path = await _appendQueryParams('/suppliers');
     if (kDebugMode) {
       //debugPrint('ApiService: createSupplier - Generated path: $path');
@@ -12131,6 +15039,7 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
       'phone': supplier.phone,
       "note": supplier.note,
       "inn": supplier.inn,
+      'currency_id': supplier.currencyId,
       'organization_id': organizationId,
       'sales_funnel_id': salesFunnelId,
     };
@@ -12139,7 +15048,7 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
 
     if (response.statusCode == 200 || response.statusCode == 201) {
       if (response.body.isNotEmpty) {
-        return ; //Supplier.fromJson(json.decode(response.body)['result']);
+        return; //Supplier.fromJson(json.decode(response.body)['result']);
       } else {
         throw Exception('Ошибка создания поставщика: ${response.body}');
       }
@@ -12162,6 +15071,7 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
       'phone': supplier.phone,
       if (supplier.note != null) 'note': supplier.note,
       if (supplier.inn != null) 'inn': supplier.inn,
+      'currency_id': supplier.currencyId,
       'organization_id': organizationId,
       'sales_funnel_id': salesFunnelId,
     };
@@ -12224,15 +15134,21 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
   }
 
   //getSupplier
-  Future<List<Supplier>> getSupplier({String? search}) async {
+  Future<List<Supplier>> getSupplier({
+    String? search,
+    int page = 1,
+    int perPage = 20,
+  }) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
-    String path = await _appendQueryParams('/suppliers');
-    
+    String path =
+        await _appendQueryParams('/suppliers?page=$page&per_page=$perPage');
+
     // Добавляем параметр поиска, если он передан
     if (search != null && search.isNotEmpty) {
-      path = path.contains('?') ? '$path&search=$search' : '$path?search=$search';
+      path =
+          path.contains('?') ? '$path&search=$search' : '$path?search=$search';
     }
-    
+
     if (kDebugMode) {
       //debugPrint('ApiService: getSupplier - Generated path: $path');
     }
@@ -12246,22 +15162,42 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
       // Извлекаем массив из поля "result"
       final List<dynamic> resultList = data['result']["data"] ?? [];
 
-      return resultList
-          .map((supplier) => Supplier.fromJson(supplier))
-          .toList();
+      return resultList.map((supplier) => Supplier.fromJson(supplier)).toList();
     } else {
       throw Exception('Ошибка загрузки поставщиков');
     }
   }
 
+  Future<List<SupplierCurrency>> getCurrencies() async {
+    final organizationId = await getSelectedOrganization();
+    String path = '/currency';
+    if (organizationId != null && organizationId.isNotEmpty) {
+      path += '?organization_id=$organizationId';
+    }
+    final response = await _getRequest(path);
+
+    if (response.statusCode != 200) {
+      throw Exception('Ошибка загрузки валют: ${response.body}');
+    }
+
+    final data = json.decode(response.body);
+    dynamic result = data['result'];
+    if (result is Map<String, dynamic>) {
+      result = result['data'] ?? result['result'] ?? result['currencies'];
+    }
+
+    if (result is List) {
+      return result
+          .whereType<Map<String, dynamic>>()
+          .map(SupplierCurrency.fromJson)
+          .toList();
+    }
+
+    return [];
+  }
+
   //updateSupplier
   // Future<List<Supplier>> updateSupplier(){};
-
-
-
-
-
-
 
   Future<CashRegisterResponseModel> getCashRegister({
     int page = 1,
@@ -12276,27 +15212,105 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
 
     final path = await _appendQueryParams(url);
     if (kDebugMode) {
-      debugPrint('ApiService: getCashRegister - Generated path: $path');
+      debugPrint('🔵 ApiService: getCashRegister - path: $path');
     }
 
     try {
       final response = await _getRequest(path);
+
+      if (kDebugMode) {
+        debugPrint(
+            '🔵 ApiService: getCashRegister - statusCode: ${response.statusCode}');
+        debugPrint(
+            '🔵 ApiService: getCashRegister - body length: ${response.body.length}');
+      }
+
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
+
+        if (kDebugMode) {
+          debugPrint('🔵 ApiService: getCashRegister - JSON decoded');
+          debugPrint(
+              '🔵 ApiService: getCashRegister - keys: ${data is Map ? (data as Map).keys.toList() : "not a map"}');
+          if (data is Map && data['result'] != null) {
+            final result = data['result'];
+            debugPrint(
+                '🔵 ApiService: getCashRegister - result type: ${result.runtimeType}');
+            if (result is Map) {
+              debugPrint(
+                  '🔵 ApiService: getCashRegister - result keys: ${result.keys.toList()}');
+              if (result['data'] != null) {
+                debugPrint(
+                    '🔵 ApiService: getCashRegister - data type: ${result['data'].runtimeType}');
+                if (result['data'] is List) {
+                  debugPrint(
+                      '🔵 ApiService: getCashRegister - data length: ${(result['data'] as List).length}');
+                  if ((result['data'] as List).isNotEmpty) {
+                    final first = (result['data'] as List)[0];
+                    if (first is Map) {
+                      debugPrint(
+                          '🔵 ApiService: getCashRegister - first item keys: ${first.keys.toList()}');
+                      if (first['users'] != null) {
+                        debugPrint(
+                            '🔵 ApiService: getCashRegister - first item users type: ${first['users'].runtimeType}');
+                        if (first['users'] is List &&
+                            (first['users'] as List).isNotEmpty) {
+                          final firstUser = (first['users'] as List)[0];
+                          if (firstUser is Map) {
+                            debugPrint(
+                                '🔵 ApiService: getCashRegister - first user keys: ${firstUser.keys.toList()}');
+                            debugPrint(
+                                '🔵 ApiService: getCashRegister - first user job_title: ${firstUser['job_title']} (type: ${firstUser['job_title'].runtimeType})');
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+              if (result['pagination'] != null) {
+                debugPrint(
+                    '🔵 ApiService: getCashRegister - pagination keys: ${(result['pagination'] as Map).keys.toList()}');
+              }
+            }
+          }
+        }
+
         if (data['result'] != null) {
-          return CashRegisterResponseModel.fromJson(data['result']);
+          if (kDebugMode) {
+            debugPrint(
+                '🔵 ApiService: getCashRegister - calling CashRegisterResponseModel.fromJson');
+          }
+          final parsed = CashRegisterResponseModel.fromJson(data['result']);
+          if (kDebugMode) {
+            debugPrint(
+                '🔵 ApiService: getCashRegister - parsed successfully, count: ${parsed.data.length}');
+          }
+          return parsed;
         } else {
+          if (kDebugMode) {
+            debugPrint(
+                '🔴 ApiService: getCashRegister - data["result"] is null');
+          }
           throw Exception('Нет данных по кассе');
         }
       } else {
         final data = json.decode(response.body);
+        if (kDebugMode) {
+          debugPrint(
+              '🔴 ApiService: getCashRegister - error status: ${response.statusCode}');
+        }
         if (data['errors'] != null) {
           throw Exception(data['errors'] ?? 'Ошибка загрузки кассы');
         } else {
           throw Exception('Ошибка загрузки кассы: ${response.body}');
         }
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      if (kDebugMode) {
+        debugPrint('🔴 ApiService: getCashRegister - EXCEPTION: $e');
+        debugPrint('🔴 ApiService: getCashRegister - STACK: $stackTrace');
+      }
       throw Exception('Ошибка получения данных кассы: $e');
     }
   }
@@ -12330,7 +15344,8 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     }
   }
 
-  Future<CashRegisterModel> patchCashRegister(int id, AddCashDeskModel value) async {
+  Future<CashRegisterModel> patchCashRegister(
+      int id, AddCashDeskModel value) async {
     final response = await _patchRequest('/cashRegister/$id', value.toJson());
     final data = json.decode(response.body);
     if (response.statusCode == 200) {
@@ -12508,9 +15523,6 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     }
   }
 
-
-
-
   //______________________________start supplier return documents____________________________//
   Future<IncomingResponse> getSupplierReturnDocuments({
     int page = 1,
@@ -12520,8 +15532,7 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     DateTime? toDate,
     int? approved, // Для будущего фильтра по статусу
   }) async {
-    String url =
-        '/supplier-return-documents'; // Замена endpoint'а
+    String url = '/supplier-return-documents'; // Замена endpoint'а
     url += '?page=$page&per_page=$perPage';
     if (query != null && query.isNotEmpty) {
       url += '&search=$query';
@@ -12561,7 +15572,8 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
 
       final path = await _appendQueryParams(url);
       if (kDebugMode) {
-        debugPrint('ApiService: getSupplierReturnDocumentById - Generated path: $path');
+        debugPrint(
+            'ApiService: getSupplierReturnDocumentById - Generated path: $path');
       }
 
       final response = await _getRequest(path);
@@ -12585,7 +15597,8 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
 
     final path = await _appendQueryParams(url);
     if (kDebugMode) {
-      debugPrint('ApiService: approveSupplierReturnDocument - Generated path: $path');
+      debugPrint(
+          'ApiService: approveSupplierReturnDocument - Generated path: $path');
     }
 
     try {
@@ -12612,7 +15625,8 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
 
     final path = await _appendQueryParams(url);
     if (kDebugMode) {
-      debugPrint('ApiService: unApproveSupplierReturnDocument - Generated path: $path');
+      debugPrint(
+          'ApiService: unApproveSupplierReturnDocument - Generated path: $path');
     }
 
     try {
@@ -12643,6 +15657,7 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     required int organizationId,
     required int salesFunnelId,
     required bool approve,
+    double? exchangeRate,
   }) async {
     try {
       final token = await getToken();
@@ -12659,6 +15674,7 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
         'organization_id': organizationId,
         'sales_funnel_id': salesFunnelId,
         'approve': approve,
+        if (exchangeRate != null) 'exchange_rate': exchangeRate,
       });
 
       final response = await http.post(
@@ -12676,7 +15692,8 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
         return;
       } else {
         final message = _extractErrorMessageFromResponse(response);
-        throw ApiException(message ?? "Ошибка создании документа", response.statusCode);
+        throw ApiException(
+            message ?? "Ошибка создании документа", response.statusCode);
       }
     } catch (e) {
       rethrow;
@@ -12692,12 +15709,14 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     required List<Map<String, dynamic>> documentGoods,
     required int organizationId,
     required int salesFunnelId,
+    double? exchangeRate,
   }) async {
     try {
       final token = await getToken();
       if (token == null) throw 'Токен не найден';
 
-      final path = await _appendQueryParams('/supplier-return-documents/$documentId');
+      final path =
+          await _appendQueryParams('/supplier-return-documents/$documentId');
       final uri = Uri.parse('$baseUrl$path');
       final body = jsonEncode({
         'date': date,
@@ -12707,6 +15726,7 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
         'document_goods': documentGoods,
         'organization_id': organizationId,
         'sales_funnel_id': salesFunnelId,
+        if (exchangeRate != null) 'exchange_rate': exchangeRate,
       });
 
       final response = await http.put(
@@ -12724,20 +15744,23 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
         return;
       } else {
         final message = _extractErrorMessageFromResponse(response);
-        throw ApiException(message ?? "Ошибка обновления документа", response.statusCode);
+        throw ApiException(
+            message ?? "Ошибка обновления документа", response.statusCode);
       }
     } catch (e) {
       rethrow;
     }
   }
 
-  Future<Map<String, dynamic>> deleteSupplierReturnDocument(int documentId) async {
+  Future<Map<String, dynamic>> deleteSupplierReturnDocument(
+      int documentId) async {
     try {
       final token = await getToken();
       if (token == null) throw 'Токен не найден';
 
       // Используем _appendQueryParams для получения параметров, но извлекаем их для тела запроса
-      final pathWithParams = await _appendQueryParams('/supplier-return-documents');
+      final pathWithParams =
+          await _appendQueryParams('/supplier-return-documents');
       final uri = Uri.parse('$baseUrl$pathWithParams');
 
       // Извлекаем organization_id и sales_funnel_id из query параметров
@@ -12754,7 +15777,8 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
       });
 
       if (kDebugMode) {
-        debugPrint('ApiService: deleteSupplierReturnDocument - Request body: $body');
+        debugPrint(
+            'ApiService: deleteSupplierReturnDocument - Request body: $body');
       }
 
       final response = await http.delete(
@@ -12772,19 +15796,22 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
         return {'result': 'Success'};
       } else {
         final message = _extractErrorMessageFromResponse(response);
-        throw ApiException(message ?? "Ошибка удалении документа", response.statusCode);
+        throw ApiException(
+            message ?? "Ошибка удалении документа", response.statusCode);
       }
     } catch (e) {
       rethrow;
     }
   }
 
-  Future<Map<String, dynamic>> restoreSupplierReturnDocument(int documentId) async {
+  Future<Map<String, dynamic>> restoreSupplierReturnDocument(
+      int documentId) async {
     try {
       final token = await getToken();
       if (token == null) throw 'Токен не найден';
 
-      final pathWithParams = await _appendQueryParams('/supplier-return-documents/restore');
+      final pathWithParams =
+          await _appendQueryParams('/supplier-return-documents/restore');
       final uri = Uri.parse('$baseUrl$pathWithParams');
 
       final body = jsonEncode({
@@ -12792,7 +15819,8 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
       });
 
       if (kDebugMode) {
-        debugPrint('ApiService: restoreSupplierReturnDocument - Request body: $body');
+        debugPrint(
+            'ApiService: restoreSupplierReturnDocument - Request body: $body');
       }
 
       final response = await http.post(
@@ -12808,12 +15836,14 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         if (kDebugMode) {
-          debugPrint('ApiService: restoreSupplierReturnDocument - Document $documentId restored successfully');
+          debugPrint(
+              'ApiService: restoreSupplierReturnDocument - Document $documentId restored successfully');
         }
         return {'result': 'Success'};
       } else {
         final message = _extractErrorMessageFromResponse(response);
-        throw ApiException(message ?? 'Ошибка при восстановлении документа', response.statusCode);
+        throw ApiException(message ?? 'Ошибка при восстановлении документа',
+            response.statusCode);
       }
     } catch (e) {
       rethrow;
@@ -12847,8 +15877,16 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
   }
 
   //Метод для получения suppliers
-  Future<SuppliersDataResponse> getAllSuppliers() async {
-    final path = await _appendQueryParams('/suppliers');
+  Future<SuppliersDataResponse> getAllSuppliers({
+    String? search,
+    int page = 1,
+    int perPage = 20,
+  }) async {
+    String path =
+        await _appendQueryParams('/suppliers?page=$page&per_page=$perPage');
+    if (search != null && search.trim().isNotEmpty) {
+      path += '&search=${Uri.encodeComponent(search.trim())}';
+    }
 
     final response = await _getRequest(path);
 
@@ -12897,7 +15935,8 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     }
   }
 
-  Future<void> createMoneyIncomeDocument({required String date,
+  Future<void> createMoneyIncomeDocument({
+    required String date,
     required num amount,
     required String operationType,
     required String movementType,
@@ -12908,6 +15947,7 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     int? cashRegisterId,
     int? supplierId,
     required bool approve,
+    double? exchangeRate,
   }) async {
     final path = await _appendQueryParams('/checking-account');
 
@@ -12924,6 +15964,7 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
         'cash_register_id': cashRegisterId,
         'supplier_id': supplierId,
         'approved': approve,
+        if (exchangeRate != null) 'exchange_rate': exchangeRate,
       });
       if (response.statusCode == 200 || response.statusCode == 201) {
         return;
@@ -12935,7 +15976,7 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
         );
       }
     } catch (e) {
-     rethrow;
+      rethrow;
     }
   }
 
@@ -12971,11 +16012,13 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
         path += '&lead_id=${filters['lead_id']}';
       }
 
-      if (filters.containsKey('cash_register_id') && filters['cash_register_id'] != null) {
+      if (filters.containsKey('cash_register_id') &&
+          filters['cash_register_id'] != null) {
         path += '&cash_register_id=${filters['cash_register_id']}';
       }
 
-      if (filters.containsKey('supplier_id') && filters['supplier_id'] != null) {
+      if (filters.containsKey('supplier_id') &&
+          filters['supplier_id'] != null) {
         path += '&supplier_id=${filters['supplier_id']}';
       }
 
@@ -12988,29 +16031,29 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
       }
     }
 
-      // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
-      path = await _appendQueryParams(path);
-      if (kDebugMode) {
-        debugPrint('ApiService: getMoneyIncomeDocuments - Generated path: $path');
-      }
-
-      try {
-        final response = await _getRequest(path);
-        if (response.statusCode == 200 || response.statusCode == 201) {
-          final rawData = json.decode(response.body);
-          debugPrint("Полученные данные по приходу: $rawData");
-          return MoneyIncomeDocumentModel.fromJson(rawData);
-        } else {
-          final message = _extractErrorMessageFromResponse(response);
-          throw ApiException(
-            message ?? 'Ошибка при получении данных прихода!',
-            response.statusCode,
-          );
-        }
-      } catch (e) {
-        rethrow;
-      }
+    // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+    path = await _appendQueryParams(path);
+    if (kDebugMode) {
+      debugPrint('ApiService: getMoneyIncomeDocuments - Generated path: $path');
     }
+
+    try {
+      final response = await _getRequest(path);
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final rawData = json.decode(response.body);
+        debugPrint("Полученные данные по приходу: $rawData");
+        return MoneyIncomeDocumentModel.fromJson(rawData);
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(
+          message ?? 'Ошибка при получении данных прихода!',
+          response.statusCode,
+        );
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
 
   Future<bool> deleteMoneyIncomeDocument(int documentId) async {
     final path = await _appendQueryParams('/checking-account/mass-delete');
@@ -13039,7 +16082,8 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     final token = await getToken();
     if (token == null) throw Exception('Токен не найден');
 
-    final pathWithParams = await _appendQueryParams('/checking-account/restore');
+    final pathWithParams =
+        await _appendQueryParams('/checking-account/restore');
     final uri = Uri.parse('$baseUrl$pathWithParams');
 
     final body = jsonEncode({
@@ -13078,6 +16122,7 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     int? senderCashRegisterId,
     int? cashRegisterId,
     int? supplierId,
+    double? exchangeRate,
   }) async {
     final path = await _appendQueryParams('/checking-account/$documentId');
 
@@ -13093,6 +16138,7 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
         'comment': comment,
         'cash_register_id': cashRegisterId,
         'supplier_id': supplierId,
+        if (exchangeRate != null) 'exchange_rate': exchangeRate,
       });
       if (response.statusCode == 200 || response.statusCode == 201) {
         final rawData = json.decode(response.body);
@@ -13128,7 +16174,7 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
           response.statusCode,
         );
       }
-    }  catch (e) {
+    } catch (e) {
       rethrow;
     }
   }
@@ -13143,16 +16189,17 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
         'ids': [id],
       });
 
-      if (response.statusCode != 200 && response.statusCode != 204 && response.statusCode != 201) {
-       final message = _extractErrorMessageFromResponse(response);
-       throw ApiException(
-         message ?? 'Ошибка при изменении статуса документа прихода!',
-         response.statusCode,
-       );
+      if (response.statusCode != 200 &&
+          response.statusCode != 204 &&
+          response.statusCode != 201) {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(
+          message ?? 'Ошибка при изменении статуса документа прихода!',
+          response.statusCode,
+        );
       }
 
-     return;
-
+      return;
     } catch (e) {
       rethrow;
     }
@@ -13171,7 +16218,8 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
       } else {
         final message = _extractErrorMessageFromResponse(response);
         throw ApiException(
-          message ?? 'Ошибка при массовом снятии проведения документов прихода!',
+          message ??
+              'Ошибка при массовом снятии проведения документов прихода!',
           response.statusCode,
         );
       }
@@ -13232,7 +16280,8 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
   Future<OutcomeCategoriesDataResponse> getAllOutcomeCategories() async {
     final path = await _appendQueryParams('/article?type=expense');
 
-    final response = await _getRequest(path);;
+    final response = await _getRequest(path);
+    ;
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
@@ -13248,7 +16297,8 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     }
   }
 
-  Future<void> createMoneyOutcomeDocument({required String date,
+  Future<void> createMoneyOutcomeDocument({
+    required String date,
     required num amount,
     required String operationType,
     required String movementType,
@@ -13258,7 +16308,10 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     int? senderCashRegisterId,
     int? cashRegisterId,
     int? supplierId,
+    int? employeeId,
+    String? month,
     required bool approve,
+    double? exchangeRate,
   }) async {
     final path = await _appendQueryParams('/checking-account');
 
@@ -13274,7 +16327,10 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
         'comment': comment,
         'cash_register_id': cashRegisterId,
         'supplier_id': supplierId,
+        'employee_id': employeeId,
+        'month': month,
         'approved': approve,
+        if (exchangeRate != null) 'exchange_rate': exchangeRate,
       });
       if (response.statusCode == 200 || response.statusCode == 201) {
         return;
@@ -13322,11 +16378,13 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
         path += '&lead_id=${filters['lead_id']}';
       }
 
-      if (filters.containsKey('cash_register_id') && filters['cash_register_id'] != null) {
+      if (filters.containsKey('cash_register_id') &&
+          filters['cash_register_id'] != null) {
         path += '&cash_register_id=${filters['cash_register_id']}';
       }
 
-      if (filters.containsKey('supplier_id') && filters['supplier_id'] != null) {
+      if (filters.containsKey('supplier_id') &&
+          filters['supplier_id'] != null) {
         path += '&supplier_id=${filters['supplier_id']}';
       }
 
@@ -13342,7 +16400,8 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     path = await _appendQueryParams(path);
     if (kDebugMode) {
-      debugPrint('ApiService: getMoneyOutcomeDocuments - Generated path: $path');
+      debugPrint(
+          'ApiService: getMoneyOutcomeDocuments - Generated path: $path');
     }
 
     try {
@@ -13419,6 +16478,9 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     int? senderCashRegisterId,
     int? cashRegisterId,
     int? supplierId,
+    int? employeeId,
+    String? month,
+    double? exchangeRate,
   }) async {
     final path = await _appendQueryParams('/checking-account/$documentId');
 
@@ -13434,6 +16496,9 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
         'comment': comment,
         'cash_register_id': cashRegisterId,
         'supplier_id': supplierId,
+        'employee_id': employeeId,
+        'month': month,
+        if (exchangeRate != null) 'exchange_rate': exchangeRate,
       });
       if (response.statusCode == 200 || response.statusCode == 201) {
         final rawData = json.decode(response.body);
@@ -13469,12 +16534,13 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
           response.statusCode,
         );
       }
-    }  catch (e) {
+    } catch (e) {
       rethrow;
     }
   }
 
-  Future<void> toggleApproveOneMoneyOutcomeDocument(int id, bool approve) async {
+  Future<void> toggleApproveOneMoneyOutcomeDocument(
+      int id, bool approve) async {
     final path = approve
         ? await _appendQueryParams('/checking-account/mass-approve')
         : await _appendQueryParams('/checking-account/mass-unapprove');
@@ -13484,7 +16550,9 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
         'ids': [id],
       });
 
-      if (response.statusCode != 200 && response.statusCode != 204 && response.statusCode != 201) {
+      if (response.statusCode != 200 &&
+          response.statusCode != 204 &&
+          response.statusCode != 201) {
         final message = _extractErrorMessageFromResponse(response);
         throw ApiException(
           message ?? 'Ошибка при изменении статуса документа расхода!',
@@ -13493,7 +16561,6 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
       }
 
       return;
-
     } catch (e) {
       rethrow;
     }
@@ -13512,7 +16579,8 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
       } else {
         final message = _extractErrorMessageFromResponse(response);
         throw ApiException(
-          message ?? 'Ошибка при массовом снятии проведения документов расхода!',
+          message ??
+              'Ошибка при массовом снятии проведения документов расхода!',
           response.statusCode,
         );
       }
@@ -13557,6 +16625,89 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
         final message = _extractErrorMessageFromResponse(response);
         throw ApiException(
           message ?? 'Ошибка при массовом восстановлении документов расхода!',
+          response.statusCode,
+        );
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<List<EmployeeRemainingModel>> getEmployeesByRemaining({
+    required String month,
+  }) async {
+    await ensureInitialized();
+
+    try {
+      final token = await getToken();
+      if (token == null) {
+        throw ApiException('Токен не найден', 401);
+      }
+      if (baseUrl == null || baseUrl!.isEmpty) {
+        throw ApiException('Base URL is not initialized', 500);
+      }
+
+      final organizationId = await getSelectedOrganization();
+      final salesFunnelId = await getSelectedSalesFunnel() ??
+          await ensureSelectedSalesFunnelInitialized();
+
+      if (organizationId == null ||
+          organizationId.isEmpty ||
+          organizationId == 'null') {
+        throw ApiException('organization_id не найден', 400);
+      }
+
+      if (salesFunnelId == null ||
+          salesFunnelId.isEmpty ||
+          salesFunnelId == 'null') {
+        throw ApiException('sales_funnel_id не найден', 400);
+      }
+
+      final uri = Uri.parse('$baseUrl/employee/get-by-remaining').replace(
+        queryParameters: {
+          'month': month,
+          'organization_id': organizationId,
+          'sales_funnel_id': salesFunnelId,
+        },
+      );
+
+      debugPrint('ApiService: getEmployeesByRemaining -> $uri');
+      final response = await http.get(
+        uri,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'Device': 'web',
+        },
+      );
+      debugPrint(
+        'ApiService: getEmployeesByRemaining status=${response.statusCode}',
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final rawData = json.decode(response.body);
+        final employeesData = rawData is List
+            ? rawData
+            : rawData is Map<String, dynamic>
+                ? (rawData['result'] is List
+                    ? rawData['result']
+                    : rawData['result'] is Map<String, dynamic>
+                        ? rawData['result']['data']
+                        : rawData['data'])
+                : null;
+
+        if (employeesData is List) {
+          return employeesData
+              .whereType<Map<String, dynamic>>()
+              .map(EmployeeRemainingModel.fromJson)
+              .toList();
+        }
+        return const [];
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(
+          message ?? 'Ошибка при получении списка сотрудников!',
           response.statusCode,
         );
       }
@@ -13674,6 +16825,7 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     required int organizationId,
     required int salesFunnelId,
     required bool approve,
+    double? exchangeRate,
   }) async {
     try {
       final token = await getToken();
@@ -13690,6 +16842,7 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
         'organization_id': organizationId,
         'sales_funnel_id': salesFunnelId,
         'approve': approve,
+        if (exchangeRate != null) 'exchange_rate': exchangeRate,
       });
 
       if (response.statusCode == 200 || response.statusCode == 201) {
@@ -13707,13 +16860,15 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
   }
 
   //deleteClientReturnDocument
-  Future<Map<String, dynamic>> deleteClientReturnDocument(int documentId) async {
+  Future<Map<String, dynamic>> deleteClientReturnDocument(
+      int documentId) async {
     try {
       final token = await getToken();
       if (token == null) throw 'Токен не найден';
 
       // Используем _appendQueryParams для получения параметров, но извлекаем их для тела запроса
-      final pathWithParams = await _appendQueryParams('/client-return-documents');
+      final pathWithParams =
+          await _appendQueryParams('/client-return-documents');
       final uri = Uri.parse('$baseUrl$pathWithParams');
 
       // Извлекаем organization_id и sales_funnel_id из query параметров
@@ -13727,8 +16882,10 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
       });
 
       if (kDebugMode) {
-        debugPrint('ApiService: deleteClientReturnDocument - Request body: $body');
-        debugPrint('ApiService: deleteClientReturnDocument - Request params: $pathWithParams');
+        debugPrint(
+            'ApiService: deleteClientReturnDocument - Request body: $body');
+        debugPrint(
+            'ApiService: deleteClientReturnDocument - Request params: $pathWithParams');
       }
 
       final response = await http.delete(
@@ -13746,7 +16903,9 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
         return {'result': 'Success'};
       } else {
         final message = _extractErrorMessageFromResponse(response);
-        throw ApiException(message ?? 'Ошибка при удалении документа возврата от клиента', response.statusCode);
+        throw ApiException(
+            message ?? 'Ошибка при удалении документа возврата от клиента',
+            response.statusCode);
       }
     } catch (e) {
       rethrow;
@@ -13762,12 +16921,14 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     required List<Map<String, dynamic>> documentGoods,
     required int organizationId,
     required int salesFunnelId,
+    double? exchangeRate,
   }) async {
     try {
       final token = await getToken();
       if (token == null) throw 'Токен не найден';
 
-      final path = await _appendQueryParams('/client-return-documents/$documentId');
+      final path =
+          await _appendQueryParams('/client-return-documents/$documentId');
       final uri = Uri.parse('$baseUrl$path');
 
       final body = jsonEncode({
@@ -13778,6 +16939,7 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
         'document_goods': documentGoods,
         'organization_id': organizationId,
         'sales_funnel_id': salesFunnelId,
+        if (exchangeRate != null) 'exchange_rate': exchangeRate,
       });
 
       final response = await http.put(
@@ -13878,6 +17040,7 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
       rethrow;
     }
   }
+
   Future<void> massApproveClientReturnDocuments(List<int> ids) async {
     final path = await _appendQueryParams('/client-return-documents/approve');
 
@@ -13891,7 +17054,8 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
       } else {
         final message = _extractErrorMessageFromResponse(response);
         throw ApiException(
-          message ?? 'Ошибка при массовом проведении документов возврата от клиента!',
+          message ??
+              'Ошибка при массовом проведении документов возврата от клиента!',
           response.statusCode,
         );
       }
@@ -13913,7 +17077,8 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
       } else {
         final message = _extractErrorMessageFromResponse(response);
         throw ApiException(
-          message ?? 'Ошибка при массовом снятии проведения документов возврата от клиента!',
+          message ??
+              'Ошибка при массовом снятии проведения документов возврата от клиента!',
           response.statusCode,
         );
       }
@@ -13935,7 +17100,8 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
       } else {
         final message = _extractErrorMessageFromResponse(response);
         throw ApiException(
-          message ?? 'Ошибка при массовом удалении документов возврата от клиента!',
+          message ??
+              'Ошибка при массовом удалении документов возврата от клиента!',
           response.statusCode,
         );
       }
@@ -13957,7 +17123,8 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
       } else {
         final message = _extractErrorMessageFromResponse(response);
         throw ApiException(
-          message ?? 'Ошибка при массовом восстановлении документов возврата от клиента!',
+          message ??
+              'Ошибка при массовом восстановлении документов возврата от клиента!',
           response.statusCode,
         );
       }
@@ -13967,12 +17134,14 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
   }
 
   // Восстановление документа возврата
-  Future<Map<String, dynamic>> restoreClientReturnDocument(int documentId) async {
+  Future<Map<String, dynamic>> restoreClientReturnDocument(
+      int documentId) async {
     try {
       final token = await getToken();
       if (token == null) throw Exception('Токен не найден');
 
-      final pathWithParams = await _appendQueryParams('/client-return-documents/restore');
+      final pathWithParams =
+          await _appendQueryParams('/client-return-documents/restore');
       final uri = Uri.parse('$baseUrl$pathWithParams');
 
       final body = jsonEncode({
@@ -14084,7 +17253,9 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
         return IncomingDocument.fromJson(rawData);
       } else {
         final message = _extractErrorMessageFromResponse(response);
-        throw ApiException(message ?? 'Ошибка при получении данных документа списания!', response.statusCode);
+        throw ApiException(
+            message ?? 'Ошибка при получении данных документа списания!',
+            response.statusCode);
       }
     } catch (e) {
       rethrow;
@@ -14172,7 +17343,8 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
         return {'result': 'Success'};
       } else {
         final message = _extractErrorMessageFromResponse(response);
-        throw ApiException(message ?? 'Ошибка при удалении документа списания', response.statusCode);
+        throw ApiException(message ?? 'Ошибка при удалении документа списания',
+            response.statusCode);
       }
     } catch (e) {
       rethrow;
@@ -14219,7 +17391,9 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
         return;
       } else {
         final message = _extractErrorMessageFromResponse(response);
-        throw ApiException(message ?? 'Ошибка при обновлении документа списания!', response.statusCode);
+        throw ApiException(
+            message ?? 'Ошибка при обновлении документа списания!',
+            response.statusCode);
       }
     } catch (e) {
       rethrow;
@@ -14254,8 +17428,7 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
       } else {
         final message = _extractErrorMessageFromResponse(response);
         throw ApiException(
-          message ?? 'Ошибка при проведении документа',
-            response.statusCode);
+            message ?? 'Ошибка при проведении документа', response.statusCode);
       }
     } catch (e) {
       rethrow;
@@ -14289,8 +17462,7 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
         // Успешно отменено
       } else {
         final message = _extractErrorMessageFromResponse(response);
-        throw ApiException(
-            message ?? 'Ошибка при отмене проведения документа',
+        throw ApiException(message ?? 'Ошибка при отмене проведения документа',
             response.statusCode);
       }
     } catch (e) {
@@ -14304,7 +17476,8 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
       final token = await getToken();
       if (token == null) 'Токен не найден';
 
-      final pathWithParams = await _appendQueryParams('/write-off-documents/restore');
+      final pathWithParams =
+          await _appendQueryParams('/write-off-documents/restore');
       final uri = Uri.parse('$baseUrl$pathWithParams');
 
       final body = jsonEncode({
@@ -14326,8 +17499,7 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
         return {'result': 'Success'};
       } else {
         final message = _extractErrorMessageFromResponse(response);
-        throw ApiException(
-            message ?? 'Ошибка при восстановлении документа',
+        throw ApiException(message ?? 'Ошибка при восстановлении документа',
             response.statusCode);
       }
     } catch (e) {
@@ -14370,7 +17542,8 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
       } else {
         final message = _extractErrorMessageFromResponse(response);
         throw ApiException(
-          message ?? 'Ошибка при массовом снятии проведения документов списания!',
+          message ??
+              'Ошибка при массовом снятии проведения документов списания!',
           response.statusCode,
         );
       }
@@ -14571,7 +17744,8 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
         return {'result': 'Success'};
       } else {
         final message = _extractErrorMessageFromResponse(response);
-        throw ApiException(message ?? 'Ошибка при удалении документа', response.statusCode);
+        throw ApiException(
+            message ?? 'Ошибка при удалении документа', response.statusCode);
       }
     } catch (e) {
       rethrow;
@@ -14620,7 +17794,8 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
         return;
       } else {
         final message = _extractErrorMessageFromResponse(response);
-        throw ApiException(message ?? 'Ошибка обновления документа', response.statusCode);
+        throw ApiException(
+            message ?? 'Ошибка обновления документа', response.statusCode);
       }
     } catch (e) {
       rethrow;
@@ -14654,7 +17829,8 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
         // Успешно проведен
       } else {
         final message = _extractErrorMessageFromResponse(response);
-        throw ApiException(message ?? 'Ошибка при проведении документа', response.statusCode);
+        throw ApiException(
+            message ?? 'Ошибка при проведении документа', response.statusCode);
       }
     } catch (e) {
       rethrow;
@@ -14688,7 +17864,8 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
         // Успешно отменено
       } else {
         final message = _extractErrorMessageFromResponse(response);
-        throw ApiException(message ?? 'Ошибка при отмене проведения документа', response.statusCode);
+        throw ApiException(message ?? 'Ошибка при отмене проведения документа',
+            response.statusCode);
       }
     } catch (e) {
       rethrow;
@@ -14701,7 +17878,8 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
       final token = await getToken();
       if (token == null) throw 'Токен не найден';
 
-      final pathWithParams = await _appendQueryParams('/movement-documents/restore');
+      final pathWithParams =
+          await _appendQueryParams('/movement-documents/restore');
       final uri = Uri.parse('$baseUrl$pathWithParams');
 
       final body = jsonEncode({
@@ -14723,7 +17901,8 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
         return {'result': 'Success'};
       } else {
         final message = _extractErrorMessageFromResponse(response);
-        throw ApiException(message ?? 'Ошибка при восстановлении документа', response.statusCode);
+        throw ApiException(message ?? 'Ошибка при восстановлении документа',
+            response.statusCode);
       }
     } catch (e) {
       rethrow;
@@ -14765,7 +17944,8 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
       } else {
         final message = _extractErrorMessageFromResponse(response);
         throw ApiException(
-          message ?? 'Ошибка при массовом снятии проведения документов перемещения!',
+          message ??
+              'Ошибка при массовом снятии проведения документов перемещения!',
           response.statusCode,
         );
       }
@@ -14809,7 +17989,8 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
       } else {
         final message = _extractErrorMessageFromResponse(response);
         throw ApiException(
-          message ?? 'Ошибка при массовом восстановлении документов перемещения!',
+          message ??
+              'Ошибка при массовом восстановлении документов перемещения!',
           response.statusCode,
         );
       }
@@ -14818,8 +17999,290 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     }
   }
 
-
 //______________________________end movement____________________________//
+
+//______________________________start manufacture____________________________//
+  Future<IncomingResponse> getManufactureDocuments({
+    int page = 1,
+    int perPage = 20,
+    String? query,
+    DateTime? fromDate,
+    DateTime? toDate,
+    int? senderStorageId,
+    int? recipientStorageId,
+    int? status,
+    int? authorId,
+    int? deleted,
+  }) async {
+    String url = '/manufacture-documents?page=$page&per_page=$perPage';
+    if (query != null && query.isNotEmpty) {
+      url += '&search=$query';
+    }
+    if (fromDate != null) {
+      url += '&date_from=${fromDate.toIso8601String()}';
+    }
+    if (toDate != null) {
+      url += '&date_to=${toDate.toIso8601String()}';
+    }
+    if (senderStorageId != null) {
+      url += '&storage_id=$senderStorageId';
+    }
+    if (recipientStorageId != null) {
+      url += '&recipient_storage_id=$recipientStorageId';
+    }
+    if (status != null) {
+      url += '&status=$status';
+    }
+    if (authorId != null) {
+      url += '&author_id=$authorId';
+    }
+    if (deleted != null) {
+      url += '&deleted=$deleted';
+    }
+
+    final path = await _appendQueryParams(url);
+
+    try {
+      final response = await _getRequest(path);
+      if (response.statusCode == 200) {
+        final rawData = json.decode(response.body)['result'];
+        return IncomingResponse.fromJson(rawData);
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(
+          message ?? 'Ошибка при получении данных производства!',
+          response.statusCode,
+        );
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<IncomingDocument> getManufactureDocumentById(int documentId) async {
+    final path = await _appendQueryParams('/manufacture-documents/$documentId');
+
+    try {
+      final response = await _getRequest(path);
+      if (response.statusCode == 200) {
+        final rawData = json.decode(response.body)['result'];
+        return IncomingDocument.fromJson(rawData);
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(
+          message ?? 'Ошибка при получении документа производства!',
+          response.statusCode,
+        );
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<void> createManufactureDocument({
+    required String date,
+    required int senderStorageId,
+    required int recipientStorageId,
+    required String comment,
+    required List<Map<String, dynamic>> documentGoods,
+    required int organizationId,
+    required bool approve,
+  }) async {
+    final path = await _appendQueryParams('/manufacture-documents');
+    final response = await _postRequest(path, {
+      'date': date,
+      'storage_id': senderStorageId,
+      'recipient_storage_id': recipientStorageId,
+      'comment': comment,
+      'document_goods': documentGoods,
+      'organization_id': organizationId,
+      'approve': approve,
+    });
+
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      final message = _extractErrorMessageFromResponse(response);
+      throw ApiException(message ?? 'Неизвестная ошибка', response.statusCode);
+    }
+  }
+
+  Future<Map<String, dynamic>> deleteManufactureDocument(int documentId) async {
+    try {
+      final pathWithParams = await _appendQueryParams('/manufacture-documents');
+      final uri = Uri.parse('$baseUrl$pathWithParams');
+      final organizationId = uri.queryParameters['organization_id'];
+      final salesFunnelId = uri.queryParameters['sales_funnel_id'];
+
+      final response = await _deleteRequestWithBody('/manufacture-documents', {
+        'ids': [documentId],
+        'organization_id': organizationId ?? '1',
+        'sales_funnel_id': salesFunnelId ?? '1',
+      });
+
+      if (response.statusCode == 200 || response.statusCode == 204) {
+        return {'result': 'Success'};
+      }
+
+      final message = _extractErrorMessageFromResponse(response);
+      throw ApiException(
+        message ?? 'Ошибка при удалении документа производства',
+        response.statusCode,
+      );
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<void> updateManufactureDocument({
+    required int documentId,
+    required String date,
+    required int senderStorageId,
+    required int recipientStorageId,
+    required String comment,
+    required List<Map<String, dynamic>> documentGoods,
+    required int organizationId,
+    required bool approve,
+  }) async {
+    final path = await _appendQueryParams('/manufacture-documents/$documentId');
+    final uri = Uri.parse('$baseUrl$path');
+
+    final body = jsonEncode({
+      'date': date,
+      'storage_id': senderStorageId,
+      'recipient_storage_id': recipientStorageId,
+      'comment': comment,
+      'document_goods': documentGoods,
+      'organization_id': organizationId,
+      'approve': approve,
+    });
+
+    final token = await getToken();
+    if (token == null) {
+      throw Exception('Токен не найден');
+    }
+
+    final response = await http.put(
+      uri,
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'Device': 'mobile',
+      },
+      body: body,
+    );
+
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      final message = _extractErrorMessageFromResponse(response);
+      throw ApiException(
+        message ?? 'Ошибка обновления документа производства',
+        response.statusCode,
+      );
+    }
+  }
+
+  Future<void> approveManufactureDocument(int documentId) async {
+    final path = await _appendQueryParams('/manufacture-documents/approve');
+    final response = await _postRequest(path, {
+      'ids': [documentId],
+    });
+
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      final message = _extractErrorMessageFromResponse(response);
+      throw ApiException(
+        message ?? 'Ошибка при проведении документа производства',
+        response.statusCode,
+      );
+    }
+  }
+
+  Future<void> unApproveManufactureDocument(int documentId) async {
+    final path = await _appendQueryParams('/manufacture-documents/unApprove');
+    final response = await _postRequest(path, {
+      'ids': [documentId],
+    });
+
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      final message = _extractErrorMessageFromResponse(response);
+      throw ApiException(
+        message ?? 'Ошибка при отмене проведения документа производства',
+        response.statusCode,
+      );
+    }
+  }
+
+  Future<Map<String, dynamic>> restoreManufactureDocument(
+      int documentId) async {
+    final path = await _appendQueryParams('/manufacture-documents/restore');
+    final response = await _postRequest(path, {
+      'ids': [documentId],
+    });
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return {'result': 'Success'};
+    }
+
+    final message = _extractErrorMessageFromResponse(response);
+    throw ApiException(
+      message ?? 'Ошибка при восстановлении документа производства',
+      response.statusCode,
+    );
+  }
+
+  Future<void> massApproveManufactureDocuments(List<int> ids) async {
+    final path = await _appendQueryParams('/manufacture-documents/approve');
+    final response = await _postRequest(path, {'ids': ids});
+
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      final message = _extractErrorMessageFromResponse(response);
+      throw ApiException(
+        message ?? 'Ошибка при массовом проведении документов производства!',
+        response.statusCode,
+      );
+    }
+  }
+
+  Future<void> massDisapproveManufactureDocuments(List<int> ids) async {
+    final path = await _appendQueryParams('/manufacture-documents/unApprove');
+    final response = await _postRequest(path, {'ids': ids});
+
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      final message = _extractErrorMessageFromResponse(response);
+      throw ApiException(
+        message ??
+            'Ошибка при массовом снятии проведения документов производства!',
+        response.statusCode,
+      );
+    }
+  }
+
+  Future<void> massDeleteManufactureDocuments(List<int> ids) async {
+    final path = await _appendQueryParams('/manufacture-documents/');
+    final response = await _deleteRequestWithBody(path, {'ids': ids});
+
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      final message = _extractErrorMessageFromResponse(response);
+      throw ApiException(
+        message ?? 'Ошибка при массовом удалении документов производства!',
+        response.statusCode,
+      );
+    }
+  }
+
+  Future<void> massRestoreManufactureDocuments(List<int> ids) async {
+    final path = await _appendQueryParams('/manufacture-documents/restore');
+    final response = await _postRequest(path, {'ids': ids});
+
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      final message = _extractErrorMessageFromResponse(response);
+      throw ApiException(
+        message ??
+            'Ошибка при массовом восстановлении документов производства!',
+        response.statusCode,
+      );
+    }
+  }
+
+//______________________________end manufacture____________________________//
 
 //====================================== SALES DASHBOARD ==================================//
 
@@ -14838,7 +18301,8 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     final sumTo = filters?['sum_to'] as String?;
 
     if (categoryId != null) path += '&category_id=$categoryId';
-    if (daysWithoutMovement != null) path += '&days_without_movement=$daysWithoutMovement';
+    if (daysWithoutMovement != null)
+      path += '&days_without_movement=$daysWithoutMovement';
     if (goodId != null) path += '&good_id=$goodId';
     if (sumFrom != null && sumFrom.isNotEmpty) path += '&sum_from=$sumFrom';
     if (sumTo != null && sumTo.isNotEmpty) path += '&sum_to=$sumTo';
@@ -14847,7 +18311,8 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
 
     path = await _appendQueryParams(path);
     if (kDebugMode) {
-      debugPrint('ApiService: getSalesDashboardGoodsReport - Generated path: $path');
+      debugPrint(
+          'ApiService: getSalesDashboardGoodsReport - Generated path: $path');
     }
 
     try {
@@ -14923,12 +18388,17 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
       if (perPage != null) queryParams['per_page'] = perPage.toString();
       if (search != null && search.isNotEmpty) queryParams['search'] = search;
       if (filters != null) {
-        if (filters.containsKey('date_from') && filters['date_from'] is DateTime && filters['date_from'] != null) {
-          debugPrint("ApiService: filters['date_from']: ${filters['date_from']}");
+        if (filters.containsKey('date_from') &&
+            filters['date_from'] is DateTime &&
+            filters['date_from'] != null) {
+          debugPrint(
+              "ApiService: filters['date_from']: ${filters['date_from']}");
           final dateFrom = filters['date_from'] as DateTime;
           queryParams['date_from'] = dateFrom.toIso8601String();
         }
-        if (filters.containsKey('date_to') && filters['date_to'] is DateTime && filters['date_to'] != null) {
+        if (filters.containsKey('date_to') &&
+            filters['date_to'] is DateTime &&
+            filters['date_to'] != null) {
           debugPrint("ApiService: filters['date_to']: ${filters['date_to']}");
           final dateTo = filters['date_to'] as DateTime;
           queryParams['date_to'] = dateTo.toIso8601String();
@@ -14937,8 +18407,10 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
           debugPrint("ApiService: filters['lead_id']: ${filters['lead_id']}");
           queryParams['lead_id'] = filters['lead_id'].toString();
         }
-        if (filters.containsKey('supplier_id') && filters['supplier_id'] != null) {
-          debugPrint("ApiService: filters['supplier_id']: ${filters['supplier_id']}");
+        if (filters.containsKey('supplier_id') &&
+            filters['supplier_id'] != null) {
+          debugPrint(
+              "ApiService: filters['supplier_id']: ${filters['supplier_id']}");
           queryParams['supplier_id'] = filters['supplier_id'].toString();
         }
         if (filters.containsKey('sum_from') && filters['sum_from'] != null) {
@@ -14958,12 +18430,14 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
         // Check if path already has query params (contains ?)
         final separator = path.contains('?') ? '&' : '?';
         final encodedParams = queryParams.entries
-            .map((e) => '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}')
+            .map((e) =>
+                '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}')
             .join('&');
         path += '$separator$encodedParams';
       }
       if (kDebugMode) {
-        debugPrint('ApiService: getDebtorsList - Generated path: $path, filter: $filters');
+        debugPrint(
+            'ApiService: getDebtorsList - Generated path: $path, filter: $filters');
       }
 
       final response = await _getRequest(path);
@@ -14982,6 +18456,7 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
       throw e;
     }
   }
+
   /// Получение списка кредиторов
   Future<CreditorsResponse> getCreditorsList({
     int? page,
@@ -14997,12 +18472,17 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
       if (perPage != null) queryParams['per_page'] = perPage.toString();
       if (search != null && search.isNotEmpty) queryParams['search'] = search;
       if (filters != null) {
-        if (filters.containsKey('date_from') && filters['date_from'] is DateTime && filters['date_from'] != null) {
-          debugPrint("ApiService: filters['date_from']: ${filters['date_from']}");
+        if (filters.containsKey('date_from') &&
+            filters['date_from'] is DateTime &&
+            filters['date_from'] != null) {
+          debugPrint(
+              "ApiService: filters['date_from']: ${filters['date_from']}");
           final dateFrom = filters['date_from'] as DateTime;
           queryParams['date_from'] = dateFrom.toIso8601String();
         }
-        if (filters.containsKey('date_to') && filters['date_to'] is DateTime && filters['date_to'] != null) {
+        if (filters.containsKey('date_to') &&
+            filters['date_to'] is DateTime &&
+            filters['date_to'] != null) {
           debugPrint("ApiService: filters['date_to']: ${filters['date_to']}");
           final dateTo = filters['date_to'] as DateTime;
           queryParams['date_to'] = dateTo.toIso8601String();
@@ -15011,8 +18491,10 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
           debugPrint("ApiService: filters['lead_id']: ${filters['lead_id']}");
           queryParams['lead_id'] = filters['lead_id'].toString();
         }
-        if (filters.containsKey('supplier_id') && filters['supplier_id'] != null) {
-          debugPrint("ApiService: filters['supplier_id']: ${filters['supplier_id']}");
+        if (filters.containsKey('supplier_id') &&
+            filters['supplier_id'] != null) {
+          debugPrint(
+              "ApiService: filters['supplier_id']: ${filters['supplier_id']}");
           queryParams['supplier_id'] = filters['supplier_id'].toString();
         }
         if (filters.containsKey('sum_from') && filters['sum_from'] != null) {
@@ -15032,12 +18514,14 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
         // Check if path already has query params (contains ?)
         final separator = path.contains('?') ? '&' : '?';
         final encodedParams = queryParams.entries
-            .map((e) => '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}')
+            .map((e) =>
+                '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}')
             .join('&');
         path += '$separator$encodedParams';
       }
       if (kDebugMode) {
-        debugPrint('ApiService: getCreditorsList - Generated path: $path, filter: $filters');
+        debugPrint(
+            'ApiService: getCreditorsList - Generated path: $path, filter: $filters');
       }
 
       final response = await _getRequest(path);
@@ -15057,6 +18541,182 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     }
   }
 
+  /// Получение отчета по задолженности зарплаты
+  Future<SalaryReportResponse> getSalaryReport({
+    int? page,
+    int? perPage,
+    Map<String, dynamic>? filters,
+    String? search,
+  }) async {
+    try {
+      final queryParams = <String, String>{};
+
+      queryParams['page'] = (page ?? 1).toString();
+      queryParams['per_page'] = (perPage ?? 20).toString();
+      queryParams['limit'] = (perPage ?? 20).toString();
+      queryParams['lead_id'] = '';
+      queryParams['supplier_id'] = '';
+      queryParams['date_from'] = '';
+      queryParams['date_to'] = '';
+      queryParams['sum_from'] = '';
+      queryParams['sum_to'] = '';
+      queryParams['category_id'] = '';
+      queryParams['days_without_movement'] = '';
+      queryParams['article_id'] = '';
+      queryParams['good_id'] = '';
+      queryParams['status_id'] = '';
+      queryParams['search'] = search?.trim() ?? '';
+      queryParams['period'] = '';
+      queryParams['year'] = filters?['year']?.toString() ?? '';
+      queryParams['storage_id'] = '';
+
+      var path = await _appendQueryParams('/fin/dashboard/salary-report');
+
+      final separator = path.contains('?') ? '&' : '?';
+      final encodedParams = queryParams.entries
+          .map((e) =>
+              '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}')
+          .join('&');
+      path += '$separator$encodedParams';
+
+      if (kDebugMode) {
+        debugPrint(
+          'ApiService: getSalaryReport - Generated path: $path, filter: $filters',
+        );
+      }
+
+      final response = await _getRequest(path);
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body) as Map<String, dynamic>;
+        return SalaryReportResponse.fromJson(data);
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(
+          message ?? 'Ошибка при получении отчета по задолженности зарплаты!',
+          response.statusCode,
+        );
+      }
+    } catch (e) {
+      throw e;
+    }
+  }
+
+  Future<ManufactureReportResponse> getManufactureGoodsReport({
+    int? page,
+    int? perPage,
+    Map<String, dynamic>? filters,
+    String? search,
+  }) async {
+    try {
+      final queryParams = _buildDetailedDashboardCommonParams(
+        page: page,
+        perPage: perPage,
+        filters: filters,
+        search: search,
+      );
+
+      var path =
+          await _appendQueryParams('/dashboard/manufacture-goods-report');
+      final separator = path.contains('?') ? '&' : '?';
+      final encodedParams = queryParams.entries
+          .map((e) =>
+              '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}')
+          .join('&');
+      path += '$separator$encodedParams';
+
+      final response = await _getRequest(path);
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final data = json.decode(response.body) as Map<String, dynamic>;
+        return ManufactureReportResponse.fromJson(data);
+      }
+
+      final message = _extractErrorMessageFromResponse(response);
+      throw ApiException(
+        message ?? 'Ошибка при получении отчета производства!',
+        response.statusCode,
+      );
+    } catch (e) {
+      throw e;
+    }
+  }
+
+  Future<ManufactureMaterialsReportResponse> getManufactureMaterialsReport({
+    int? page,
+    int? perPage,
+    Map<String, dynamic>? filters,
+    String? search,
+  }) async {
+    try {
+      final queryParams = _buildDetailedDashboardCommonParams(
+        page: page,
+        perPage: perPage,
+        filters: filters,
+        search: search,
+      );
+
+      var path =
+          await _appendQueryParams('/dashboard/manufacture-materials-report');
+      final separator = path.contains('?') ? '&' : '?';
+      final encodedParams = queryParams.entries
+          .map((e) =>
+              '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}')
+          .join('&');
+      path += '$separator$encodedParams';
+
+      final response = await _getRequest(path);
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final data = json.decode(response.body) as Map<String, dynamic>;
+        return ManufactureMaterialsReportResponse.fromJson(data);
+      }
+
+      final message = _extractErrorMessageFromResponse(response);
+      throw ApiException(
+        message ?? 'Ошибка при получении отчета расхода сырья!',
+        response.statusCode,
+      );
+    } catch (e) {
+      throw e;
+    }
+  }
+
+  Map<String, String> _buildDetailedDashboardCommonParams({
+    int? page,
+    int? perPage,
+    Map<String, dynamic>? filters,
+    String? search,
+  }) {
+    return <String, String>{
+      'page': (page ?? 1).toString(),
+      'per_page': (perPage ?? 20).toString(),
+      'limit': (perPage ?? 20).toString(),
+      'lead_id': filters?['lead_id']?.toString() ?? '',
+      'supplier_id': filters?['supplier_id']?.toString() ?? '',
+      'date_from': _formatDetailedReportDate(filters?['date_from']),
+      'date_to': _formatDetailedReportDate(filters?['date_to']),
+      'sum_from': filters?['sum_from']?.toString() ?? '',
+      'sum_to': filters?['sum_to']?.toString() ?? '',
+      'category_id': filters?['category_id']?.toString() ?? '',
+      'days_without_movement':
+          filters?['days_without_movement']?.toString() ?? '',
+      'article_id': filters?['article_id']?.toString() ?? '',
+      'good_id': filters?['good_id']?.toString() ?? '',
+      'status_id': filters?['status_id']?.toString() ?? '',
+      'search': search?.trim() ?? '',
+      'period': filters?['period']?.toString() ?? '',
+      'year': filters?['year']?.toString() ?? '',
+      'storage_id': filters?['storage_id']?.toString() ?? '',
+    };
+  }
+
+  String _formatDetailedReportDate(dynamic value) {
+    if (value == null) return '';
+    if (value is DateTime) return value.toIso8601String();
+    return value.toString();
+  }
+
   /// Получение данных о неликвидных товарах
   Future<IlliquidGoodsResponse> getIlliquidGoods({
     String? from,
@@ -15072,7 +18732,8 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
       var path = await _appendQueryParams('/dashboard/illiquid-goods');
 
       if (queryParams.isNotEmpty) {
-        path += '?${Uri.encodeQueryComponent(queryParams.entries.map((e) => '${e.key}=${e.value}').join('&'))}';
+        path +=
+            '?${Uri.encodeQueryComponent(queryParams.entries.map((e) => '${e.key}=${e.value}').join('&'))}';
       }
 
       if (kDebugMode) {
@@ -15145,7 +18806,8 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
       // Check if path already has query params (contains ?)
       final separator = path.contains('?') ? '&' : '?';
       final encodedParams = queryParams.entries
-          .map((e) => '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}')
+          .map((e) =>
+              '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}')
           .join('&');
       path += '$separator$encodedParams';
     }
@@ -15173,30 +18835,35 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
 
   /// Получение баланса денежных средств
   Future<DashboardTopPart> getSalesDashboardTopPart() async {
-      // Формируем параметры запроса
-      var path = await _appendQueryParams('/fin/dashboard');
+    // Формируем параметры запроса
+    var path = await _appendQueryParams('/fin/dashboard');
 
-      debugPrint("ApiService: getSalesDashboardTopPart path: $path");
+    debugPrint("ApiService: getSalesDashboardTopPart path: $path");
 
-      final response = await _getRequest(path);
+    final response = await _getRequest(path);
 
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        return DashboardTopPart.fromJson(data);
-      } else {
-        final message = _extractErrorMessageFromResponse(response);
-        throw ApiException(
-          message ?? 'Ошибка',
-          response.statusCode,
-        );
-      }
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      return DashboardTopPart.fromJson(data);
+    } else {
+      final message = _extractErrorMessageFromResponse(response);
+      throw ApiException(
+        message ?? 'Ошибка',
+        response.statusCode,
+      );
+    }
   }
-
 
 // API request function
   Future<List<AllExpensesData>> getExpenseStructure() async {
     // Define all periods to fetch
-    final periods = [ExpensePeriodEnum.today, ExpensePeriodEnum.week, ExpensePeriodEnum.month, ExpensePeriodEnum.quarter, ExpensePeriodEnum.year];
+    final periods = [
+      ExpensePeriodEnum.today,
+      ExpensePeriodEnum.week,
+      ExpensePeriodEnum.month,
+      ExpensePeriodEnum.quarter,
+      ExpensePeriodEnum.year
+    ];
 
     // List to store results
     final List<AllExpensesData> allExpensesData = [];
@@ -15204,7 +18871,8 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     // Iterate through each period
     for (final period in periods) {
       // Form the query path for the current period
-      final path = await _appendQueryParams('/fin/dashboard/expense-structure?period=${period.name}');
+      final path = await _appendQueryParams(
+          '/fin/dashboard/expense-structure?period=${period.name}');
       debugPrint("ApiService: getExpenseStructure path: $path");
 
       try {
@@ -15240,9 +18908,11 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
   Future<AllExpensesData> getExpenseStructureForPeriod(
     ExpensePeriodEnum period,
   ) async {
-    final path = await _appendQueryParams('/fin/dashboard/expense-structure?period=${period.name}');
-    
-    debugPrint("ApiService: getExpenseStructureForPeriod path: $path for period: ${period.name}");
+    final path = await _appendQueryParams(
+        '/fin/dashboard/expense-structure?period=${period.name}');
+
+    debugPrint(
+        "ApiService: getExpenseStructureForPeriod path: $path for period: ${period.name}");
 
     try {
       final response = await _getRequest(path);
@@ -15307,9 +18977,11 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
         break;
     }
 
-    var path = await _appendQueryParams('/dashboard/sales-dynamics?period=$periodParam');
-    
-    debugPrint("ApiService: getSalesDynamicsForPeriod path: $path for period: ${period.name}");
+    var path = await _appendQueryParams(
+        '/dashboard/sales-dynamics?period=$periodParam');
+
+    debugPrint(
+        "ApiService: getSalesDynamicsForPeriod path: $path for period: ${period.name}");
 
     try {
       final response = await _getRequest(path);
@@ -15346,7 +19018,8 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     // Iterate through each period
     for (final period in periods) {
       // Form the query path for the current period
-      final path = await _appendQueryParams('/dashboard/net-profit?period=${period.name}');
+      final path = await _appendQueryParams(
+          '/dashboard/net-profit?period=${period.name}');
       debugPrint("ApiService: getNetProfitDashboard path: $path");
 
       try {
@@ -15379,9 +19052,11 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
   Future<AllNetProfitData> getNetProfitDataForPeriod(
     NetProfitPeriod period,
   ) async {
-    final path = await _appendQueryParams('/dashboard/net-profit?period=${period.name}');
-    
-    debugPrint("ApiService: getNetProfitDataForPeriod path: $path for period: ${period.name}");
+    final path =
+        await _appendQueryParams('/dashboard/net-profit?period=${period.name}');
+
+    debugPrint(
+        "ApiService: getNetProfitDataForPeriod path: $path for period: ${period.name}");
 
     try {
       final response = await _getRequest(path);
@@ -15409,7 +19084,11 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
 
   Future<List<AllOrdersData>> getOrderDashboard() async {
     // Define all periods to fetch
-    final periods = [OrderTimePeriod.week, OrderTimePeriod.month, OrderTimePeriod.year];
+    final periods = [
+      OrderTimePeriod.week,
+      OrderTimePeriod.month,
+      OrderTimePeriod.year
+    ];
 
     // List to store results
     final List<AllOrdersData> allOrdersData = [];
@@ -15417,7 +19096,8 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     // Iterate through each period
     for (final period in periods) {
       // Form the query path for the current period
-      final path = await _appendQueryParams('/order/dashboard?period=${period.name}');
+      final path =
+          await _appendQueryParams('/order/dashboard?period=${period.name}');
       debugPrint("ApiService: getOrderDashboard path: $path");
 
       try {
@@ -15454,9 +19134,11 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
   Future<AllOrdersData> getOrderDashboardForPeriod(
     OrderTimePeriod period,
   ) async {
-    final path = await _appendQueryParams('/order/dashboard?period=${period.name}');
-    
-    debugPrint("ApiService: getOrderDashboardForPeriod path: $path for period: ${period.name}");
+    final path =
+        await _appendQueryParams('/order/dashboard?period=${period.name}');
+
+    debugPrint(
+        "ApiService: getOrderDashboardForPeriod path: $path for period: ${period.name}");
 
     try {
       final response = await _getRequest(path);
@@ -15485,7 +19167,10 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
 // API request function
   Future<List<AllProfitabilityData>> getProfitability() async {
     // Define all periods to fetch
-    final periods = [ProfitabilityTimePeriod.last_year, ProfitabilityTimePeriod.year];
+    final periods = [
+      ProfitabilityTimePeriod.last_year,
+      ProfitabilityTimePeriod.year
+    ];
 
     // List to store results
     final List<AllProfitabilityData> allProfitabilityData = [];
@@ -15493,7 +19178,8 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     // Iterate through each period
     for (final period in periods) {
       // Form the query path for the current period
-      final path = await _appendQueryParams('/dashboard/profitability?period=${period.name}');
+      final path = await _appendQueryParams(
+          '/dashboard/profitability?period=${period.name}');
       debugPrint("ApiService: getProfitability path: $path");
 
       try {
@@ -15529,9 +19215,11 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
   Future<AllProfitabilityData> getProfitabilityForPeriod(
     ProfitabilityTimePeriod period,
   ) async {
-    final path = await _appendQueryParams('/dashboard/profitability?period=${period.name}');
-    
-    debugPrint("ApiService: getProfitabilityForPeriod path: $path for period: ${period.name}");
+    final path = await _appendQueryParams(
+        '/dashboard/profitability?period=${period.name}');
+
+    debugPrint(
+        "ApiService: getProfitabilityForPeriod path: $path for period: ${period.name}");
 
     try {
       final response = await _getRequest(path);
@@ -15557,7 +19245,8 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     }
   }
 
-  Future<List<AllTopSellingData>> getTopSellingGoodsDashboard({int perPage = 7}) async {
+  Future<List<AllTopSellingData>> getTopSellingGoodsDashboard(
+      {int perPage = 7}) async {
     // Define all periods to fetch
     final periods = [
       TopSellingTimePeriod.day,
@@ -15573,7 +19262,8 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     for (final period in periods) {
       final query = ['per_page=$perPage', 'period=${period.name}'].join('&');
 
-      final path = await _appendQueryParams('/dashboard/top-selling-goods?$query');
+      final path =
+          await _appendQueryParams('/dashboard/top-selling-goods?$query');
       debugPrint("ApiService: getTopSellingGoodsDashboard path: $path");
 
       try {
@@ -15598,7 +19288,7 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
       } catch (e) {
         // Log errors for individual periods
         debugPrint("Error fetching data for period $period: $e");
-         throw e;
+        throw e;
       }
     }
 
@@ -15611,9 +19301,11 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     int perPage = 7,
   }) async {
     final query = ['per_page=$perPage', 'period=${period.name}'].join('&');
-    final path = await _appendQueryParams('/dashboard/top-selling-goods?$query');
-    
-    debugPrint("ApiService: getTopSellingGoodsForPeriod path: $path for period: ${period.name}");
+    final path =
+        await _appendQueryParams('/dashboard/top-selling-goods?$query');
+
+    debugPrint(
+        "ApiService: getTopSellingGoodsForPeriod path: $path for period: ${period.name}");
 
     try {
       final response = await _getRequest(path);
@@ -15681,8 +19373,10 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
         queryParams['good_id'] = goodId.toString();
       }
 
-      if (filters.containsKey('category_id') && filters['category_id'] != null) {
-        debugPrint("ApiService: filters['category_id']: ${filters['category_id']}");
+      if (filters.containsKey('category_id') &&
+          filters['category_id'] != null) {
+        debugPrint(
+            "ApiService: filters['category_id']: ${filters['category_id']}");
         final categoryId = filters['category_id'] as int;
         queryParams['category_id'] = categoryId.toString();
       }
@@ -15694,8 +19388,10 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     if (queryParams.isNotEmpty) {
       // Check if path already has query params (contains ?)
       final separator = path.contains('?') ? '&' : '?';
-      final encodedParams =
-          queryParams.entries.map((e) => '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}').join('&');
+      final encodedParams = queryParams.entries
+          .map((e) =>
+              '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}')
+          .join('&');
       path += '$separator$encodedParams';
     }
 
@@ -15707,7 +19403,9 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
 
         final List<dynamic> dataList = data['result']['data'] as List<dynamic>;
 
-        return dataList.map((item) => TopSellingCardModel.fromJson(item)).toList();
+        return dataList
+            .map((item) => TopSellingCardModel.fromJson(item))
+            .toList();
       } else {
         final message = _extractErrorMessageFromResponse(response);
         throw ApiException(
@@ -15732,8 +19430,10 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
         final period = filters['period'] as DateTime;
         queryParams['period'] = period.toIso8601String();
       }
-      if (filters.containsKey('category_id') && filters['category_id'] != null) {
-        debugPrint("ApiService: filters['category_id']: ${filters['category_id']}");
+      if (filters.containsKey('category_id') &&
+          filters['category_id'] != null) {
+        debugPrint(
+            "ApiService: filters['category_id']: ${filters['category_id']}");
         final categoryId = filters['category_id'] as int;
         queryParams['category_id'] = categoryId.toString();
       }
@@ -15750,8 +19450,10 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     if (queryParams.isNotEmpty) {
       // Check if path already has query params (contains ?)
       final separator = path.contains('?') ? '&' : '?';
-      final encodedParams =
-      queryParams.entries.map((e) => '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}').join('&');
+      final encodedParams = queryParams.entries
+          .map((e) =>
+              '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}')
+          .join('&');
       path += '$separator$encodedParams';
     }
 
@@ -15783,8 +19485,10 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
         final period = filters['period'] as DateTime;
         queryParams['period'] = period.toIso8601String();
       }
-      if (filters.containsKey('category_id') && filters['category_id'] != null) {
-        debugPrint("ApiService: filters['category_id']: ${filters['category_id']}");
+      if (filters.containsKey('category_id') &&
+          filters['category_id'] != null) {
+        debugPrint(
+            "ApiService: filters['category_id']: ${filters['category_id']}");
         final categoryId = filters['category_id'] as int;
         queryParams['category_id'] = categoryId.toString();
       }
@@ -15801,8 +19505,10 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     if (queryParams.isNotEmpty) {
       // Check if path already has query params (contains ?)
       final separator = path.contains('?') ? '&' : '?';
-      final encodedParams =
-      queryParams.entries.map((e) => '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}').join('&');
+      final encodedParams = queryParams.entries
+          .map((e) =>
+              '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}')
+          .join('&');
       path += '$separator$encodedParams';
     }
 
@@ -15834,8 +19540,10 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
         final period = filters['period'] as DateTime;
         queryParams['period'] = period.toIso8601String();
       }
-      if (filters.containsKey('category_id') && filters['category_id'] != null) {
-        debugPrint("ApiService: filters['category_id']: ${filters['category_id']}");
+      if (filters.containsKey('category_id') &&
+          filters['category_id'] != null) {
+        debugPrint(
+            "ApiService: filters['category_id']: ${filters['category_id']}");
         final categoryId = filters['category_id'] as int;
         queryParams['category_id'] = categoryId.toString();
       }
@@ -15852,8 +19560,10 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     if (queryParams.isNotEmpty) {
       // Check if path already has query params (contains ?)
       final separator = path.contains('?') ? '&' : '?';
-      final encodedParams =
-      queryParams.entries.map((e) => '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}').join('&');
+      final encodedParams = queryParams.entries
+          .map((e) =>
+              '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}')
+          .join('&');
       path += '$separator$encodedParams';
     }
 
@@ -15890,13 +19600,16 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
         final dateTo = filters['date_to'] as DateTime;
         queryParams['date_to'] = dateTo.toIso8601String();
       }
-      if (filters.containsKey('category_id') && filters['category_id'] != null) {
-        debugPrint("ApiService: filters['category_id']: ${filters['category_id']}");
+      if (filters.containsKey('category_id') &&
+          filters['category_id'] != null) {
+        debugPrint(
+            "ApiService: filters['category_id']: ${filters['category_id']}");
         final categoryId = filters['category_id'] as int;
         queryParams['category_id'] = categoryId.toString();
       }
       if (filters.containsKey('article_id') && filters['article_id'] != null) {
-        debugPrint("ApiService: filters['article_id']: ${filters['article_id']}");
+        debugPrint(
+            "ApiService: filters['article_id']: ${filters['article_id']}");
         final articleId = filters['article_id'] as int;
         queryParams['article_id'] = articleId.toString();
       }
@@ -15908,8 +19621,10 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     if (queryParams.isNotEmpty) {
       // Check if path already has query params (contains ?)
       final separator = path.contains('?') ? '&' : '?';
-      final encodedParams =
-      queryParams.entries.map((e) => '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}').join('&');
+      final encodedParams = queryParams.entries
+          .map((e) =>
+              '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}')
+          .join('&');
       path += '$separator$encodedParams';
     }
 
@@ -15930,9 +19645,9 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
   }
 
   Future<OrderQuantityContent> getOrderByFilter(
-      Map<String, dynamic>? filters,
-      String? search,
-      ) async {
+    Map<String, dynamic>? filters,
+    String? search,
+  ) async {
     Map<String, String> queryParams = {};
     if (search != null && search.isNotEmpty) queryParams['search'] = search;
     if (filters != null) {
@@ -15973,8 +19688,10 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     if (queryParams.isNotEmpty) {
       // Check if path already has query params (contains ?)
       final separator = path.contains('?') ? '&' : '?';
-      final encodedParams =
-      queryParams.entries.map((e) => '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}').join('&');
+      final encodedParams = queryParams.entries
+          .map((e) =>
+              '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}')
+          .join('&');
       path += '$separator$encodedParams';
     }
 
@@ -16030,7 +19747,10 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
     var type = filters!['lead_id'] != null ? 'lead' : 'supplier';
     var id = filters['lead_id'] ?? filters['supplier_id'];
 
-    var queryString = queryParams.entries.map((e) => '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}').join('&');
+    var queryString = queryParams.entries
+        .map((e) =>
+            '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}')
+        .join('&');
 
     var path = await _appendQueryParams(
       '/dashboard/act-of-reconciliation/$type/$id?$queryString',
@@ -16057,62 +19777,66 @@ Future<Map<String, dynamic>> restoreClientSaleDocument(int documentId) async {
   }
 
   // Метод для получения Категорий
-Future<List<CategoryDashboardWarehouse>> getCategoryDashboardWarehouse() async {
-  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
-  final path = await _appendQueryParams('/category');
-  if (kDebugMode) {
-    debugPrint('ApiService: getCategoryDashboardWarehouse - Generated path: $path');
-  }
-
-  final response = await _getRequest(path);
-
-  if (response.statusCode == 200) {
-    final data = json.decode(response.body);
-    debugPrint('Полученные данные: $data');  // Для отладки, как в примере
-    // Данные в "result", не прямой массив
-    final resultList = data['result'] as List?;
-    if (resultList == null) {
-      return [];
+  Future<List<CategoryDashboardWarehouse>>
+      getCategoryDashboardWarehouse() async {
+    // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+    final path = await _appendQueryParams('/category');
+    if (kDebugMode) {
+      debugPrint(
+          'ApiService: getCategoryDashboardWarehouse - Generated path: $path');
     }
-    return resultList
-        .map((category) => CategoryDashboardWarehouse.fromJson(category))
-        .toList();
-  } else {
-    throw Exception('Ошибка загрузки категорий');
-  }
 
-}
+    final response = await _getRequest(path);
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      debugPrint('Полученные данные: $data'); // Для отладки, как в примере
+      // Данные в "result", не прямой массив
+      final resultList = data['result'] as List?;
+      if (resultList == null) {
+        return [];
+      }
+      return resultList
+          .map((category) => CategoryDashboardWarehouse.fromJson(category))
+          .toList();
+    } else {
+      throw Exception('Ошибка загрузки категорий');
+    }
+  }
 
 // Метод для получения статусов заказов
-Future<List<OrderStatusWarehouse>> getOrderStatusWarehouse() async {
-  // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
-  final path = await _appendQueryParams('/order-status');
-  if (kDebugMode) {
-    debugPrint('ApiService: getOrderStatusWarehouse - Generated path: $path');
-  }
-
-  final response = await _getRequest(path);
-
-  if (response.statusCode == 200) {
-    final data = json.decode(response.body);
-    debugPrint('Полученные данные: $data');  // Для отладки
-    // Данные в "result", не прямой массив
-    final resultList = data['result'] as List?;
-    if (resultList == null) {
-      return [];
-    }
-    return resultList
-        .map((orderStatus) => OrderStatusWarehouse.fromJson(orderStatus))
-        .toList();
-  } else {
-    throw Exception('Ошибка загрузки статусов заказов');
-  }
-}
-
-  Future<List<DashboardGoodsMovementHistory>> getDashboardGoodsMovementHistoryList(int goodId) async {
-    final path = await _appendQueryParams('/dashboard/good-movement-history/$goodId');
+  Future<List<OrderStatusWarehouse>> getOrderStatusWarehouse() async {
+    // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+    final path = await _appendQueryParams('/order-status');
     if (kDebugMode) {
-      debugPrint('ApiService: getDashboardGoodsMovementHistoryList - Generated path: $path');
+      debugPrint('ApiService: getOrderStatusWarehouse - Generated path: $path');
+    }
+
+    final response = await _getRequest(path);
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      debugPrint('Полученные данные: $data'); // Для отладки
+      // Данные в "result", не прямой массив
+      final resultList = data['result'] as List?;
+      if (resultList == null) {
+        return [];
+      }
+      return resultList
+          .map((orderStatus) => OrderStatusWarehouse.fromJson(orderStatus))
+          .toList();
+    } else {
+      throw Exception('Ошибка загрузки статусов заказов');
+    }
+  }
+
+  Future<List<DashboardGoodsMovementHistory>>
+      getDashboardGoodsMovementHistoryList(int goodId) async {
+    final path =
+        await _appendQueryParams('/dashboard/good-movement-history/$goodId');
+    if (kDebugMode) {
+      debugPrint(
+          'ApiService: getDashboardGoodsMovementHistoryList - Generated path: $path');
     }
 
     final response = await _getRequest(path);
@@ -16120,7 +19844,8 @@ Future<List<OrderStatusWarehouse>> getOrderStatusWarehouse() async {
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
       if (kDebugMode) {
-        debugPrint('ApiService: Полученные данные истории движения товара $goodId: $data');
+        debugPrint(
+            'ApiService: Полученные данные истории движения товара $goodId: $data');
       }
       final resultList = data['result'] as List?;
       if (resultList == null) {
@@ -16138,7 +19863,8 @@ Future<List<OrderStatusWarehouse>> getOrderStatusWarehouse() async {
     }
   }
 
-  Future<dgrmodel.GoodDashboardWarehouseResponse> getGoodDashboardWarehousePage(int page) async {
+  Future<dgrmodel.GoodDashboardWarehouseResponse> getGoodDashboardWarehousePage(
+      int page) async {
     try {
       // Form path with page parameter
       String basePath = '/good?page=$page';
@@ -16147,7 +19873,8 @@ Future<List<OrderStatusWarehouse>> getOrderStatusWarehouse() async {
       final path = await _appendQueryParams(basePath);
 
       if (kDebugMode) {
-        debugPrint('ApiService: getGoodDashboardWarehousePage - Loading page $page, path: $path');
+        debugPrint(
+            'ApiService: getGoodDashboardWarehousePage - Loading page $page, path: $path');
       }
 
       // Execute GET request
@@ -16172,11 +19899,14 @@ Future<List<OrderStatusWarehouse>> getOrderStatusWarehouse() async {
 
           // Parse pagination
           if (resultObj['pagination'] != null) {
-            final pagination = dgrmodel.Pagination.fromJson(resultObj['pagination'] as Map<String, dynamic>);
+            final pagination = dgrmodel.Pagination.fromJson(
+                resultObj['pagination'] as Map<String, dynamic>);
 
             if (kDebugMode) {
-              debugPrint('ApiService: Page $page loaded successfully with ${goodsList.length} items');
-              debugPrint('ApiService: Pagination - current: ${pagination.currentPage}, total pages: ${pagination.totalPages}');
+              debugPrint(
+                  'ApiService: Page $page loaded successfully with ${goodsList.length} items');
+              debugPrint(
+                  'ApiService: Pagination - current: ${pagination.currentPage}, total pages: ${pagination.totalPages}');
             }
 
             return dgrmodel.GoodDashboardWarehouseResponse(
@@ -16197,7 +19927,8 @@ Future<List<OrderStatusWarehouse>> getOrderStatusWarehouse() async {
           );
         }
       } else {
-        throw Exception('Ошибка при получении данных со страницы $page! Статус: ${response.statusCode}');
+        throw Exception(
+            'Ошибка при получении данных со страницы $page! Статус: ${response.statusCode}');
       }
     } catch (e) {
       if (kDebugMode) {
@@ -16207,38 +19938,39 @@ Future<List<OrderStatusWarehouse>> getOrderStatusWarehouse() async {
     }
   }
 
-
 // Метод для получения Статей расхода
-Future<List<ExpenseArticleDashboardWarehouse>> getExpenseArticleDashboardWarehouse() async {
-  final path = await _appendQueryParams('/article?type=expense');
-  if (kDebugMode) {
-    debugPrint('ApiService: getExpenseArticleDashboardWarehouse - Generated path: $path');
-  }
-
-  final response = await _getRequest(path);
-
-  if (response.statusCode == 200) {
-    final data = json.decode(response.body);
-    debugPrint('Полученные данные статей расхода: $data');
-    
-    // Navigate to nested data: result -> data
-    final resultData = data['result'];
-    if (resultData == null) {
-      return [];
+  Future<List<ExpenseArticleDashboardWarehouse>>
+      getExpenseArticleDashboardWarehouse() async {
+    final path = await _appendQueryParams('/article?type=expense');
+    if (kDebugMode) {
+      debugPrint(
+          'ApiService: getExpenseArticleDashboardWarehouse - Generated path: $path');
     }
-    
-    final dataList = resultData['data'] as List?;
-    if (dataList == null) {
-      return [];
+
+    final response = await _getRequest(path);
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      debugPrint('Полученные данные статей расхода: $data');
+
+      // Navigate to nested data: result -> data
+      final resultData = data['result'];
+      if (resultData == null) {
+        return [];
+      }
+
+      final dataList = resultData['data'] as List?;
+      if (dataList == null) {
+        return [];
+      }
+
+      return dataList
+          .map((article) => ExpenseArticleDashboardWarehouse.fromJson(article))
+          .toList();
+    } else {
+      throw Exception('Ошибка загрузки статей расхода');
     }
-    
-    return dataList
-        .map((article) => ExpenseArticleDashboardWarehouse.fromJson(article))
-        .toList();
-  } else {
-    throw Exception('Ошибка загрузки статей расхода');
   }
-}
 
   // used for getting all articles (income and expense)
   Future<List<ArticleGood>> getAllExpenseArticles() async {
@@ -16271,172 +20003,187 @@ Future<List<ExpenseArticleDashboardWarehouse>> getExpenseArticleDashboardWarehou
     }
   }
 
-
 // _______________________________SECTION FOR FIELD CONFIGURATION _______________________________
 
 // В секции API__SCREEN__LEAD
 
 // Метод для получения конфигурации полей (уже есть)
-// Future<FieldConfigurationResponse> getFieldPositions({
-//   required String tableName,
-// }) async {
-//   try {
-//     final path = await _appendQueryParams('/field-position?table=$tableName');
-//
-//     if (kDebugMode) {
-//       debugPrint('ApiService: getFieldPositions - Generated path: $path');
-//     }
-//
-//     final response = await _getRequest(path);
-//
-//     if (response.statusCode == 200) {
-//       final data = json.decode(response.body);
-//       return FieldConfigurationResponse.fromJson(data);
-//     } else {
-//       throw Exception('Ошибка загрузки конфигурации полей: ${response.statusCode}');
-//     }
-//   } catch (e) {
-//     if (kDebugMode) {
-//       debugPrint('ApiService: getFieldPositions - Error: $e');
-//     }
-//     throw Exception('Ошибка загрузки конфигурации полей!');
-//   }
-// }
+  Future<FieldConfigurationResponse> getFieldPositions({
+    required String tableName,
+  }) async {
+    try {
+      final path = await _appendQueryParams('/field-position?table=$tableName');
 
-// Новый метод для сохранения конфигурации в кэш
-Future<void> cacheFieldConfiguration({
-  required String tableName,
-  required FieldConfigurationResponse configuration,
-}) async {
-  try {
-    final prefs = await SharedPreferences.getInstance();
-    final organizationId = await getSelectedOrganization();
-    final cacheKey = 'field_config_${tableName}_org_${organizationId}';
-    
-    final jsonData = json.encode(configuration.toJson()); 
-    await prefs.setString(cacheKey, jsonData);
-    
-    // Сохраняем timestamp последнего обновления
-    await prefs.setInt('${cacheKey}_timestamp', DateTime.now().millisecondsSinceEpoch);
-    
-    if (kDebugMode) {
-      debugPrint('ApiService: Cached field configuration for $tableName');
-    }
-  } catch (e) {
-    if (kDebugMode) {
-      debugPrint('ApiService: Error caching field configuration: $e');
-    }
-  }
-}
-
-// Новый метод для получения конфигурации из кэша
-Future<FieldConfigurationResponse?> getCachedFieldConfiguration({
-  required String tableName,
-}) async {
-  try {
-    final prefs = await SharedPreferences.getInstance();
-    final organizationId = await getSelectedOrganization();
-    final cacheKey = 'field_config_${tableName}_org_${organizationId}';
-    
-    final cachedData = prefs.getString(cacheKey);
-    
-    if (cachedData != null) {
-      final jsonData = json.decode(cachedData);
-      final config = FieldConfigurationResponse.fromJson(jsonData);
-      
       if (kDebugMode) {
-        debugPrint('ApiService: Loaded cached field configuration for $tableName');
+        debugPrint('ApiService: getFieldPositions - Generated path: $path');
       }
-      
-      return config;
-    }
-    
-    return null;
-  } catch (e) {
-    if (kDebugMode) {
-      debugPrint('ApiService: Error loading cached field configuration: $e');
-    }
-    return null;
-  }
-}
 
+      final response = await _getRequest(path);
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return FieldConfigurationResponse.fromJson(data);
+      } else {
+        throw Exception(
+            'Ошибка загрузки конфигурации полей: ${response.statusCode}');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('ApiService: getFieldPositions - Error: $e');
+      }
+      throw Exception('Ошибка загрузки конфигурации полей!');
+    }
+  }
+
+  // not used
+// Новый метод для сохранения конфигурации в кэш
+  Future<void> cacheFieldConfiguration({
+    required String tableName,
+    required FieldConfigurationResponse configuration,
+  }) async {
+    // Кэширование конфигурации временно отключено.
+    // try {
+    //   final prefs = await SharedPreferences.getInstance();
+    //   final organizationId = await getSelectedOrganization();
+    //   final cacheKey = 'field_config_${tableName}_org_${organizationId}';
+    //
+    //   final jsonData = json.encode(configuration.toJson());
+    //   await prefs.setString(cacheKey, jsonData);
+    //
+    //   // Сохраняем timestamp последнего обновления
+    //   await prefs.setInt('${cacheKey}_timestamp', DateTime.now().millisecondsSinceEpoch);
+    //
+    //   if (kDebugMode) {
+    //     debugPrint('ApiService: Cached field configuration for $tableName');
+    //   }
+    // } catch (e) {
+    //   if (kDebugMode) {
+    //     debugPrint('ApiService: Error caching field configuration: $e');
+    //   }
+    // }
+  }
+
+  // not used
+// Новый метод для получения конфигурации из кэша
+  Future<FieldConfigurationResponse?> getCachedFieldConfiguration({
+    required String tableName,
+  }) async {
+    // Кэширование конфигурации временно отключено, всегда возвращаем null.
+    return null;
+    // try {
+    //   final prefs = await SharedPreferences.getInstance();
+    //   final organizationId = await getSelectedOrganization();
+    //   final cacheKey = 'field_config_${tableName}_org_${organizationId}';
+    //
+    //   final cachedData = prefs.getString(cacheKey);
+    //
+    //   if (cachedData != null) {
+    //     final jsonData = json.decode(cachedData);
+    //     final config = FieldConfigurationResponse.fromJson(jsonData);
+    //
+    //     if (kDebugMode) {
+    //       debugPrint('ApiService: Loaded cached field configuration for $tableName');
+    //     }
+    //
+    //     return config;
+    //   }
+    //
+    //   return null;
+    // } catch (e) {
+    //   if (kDebugMode) {
+    //     debugPrint('ApiService: Error loading cached field configuration: $e');
+    //   }
+    //   return null;
+    // }
+  }
+
+  // not used
 // Метод для загрузки и кэширования всех конфигураций
-Future<void> loadAndCacheAllFieldConfigurations() async {
-  try {
-    if (kDebugMode) {
-      debugPrint('ApiService: Loading all field configurations');
-    }
-    
-    final tables = ['leads', 'tasks', 'deals'];
-    
-    for (final tableName in tables) {
-      try {
-        // final config = await getFieldPositions(tableName: tableName);
-        // await cacheFieldConfiguration(tableName: tableName, configuration: config);
-        
-        if (kDebugMode) {
-          debugPrint('ApiService: Successfully cached configuration for $tableName');
-        }
-      } catch (e) {
-        if (kDebugMode) {
-          debugPrint('ApiService: Error loading configuration for $tableName: $e');
+  Future<void> loadAndCacheAllFieldConfigurations() async {
+    try {
+      if (kDebugMode) {
+        debugPrint('ApiService: Loading all field configurations');
+      }
+
+      final tables = ['leads', 'tasks', 'deals', 'orders'];
+
+      for (final tableName in tables) {
+        try {
+          final config = await getFieldPositions(tableName: tableName);
+          // not used as this method is not used
+          await cacheFieldConfiguration(
+              tableName: tableName, configuration: config);
+
+          if (kDebugMode) {
+            debugPrint(
+                'ApiService: Successfully cached configuration for $tableName');
+          }
+        } catch (e) {
+          if (kDebugMode) {
+            debugPrint(
+                'ApiService: Error loading configuration for $tableName: $e');
+          }
         }
       }
-    }
-    
-    if (kDebugMode) {
-      debugPrint('ApiService: Finished loading all field configurations');
-    }
-  } catch (e) {
-    if (kDebugMode) {
-      debugPrint('ApiService: Error in loadAndCacheAllFieldConfigurations: $e');
+
+      if (kDebugMode) {
+        debugPrint('ApiService: Finished loading all field configurations');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint(
+            'ApiService: Error in loadAndCacheAllFieldConfigurations: $e');
+      }
     }
   }
-}
 
+  // not used
 // Метод для очистки кэша конфигураций (при смене организации)
-Future<void> clearFieldConfigurationCache() async {
-  try {
-    final prefs = await SharedPreferences.getInstance();
-    final organizationId = await getSelectedOrganization();
-    
-    final tables = ['leads', 'tasks', 'deals'];
-    
-    for (final tableName in tables) {
-      final cacheKey = 'field_config_${tableName}_org_${organizationId}';
+  Future<void> clearFieldConfigurationCache() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final organizationId = await getSelectedOrganization();
+
+      final tables = ['leads', 'tasks', 'deals', 'orders'];
+
+      for (final tableName in tables) {
+        final cacheKey = 'field_config_${tableName}_org_${organizationId}';
+        await prefs.remove(cacheKey);
+        await prefs.remove('${cacheKey}_timestamp');
+      }
+
+      if (kDebugMode) {
+        debugPrint('ApiService: Cleared all field configuration cache');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('ApiService: Error clearing field configuration cache: $e');
+      }
+    }
+  }
+
+  // not used
+// Метод для очистки кэша конфигурации конкретной таблицы
+  Future<void> clearFieldConfigurationCacheForTable(String tableName) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final organizationId = await getSelectedOrganization();
+
+      final cacheKey = 'field_config_${tableName}_org_$organizationId';
       await prefs.remove(cacheKey);
       await prefs.remove('${cacheKey}_timestamp');
-    }
-    
-    if (kDebugMode) {
-      debugPrint('ApiService: Cleared all field configuration cache');
-    }
-  } catch (e) {
-    if (kDebugMode) {
-      debugPrint('ApiService: Error clearing field configuration cache: $e');
+
+      if (kDebugMode) {
+        debugPrint(
+            'ApiService: Cleared field configuration cache for $tableName');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint(
+            'ApiService: Error clearing field configuration cache for $tableName: $e');
+      }
     }
   }
-}
-
-// Метод для очистки кэша конфигурации конкретной таблицы
-Future<void> clearFieldConfigurationCacheForTable(String tableName) async {
-  try {
-    final prefs = await SharedPreferences.getInstance();
-    final organizationId = await getSelectedOrganization();
-
-    final cacheKey = 'field_config_${tableName}_org_$organizationId';
-    await prefs.remove(cacheKey);
-    await prefs.remove('${cacheKey}_timestamp');
-
-    if (kDebugMode) {
-      debugPrint('ApiService: Cleared field configuration cache for $tableName');
-    }
-  } catch (e) {
-    if (kDebugMode) {
-      debugPrint('ApiService: Error clearing field configuration cache for $tableName: $e');
-    }
-  }
-}
 
 // Метод для обновления позиций полей
   Future<Map<String, dynamic>> updateFieldPositions({
@@ -16456,8 +20203,18 @@ Future<void> clearFieldConfigurationCacheForTable(String tableName) async {
       final organizationId = await getSelectedOrganization();
       final salesFunnelId = await getSelectedSalesFunnel();
 
+      final normalizedUpdates = updates.map((update) {
+        if (update.containsKey('show_on_site')) {
+          return {
+            ...update,
+            'show_to_site': update['show_on_site'],
+          }..remove('show_on_site');
+        }
+        return update;
+      }).toList();
+
       final body = {
-        'updates': updates,
+        'updates': normalizedUpdates,
         'organization_id': organizationId,
         'sales_funnel_id': salesFunnelId,
       };
@@ -16473,7 +20230,8 @@ Future<void> clearFieldConfigurationCacheForTable(String tableName) async {
           'message': 'Field positions updated successfully',
         };
       } else {
-        throw Exception('Ошибка обновления позиций полей: ${response.statusCode}');
+        throw Exception(
+            'Ошибка обновления позиций полей: ${response.statusCode}');
       }
     } catch (e) {
       if (kDebugMode) {
@@ -16489,7 +20247,11 @@ Future<void> clearFieldConfigurationCacheForTable(String tableName) async {
     required String fieldType,
   }) async {
     final path = await _appendQueryParams('/field-position');
-    final body = {"table": tableName, "field_name": fieldName, "type": fieldType};
+    final body = {
+      "table": tableName,
+      "field_name": fieldName,
+      "type": fieldType
+    };
 
     try {
       final response = await _postRequest(path, body);
@@ -16508,16 +20270,193 @@ Future<void> clearFieldConfigurationCacheForTable(String tableName) async {
     }
   }
 
+  // GET lead custom fields
+  // lead/get/custom-fields?organization_id=1&sales_funnel_id=1
+  // response.result is list of strings
+  Future<List<String>> getLeadCustomFields() async {
+    final path = await _appendQueryParams('/lead/get/custom-fields');
+
+    if (kDebugMode) {
+      debugPrint('ApiService: getLeadCustomFields - Generated path: $path');
+    }
+
+    final response = await _getRequest(path);
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      final resultList = data['result'] as List?;
+      if (resultList == null) {
+        return [];
+      }
+      return resultList.map((field) => field.toString()).toList();
+    } else {
+      final message = _extractErrorMessageFromResponse(response);
+      throw ApiException(
+        message ?? 'Ошибка загрузки пользовательских полей лидов',
+        response.statusCode,
+      );
+    }
+  }
+
+  // GET custom field values by key (we get key from getLeadCustomFields)
+  // lead/get/custom-field-values?key=aa&organization_id=1&sales_funnel_id=1
+  // response.result is list of strings
+  Future<List<String>> getLeadCustomFieldValues(String key) async {
+    final path =
+        await _appendQueryParams('/lead/get/custom-field-values?key=$key');
+    if (kDebugMode) {
+      debugPrint(
+          'ApiService: getLeadCustomFieldValues - Generated path: $path');
+    }
+    final response = await _getRequest(path);
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      final resultList = data['result'] as List?;
+      if (resultList == null) {
+        return [];
+      }
+      return resultList.map((value) => value.toString()).toList();
+    } else {
+      final message = _extractErrorMessageFromResponse(response);
+      throw ApiException(
+        message ?? 'Ошибка загрузки значений пользовательского поля лидов',
+        response.statusCode,
+      );
+    }
+  }
+
+  // GET deal custom fields
+  // lead/get/custom-fields?organization_id=1&sales_funnel_id=1
+  // response.result is list of strings
+  Future<List<String>> getDealCustomFields() async {
+    final path = await _appendQueryParams('/deal/get/custom-fields');
+
+    if (kDebugMode) {
+      debugPrint('ApiService: getLeadCustomFields - Generated path: $path');
+    }
+
+    final response = await _getRequest(path);
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      final resultList = data['result'] as List?;
+      if (resultList == null) {
+        return [];
+      }
+      return resultList.map((field) => field.toString()).toList();
+    } else {
+      final message = _extractErrorMessageFromResponse(response);
+      throw ApiException(
+        message ?? 'Ошибка загрузки пользовательских полей лидов',
+        response.statusCode,
+      );
+    }
+  }
+
+  // GET custom field values by key (we get key from getLeadCustomFields)
+  // lead/get/custom-field-values?key=aa&organization_id=1&sales_funnel_id=1
+  // response.result is list of strings
+  Future<List<String>> getDealCustomFieldValues(String key) async {
+    final path =
+        await _appendQueryParams('/deal/get/custom-field-values?key=$key');
+    if (kDebugMode) {
+      debugPrint(
+          'ApiService: getLeadCustomFieldValues - Generated path: $path');
+    }
+    final response = await _getRequest(path);
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      final resultList = data['result'] as List?;
+      if (resultList == null) {
+        return [];
+      }
+      return resultList.map((value) => value.toString()).toList();
+    } else {
+      final message = _extractErrorMessageFromResponse(response);
+      throw ApiException(
+        message ?? 'Ошибка загрузки значений пользовательского поля лидов',
+        response.statusCode,
+      );
+    }
+  }
+  //  ================================= TASK CUSTOM FIELDS ================================
+
+  Future<List<String>> getTaskCustomFields() async {
+    final path = await _appendQueryParams('/field-position?table=tasks');
+
+    if (kDebugMode) {
+      debugPrint('ApiService: getTaskCustomFields - Generated path: $path');
+    }
+
+    final response = await _getRequest(path);
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      final resultList = data['result'] as List<dynamic>?;
+      final ls = resultList
+              ?.where((e) => e['is_custom_field'] == true)
+              .map((e) => e['field_name'] as String)
+              .toList() ??
+          <String>[];
+
+      if (kDebugMode) {
+        debugPrint(
+            'ApiService: getTaskCustomFields - Response status: ${response.statusCode}');
+        debugPrint('ApiService: getTaskCustomFields - Response ls: $ls');
+      }
+
+      return ls;
+    } else {
+      final message = _extractErrorMessageFromResponse(response);
+      throw ApiException(
+        message ?? 'Ошибка загрузки пользовательских полей задач',
+        response.statusCode,
+      );
+    }
+  }
+
+  // GET custom field values by key (we get key from getLeadCustomFields)
+  // lead/get/custom-field-values?key=aa&organization_id=1&sales_funnel_id=1
+  // response.result is list of strings
+  Future<List<String>> getTaskCustomFieldValues(String key) async {
+    final path =
+        await _appendQueryParams('/task/get/custom-field-values?key=$key');
+    if (kDebugMode) {
+      debugPrint(
+          'ApiService: getTaskCustomFieldValues - Generated path: $path');
+    }
+    final response = await _getRequest(path);
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      final resultList = data['result'] as List?;
+      if (resultList == null) {
+        return [];
+      }
+      return resultList.map((value) => value.toString()).toList();
+    } else {
+      final message = _extractErrorMessageFromResponse(response);
+      throw ApiException(
+        message ?? 'Ошибка загрузки значений пользовательского поля задач',
+        response.statusCode,
+      );
+    }
+  }
+
 // _______________________________END SECTION FOR FIELD CONFIGURATION _______________________________
 
 // _______________________________START SECTION FOR OPENINGS (Первоначальный остаток) _______________________________
 
   //==================== OPENING GOOD SECTION ================
   /// Получить первоначальные остатки по товарам
-  Future<GoodsOpeningsResponse> getGoodsOpenings() async {
+  Future<GoodsOpeningsResponse> getGoodsOpenings({String? search}) async {
     String path = await _appendQueryParams('/good-initial-balance');
 
     path += '&is_service=0';
+
+    // Добавляем параметр search, если он передан
+    if (search != null && search.trim().isNotEmpty) {
+      path += '&search=${Uri.encodeComponent(search.trim())}';
+    }
 
     if (kDebugMode) {
       debugPrint('ApiService: getGoodsOpenings - path: $path');
@@ -16543,7 +20482,8 @@ Future<void> clearFieldConfigurationCacheForTable(String tableName) async {
     int perPage = 15,
   }) async {
     try {
-      String path = await _appendQueryParams('/good/get/variant?page=$page&per_page=$perPage');
+      String path = await _appendQueryParams(
+          '/good/get/variant?page=$page&per_page=$perPage');
 
       path += '&is_service=0';
 
@@ -16574,7 +20514,8 @@ Future<void> clearFieldConfigurationCacheForTable(String tableName) async {
         return {'result': 'Success'};
       } else {
         final message = _extractErrorMessageFromResponse(response);
-        throw ApiException(message ?? "Ошибка удаления остатка товара", response.statusCode);
+        throw ApiException(
+            message ?? "Ошибка удаления остатка товара", response.statusCode);
       }
     } catch (e) {
       rethrow;
@@ -16673,8 +20614,13 @@ Future<void> clearFieldConfigurationCacheForTable(String tableName) async {
   //========= OPENING CLIENT SECTION ==========
 
   /// Получить первоначальные остатки по клиентам
-  Future<ClientOpeningsResponse> getClientOpenings() async {
+  Future<ClientOpeningsResponse> getClientOpenings({String? search}) async {
     String path = await _appendQueryParams('/initial-balance/lead');
+
+    // Добавляем параметр search, если он передан
+    if (search != null && search.trim().isNotEmpty) {
+      path += '&search=${Uri.encodeComponent(search.trim())}';
+    }
 
     if (kDebugMode) {
       debugPrint('ApiService: getClientOpenings - path: $path');
@@ -16694,11 +20640,14 @@ Future<void> clearFieldConfigurationCacheForTable(String tableName) async {
     }
   }
 
-
   /// Получить список клиентов/лидов для диалога выбора
-  Future<List<opening_lead.Lead>> getClientOpeningsForDialog() async {
+  Future<List<opening_lead.Lead>> getClientOpeningsForDialog(
+      {String? search}) async {
     try {
       String path = await _appendQueryParams('/initial-balance/get/leads');
+      if (search != null && search.trim().isNotEmpty) {
+        path += '&search=${Uri.encodeComponent(search.trim())}';
+      }
       final response = await _getRequest(path);
 
       if (response.statusCode == 200) {
@@ -16707,7 +20656,10 @@ Future<void> clearFieldConfigurationCacheForTable(String tableName) async {
         // Проверяем, является ли ответ массивом (API возвращает массив напрямую)
         if (data is List) {
           // Преобразуем массив в ожидаемую структуру
-          return data.map<opening_lead.Lead>((item) => opening_lead.Lead.fromJson(item)).toList();
+          return data
+              .map<opening_lead.Lead>(
+                  (item) => opening_lead.Lead.fromJson(item))
+              .toList();
         } else {
           return [];
         }
@@ -16733,7 +20685,8 @@ Future<void> clearFieldConfigurationCacheForTable(String tableName) async {
         return {'result': 'Success'};
       } else {
         final message = _extractErrorMessageFromResponse(response);
-        throw ApiException(message ?? "Ошибка удаления остатка клиента", response.statusCode);
+        throw ApiException(
+            message ?? "Ошибка удаления остатка клиента", response.statusCode);
       }
     } catch (e) {
       rethrow;
@@ -16750,7 +20703,7 @@ Future<void> clearFieldConfigurationCacheForTable(String tableName) async {
       String path = await _appendQueryParams('/initial-balance');
 
       final body = {
-        'data' : [
+        'data': [
           {
             "type": "lead",
             "counterparty_id": leadId,
@@ -16780,7 +20733,6 @@ Future<void> clearFieldConfigurationCacheForTable(String tableName) async {
       rethrow;
     }
   }
-
 
   /// Создать первоначальный остаток клиента
   Future<Map<String, dynamic>> updateClientOpening({
@@ -16823,8 +20775,13 @@ Future<void> clearFieldConfigurationCacheForTable(String tableName) async {
   //========= OPENING SUPPLIER SECTION ==========
 
   /// Получить первоначальные остатки по поставщикам
-  Future<SupplierOpeningsResponse> getSupplierOpenings() async {
+  Future<SupplierOpeningsResponse> getSupplierOpenings({String? search}) async {
     String path = await _appendQueryParams('/initial-balance/supplier');
+
+    // Добавляем параметр search, если он передан
+    if (search != null && search.trim().isNotEmpty) {
+      path += '&search=${Uri.encodeComponent(search.trim())}';
+    }
 
     if (kDebugMode) {
       debugPrint('ApiService: getSupplierOpenings - path: $path');
@@ -16854,7 +20811,7 @@ Future<void> clearFieldConfigurationCacheForTable(String tableName) async {
       String path = await _appendQueryParams('/initial-balance');
 
       final body = {
-        'data' : [
+        'data': [
           {
             "type": "supplier",
             "counterparty_id": supplierId,
@@ -16933,7 +20890,8 @@ Future<void> clearFieldConfigurationCacheForTable(String tableName) async {
         return {'result': 'Success'};
       } else {
         final message = _extractErrorMessageFromResponse(response);
-        throw ApiException(message ?? "Ошибка удаления остатка поставщика", response.statusCode);
+        throw ApiException(message ?? "Ошибка удаления остатка поставщика",
+            response.statusCode);
       }
     } catch (e) {
       rethrow;
@@ -16941,9 +20899,13 @@ Future<void> clearFieldConfigurationCacheForTable(String tableName) async {
   }
 
   /// Получить список поставщиков для диалога выбора
-  Future<opening_supplier.SuppliersForOpeningsResponse> getOpeningsSuppliers() async {
+  Future<opening_supplier.SuppliersForOpeningsResponse> getOpeningsSuppliers(
+      {String? search}) async {
     try {
       String path = await _appendQueryParams('/initial-balance/get/suppliers');
+      if (search != null && search.trim().isNotEmpty) {
+        path += '&search=${Uri.encodeComponent(search.trim())}';
+      }
       final response = await _getRequest(path);
 
       if (response.statusCode == 200) {
@@ -16972,34 +20934,106 @@ Future<void> clearFieldConfigurationCacheForTable(String tableName) async {
     }
   }
 
-
   // ========== OPENING Cash Register =========
   /// Получить первоначальные остатки по кассам/складам
-  Future<openings.CashRegisterOpeningsResponse> getCashRegisterOpenings() async {
+  Future<openings.CashRegisterOpeningsResponse> getCashRegisterOpenings(
+      {String? search}) async {
     String path = await _appendQueryParams('/cash-register-initial-balance');
 
-    if (kDebugMode) {
-      debugPrint('ApiService: getCashRegisterOpenings - path: $path');
+    // Добавляем параметр search, если он передан
+    if (search != null && search.trim().isNotEmpty) {
+      path += '&search=${Uri.encodeComponent(search.trim())}';
     }
 
-    final response = await _getRequest(path);
+    if (kDebugMode) {
+      debugPrint('🔵 ApiService: getCashRegisterOpenings - path: $path');
+    }
 
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      return openings.CashRegisterOpeningsResponse.fromJson(data);
-    } else {
-      final message = _extractErrorMessageFromResponse(response);
-      throw ApiException(
-        message ?? 'Ошибка получения первоначальных остатков по кассам/складам',
-        response.statusCode,
-      );
+    try {
+      final response = await _getRequest(path);
+
+      if (kDebugMode) {
+        debugPrint(
+            '🔵 ApiService: getCashRegisterOpenings - statusCode: ${response.statusCode}');
+        debugPrint(
+            '🔵 ApiService: getCashRegisterOpenings - body length: ${response.body.length}');
+      }
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+
+        if (kDebugMode) {
+          debugPrint(
+              '🔵 ApiService: getCashRegisterOpenings - JSON decoded successfully');
+          debugPrint(
+              '🔵 ApiService: getCashRegisterOpenings - JSON keys: ${data is Map ? (data as Map).keys.toList() : "not a map"}');
+          if (data is Map && data["result"] != null) {
+            final result = data["result"];
+            debugPrint(
+                '🔵 ApiService: getCashRegisterOpenings - result type: ${result.runtimeType}');
+            if (result is Map) {
+              debugPrint(
+                  '🔵 ApiService: getCashRegisterOpenings - result keys: ${result.keys.toList()}');
+              if (result["data"] != null) {
+                debugPrint(
+                    '🔵 ApiService: getCashRegisterOpenings - data type: ${result["data"].runtimeType}');
+                if (result["data"] is List) {
+                  debugPrint(
+                      '🔵 ApiService: getCashRegisterOpenings - data length: ${(result["data"] as List).length}');
+                  if ((result["data"] as List).isNotEmpty) {
+                    debugPrint(
+                        '🔵 ApiService: getCashRegisterOpenings - first item keys: ${(result["data"] as List)[0] is Map ? ((result["data"] as List)[0] as Map).keys.toList() : "not a map"}');
+                  }
+                }
+              }
+            } else if (result is List) {
+              debugPrint(
+                  '🔵 ApiService: getCashRegisterOpenings - result is List, length: ${result.length}');
+            }
+          }
+        }
+
+        final parsedResponse =
+            openings.CashRegisterOpeningsResponse.fromJson(data);
+
+        if (kDebugMode) {
+          debugPrint(
+              '🔵 ApiService: getCashRegisterOpenings - parsed successfully');
+          debugPrint(
+              '🔵 ApiService: getCashRegisterOpenings - result count: ${parsedResponse.result?.length ?? 0}');
+        }
+
+        return parsedResponse;
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        if (kDebugMode) {
+          debugPrint(
+              '🔴 ApiService: getCashRegisterOpenings - error status: ${response.statusCode}, message: $message');
+        }
+        throw ApiException(
+          message ??
+              'Ошибка получения первоначальных остатков по кассам/складам',
+          response.statusCode,
+        );
+      }
+    } catch (e, stackTrace) {
+      if (kDebugMode) {
+        debugPrint('🔴 ApiService: getCashRegisterOpenings - EXCEPTION: $e');
+        debugPrint(
+            '🔴 ApiService: getCashRegisterOpenings - STACK: $stackTrace');
+      }
+      rethrow;
     }
   }
 
   /// Получить список касс для выбора при создании остатка кассы
-  Future<List<openings.CashRegister>> getCashRegisters() async {
+  Future<List<openings.CashRegister>> getCashRegisters({String? search}) async {
     try {
-      String path = await _appendQueryParams('/initial-balance/get/cash-registers');
+      String path =
+          await _appendQueryParams('/initial-balance/get/cash-registers');
+      if (search != null && search.trim().isNotEmpty) {
+        path += '&search=${Uri.encodeComponent(search.trim())}';
+      }
 
       if (kDebugMode) {
         debugPrint('ApiService: getCashRegisters - path: $path');
@@ -17011,7 +21045,9 @@ Future<void> clearFieldConfigurationCacheForTable(String tableName) async {
         final data = json.decode(response.body);
 
         if (data is List) {
-          return data.map((json) => openings.CashRegister.fromJson(json)).toList();
+          return data
+              .map((json) => openings.CashRegister.fromJson(json))
+              .toList();
         } else {
           throw Exception('Неожиданный формат ответа API');
         }
@@ -17038,13 +21074,18 @@ Future<void> clearFieldConfigurationCacheForTable(String tableName) async {
     try {
       String path = await _appendQueryParams('/cash-register-initial-balance');
 
-      final body = {'data': [{
-        'cash_register_id': cashRegisterId,
-        'sum': sum,
-      }]};
+      final body = {
+        'data': [
+          {
+            'cash_register_id': cashRegisterId,
+            'sum': sum,
+          }
+        ]
+      };
 
       if (kDebugMode) {
-        debugPrint('ApiService: createCashRegisterOpening - path: $path, body: $body');
+        debugPrint(
+            'ApiService: createCashRegisterOpening - path: $path, body: $body');
       }
 
       final response = await _postRequest(path, body);
@@ -17073,7 +21114,8 @@ Future<void> clearFieldConfigurationCacheForTable(String tableName) async {
     required String sum,
   }) async {
     try {
-      String path = await _appendQueryParams('/cash-register-initial-balance/$id');
+      String path =
+          await _appendQueryParams('/cash-register-initial-balance/$id');
 
       final body = {
         'cash_register_id': cashRegisterId,
@@ -17081,7 +21123,8 @@ Future<void> clearFieldConfigurationCacheForTable(String tableName) async {
       };
 
       if (kDebugMode) {
-        debugPrint('ApiService: createCashRegisterOpening - path: $path, body: $body');
+        debugPrint(
+            'ApiService: createCashRegisterOpening - path: $path, body: $body');
       }
 
       final response = await _patchRequest(path, body);
@@ -17107,14 +21150,16 @@ Future<void> clearFieldConfigurationCacheForTable(String tableName) async {
   /// Удалить первоначальный остаток кассы
   Future<Map<String, dynamic>> deleteCashRegisterOpening(int id) async {
     try {
-      String path = await _appendQueryParams('/cash-register-initial-balance/$id');
+      String path =
+          await _appendQueryParams('/cash-register-initial-balance/$id');
       final response = await _deleteRequest(path);
 
       if (response.statusCode == 200 || response.statusCode == 204) {
         return {'result': 'Success'};
       } else {
         final message = _extractErrorMessageFromResponse(response);
-        throw ApiException(message ?? "Ошибка удаления остатка кассы", response.statusCode);
+        throw ApiException(
+            message ?? "Ошибка удаления остатка кассы", response.statusCode);
       }
     } catch (e) {
       rethrow;
@@ -17130,7 +21175,7 @@ Future<void> clearFieldConfigurationCacheForTable(String tableName) async {
   }) async {
     String path = '/good/get/variant?page=$page&per_page=$perPage';
     if (search != null && search.isNotEmpty) {
-      path += '&search=$search';
+      path += '&search=${Uri.encodeComponent(search)}';
     }
 
     path += '&is_service=0';
@@ -17138,32 +21183,145 @@ Future<void> clearFieldConfigurationCacheForTable(String tableName) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     path = await _appendQueryParams(path);
     if (kDebugMode) {
-      debugPrint('ApiService: getGoodVariantsForDropdown - Generated path: $path');
+      debugPrint(
+          'ApiService: getGoodVariantsForDropdown - Generated path: $path');
     }
 
     final response = await _getRequest(path);
     if (kDebugMode) {
-      debugPrint('ApiService: Ответ сервера: statusCode=${response.statusCode}');
+      debugPrint(
+          'ApiService: Ответ сервера: statusCode=${response.statusCode}');
     }
-    
+
     if (response.statusCode == 200) {
       final Map<String, dynamic> data = json.decode(response.body);
       final variantsResponse = GoodVariantsResponse.fromJson(data);
-      
+
       if (kDebugMode) {
-        debugPrint('ApiService: Успешно получено ${variantsResponse.result?.data?.length ?? 0} вариантов товаров');
+        debugPrint(
+            'ApiService: Успешно получено ${variantsResponse.result?.data?.length ?? 0} вариантов товаров');
         if (variantsResponse.result?.pagination != null) {
-          debugPrint('ApiService: Pagination - current: ${variantsResponse.result!.pagination!.currentPage}, total pages: ${variantsResponse.result!.pagination!.totalPages}');
+          debugPrint(
+              'ApiService: Pagination - current: ${variantsResponse.result!.pagination!.currentPage}, total pages: ${variantsResponse.result!.pagination!.totalPages}');
         }
       }
-      
+
       return variantsResponse;
     } else {
       if (kDebugMode) {
-        debugPrint('ApiService: Ошибка загрузки вариантов товаров: ${response.statusCode}');
+        debugPrint(
+            'ApiService: Ошибка загрузки вариантов товаров: ${response.statusCode}');
       }
-      throw Exception('Ошибка загрузки вариантов товаров: ${response.statusCode}');
+      throw Exception(
+          'Ошибка загрузки вариантов товаров: ${response.statusCode}');
     }
   }
 
+  // ======================================== LOCALIZATION API ========================================
+
+  /// Получить настройки локализации с сервера
+  /// GET /api/localization?organization_id=1&sales_funnel_id=1
+  Future<LocalizationResponse?> getLocalization() async {
+    try {
+      // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+      String path = await _appendQueryParams('/localization');
+
+      if (kDebugMode) {
+        debugPrint('ApiService: getLocalization - Path: $path');
+      }
+
+      final response = await _getRequest(path);
+
+      if (kDebugMode) {
+        debugPrint(
+            'ApiService: getLocalization - Status: ${response.statusCode}');
+        debugPrint('ApiService: getLocalization - Response: ${response.body}');
+      }
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = json.decode(response.body);
+        final localizationResponse = LocalizationResponse.fromJson(data);
+
+        if (kDebugMode) {
+          debugPrint('ApiService: Локализация получена успешно');
+          debugPrint('  - Language: ${localizationResponse.result?.language}');
+          debugPrint(
+              '  - Phone code: ${localizationResponse.result?.countryPhoneCodes}');
+        }
+
+        return localizationResponse;
+      } else {
+        if (kDebugMode) {
+          debugPrint(
+              'ApiService: Ошибка получения локализации: ${response.statusCode}');
+        }
+        return null;
+      }
+    } catch (e, stackTrace) {
+      if (kDebugMode) {
+        debugPrint('ApiService: Исключение при получении локализации: $e');
+        debugPrint('ApiService: StackTrace: $stackTrace');
+      }
+      return null;
+    }
+  }
+
+  /// Изменить язык на сервере
+  /// POST /api/localization/change-language
+  Future<bool> changeLanguage(String language) async {
+    try {
+      final organizationId = await getSelectedOrganization();
+      final salesFunnelId = await getSelectedSalesFunnel();
+
+      final Map<String, dynamic> body = {
+        'language': language,
+        'organization_id':
+            organizationId != null ? int.parse(organizationId) : null,
+        'sales_funnel_id':
+            salesFunnelId != null ? int.parse(salesFunnelId) : null,
+      };
+
+      if (kDebugMode) {
+        debugPrint('ApiService: changeLanguage - Body: $body');
+      }
+
+      final response =
+          await _postRequest('/localization/change-language', body);
+
+      if (kDebugMode) {
+        debugPrint(
+            'ApiService: changeLanguage - Status: ${response.statusCode}');
+        debugPrint('ApiService: changeLanguage - Response: ${response.body}');
+      }
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        if (kDebugMode) {
+          debugPrint('ApiService: Язык успешно изменён на сервере: $language');
+        }
+        return true;
+      } else {
+        if (kDebugMode) {
+          debugPrint(
+              'ApiService: Ошибка изменения языка: ${response.statusCode}');
+        }
+        return false;
+      }
+    } catch (e, stackTrace) {
+      if (kDebugMode) {
+        debugPrint('ApiService: Исключение при изменении языка: $e');
+        debugPrint('ApiService: StackTrace: $stackTrace');
+      }
+      return false;
+    }
+  }
+}
+
+class OrderStatusUpdateException implements Exception {
+  final int statusCode;
+  final String message;
+
+  OrderStatusUpdateException(this.statusCode, this.message);
+
+  @override
+  String toString() => 'OrderStatusUpdateException($statusCode, $message)';
 }

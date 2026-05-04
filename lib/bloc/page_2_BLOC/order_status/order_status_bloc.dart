@@ -1,26 +1,35 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_state.dart';
 import 'package:crm_task_manager/models/page_2/order_card.dart';
+import 'package:crm_task_manager/models/page_2/order_status_model.dart';
+import 'package:crm_task_manager/page_2/order/order_cache.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:http/http.dart' as http;
 
 class OrderBloc extends Bloc<OrderEvent, OrderState> {
- final ApiService apiService;
+  final ApiService apiService;
   Map<int?, List<Order>> allOrders = {};
   Map<int?, bool> allOrdersFetched = {};
+  Map<int, int> _orderCounts = {};
+  bool isFetching = false;
   String? _currentQuery;
   List<String>? _currentManagerIds;
+  List<String>? _currentRegionsIds;
   List<String>? _currentLeadIds;
   DateTime? _currentFromDate;
   DateTime? _currentToDate;
   String? _currentStatus;
   String? _currentPaymentMethod;
+  String? _currentDeliveryType;
+  List<int>? _currentReasonForRefusalIds;
+  Map<String, List<String>>? _currentCustomFieldFilters;
 
   OrderBloc(this.apiService) : super(OrderInitial()) {
     on<FetchOrderStatuses>(_fetchOrderStatuses);
+    on<FetchOrderStatusesWithFilters>(_fetchOrderStatusesWithFilters);
     on<FetchOrders>(_fetchOrders);
     on<FetchMoreOrders>(_fetchMoreOrders);
     on<FetchOrderDetails>(_fetchOrderDetails);
@@ -34,85 +43,310 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
     on<AddMiniAppAddress>(_addMiniAppAddress);
   }
 
-Future<void> _fetchOrderStatuses(FetchOrderStatuses event, Emitter<OrderState> emit) async {
+  bool get _hasActiveFilters {
+    final bool listsOrQuery =
+        (_currentQuery != null && _currentQuery!.isNotEmpty) ||
+            (_currentManagerIds != null && _currentManagerIds!.isNotEmpty) ||
+            (_currentRegionsIds != null && _currentRegionsIds!.isNotEmpty) ||
+            (_currentLeadIds != null && _currentLeadIds!.isNotEmpty);
+
+    final bool flagsOrDates = (_currentFromDate != null) ||
+        (_currentToDate != null) ||
+        (_currentStatus != null && _currentStatus!.isNotEmpty) ||
+        (_currentPaymentMethod != null && _currentPaymentMethod!.isNotEmpty) ||
+        (_currentDeliveryType != null && _currentDeliveryType!.isNotEmpty) ||
+        (_currentReasonForRefusalIds != null &&
+            _currentReasonForRefusalIds!.isNotEmpty) ||
+        (_currentCustomFieldFilters != null &&
+            _currentCustomFieldFilters!.isNotEmpty);
+
+    return listsOrQuery || flagsOrDates;
+  }
+
+  Future<bool> _checkInternetConnection() async {
     try {
-      final statuses = await apiService.getOrderStatuses();
-      if (statuses.isEmpty) {
-        emit(OrderError('Нет статусов заказов!'));
-        return;
-      }
-      if (state is OrderLoaded) {
-        final currentState = state as OrderLoaded;
-        emit(OrderLoaded(
-          statuses,
-          orders: currentState.orders,
-          pagination: currentState.pagination,
-          orderDetails: currentState.orderDetails,
-        ));
+      final result = await InternetAddress.lookup('example.com');
+      return result.isNotEmpty && result[0].rawAddress.isNotEmpty;
+    } on SocketException {
+      return false;
+    }
+  }
+
+  Future<void> _fetchOrderStatuses(
+      FetchOrderStatuses event, Emitter<OrderState> emit) async {
+    emit(OrderLoading());
+
+    try {
+      List<OrderStatus> response;
+
+      // При forceRefresh = true делаем РАДИКАЛЬНУЮ перезагрузку
+      if (event.forceRefresh) {
+        if (!await _checkInternetConnection()) {
+          emit(OrderError('Нет подключения к интернету для обновления данных'));
+          return;
+        }
+
+        // РАДИКАЛЬНАЯ очистка всех локальных данных блока
+        _orderCounts.clear();
+        allOrders.clear();
+        allOrdersFetched.clear();
+        isFetching = false;
+
+        // Сбрасываем все параметры фильтрации
+        _currentQuery = null;
+        _currentManagerIds = null;
+        _currentRegionsIds = null;
+        _currentLeadIds = null;
+        _currentFromDate = null;
+        _currentToDate = null;
+        _currentStatus = null;
+        _currentPaymentMethod = null;
+        _currentDeliveryType = null;
+        _currentReasonForRefusalIds = null;
+        _currentCustomFieldFilters = null;
+
+        // Загружаем статусы с сервера
+        response = await apiService.getOrderStatuses();
+
+        // ПОЛНОСТЬЮ перезаписываем кэш новыми данными
+        await OrderCache.clearEverything();
+        await OrderCache.cacheOrderStatuses(response
+            .map((status) => {
+                  'id': status.id,
+                  'name': status.name,
+                  'orders_count': status.ordersCount,
+                })
+            .toList());
+
+        // Устанавливаем новые счетчики ТОЛЬКО из свежих данных API
+        for (var status in response) {
+          _orderCounts[status.id] = status.ordersCount;
+          await OrderCache.setPersistentOrderCount(
+              status.id, status.ordersCount);
+        }
       } else {
-        emit(OrderLoaded(statuses));
+        // Стандартная логика для обычной загрузки
+        if (!await _checkInternetConnection()) {
+          final cachedStatuses = await OrderCache.getOrderStatuses();
+          if (cachedStatuses.isNotEmpty) {
+            // Восстанавливаем счетчики из кэша
+            _orderCounts.clear();
+            final allPersistentCounts =
+                await OrderCache.getPersistentOrderCounts();
+            for (String statusIdStr in allPersistentCounts.keys) {
+              int statusId = int.parse(statusIdStr);
+              int count = allPersistentCounts[statusIdStr] ?? 0;
+              _orderCounts[statusId] = count;
+            }
+
+            // Создаём минимальные OrderStatus объекты для отображения
+            final List<OrderStatus> minimalStatuses =
+                cachedStatuses.map((status) {
+              final statusId = status['id'] as int;
+              final count = _orderCounts[statusId] ?? 0;
+              return OrderStatus(
+                id: statusId,
+                name: status['name'] as String,
+                createdAt: DateTime.now(),
+                updatedAt: DateTime.now(),
+                isSuccess: false,
+                isFailed: false,
+                canceled: false,
+                color: '#000000',
+                position: 1,
+                ordersCount: count,
+              );
+            }).toList();
+
+            emit(OrderLoaded(minimalStatuses,
+                orderCounts: Map.from(_orderCounts)));
+          } else {
+            emit(OrderError(
+                'Нет подключения к интернету и нет кэшированных данных'));
+          }
+          return;
+        }
+
+        // ВСЕГДА загружаем с API для получения актуальных счётчиков
+        response = await apiService.getOrderStatuses();
+
+        if (response.isEmpty) {
+          debugPrint("OrderBloc: API returned empty statuses array");
+          emit(OrderLoaded([], orderCounts: {}));
+          return;
+        }
+
+        await OrderCache.cacheOrderStatuses(response
+            .map((status) => {
+                  'id': status.id,
+                  'name': status.name,
+                  'orders_count': status.ordersCount,
+                })
+            .toList());
+
+        // Устанавливаем счетчики из свежих данных API
+        _orderCounts.clear();
+        for (var status in response) {
+          _orderCounts[status.id] = status.ordersCount;
+          await OrderCache.setPersistentOrderCount(
+              status.id, status.ordersCount);
+        }
+      }
+
+      emit(OrderLoaded(response, orderCounts: Map.from(_orderCounts)));
+
+      // При обычной загрузке автоматически загружаем заказы для первого статуса
+      if (response.isNotEmpty && !event.forceRefresh && !_hasActiveFilters) {
+        final firstStatusId = response.first.id;
+        add(FetchOrders(statusId: firstStatusId));
       }
     } catch (e) {
-      if (state is! OrderStatusCreated) {
-        emit(OrderError('Не удалось загрузить статусы заказов: ${e.toString()}'));
-      }
+      debugPrint('❌ OrderBloc: _fetchOrderStatuses - Error: $e');
+      emit(OrderError('Не удалось загрузить статусы: $e'));
     }
   }
 
   Future<void> _fetchOrders(FetchOrders event, Emitter<OrderState> emit) async {
-    if (event.page == 1 && !event.forceRefresh) {
-      emit(OrderLoading());
+    if (isFetching) {
+      debugPrint('⚠️ OrderBloc: _fetchOrders - Already fetching, skipping');
+      return;
     }
 
-    _currentQuery = event.query;
-    _currentManagerIds = event.managerIds;
-    _currentLeadIds = event.leadIds;
-    _currentFromDate = event.fromDate;
-    _currentToDate = event.toDate;
-    _currentStatus = event.status;
-    _currentPaymentMethod = event.paymentMethod;
+    isFetching = true;
+
+    debugPrint('🔍 OrderBloc: _fetchOrders - START');
+    debugPrint('🔍 OrderBloc: statusId=${event.statusId}');
 
     try {
-      final statuses = await apiService.getOrderStatuses();
-      final orderResponse = await apiService.getOrders(
-        statusId: event.statusId,
-        page: event.page,
-        perPage: event.perPage,
-        query: event.query,
-        managerIds: event.managerIds,
-        leadIds: event.leadIds,
-        fromDate: event.fromDate,
-        toDate: event.toDate,
-        status: event.status,
-        paymentMethod: event.paymentMethod,
-      );
-
-      if (event.page == 1) {
-        allOrders[event.statusId] = [];
-        allOrdersFetched[event.statusId] = false;
+      if (state is! OrderLoaded || event.page == 1) {
+        emit(OrderLoading());
       }
 
-      final existingOrderIds = (allOrders[event.statusId] ?? []).map((order) => order.id).toSet();
-      final newOrders = orderResponse.data
-          .where((order) => !existingOrderIds.contains(order.id))
-          .toList();
+      // Сохраняем параметры текущего запроса
+      _currentQuery = event.query;
+      _currentManagerIds = event.managerIds;
+      _currentRegionsIds = event.regionsIds;
+      _currentLeadIds = event.leadIds;
+      _currentFromDate = event.fromDate;
+      _currentToDate = event.toDate;
+      _currentStatus = event.status;
+      _currentPaymentMethod = event.paymentMethod;
+      _currentDeliveryType = event.deliveryType;
+      _currentReasonForRefusalIds = event.reasonForRefusalIds;
+      _currentCustomFieldFilters = event.customFieldFilters;
 
-      allOrders[event.statusId] = (allOrders[event.statusId] ?? []) + newOrders;
-      allOrdersFetched[event.statusId] = newOrders.length < event.perPage || newOrders.isEmpty;
+      // КРИТИЧНО: Восстанавливаем ВСЕ постоянные счетчики
+      final allPersistentCounts = await OrderCache.getPersistentOrderCounts();
+      for (String statusIdStr in allPersistentCounts.keys) {
+        int statusId = int.parse(statusIdStr);
+        int count = allPersistentCounts[statusIdStr] ?? 0;
+        _orderCounts[statusId] = count;
+      }
 
-      emit(OrderLoaded(
-        statuses,
-        orders: allOrders[event.statusId] ?? [],
-        pagination: orderResponse.pagination,
-      ));
+      debugPrint('✅ OrderBloc: Restored persistent counts: $_orderCounts');
+
+      List<Order> orders = [];
+
+      // Попытка загрузить из кэша
+      if (event.statusId != null) {
+        orders = await OrderCache.getOrdersForStatus(event.statusId);
+        if (orders.isNotEmpty) {
+          debugPrint(
+              '✅ OrderBloc: _fetchOrders - Emitting ${orders.length} cached orders for status ${event.statusId}');
+
+          final statuses = await apiService.getOrderStatuses();
+          emit(OrderLoaded(
+            statuses,
+            orders: orders,
+            orderCounts: Map.from(_orderCounts),
+          ));
+        }
+      }
+
+      if (await _checkInternetConnection()) {
+        debugPrint('📡 OrderBloc: Internet available, fetching from API');
+
+        final statuses = await apiService.getOrderStatuses();
+        final orderResponse = await apiService.getOrders(
+          statusId: event.statusId,
+          page: event.page,
+          perPage: event.perPage,
+          query: event.query,
+          managerIds: event.managerIds,
+          regionsIds: event.regionsIds,
+          leadIds: event.leadIds,
+          fromDate: event.fromDate,
+          toDate: event.toDate,
+          status: event.status,
+          paymentMethod: event.paymentMethod,
+          deliveryType: event.deliveryType,
+          reasonForRefusalIds: event.reasonForRefusalIds,
+          customFieldFilters: event.customFieldFilters,
+        );
+
+        if (event.page == 1) {
+          allOrders[event.statusId] = [];
+          allOrdersFetched[event.statusId] = false;
+        }
+
+        final existingOrderIds =
+            (allOrders[event.statusId] ?? []).map((order) => order.id).toSet();
+        final newOrders = orderResponse.data
+            .where((order) => !existingOrderIds.contains(order.id))
+            .toList();
+
+        allOrders[event.statusId] =
+            (allOrders[event.statusId] ?? []) + newOrders;
+        allOrdersFetched[event.statusId] =
+            newOrders.length < event.perPage || newOrders.isEmpty;
+
+        debugPrint(
+            '✅ OrderBloc: Fetched ${newOrders.length} orders from API for status ${event.statusId}');
+
+        // КЛЮЧЕВОЙ МОМЕНТ: Берём реальный счётчик из _orderCounts
+        final int? realTotalCount = _orderCounts[event.statusId];
+
+        debugPrint(
+            '🔍 OrderBloc: Real total count for status ${event.statusId}: $realTotalCount');
+
+        // Кэшируем заказы с РЕАЛЬНЫМ общим счётчиком
+        if (event.statusId != null) {
+          await OrderCache.cacheOrdersForStatus(
+            event.statusId,
+            allOrders[event.statusId] ?? [],
+            updatePersistentCount: true,
+            actualTotalCount: realTotalCount,
+          );
+        }
+
+        debugPrint(
+            '✅ OrderBloc: Cached ${(allOrders[event.statusId] ?? []).length} orders for status ${event.statusId}');
+
+        emit(OrderLoaded(
+          statuses,
+          orders: allOrders[event.statusId] ?? [],
+          pagination: orderResponse.pagination,
+          orderCounts: Map.from(_orderCounts),
+        ));
+      } else {
+        debugPrint('❌ OrderBloc: No internet connection');
+      }
+
+      debugPrint(
+          '✅ OrderBloc: _fetchOrders - Final orderCounts: $_orderCounts');
     } catch (e) {
+      debugPrint('❌ OrderBloc: _fetchOrders - Error: $e');
       if (state is! OrderStatusCreated) {
         emit(OrderError('Не удалось загрузить заказы: ${e.toString()}'));
       }
+    } finally {
+      isFetching = false;
+      debugPrint('🏁 OrderBloc: _fetchOrders - FINISHED');
     }
   }
 
-  Future<void> _fetchMoreOrders(FetchMoreOrders event, Emitter<OrderState> emit) async {
+  Future<void> _fetchMoreOrders(
+      FetchMoreOrders event, Emitter<OrderState> emit) async {
     if (allOrdersFetched[event.statusId] == true || state is! OrderLoaded) {
       return;
     }
@@ -124,20 +358,26 @@ Future<void> _fetchOrderStatuses(FetchOrderStatuses event, Emitter<OrderState> e
         perPage: event.perPage,
         query: _currentQuery,
         managerIds: _currentManagerIds,
+        regionsIds: _currentRegionsIds,
         leadIds: _currentLeadIds,
         fromDate: _currentFromDate,
         toDate: _currentToDate,
         status: _currentStatus,
         paymentMethod: _currentPaymentMethod,
+        deliveryType: _currentDeliveryType,
+        reasonForRefusalIds: _currentReasonForRefusalIds,
+        customFieldFilters: _currentCustomFieldFilters,
       );
 
-      final existingOrderIds = (allOrders[event.statusId] ?? []).map((order) => order.id).toSet();
+      final existingOrderIds =
+          (allOrders[event.statusId] ?? []).map((order) => order.id).toSet();
       final newOrders = orderResponse.data
           .where((order) => !existingOrderIds.contains(order.id))
           .toList();
 
       allOrders[event.statusId] = (allOrders[event.statusId] ?? []) + newOrders;
-      allOrdersFetched[event.statusId] = newOrders.length < event.perPage || newOrders.isEmpty;
+      allOrdersFetched[event.statusId] =
+          newOrders.length < event.perPage || newOrders.isEmpty;
 
       final currentState = state as OrderLoaded;
       emit(OrderLoaded(
@@ -147,10 +387,12 @@ Future<void> _fetchOrderStatuses(FetchOrderStatuses event, Emitter<OrderState> e
       ));
     } catch (e) {
       if (state is! OrderStatusCreated) {
-        emit(OrderError('Не удалось загрузить дополнительные заказы: ${e.toString()}'));
+        emit(OrderError(
+            'Не удалось загрузить дополнительные заказы: ${e.toString()}'));
       }
     }
   }
+
   Future<void> _fetchOrderDetails(
       FetchOrderDetails event, Emitter<OrderState> emit) async {
     // //print('OrderBloc: Начало _fetchOrderDetails для orderId=${event.orderId}');
@@ -171,126 +413,151 @@ Future<void> _fetchOrderStatuses(FetchOrderStatuses event, Emitter<OrderState> e
     }
   }
 
-Future<void> _createOrder(CreateOrder event, Emitter<OrderState> emit) async {
-  //print('OrderBloc: Начало _createOrder');
-  emit(OrderLoading());
-  try {
-    final Map<String, dynamic> body = {
-      'phone': event.phone,
-      'lead_id': event.leadId,
-      'deliveryType': event.delivery ? 'delivery' : 'pickup',
-      'goods': event.goods,
-      'organization_id': event.organizationId.toString(),
-      'status_id': event.statusId,
-      'comment_to_courier': event.commentToCourier,
-      'manager_id': event.managerId?.toString(),
-      'integration': null,
-    };
+  Future<void> _createOrder(CreateOrder event, Emitter<OrderState> emit) async {
+    //print('OrderBloc: Начало _createOrder');
+    emit(OrderLoading());
+    try {
+      final Map<String, dynamic> body = {
+        'phone': event.phone,
+        'deliveryType': event.delivery ? 'delivery' : 'pickup',
+        'goods': event.goods,
+        'organization_id': event.organizationId.toString(),
+        'status_id': event.statusId,
+        'comment_to_courier': event.commentToCourier,
+        'manager_id': event.managerId?.toString(),
+        'integration': event.integrationId,
+        'sum': event.sum,
+      };
 
-    if (event.delivery) {
-      body['delivery_address_id'] = event.deliveryAddressId?.toString();
-    } else {
-      body['delivery_address_id'] = null;
+      if (event.delivery) {
+        body['delivery_address_id'] = event.deliveryAddressId?.toString();
+      } else {
+        body['delivery_address_id'] = null;
+      }
+
+      if (event.leadId != null) {
+        body['lead_id'] = event.leadId;
+      }
+      if (event.dealId != null) {
+        body['deal_id'] = event.dealId;
+      }
+
+      // Всегда отправляем branch_id, если он указан
+      if (event.branchId != null) {
+        body['branch_id'] = event.branchId.toString();
+      }
+
+      //print('OrderBloc: Тело запроса для создания заказа: ${jsonEncode(body)}');
+
+      final result = await apiService.createOrder(
+        phone: event.phone,
+        leadId: event.leadId,
+        dealId: event.dealId,
+        delivery: event.delivery,
+        deliveryAddress: event.deliveryAddress,
+        deliveryAddressId: event.deliveryAddressId,
+        goods: event.goods,
+        organizationId: event.organizationId,
+        statusId: event.statusId,
+        branchId: event.branchId,
+        commentToCourier: event.commentToCourier,
+        managerId: event.managerId,
+        integration: event.integrationId,
+        sum: event.sum,
+        customFields: event.customFields,
+        directoryValues: event.directoryValues,
+      );
+      //print('OrderBloc: Результат создания заказа: $result');
+
+      if (result['success']) {
+        final statusId = result['statusId'] ?? event.statusId;
+        //print('OrderBloc: Новый заказ создан, statusId=$statusId');
+
+        // Эмитируем успех без создания объекта Order
+        emit(OrderSuccess(statusId: statusId));
+        //print('OrderBloc: Выдано состояние OrderSuccess');
+      } else {
+        //print('OrderBloc: Ошибка сервера при создании заказа: ${result['error']}');
+        emit(OrderError('Не удалось создать заказ:'));
+      }
+    } catch (e, stackTrace) {
+      //print('OrderBloc: Ошибка при создании заказа: $e');
+      //print('OrderBloc: StackTrace: $stackTrace');
+      emit(OrderError('Ошибка создания заказа'));
     }
-    
-    // Всегда отправляем branch_id, если он указан
-    if (event.branchId != null) {
-      body['branch_id'] = event.branchId.toString();
-    }
-
-    //print('OrderBloc: Тело запроса для создания заказа: ${jsonEncode(body)}');
-
-    final result = await apiService.createOrder(
-      phone: event.phone,
-      leadId: event.leadId,
-      delivery: event.delivery,
-      deliveryAddress: event.deliveryAddress,
-      deliveryAddressId: event.deliveryAddressId,
-      goods: event.goods,
-      organizationId: event.organizationId,
-      statusId: event.statusId,
-      branchId: event.branchId,
-      commentToCourier: event.commentToCourier,
-      managerId: event.managerId,
-      integration: 1,
-    );
-    //print('OrderBloc: Результат создания заказа: $result');
-
-    if (result['success']) {
-      final statusId = result['statusId'] ?? event.statusId;
-      //print('OrderBloc: Новый заказ создан, statusId=$statusId');
-
-      // Эмитируем успех без создания объекта Order
-      emit(OrderSuccess(statusId: statusId));
-      //print('OrderBloc: Выдано состояние OrderSuccess');
-    } else {
-      //print('OrderBloc: Ошибка сервера при создании заказа: ${result['error']}');
-      emit(OrderError('Не удалось создать заказ:'));
-    }
-  } catch (e, stackTrace) {
-    //print('OrderBloc: Ошибка при создании заказа: $e');
-    //print('OrderBloc: StackTrace: $stackTrace');
-    emit(OrderError('Ошибка создания заказа'));
   }
-}
-Future<void> _updateOrder(UpdateOrder event, Emitter<OrderState> emit) async {
-  //print('OrderBloc: Начало _updateOrder для orderId=${event.orderId}');
-  emit(OrderLoading());
-  try {
-    final Map<String, dynamic> body = {
-      'phone': event.phone,
-      'lead_id': event.leadId,
-      'deliveryType': event.delivery ? 'delivery' : 'pickup',
-      'goods': event.goods,
-      'organization_id': event.organizationId.toString(),
-      'comment_to_courier': event.commentToCourier,
-      'manager_id': event.managerId?.toString(),
-    };
 
-    if (event.delivery) {
-      body['delivery_address'] = event.deliveryAddress;
-      body['delivery_address_id'] = event.deliveryAddressId?.toString();
-    } else {
-      body['delivery_address'] = null;
-      body['delivery_address_id'] = null;
+  Future<void> _updateOrder(UpdateOrder event, Emitter<OrderState> emit) async {
+    //print('OrderBloc: Начало _updateOrder для orderId=${event.orderId}');
+    emit(OrderLoading());
+    try {
+      final Map<String, dynamic> body = {
+        'phone': event.phone,
+        'deliveryType': event.delivery ? 'delivery' : 'pickup',
+        'goods': event.goods,
+        'organization_id': event.organizationId.toString(),
+        'comment_to_courier': event.commentToCourier,
+        'manager_id': event.managerId?.toString(),
+        'sum': event.sum,
+      };
+
+      if (event.delivery) {
+        body['delivery_address'] = event.deliveryAddress;
+        body['delivery_address_id'] = event.deliveryAddressId?.toString();
+      } else {
+        body['delivery_address'] = null;
+        body['delivery_address_id'] = null;
+      }
+
+      if (event.leadId != null) {
+        body['lead_id'] = event.leadId;
+      }
+      if (event.dealId != null) {
+        body['deal_id'] = event.dealId;
+      }
+
+      // Всегда отправляем branch_id, если он указан
+      if (event.branchId != null) {
+        body['branch_id'] = event.branchId.toString();
+      }
+
+      //print('OrderBloc: Тело запроса для обновления заказа: ${jsonEncode(body)}');
+
+      final response = await apiService.updateOrder(
+        orderId: event.orderId,
+        phone: event.phone,
+        leadId: event.leadId,
+        dealId: event.dealId,
+        delivery: event.delivery,
+        deliveryAddress: event.deliveryAddress,
+        deliveryAddressId: event.deliveryAddressId,
+        goods: event.goods,
+        organizationId: event.organizationId,
+        branchId: event.branchId,
+        commentToCourier: event.commentToCourier,
+        managerId: event.managerId,
+        integration: event.integrationId,
+        sum: event.sum,
+        customFields: event.customFields,
+        directoryValues: event.directoryValues,
+      );
+      //print('OrderBloc: Ответ сервера на обновление заказа: $response');
+
+      if (response['success']) {
+        //print('OrderBloc: Заказ успешно обновлен');
+        final statusId = response['statusId'] ?? event.statusId;
+        emit(OrderSuccess(statusId: statusId)); // Эмитируем успех с statusId
+      } else {
+        //print('OrderBloc: Ошибка сервера при обновлении заказа: ${response['error']}');
+        emit(OrderError('Не удалось обновить заказ: ${response['error']}'));
+      }
+    } catch (e, stackTrace) {
+      //print('OrderBloc: Ошибка при обновлении заказа: $e');
+      //print('OrderBloc: StackTrace: $stackTrace');
+      emit(OrderError('Ошибка при обновлении заказа: ${e.toString()}'));
     }
-    
-    // Всегда отправляем branch_id, если он указан
-    if (event.branchId != null) {
-      body['branch_id'] = event.branchId.toString();
-    }
-
-    //print('OrderBloc: Тело запроса для обновления заказа: ${jsonEncode(body)}');
-
-    final response = await apiService.updateOrder(
-      orderId: event.orderId,
-      phone: event.phone,
-      leadId: event.leadId,
-      delivery: event.delivery,
-      deliveryAddress: event.deliveryAddress,
-      deliveryAddressId: event.deliveryAddressId,
-      goods: event.goods,
-      organizationId: event.organizationId,
-      branchId: event.branchId,
-      commentToCourier: event.commentToCourier,
-      managerId: event.managerId,
-    );
-    //print('OrderBloc: Ответ сервера на обновление заказа: $response');
-
-    if (response['success']) {
-      //print('OrderBloc: Заказ успешно обновлен');
-      final statusId = response['statusId'] ?? event.statusId;
-      emit(OrderSuccess(statusId: statusId)); // Эмитируем успех с statusId
-    } else {
-      //print('OrderBloc: Ошибка сервера при обновлении заказа: ${response['error']}');
-      emit(OrderError('Не удалось обновить заказ: ${response['error']}'));
-    }
-  } catch (e, stackTrace) {
-    //print('OrderBloc: Ошибка при обновлении заказа: $e');
-    //print('OrderBloc: StackTrace: $stackTrace');
-    emit(OrderError('Ошибка при обновлении заказа: ${e.toString()}'));
   }
-}
+
   Future<void> _deleteOrder(DeleteOrder event, Emitter<OrderState> emit) async {
     //print('OrderBloc: Начало _deleteOrder для orderId=${event.orderId}');
     emit(OrderLoading());
@@ -322,6 +589,8 @@ Future<void> _updateOrder(UpdateOrder event, Emitter<OrderState> emit) async {
         orderId: event.orderId,
         statusId: event.statusId,
         organizationId: event.organizationId,
+        reasonForRefusalId: event.reasonForRefusalId,
+        reasonForRefusal: event.reasonForRefusal,
       );
       // //print('OrderBloc: Результат смены статуса заказа: $success');
       if (success) {
@@ -359,7 +628,11 @@ Future<void> _updateOrder(UpdateOrder event, Emitter<OrderState> emit) async {
       }
     } catch (e) {
       //print('OrderBloc: Ошибка при смене статуса заказа: $e');
-      emit(OrderError('Ошибка смены статуса заказа: $e'));
+      if (e is OrderStatusUpdateException) {
+        emit(OrderError(e.message));
+      } else {
+        emit(OrderError('Ошибка смены статуса заказа: $e'));
+      }
     }
   }
 
@@ -473,81 +746,102 @@ Future<void> _updateOrder(UpdateOrder event, Emitter<OrderState> emit) async {
       emit(OrderError('Ошибка обновления статуса: $e'));
     }
   }
- Future<void> _changeOrderStatus(ChangeOrderStatus event, Emitter<OrderState> emit) async {
-  try {
-    final success = await apiService.changeOrderStatus(
-      orderId: event.orderId,
-      statusId: event.statusId,
-      organizationId: event.organizationId,
-    );
-    if (success) {
-      if (state is OrderLoaded) {
-        final currentState = state as OrderLoaded;
-        final newStatus = currentState.statuses.firstWhere(
-          (status) => status.id == event.statusId,
-          orElse: () => throw Exception('Статус с id ${event.statusId} не найден'),
-        );
 
-        // Создаём новый список заказов, исключая заказ, который сменил статус
-        final updatedOrders = currentState.orders
-            .where((order) => order.id != event.orderId)
-            .toList();
+  Future<void> _changeOrderStatus(
+      ChangeOrderStatus event, Emitter<OrderState> emit) async {
+    try {
+      final success = await apiService.changeOrderStatus(
+        orderId: event.orderId,
+        statusId: event.statusId,
+        organizationId: event.organizationId,
+        reasonForRefusalId: event.reasonForRefusalId,
+        reasonForRefusal: event.reasonForRefusal,
+      );
+      if (success) {
+        if (state is OrderLoaded) {
+          final currentState = state as OrderLoaded;
+          final newStatus = currentState.statuses.firstWhere(
+            (status) => status.id == event.statusId,
+            orElse: () =>
+                throw Exception('Статус с id ${event.statusId} не найден'),
+          );
 
-        // Получаем обновлённый заказ с сервера
-        final updatedOrder = await apiService.getOrderDetails(event.orderId);
+          // Создаём новый список заказов, исключая заказ, который сменил статус
+          final updatedOrders = currentState.orders
+              .where((order) => order.id != event.orderId)
+              .toList();
 
-        // Добавляем обновлённый заказ в список
-        updatedOrders.add(updatedOrder);
+          // Получаем обновлённый заказ с сервера
+          final updatedOrder = await apiService.getOrderDetails(event.orderId);
 
-        emit(OrderLoaded(
-          currentState.statuses, // Сохраняем текущие статусы без обновления
-          orders: updatedOrders,
-          pagination: currentState.pagination,
-          orderDetails: currentState.orderDetails,
-        ));
+          // Добавляем обновлённый заказ в список
+          updatedOrders.add(updatedOrder);
 
-        // Обновляем заказы для текущего статуса
-        add(FetchOrders(
-          statusId: currentState.statuses.firstWhere(
-              (status) => status.id == updatedOrder.orderStatus.id).id,
-          page: 1,
-          perPage: 20,
-          forceRefresh: true,
-          query: _currentQuery,
-          managerIds: _currentManagerIds,
-          leadIds: _currentLeadIds,
-          fromDate: _currentFromDate,
-          toDate: _currentToDate,
-          status: _currentStatus,
-          paymentMethod: _currentPaymentMethod,
-        ));
+          emit(OrderLoaded(
+            currentState.statuses, // Сохраняем текущие статусы без обновления
+            orders: updatedOrders,
+            pagination: currentState.pagination,
+            orderDetails: currentState.orderDetails,
+          ));
 
-        // Если статус изменился, обновляем заказы для старого статуса
-        if (updatedOrder.orderStatus.id != event.statusId) {
+          // Обновляем заказы для текущего статуса
           add(FetchOrders(
-            statusId: event.statusId,
+            statusId: currentState.statuses
+                .firstWhere(
+                    (status) => status.id == updatedOrder.orderStatus.id)
+                .id,
             page: 1,
             perPage: 20,
             forceRefresh: true,
             query: _currentQuery,
             managerIds: _currentManagerIds,
+            regionsIds: _currentRegionsIds,
             leadIds: _currentLeadIds,
             fromDate: _currentFromDate,
             toDate: _currentToDate,
             status: _currentStatus,
             paymentMethod: _currentPaymentMethod,
+            deliveryType: _currentDeliveryType,
+            reasonForRefusalIds: _currentReasonForRefusalIds,
+            customFieldFilters: _currentCustomFieldFilters,
           ));
+
+          // Если статус изменился, обновляем заказы для старого статуса
+          if (updatedOrder.orderStatus.id != event.statusId) {
+            add(FetchOrders(
+              statusId: event.statusId,
+              page: 1,
+              perPage: 20,
+              forceRefresh: true,
+              query: _currentQuery,
+              managerIds: _currentManagerIds,
+              regionsIds: _currentRegionsIds,
+              leadIds: _currentLeadIds,
+              fromDate: _currentFromDate,
+              toDate: _currentToDate,
+              status: _currentStatus,
+              paymentMethod: _currentPaymentMethod,
+              deliveryType: _currentDeliveryType,
+              reasonForRefusalIds: _currentReasonForRefusalIds,
+              customFieldFilters: _currentCustomFieldFilters,
+            ));
+          }
+        } else {
+          emit(OrderSuccess(statusId: event.statusId));
         }
       } else {
-        emit(OrderSuccess(statusId: event.statusId));
+        emit(OrderError(
+            'Не удалось сменить статус заказа: сервер вернул ошибку'));
       }
-    } else {
-      emit(OrderError('Не удалось сменить статус заказа: сервер вернул ошибку'));
+    } catch (e) {
+      if (e is OrderStatusUpdateException) {
+        emit(OrderError(e.message));
+      } else {
+        emit(OrderError('Ошибка смены статуса заказа: $e'));
+      }
     }
-  } catch (e) {
-    emit(OrderError('Ошибка смены статуса заказа: $e'));
   }
-}
+
   Future<void> _deleteOrderStatus(
       DeleteOrderStatus event, Emitter<OrderState> emit) async {
     // //print(
@@ -566,20 +860,244 @@ Future<void> _updateOrder(UpdateOrder event, Emitter<OrderState> emit) async {
     }
   }
 
-  Future<void> _addMiniAppAddress(AddMiniAppAddress event, Emitter<OrderState> emit) async {
+  Future<void> _addMiniAppAddress(
+      AddMiniAppAddress event, Emitter<OrderState> emit) async {
     emit(OrderCreateAddressLoading());
 
     try {
       final response = await apiService.createDeliveryAddress(
         address: event.address,
         leadId: event.leadId,
+        dealId: event.dealId,
       );
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        emit(OrderCreateAddressSuccess());
+        int? createdAddressId;
+        String? createdAddress;
+        try {
+          final decoded = jsonDecode(response.body);
+          final success =
+              decoded is Map<String, dynamic> ? decoded['success'] : null;
+          if (success is Map<String, dynamic>) {
+            createdAddressId = success['id'] as int?;
+            createdAddress = success['address']?.toString();
+          }
+        } catch (_) {}
+        emit(OrderCreateAddressSuccess(
+          addressId: createdAddressId,
+          address: createdAddress ?? event.address,
+        ));
+      } else {
+        emit(OrderCreateAddressError(
+            'Ошибка создания адреса доставки: ${response.statusCode}'));
       }
     } catch (e) {
       emit(OrderCreateAddressError('Ошибка создания адреса доставки: $e'));
+    }
+  }
+
+  // ======================== ФИЛЬТРАЦИЯ СО СТАТУСАМИ ========================
+
+  Future<void> _fetchOrderStatusesWithFilters(
+    FetchOrderStatusesWithFilters event,
+    Emitter<OrderState> emit,
+  ) async {
+    debugPrint('🔍 OrderBloc: _fetchOrderStatusesWithFilters - START');
+
+    emit(OrderLoading());
+
+    try {
+      // 1. Получаем ВСЕ статусы (метод getOrderStatuses не поддерживает фильтры)
+      final statuses = await apiService.getOrderStatuses();
+
+      debugPrint('✅ OrderBloc: Got ${statuses.length} statuses');
+
+      // 2. Обновляем счётчики из полученных статусов
+      _orderCounts.clear();
+      for (var status in statuses) {
+        _orderCounts[status.id] = status.ordersCount;
+        await OrderCache.setPersistentOrderCount(status.id, status.ordersCount);
+      }
+
+      // 3. Кэшируем статусы
+      await OrderCache.cacheOrderStatuses(statuses
+          .map((status) => {
+                'id': status.id,
+                'name': status.name,
+                'orders_count': status.ordersCount,
+              })
+          .toList());
+
+      // 4. Эмитим состояние со статусами
+      emit(OrderLoaded(statuses, orderCounts: Map.from(_orderCounts)));
+
+      // 5. СОХРАНЯЕМ ФИЛЬТРЫ В БЛОКЕ ПЕРЕД ПАРАЛЛЕЛЬНОЙ ЗАГРУЗКОЙ
+      if (statuses.isNotEmpty) {
+        debugPrint(
+            '🚀 OrderBloc: Starting parallel fetch for ${statuses.length} statuses');
+
+        // Сохраняем фильтры для последующих запросов
+        _currentQuery = null;
+        _currentManagerIds = event.managerIds;
+        _currentRegionsIds = event.regionsIds;
+        _currentLeadIds = event.leadIds;
+        _currentFromDate = event.fromDate;
+        _currentToDate = event.toDate;
+        _currentStatus = event.status;
+        _currentPaymentMethod = event.paymentMethod;
+        _currentDeliveryType = event.deliveryType;
+        _currentReasonForRefusalIds = event.reasonForRefusalIds;
+        _currentCustomFieldFilters = event.customFieldFilters;
+
+        debugPrint('✅ OrderBloc: Filters saved to bloc state');
+
+        // Создаём список Future для параллельной загрузки
+        final List<Future<void>> fetchTasks = statuses.map((status) {
+          return _fetchOrdersForStatusWithFilters(
+            status.id,
+            event.managerIds,
+            event.regionsIds,
+            event.leadIds,
+            event.fromDate,
+            event.toDate,
+            event.status,
+            event.paymentMethod,
+            event.deliveryType,
+            event.reasonForRefusalIds,
+            event.customFieldFilters,
+          );
+        }).toList();
+
+        // Запускаем все запросы параллельно
+        await Future.wait(fetchTasks);
+
+        debugPrint('✅ OrderBloc: All parallel fetches completed');
+
+        // После загрузки всех данных эмитим финальное состояние
+        final allOrdersList = <Order>[];
+        for (var status in statuses) {
+          final ordersForStatus =
+              await OrderCache.getOrdersForStatus(status.id);
+          allOrdersList.addAll(ordersForStatus);
+        }
+
+        // Обновляем allOrders
+        for (var status in statuses) {
+          allOrders[status.id] = await OrderCache.getOrdersForStatus(status.id);
+        }
+
+        emit(OrderLoaded(
+          statuses,
+          orders: allOrdersList,
+          orderCounts: Map.from(_orderCounts),
+        ));
+      }
+    } catch (e) {
+      debugPrint('❌ OrderBloc: _fetchOrderStatusesWithFilters - Error: $e');
+      emit(OrderError('Не удалось загрузить статусы с фильтрами: $e'));
+    }
+  }
+
+  // Вспомогательный метод для загрузки заказов одного статуса
+  Future<void> _fetchOrdersForStatusWithFilters(
+    int statusId,
+    List<String>? managerIds,
+    List<String>? regionsIds,
+    List<String>? leadIds,
+    DateTime? fromDate,
+    DateTime? toDate,
+    String? status,
+    String? paymentMethod,
+    String? deliveryType,
+    List<int>? reasonForRefusalIds,
+    Map<String, List<String>>? customFieldFilters,
+  ) async {
+    try {
+      if (!await _checkInternetConnection()) {
+        debugPrint('⚠️ OrderBloc: No internet for status $statusId');
+        return;
+      }
+
+      debugPrint(
+          '🔍 OrderBloc: _fetchOrdersForStatusWithFilters for status $statusId');
+
+      final orderResponse = await apiService.getOrders(
+        statusId: statusId,
+        page: 1,
+        perPage: 20,
+        managerIds: managerIds,
+        regionsIds: regionsIds,
+        leadIds: leadIds,
+        fromDate: fromDate,
+        toDate: toDate,
+        status: status,
+        paymentMethod: paymentMethod,
+        deliveryType: deliveryType,
+        reasonForRefusalIds: reasonForRefusalIds,
+        customFieldFilters: customFieldFilters,
+      );
+
+      debugPrint(
+          '✅ OrderBloc: Fetched ${orderResponse.data.length} orders for status $statusId WITH FILTERS');
+
+      // Кэшируем с сохранением реального счётчика
+      final realCount = _orderCounts[statusId];
+      await OrderCache.cacheOrdersForStatus(
+        statusId,
+        orderResponse.data,
+        updatePersistentCount: true,
+        actualTotalCount: realCount,
+      );
+
+      // Обновляем allOrders для этого статуса
+      allOrders[statusId] = orderResponse.data;
+    } catch (e) {
+      debugPrint('❌ OrderBloc: Error fetching orders for status $statusId: $e');
+    }
+  }
+
+  // ======================== ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ ========================
+
+  /// РАДИКАЛЬНАЯ очистка - удаляет ВСЕ данные и сбрасывает состояние блока
+  Future<void> clearAllCountsAndCache() async {
+    // Очищаем локальные переменные блока
+    _orderCounts.clear();
+    allOrders.clear();
+    allOrdersFetched.clear();
+    isFetching = false;
+
+    // Сбрасываем все текущие параметры фильтрации
+    _currentQuery = null;
+    _currentManagerIds = null;
+    _currentRegionsIds = null;
+    _currentLeadIds = null;
+    _currentFromDate = null;
+    _currentToDate = null;
+    _currentStatus = null;
+    _currentPaymentMethod = null;
+    _currentDeliveryType = null;
+    _currentReasonForRefusalIds = null;
+    _currentCustomFieldFilters = null;
+
+    // Радикальная очистка кэша
+    await OrderCache.clearEverything();
+  }
+
+  /// Дополнительный метод для принудительного сброса всех счетчиков
+  Future<void> resetAllCounters() async {
+    _orderCounts.clear();
+    await OrderCache.clearPersistentCounts();
+  }
+
+  /// Метод для восстановления всех счетчиков из постоянного кэша
+  Future<void> _restoreAllCounts() async {
+    final allPersistentCounts = await OrderCache.getPersistentOrderCounts();
+    _orderCounts.clear();
+
+    for (String statusIdStr in allPersistentCounts.keys) {
+      int statusId = int.parse(statusIdStr);
+      int count = allPersistentCounts[statusIdStr] ?? 0;
+      _orderCounts[statusId] = count;
     }
   }
 }

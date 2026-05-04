@@ -1,4 +1,5 @@
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
+import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/manager_list/manager_bloc.dart';
 import 'package:crm_task_manager/models/manager_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
@@ -21,10 +22,13 @@ class ManagerRadioGroupWidget extends StatefulWidget {
   });
 
   @override
-  State<ManagerRadioGroupWidget> createState() => _ManagerRadioGroupWidgetState();
+  State<ManagerRadioGroupWidget> createState() =>
+      _ManagerRadioGroupWidgetState();
 }
 
 class _ManagerRadioGroupWidgetState extends State<ManagerRadioGroupWidget> {
+  static const int _pageSize = 20;
+  final ApiService _apiService = ApiService();
   List<ManagerData> managersList = [];
   ManagerData? selectedManagerData;
   String? currentUserId;
@@ -63,6 +67,32 @@ class _ManagerRadioGroupWidgetState extends State<ManagerRadioGroupWidget> {
     }
   }
 
+  Future<CustomDropdownPaginatedResponse<ManagerData>> _searchManagers(
+    String query,
+    int page,
+  ) async {
+    final response = await _apiService.getAllManager(
+      search: query,
+      page: page,
+      perPage: _pageSize,
+    );
+    final items = response.result ?? <ManagerData>[];
+
+    return CustomDropdownPaginatedResponse<ManagerData>(
+      items: page == 1
+          ? [
+              ManagerData(
+                id: 0,
+                name: "Система",
+                lastname: "",
+              ),
+              ...items,
+            ]
+          : items,
+      hasMore: items.length >= _pageSize,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -86,13 +116,15 @@ class _ManagerRadioGroupWidgetState extends State<ManagerRadioGroupWidget> {
                       overflow: TextOverflow.ellipsis,
                     ),
                     behavior: SnackBarBehavior.floating,
-                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    margin:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
                     backgroundColor: Colors.red,
                     elevation: 3,
-                    padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                    padding: const EdgeInsets.symmetric(
+                        vertical: 12, horizontal: 16),
                     duration: const Duration(seconds: 3),
                   ),
                 );
@@ -133,10 +165,13 @@ class _ManagerRadioGroupWidgetState extends State<ManagerRadioGroupWidget> {
                   ),
                 ),
                 const SizedBox(height: 4),
-                CustomDropdown<ManagerData>.search(
+                CustomDropdown<ManagerData>.searchRequestPaginated(
+                  paginatedRequest: _searchManagers,
+                  futureRequestDelay: const Duration(milliseconds: 350),
                   closeDropDownOnClearFilterSearch: true,
                   items: managersList,
-                  searchHintText: AppLocalizations.of(context)!.translate('search'),
+                  searchHintText:
+                      AppLocalizations.of(context)!.translate('search'),
                   overlayHeight: 400,
                   enabled: true,
                   decoration: CustomDropdownDecoration(
@@ -155,43 +190,43 @@ class _ManagerRadioGroupWidgetState extends State<ManagerRadioGroupWidget> {
                   ),
                   listItemBuilder: (context, item, isSelected, onItemSelect) {
                     return Text(
-                      '${item.name!} ${item.lastname ?? ''}'.trim(),
+                      '${item.name} ${item.lastname ?? ''}'.trim(),
                       style: const TextStyle(
                         color: Color(0xff1E2E52),
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
                         fontFamily: 'Gilroy',
                       ),
-                         maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     );
                   },
                   headerBuilder: (context, selectedItem, enabled) {
                     if (state is GetAllManagerLoading) {
                       return Text(
-                        AppLocalizations.of(context)!.translate('select_manager'),
+                        AppLocalizations.of(context)!
+                            .translate('select_manager'),
                         style: const TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w500,
                           fontFamily: 'Gilroy',
                           color: Color(0xff1E2E52),
                         ),
-                           maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       );
                     }
                     return Text(
-                      selectedItem != null
-                          ? '${selectedItem.name ?? ''} ${selectedItem.lastname ?? ''}'.trim()
-                          : AppLocalizations.of(context)!.translate('select_manager'),
+                      '${selectedItem.name} ${selectedItem.lastname ?? ''}'
+                          .trim(),
                       style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
                         fontFamily: 'Gilroy',
                         color: Color(0xff1E2E52),
                       ),
-                         maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     );
                   },
                   hintBuilder: (context, hint, enabled) => Text(
@@ -222,10 +257,9 @@ class _ManagerRadioGroupWidgetState extends State<ManagerRadioGroupWidget> {
                     style: const TextStyle(
                       color: Color.fromARGB(255, 241, 50, 36),
                     ),
-                       maxLines: 1,
+                    maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-
                 ],
               ],
             );

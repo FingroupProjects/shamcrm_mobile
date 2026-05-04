@@ -1,5 +1,4 @@
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
-import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/directory_bloc/directory_bloc.dart';
 import 'package:crm_task_manager/bloc/directory_bloc/directory_event.dart';
 import 'package:crm_task_manager/bloc/directory_bloc/directory_state.dart';
@@ -20,7 +19,6 @@ class AddCustomDirectoryDialog extends StatefulWidget {
 
 class _AddCustomDirectoryDialogState extends State<AddCustomDirectoryDialog> {
   Directory? selectedDirectory;
-  final ApiService apiService = ApiService();
 
   @override
   Widget build(BuildContext context) {
@@ -76,16 +74,6 @@ class _AddCustomDirectoryDialogState extends State<AddCustomDirectoryDialog> {
                 onPressed: () async {
                   if (selectedDirectory != null) {
                     widget.onAddDirectory(selectedDirectory!);
-                    try {
-                      final organizationId = await apiService.getSelectedOrganization();
-                      await apiService.linkDirectory(
-                        directoryId: selectedDirectory!.id,
-                        modelType: 'task',
-                        organizationId: organizationId.toString(),
-                      );
-                    } catch (e) {
-                      //print('Ошибка при связывании справочника: $e');
-                    }
                     Navigator.of(context).pop();
                   }
                 },

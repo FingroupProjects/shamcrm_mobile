@@ -1,7 +1,9 @@
 abstract class SupplierOpeningsEvent {}
 
 class LoadSupplierOpenings extends SupplierOpeningsEvent {
-  LoadSupplierOpenings();
+  final String? search;
+  
+  LoadSupplierOpenings({this.search});
 }
 
 class RefreshSupplierOpenings extends SupplierOpeningsEvent {

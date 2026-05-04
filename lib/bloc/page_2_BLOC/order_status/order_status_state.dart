@@ -12,8 +12,15 @@ class OrderLoaded extends OrderState {
   final List<Order> orders;
   final Pagination? pagination;
   final Order? orderDetails;
+  final Map<int, int> orderCounts;
 
-  OrderLoaded(this.statuses, {this.orders = const [], this.pagination, this.orderDetails});
+  OrderLoaded(
+    this.statuses, {
+    this.orders = const [],
+    this.pagination,
+    this.orderDetails,
+    this.orderCounts = const {},
+  });
 }
 
 class OrderError extends OrderState {
@@ -49,8 +56,14 @@ class OrderCreateAddressLoading extends OrderState {}
 
 class OrderCreateAddressSuccess extends OrderState {
   final String message;
+  final int? addressId;
+  final String? address;
 
-  OrderCreateAddressSuccess({this.message = 'Адрес доставки успешно создан'});
+  OrderCreateAddressSuccess({
+    this.message = 'Адрес доставки успешно создан',
+    this.addressId,
+    this.address,
+  });
 }
 
 class OrderCreateAddressError extends OrderState {

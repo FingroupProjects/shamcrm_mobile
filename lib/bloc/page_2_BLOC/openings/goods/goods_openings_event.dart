@@ -1,7 +1,9 @@
 abstract class GoodsOpeningsEvent {}
 
 class LoadGoodsOpenings extends GoodsOpeningsEvent {
-  LoadGoodsOpenings();
+  final String? search;
+  
+  LoadGoodsOpenings({this.search});
 }
 
 class RefreshGoodsOpenings extends GoodsOpeningsEvent {

@@ -33,8 +33,12 @@ class _OnlineStoreScreenState extends State<OnlineStoreScreen> {
     List<StoreSection> sections = [];
     
     try {
+      final permissions = await _apiService.getPermissions();
+      bool hasAnyPermissionWithPrefix(String prefix) =>
+          permissions.any((permission) => permission.startsWith(prefix));
+
       // Категории
-      if (await _apiService.hasPermission('category.read')) {
+      if (permissions.contains('category.read')) {
         sections.add(StoreSection(
           title: 'appbar_categories',
           icon: 'assets/icons/MyNavBar/category_ON.png',
@@ -44,7 +48,7 @@ class _OnlineStoreScreenState extends State<OnlineStoreScreen> {
       }
 
       // Товары
-      if (await _apiService.hasPermission('product.read')) {
+      if (permissions.contains('product.read')) {
         sections.add(StoreSection(
           title: 'appbar_goods',
           icon: 'assets/icons/MyNavBar/goods_ON.png',
@@ -54,7 +58,7 @@ class _OnlineStoreScreenState extends State<OnlineStoreScreen> {
       }
 
       // Заказы
-      if (await _apiService.hasPermission('order.read')) {
+      if (hasAnyPermissionWithPrefix('order.')) {
         sections.add(StoreSection(
           title: 'appbar_orders',
           icon: 'assets/icons/MyNavBar/order_on_2.png',

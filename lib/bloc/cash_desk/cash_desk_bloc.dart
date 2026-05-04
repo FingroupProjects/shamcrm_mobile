@@ -2,6 +2,7 @@
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 
 import '../../api/service/api_service.dart';
 import '../../models/money/cash_register_model.dart';
@@ -31,13 +32,23 @@ class CashDeskBloc extends Bloc<CashDeskEvent, CashDeskState> {
   }
 
   Future<void> _onFetchCashRegisters(FetchCashRegisters event, Emitter<CashDeskState> emit) async {
+    if (kDebugMode) {
+      debugPrint('🟡 CashDeskBloc: _onFetchCashRegisters - начало, query: ${event.query}');
+    }
     emit(state.copyWith(status: CashDeskStatus.initialLoading));
     try {
+      if (kDebugMode) {
+        debugPrint('🟡 CashDeskBloc: вызываю apiService.getCashRegister');
+      }
       final response = await apiService.getCashRegister(
         page: 1,
         perPage: 15,
         query: event.query,
       );
+
+      if (kDebugMode) {
+        debugPrint('🟡 CashDeskBloc: получен response, data count: ${response.data.length}');
+      }
 
       emit(state.copyWith(
         status: CashDeskStatus.initialLoaded,
@@ -47,7 +58,15 @@ class CashDeskBloc extends Bloc<CashDeskEvent, CashDeskState> {
         searchQuery: event.query,
         hasReachedMax: response.pagination.currentPage >= response.pagination.totalPages,
       ));
-    } catch (e) {
+      
+      if (kDebugMode) {
+        debugPrint('🟢 CashDeskBloc: успешно загружено ${response.data.length} касс');
+      }
+    } catch (e, stackTrace) {
+      if (kDebugMode) {
+        debugPrint('🔴 CashDeskBloc: ОШИБКА при загрузке: $e');
+        debugPrint('🔴 CashDeskBloc: STACK TRACE: $stackTrace');
+      }
       emit(state.copyWith(
         status: CashDeskStatus.initialError,
         errorMessage: e.toString(),

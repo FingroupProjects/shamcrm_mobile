@@ -39,7 +39,7 @@ class _AddUserToGroupDialogState extends State<AddUserToGroupDialog> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                '${state.message}',
+                AppLocalizations.of(context)!.translate(state.message),
                 style: TextStyle(
                   fontFamily: 'Gilroy',
                   fontSize: 16,
@@ -65,7 +65,7 @@ class _AddUserToGroupDialogState extends State<AddUserToGroupDialog> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                '${state.message}',
+                AppLocalizations.of(context)!.translate(state.message),
                 style: TextStyle(
                   fontFamily: 'Gilroy',
                   fontSize: 16,

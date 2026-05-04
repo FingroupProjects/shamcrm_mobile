@@ -119,20 +119,6 @@ class StatisticChart1 extends StatelessWidget {
                       showTitles: true,
                       reservedSize: 40, // Увеличено для повернутого текста
                       getTitlesWidget: (value, meta) {
-                        const monthNames = [
-                          'Янв',
-                          'Фев',
-                          'Мар',
-                          'Апр',
-                          'Май',
-                          'Июн',
-                          'Июл',
-                          'Авг',
-                          'Сен',
-                          'Окт',
-                          'Ноя',
-                          'Дек'
-                        ];
                         final index = value.toInt();
                         if (index < 0 || index >= monthNames.length) {
                           return const SizedBox.shrink();

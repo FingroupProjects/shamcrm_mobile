@@ -1,14 +1,14 @@
-
+import 'dart:async';
 import 'dart:convert';
 import 'package:crm_task_manager/api/service/api_service.dart';
-import 'package:crm_task_manager/bloc/deal/deal_bloc.dart';
-import 'package:crm_task_manager/bloc/deal/deal_event.dart';
 import 'package:crm_task_manager/bloc/manager_list/manager_bloc.dart';
 import 'package:crm_task_manager/bloc/region_list/region_bloc.dart';
 import 'package:crm_task_manager/bloc/sales_funnel/sales_funnel_bloc.dart';
 import 'package:crm_task_manager/bloc/sales_funnel/sales_funnel_event.dart';
 import 'package:crm_task_manager/bloc/sales_funnel/sales_funnel_state.dart';
 import 'package:crm_task_manager/bloc/source_list/source_bloc.dart';
+import 'package:crm_task_manager/models/city_model.dart';
+import 'package:crm_task_manager/models/lead_filter_channel_model.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/custom_widget/custom_app_bar.dart';
 import 'package:crm_task_manager/models/lead_model.dart';
@@ -16,8 +16,8 @@ import 'package:crm_task_manager/models/manager_model.dart';
 import 'package:crm_task_manager/models/region_model.dart';
 import 'package:crm_task_manager/models/sales_funnel_model.dart';
 import 'package:crm_task_manager/models/source_list_model.dart';
+import 'package:crm_task_manager/models/advertising_campaign_model.dart';
 import 'package:crm_task_manager/screens/auth/login_screen.dart';
-import 'package:crm_task_manager/screens/deal/deal_cache.dart';
 import 'package:crm_task_manager/screens/lead/lead_cache.dart';
 import 'package:crm_task_manager/screens/lead/lead_status_delete.dart';
 import 'package:crm_task_manager/screens/lead/lead_status_edit.dart';
@@ -26,13 +26,14 @@ import 'package:crm_task_manager/screens/lead/tabBar/lead_column.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_status_add.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/profile/profile_screen.dart';
-import 'package:crm_task_manager/utils/TutorialStyleWidget.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/bloc/lead/lead_bloc.dart';
 import 'package:crm_task_manager/bloc/lead/lead_event.dart';
 import 'package:crm_task_manager/bloc/lead/lead_state.dart';
 import 'package:crm_task_manager/custom_widget/custom_tasks_tabBar.dart';
+import 'package:dart_pusher_channels/dart_pusher_channels.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/contact_list_screen.dart';
@@ -71,7 +72,12 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
   String _lastSearchQuery = "";
   List<ManagerData> _selectedManagers = [];
   List<RegionData> _selectedRegions = [];
+  RegionData? _selectedState;
+  List<CityData> _selectedCities = [];
   List<SourceData> _selectedSources = [];
+  List<LeadFilterChannelData> _selectedChannels = [];
+  List<AdvertisingCampaignData> _selectedAdvertisingCampaigns = [];
+  List<int> _selectedReasonForRefusalIds = [];
   int? _selectedStatuses;
   DateTime? _fromDate;
   DateTime? _toDate;
@@ -86,13 +92,19 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
   bool? _hasDeal = false;
   bool? _hasOrders = false;
   int? _daysWithoutActivity;
+  int? _numberOfDaysDeal;
   List<Map<String, dynamic>> _directoryValues = [];
   List<Map<String, dynamic>> _initialDirectoryValues = [];
   Map<String, List<String>> _selectedCustomFieldFilters = {};
   Map<String, List<String>> _initialCustomFieldFilters = {};
   List<ManagerData> _initialSelectedManagers = [];
   List<RegionData> _initialSelectedRegions = [];
+  RegionData? _initialSelectedState;
+  List<CityData> _initialSelectedCities = [];
   List<SourceData> _initialSelectedSources = [];
+  List<LeadFilterChannelData> _initialSelectedChannels = [];
+  List<AdvertisingCampaignData> _initialSelectedAdvertisingCampaigns = [];
+  List<int> _initialReasonForRefusalIds = [];
   int? _initialSelStatus;
   DateTime? _initialFromDate;
   DateTime? _initialToDate;
@@ -107,6 +119,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
   bool? _initialHasDeal;
   bool? _initialHasOrders;
   int? _initialDaysWithoutActivity;
+  int? _initialNumberOfDaysDeal;
   final GlobalKey keySearchIcon = GlobalKey();
   final GlobalKey keyMenuIcon = GlobalKey();
   final GlobalKey keyFloatingActionButton = GlobalKey();
@@ -116,11 +129,14 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
   Map<String, dynamic>? tutorialProgress;
   SalesFunnel? _selectedFunnel;
   List<int>? _selectedManagerIds;
-  bool _isFilterLoading = false; // НОВЫЙ флаг для отслеживания загрузки после фильтрации
-  bool _shouldShowLoader = false; // НОВЫЙ флаг для принудительного показа лоадера
+  bool _isFilterLoading = false;
+  bool _shouldShowLoader = false;
+  bool _skipNextTabListener = false;
+  PusherChannelsClient? _leadSocketClient;
+  final List<StreamSubscription<dynamic>> _leadSocketSubscriptions = [];
 
-
-  Map<String, List<String>> _cloneCustomFieldFilters(Map<String, List<String>> source) {
+  Map<String, List<String>> _cloneCustomFieldFilters(
+      Map<String, List<String>> source) {
     final result = <String, List<String>>{};
     source.forEach((key, value) {
       result[key] = List<String>.from(value);
@@ -140,15 +156,46 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
     return result;
   }
 
-  bool get _hasActiveCustomFieldFilters => _selectedCustomFieldFilters.values
-      .any((values) => values.isNotEmpty);
+  bool get _hasActiveCustomFieldFilters =>
+      _selectedCustomFieldFilters.values.any((values) => values.isNotEmpty);
 
+  // Метод для проверки наличия активных фильтров
+  bool _hasActiveFilters() {
+    return _selectedManagers.isNotEmpty ||
+        _selectedRegions.isNotEmpty ||
+        _selectedState != null ||
+        _selectedCities.isNotEmpty ||
+        _selectedSources.isNotEmpty ||
+        _selectedChannels.isNotEmpty ||
+        _selectedAdvertisingCampaigns.isNotEmpty ||
+        _selectedReasonForRefusalIds.isNotEmpty ||
+        _selectedStatuses != null ||
+        _fromDate != null ||
+        _toDate != null ||
+        _hasSuccessDeals == true ||
+        _hasInProgressDeals == true ||
+        _hasFailureDeals == true ||
+        _hasNotices == true ||
+        _hasContact == true ||
+        _hasChat == true ||
+        _hasNoReplies == true ||
+        _hasUnreadMessages == true ||
+        _hasDeal == true ||
+        _hasOrders == true ||
+        _daysWithoutActivity != null ||
+        _numberOfDaysDeal != null ||
+        _directoryValues.isNotEmpty ||
+        _hasActiveCustomFieldFilters;
+  }
 
   @override
   void initState() {
     super.initState();
+
+    // ← КРИТИЧНО: Инициализируем пустой TabController
+    _tabController = TabController(length: 0, vsync: this);
+
     _initializeSalesFunnel();
-    //print('LeadScreen: initState started');
     context.read<GetAllManagerBloc>().add(GetAllManagerEv());
     context.read<GetAllRegionBloc>().add(GetAllRegionEv());
     context.read<GetAllSourceBloc>().add(GetAllSourceEv());
@@ -160,15 +207,15 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
     _apiService.getSelectedSalesFunnel().then((funnelId) {
       if (funnelId != null && mounted) {
         context.read<SalesFunnelBloc>().add(SelectSalesFunnel(
-          SalesFunnel(
-            id: int.parse(funnelId),
-            name: '',
-            organizationId: 1,
-            isActive: true,
-            createdAt: '',
-            updatedAt: '',
-          ),
-        ));
+              SalesFunnel(
+                id: int.parse(funnelId),
+                name: '',
+                organizationId: 1,
+                isActive: true,
+                createdAt: '',
+                updatedAt: '',
+              ),
+            ));
       }
     });
 
@@ -177,103 +224,201 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
         setState(() {
           _selectedFunnel = state.selectedFunnel ?? state.funnels.firstOrNull;
         });
-        LeadCache.getLeadStatuses().then((cachedStatuses) {
-          if (cachedStatuses.isNotEmpty && mounted) {
-            setState(() {
-              _tabTitles = cachedStatuses
-                  .map((status) => {'id': status['id'], 'title': status['title']})
-                  .toList();
-              _tabController = TabController(length: _tabTitles.length, vsync: this);
-              _tabController.index = _currentTabIndex;
 
-              _tabController.addListener(() {
-                if (!_tabController.indexIsChanging) {
-                  setState(() {
-                    _currentTabIndex = _tabController.index;
-                    //print('LeadScreen: Tab changed to index: $_currentTabIndex');
-                  });
-                  _scrollToActiveTab();
-                  final currentStatusId = _tabTitles[_currentTabIndex]['id'];
-                  context.read<LeadBloc>().add(FetchLeads(
-                    currentStatusId,
-                    salesFunnelId: _selectedFunnel?.id,
-                    ignoreCache: true,
-                  ));
-                  //print('LeadScreen: FetchLeads dispatched for statusId: $currentStatusId');
-                }
-              });
-
-              final currentStatusId = _tabTitles.isNotEmpty ? _tabTitles[_currentTabIndex]['id'] : 0;
-              context.read<LeadBloc>().add(FetchLeads(
-                currentStatusId,
-                salesFunnelId: _selectedFunnel?.id,
-                ignoreCache: true,
-              ));
-            });
-          } else {
-            context.read<LeadBloc>().add(FetchLeadStatuses());
-          }
-        });
+        // Просто загружаем статусы, listener будет создан в BlocListener
+        context.read<LeadBloc>().add(FetchLeadStatuses());
       }
     });
 
     _checkPermissions();
+    _setupLeadSocket();
   }
+
   Future<void> _initializeSalesFunnel() async {
-  try {
-    final savedFunnelId = await _apiService.getSelectedSalesFunnel();
-    
-    if (savedFunnelId == null || savedFunnelId.isEmpty) {
-      debugPrint('⚠️ No saved funnel, will use first available');
-      // Воронка установится автоматически из SalesFunnelBloc.stream
-      return;
+    try {
+      final savedFunnelId = await _apiService.getSelectedSalesFunnel();
+
+      if (savedFunnelId == null || savedFunnelId.isEmpty) {
+        debugPrint('⚠️ No saved funnel, will use first available');
+        return;
+      }
+
+      context.read<SalesFunnelBloc>().add(FetchSalesFunnels());
+    } catch (e) {
+      debugPrint('❌ _initializeSalesFunnel error: $e');
     }
-    
-    // Загружаем воронки
-    context.read<SalesFunnelBloc>().add(FetchSalesFunnels());
-    
-    debugPrint('✅ Initialized with funnelId: $savedFunnelId');
-  } catch (e) {
-    debugPrint('❌ _initializeSalesFunnel error: $e');
   }
-}
 
   Future<void> _loadFeatureState() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     setState(() {
       _isSwitch = prefs.getBool('switchContact') ?? false;
-      //print('LeadScreen: _loadFeatureState - _isSwitch set to: $_isSwitch');
     });
   }
 
   void _onScroll() {
     // Логика прокрутки табов
   }
-// Заменить метод _onRefresh в LeadScreen на этот:
 
-  Future<void> _onRefresh(int currentStatusId) async {
-    //print('LeadScreen: _onRefresh - RADICAL FULL REFRESH - clearing everything');
+  Future<void> _setupLeadSocket() async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('token');
+    final userId = prefs.getString('unique_id');
+
+    if (token == null || token.isEmpty || userId == null || userId.isEmpty) {
+      debugPrint('LeadScreen: socket init skipped, token or userId is missing');
+      return;
+    }
+
+    final enteredDomainMap = await _apiService.getEnteredDomain();
+    final enteredMainDomain = enteredDomainMap['enteredMainDomain'];
+    final enteredDomain = enteredDomainMap['enteredDomain'];
+
+    if (enteredMainDomain == null ||
+        enteredMainDomain.isEmpty ||
+        enteredDomain == null ||
+        enteredDomain.isEmpty) {
+      debugPrint('LeadScreen: socket init skipped, domain is missing');
+      return;
+    }
+
+    final customOptions = PusherChannelsOptions.custom(
+      uriResolver: (metadata) =>
+          Uri.parse('wss://soketi.$enteredMainDomain/app/app-key'),
+      metadata: PusherChannelsOptionsMetadata.byDefault(),
+    );
+
+    final socketClient = PusherChannelsClient.websocket(
+      options: customOptions,
+      connectionErrorHandler: (exception, trace, refresh) {
+        debugPrint('LeadScreen: socket connection error: $exception');
+        refresh();
+      },
+      minimumReconnectDelayDuration: const Duration(seconds: 1),
+    );
+
+    final presenceChannel = socketClient.presenceChannel(
+      'presence-user.$userId',
+      authorizationDelegate:
+          EndpointAuthorizableChannelTokenAuthorizationDelegate
+              .forPresenceChannel(
+        authorizationEndpoint: Uri.parse(
+          'https://$enteredDomain-back.$enteredMainDomain/broadcasting/auth',
+        ),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'X-Tenant': '$enteredDomain-back',
+        },
+        onAuthFailed: (exception, trace) {
+          debugPrint('LeadScreen: socket auth failed: $exception');
+        },
+      ),
+    );
+
+    _leadSocketSubscriptions.add(
+      socketClient.onConnectionEstablished.listen((_) {
+        presenceChannel.subscribeIfNotUnsubscribed();
+      }),
+    );
+
+    _leadSocketSubscriptions.add(
+      presenceChannel.bind('lead.created').listen((event) async {
+        await _handleLeadCreatedSocketEvent(event.data);
+      }),
+    );
+
+    _leadSocketClient = socketClient;
 
     try {
-      // РАДИКАЛЬНАЯ очистка - удаляем ВСЕ данные связанные с лидами
-      await LeadCache.clearAllData();
-      await LeadCache.clearPersistentCounts(); // Очищаем и постоянные счетчики
-      //print('LeadScreen: _onRefresh - Cleared ALL cache data including persistent counts');
+      await socketClient.connect();
+    } catch (e) {
+      debugPrint('LeadScreen: socket connect failed: $e');
+    }
+  }
 
-      // Полный сброс состояния приложения
+  Future<void> _handleLeadCreatedSocketEvent(dynamic rawData) async {
+    try {
+      final payload = _decodeSocketPayload(rawData);
+      final leadJson = payload['lead'];
+
+      if (leadJson is! Map<String, dynamic>) {
+        debugPrint('LeadScreen: invalid lead.created payload: $rawData');
+        return;
+      }
+
+      final leadStatusId =
+          int.tryParse(leadJson['lead_status_id']?.toString() ?? '') ?? 0;
+      final salesFunnelId =
+          int.tryParse(leadJson['sales_funnel_id']?.toString() ?? '');
+
+      if (leadStatusId == 0) {
+        debugPrint('LeadScreen: lead.created skipped, lead_status_id is empty');
+        return;
+      }
+
+      if (_selectedFunnel != null &&
+          salesFunnelId != null &&
+          salesFunnelId != _selectedFunnel!.id) {
+        return;
+      }
+
+      if (!mounted) return;
+
+      context.read<LeadBloc>().add(
+            LeadCreatedFromSocket(
+              lead: Lead.fromJson(leadJson, leadStatusId),
+              activeStatusId: _tabTitles.isNotEmpty
+                  ? _tabTitles[_currentTabIndex]['id'] as int?
+                  : null,
+              hasActiveFilters: _hasActiveFilters(),
+            ),
+          );
+    } catch (e) {
+      debugPrint('LeadScreen: failed to process lead.created: $e');
+    }
+  }
+
+  Map<String, dynamic> _decodeSocketPayload(dynamic rawData) {
+    dynamic decoded = rawData;
+
+    if (decoded is String) {
+      decoded = json.decode(decoded);
+    }
+
+    if (decoded is Map && decoded['data'] is String) {
+      decoded = json.decode(decoded['data'] as String);
+    }
+
+    if (decoded is Map<String, dynamic>) {
+      return decoded;
+    }
+
+    if (decoded is Map) {
+      return decoded.map(
+        (key, value) => MapEntry(key.toString(), value),
+      );
+    }
+
+    throw const FormatException('Unsupported socket payload');
+  }
+
+  Future<void> _onRefresh(int currentStatusId) async {
+    try {
+      await LeadCache.clearAllData();
+      await LeadCache.clearPersistentCounts();
+
       if (mounted) {
         setState(() {
-          // Сбрасываем ВЕСЬ UI в исходное состояние
           _isSearching = false;
           _lastSearchQuery = '';
           _searchController.clear();
           _showCustomTabBar = true;
           _isSwitchingFunnel = false;
 
-          // Полный сброс всех фильтров
           _selectedManagers.clear();
           _selectedRegions.clear();
           _selectedSources.clear();
+          _selectedAdvertisingCampaigns.clear();
           _selectedStatuses = null;
           _fromDate = null;
           _toDate = null;
@@ -288,9 +433,9 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
           _hasDeal = false;
           _hasOrders = false;
           _daysWithoutActivity = null;
+          _numberOfDaysDeal = null;
           _directoryValues.clear();
 
-          // Сбрасываем и initial значения
           _initialSelectedManagers.clear();
           _initialSelectedRegions.clear();
           _initialSelectedSources.clear();
@@ -308,39 +453,24 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
           _initialHasDeal = null;
           _initialHasOrders = null;
           _initialDaysWithoutActivity = null;
+          _initialNumberOfDaysDeal = null;
           _initialDirectoryValues.clear();
 
-          // Очищаем табы - начинаем с чистого листа
           _tabTitles.clear();
           _tabKeys.clear();
           _currentTabIndex = 0;
 
-          // Создаем пустой контроллер табов
           if (_tabController.length > 0) {
             _tabController.dispose();
           }
           _tabController = TabController(length: 0, vsync: this);
-
-          //print('LeadScreen: _onRefresh - Reset all UI state to initial');
         });
       }
 
-      // Очищаем состояние LeadBloc полностью
       final leadBloc = BlocProvider.of<LeadBloc>(context);
       await leadBloc.clearAllCountsAndCache();
-      //print('LeadScreen: _onRefresh - Cleared LeadBloc state');
-
-      // ПРИНУДИТЕЛЬНАЯ загрузка ВСЕХ данных с сервера
-      // Никаких кэшей, никаких сохраненных данных - все с нуля
       leadBloc.add(FetchLeadStatuses(forceRefresh: true));
-      //print('LeadScreen: _onRefresh - Initiated FORCED reload of all data from server');
-
-      //print('LeadScreen: _onRefresh - RADICAL refresh completed successfully');
-
     } catch (e) {
-      //print('LeadScreen: _onRefresh error: $e');
-
-      // При ошибке показываем пользователю и пытаемся восстановить хотя бы базовое состояние
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -363,7 +493,6 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
           ),
         );
 
-        // Пытаемся восстановить минимальное рабочее состояние
         final leadBloc = BlocProvider.of<LeadBloc>(context);
         leadBloc.add(FetchLeadStatuses(forceRefresh: false));
       }
@@ -389,7 +518,8 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
     try {
       final progress = await _apiService.getTutorialProgress();
       if (mounted) {
-        if (progress is Map<String, dynamic> && progress['result'] is Map<String, dynamic>) {
+        if (progress is Map<String, dynamic> &&
+            progress['result'] is Map<String, dynamic>) {
           setState(() {
             tutorialProgress = progress['result'];
           });
@@ -401,7 +531,8 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
       }
 
       SharedPreferences prefs = await SharedPreferences.getInstance();
-      bool isTutorialShown = prefs.getBool('isTutorialShownLeadSearchIconAppBar') ?? false;
+      bool isTutorialShown =
+          prefs.getBool('isTutorialShownLeadSearchIconAppBar') ?? false;
       if (mounted) {
         setState(() {
           _isTutorialShown = isTutorialShown;
@@ -412,7 +543,6 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
           tutorialProgress!['leads']?['index'] == false &&
           !_isTutorialShown &&
           mounted) {
-        // _initTutorialTargets();
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted) {
             // showTutorial();
@@ -420,113 +550,32 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
         });
       }
     } catch (e) {
-      //print('LeadScreen: Error fetching tutorial progress: $e');
+      debugPrint('LeadScreen: Error fetching tutorial progress: $e');
     }
   }
-
-  // void _initTutorialTargets() {
-  //   targets.clear();
-  //   targets.addAll([
-  //     createTarget(
-  //       identify: "LeadSearchIcon",
-  //       keyTarget: keySearchIcon,
-  //       title: AppLocalizations.of(context)!
-  //           .translate('tutorial_task_screen_search_title'),
-  //       description: AppLocalizations.of(context)!
-  //           .translate('tutorial_lead_screen_search_description'),
-  //       align: ContentAlign.bottom,
-  //       context: context,
-  //       contentPosition: ContentPosition.above,
-  //     ),
-  //     createTarget(
-  //       identify: "LeadMenuIcon",
-  //       keyTarget: keyMenuIcon,
-  //       title: AppLocalizations.of(context)!
-  //           .translate('tutorial_task_screen_menu_title'),
-  //       description: AppLocalizations.of(context)!
-  //           .translate('tutorial_lead_screen_menu_description'),
-  //       align: ContentAlign.bottom,
-  //       context: context,
-  //       contentPosition: ContentPosition.above,
-  //     ),
-  //     createTarget(
-  //       identify: "FloatingActionButton",
-  //       keyTarget: keyFloatingActionButton,
-  //       title: AppLocalizations.of(context)!.translate('tutorial_lead_button_title'),
-  //       description: AppLocalizations.of(context)!.translate('tutorial_lead_button_description'),
-  //       align: ContentAlign.top,
-  //       context: context,
-  //     ),
-  //   ]);
-  // }
-
-  // void showTutorial() async {
-  //   if (_isTutorialShown) {
-  //     //print('LeadScreen: Tutorial already shown for LeadScreen, skipping');
-  //     return;
-  //   }
-
-  //   SharedPreferences prefs = await SharedPreferences.getInstance();
-  //   await Future.delayed(const Duration(milliseconds: 500));
-
-  //   TutorialCoachMark(
-  //     targets: targets,
-  //     textSkip: AppLocalizations.of(context)!.translate('skip'),
-  //     textStyleSkip: TextStyle(
-  //       color: Colors.white,
-  //       fontFamily: 'Gilroy',
-  //       fontSize: 20,
-  //       fontWeight: FontWeight.w600,
-  //       shadows: [
-  //         Shadow(offset: Offset(-1.5, -1.5), color: Colors.black),
-  //         Shadow(offset: Offset(1.5, -1.5), color: Colors.black),
-  //         Shadow(offset: Offset(1.5, 1.5), color: Colors.black),
-  //         Shadow(offset: Offset(-1.5, 1.5), color: Colors.black),
-  //       ],
-  //     ),
-  //     colorShadow: Color(0xff1E2E52),
-  //     onSkip: () {
-  //       //print('LeadScreen: Tutorial skipped for LeadScreen');
-  //       prefs.setBool('isTutorialShownLeadSearchIconAppBar', true);
-  //       if (mounted) {
-  //         setState(() {
-  //           _isTutorialShown = true;
-  //           _isLeadScreenTutorialCompleted = true;
-  //         });
-  //       }
-  //       return true;
-  //     },
-  //     onFinish: () {
-  //       //print('LeadScreen: Tutorial finished for LeadScreen');
-  //       prefs.setBool('isTutorialShownLeadSearchIconAppBar', true);
-  //       if (mounted) {
-  //         setState(() {
-  //           _isTutorialShown = true;
-  //           _isLeadScreenTutorialCompleted = true;
-  //         });
-  //       }
-  //     },
-  //   ).show(context: context);
-  // }
 
   Future<void> _searchLeads(String query, int currentStatusId) async {
     if (mounted) {
       setState(() {
-        _isFilterLoading = true; // ← НОВОЕ
-        _shouldShowLoader = true; // ← НОВОЕ: принудительно показываем лоадер
-
+        _isFilterLoading = true;
+        _shouldShowLoader = true;
       });
     }
 
     final leadBloc = BlocProvider.of<LeadBloc>(context);
     await LeadCache.clearLeadsForStatus(currentStatusId);
-    //print('LeadScreen: Searching leads with query: $query');
     leadBloc.add(FetchLeads(
       currentStatusId,
       query: query,
       managerIds: _selectedManagers.map((manager) => manager.id).toList(),
       regionsIds: _selectedRegions.map((region) => region.id).toList(),
+      regionId: _selectedState?.id,
+      cityIds: _selectedCities.map((city) => city.id).toList(),
       sourcesIds: _selectedSources.map((source) => source.id).toList(),
+      channelIds: _selectedChannels.map((channel) => channel.id).toList(),
+      advertisingCampaignIds:
+          _selectedAdvertisingCampaigns.map((campaign) => campaign.id).toList(),
+      reasonForRefusalIds: _selectedReasonForRefusalIds,
       statusIds: _selectedStatuses,
       fromDate: _fromDate,
       toDate: _toDate,
@@ -541,9 +590,10 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
       hasDeal: _hasDeal,
       hasOrders: _hasOrders,
       daysWithoutActivity: _daysWithoutActivity,
+      numberOfDaysDeal: _numberOfDaysDeal,
       directoryValues: _directoryValues,
       salesFunnelId: _selectedFunnel?.id,
-      ignoreCache: true, // ← ВАЖНО!
+      ignoreCache: true,
     ));
   }
 
@@ -553,7 +603,12 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
         _showCustomTabBar = true;
         _selectedManagers = [];
         _selectedRegions = [];
+        _selectedState = null;
+        _selectedCities = [];
         _selectedSources = [];
+        _selectedChannels = [];
+        _selectedAdvertisingCampaigns = [];
+        _selectedReasonForRefusalIds = [];
         _selectedStatuses = null;
         _fromDate = null;
         _toDate = null;
@@ -568,11 +623,18 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
         _hasDeal = false;
         _hasOrders = false;
         _daysWithoutActivity = null;
+        _numberOfDaysDeal = null;
         _directoryValues = [];
         _selectedCustomFieldFilters = {};
+
         _initialSelectedManagers = [];
         _initialSelectedRegions = [];
+        _initialSelectedState = null;
+        _initialSelectedCities = [];
         _initialSelectedSources = [];
+        _initialSelectedChannels = [];
+        _initialSelectedAdvertisingCampaigns = [];
+        _initialReasonForRefusalIds = [];
         _initialSelStatus = null;
         _initialFromDate = null;
         _initialToDate = null;
@@ -587,32 +649,57 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
         _initialHasDeal = false;
         _initialHasOrders = false;
         _initialDaysWithoutActivity = null;
+        _initialNumberOfDaysDeal = null;
         _initialDirectoryValues = [];
         _initialCustomFieldFilters = {};
         _lastSearchQuery = '';
         _searchController.clear();
       });
     }
+
     final leadBloc = BlocProvider.of<LeadBloc>(context);
     leadBloc.add(FetchLeadStatuses());
   }
 
   Future<void> _handleManagerSelected(Map managers) async {
-    //print('LeadScreen: _handleManagerSelected - START');
+    debugPrint('LeadScreen: _handleManagerSelected - START WITH NEW LOGIC');
+    debugPrint('LeadScreen: Received managers: ${managers['managers']}');
+    debugPrint('LeadScreen: Received regions: ${managers['regions']}');
+    debugPrint('LeadScreen: Received sources: ${managers['sources']}');
+    debugPrint('LeadScreen: hasContact: ${managers['hasContact']}');
+    debugPrint('LeadScreen: hasOrders: ${managers['hasOrders']}');
 
-    // КРИТИЧНО: Сначала показываем лоадер и скрываем старые данные
     final customFieldFiltersRaw =
-    managers['custom_field_filters'] as Map<String, dynamic>?;
+        managers['custom_field_filters'] as Map<String, dynamic>?;
     final parsedCustomFieldFilters =
-    _parseCustomFieldFilters(customFieldFiltersRaw);
+        _parseCustomFieldFilters(customFieldFiltersRaw);
+
     if (mounted) {
       setState(() {
         _isFilterLoading = true;
-        _shouldShowLoader = true; // ← НОВОЕ: принудительно показываем лоадер
-        _showCustomTabBar = false;
+        _shouldShowLoader = true;
+        _showCustomTabBar = true;
+        _skipNextTabListener =
+            true; // ← КРИТИЧНО: Пропускаем следующий TabListener!
+
         _selectedManagers = managers['managers'];
         _selectedRegions = managers['regions'];
+        _selectedState = managers['state'] as RegionData?;
+        _selectedCities = (managers['cities'] as List?)?.cast<CityData>() ?? [];
         _selectedSources = managers['sources'];
+        _selectedChannels =
+            (managers['channels'] as List?)?.cast<LeadFilterChannelData>() ??
+                [];
+        _selectedAdvertisingCampaigns =
+            (managers['advertising_campaigns'] as List?)
+                    ?.cast<AdvertisingCampaignData>() ??
+                [];
+        _selectedReasonForRefusalIds =
+            (managers['reason_for_refusal_ids'] as List?)
+                    ?.map((id) => int.tryParse(id.toString()) ?? 0)
+                    .where((id) => id != 0)
+                    .toList() ??
+                [];
         _selectedStatuses = managers['statuses'];
         _fromDate = managers['fromDate'];
         _toDate = managers['toDate'];
@@ -627,12 +714,24 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
         _hasDeal = managers['hasDeal'];
         _hasOrders = managers['hasOrders'];
         _daysWithoutActivity = managers['daysWithoutActivity'];
+        _numberOfDaysDeal = managers['numberOfDaysDeal'];
         _directoryValues = managers['directory_values'] ?? [];
         _selectedCustomFieldFilters =
             _cloneCustomFieldFilters(parsedCustomFieldFilters);
+
         _initialSelectedManagers = managers['managers'];
         _initialSelectedRegions = managers['regions'];
+        _initialSelectedState = _selectedState;
+        _initialSelectedCities = List<CityData>.from(_selectedCities);
         _initialSelectedSources = managers['sources'];
+        _initialSelectedChannels =
+            List<LeadFilterChannelData>.from(_selectedChannels);
+        _initialSelectedAdvertisingCampaigns =
+            (managers['advertising_campaigns'] as List?)
+                    ?.cast<AdvertisingCampaignData>() ??
+                [];
+        _initialReasonForRefusalIds =
+            List<int>.from(_selectedReasonForRefusalIds);
         _initialSelStatus = managers['statuses'];
         _initialFromDate = managers['fromDate'];
         _initialToDate = managers['toDate'];
@@ -647,31 +746,41 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
         _initialHasDeal = managers['hasDeal'];
         _initialHasOrders = managers['hasOrders'];
         _initialDaysWithoutActivity = managers['daysWithoutActivity'];
+        _initialNumberOfDaysDeal = managers['numberOfDaysDeal'];
         _initialDirectoryValues = managers['directory_values'] ?? [];
         _initialCustomFieldFilters =
             _cloneCustomFieldFilters(parsedCustomFieldFilters);
       });
     }
 
-    //print('LeadScreen: _handleManagerSelected - Loader shown, clearing cache');
-
-    final currentStatusId = _tabTitles[_currentTabIndex]['id'];
-
-    // Очищаем кэш
-    await LeadCache.clearLeadsForStatus(currentStatusId);
-
-    //print('LeadScreen: _handleManagerSelected - Cache cleared, dispatching FetchLeads');
-
-    // Небольшая задержка для гарантии отображения лоадера
     await Future.delayed(Duration(milliseconds: 50));
 
     final leadBloc = BlocProvider.of<LeadBloc>(context);
-    leadBloc.add(FetchLeads(
-      currentStatusId,
-      managerIds: _selectedManagers.map((manager) => manager.id).toList(),
-      regionsIds: _selectedRegions.map((region) => region.id).toList(),
-      sourcesIds: _selectedSources.map((source) => source.id).toList(),
-      statusIds: _selectedStatuses,
+    leadBloc.add(FetchLeadStatusesWithFilters(
+      managerIds: _selectedManagers.isNotEmpty
+          ? _selectedManagers.map((manager) => manager.id).toList()
+          : null,
+      regionsIds: _selectedRegions.isNotEmpty
+          ? _selectedRegions.map((region) => region.id).toList()
+          : null,
+      regionId: _selectedState?.id,
+      cityIds: _selectedCities.isNotEmpty
+          ? _selectedCities.map((city) => city.id).toList()
+          : null,
+      sourcesIds: _selectedSources.isNotEmpty
+          ? _selectedSources.map((source) => source.id).toList()
+          : null,
+      channelIds: _selectedChannels.isNotEmpty
+          ? _selectedChannels.map((channel) => channel.id).toList()
+          : null,
+      advertisingCampaignIds: _selectedAdvertisingCampaigns.isNotEmpty
+          ? _selectedAdvertisingCampaigns
+              .map((campaign) => campaign.id)
+              .toList()
+          : null,
+      reasonForRefusalIds: _selectedReasonForRefusalIds.isNotEmpty
+          ? _selectedReasonForRefusalIds
+          : null,
       fromDate: _fromDate,
       toDate: _toDate,
       hasSuccessDeals: _hasSuccessDeals,
@@ -685,13 +794,13 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
       hasDeal: _hasDeal,
       hasOrders: _hasOrders,
       daysWithoutActivity: _daysWithoutActivity,
+      numberOfDaysDeal: _numberOfDaysDeal,
       directoryValues: _directoryValues,
       salesFunnelId: _selectedFunnel?.id,
-      query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
-      ignoreCache: true,
     ));
 
-    //print('LeadScreen: _handleManagerSelected - FetchLeads dispatched');
+    debugPrint(
+        'LeadScreen: _handleManagerSelected - Dispatched FetchLeadStatusesWithFilters');
   }
 
   void _onSearch(String query) {
@@ -699,135 +808,146 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
     final currentStatusId = _tabTitles[_currentTabIndex]['id'];
     _searchLeads(query, currentStatusId);
   }
+
   FocusNode focusNode = FocusNode();
   TextEditingController textEditingController = TextEditingController();
   ValueChanged<String>? onChangedSearchInput;
-
   bool isClickAvatarIcon = false;
 
   Widget _buildTitleWidget(BuildContext context) {
-    //print('LeadScreen: Entering _buildTitleWidget');
     return BlocBuilder<SalesFunnelBloc, SalesFunnelState>(
       builder: (context, state) {
-        //print('LeadScreen: _buildTitleWidget - Current SalesFunnelBloc state: $state');
         String title = AppLocalizations.of(context)!.translate('appbar_leads');
         SalesFunnel? selectedFunnel;
-        if (state is SalesFunnelLoading) {
-          //print('LeadScreen: _buildTitleWidget - State is SalesFunnelLoading');
-          title = AppLocalizations.of(context)!.translate('appbar_leads');
-        } else if (state is SalesFunnelLoaded) {
-          //print('LeadScreen: _buildTitleWidget - State is SalesFunnelLoaded, funnels: ${state.funnels}, selectedFunnel: ${state.selectedFunnel}');
+
+        if (state is SalesFunnelLoaded) {
           selectedFunnel = state.selectedFunnel ?? state.funnels.firstOrNull;
           _selectedFunnel = selectedFunnel;
-          //print('LeadScreen: _buildTitleWidget - Selected funnel set to: $selectedFunnel');
-          title = selectedFunnel?.name ?? AppLocalizations.of(context)!.translate('appbar_leads');
-          //print('LeadScreen: _buildTitleWidget - Title set to: $title');
-        } else if (state is SalesFunnelError) {
-          //print('LeadScreen: _buildTitleWidget - State is SalesFunnelError: ${state.message}');
-          title = 'Ошибка загрузки';
-        } else {
-          //print('LeadScreen: _buildTitleWidget - Unexpected state: $state');
+          if (selectedFunnel != null) {
+            title = selectedFunnel.name;
+          }
         }
-        //print('LeadScreen: _buildTitleWidget - Rendering title: $title');
+
         return Row(
           children: [
-            Expanded(
-              child: Text(
-                title,
-                style: TextStyle(
-                  fontSize: 20,
-                  fontFamily: 'Gilroy',
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xff1E2E52),
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
             if (state is SalesFunnelLoaded && state.funnels.length > 1)
-              Padding(
-                padding: const EdgeInsets.only(left: 8.0),
-                child: PopupMenuButton<SalesFunnel>(
-                  icon: Icon(Icons.arrow_drop_down, color: Color(0xff1E2E52)),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12.0),
-                  ),
-                  color: Colors.white,
-                  elevation: 8,
-                  shadowColor: Colors.black.withOpacity(0.2),
-                  offset: Offset(0, 40),
-                  onSelected: (SalesFunnel funnel) async {
-                    //print('LeadScreen: _buildTitleWidget - Selected new funnel: ${funnel.name} (ID: ${funnel.id})');
-                    try {
-                      setState(() {
-                        _isSwitchingFunnel = true;
-                        //print('LeadScreen: _buildTitleWidget - _isSwitchingFunnel set to true');
-                      });
-                      await _apiService.saveSelectedSalesFunnel(funnel.id.toString());
-                      //print('LeadScreen: _buildTitleWidget - Saved funnel ID ${funnel.id} to SharedPreferences');
-                      await LeadCache.clearAllLeads();
-                      await LeadCache.clearCache();
-                      //print('LeadScreen: _buildTitleWidget - Cleared lead cache and statuses');
-                      _resetFilters();
-                      //print('LeadScreen: _buildTitleWidget - Reset filters');
-                      if (mounted) {
-                        setState(() {
-                          _selectedFunnel = funnel;
-                          _isSearching = false;
-                          _searchController.clear();
-                          _lastSearchQuery = '';
-                          //print('LeadScreen: _buildTitleWidget - Updated _selectedFunnel: $_selectedFunnel, cleared search');
-                        });
-                      }
-                      context.read<SalesFunnelBloc>().add(SelectSalesFunnel(funnel));
-                      await Future.delayed(Duration(milliseconds: 100));
-                      if (mounted) {
-                        setState(() {
-                          _tabTitles.clear();
-                          _tabController = TabController(length: 0, vsync: this);
-                        });
-                      }
-                      context.read<LeadBloc>().add(FetchLeadStatuses());
-                    } catch (e) {
-                      //print('LeadScreen: Error switching funnel: $e');
-                      setState(() {
-                        _isSwitchingFunnel = false;
-                      });
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            'Ошибка при смене воронки',
-                            style: TextStyle(
-                              fontFamily: 'Gilroy',
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.white,
-                            ),
+              Expanded(
+                child: InkWell(
+                  onTap: () async {
+                    final RenderBox button =
+                        context.findRenderObject() as RenderBox;
+                    final RenderBox overlay = Navigator.of(context)
+                        .overlay!
+                        .context
+                        .findRenderObject() as RenderBox;
+                    final RelativeRect position = RelativeRect.fromRect(
+                      Rect.fromPoints(
+                        button.localToGlobal(Offset.zero, ancestor: overlay),
+                        button.localToGlobal(
+                            button.size.bottomRight(Offset.zero),
+                            ancestor: overlay),
+                      ),
+                      Offset.zero & overlay.size,
+                    );
+
+                    final selected = await showMenu<SalesFunnel>(
+                      context: context,
+                      position: position,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                      color: Colors.white,
+                      elevation: 8,
+                      items: state.funnels
+                          .map((f) => PopupMenuItem<SalesFunnel>(
+                                value: f,
+                                child: Text(f.name,
+                                    style:
+                                        const TextStyle(fontFamily: 'Gilroy')),
+                              ))
+                          .toList(),
+                    );
+
+                    if (selected != null) {
+                      try {
+                        setState(() => _isSwitchingFunnel = true);
+                        await _apiService
+                            .saveSelectedSalesFunnel(selected.id.toString());
+                        await LeadCache.clearAllLeads();
+                        await LeadCache.clearCache();
+                        _resetFilters();
+
+                        if (mounted) {
+                          setState(() {
+                            _selectedFunnel = selected;
+                            _isSearching = false;
+                            _searchController.clear();
+                            _lastSearchQuery = '';
+                          });
+                        }
+
+                        context
+                            .read<SalesFunnelBloc>()
+                            .add(SelectSalesFunnel(selected));
+                        await Future.delayed(const Duration(milliseconds: 100));
+                        if (mounted) {
+                          setState(() {
+                            _tabTitles.clear();
+                            _tabController =
+                                TabController(length: 0, vsync: this);
+                          });
+                        }
+                        context.read<LeadBloc>().add(FetchLeadStatuses());
+                      } catch (e) {
+                        setState(() => _isSwitchingFunnel = false);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Ошибка при смене воронки'),
+                            backgroundColor: Colors.red,
                           ),
-                          backgroundColor: Colors.red,
-                        ),
-                      );
+                        );
+                      }
                     }
                   },
-                  itemBuilder: (BuildContext context) {
-                    //print('LeadScreen: _buildTitleWidget - Building PopupMenu with funnels: ${state.funnels}');
-                    return state.funnels
-                        .map((funnel) => PopupMenuItem<SalesFunnel>(
-                      value: funnel,
-                      child: Text(
-                        funnel.name,
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontFamily: 'Gilroy',
-                          fontWeight: FontWeight.w500,
-                          color: Color(0xff1E2E52),
+                  borderRadius: BorderRadius.circular(8),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 4.0, vertical: 4.0),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.expand_more,
+                            color: Color(0xff1E2E52), size: 24),
+                        const SizedBox(width: 4),
+                        Flexible(
+                          child: Text(
+                            title,
+                            style: const TextStyle(
+                              fontSize: 20,
+                              fontFamily: 'Gilroy',
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xff1E2E52),
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ))
-                        .toList();
-                  },
+                      ],
+                    ),
+                  ),
+                ),
+              )
+            else
+              Expanded(
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontFamily: 'Gilroy',
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xff1E2E52),
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
           ],
@@ -838,7 +958,6 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    //print('LeadScreen: Building widget tree, _tabTitles: $_tabTitles, _currentTabIndex: $_currentTabIndex');
     final localizations = AppLocalizations.of(context);
     return MultiBlocProvider(
       providers: [
@@ -854,14 +973,14 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
             title: '',
             titleWidget: isClickAvatarIcon
                 ? Text(
-              localizations!.translate('appbar_settings'),
-              style: TextStyle(
-                fontSize: 20,
-                fontFamily: 'Gilroy',
-                fontWeight: FontWeight.w600,
-                color: Color(0xff1E2E52),
-              ),
-            )
+                    localizations!.translate('appbar_settings'),
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xff1E2E52),
+                    ),
+                  )
                 : _buildTitleWidget(context),
             onClickProfileAvatar: () {
               //print('LeadScreen: Profile avatar clicked, isClickAvatarIcon: $isClickAvatarIcon');
@@ -886,7 +1005,13 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
             onManagersLeadSelected: _handleManagerSelected,
             initialManagersLead: _initialSelectedManagers,
             initialManagersLeadRegions: _initialSelectedRegions,
+            initialManagersLeadState: _initialSelectedState,
+            initialManagersLeadCities: _initialSelectedCities,
             initialManagersLeadSources: _initialSelectedSources,
+            initialManagersLeadChannels: _initialSelectedChannels,
+            initialManagersLeadAdvertisingCampaigns:
+                _initialSelectedAdvertisingCampaigns,
+            initialManagersLeadReasonForRefusalIds: _initialReasonForRefusalIds,
             initialManagerLeadStatuses: _initialSelStatus,
             initialManagerLeadFromDate: _initialFromDate,
             initialManagerLeadToDate: _initialToDate,
@@ -901,6 +1026,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
             initialManagerLeadHasDeal: _initialHasDeal,
             initialManagerLeadHasOrders: _initialHasOrders,
             initialManagerLeadDaysWithoutActivity: _initialDaysWithoutActivity,
+            initialManagerLeadNumberOfDaysDeal: _initialNumberOfDaysDeal,
             initialDirectoryValuesLead: _initialDirectoryValues,
             initialLeadCustomFields: _initialCustomFieldFilters,
             onLeadResetFilters: _resetFilters,
@@ -908,27 +1034,30 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
             focusNode: focusNode,
             showMenuIcon: _showCustomTabBar,
             showFilterIconOnSelectLead: !_showCustomTabBar,
-            hasActiveLeadFilters: !_showCustomTabBar,
+            hasActiveLeadFilters: _hasActiveFilters(),
             showFilterTaskIcon: false,
             showMyTaskIcon: true,
             showCallCenter: true,
             showFilterIconDeal: false,
             showEvent: true,
             clearButtonClick: (value) {
-              //print('LeadScreen: Clear button clicked, isSearching: $value');
               if (value == false) {
                 if (mounted) {
                   setState(() {
                     _isSearching = false;
                     _searchController.clear();
                     _lastSearchQuery = '';
-                    //print('LeadScreen: Search cleared, resetting state');
                   });
                 }
                 if (_searchController.text.isEmpty) {
                   if (_selectedManagers.isEmpty &&
                       _selectedRegions.isEmpty &&
+                      _selectedState == null &&
+                      _selectedCities.isEmpty &&
                       _selectedSources.isEmpty &&
+                      _selectedChannels.isEmpty &&
+                      _selectedAdvertisingCampaigns.isEmpty &&
+                      _selectedReasonForRefusalIds.isEmpty &&
                       _selectedStatuses == null &&
                       _fromDate == null &&
                       _toDate == null &&
@@ -949,24 +1078,43 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
                         _showCustomTabBar = true;
                       });
                     }
-                    //print('LeadScreen: Showing custom tab bar after clear');
                     final taskBloc = BlocProvider.of<LeadBloc>(context);
                     taskBloc.add(FetchLeadStatuses());
-                    //print('LeadScreen: FetchLeadStatuses dispatched after clear');
                   } else {
                     final currentStatusId = _tabTitles[_currentTabIndex]['id'];
                     final taskBloc = BlocProvider.of<LeadBloc>(context);
                     taskBloc.add(FetchLeads(
                       currentStatusId,
                       managerIds: _selectedManagers.isNotEmpty
-                          ? _selectedManagers.map((manager) => manager.id).toList()
+                          ? _selectedManagers
+                              .map((manager) => manager.id)
+                              .toList()
                           : null,
                       regionsIds: _selectedRegions.isNotEmpty
                           ? _selectedRegions.map((region) => region.id).toList()
                           : null,
+                      regionId: _selectedState?.id,
+                      cityIds: _selectedCities.isNotEmpty
+                          ? _selectedCities.map((city) => city.id).toList()
+                          : null,
                       sourcesIds: _selectedSources.isNotEmpty
                           ? _selectedSources.map((source) => source.id).toList()
                           : null,
+                      channelIds: _selectedChannels.isNotEmpty
+                          ? _selectedChannels
+                              .map((channel) => channel.id)
+                              .toList()
+                          : null,
+                      advertisingCampaignIds:
+                          _selectedAdvertisingCampaigns.isNotEmpty
+                              ? _selectedAdvertisingCampaigns
+                                  .map((campaign) => campaign.id)
+                                  .toList()
+                              : null,
+                      reasonForRefusalIds:
+                          _selectedReasonForRefusalIds.isNotEmpty
+                              ? _selectedReasonForRefusalIds
+                              : null,
                       statusIds: _selectedStatuses,
                       fromDate: _fromDate,
                       toDate: _toDate,
@@ -981,167 +1129,230 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
                       hasDeal: _hasDeal,
                       hasOrders: _hasOrders,
                       daysWithoutActivity: _daysWithoutActivity,
+                      numberOfDaysDeal: _numberOfDaysDeal,
                       directoryValues: _directoryValues,
+                      customFieldFilters: _selectedCustomFieldFilters,
                       salesFunnelId: _selectedFunnel?.id,
                     ));
-                    //print('LeadScreen: FetchLeads dispatched with filters after clear, salesFunnelId: ${_selectedFunnel?.id}');
                   }
-                } else if (_selectedManagerIds != null && _selectedManagerIds!.isNotEmpty) {
+                } else if (_selectedManagerIds != null &&
+                    _selectedManagerIds!.isNotEmpty) {
                   final currentStatusId = _tabTitles[_currentTabIndex]['id'];
                   final taskBloc = BlocProvider.of<LeadBloc>(context);
                   taskBloc.add(FetchLeads(
                     currentStatusId,
                     managerIds: _selectedManagerIds,
-                    query: _searchController.text.isNotEmpty ? _searchController.text : null,
+                    query: _searchController.text.isNotEmpty
+                        ? _searchController.text
+                        : null,
                     directoryValues: _directoryValues,
+                    customFieldFilters: _selectedCustomFieldFilters,
                     salesFunnelId: _selectedFunnel?.id,
                   ));
-                  //print('LeadScreen: FetchLeads dispatched with managerIds after clear, salesFunnelId: ${_selectedFunnel?.id}');
                 }
               }
             },
-            clearButtonClickFiltr: (value) {
-              //print('LeadScreen: Filter clear button clicked: $value');
-            },
+            clearButtonClickFiltr: (value) {},
           ),
         ),
         body: isClickAvatarIcon
             ? ProfileScreen()
             : Column(
-          children: [
-            const SizedBox(height: 15),
-            if (!_isSearching && _selectedManagerIds == null && _showCustomTabBar)
-              _buildCustomTabBar(),
-            Expanded(
-              child: _isSearching || _selectedManagerIds != null
-                  ? _buildManagerView()
-                  : _buildTabBarView(),
-            ),
-          ],
-        ),
-        floatingActionButton: _tabTitles.isNotEmpty && _hasPermissionToAddLead
+                children: [
+                  const SizedBox(height: 15),
+                  if (!_isSearching &&
+                      _selectedManagerIds == null &&
+                      _showCustomTabBar)
+                    _buildCustomTabBar(),
+                  Expanded(
+                    child: _isSearching || _selectedManagerIds != null
+                        ? _buildManagerView()
+                        : _buildTabBarView(),
+                  ),
+                ],
+              ),
+        floatingActionButton: _tabTitles.isNotEmpty &&
+                _hasPermissionToAddLead &&
+                !isClickAvatarIcon
             ? FloatingActionButton(
-          key: keyFloatingActionButton,
-          onPressed: () {
-            //print('LeadScreen: FloatingActionButton pressed');
-            final currentStatusId = _tabTitles[_currentTabIndex]['id'];
-            if (_isSwitch) {
-              showModalBottomSheet(
-                backgroundColor: Colors.white,
-                context: context,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-                ),
-                builder: (BuildContext context) {
-                  return Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          AppLocalizations.of(context)!.translate('add_for_current_status'),
-                          style: TextStyle(
-                            color: Color(0xff1E2E52),
-                            fontSize: 20,
-                            fontFamily: "Gilroy",
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        SizedBox(height: 8),
-                        Divider(color: Color(0xff1E2E52)),
-                        ListTile(
-                          title: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                key: keyFloatingActionButton,
+                onPressed: () {
+                  final currentStatusId = _tabTitles[_currentTabIndex]['id'];
+                  if (_isSwitch) {
+                    showModalBottomSheet(
+                      backgroundColor: Colors.white,
+                      context: context,
+                      shape: RoundedRectangleBorder(
+                        borderRadius:
+                            BorderRadius.vertical(top: Radius.circular(20)),
+                      ),
+                      builder: (BuildContext context) {
+                        return Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
                             children: [
                               Text(
-                                AppLocalizations.of(context)!.translate('new_lead_in_switch'),
+                                AppLocalizations.of(context)!
+                                    .translate('add_for_current_status'),
                                 style: TextStyle(
                                   color: Color(0xff1E2E52),
-                                  fontSize: 16,
+                                  fontSize: 20,
                                   fontFamily: "Gilroy",
-                                  fontWeight: FontWeight.w500,
+                                  fontWeight: FontWeight.bold,
                                 ),
                               ),
-                              Icon(
-                                Icons.add,
-                                color: Color(0xff1E2E52),
-                                size: 25,
-                              ),
-                            ],
-                          ),
-                          onTap: () {
-                            Navigator.pop(context);
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => LeadAddScreen(statusId: currentStatusId),
-                              ),
-                            ).then((_) => context.read<LeadBloc>().add(FetchLeads(currentStatusId)));
-                          },
-                        ),
-                        ListTile(
-                          title: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                AppLocalizations.of(context)!.translate('import_contact'),
-                                style: TextStyle(
-                                  color: Color(0xff1E2E52),
-                                  fontSize: 16,
-                                  fontFamily: "Gilroy",
-                                  fontWeight: FontWeight.w500,
+                              SizedBox(height: 8),
+                              Divider(color: Color(0xff1E2E52)),
+                              ListTile(
+                                title: Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(
+                                      AppLocalizations.of(context)!
+                                          .translate('new_lead_in_switch'),
+                                      style: TextStyle(
+                                        color: Color(0xff1E2E52),
+                                        fontSize: 16,
+                                        fontFamily: "Gilroy",
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                    Icon(
+                                      Icons.add,
+                                      color: Color(0xff1E2E52),
+                                      size: 25,
+                                    ),
+                                  ],
                                 ),
+                                onTap: () {
+                                  Navigator.pop(context);
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => LeadAddScreen(
+                                          statusId: currentStatusId),
+                                    ),
+                                  ).then((_) => context.read<LeadBloc>().add(
+                                        FetchLeads(
+                                          currentStatusId,
+                                          salesFunnelId: _selectedFunnel?.id,
+                                          advertisingCampaignIds:
+                                              _selectedAdvertisingCampaigns
+                                                      .isNotEmpty
+                                                  ? _selectedAdvertisingCampaigns
+                                                      .map((campaign) =>
+                                                          campaign.id)
+                                                      .toList()
+                                                  : null,
+                                          reasonForRefusalIds:
+                                              _selectedReasonForRefusalIds
+                                                      .isNotEmpty
+                                                  ? _selectedReasonForRefusalIds
+                                                  : null,
+                                        ),
+                                      ));
+                                },
                               ),
-                              Icon(
-                                Icons.contacts,
-                                color: Color(0xff1E2E52),
-                                size: 25,
+                              ListTile(
+                                title: Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(
+                                      AppLocalizations.of(context)!
+                                          .translate('import_contact'),
+                                      style: TextStyle(
+                                        color: Color(0xff1E2E52),
+                                        fontSize: 16,
+                                        fontFamily: "Gilroy",
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                    Icon(
+                                      Icons.contacts,
+                                      color: Color(0xff1E2E52),
+                                      size: 25,
+                                    ),
+                                  ],
+                                ),
+                                onTap: () {
+                                  Navigator.pop(context);
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => ContactsScreen(
+                                          statusId: currentStatusId),
+                                    ),
+                                  ).then((_) => context.read<LeadBloc>().add(
+                                        FetchLeads(
+                                          currentStatusId,
+                                          salesFunnelId: _selectedFunnel?.id,
+                                          advertisingCampaignIds:
+                                              _selectedAdvertisingCampaigns
+                                                      .isNotEmpty
+                                                  ? _selectedAdvertisingCampaigns
+                                                      .map((campaign) =>
+                                                          campaign.id)
+                                                      .toList()
+                                                  : null,
+                                          reasonForRefusalIds:
+                                              _selectedReasonForRefusalIds
+                                                      .isNotEmpty
+                                                  ? _selectedReasonForRefusalIds
+                                                  : null,
+                                        ),
+                                      ));
+                                },
                               ),
+                              SizedBox(height: 10),
                             ],
                           ),
-                          onTap: () {
-                            Navigator.pop(context);
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => ContactsScreen(statusId: currentStatusId),
-                              ),
-                            ).then((_) => context.read<LeadBloc>().add(FetchLeads(currentStatusId)));
-                          },
-                        ),
-                        SizedBox(height: 10),
-                      ],
-                    ),
-                  );
+                        );
+                      },
+                    );
+                  } else {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) =>
+                            LeadAddScreen(statusId: currentStatusId),
+                      ),
+                    ).then((_) => context.read<LeadBloc>().add(
+                          FetchLeads(
+                            currentStatusId,
+                            salesFunnelId: _selectedFunnel?.id,
+                            advertisingCampaignIds:
+                                _selectedAdvertisingCampaigns.isNotEmpty
+                                    ? _selectedAdvertisingCampaigns
+                                        .map((campaign) => campaign.id)
+                                        .toList()
+                                    : null,
+                            reasonForRefusalIds:
+                                _selectedReasonForRefusalIds.isNotEmpty
+                                    ? _selectedReasonForRefusalIds
+                                    : null,
+                          ),
+                        ));
+                  }
                 },
-              );
-            } else {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => LeadAddScreen(statusId: currentStatusId),
+                backgroundColor: Color(0xff1E2E52),
+                child: Image.asset(
+                  'assets/icons/tabBar/add.png',
+                  width: 24,
+                  height: 24,
                 ),
-              ).then((_) => context.read<LeadBloc>().add(FetchLeads(currentStatusId)));
-            }
-          },
-          backgroundColor: Color(0xff1E2E52),
-          child: Image.asset(
-            'assets/icons/tabBar/add.png',
-            width: 24,
-            height: 24,
-          ),
-        )
+              )
             : null,
       ),
     );
   }
 
   Widget searchWidget(List<Lead> leads) {
-    final currentStatusId = _tabTitles.isNotEmpty
-        ? _tabTitles[_currentTabIndex]['id']
-        : 0;
+    final currentStatusId =
+        _tabTitles.isNotEmpty ? _tabTitles[_currentTabIndex]['id'] : 0;
 
-    // Показываем лоадер если флаги активны
     if (_isFilterLoading || _shouldShowLoader) {
       return const Center(
         child: PlayStoreImageLoading(
@@ -1179,8 +1390,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
     } else if (leads.isEmpty) {
       return Center(
         child: Text(
-          AppLocalizations.of(context)!
-              .translate('nothing_lead_for_manager'),
+          AppLocalizations.of(context)!.translate('nothing_lead_for_manager'),
           style: const TextStyle(
             fontSize: 18,
             fontFamily: 'Gilroy',
@@ -1207,8 +1417,8 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
               statusId: lead.statusId,
               onStatusUpdated: () {},
               onStatusId: (StatusLeadId) {
-                final index = _tabTitles.indexWhere(
-                        (status) => status['id'] == StatusLeadId);
+                final index = _tabTitles
+                    .indexWhere((status) => status['id'] == StatusLeadId);
                 if (index != -1) {
                   _tabController.animateTo(index);
                 }
@@ -1254,9 +1464,8 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
           if (state is LeadDataLoaded) {
             final List<Lead> leads = state.leads;
             final statusId = _tabTitles[_tabController.index]['id'];
-            final filteredLeads = leads
-                .where((lead) => lead.statusId == statusId)
-                .toList();
+            final filteredLeads =
+                leads.where((lead) => lead.statusId == statusId).toList();
 
             if (filteredLeads.isEmpty) {
               return RefreshIndicator(
@@ -1269,9 +1478,9 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
                     child: Text(
                       _selectedManagers.isNotEmpty
                           ? AppLocalizations.of(context)!
-                          .translate('selected_manager_has_any_lead')
+                              .translate('selected_manager_has_any_lead')
                           : AppLocalizations.of(context)!
-                          .translate('nothing_found'),
+                              .translate('nothing_found'),
                       style: const TextStyle(
                         fontSize: 18,
                         fontFamily: 'Gilroy',
@@ -1293,8 +1502,8 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
                 itemBuilder: (context, index) {
                   final lead = filteredLeads[index];
                   return Padding(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 8),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     child: LeadCard(
                       lead: lead,
                       title: lead.leadStatus?.title ?? "",
@@ -1302,7 +1511,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
                       onStatusUpdated: () {},
                       onStatusId: (StatusLeadId) {
                         final index = _tabTitles.indexWhere(
-                                (status) => status['id'] == StatusLeadId);
+                            (status) => status['id'] == StatusLeadId);
                         if (index != -1) {
                           _tabController.animateTo(index);
                         }
@@ -1329,7 +1538,12 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
             );
           }
 
-          return const SizedBox();
+          return const Center(
+            child: PlayStoreImageLoading(
+              size: 80.0,
+              duration: Duration(milliseconds: 1000),
+            ),
+          );
         },
       ),
     );
@@ -1352,7 +1566,8 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
           }),
           if (_canCreateLeadStatus)
             IconButton(
-              icon: Image.asset('assets/icons/tabBar/add_black.png', width: 24, height: 24),
+              icon: Image.asset('assets/icons/tabBar/add_black.png',
+                  width: 24, height: 24),
               onPressed: _addNewTab,
             ),
         ],
@@ -1377,7 +1592,8 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
   }
 
   void _showStatusOptions(BuildContext context, int index) {
-    final RenderBox renderBox = _tabKeys[index].currentContext!.findRenderObject() as RenderBox;
+    final RenderBox renderBox =
+        _tabKeys[index].currentContext!.findRenderObject() as RenderBox;
     final Offset position = renderBox.localToGlobal(Offset.zero);
 
     showMenu(
@@ -1439,48 +1655,33 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
 // Обновленный метод _buildTabButton в LeadScreen
   Widget _buildTabButton(int index) {
     bool isActive = _tabController.index == index;
+    final statusId = _tabTitles[index]['id'] as int;
 
-    return FutureBuilder<int>(
-      future: LeadCache.getPersistentLeadCount(_tabTitles[index]['id']),
-      builder: (context, snapshot) {
-        // Сначала пробуем получить count из постоянного кэша
-        int leadCount = snapshot.data ?? 0;
+    return BlocBuilder<LeadBloc, LeadState>(
+      builder: (context, state) {
+        int leadCount = (_tabTitles[index]['leads_count'] as int?) ?? 0;
 
-        // Если в постоянном кэше нет данных, пробуем другие источники
-        if (leadCount == 0) {
-          return BlocBuilder<LeadBloc, LeadState>(
-            builder: (context, state) {
-              // Используем данные из состояния только если нет постоянного счетчика
-              if (state is LeadLoaded) {
-                final statusId = _tabTitles[index]['id'];
-                final leadStatus = state.leadStatuses.firstWhere(
-                      (status) => status.id == statusId,
-                  orElse: () => LeadStatus(
-                    id: 0,
-                    title: '',
-                    leadsCount: 0,
-                    isSuccess: false,
-                    position: 1,
-                    isFailure: false,
-                  ),
-                );
-                leadCount = leadStatus.leadsCount;
-
-                // Сразу сохраняем в постоянный кэш
-                LeadCache.setPersistentLeadCount(statusId, leadCount);
-              } else if (state is LeadDataLoaded && state.leadCounts.containsKey(_tabTitles[index]['id'])) {
-                leadCount = state.leadCounts[_tabTitles[index]['id']] ?? 0;
-
-                // Сразу сохраняем в постоянный кэш
-                LeadCache.setPersistentLeadCount(_tabTitles[index]['id'], leadCount);
-              }
-
-              return _buildTabButtonUI(index, isActive, leadCount);
-            },
-          );
+        if (state is LeadLoaded) {
+          leadCount = state.leadCounts[statusId] ??
+              state.leadStatuses
+                  .firstWhere(
+                    (status) => status.id == statusId,
+                    orElse: () => LeadStatus(
+                      id: 0,
+                      title: '',
+                      leadsCount: 0,
+                      isSuccess: false,
+                      position: 1,
+                      isFailure: false,
+                      isUnassembled: false,
+                    ),
+                  )
+                  .leadsCount;
+        } else if (state is LeadDataLoaded) {
+          leadCount = state.leadCounts[statusId] ?? leadCount;
         }
 
-        // Если есть постоянный счетчик, используем его напрямую
+        LeadCache.setPersistentLeadCount(statusId, leadCount);
         return _buildTabButtonUI(index, isActive, leadCount);
       },
     );
@@ -1506,7 +1707,9 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
             Text(
               _tabTitles[index]['title'],
               style: TaskStyles.tabTextStyle.copyWith(
-                color: isActive ? TaskStyles.activeColor : TaskStyles.inactiveColor,
+                color: isActive
+                    ? TaskStyles.activeColor
+                    : TaskStyles.inactiveColor,
               ),
             ),
             Transform.translate(
@@ -1517,7 +1720,9 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: isActive ? const Color(0xff1E2E52) : const Color(0xff99A4BA),
+                    color: isActive
+                        ? const Color(0xff1E2E52)
+                        : const Color(0xff99A4BA),
                     width: 1,
                   ),
                 ),
@@ -1558,11 +1763,27 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
           navigateAfterDelete = true;
           _tabTitles.removeAt(index);
           _tabKeys.removeAt(index);
-          _tabController = TabController(length: _tabTitles.length, vsync: this);
+          _tabController =
+              TabController(length: _tabTitles.length, vsync: this);
           _currentTabIndex = 0;
           _isSearching = false;
           _searchController.clear();
-          context.read<LeadBloc>().add(FetchLeads(_currentTabIndex));
+          if (_tabTitles.isNotEmpty) {
+            final activeStatusId = _tabTitles[_currentTabIndex]['id'];
+            context.read<LeadBloc>().add(FetchLeads(
+                  activeStatusId,
+                  salesFunnelId: _selectedFunnel?.id,
+                  advertisingCampaignIds:
+                      _selectedAdvertisingCampaigns.isNotEmpty
+                          ? _selectedAdvertisingCampaigns
+                              .map((campaign) => campaign.id)
+                              .toList()
+                          : null,
+                  reasonForRefusalIds: _selectedReasonForRefusalIds.isNotEmpty
+                      ? _selectedReasonForRefusalIds
+                      : null,
+                ));
+          }
         });
       }
 
@@ -1596,11 +1817,9 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
         if (state is LeadDataLoaded || state is LeadError) {
           if (mounted && _isFilterLoading) {
             setState(() {
-              _isFilterLoading = false; // ← НОВОЕ: сбрасываем флаг после загрузки
-              _shouldShowLoader = false; // ← НОВОЕ: разрешаем показывать данные
-              _isSwitchingFunnel = false; // На всякий случай
-
-
+              _isFilterLoading = false;
+              _shouldShowLoader = false;
+              _isSwitchingFunnel = false;
             });
           }
         }
@@ -1614,10 +1833,10 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
               _tabTitles = state.leadStatuses
                   .where((status) => _canReadLeadStatus)
                   .map((status) => {
-                'id': status.id,
-                'title': status.title,
-                'leads_count': status.leadsCount,
-              })
+                        'id': status.id,
+                        'title': status.title,
+                        'leads_count': status.leadsCount,
+                      })
                   .toList();
               _tabKeys = List.generate(_tabTitles.length, (_) => GlobalKey());
               _isSwitchingFunnel = false;
@@ -1626,7 +1845,8 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
                 //print('LeadScreen: Initializing TabController with length: ${_tabTitles.length}');
 
                 // Проверяем, нужно ли создавать новый контроллер
-                bool needNewController = _tabController.length != _tabTitles.length;
+                bool needNewController =
+                    _tabController.length != _tabTitles.length;
 
                 if (needNewController) {
                   // Сохраняем текущий индекс перед созданием нового контроллера
@@ -1638,61 +1858,148 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
                   }
 
                   // Создаем новый контроллер
-                  _tabController = TabController(length: _tabTitles.length, vsync: this);
+                  _tabController =
+                      TabController(length: _tabTitles.length, vsync: this);
                   //print('LeadScreen: Created new TabController with length: ${_tabTitles.length}');
-                }
 
-                // Настраиваем слушатель (всегда обновляем)
-                _tabController.addListener(() {
-                  if (!_tabController.indexIsChanging) {
-                    //print('LeadScreen: TabController listener triggered, new index: ${_tabController.index}');
-                    setState(() {
-                      _currentTabIndex = _tabController.index;
-                    });
-                    final currentStatusId = _tabTitles[_currentTabIndex]['id'];
-                    if (tabScrollController.hasClients) {
-                      _scrollToActiveTab();
+                  // ← КРИТИЧНО: Добавляем listener ТОЛЬКО при создании нового контроллера!
+                  _tabController.addListener(() {
+                    if (!_tabController.indexIsChanging) {
+                      // ← КРИТИЧНО: Проверяем флаг пропуска!
+                      if (_skipNextTabListener) {
+                        debugPrint(
+                            'LeadScreen: TabController listener - SKIPPED (filter just applied)');
+                        setState(() {
+                          _skipNextTabListener = false;
+                          _currentTabIndex = _tabController.index;
+                        });
+                        return; // ← ВЫХОДИМ БЕЗ ЗАПРОСА!
+                      }
+
+                      debugPrint(
+                          'LeadScreen: TabController listener triggered, new index: ${_tabController.index}');
+                      setState(() {
+                        _currentTabIndex = _tabController.index;
+                      });
+                      final currentStatusId =
+                          _tabTitles[_currentTabIndex]['id'];
+                      if (tabScrollController.hasClients) {
+                        _scrollToActiveTab();
+                      }
+
+                      bool hasActiveFilters = _selectedManagers.isNotEmpty ||
+                          _selectedRegions.isNotEmpty ||
+                          _selectedSources.isNotEmpty ||
+                          _selectedAdvertisingCampaigns.isNotEmpty ||
+                          _selectedReasonForRefusalIds.isNotEmpty ||
+                          _selectedStatuses != null ||
+                          _fromDate != null ||
+                          _toDate != null ||
+                          _hasSuccessDeals == true ||
+                          _hasInProgressDeals == true ||
+                          _hasFailureDeals == true ||
+                          _hasNotices == true ||
+                          _hasContact == true ||
+                          _hasChat == true ||
+                          _hasNoReplies == true ||
+                          _hasUnreadMessages == true ||
+                          _hasDeal == true ||
+                          _hasOrders == true ||
+                          _daysWithoutActivity != null ||
+                          _numberOfDaysDeal != null ||
+                          _directoryValues.isNotEmpty;
+
+                      if (mounted) {
+                        setState(() {
+                          _shouldShowLoader = true;
+                        });
+                      }
+
+                      context.read<LeadBloc>().add(FetchLeads(
+                            currentStatusId,
+                            salesFunnelId: _selectedFunnel?.id,
+                            ignoreCache: false,
+                            query: _lastSearchQuery.isNotEmpty
+                                ? _lastSearchQuery
+                                : null,
+
+                            managerIds:
+                                hasActiveFilters && _selectedManagers.isNotEmpty
+                                    ? _selectedManagers
+                                        .map((manager) => manager.id)
+                                        .toList()
+                                    : null,
+                            regionsIds:
+                                hasActiveFilters && _selectedRegions.isNotEmpty
+                                    ? _selectedRegions
+                                        .map((region) => region.id)
+                                        .toList()
+                                    : null,
+                            sourcesIds:
+                                hasActiveFilters && _selectedSources.isNotEmpty
+                                    ? _selectedSources
+                                        .map((source) => source.id)
+                                        .toList()
+                                    : null,
+                            advertisingCampaignIds: hasActiveFilters &&
+                                    _selectedAdvertisingCampaigns.isNotEmpty
+                                ? _selectedAdvertisingCampaigns
+                                    .map((campaign) => campaign.id)
+                                    .toList()
+                                : null,
+                            reasonForRefusalIds: hasActiveFilters &&
+                                    _selectedReasonForRefusalIds.isNotEmpty
+                                ? _selectedReasonForRefusalIds
+                                : null,
+                            // ВАЖНО: всегда пробрасываем текущий статус вкладки,
+                            // чтобы в каждом запросе присутствовал lead_status_id
+                            statusIds: currentStatusId,
+                            fromDate: hasActiveFilters ? _fromDate : null,
+                            toDate: hasActiveFilters ? _toDate : null,
+                            hasSuccessDeals:
+                                hasActiveFilters ? _hasSuccessDeals : null,
+                            hasInProgressDeals:
+                                hasActiveFilters ? _hasInProgressDeals : null,
+                            hasFailureDeals:
+                                hasActiveFilters ? _hasFailureDeals : null,
+                            hasNotices: hasActiveFilters ? _hasNotices : null,
+                            hasContact: hasActiveFilters ? _hasContact : null,
+                            hasChat: hasActiveFilters ? _hasChat : null,
+                            hasNoReplies:
+                                hasActiveFilters ? _hasNoReplies : null,
+                            hasUnreadMessages:
+                                hasActiveFilters ? _hasUnreadMessages : null,
+                            hasDeal: hasActiveFilters ? _hasDeal : null,
+                            hasOrders: hasActiveFilters ? _hasOrders : null,
+                            daysWithoutActivity:
+                                hasActiveFilters ? _daysWithoutActivity : null,
+                            numberOfDaysDeal:
+                                hasActiveFilters ? _numberOfDaysDeal : null,
+                            directoryValues:
+                                hasActiveFilters && _directoryValues.isNotEmpty
+                                    ? _directoryValues
+                                    : null,
+                          ));
+
+                      if (kDebugMode) {
+                        debugPrint(
+                            'LeadScreen: FetchLeads dispatched for statusId: $currentStatusId');
+                        debugPrint(
+                            'LeadScreen: hasActiveFilters: $hasActiveFilters');
+                        if (hasActiveFilters) {
+                          debugPrint(
+                              'LeadScreen: Applied filters - managers: ${_selectedManagers.length}, regions: ${_selectedRegions.length}');
+                        }
+                      }
                     }
-
-                    // Загружаем лиды для выбранного статуса
-                    context.read<LeadBloc>().add(FetchLeads(
-                      currentStatusId,
-                      salesFunnelId: _selectedFunnel?.id,
-                      ignoreCache: false,
-                      query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
-                      managerIds: _selectedManagers.isNotEmpty
-                          ? _selectedManagers.map((manager) => manager.id).toList()
-                          : null,
-                      regionsIds: _selectedRegions.isNotEmpty
-                          ? _selectedRegions.map((region) => region.id).toList()
-                          : null,
-                      sourcesIds: _selectedSources.isNotEmpty
-                          ? _selectedSources.map((source) => source.id).toList()
-                          : null,
-                      statusIds: _selectedStatuses,
-                      fromDate: _fromDate,
-                      toDate: _toDate,
-                      hasSuccessDeals: _hasSuccessDeals,
-                      hasInProgressDeals: _hasInProgressDeals,
-                      hasFailureDeals: _hasFailureDeals,
-                      hasNotices: _hasNotices,
-                      hasContact: _hasContact,
-                      hasChat: _hasChat,
-                      hasNoReplies: _hasNoReplies,
-                      hasUnreadMessages: _hasUnreadMessages,
-                      hasDeal: _hasDeal,
-                      hasOrders: _hasOrders,
-                      daysWithoutActivity: _daysWithoutActivity,
-                      directoryValues: _directoryValues,
-                    ));
-                    //print('LeadScreen: FetchLeads dispatched for statusId: $currentStatusId');
-                  }
-                });
+                  }); // ← Закрываем listener здесь, только для нового контроллера!
+                }
 
                 // Установка правильного индекса
                 if (needNewController) {
                   // При создании нового контроллера восстанавливаем индекс или ставим 0
-                  if (_currentTabIndex < _tabTitles.length && _currentTabIndex >= 0) {
+                  if (_currentTabIndex < _tabTitles.length &&
+                      _currentTabIndex >= 0) {
                     _tabController.index = _currentTabIndex;
                     //print('LeadScreen: Restored tab index to: $_currentTabIndex');
                   } else {
@@ -1702,14 +2009,16 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
                   }
                 } else {
                   // При обновлении существующего контроллера проверяем initialStatusId
-                  int initialIndex = state.leadStatuses
-                      .indexWhere((status) => status.id == widget.initialStatusId);
+                  int initialIndex = state.leadStatuses.indexWhere(
+                      (status) => status.id == widget.initialStatusId);
                   if (initialIndex != -1 && initialIndex != _currentTabIndex) {
                     _tabController.index = initialIndex;
                     _currentTabIndex = initialIndex;
                     //print('LeadScreen: Set initial tab index to: $initialIndex');
                   } else if (_tabTitles.isNotEmpty) {
-                    int safeIndex = _currentTabIndex < _tabTitles.length ? _currentTabIndex : 0;
+                    int safeIndex = _currentTabIndex < _tabTitles.length
+                        ? _currentTabIndex
+                        : 0;
                     _tabController.index = safeIndex;
                     _currentTabIndex = safeIndex;
                     //print('LeadScreen: Set safe tab index to: $safeIndex');
@@ -1735,7 +2044,9 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
                 if (navigateAfterDelete && _tabTitles.isNotEmpty) {
                   navigateAfterDelete = false;
                   if (_deletedIndex != null) {
-                    int newIndex = _deletedIndex! >= _tabTitles.length ? _tabTitles.length - 1 : _deletedIndex!;
+                    int newIndex = _deletedIndex! >= _tabTitles.length
+                        ? _tabTitles.length - 1
+                        : _deletedIndex!;
                     newIndex = newIndex < 0 ? 0 : newIndex;
                     Future.delayed(Duration(milliseconds: 100), () {
                       if (mounted) {
@@ -1748,18 +2059,49 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
                 }
 
                 // При радикальном обновлении (после refresh) автоматически загружаем лиды для активного статуса
+                // НО только если нет активных фильтров, иначе будет второй «чистый» запрос без фильтров
                 Future.delayed(Duration(milliseconds: 150), () {
                   if (mounted && _tabTitles.isNotEmpty) {
                     final activeStatusId = _tabTitles[_currentTabIndex]['id'];
-                    //print('LeadScreen: Auto-loading leads for active status after refresh: $activeStatusId');
-                    context.read<LeadBloc>().add(FetchLeads(
-                      activeStatusId,
-                      salesFunnelId: _selectedFunnel?.id,
-                      ignoreCache: true, // При обновлении после refresh принудительно загружаем с сервера
-                    ));
+
+                    final bool hasActiveFilters =
+                        _selectedManagers.isNotEmpty ||
+                            _selectedRegions.isNotEmpty ||
+                            _selectedSources.isNotEmpty ||
+                            _selectedAdvertisingCampaigns.isNotEmpty ||
+                            _selectedReasonForRefusalIds.isNotEmpty ||
+                            _selectedStatuses != null ||
+                            _fromDate != null ||
+                            _toDate != null ||
+                            _hasSuccessDeals == true ||
+                            _hasInProgressDeals == true ||
+                            _hasFailureDeals == true ||
+                            _hasNotices == true ||
+                            _hasContact == true ||
+                            _hasChat == true ||
+                            _hasNoReplies == true ||
+                            _hasUnreadMessages == true ||
+                            _hasDeal == true ||
+                            _hasOrders == true ||
+                            _daysWithoutActivity != null ||
+                            _numberOfDaysDeal != null ||
+                            _directoryValues.isNotEmpty;
+
+                    if (!hasActiveFilters) {
+                      //print('LeadScreen: Auto-loading leads for active status after refresh: $activeStatusId');
+                      context.read<LeadBloc>().add(FetchLeads(
+                            activeStatusId,
+                            salesFunnelId: _selectedFunnel?.id,
+                            ignoreCache: true,
+                          ));
+                    } else {
+                      if (kDebugMode) {
+                        debugPrint(
+                            'LeadScreen: Skip auto FetchLeads due to active filters');
+                      }
+                    }
                   }
                 });
-
               } else {
                 // Если табы пустые, создаем пустой контроллер
                 if (_tabController.length > 0) {
@@ -1781,131 +2123,211 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
             Navigator.pushAndRemoveUntil(
               context,
               MaterialPageRoute(builder: (context) => LoginScreen()),
-                  (Route<dynamic> route) => false,
+              (Route<dynamic> route) => false,
             );
           } else {
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    state.message,
-                    style: TextStyle(
-                      fontFamily: 'Gilroy',
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.white,
-                    ),
-                  ),
-                  backgroundColor: Colors.red,
-                  duration: Duration(seconds: 3),
-                  action: SnackBarAction(
-                    label: 'Повторить',
-                    textColor: Colors.white,
-                    onPressed: () {
-                      // При ошибке пробуем еще раз с принудительным обновлением
-                      context.read<LeadBloc>().add(FetchLeadStatuses(forceRefresh: true));
-                    },
-                  ),
-                ),
-              );
+            // ✅ УБРАНО: Не показываем непереведенный SnackBar с кнопкой "Повторить"
+            // Переведенные сообщения показываются в других местах
+            if (kDebugMode) {
+              debugPrint('LeadScreen: Error state - ${state.message}');
             }
           }
         }
       },
       child: _tabTitles.isEmpty
           ? const Center(
-        child: PlayStoreImageLoading(
-          size: 80.0,
-          duration: Duration(milliseconds: 1000),
-        ),
-      )
+              child: PlayStoreImageLoading(
+                size: 80.0,
+                duration: Duration(milliseconds: 1000),
+              ),
+            )
           : TabBarView(
-        controller: _tabController,
-        physics: const AlwaysScrollableScrollPhysics(),
-        children: _tabTitles.map((status) {
-          //print('LeadScreen: Building TabBarView child for status: ${status['title']}');
-          return RefreshIndicator(
-            onRefresh: () => _onRefresh(status['id']),
-            color: const Color(0xff1E2E52),
-            backgroundColor: Colors.white,
-            child: LeadColumn(
-              isLeadScreenTutorialCompleted: _isLeadScreenTutorialCompleted,
-              statusId: status['id'],
-              title: status['title'],
-              onStatusId: (newStatusId) {
-                //print('LeadScreen: onStatusId called with id: $newStatusId');
-                final index = _tabTitles.indexWhere((s) => s['id'] == newStatusId);
-                if (index != -1) {
-                  _tabController.animateTo(index);
-                  //print('LeadScreen: Animated to tab index: $index for statusId: $newStatusId');
+              controller: _tabController,
+              physics: const AlwaysScrollableScrollPhysics(),
+              children: _tabTitles.map((status) {
+                //print('LeadScreen: Building TabBarView child for status: ${status['title']}');
+                return RefreshIndicator(
+                  onRefresh: () => _onRefresh(status['id']),
+                  color: const Color(0xff1E2E52),
+                  backgroundColor: Colors.white,
+                  child: LeadColumn(
+                    isLeadScreenTutorialCompleted:
+                        _isLeadScreenTutorialCompleted,
+                    statusId: status['id'],
+                    title: status['title'],
+                    onStatusId: (newStatusId) {
+                      //print('LeadScreen: onStatusId called with id: $newStatusId');
+                      final index =
+                          _tabTitles.indexWhere((s) => s['id'] == newStatusId);
+                      if (index != -1) {
+                        _tabController.animateTo(index);
+                        //print('LeadScreen: Animated to tab index: $index for statusId: $newStatusId');
 
-                  // Проверяем, есть ли уже данные для этого статуса
-                  final currentLeadBloc = context.read<LeadBloc>();
-                  if (currentLeadBloc.state is LeadDataLoaded) {
-                    final currentState = currentLeadBloc.state as LeadDataLoaded;
-                    final hasLeadsForStatus = currentState.leads.any((lead) => lead.statusId == newStatusId);
+                        // Проверяем, есть ли уже данные для этого статуса
+                        final currentLeadBloc = context.read<LeadBloc>();
+                        if (currentLeadBloc.state is LeadDataLoaded) {
+                          final currentState =
+                              currentLeadBloc.state as LeadDataLoaded;
+                          final hasLeadsForStatus = currentState.leads
+                              .any((lead) => lead.statusId == newStatusId);
 
-                    // Загружаем только если нет данных для этого статуса
-                    if (!hasLeadsForStatus) {
-                      currentLeadBloc.add(FetchLeads(
-                        newStatusId,
-                        salesFunnelId: _selectedFunnel?.id,
-                        ignoreCache: false,
-                        query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
-                        managerIds: _selectedManagers.isNotEmpty
-                            ? _selectedManagers.map((manager) => manager.id).toList()
-                            : null,
-                        regionsIds: _selectedRegions.isNotEmpty
-                            ? _selectedRegions.map((region) => region.id).toList()
-                            : null,
-                        sourcesIds: _selectedSources.isNotEmpty
-                            ? _selectedSources.map((source) => source.id).toList()
-                            : null,
-                        statusIds: _selectedStatuses,
-                        fromDate: _fromDate,
-                        toDate: _toDate,
-                        hasSuccessDeals: _hasSuccessDeals,
-                        hasInProgressDeals: _hasInProgressDeals,
-                        hasFailureDeals: _hasFailureDeals,
-                        hasNotices: _hasNotices,
-                        hasContact: _hasContact,
-                        hasChat: _hasChat,
-                        hasNoReplies: _hasNoReplies,
-                        hasUnreadMessages: _hasUnreadMessages,
-                        hasDeal: _hasDeal,
-                        hasOrders: _hasOrders,
-                        daysWithoutActivity: _daysWithoutActivity,
-                        directoryValues: _directoryValues,
-                      ));
-                      //print('LeadScreen: FetchLeads dispatched for statusId: $newStatusId (no cached data found)');
-                    } else {
-                      //print('LeadScreen: Using cached data for statusId: $newStatusId');
-                    }
-                  } else {
-                    // Если нет состояния LeadDataLoaded, загружаем данные
-                    currentLeadBloc.add(FetchLeads(
-                      newStatusId,
-                      salesFunnelId: _selectedFunnel?.id,
-                      ignoreCache: false,
-                    ));
-                    //print('LeadScreen: FetchLeads dispatched for statusId: $newStatusId (no LeadDataLoaded state)');
-                  }
-                }
-              },
+                          // Загружаем только если нет данных для этого статуса
+                          if (!hasLeadsForStatus) {
+                            if (mounted) {
+                              setState(() {
+                                _shouldShowLoader = true;
+                              });
+                            }
+                            currentLeadBloc.add(FetchLeads(
+                              newStatusId,
+                              salesFunnelId: _selectedFunnel?.id,
+                              ignoreCache: false,
+                              query: _lastSearchQuery.isNotEmpty
+                                  ? _lastSearchQuery
+                                  : null,
+                              managerIds: _selectedManagers.isNotEmpty
+                                  ? _selectedManagers
+                                      .map((manager) => manager.id)
+                                      .toList()
+                                  : null,
+                              regionsIds: _selectedRegions.isNotEmpty
+                                  ? _selectedRegions
+                                      .map((region) => region.id)
+                                      .toList()
+                                  : null,
+                              regionId: _selectedState?.id,
+                              cityIds: _selectedCities.isNotEmpty
+                                  ? _selectedCities
+                                      .map((city) => city.id)
+                                      .toList()
+                                  : null,
+                              sourcesIds: _selectedSources.isNotEmpty
+                                  ? _selectedSources
+                                      .map((source) => source.id)
+                                      .toList()
+                                  : null,
+                              channelIds: _selectedChannels.isNotEmpty
+                                  ? _selectedChannels
+                                      .map((channel) => channel.id)
+                                      .toList()
+                                  : null,
+                              advertisingCampaignIds:
+                                  _selectedAdvertisingCampaigns.isNotEmpty
+                                      ? _selectedAdvertisingCampaigns
+                                          .map((campaign) => campaign.id)
+                                          .toList()
+                                      : null,
+                              reasonForRefusalIds:
+                                  _selectedReasonForRefusalIds.isNotEmpty
+                                      ? _selectedReasonForRefusalIds
+                                      : null,
+                              statusIds: _selectedStatuses,
+                              fromDate: _fromDate,
+                              toDate: _toDate,
+                              hasSuccessDeals: _hasSuccessDeals,
+                              hasInProgressDeals: _hasInProgressDeals,
+                              hasFailureDeals: _hasFailureDeals,
+                              hasNotices: _hasNotices,
+                              hasContact: _hasContact,
+                              hasChat: _hasChat,
+                              hasNoReplies: _hasNoReplies,
+                              hasUnreadMessages: _hasUnreadMessages,
+                              hasDeal: _hasDeal,
+                              hasOrders: _hasOrders,
+                              daysWithoutActivity: _daysWithoutActivity,
+                              numberOfDaysDeal: _numberOfDaysDeal,
+                              directoryValues: _directoryValues,
+                            ));
+                            //print('LeadScreen: FetchLeads dispatched for statusId: $newStatusId (no cached data found)');
+                          } else {
+                            //print('LeadScreen: Using cached data for statusId: $newStatusId');
+                          }
+                        } else {
+                          // Если нет состояния LeadDataLoaded, загружаем данные
+                          if (mounted) {
+                            setState(() {
+                              _shouldShowLoader = true;
+                            });
+                          }
+                          currentLeadBloc.add(FetchLeads(
+                            newStatusId,
+                            salesFunnelId: _selectedFunnel?.id,
+                            ignoreCache: false,
+                            managerIds: _selectedManagers.isNotEmpty
+                                ? _selectedManagers
+                                    .map((manager) => manager.id)
+                                    .toList()
+                                : null,
+                            regionsIds: _selectedRegions.isNotEmpty
+                                ? _selectedRegions
+                                    .map((region) => region.id)
+                                    .toList()
+                                : null,
+                            regionId: _selectedState?.id,
+                            cityIds: _selectedCities.isNotEmpty
+                                ? _selectedCities
+                                    .map((city) => city.id)
+                                    .toList()
+                                : null,
+                            sourcesIds: _selectedSources.isNotEmpty
+                                ? _selectedSources
+                                    .map((source) => source.id)
+                                    .toList()
+                                : null,
+                            channelIds: _selectedChannels.isNotEmpty
+                                ? _selectedChannels
+                                    .map((channel) => channel.id)
+                                    .toList()
+                                : null,
+                            advertisingCampaignIds:
+                                _selectedAdvertisingCampaigns.isNotEmpty
+                                    ? _selectedAdvertisingCampaigns
+                                        .map((campaign) => campaign.id)
+                                        .toList()
+                                    : null,
+                            reasonForRefusalIds:
+                                _selectedReasonForRefusalIds.isNotEmpty
+                                    ? _selectedReasonForRefusalIds
+                                    : null,
+                            statusIds: _selectedStatuses,
+                            fromDate: _fromDate,
+                            toDate: _toDate,
+                            hasSuccessDeals: _hasSuccessDeals,
+                            hasInProgressDeals: _hasInProgressDeals,
+                            hasFailureDeals: _hasFailureDeals,
+                            hasNotices: _hasNotices,
+                            hasContact: _hasContact,
+                            hasChat: _hasChat,
+                            hasNoReplies: _hasNoReplies,
+                            hasUnreadMessages: _hasUnreadMessages,
+                            hasDeal: _hasDeal,
+                            hasOrders: _hasOrders,
+                            daysWithoutActivity: _daysWithoutActivity,
+                            numberOfDaysDeal: _numberOfDaysDeal,
+                            directoryValues: _directoryValues,
+                            customFieldFilters: _selectedCustomFieldFilters,
+                          ));
+                          //print('LeadScreen: FetchLeads dispatched for statusId: $newStatusId (no LeadDataLoaded state)');
+                        }
+                      }
+                    },
+                  ),
+                );
+              }).toList(),
             ),
-          );
-        }).toList(),
-      ),
     );
   }
+
   void _scrollToActiveTab() {
     final keyContext = _tabKeys[_currentTabIndex].currentContext;
     if (keyContext != null && tabScrollController.hasClients) {
       final box = keyContext.findRenderObject() as RenderBox;
-      final position = box.localToGlobal(Offset.zero, ancestor: context.findRenderObject());
+      final position =
+          box.localToGlobal(Offset.zero, ancestor: context.findRenderObject());
       final tabWidth = box.size.width;
 
-      if (position.dx < 0 || (position.dx + tabWidth) > MediaQuery.of(context).size.width) {
+      if (position.dx < 0 ||
+          (position.dx + tabWidth) > MediaQuery.of(context).size.width) {
         double targetOffset = tabScrollController.offset +
             position.dx -
             (MediaQuery.of(context).size.width / 2) +
@@ -1922,9 +2344,12 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
 
   @override
   void dispose() {
+    for (final subscription in _leadSocketSubscriptions) {
+      subscription.cancel();
+    }
+    _leadSocketClient?.disconnect();
     tabScrollController.dispose();
     _tabController.dispose();
     super.dispose();
   }
 }
-

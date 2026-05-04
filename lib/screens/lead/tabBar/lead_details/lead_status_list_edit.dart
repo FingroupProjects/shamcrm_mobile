@@ -112,7 +112,7 @@ class _LeadStatusEditpWidgetState extends State<LeadStatusEditpWidget> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    AppLocalizations.of(context)!.translate('Статус лида'),
+                    AppLocalizations.of(context)!.translate('lead_status'),
                     style: statusTextStyle.copyWith(fontWeight: FontWeight.w400),
                   ),
                   const SizedBox(height: 4),

@@ -23,6 +23,8 @@ class CashDeskScreen extends StatefulWidget {
 
 class _CashDeskScreenState extends State<CashDeskScreen> {
   final ScrollController _scrollController = ScrollController();
+  final TextEditingController _searchController = TextEditingController();
+  final FocusNode _searchFocusNode = FocusNode();
   bool isClickAvatarIcon = false;
 
   // НОВОЕ: Флаги прав доступа
@@ -61,6 +63,8 @@ class _CashDeskScreenState extends State<CashDeskScreen> {
   @override
   void dispose() {
     _scrollController.dispose();
+    _searchController.dispose();
+    _searchFocusNode.dispose();
     super.dispose();
   }
 
@@ -75,6 +79,11 @@ class _CashDeskScreenState extends State<CashDeskScreen> {
     final maxScroll = _scrollController.position.maxScrollExtent;
     final currentScroll = _scrollController.offset;
     return currentScroll >= (maxScroll * 0.9);
+  }
+
+  void _onSearch(String input) {
+    final query = input.trim().isEmpty ? null : input.trim();
+    context.read<CashDeskBloc>().add(SearchCashRegisters(query));
   }
 
   @override
@@ -92,13 +101,20 @@ class _CashDeskScreenState extends State<CashDeskScreen> {
             });
           },
           clearButtonClickFiltr: (isSearching) {},
-          showSearchIcon: false,
+          showSearchIcon: !isClickAvatarIcon,
           showFilterIcon: false,
           showFilterOrderIcon: false,
-          onChangedSearchInput: (input) {},
-          textEditingController: TextEditingController(),
-          focusNode: FocusNode(),
-          clearButtonClick: (isSearching) {},
+          onChangedSearchInput: _onSearch,
+          textEditingController: _searchController,
+          focusNode: _searchFocusNode,
+          clearButtonClick: (isSearching) {
+            if (!isSearching) {
+              setState(() {
+                _searchController.clear();
+              });
+              context.read<CashDeskBloc>().add(const SearchCashRegisters(null));
+            }
+          },
           currentFilters: {},
         ),
       ),
@@ -130,7 +146,10 @@ class _CashDeskScreenState extends State<CashDeskScreen> {
                         const SizedBox(height: 16),
                         ElevatedButton(
                           onPressed: () {
-                            context.read<CashDeskBloc>().add(const FetchCashRegisters());
+                            // Сохраняем текущий поисковый запрос при повторной попытке
+                            final currentState = context.read<CashDeskBloc>().state;
+                            final currentQuery = currentState.searchQuery;
+                            context.read<CashDeskBloc>().add(FetchCashRegisters(query: currentQuery));
                           },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xff1E2E52),
@@ -163,7 +182,10 @@ class _CashDeskScreenState extends State<CashDeskScreen> {
                     color: const Color(0xff1E2E52),
                     backgroundColor: Colors.white,
                     onRefresh: () async {
-                      context.read<CashDeskBloc>().add(const FetchCashRegisters());
+                      // Сохраняем текущий поисковый запрос при обновлении
+                      final currentState = context.read<CashDeskBloc>().state;
+                      final currentQuery = currentState.searchQuery;
+                      context.read<CashDeskBloc>().add(FetchCashRegisters(query: currentQuery));
                     },
                     child: ListView.builder(
                       controller: _scrollController,
@@ -273,7 +295,10 @@ class _CashDeskScreenState extends State<CashDeskScreen> {
     );
 
     if (result == true) {
-      context.read<CashDeskBloc>().add(const FetchCashRegisters());
+      // Сохраняем текущий поисковый запрос
+      final currentState = context.read<CashDeskBloc>().state;
+      final currentQuery = currentState.searchQuery;
+      context.read<CashDeskBloc>().add(FetchCashRegisters(query: currentQuery));
     }
   }
 
@@ -291,7 +316,10 @@ class _CashDeskScreenState extends State<CashDeskScreen> {
     );
 
     if (result == true) {
-      context.read<CashDeskBloc>().add(const FetchCashRegisters());
+      // Сохраняем текущий поисковый запрос
+      final currentState = context.read<CashDeskBloc>().state;
+      final currentQuery = currentState.searchQuery;
+      context.read<CashDeskBloc>().add(FetchCashRegisters(query: currentQuery));
     }
   }
 

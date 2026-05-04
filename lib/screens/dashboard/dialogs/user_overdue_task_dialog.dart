@@ -227,66 +227,66 @@ class _UserOverdueTasksDialogState extends State<UserOverdueTasksDialog> {
   }
 
   Widget _buildTaskCard(OverdueTask task) {
-  return InkWell(
-    onTap: () {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => TaskDetailsScreen(
-            taskId: (task.id ?? 0).toString(),
-            taskName: task.name ?? '',
-            taskStatus: task.taskStatus?.name ?? '',
-            taskCustomFields: [],
-          ),
-        ),
-      );
-    },
-    child: Container(
-      width: double.infinity,
-      margin: const EdgeInsets.only(bottom: 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xffE2E8F0), width: 1),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xff1E2E52).withOpacity(0.08),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // === ЗАГОЛОВОК С НОМЕРОМ, НАЗВАНИЕМ И ПРОСРОЧКОЙ ===
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(16),
-            decoration: const BoxDecoration(
-              color: Color(0xffF8FAFC),
-              borderRadius: BorderRadius.only(
-                topLeft: Radius.circular(12),
-                topRight: Radius.circular(12),
-              ),
-              border: Border(
-                left: BorderSide(width: 4, color: Color(0xff1E2E52)),
-              ),
+    return InkWell(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => TaskDetailsScreen(
+              taskId: (task.id ?? 0).toString(),
+              taskName: task.name ?? '',
+              taskStatus: task.taskStatus?.name ?? '',
+              customFields: [],
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Номер задачи
-                if (task.taskNumber != null)
-                  Text(
-                    '${AppLocalizations.of(context)!.translate('task')} №${task.taskNumber}',
-                    style: const TextStyle(
-                      fontFamily: 'Gilroy',
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xff64748B),
+          ),
+        );
+      },
+      child: Container(
+        width: double.infinity,
+        margin: const EdgeInsets.only(bottom: 16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0xffE2E8F0), width: 1),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xff1E2E52).withOpacity(0.08),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // === ЗАГОЛОВОК С OVERDUE ===
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: const BoxDecoration(
+                color: Color(0xffF8FAFC),
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(12),
+                  topRight: Radius.circular(12),
+                ),
+                border: Border(
+                  left: BorderSide(width: 4, color: Color(0xff1E2E52)),
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // === СТРОКА 1: "Задача №1" ===
+                  if (task.taskNumber != null)
+                    Text(
+                      '${AppLocalizations.of(context)!.translate('task')} №${task.taskNumber}',
+                      style: const TextStyle(
+                        fontFamily: 'Gilroy',
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                            color: Color(0xff1E2E52),
+                      ),
                     ),
-                  ),
 
                 const SizedBox(height: 4),
 
@@ -376,9 +376,9 @@ class _UserOverdueTasksDialogState extends State<UserOverdueTasksDialog> {
                         compact: true,
                       ),
                     ),
-                    
+
                     const SizedBox(width: 16),
-                    
+
                     // Дата "До"
                     Expanded(
                       child: _buildDetailRow(
@@ -423,9 +423,9 @@ Widget _buildDetailRow({
           color: const Color(0xff64748B),
         ),
       ),
-      
+
       const SizedBox(width: 10),
-      
+
       // Текст
       Expanded(
         child: Column(

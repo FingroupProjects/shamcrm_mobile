@@ -30,7 +30,8 @@ class PinScreen extends StatefulWidget {
   _PinScreenState createState() => _PinScreenState();
 }
 
-class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMixin {
+class _PinScreenState extends State<PinScreen>
+    with SingleTickerProviderStateMixin {
   String _pin = '';
   bool _isWrongPin = false;
   bool _isIosVersionAbove15 = false;
@@ -47,13 +48,13 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
   bool _isInitialized = false;
   bool _isPinVerified = false; // ✅ НОВОЕ: Флаг верификации PIN
   final ApiService _apiService = ApiService();
-  
+
   FirebaseApi? _firebaseApi;
 
   @override
   void initState() {
     super.initState();
-    
+
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 500),
       vsync: this,
@@ -92,10 +93,10 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
 
       // ШАГ 4: Проверка PIN
       await _checkSavedPin();
-      
+
       // ШАГ 5: Загрузка настройки биометрии
       await _loadBiometricSetting();
-      
+
       // ШАГ 6: Биометрия (только если включена)
       await _initBiometrics();
 
@@ -104,13 +105,16 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
           _isLoading = false;
         });
       }
-      
     } catch (e) {
       if (mounted) {
         setState(() {
           _isLoading = false;
         });
-        _showErrorDialog('Ошибка инициализации', e.toString());
+        _showErrorDialog(
+          AppLocalizations.of(context)?.translate('initialization_error') ??
+              'Ошибка инициализации',
+          e.toString(),
+        );
       }
     }
   }
@@ -128,9 +132,11 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
       String? savedUserImage = prefs.getString('userImage');
 
       if (mounted) {
+        final fallbackUser =
+            AppLocalizations.of(context)?.translate('user') ?? 'Пользователь';
         setState(() {
-          _userName = savedUserName ?? 'Пользователь';
-          _userNameProfile = savedUserNameProfile ?? 'Пользователь';
+          _userName = savedUserName ?? fallbackUser;
+          _userNameProfile = savedUserNameProfile ?? fallbackUser;
           _userImage = savedUserImage ?? '';
         });
       }
@@ -147,19 +153,34 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
     try {
       final newVersionPlus = NewVersionPlus();
       final status = await newVersionPlus.getVersionStatus();
-      debugPrint("pinScreen. APP_VERSION: Current: ${status?.localVersion}, Store: ${status?.storeVersion}, CanUpdate: ${status?.canUpdate}");
+      debugPrint(
+          "pinScreen. APP_VERSION: Current: ${status?.localVersion}, Store: ${status?.storeVersion}, CanUpdate: ${status?.canUpdate}");
 
-      if (mounted && context.mounted && status != null && status.canUpdate == true) {
+      if (mounted &&
+          context.mounted &&
+          status != null &&
+          status.canUpdate == true) {
         final localizations = AppLocalizations.of(context);
-        
+
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted && context.mounted) {
             UpdateDialog.show(
               context: context,
               status: status,
-              title: localizations?.translate('app_update_available_title') ?? 'Обновление',
-              message: localizations?.translate('app_update_available_message') ?? 'Доступна новая версия приложения',
-              updateButton: localizations?.translate('app_update_button') ?? 'Обновить',
+              title: localizations?.translate('app_update_available_title') ??
+                  'Обновление',
+              message:
+                  localizations?.translate('app_update_available_message') ??
+                      'Доступна новая версия приложения',
+              updateButton:
+                  localizations?.translate('app_update_button') ?? 'Обновить',
+              laterButton: localizations?.translate('later') ??
+                  'Позже', // ← Добавь перевод
+              onLaterPressed: () {
+                // Опционально: можно сохранить, что пользователь отложил обновление
+                // Например: SharedPreferences.setBool('update_later_shown', true);
+                debugPrint('Пользователь отложил обновление');
+              },
             );
           }
         });
@@ -197,7 +218,6 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
       }
 
       _firebaseApi = FirebaseApi();
-      
     } catch (e) {
       _firebaseApi = null;
     }
@@ -211,7 +231,7 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
     try {
       final prefs = await SharedPreferences.getInstance();
       final savedPin = prefs.getString('user_pin');
-      
+
       if (savedPin == null) {
         if (mounted) {
           Navigator.of(context).pushReplacementNamed('/pin_setup');
@@ -227,7 +247,8 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
       final prefs = await SharedPreferences.getInstance();
       if (mounted) {
         setState(() {
-          _isBiometricEnabled = prefs.getBool('biometric_auth_enabled') ?? false;
+          _isBiometricEnabled =
+              prefs.getBool('biometric_auth_enabled') ?? false;
         });
       }
     } catch (e) {
@@ -249,11 +270,13 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
 
       if (_canCheckBiometrics) {
         _availableBiometrics = await _auth.getAvailableBiometrics();
-        
+
         if (_availableBiometrics.isNotEmpty) {
-          if (Platform.isIOS && _availableBiometrics.contains(BiometricType.face)) {
+          if (Platform.isIOS &&
+              _availableBiometrics.contains(BiometricType.face)) {
             _authenticate();
-          } else if (Platform.isAndroid && _availableBiometrics.contains(BiometricType.strong)) {
+          } else if (Platform.isAndroid &&
+              _availableBiometrics.contains(BiometricType.strong)) {
             _authenticate();
           }
         }
@@ -301,22 +324,23 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
 
   void _navigateToHome() {
     if (!mounted) return;
-    
+
     // ✅ КРИТИЧНО: Проверяем флаг верификации
     if (!_isPinVerified) {
       debugPrint('PinScreen: PIN не верифицирован, отменяем навигацию');
       return;
     }
-    
+
     debugPrint('PinScreen: PIN верифицирован, переход на HomeScreen');
-    
+
     // ✅ ИСПРАВЛЕНИЕ: Передаем initialMessage через arguments
     Future.delayed(Duration(milliseconds: 50), () {
       if (!mounted) return;
-      
+
       if (mounted) {
-        Navigator.of(context).pushReplacementNamed(
+        Navigator.of(context).pushNamedAndRemoveUntil(
           '/home',
+          (route) => false,
           arguments: {
             'initialMessage': widget.initialMessage, // ⬅️ Передаем сообщение
           },
@@ -347,12 +371,12 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
 
         if (_pin == savedPin) {
           debugPrint('PinScreen: PIN корректен');
-          
+
           // ✅ ИСПРАВЛЕНИЕ: Устанавливаем флаг ПЕРЕД навигацией
           setState(() {
             _isPinVerified = true;
           });
-          
+
           if (mounted) {
             _navigateToHome();
           }
@@ -370,7 +394,7 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
         Vibration.vibrate(duration: 200);
       }
     } catch (e) {}
-    
+
     setState(() {
       _isWrongPin = true;
       _pin = '';
@@ -405,7 +429,7 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
 
   void _showErrorDialog(String title, String message) {
     if (!mounted) return;
-    
+
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -418,7 +442,10 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
               Navigator.of(context).pop();
               SystemNavigator.pop();
             },
-            child: Text('Закрыть приложение'),
+            child: Text(
+              AppLocalizations.of(context)?.translate('close_app') ??
+                  'Закрыть приложение',
+            ),
           ),
           TextButton(
             onPressed: () {
@@ -429,7 +456,10 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
               });
               _initializeMinimal();
             },
-            child: Text('Повторить'),
+            child: Text(
+              AppLocalizations.of(context)?.translate('retry_dialog') ??
+                  'Повторить',
+            ),
           ),
         ],
       ),
@@ -438,7 +468,7 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
 
   Future<bool> _showNoInternetDialog(BuildContext context) async {
     final localizations = AppLocalizations.of(context);
-    
+
     final result = await showDialog<bool>(
       context: context,
       barrierDismissible: false,
@@ -494,7 +524,7 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
                           Navigator.of(context).pop(false);
                         },
                         child: Text(
-                          'Отмена',
+                          localizations?.translate('cancel') ?? 'Отмена',
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
@@ -574,7 +604,7 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context);
-    
+
     if (_isLoading) {
       return Scaffold(
         backgroundColor: Colors.white,
@@ -704,7 +734,9 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
                           color: const Color.fromARGB(255, 33, 41, 188),
                         ),
                       )
-                    else if (!_isIosVersionAbove15 && !_isBiometricEnabled && _pin.isNotEmpty)
+                    else if (!_isIosVersionAbove15 &&
+                        !_isBiometricEnabled &&
+                        _pin.isNotEmpty)
                       TextButton(
                         onPressed: _onDelete,
                         child: const Icon(

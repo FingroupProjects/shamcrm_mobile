@@ -31,6 +31,7 @@ class UpdateMoneyIncome extends MoneyIncomeEvent {
   final int? cashRegisterId;
   final int? senderCashRegisterId;
   final int? supplierId;
+  final double? exchangeRate;
 
   UpdateMoneyIncome({
     this.id,
@@ -43,22 +44,24 @@ class UpdateMoneyIncome extends MoneyIncomeEvent {
     this.cashRegisterId,
     this.senderCashRegisterId,
     this.supplierId,
+    this.exchangeRate,
   });
 
   @override
   List<Object> get props => [
-    id ?? 0,
-    date,
-    amount,
-    operationType,
-    movementType,
-    leadId ?? 0,
-    articleId ?? 0,
-    comment,
-    cashRegisterId ?? '',
-    senderCashRegisterId ?? '',
-    supplierId ?? 0,
-  ];
+        id ?? 0,
+        date,
+        amount,
+        operationType,
+        movementType,
+        leadId ?? 0,
+        articleId ?? 0,
+        comment,
+        cashRegisterId ?? '',
+        senderCashRegisterId ?? '',
+        supplierId ?? 0,
+        exchangeRate ?? -1,
+      ];
 }
 
 class DeleteMoneyIncome extends MoneyIncomeEvent {
@@ -91,6 +94,7 @@ class CreateMoneyIncome extends MoneyIncomeEvent {
   final int? senderCashRegisterId;
   final int? supplierId;
   final bool approve;
+  final double? exchangeRate;
 
   CreateMoneyIncome({
     required this.date,
@@ -103,6 +107,7 @@ class CreateMoneyIncome extends MoneyIncomeEvent {
     this.senderCashRegisterId,
     this.supplierId,
     required this.approve,
+    this.exchangeRate,
   });
 
   @override
@@ -118,30 +123,26 @@ class CreateMoneyIncome extends MoneyIncomeEvent {
         senderCashRegisterId ?? '',
         supplierId ?? 0,
         approve,
+        exchangeRate ?? -1,
       ];
 }
 
-
 class MassApproveMoneyIncomeDocuments extends MoneyIncomeEvent {
-
   @override
   List<Object> get props => [];
 }
 
 class MassDisapproveMoneyIncomeDocuments extends MoneyIncomeEvent {
-
   @override
   List<Object> get props => [];
 }
 
 class MassDeleteMoneyIncomeDocuments extends MoneyIncomeEvent {
-
   @override
   List<Object> get props => [];
 }
 
 class MassRestoreMoneyIncomeDocuments extends MoneyIncomeEvent {
-
   @override
   List<Object> get props => [];
 }
@@ -169,6 +170,7 @@ class UpdateThenToggleOneMoneyIncomeDocument extends MoneyIncomeEvent {
   final int? senderCashRegisterId;
   final int? supplierId;
   final bool approve;
+  final double? exchangeRate;
 
   UpdateThenToggleOneMoneyIncomeDocument({
     required this.id,
@@ -182,6 +184,7 @@ class UpdateThenToggleOneMoneyIncomeDocument extends MoneyIncomeEvent {
     this.senderCashRegisterId,
     this.supplierId,
     required this.approve,
+    this.exchangeRate,
   });
 
   @override
@@ -198,6 +201,7 @@ class UpdateThenToggleOneMoneyIncomeDocument extends MoneyIncomeEvent {
         senderCashRegisterId ?? '',
         supplierId ?? 0,
         approve,
+        exchangeRate ?? -1,
       ];
 }
 

@@ -5,12 +5,18 @@ class LeadData {
   final String name;
   final int? managerId;
   final num? debt; // ← Добавляем поле долга
+  final String? phone; // ← Добавляем поле телефон
+  final int? currencyId;
+  final LeadListCurrency? currency;
 
   LeadData({
     required this.id,
     required this.name,
     this.managerId,
     this.debt, // ← Добавляем в конструктор
+    this.phone, // ← Добавляем в конструктор
+    this.currencyId,
+    this.currency,
   });
 
   factory LeadData.fromJson(Map<String, dynamic> json) => LeadData(
@@ -18,6 +24,11 @@ class LeadData {
         name: json['name'] is String ? json['name'] : 'Без имени',
         managerId: json['manager'] != null ? json['manager']['id'] : null,
         debt: json['debt'], // ← Парсим долг из JSON
+        phone: json['phone']?.toString(), // ← Парсим телефон из JSON
+        currencyId: json['currency_id'],
+        currency: json['currency'] != null
+            ? LeadListCurrency.fromJson(json['currency'])
+            : null,
       );
 
   Map<String, dynamic> toJson() => {
@@ -25,23 +36,67 @@ class LeadData {
         "name": name,
         "managerId": managerId,
         "debt": debt, // ← Добавляем в toJson
+        "phone": phone, // ← Добавляем в toJson
+        "currency_id": currencyId,
+        "currency": currency?.toJson(),
       };
 
   @override
   String toString() {
-    return 'LeadData{id: $id, name: $name, managerId: $managerId, debt: $debt}';
+    return 'LeadData{id: $id, name: $name, managerId: $managerId, debt: $debt, phone: $phone}';
   }
 
   @override
-  bool operator == (Object other) =>
+  bool operator ==(Object other) =>
       identical(this, other) ||
-      other is LeadData &&
-          runtimeType == other.runtimeType &&
-          id == other.id;
+      other is LeadData && runtimeType == other.runtimeType && id == other.id;
 
   @override
   int get hashCode => id.hashCode ^ name.hashCode;
+}
 
+class LeadListCurrency {
+  final int? id;
+  final String? name;
+  final int? digitalCode;
+  final String? symbolCode;
+  final int? organizationId;
+  final String? createdAt;
+  final String? updatedAt;
+
+  LeadListCurrency({
+    this.id,
+    this.name,
+    this.digitalCode,
+    this.symbolCode,
+    this.organizationId,
+    this.createdAt,
+    this.updatedAt,
+  });
+
+  factory LeadListCurrency.fromJson(Map<String, dynamic> json) {
+    return LeadListCurrency(
+      id: json['id'],
+      name: json['name']?.toString(),
+      digitalCode: json['digital_code'],
+      symbolCode: json['symbol_code']?.toString(),
+      organizationId: json['organization_id'],
+      createdAt: json['created_at']?.toString(),
+      updatedAt: json['updated_at']?.toString(),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'digital_code': digitalCode,
+      'symbol_code': symbolCode,
+      'organization_id': organizationId,
+      'created_at': createdAt,
+      'updated_at': updatedAt,
+    };
+  }
 }
 
 class Pagination {
@@ -60,20 +115,20 @@ class Pagination {
   });
 
   factory Pagination.fromJson(Map<String, dynamic> json) => Pagination(
-    total: json["total"],
-    count: json["count"],
-    perPage: json["per_page"],
-    currentPage: json["current_page"],
-    totalPages: json["total_pages"],
-  );
+        total: json["total"],
+        count: json["count"],
+        perPage: json["per_page"],
+        currentPage: json["current_page"],
+        totalPages: json["total_pages"],
+      );
 
   Map<String, dynamic> toJson() => {
-    "total": total,
-    "count": count,
-    "per_page": perPage,
-    "current_page": currentPage,
-    "total_pages": totalPages,
-  };
+        "total": total,
+        "count": count,
+        "per_page": perPage,
+        "current_page": currentPage,
+        "total_pages": totalPages,
+      };
 
   @override
   String toString() {
@@ -81,10 +136,11 @@ class Pagination {
   }
 }
 
+LeadsDataResponse leadsDataResponseFromJson(String str) =>
+    LeadsDataResponse.fromJson(json.decode(str));
 
-LeadsDataResponse leadsDataResponseFromJson(String str) => LeadsDataResponse.fromJson(json.decode(str));
-
-String leadsDataResponseToJson(LeadsDataResponse data) => json.encode(data.toJson());
+String leadsDataResponseToJson(LeadsDataResponse data) =>
+    json.encode(data.toJson());
 
 class LeadsDataResponse {
   List<LeadData>? result;
@@ -101,8 +157,7 @@ class LeadsDataResponse {
     return LeadsDataResponse(
       result: json["result"] != null && json["result"]["data"] != null
           ? List<LeadData>.from(
-              (json["result"]["data"] as List).map((x) => LeadData.fromJson(x))
-            )
+              (json["result"]["data"] as List).map((x) => LeadData.fromJson(x)))
           : [],
       errors: json["errors"],
       pagination: json["result"] != null && json["result"]["pagination"] != null
@@ -112,9 +167,10 @@ class LeadsDataResponse {
   }
 
   Map<String, dynamic> toJson() => {
-    "result": result == null ? [] : List<dynamic>.from(result!.map((x) => x.toJson())),
-    "errors": errors,
-    "pagination": pagination?.toJson(),
-  };
+        "result": result == null
+            ? []
+            : List<dynamic>.from(result!.map((x) => x.toJson())),
+        "errors": errors,
+        "pagination": pagination?.toJson(),
+      };
 }
-

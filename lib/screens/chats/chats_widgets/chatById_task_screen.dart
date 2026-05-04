@@ -26,6 +26,13 @@ class _TaskByIdScreenState extends State<TaskByIdScreen> {
   bool _canEditTask = false;
   bool _isLoadingPermissions = true;
 
+  String _getTaskErrorMessage(String error) {
+    if (error.toLowerCase().contains('интернет')) {
+      return error;
+    }
+    return 'Задача была удалена';
+  }
+
   @override
   void initState() {
     super.initState();
@@ -35,7 +42,7 @@ class _TaskByIdScreenState extends State<TaskByIdScreen> {
   Future<void> _checkPermissions() async {
     try {
       final canEdit = await _apiService.hasPermission('task.update');
-      
+
       if (mounted) {
         setState(() {
           _canEditTask = canEdit;
@@ -152,14 +159,15 @@ class _TaskByIdScreenState extends State<TaskByIdScreen> {
                   taskName: task.name,
                   taskStatus: task.taskStatus?.taskStatus?.name ?? '',
                   statusId: task.taskStatus?.id ?? 0,
-                  taskCustomFields: [],
+                  customFields: [],
                 ),
               ),
             );
           } else {
             showCustomSnackBar(
               context: context,
-              message: AppLocalizations.of(context)!.translate('task_data_missing'),
+              message:
+                  AppLocalizations.of(context)!.translate('task_data_missing'),
               isSuccess: false,
             );
           }
@@ -252,7 +260,9 @@ class _TaskByIdScreenState extends State<TaskByIdScreen> {
                   () {
                     // Callback после успешного изменения статуса
                     // Перезагружаем профиль задачи
-                    context.read<TaskProfileBloc>().add(FetchTaskProfile(widget.chatId));
+                    context
+                        .read<TaskProfileBloc>()
+                        .add(FetchTaskProfile(widget.chatId));
                   },
                 );
               }
@@ -322,16 +332,20 @@ class _TaskByIdScreenState extends State<TaskByIdScreen> {
               String priorityLevelText;
               switch (task.priority_level) {
                 case '1':
-                  priorityLevelText = AppLocalizations.of(context)!.translate('normal');
+                  priorityLevelText =
+                      AppLocalizations.of(context)!.translate('normal');
                   break;
                 case '2':
-                  priorityLevelText = AppLocalizations.of(context)!.translate('normal');
+                  priorityLevelText =
+                      AppLocalizations.of(context)!.translate('normal');
                   break;
                 case '3':
-                  priorityLevelText = AppLocalizations.of(context)!.translate('urgent');
+                  priorityLevelText =
+                      AppLocalizations.of(context)!.translate('urgent');
                   break;
                 default:
-                  priorityLevelText = AppLocalizations.of(context)!.translate('not_specified');
+                  priorityLevelText =
+                      AppLocalizations.of(context)!.translate('not_specified');
               }
 
               return SingleChildScrollView(
@@ -430,7 +444,17 @@ class _TaskByIdScreenState extends State<TaskByIdScreen> {
                 ),
               );
             } else if (state is TaskProfileError) {
-              return Center(child: Text(state.error));
+              return Center(
+                child: Text(
+                  _getTaskErrorMessage(state.error),
+                  style: const TextStyle(
+                    fontFamily: 'Gilroy',
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.black,
+                  ),
+                ),
+              );
             }
             return Center(
                 child: Text(

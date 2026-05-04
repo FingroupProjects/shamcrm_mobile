@@ -54,7 +54,8 @@ class _SupplierCardState extends State<SupplierCard> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => EditSupplierScreen(supplier: widget.supplier),
+                  builder: (context) =>
+                      EditSupplierScreen(supplier: widget.supplier),
                 ),
               ).then((wasUpdated) {
                 // Перезагружаем список только если были сохранены изменения
@@ -112,7 +113,8 @@ class _SupplierCardState extends State<SupplierCard> {
                     onTap: () {
                       showDialog(
                         context: context,
-                        builder: (context) => SupplierDeleteDialog(documentId: widget.supplier.id),
+                        builder: (context) => SupplierDeleteDialog(
+                            documentId: widget.supplier.id),
                       ).then((value) {
                         // BLoC сам обновляет список после удаления с сохранением query
                         if (widget.onUpdate != null) {

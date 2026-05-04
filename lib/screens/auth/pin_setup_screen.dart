@@ -34,24 +34,24 @@ class _PinSetupScreenState extends State<PinSetupScreen>
   // ═══════════════════════════════════════════════════════════════════════
   // ПЕРЕМЕННЫЕ СОСТОЯНИЯ
   // ═══════════════════════════════════════════════════════════════════════
-  
+
   String _pin = '';
   String _confirmPin = '';
   bool _isConfirming = false;
   bool _pinsDoNotMatch = false;
-  
+
   late AnimationController _animationController;
   late Animation<double> _shakeAnimation;
-  
+
   int? userRoleId;
   bool isPermissionsLoaded = false;
   Map<String, dynamic>? tutorialProgress;
-  
+
   // ✅ Убрано: final ApiService _apiService = ApiService(); — используем context.read<ApiService>()
-  
+
   // ✅ НОВОЕ: Флаг для предотвращения повторной отправки FCM токена
   bool _fcmTokenSent = false;
-  
+
   // ✅ НОВОЕ: Флаг для отслеживания статуса инициализации
   bool _isInitializing = false;
 
@@ -65,18 +65,18 @@ class _PinSetupScreenState extends State<PinSetupScreen>
 
     // Запускаем permissions
     context.read<PermissionsBloc>().add(FetchPermissionsEvent());
-    
+
     // Загружаем данные пользователя
     _loadUserRoleId();
     _fetchTutorialProgress();
     _fetchSettings();
     _fetchMiniAppSettings();
-    
+
     // ✅ КРИТИЧНО: Отправляем FCM токен при открытии экрана
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _sendFCMTokenOnInit();
     });
-    
+
     // Инициализируем анимацию
     _animationController = AnimationController(
       vsync: this,
@@ -111,54 +111,59 @@ class _PinSetupScreenState extends State<PinSetupScreen>
 
     try {
       debugPrint('════════════════════════════════════════════════════════');
-      debugPrint('PinSetupScreen: 📱 СТАРТ: Отправка FCM токена при инициализации');
+      debugPrint(
+          'PinSetupScreen: 📱 СТАРТ: Отправка FCM токена при инициализации');
       debugPrint('════════════════════════════════════════════════════════');
-      
+
       // ✅ ШАГ 1: Инициализируем ApiService
       debugPrint('PinSetupScreen: 🔧 Шаг 1/3: Инициализация ApiService...');
       await apiService.ensureInitialized();
-      
+
       // Проверяем что baseUrl инициализирован
       if (apiService.baseUrl == null || apiService.baseUrl!.isEmpty) {
-        debugPrint('PinSetupScreen: ⚠️ baseUrl не инициализирован после ensureInitialized');
+        debugPrint(
+            'PinSetupScreen: ⚠️ baseUrl не инициализирован после ensureInitialized');
         debugPrint('PinSetupScreen: 🔄 Пробуем явную инициализацию...');
-        
+
         await apiService.initialize();
-        
+
         // Финальная проверка
         if (apiService.baseUrl == null || apiService.baseUrl!.isEmpty) {
-          debugPrint('PinSetupScreen: ❌ baseUrl всё ещё null, откладываем отправку');
-          debugPrint('════════════════════════════════════════════════════════');
+          debugPrint(
+              'PinSetupScreen: ❌ baseUrl всё ещё null, откладываем отправку');
+          debugPrint(
+              '════════════════════════════════════════════════════════');
           _isInitializing = false;
           return;
         }
       }
-      
+
       debugPrint('PinSetupScreen: ✅ ApiService инициализирован');
       debugPrint('PinSetupScreen: 🌐 baseUrl: ${apiService.baseUrl}');
-      
+
       // ✅ ШАГ 2: Получаем FCM токен (с поддержкой iOS)
       debugPrint('PinSetupScreen: 📡 Шаг 2/3: Получение FCM токена...');
       String? fcmToken = await _getFCMToken();
-      
+
       if (fcmToken == null || fcmToken.isEmpty) {
         debugPrint('PinSetupScreen: ⚠️ Не удалось получить FCM токен');
         debugPrint('════════════════════════════════════════════════════════');
         _isInitializing = false;
         return;
       }
-      
+
       debugPrint('PinSetupScreen: ✅ FCM токен получен');
-      debugPrint('PinSetupScreen: 🔑 Token (первые 30 символов): ${fcmToken.substring(0, fcmToken.length > 30 ? 30 : fcmToken.length)}...');
-      
+      debugPrint(
+          'PinSetupScreen: 🔑 Token (первые 30 символов): ${fcmToken.substring(0, fcmToken.length > 30 ? 30 : fcmToken.length)}...');
+
       // ✅ ШАГ 3: Отправляем токен на сервер
-      debugPrint('PinSetupScreen: 📤 Шаг 3/3: Отправка FCM токена на сервер...');
+      debugPrint(
+          'PinSetupScreen: 📤 Шаг 3/3: Отправка FCM токена на сервер...');
       await apiService.sendDeviceToken(fcmToken);
-      
+
       _fcmTokenSent = true;
       debugPrint('PinSetupScreen: ✅ FCM токен УСПЕШНО отправлен на сервер!');
       debugPrint('════════════════════════════════════════════════════════');
-      
     } catch (e, stackTrace) {
       debugPrint('════════════════════════════════════════════════════════');
       debugPrint('PinSetupScreen: ❌ ОШИБКА отправки FCM токена');
@@ -177,10 +182,10 @@ class _PinSetupScreenState extends State<PinSetupScreen>
       if (Platform.isIOS) {
         debugPrint('PinSetupScreen: 🍎 Платформа: iOS');
         debugPrint('PinSetupScreen: 🔍 Проверка APNS токена...');
-        
+
         // Для iOS сначала проверяем APNS
         String? apnsToken = await FirebaseMessaging.instance.getAPNSToken();
-        
+
         if (apnsToken != null) {
           debugPrint('PinSetupScreen: ✅ APNS токен получен');
           // Если APNS токен есть, получаем FCM токен
@@ -188,28 +193,31 @@ class _PinSetupScreenState extends State<PinSetupScreen>
           return fcmToken;
         } else {
           debugPrint('PinSetupScreen: ⚠️ APNS токен недоступен, ждём...');
-          
+
           // Ждём до 5 секунд появления APNS токена
           int attempts = 0;
           const maxAttempts = 10;
           const delayMs = 500;
-          
+
           while (attempts < maxAttempts) {
             await Future.delayed(Duration(milliseconds: delayMs));
             apnsToken = await FirebaseMessaging.instance.getAPNSToken();
-            
+
             if (apnsToken != null) {
-              debugPrint('PinSetupScreen: ✅ APNS токен получен после ${(attempts + 1) * delayMs}ms ожидания');
+              debugPrint(
+                  'PinSetupScreen: ✅ APNS токен получен после ${(attempts + 1) * delayMs}ms ожидания');
               String? fcmToken = await FirebaseMessaging.instance.getToken();
               return fcmToken;
             }
             attempts++;
             debugPrint('PinSetupScreen: ⏳ Попытка ${attempts}/$maxAttempts...');
           }
-          
-          debugPrint('PinSetupScreen: ⚠️ APNS токен так и не появился после ${maxAttempts * delayMs}ms');
-          debugPrint('PinSetupScreen: 🔄 Пробуем получить FCM токен напрямую...');
-          
+
+          debugPrint(
+              'PinSetupScreen: ⚠️ APNS токен так и не появился после ${maxAttempts * delayMs}ms');
+          debugPrint(
+              'PinSetupScreen: 🔄 Пробуем получить FCM токен напрямую...');
+
           // Последняя попытка получить FCM токен напрямую
           return await FirebaseMessaging.instance.getToken();
         }
@@ -217,7 +225,7 @@ class _PinSetupScreenState extends State<PinSetupScreen>
         // Для Android просто получаем FCM токен
         debugPrint('PinSetupScreen: 🤖 Платформа: Android');
         debugPrint('PinSetupScreen: 📡 Получение FCM токена...');
-        
+
         String? fcmToken = await FirebaseMessaging.instance.getToken();
         return fcmToken;
       }
@@ -248,28 +256,32 @@ class _PinSetupScreenState extends State<PinSetupScreen>
     try {
       final prefs = await SharedPreferences.getInstance();
       final organizationId = await apiService.getSelectedOrganization();
-      
+
       if (organizationId == null) {
-        debugPrint('PinSetupScreen: organizationId is null, пропускаем загрузку MiniAppSettings');
+        debugPrint(
+            'PinSetupScreen: organizationId is null, пропускаем загрузку MiniAppSettings');
         return;
       }
-      
+
       final settingsList = await apiService.getMiniAppSettings(organizationId);
-      
+
       if (settingsList.isNotEmpty) {
         final settings = settingsList.first;
         await prefs.setInt('currency_id', settings.currencyId);
-        debugPrint('PinSetupScreen: MiniAppSettings загружены, currency_id: ${settings.currencyId}');
+        debugPrint(
+            'PinSetupScreen: MiniAppSettings загружены, currency_id: ${settings.currencyId}');
       } else {
-        debugPrint('PinSetupScreen: MiniAppSettings пусты для organizationId: $organizationId');
+        debugPrint(
+            'PinSetupScreen: MiniAppSettings пусты для organizationId: $organizationId');
       }
     } catch (e) {
       debugPrint('PinSetupScreen: Ошибка загрузки MiniAppSettings: $e');
-      
+
       // Используем кэшированное значение
       final prefs = await SharedPreferences.getInstance();
       final savedCurrencyId = prefs.getInt('currency_id');
-      debugPrint('PinSetupScreen: Используем кэшированный currency_id: $savedCurrencyId');
+      debugPrint(
+          'PinSetupScreen: Используем кэшированный currency_id: $savedCurrencyId');
     }
   }
 
@@ -286,7 +298,8 @@ class _PinSetupScreenState extends State<PinSetupScreen>
         });
         await prefs.setString(
             'tutorial_progress', json.encode(progress['result']));
-        debugPrint('PinSetupScreen: Tutorial progress загружен для нового пользователя');
+        debugPrint(
+            'PinSetupScreen: Tutorial progress загружен для нового пользователя');
       } else {
         final savedProgress = prefs.getString('tutorial_progress');
         if (savedProgress != null) {
@@ -308,7 +321,8 @@ class _PinSetupScreenState extends State<PinSetupScreen>
       final organizationId = await apiService.getSelectedOrganization();
 
       if (organizationId == null) {
-        debugPrint('PinSetupScreen: organizationId is null, используем настройки по умолчанию');
+        debugPrint(
+            'PinSetupScreen: organizationId is null, используем настройки по умолчанию');
         await _setDefaultSettings(prefs);
         return;
       }
@@ -318,46 +332,88 @@ class _PinSetupScreenState extends State<PinSetupScreen>
       if (response['result'] != null) {
         // Сохраняем localization
         String? localization = response['result']['localization'];
-        
+
         // Логика: если localization == null, используем "+992"
-        String defaultDialCode = (localization != null && localization.isNotEmpty) 
-            ? localization 
-            : '+992';
-        
+        String defaultDialCode =
+            (localization != null && localization.isNotEmpty)
+                ? localization
+                : '+992';
+
         await prefs.setString('default_dial_code', defaultDialCode);
-        
+
         // Остальные настройки
         await prefs.setBool(
-          'department_enabled', 
-          _toBool(response['result']['department'])
-        );
-        
+            'department_enabled', _toBool(response['result']['department']));
+
+        await prefs.setBool('integration_with_1C',
+            _toBool(response['result']['integration_with_1C']));
+
+        await prefs.setBool('good_measurement',
+            _toBool(response['result']['good_measurement']));
+
+        await prefs.setBool('managing_deal_status_visibility',
+            _toBool(response['result']['managing_deal_status_visibility']));
+
         await prefs.setBool(
-          'integration_with_1C', 
-          _toBool(response['result']['integration_with_1C'])
-        );
-        
+            'has_deal_users', _toBool(response['result']['has_deal_users']));
+
+        await prefs.setBool('change_deal_to_multiple_statuses',
+            _toBool(response['result']['change_deal_to_multiple_statuses']));
+
+        await prefs.setBool('push_status_change_enabled',
+            _toBool(response['result']['push_status_change_enabled']));
+
+        await prefs.setBool('push_to_lead_author',
+            _toBool(response['result']['push_to_lead_author']));
+
+        await prefs.setBool('push_to_lead_manager',
+            _toBool(response['result']['push_to_lead_manager']));
+
         await prefs.setBool(
-          'good_measurement', 
-          _toBool(response['result']['good_measurement'])
-        );
-        
-        await prefs.setBool(
-          'managing_deal_status_visibility', 
-          _toBool(response['result']['managing_deal_status_visibility'])
-        );
-        
+            'notify_user', _toBool(response['result']['notify_user']));
+
+        await prefs.setBool('managing_lead_status_visibility',
+            _toBool(response['result']['managing_lead_status_visibility']));
+
+        await prefs.setBool('create_order_from_deal',
+            _toBool(response['result']['create_order_from_deal']));
+
+        await prefs.setBool('create_task_in_deal',
+            _toBool(response['result']['create_task_in_deal']));
+
+        await prefs.setBool('show_chat_in_deals',
+            _toBool(response['result']['show_chat_in_deals']));
+
+        await prefs.setBool('show_accept_button',
+            _toBool(response['result']['show_accept_button']));
+
+        await prefs.setBool('show_accept_decline_button',
+            _toBool(response['result']['show_accept_decline_button']));
+
+        await prefs.setBool('ask_reason_for_refusal',
+            _toBool(response['result']['ask_reason_for_refusal']));
+
+        await prefs.setInt(
+            'accept_lead_status_id',
+            response['result']['accept_lead_status_id'] is int
+                ? response['result']['accept_lead_status_id'] as int
+                : int.tryParse(
+                        '${response['result']['accept_lead_status_id']}') ??
+                    0);
+
         if (kDebugMode) {
           debugPrint('PinSetupScreen: Настройки сохранены успешно');
-          debugPrint('PinSetupScreen: localization = $localization, default_dial_code = $defaultDialCode');
+          debugPrint(
+              'PinSetupScreen: localization = $localization, default_dial_code = $defaultDialCode');
         }
       } else {
-        debugPrint('PinSetupScreen: response[result] is null, используем настройки по умолчанию');
+        debugPrint(
+            'PinSetupScreen: response[result] is null, используем настройки по умолчанию');
         await _setDefaultSettings(prefs);
       }
     } catch (e) {
       debugPrint('PinSetupScreen: Ошибка загрузки settings: $e');
-      
+
       final prefs = await SharedPreferences.getInstance();
       await _setDefaultSettings(prefs);
     }
@@ -368,6 +424,20 @@ class _PinSetupScreenState extends State<PinSetupScreen>
     await prefs.setBool('good_measurement', false);
     await prefs.setBool('managing_deal_status_visibility', false);
     await prefs.setBool('department_enabled', false);
+    await prefs.setBool('has_deal_users', false);
+    await prefs.setBool('change_deal_to_multiple_statuses', false);
+    await prefs.setBool('push_status_change_enabled', false);
+    await prefs.setBool('push_to_lead_author', false);
+    await prefs.setBool('push_to_lead_manager', false);
+    await prefs.setBool('notify_user', false);
+    await prefs.setBool('managing_lead_status_visibility', false);
+    await prefs.setBool('create_order_from_deal', false);
+    await prefs.setBool('create_task_in_deal', false);
+    await prefs.setBool('show_chat_in_deals', false);
+    await prefs.setBool('show_accept_button', false);
+    await prefs.setBool('show_accept_decline_button', false);
+    await prefs.setBool('ask_reason_for_refusal', false);
+    await prefs.setInt('accept_lead_status_id', 0);
     await prefs.setString('default_dial_code', '+992');
     debugPrint('PinSetupScreen: Установлены настройки по умолчанию');
   }
@@ -377,7 +447,7 @@ class _PinSetupScreenState extends State<PinSetupScreen>
     try {
       SharedPreferences prefs = await SharedPreferences.getInstance();
       String userId = prefs.getString('userID') ?? '';
-      
+
       if (userId.isEmpty) {
         debugPrint('PinSetupScreen: userID пуст');
         setState(() {
@@ -386,8 +456,9 @@ class _PinSetupScreenState extends State<PinSetupScreen>
         return;
       }
 
-      UserByIdProfile userProfile = await apiService.getUserById(int.parse(userId));
-      
+      UserByIdProfile userProfile =
+          await apiService.getUserById(int.parse(userId));
+
       setState(() {
         userRoleId = userProfile.role!.first.id;
       });
@@ -404,7 +475,7 @@ class _PinSetupScreenState extends State<PinSetupScreen>
       setState(() {
         isPermissionsLoaded = true;
       });
-      
+
       debugPrint('PinSetupScreen: User role загружена: $userRoleId');
     } catch (e) {
       debugPrint('PinSetupScreen: Ошибка загрузки user role: $e');
@@ -467,12 +538,12 @@ class _PinSetupScreenState extends State<PinSetupScreen>
     if (_pin == _confirmPin) {
       debugPrint('════════════════════════════════════════════════════════');
       debugPrint('PinSetupScreen: ✅ PIN-коды совпадают, сохраняем...');
-      
+
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('user_pin', _pin);
-      
+
       debugPrint('PinSetupScreen: ✅ PIN-код сохранён');
-      
+
       // ✅ Проверка отложенных токенов (на всякий случай)
       try {
         debugPrint('PinSetupScreen: 📤 Проверка отложенных FCM токенов...');
@@ -482,11 +553,11 @@ class _PinSetupScreenState extends State<PinSetupScreen>
       } catch (e) {
         debugPrint('PinSetupScreen: ❌ Ошибка отправки отложенных токенов: $e');
       }
-      
+
       if (isPermissionsLoaded) {
         debugPrint('PinSetupScreen: 🏠 Переход на HomeScreen');
         debugPrint('════════════════════════════════════════════════════════');
-        
+
         Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(builder: (context) => HomeScreen()),
@@ -528,15 +599,15 @@ class _PinSetupScreenState extends State<PinSetupScreen>
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               const SizedBox(height: 40),
-              
+
               // Логотип
               Image.asset(
                 'assets/icons/playstore.png',
                 height: 160,
               ),
-              
+
               const SizedBox(height: 16),
-              
+
               // Заголовок
               Text(
                 _isConfirming
@@ -552,9 +623,9 @@ class _PinSetupScreenState extends State<PinSetupScreen>
                   color: _pinsDoNotMatch ? Colors.red : Colors.black,
                 ),
               ),
-              
+
               const SizedBox(height: 24),
-              
+
               // PIN индикаторы с анимацией
               AnimatedBuilder(
                 animation: _shakeAnimation,
@@ -572,9 +643,9 @@ class _PinSetupScreenState extends State<PinSetupScreen>
                   );
                 },
               ),
-              
+
               const SizedBox(height: 24),
-              
+
               // Цифровая клавиатура
               GridView.count(
                 crossAxisCount: 3,
@@ -604,9 +675,9 @@ class _PinSetupScreenState extends State<PinSetupScreen>
                   const SizedBox(),
                 ],
               ),
-              
+
               const SizedBox(height: 24),
-              
+
               // Кнопка очистки
               ElevatedButton(
                 onPressed: _onClear,

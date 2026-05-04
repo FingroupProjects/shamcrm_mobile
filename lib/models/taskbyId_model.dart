@@ -19,11 +19,15 @@ class TaskById {
   final int priority;
   final ChatById? chat;
   final AuthorTask? author;
-  final List<TaskCustomFieldsById> taskCustomFields;
+  // final List<TaskCustomFieldsById> taskCustomFields;
+  final List<CustomFieldsById> customFields;
   final String? taskFile;
   final int isFinished;
   final List<TaskFiles>? files;
   final List<DirectoryValues>? directoryValues; // Новое поле
+  final int? reasonForRefusalId;
+  final String? reasonForRefusalComment;
+  final String? refusalReasonText;
 
   TaskById({
     required this.id,
@@ -42,11 +46,14 @@ class TaskById {
     required this.priority,
     this.chat,
     this.author,
-    required this.taskCustomFields,
+    required this.customFields,
     this.taskFile,
     this.files,
     required this.isFinished,
     this.directoryValues, // Инициализация нового поля
+    this.reasonForRefusalId,
+    this.reasonForRefusalComment,
+    this.refusalReasonText,
   });
 
   factory TaskById.fromJson(Map<String, dynamic> json, int taskStatusId) {
@@ -70,12 +77,14 @@ class TaskById {
       description: json['description'] is String ? json['description'] : '',
       statusId: taskStatusId,
       priority: priorityLevel,
-      taskStatus: json['taskStatus'] != null && json['taskStatus'] is Map<String, dynamic>
+      taskStatus: json['taskStatus'] != null &&
+              json['taskStatus'] is Map<String, dynamic>
           ? TaskStatusById.fromJson(json['taskStatus'])
           : null,
-      project: json['project'] != null && json['project'] is Map<String, dynamic>
-          ? Project.fromJson(json['project'])
-          : null,
+      project:
+          json['project'] != null && json['project'] is Map<String, dynamic>
+              ? Project.fromJson(json['project'])
+              : null,
       user: json['users'] != null && json['users'] is List
           ? (json['users'] as List)
               .map((userJson) => UserById.fromJson(userJson))
@@ -97,33 +106,59 @@ class TaskById {
       author: json['author'] != null && json['author'] is Map<String, dynamic>
           ? AuthorTask.fromJson(json['author'])
           : null,
-      taskCustomFields: (json['task_custom_fields'] as List<dynamic>?)
-              ?.map((field) => TaskCustomFieldsById.fromJson(field))
+      customFields: (json['custom_fields'] as List<dynamic>?)
+              ?.map((field) => CustomFieldsById.fromJson(field))
               .toList() ??
           [],
       isFinished: json['is_finished'] is int ? json['is_finished'] : 0,
-      directoryValues: json['directory_values'] != null && json['directory_values'] is List
-          ? (json['directory_values'] as List)
-              .map((dirJson) => DirectoryValues.fromJson(dirJson))
-              .toList()
-          : null, // Парсинг directory_values
+      directoryValues:
+          json['directory_values'] != null && json['directory_values'] is List
+              ? (json['directory_values'] as List)
+                  .map((dirJson) => DirectoryValues.fromJson(dirJson))
+                  .toList()
+              : null, // Парсинг directory_values
+      reasonForRefusalId: json['reason_for_refusal_id'] is int
+          ? json['reason_for_refusal_id'] as int
+          : int.tryParse('${json['reason_for_refusal_id']}'),
+      reasonForRefusalComment: json['reason_for_refusal']?.toString(),
+      refusalReasonText: _extractRefusalReasonText(json['refusalReason']),
     );
   }
+}
+
+String? _extractRefusalReasonText(dynamic raw) {
+  if (raw == null) return null;
+  if (raw is String) {
+    return raw.trim().isEmpty ? null : raw.trim();
+  }
+  if (raw is Map<String, dynamic>) {
+    final text = raw['text']?.toString().trim();
+    if (text != null && text.isNotEmpty) return text;
+    final name = raw['name']?.toString().trim();
+    if (name != null && name.isNotEmpty) return name;
+  }
+  return null;
 }
 
 class AuthorTask {
   final int id;
   final String name;
+  final String? lastname;
+  final String? fullName;
 
   AuthorTask({
     required this.id,
     required this.name,
+    this.lastname,
+    this.fullName,
   });
 
   factory AuthorTask.fromJson(Map<String, dynamic> json) {
     return AuthorTask(
       id: json['id'] ?? 0,
       name: json['name'] ?? 'Не указан',
+      lastname: json['lastname'],
+      fullName: json['full_name'],
     );
   }
 }
@@ -148,24 +183,25 @@ class TaskFiles {
   }
 }
 
-class TaskCustomFieldsById {
+class CustomFieldsById {
   final int id;
-  final String key;
+  final String name;
   final String value;
   final String type;
 
-  TaskCustomFieldsById({
+  CustomFieldsById({
     required this.id,
-    required this.key,
+    required this.name,
     required this.value,
     required this.type,
   });
 
-  factory TaskCustomFieldsById.fromJson(Map<String, dynamic> json) {
-    return TaskCustomFieldsById(
-      id: json['id'] ?? 0,
-      key: json['key'] ?? '',
-      value: json['value'] ?? '', type: '',
+  factory CustomFieldsById.fromJson(Map<String, dynamic> json) {
+    return CustomFieldsById(
+      id: json['field_id'] ?? 0,
+      name: json['name'] ?? '',
+      value: json['value'] ?? '',
+      type: json['type'] ?? '',
     );
   }
 }
@@ -264,7 +300,8 @@ class TaskStatusById {
   factory TaskStatusById.fromJson(Map<String, dynamic> json) {
     return TaskStatusById(
       id: json['id'] ?? 0,
-      taskStatus: json['taskStatus'] != null && json['taskStatus'] is Map<String, dynamic>
+      taskStatus: json['taskStatus'] != null &&
+              json['taskStatus'] is Map<String, dynamic>
           ? TaskStatusNameById.fromJson(json['taskStatus'])
           : null, // Handle null case
       color: json['color'] ?? '',
@@ -279,6 +316,7 @@ class TaskStatusById {
     };
   }
 }
+
 class TaskStatusNameById {
   final int id;
   final String name;
@@ -313,7 +351,6 @@ class TaskStatusNameById {
   }
 }
 
-
 class DirectoryValues {
   final int id;
   final DirectoryEntry entry;
@@ -334,7 +371,7 @@ class DirectoryValues {
 class DirectoryEntry {
   final int id;
   final DirectoryVV directory;
-  final Map<String, String> values;
+  final List<DirectoryValuePair> values; // Change to List
   final String createdAt;
 
   DirectoryEntry({
@@ -345,11 +382,33 @@ class DirectoryEntry {
   });
 
   factory DirectoryEntry.fromJson(Map<String, dynamic> json) {
+    final valuesJson = json['values'];
+    final valuesList = valuesJson is List
+        ? valuesJson.map((v) => DirectoryValuePair.fromJson(v)).toList()
+        : <DirectoryValuePair>[];
+
     return DirectoryEntry(
       id: json['id'] ?? 0,
       directory: DirectoryVV.fromJson(json['directory']),
-      values: Map<String, String>.from(json['values'] ?? {}),
+      values: valuesList,
       createdAt: json['created_at'] ?? '',
+    );
+  }
+}
+
+class DirectoryValuePair {
+  final String key;
+  final String value;
+
+  DirectoryValuePair({
+    required this.key,
+    required this.value,
+  });
+
+  factory DirectoryValuePair.fromJson(Map<String, dynamic> json) {
+    return DirectoryValuePair(
+      key: json['key'] ?? '',
+      value: json['value'] ?? '',
     );
   }
 }

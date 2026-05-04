@@ -23,3 +23,13 @@ class PermissionsError extends PermissionsState {
 
   PermissionsError(this.message);
 }
+
+// Состояние для сетевых ошибок - не показываем экран "нет доступа"
+class PermissionsNetworkError extends PermissionsState {
+  final String message;
+
+  PermissionsNetworkError(this.message);
+}
+
+// Состояние для реального отсутствия доступа (пустой массив permissions)
+class PermissionsNoAccess extends PermissionsState {}

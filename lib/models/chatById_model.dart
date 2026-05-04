@@ -143,6 +143,7 @@ class Integration {
 // Модель чата по ID
 class ChatById {
   final int id;
+  final String? uniqueId;
   final Channel? channel;
   final bool canSendMessage;
   final String type;
@@ -153,6 +154,7 @@ class ChatById {
 
   ChatById({
     required this.id,
+    this.uniqueId,
     this.channel,
     required this.canSendMessage,
     required this.type,
@@ -165,6 +167,7 @@ class ChatById {
     debugPrint('Parsing ChatById: $json');
     return ChatById(
       id: json['id'] ?? 0,
+      uniqueId: json['unique_id'] as String?,
       channel: json['channel'] != null ? Channel.fromJson(json['channel']) : null,
       canSendMessage: json['can_send_message'] ?? false,
       type: json['type'] ?? '',
@@ -178,6 +181,6 @@ class ChatById {
 
   @override
   String toString() {
-    return 'ChatById{id: $id, channel: $channel, canSendMessage: $canSendMessage, type: $type, unreadCount: $unreadCount, referralBody: $referralBody, integration: $integration}';
+    return 'ChatById{id: $id, uniqueId: $uniqueId, channel: $channel, canSendMessage: $canSendMessage, type: $type, unreadCount: $unreadCount, referralBody: $referralBody, integration: $integration}';
   }
 }

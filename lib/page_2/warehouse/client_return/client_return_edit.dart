@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/client_return/client_return_bloc.dart';
+import 'package:crm_task_manager/api/service/localization_service.dart';
 import 'package:crm_task_manager/custom_widget/compact_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
@@ -31,10 +32,12 @@ class EditClientReturnDocumentScreen extends StatefulWidget {
   });
 
   @override
-  _EditClientReturnDocumentScreenState createState() => _EditClientReturnDocumentScreenState();
+  _EditClientReturnDocumentScreenState createState() =>
+      _EditClientReturnDocumentScreenState();
 }
 
-class _EditClientReturnDocumentScreenState extends State<EditClientReturnDocumentScreen>
+class _EditClientReturnDocumentScreenState
+    extends State<EditClientReturnDocumentScreen>
     with SingleTickerProviderStateMixin {
   String? _selectedStorage;
   LeadData? _selectedLead;
@@ -42,6 +45,7 @@ class _EditClientReturnDocumentScreenState extends State<EditClientReturnDocumen
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _dateController = TextEditingController();
   final TextEditingController _commentController = TextEditingController();
+  final TextEditingController _exchangeRateController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
 
   List<Map<String, dynamic>> _items = [];
@@ -64,12 +68,72 @@ class _EditClientReturnDocumentScreenState extends State<EditClientReturnDocumen
   final Map<int, bool> _collapsedItems = {};
 
   late TabController _tabController;
+  int? _organizationCurrencyId;
+  String? _exchangeRateErrorText;
 
   @override
   void initState() {
     super.initState();
     _initializeFormData();
     _tabController = TabController(length: 2, vsync: this);
+    _loadOrganizationCurrency();
+
+    // ✅ Add tab listener to validate required fields before switching to Products tab
+    _tabController.addListener(() {
+      if (!_tabController.indexIsChanging) return;
+
+      // Prevent switching to Products tab (index 1) if required fields are empty
+      if (_tabController.index == 1) {
+        if (_selectedLead == null || _selectedStorage == null) {
+          // Prevent the tab switch
+          Future.microtask(() {
+            if (mounted) {
+              _tabController.index = 0;
+              _showSnackBar(
+                AppLocalizations.of(context)?.translate('select_lead_first') ??
+                    'Пожайлуста заполните вкладку "Oсновное"',
+                false,
+              );
+            }
+          });
+        }
+      }
+    });
+  }
+
+  Future<void> _loadOrganizationCurrency() async {
+    final currencyId = await LocalizationService.getCurrencyId();
+    if (!mounted) return;
+    setState(() {
+      _organizationCurrencyId = currencyId;
+    });
+  }
+
+  int? get _selectedLeadCurrencyId =>
+      _selectedLead?.currency?.id ?? _selectedLead?.currencyId;
+  String? get _selectedLeadCurrencyName => _selectedLead?.currency?.name;
+
+  bool get _isExchangeRateRequired {
+    if (_organizationCurrencyId == null || _selectedLeadCurrencyId == null) {
+      return false;
+    }
+    return _organizationCurrencyId != _selectedLeadCurrencyId;
+  }
+
+  double? get _exchangeRateValue =>
+      double.tryParse(_exchangeRateController.text.replaceAll(',', '.'));
+
+  double get _totalByCurrency {
+    final rate = _exchangeRateValue ?? 0;
+    return _totalAmount * rate;
+  }
+
+  String _totalByCurrencyLabel(AppLocalizations? localizations) {
+    final base =
+        localizations?.translate('total_by_currency') ?? 'Итого по валюте';
+    final currencyName = _selectedLeadCurrencyName;
+    if (currencyName == null || currencyName.isEmpty) return base;
+    return '$base: $currencyName';
   }
 
   void _initializeFormData() {
@@ -78,11 +142,13 @@ class _EditClientReturnDocumentScreenState extends State<EditClientReturnDocumen
         : DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now());
 
     _commentController.text = widget.document.comment ?? '';
+    _exchangeRateController.text = widget.document.exchangeRate?.value ?? '';
     _selectedStorage = widget.document.storage?.id.toString();
     if (widget.document.model?.id != null) {
       _selectedLead = LeadData(
         id: widget.document.model!.id ?? 0,
         name: widget.document.model!.name ?? '',
+        currencyId: widget.document.model!.currencyId,
       );
     }
     if (widget.document.documentGoods != null) {
@@ -91,7 +157,8 @@ class _EditClientReturnDocumentScreenState extends State<EditClientReturnDocumen
         final quantity = good.quantity ?? 0;
         final price = double.tryParse(good.price ?? '0') ?? 0.0;
 
-        final availableUnits = good.good?.units ?? (good.unit != null ? [good.unit!] : []);
+        final availableUnits =
+            good.good?.units ?? (good.unit != null ? [good.unit!] : []);
         Unit? selectedUnitObj;
         double amount = 1.0; // USE 1 for amount DO NOT USE good.amount directly
 
@@ -108,7 +175,10 @@ class _EditClientReturnDocumentScreenState extends State<EditClientReturnDocumen
         //   }
         // }
         // Fallback if not found
-        selectedUnitObj ??= good.unit ?? (availableUnits.isNotEmpty ? availableUnits.first : Unit(id: null, name: 'шт'));
+        selectedUnitObj ??= good.unit ??
+            (availableUnits.isNotEmpty
+                ? availableUnits.first
+                : Unit(id: null, name: 'шт'));
         debugPrint("amount of unit '${selectedUnitObj.name}': $amount");
 
         _items.add({
@@ -124,8 +194,10 @@ class _EditClientReturnDocumentScreenState extends State<EditClientReturnDocumen
           'availableUnits': availableUnits,
         });
 
-        _priceControllers[variantId] = TextEditingController(text: parseNumberToString(price * amount));
-        _quantityControllers[variantId] = TextEditingController(text: quantity.toString());
+        _priceControllers[variantId] =
+            TextEditingController(text: parseNumberToString(price * amount));
+        _quantityControllers[variantId] =
+            TextEditingController(text: quantity.toString());
 
         // ✅ НОВОЕ: Создаём FocusNode для существующих товаров
         _quantityFocusNodes[variantId] = FocusNode();
@@ -151,7 +223,8 @@ class _EditClientReturnDocumentScreenState extends State<EditClientReturnDocumen
 
           // ✅ Don't use the price from newItem - let user enter it
           final modifiedItem = Map<String, dynamic>.from(newItem);
-          modifiedItem['price'] = 0.0; // Set to 0 instead of using default price
+          modifiedItem['price'] =
+              0.0; // Set to 0 instead of using default price
           modifiedItem.remove('quantity');
 
           _items.add(modifiedItem);
@@ -206,9 +279,10 @@ class _EditClientReturnDocumentScreenState extends State<EditClientReturnDocumen
         _items[index]['selectedUnit'] = newUnit;
         _items[index]['unit_id'] = newUnitId;
 
-        final availableUnits = _items[index]['availableUnits'] as List<Unit>? ?? [];
+        final availableUnits =
+            _items[index]['availableUnits'] as List<Unit>? ?? [];
         final selectedUnitObj = availableUnits.firstWhere(
-              (unit) => (unit.name) == newUnit,
+          (unit) => (unit.name) == newUnit,
           orElse: () => availableUnits.isNotEmpty
               ? availableUnits.first
               : Unit(id: null, name: '', amount: 1),
@@ -219,7 +293,8 @@ class _EditClientReturnDocumentScreenState extends State<EditClientReturnDocumen
 
         // ✅ Get the current price from the controller (user input)
         final priceController = _priceControllers[variantId];
-        final currentDisplayPrice = double.tryParse(priceController?.text ?? '0') ?? 0.0;
+        final currentDisplayPrice =
+            double.tryParse(priceController?.text ?? '0') ?? 0.0;
 
         // ✅ Update price in item
         _items[index]['price'] = currentDisplayPrice;
@@ -235,7 +310,8 @@ class _EditClientReturnDocumentScreenState extends State<EditClientReturnDocumen
     final inputPrice = double.tryParse(value);
     if (inputPrice != null && inputPrice >= 0) {
       setState(() {
-        final index = _items.indexWhere((item) => item['variantId'] == variantId);
+        final index =
+            _items.indexWhere((item) => item['variantId'] == variantId);
         if (index != -1) {
           // ✅ Store the price as entered
           _items[index]['price'] = inputPrice;
@@ -248,7 +324,8 @@ class _EditClientReturnDocumentScreenState extends State<EditClientReturnDocumen
       });
     } else if (value.isEmpty) {
       setState(() {
-        final index = _items.indexWhere((item) => item['variantId'] == variantId);
+        final index =
+            _items.indexWhere((item) => item['variantId'] == variantId);
         if (index != -1) {
           _items[index]['price'] = 0.0;
           _items[index]['total'] = 0.0;
@@ -261,7 +338,8 @@ class _EditClientReturnDocumentScreenState extends State<EditClientReturnDocumen
     final quantity = int.tryParse(value);
     if (quantity != null && quantity > 0) {
       setState(() {
-        final index = _items.indexWhere((item) => item['variantId'] == variantId);
+        final index =
+            _items.indexWhere((item) => item['variantId'] == variantId);
         if (index != -1) {
           _items[index]['quantity'] = quantity;
           final price = _items[index]['price'] ?? 0.0;
@@ -273,7 +351,8 @@ class _EditClientReturnDocumentScreenState extends State<EditClientReturnDocumen
       });
     } else if (value.isEmpty) {
       setState(() {
-        final index = _items.indexWhere((item) => item['variantId'] == variantId);
+        final index =
+            _items.indexWhere((item) => item['variantId'] == variantId);
         if (index != -1) {
           // ✅ Remove quantity from item
           _items[index].remove('quantity');
@@ -290,7 +369,7 @@ class _EditClientReturnDocumentScreenState extends State<EditClientReturnDocumen
 
       _listKey.currentState?.removeItem(
         index,
-            (context, animation) =>
+        (context, animation) =>
             _buildSelectedItemCard(index, removedItem, animation),
         duration: const Duration(milliseconds: 300),
       );
@@ -325,7 +404,8 @@ class _EditClientReturnDocumentScreenState extends State<EditClientReturnDocumen
   void _openVariantSelection() async {
     if (_selectedLead == null) {
       _showSnackBar(
-        AppLocalizations.of(context)?.translate('select_lead_first') ?? 'Сначала выберите лида',
+        AppLocalizations.of(context)?.translate('select_lead_first') ??
+            'Сначала выберите лида',
         false,
       );
       return;
@@ -333,7 +413,8 @@ class _EditClientReturnDocumentScreenState extends State<EditClientReturnDocumen
 
     if (_selectedStorage == null) {
       _showSnackBar(
-        AppLocalizations.of(context)?.translate('select_storage_first') ?? 'Сначала выберите склад',
+        AppLocalizations.of(context)?.translate('select_storage_first') ??
+            'Сначала выберите склад',
         false,
       );
       return;
@@ -361,7 +442,6 @@ class _EditClientReturnDocumentScreenState extends State<EditClientReturnDocumen
     }
   }
 
-
   // ✅ НОВОЕ: Функция для перехода к следующему пустому полю
   void _moveToNextEmptyField() {
     for (var item in _items) {
@@ -369,7 +449,8 @@ class _EditClientReturnDocumentScreenState extends State<EditClientReturnDocumen
       final quantityController = _quantityControllers[variantId];
       final priceController = _priceControllers[variantId];
 
-      if (quantityController != null && quantityController.text.trim().isEmpty) {
+      if (quantityController != null &&
+          quantityController.text.trim().isEmpty) {
         _quantityFocusNodes[variantId]?.requestFocus();
         return;
       }
@@ -401,7 +482,9 @@ class _EditClientReturnDocumentScreenState extends State<EditClientReturnDocumen
 
   // Функция для парсинга цены: возвращает int если целое, double если дробное
   num _parsePriceAsNumber(dynamic price) {
-    final double parsedPrice = price is String ? (double.tryParse(price) ?? 0.0) : (price as num).toDouble();
+    final double parsedPrice = price is String
+        ? (double.tryParse(price) ?? 0.0)
+        : (price as num).toDouble();
     // Проверяем, является ли число целым
     if (parsedPrice == parsedPrice.truncateToDouble()) {
       return parsedPrice.toInt();
@@ -410,21 +493,41 @@ class _EditClientReturnDocumentScreenState extends State<EditClientReturnDocumen
   }
 
   void _updateDocument() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (_isLoading) return;
+    setState(() => _isLoading = true);
+
+    void cancelLoading() {
+      if (!mounted || !_isLoading) return;
+      setState(() => _isLoading = false);
+    }
+
+    if (!_formKey.currentState!.validate()) {
+      cancelLoading();
+      return;
+    }
 
     if (_items.isEmpty) {
       _showSnackBar('Добавьте хотя бы один товар', false);
+      cancelLoading();
       return;
     }
 
     if (_selectedStorage == null) {
       _showSnackBar('Выберите склад', false);
+      cancelLoading();
       return;
     }
 
     if (_selectedLead == null) {
       _showSnackBar('Выберите лид', false);
+      cancelLoading();
       return;
+    }
+
+    if (_exchangeRateErrorText != null) {
+      setState(() {
+        _exchangeRateErrorText = null;
+      });
     }
 
     bool hasErrors = false;
@@ -465,14 +568,15 @@ class _EditClientReturnDocumentScreenState extends State<EditClientReturnDocumen
       );
       // Фокусируемся на первом товаре с ошибкой
       _focusFirstErrorItem();
+      cancelLoading();
       return;
     }
 
-    setState(() => _isLoading = true);
-
     try {
-      DateTime? parsedDate = DateFormat('dd/MM/yyyy HH:mm').parse(_dateController.text);
-      String isoDate = DateFormat("yyyy-MM-ddTHH:mm:ss.SSS'Z'").format(parsedDate);
+      DateTime? parsedDate =
+          DateFormat('dd/MM/yyyy HH:mm').parse(_dateController.text);
+      String isoDate =
+          DateFormat("yyyy-MM-ddTHH:mm:ss.SSS'Z'").format(parsedDate);
 
       final bloc = context.read<ClientReturnBloc>();
       bloc.add(UpdateClientReturnDocument(
@@ -481,19 +585,23 @@ class _EditClientReturnDocumentScreenState extends State<EditClientReturnDocumen
         storageId: int.parse(_selectedStorage!),
         comment: _commentController.text.trim(),
         counterpartyId: _selectedLead!.id,
-        documentGoods: _items.map((item) => {
-          'good_id': item['variantId'],
-          'quantity': int.tryParse(item['quantity'].toString()),
-          'price': _parsePriceAsNumber(item['price']),
-          "unit_id": item["unit_id"]
-        }).toList(),
+        documentGoods: _items
+            .map((item) => {
+                  'good_id': item['variantId'],
+                  'quantity': int.tryParse(item['quantity'].toString()),
+                  'price': _parsePriceAsNumber(item['price']),
+                  "unit_id": item["unit_id"]
+                })
+            .toList(),
         organizationId: widget.document.organizationId ?? 1,
         salesFunnelId: 1,
+        exchangeRate: _exchangeRateValue,
       ));
     } catch (e) {
-      setState(() => _isLoading = false);
+      cancelLoading();
       _showSnackBar(
-        AppLocalizations.of(context)?.translate('enter_valid_datetime') ?? 'Введите корректную дату и время',
+        AppLocalizations.of(context)?.translate('enter_valid_datetime') ??
+            'Введите корректную дату и время',
         false,
       );
     }
@@ -576,8 +684,12 @@ class _EditClientReturnDocumentScreenState extends State<EditClientReturnDocumen
                         fontWeight: FontWeight.w500,
                       ),
                       tabs: [
-                        Tab(text: localizations?.translate('main') ?? 'Основное'),
-                        Tab(text: localizations?.translate('goods') ?? 'Товары'),
+                        Tab(
+                            text:
+                                localizations?.translate('main') ?? 'Основное'),
+                        Tab(
+                            text:
+                                localizations?.translate('goods') ?? 'Товары'),
                       ],
                     ),
                   ),
@@ -610,7 +722,13 @@ class _EditClientReturnDocumentScreenState extends State<EditClientReturnDocumen
           const SizedBox(height: 16),
           LeadRadioGroupWidget(
             selectedLead: _selectedLead?.id.toString(),
-            onSelectLead: (lead) => setState(() => _selectedLead = lead),
+            onSelectLead: (lead) => setState(() {
+              _selectedLead = lead;
+              _exchangeRateErrorText = null;
+              if (!_isExchangeRateRequired) {
+                _exchangeRateController.clear();
+              }
+            }),
             showDebt: true,
           ),
           const SizedBox(height: 16),
@@ -619,8 +737,16 @@ class _EditClientReturnDocumentScreenState extends State<EditClientReturnDocumen
             selectedStorage: _selectedStorage,
             onChanged: (value) => setState(() => _selectedStorage = value),
           ),
+          if (_isExchangeRateRequired) ...[
+            const SizedBox(height: 16),
+            _buildExchangeRateField(localizations),
+          ],
           const SizedBox(height: 16),
           _buildCommentField(localizations),
+          if (_isExchangeRateRequired) ...[
+            const SizedBox(height: 16),
+            _buildTotalByCurrencyField(localizations),
+          ],
           const SizedBox(height: 24),
           _buildActionButtons(localizations),
           const SizedBox(height: 16),
@@ -648,7 +774,8 @@ class _EditClientReturnDocumentScreenState extends State<EditClientReturnDocumen
                     child: Padding(
                       padding: const EdgeInsets.symmetric(vertical: 32),
                       child: Text(
-                        localizations?.translate('no_goods_added') ?? 'Товары не добавлены',
+                        localizations?.translate('no_goods_added') ??
+                            'Товары не добавлены',
                         style: const TextStyle(
                           fontSize: 14,
                           fontFamily: 'Gilroy',
@@ -808,12 +935,67 @@ class _EditClientReturnDocumentScreenState extends State<EditClientReturnDocumen
     return CustomTextField(
       controller: _commentController,
       label: localizations?.translate('comment') ?? 'Примечание',
-      hintText: localizations?.translate('enter_comment') ?? 'Введите примечание',
+      hintText:
+          localizations?.translate('enter_comment') ?? 'Введите примечание',
       maxLines: 3,
       keyboardType: TextInputType.multiline,
     );
   }
 
+  Widget _buildExchangeRateField(AppLocalizations? localizations) {
+    return CustomTextField(
+      controller: _exchangeRateController,
+      label: localizations?.translate('exchange_rate') ?? 'Курс валюты',
+      hintText: localizations?.translate('enter_value') ?? 'Введите курс',
+      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+      inputFormatters: [
+        PriceInputFormatter(),
+      ],
+      errorText: _exchangeRateErrorText,
+      onChanged: (_) {
+        if (_exchangeRateErrorText != null) {
+          setState(() => _exchangeRateErrorText = null);
+        } else {
+          setState(() {});
+        }
+      },
+    );
+  }
+
+  Widget _buildTotalByCurrencyField(AppLocalizations? localizations) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          _totalByCurrencyLabel(localizations),
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            fontFamily: 'Gilroy',
+            color: Color(0xff1E2E52),
+          ),
+        ),
+        const SizedBox(height: 4),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+          decoration: BoxDecoration(
+            color: const Color(0xffF4F7FD),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Text(
+            parseNumberToString(_totalByCurrency.toStringAsFixed(2)),
+            style: const TextStyle(
+              fontFamily: 'Gilroy',
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+              color: Color(0xff1E2E52),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
 
   Widget _buildSelectedItemsList() {
     return Column(
@@ -832,6 +1014,7 @@ class _EditClientReturnDocumentScreenState extends State<EditClientReturnDocumen
       ],
     );
   }
+
   Widget _buildSelectedItemCard(
       int index, Map<String, dynamic> item, Animation<double> animation) {
     final availableUnits = item['availableUnits'] as List<Unit>? ?? [];
@@ -885,14 +1068,17 @@ class _EditClientReturnDocumentScreenState extends State<EditClientReturnDocumen
                     ),
                     const SizedBox(width: 8),
                     Icon(
-                      isCollapsed ? Icons.keyboard_arrow_down : Icons.keyboard_arrow_up,
+                      isCollapsed
+                          ? Icons.keyboard_arrow_down
+                          : Icons.keyboard_arrow_up,
                       color: const Color(0xff4759FF),
                       size: 20,
                     ),
                     const SizedBox(width: 8),
                     GestureDetector(
                       onTap: () => _removeItem(index),
-                      child: const Icon(Icons.close, color: Color(0xff99A4BA), size: 18),
+                      child: const Icon(Icons.close,
+                          color: Color(0xff99A4BA), size: 18),
                     ),
                   ],
                 ),
@@ -923,7 +1109,8 @@ class _EditClientReturnDocumentScreenState extends State<EditClientReturnDocumen
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          AppLocalizations.of(context)?.translate('quantity') ?? 'Кол-во',
+                          AppLocalizations.of(context)?.translate('quantity') ??
+                              'Кол-во',
                           style: const TextStyle(
                             fontSize: 11,
                             fontFamily: 'Gilroy',
@@ -933,9 +1120,12 @@ class _EditClientReturnDocumentScreenState extends State<EditClientReturnDocumen
                         ),
                         const SizedBox(height: 4),
                         CompactTextField(
-                          controller: quantityController ?? TextEditingController(),
+                          controller:
+                              quantityController ?? TextEditingController(),
                           focusNode: quantityFocusNode,
-                          hintText: AppLocalizations.of(context)?.translate('quantity') ?? 'Количество',
+                          hintText: AppLocalizations.of(context)
+                                  ?.translate('quantity') ??
+                              'Количество',
                           keyboardType: TextInputType.number,
                           inputFormatters: [
                             QuantityInputFormatter(),
@@ -948,7 +1138,8 @@ class _EditClientReturnDocumentScreenState extends State<EditClientReturnDocumen
                             color: Color(0xff1E2E52),
                           ),
                           hasError: _quantityErrors[variantId] == true,
-                          onChanged: (value) => _updateItemQuantity(variantId, value),
+                          onChanged: (value) =>
+                              _updateItemQuantity(variantId, value),
                           onDone: _moveToNextEmptyField,
                         ),
                       ],
@@ -962,7 +1153,8 @@ class _EditClientReturnDocumentScreenState extends State<EditClientReturnDocumen
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            AppLocalizations.of(context)?.translate('unit') ?? 'Ед.',
+                            AppLocalizations.of(context)?.translate('unit') ??
+                                'Ед.',
                             style: const TextStyle(
                               fontSize: 11,
                               fontFamily: 'Gilroy',
@@ -974,11 +1166,13 @@ class _EditClientReturnDocumentScreenState extends State<EditClientReturnDocumen
                           if (availableUnits.length > 1)
                             Container(
                               height: 48,
-                              padding: const EdgeInsets.symmetric(horizontal: 8),
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 8),
                               decoration: BoxDecoration(
                                 color: const Color(0xFFF4F7FD),
                                 borderRadius: BorderRadius.circular(8),
-                                border: Border.all(color: const Color(0xFFE5E7EB)),
+                                border:
+                                    Border.all(color: const Color(0xFFE5E7EB)),
                               ),
                               child: DropdownButtonHideUnderline(
                                 child: DropdownButton<String>(
@@ -986,7 +1180,8 @@ class _EditClientReturnDocumentScreenState extends State<EditClientReturnDocumen
                                   isDense: true,
                                   isExpanded: true,
                                   dropdownColor: Colors.white,
-                                  icon: const Icon(Icons.arrow_drop_down, size: 16, color: Color(0xff4759FF)),
+                                  icon: const Icon(Icons.arrow_drop_down,
+                                      size: 16, color: Color(0xff4759FF)),
                                   style: const TextStyle(
                                     fontSize: 12,
                                     fontFamily: 'Gilroy',
@@ -1001,10 +1196,12 @@ class _EditClientReturnDocumentScreenState extends State<EditClientReturnDocumen
                                   }).toList(),
                                   onChanged: (String? newValue) {
                                     if (newValue != null) {
-                                      final selectedUnit = availableUnits.firstWhere(
-                                            (unit) => (unit.name) == newValue,
+                                      final selectedUnit =
+                                          availableUnits.firstWhere(
+                                        (unit) => (unit.name) == newValue,
                                       );
-                                      _updateItemUnit(variantId, newValue, selectedUnit.id);
+                                      _updateItemUnit(
+                                          variantId, newValue, selectedUnit.id);
                                     }
                                   },
                                 ),
@@ -1013,11 +1210,13 @@ class _EditClientReturnDocumentScreenState extends State<EditClientReturnDocumen
                           else
                             Container(
                               height: 48,
-                              padding: const EdgeInsets.symmetric(horizontal: 8),
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 8),
                               decoration: BoxDecoration(
                                 color: const Color(0xFFF4F7FD),
                                 borderRadius: BorderRadius.circular(8),
-                                border: Border.all(color: const Color(0xFFE5E7EB)),
+                                border:
+                                    Border.all(color: const Color(0xFFE5E7EB)),
                               ),
                               alignment: Alignment.centerLeft,
                               child: Text(
@@ -1040,7 +1239,8 @@ class _EditClientReturnDocumentScreenState extends State<EditClientReturnDocumen
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            AppLocalizations.of(context)?.translate('price') ?? 'Цена',
+                            AppLocalizations.of(context)?.translate('price') ??
+                                'Цена',
                             style: const TextStyle(
                               fontSize: 11,
                               fontFamily: 'Gilroy',
@@ -1051,9 +1251,11 @@ class _EditClientReturnDocumentScreenState extends State<EditClientReturnDocumen
                           const SizedBox(height: 4),
                           CompactTextField(
                             controller:
-                            priceController ?? TextEditingController(),
+                                priceController ?? TextEditingController(),
                             focusNode: priceFocusNode,
-                            hintText: AppLocalizations.of(context)?.translate('price') ?? 'Цена',
+                            hintText: AppLocalizations.of(context)
+                                    ?.translate('price') ??
+                                'Цена',
                             keyboardType: const TextInputType.numberWithOptions(
                                 decimal: true),
                             inputFormatters: [
@@ -1097,29 +1299,30 @@ class _EditClientReturnDocumentScreenState extends State<EditClientReturnDocumen
         ),
         child: _isLoading
             ? const SizedBox(
-          width: 18,
-          height: 18,
-          child: CircularProgressIndicator(
-            strokeWidth: 2,
-            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-          ),
-        )
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
+              )
             : Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.save_outlined, color: Colors.white, size: 18),
-            const SizedBox(width: 6),
-            Text(
-              localizations?.translate('save') ?? 'Обновить',
-              style: const TextStyle(
-                fontSize: 14,
-                fontFamily: 'Gilroy',
-                fontWeight: FontWeight.w600,
-                color: Colors.white,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.save_outlined,
+                      color: Colors.white, size: 18),
+                  const SizedBox(width: 6),
+                  Text(
+                    localizations?.translate('save') ?? 'Обновить',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
               ),
-            ),
-          ],
-        ),
       ),
     );
   }
@@ -1128,6 +1331,7 @@ class _EditClientReturnDocumentScreenState extends State<EditClientReturnDocumen
   void dispose() {
     _dateController.dispose();
     _commentController.dispose();
+    _exchangeRateController.dispose();
     _scrollController.dispose();
     _tabController.dispose();
 

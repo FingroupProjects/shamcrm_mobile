@@ -24,8 +24,26 @@ class MoneyOutcomeCard extends StatelessWidget {
 
   String _formatAmount(dynamic amount) {
     if (amount == null) return '0.00';
-    double amountValue = amount is String ? double.tryParse(amount) ?? 0.0 : amount.toDouble();
+    double amountValue =
+        amount is String ? double.tryParse(amount) ?? 0.0 : amount.toDouble();
     return NumberFormat('#,##0.00', 'ru_RU').format(amountValue);
+  }
+
+  double _parseDouble(dynamic value) {
+    if (value == null) return 0;
+    if (value is num) return value.toDouble();
+    return double.tryParse(value.toString().replaceAll(',', '.')) ?? 0;
+  }
+
+  String? _formatDocumentDate() {
+    final rawDate = document.date ?? document.createdAt;
+    if (rawDate == null || rawDate.isEmpty) return null;
+
+    try {
+      return DateFormat('dd/MM/yyyy HH:mm').format(DateTime.parse(rawDate).toLocal());
+    } catch (_) {
+      return rawDate;
+    }
   }
 
   String _getLocalizedStatus(BuildContext context) {
@@ -48,9 +66,36 @@ class MoneyOutcomeCard extends StatelessWidget {
     return document.approved == false ? Colors.orange : Colors.green;
   }
 
+  String _getDocumentTitle(AppLocalizations localizations) {
+    return '${localizations.translate('outcome') ?? 'Расход'} №${document.docNumber}';
+  }
+
+  String _getDateLabel(AppLocalizations localizations) {
+    final rawLabel = localizations.translate('date') ?? 'Дата';
+    return rawLabel.trim().replaceFirst(RegExp(r':\s*$'), '');
+  }
+
+  String? _getSecondaryLine(AppLocalizations localizations) {
+    if (document.operationType ==
+        MoneyOutcomeOperationType.salary_payment.name) {
+      final employeeName = document.model?.name;
+      if (employeeName != null && employeeName.isNotEmpty) {
+        return '${localizations.translate('employee') ?? 'Сотрудник'}: $employeeName';
+      }
+      return null;
+    }
+
+    if (document.model?.name?.isNotEmpty ?? false) {
+      return '${localizations.translate('client') ?? 'Клиент'} ${document.model!.name}';
+    }
+
+    return null;
+  }
+
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
+    final formattedDate = _formatDocumentDate();
 
     return GestureDetector(
       onTap: () => onClick(document),
@@ -58,9 +103,7 @@ class MoneyOutcomeCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: isSelected
-              ? const Color(0xFFDDE8F5)
-              : const Color(0xFFE9EDF5),
+          color: isSelected ? const Color(0xFFDDE8F5) : const Color(0xFFE9EDF5),
           borderRadius: BorderRadius.circular(12),
           boxShadow: [BoxShadow(color: Colors.grey.shade200, blurRadius: 4)],
         ),
@@ -76,7 +119,7 @@ class MoneyOutcomeCard extends StatelessWidget {
                     children: [
                       Expanded(
                         child: Text(
-                          '${localizations.translate('outcome') ?? 'Доход'} №${document.docNumber}',
+                          _getDocumentTitle(localizations),
                           style: const TextStyle(
                             fontSize: 18,
                             fontFamily: 'Gilroy',
@@ -88,7 +131,8 @@ class MoneyOutcomeCard extends StatelessWidget {
                       Row(
                         children: [
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 4),
                             decoration: BoxDecoration(
                               color: _getStatusColor().withOpacity(0.1),
                               borderRadius: BorderRadius.circular(4),
@@ -128,11 +172,46 @@ class MoneyOutcomeCard extends StatelessWidget {
                       color: Color(0xff1E2E52),
                     ),
                   ),
-
-                  if (document.model?.name?.isNotEmpty ?? false) ...[
+                  if (formattedDate != null) ...[
                     const SizedBox(height: 8),
                     Text(
-                      '${localizations.translate('client') ?? 'Клиент'} ${document.model!.name}',
+                      '${_getDateLabel(localizations)}: $formattedDate',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontFamily: 'Gilroy',
+                        fontWeight: FontWeight.w400,
+                        color: Color(0xff99A4BA),
+                      ),
+                    ),
+                  ],
+
+                  if ((document.exchangeRate?.value ?? '').isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      '${localizations.translate('exchange_rate') ?? 'Курс валюты'}: ${document.exchangeRate!.value}',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontFamily: 'Gilroy',
+                        fontWeight: FontWeight.w400,
+                        color: Color(0xff99A4BA),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${localizations.translate('total_by_currency') ?? 'Итого валюты'}: ${_formatAmount(_parseDouble(document.amount) * _parseDouble(document.exchangeRate!.value))}',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontFamily: 'Gilroy',
+                        fontWeight: FontWeight.w400,
+                        color: Color(0xff99A4BA),
+                      ),
+                    ),
+                  ],
+
+                  if (_getSecondaryLine(localizations) != null) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      _getSecondaryLine(localizations)!,
                       style: const TextStyle(
                         fontSize: 14,
                         fontFamily: 'Gilroy',
@@ -164,7 +243,9 @@ class MoneyOutcomeCard extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.only(left: 8),
                 child: Icon(
-                  isSelected ? Icons.check_circle : Icons.radio_button_unchecked,
+                  isSelected
+                      ? Icons.check_circle
+                      : Icons.radio_button_unchecked,
                   color: Color(0xff1E2E52),
                   size: 24,
                 ),

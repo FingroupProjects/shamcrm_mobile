@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:crm_task_manager/custom_widget/custom_chat_styles.dart';
+import 'package:crm_task_manager/models/message_reaction_model.dart';
+import 'package:crm_task_manager/screens/chats/chats_widgets/compact_reaction_chip.dart';
 
 class FileMessageBubble extends StatelessWidget {
   final String time;
@@ -8,11 +10,15 @@ class FileMessageBubble extends StatelessWidget {
   final String fileName;
   final String senderName;
   final Function(String) onTap;
-  final bool isHighlighted; 
+  final bool isHighlighted;
   final bool isRead;
+  final bool isLeadChat;
+  final bool? isGroupChat;
+  final List<MessageReaction> reactions;
+  final Function(String)? onReactionTap;
 
   const FileMessageBubble({
-    Key? key,
+    super.key,
     required this.time,
     required this.isSender,
     required this.filePath,
@@ -20,69 +26,71 @@ class FileMessageBubble extends StatelessWidget {
     required this.onTap,
     required this.senderName,
     this.isHighlighted = false,
-    required this.isRead, 
-  }) : super(key: key);
+    required this.isRead,
+    this.isLeadChat = false,
+    this.isGroupChat,
+    this.reactions = const [],
+    this.onReactionTap,
+  });
+
+  String _extractFileExtension() {
+    String candidate = fileName.trim();
+
+    if (!candidate.contains('.') && filePath.trim().isNotEmpty) {
+      candidate = filePath.trim();
+    }
+
+    candidate = candidate.split('?').first.split('#').first;
+    final segments = candidate.split('/');
+    final lastSegment = segments.isNotEmpty ? segments.last : candidate;
+
+    if (!lastSegment.contains('.')) {
+      return 'file';
+    }
+
+    final rawExtension = lastSegment.split('.').last.toLowerCase();
+
+    switch (rawExtension) {
+      case 'jpeg':
+        return 'jpg';
+      case 'docx':
+        return 'docx';
+      case 'xlsx':
+        return 'xls';
+      default:
+        return rawExtension;
+    }
+  }
+
+  String _buildPrimaryIconPath(String fileExtension) {
+    return 'assets/icons/files/$fileExtension.png';
+  }
+
+  String _buildFallbackIconPath(String fileExtension) {
+    switch (fileExtension) {
+      case 'mp3':
+        return 'assets/icons/chats/mp3.png';
+      case 'mp4':
+        return 'assets/icons/chats/mp4.png';
+      case 'webp':
+        return 'assets/icons/chats/webp.png';
+      default:
+        return 'assets/icons/files/file.png';
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    String fileExtension = fileName.split('.').last.toLowerCase();
-    String iconPath;
-
-    switch (fileExtension) {
-      case 'pdf':
-        iconPath = 'assets/icons/chats/pdf.png';
-        break;
-      case 'jpg':
-        iconPath = 'assets/icons/files/jpg.png';
-        break;
-      case 'jpeg':
-        iconPath = 'assets/icons/files/jpg.png';
-        break;
-      case 'png':
-        iconPath = 'assets/icons/chats/jpg-file.png';
-        break;
-      case 'doc':
-        iconPath = 'assets/icons/files/doc.png';
-        break;
-      case 'docx':
-        iconPath = 'assets/icons/files/doc.png';
-        break;
-      case 'pptx':
-        iconPath = 'assets/icons/files/pptx.png';
-        break;
-      case 'ppt':
-        iconPath = 'assets/icons/files/ppt.png';
-        break;
-      case 'document':
-        iconPath = 'assets/icons/chats/doc.png';
-        break;
-      case 'xls':
-        iconPath = 'assets/icons/chats/xls.png';
-        break;
-      case 'xlsx':
-        iconPath = 'assets/icons/chats/xls.png';
-        break;
-      case 'webp':
-        iconPath = 'assets/icons/chats/webp.png';
-        break;
-      case 'svg':
-        iconPath = 'assets/icons/chats/svg-file.png';
-        break;
-      case 'mp4':
-        iconPath = 'assets/icons/chats/mp4.png';
-        break;
-      case 'mp3':
-        iconPath = 'assets/icons/chats/mp3.png';
-        break;
-      default:
-        iconPath = 'assets/icons/files/file.png';
-    }
+    final fileExtension = _extractFileExtension();
+    final iconPath = _buildPrimaryIconPath(fileExtension);
+    final fallbackIconPath = _buildFallbackIconPath(fileExtension);
 
     return DecoratedBox(
       decoration: BoxDecoration(
         boxShadow: isHighlighted
-            ? [ BoxShadow(
-                  color: Colors.grey.withOpacity(0.3),
+            ? [
+                BoxShadow(
+                  color: Colors.grey.withValues(alpha: 0.3),
                   blurRadius: 5,
                   spreadRadius: 2,
                   offset: Offset(0, -4),
@@ -93,11 +101,21 @@ class FileMessageBubble extends StatelessWidget {
       child: Align(
         alignment: isSender ? Alignment.centerRight : Alignment.centerLeft,
         child: Column(
-          crossAxisAlignment: isSender ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+          crossAxisAlignment:
+              isSender ? CrossAxisAlignment.end : CrossAxisAlignment.start,
           children: [
             const SizedBox(height: 8),
-            if (!isSender)
-              Text( senderName, style: const TextStyle(fontWeight: FontWeight.w600),
+            // ✅ Логика отображения имени отправителя:
+            // - В лид-чатах: показываем имя для ОБЕИХ сторон (несколько менеджеров могут отвечать)
+            // - В корпоративных группах: показываем имя только для собеседника
+            // - В корпоративных чатах (не группа): показываем имя хотя бы для собеседника
+            if (isLeadChat || isGroupChat == true || !isSender)
+              Text(
+                senderName,
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: isSender ? Colors.grey.shade600 : Colors.black87,
+                ),
               ),
             GestureDetector(
               onTap: () => onTap(filePath),
@@ -112,7 +130,7 @@ class FileMessageBubble extends StatelessWidget {
                   borderRadius: BorderRadius.circular(10),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
+                      color: Colors.black.withValues(alpha: 0.1),
                       offset: Offset(0, 4),
                       blurRadius: 6,
                     ),
@@ -123,14 +141,33 @@ class FileMessageBubble extends StatelessWidget {
                   crossAxisAlignment:
                       CrossAxisAlignment.center, // Центрируем по вертикали
                   children: [
-                    Image.asset(iconPath, width: 32, height: 32),
+                    Image.asset(
+                      iconPath,
+                      width: 32,
+                      height: 32,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Image.asset(
+                          fallbackIconPath,
+                          width: 32,
+                          height: 32,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Image.asset(
+                              'assets/icons/files/file.png',
+                              width: 32,
+                              height: 32,
+                            );
+                          },
+                        );
+                      },
+                    ),
                     const SizedBox(
                         width: 10), // Add this line to create spacing
 
                     Flexible(
                       child: Text(
                         fileName,
-                        style: TextStyle( color: isSender ? Colors.white : Colors.black),
+                        style: TextStyle(
+                            color: isSender ? Colors.white : Colors.black),
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
@@ -138,9 +175,29 @@ class FileMessageBubble extends StatelessWidget {
                 ),
               ),
             ),
-            Row( mainAxisSize: MainAxisSize.min,
+            if (reactions.isNotEmpty)
+              Transform.translate(
+                offset: const Offset(0, -4),
+                child: Padding(
+                  padding: EdgeInsets.only(
+                    left: isSender ? 0 : 6,
+                    right: isSender ? 6 : 0,
+                    bottom: 2,
+                  ),
+                  child: ReactionCapsule(
+                    reactions: reactions,
+                    isSender: isSender,
+                    onReactionTap: onReactionTap,
+                  ),
+                ),
+              ),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                Text(time, style: const TextStyle(
+                Text(
+                  time,
+                  style: const TextStyle(
                     fontSize: 12,
                     color: ChatSmsStyles.appBarTitleColor,
                     fontWeight: FontWeight.w400,
@@ -149,8 +206,8 @@ class FileMessageBubble extends StatelessWidget {
                 ),
                 const SizedBox(width: 3),
                 if (isSender)
-
-                  Icon(isRead ? Icons.done_all : Icons.done_all,
+                  Icon(
+                    isRead ? Icons.done_all : Icons.done_all,
                     size: 18,
                     color: isRead
                         ? const Color.fromARGB(255, 45, 28, 235)

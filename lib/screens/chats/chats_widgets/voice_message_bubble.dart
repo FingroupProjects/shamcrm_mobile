@@ -3,15 +3,25 @@ import 'package:crm_task_manager/utils/global_fun.dart';
 import 'package:flutter/material.dart';
 import 'package:voice_message_package/voice_message_package.dart';
 import 'package:crm_task_manager/models/chats_model.dart';
+import 'package:crm_task_manager/models/message_reaction_model.dart';
+import 'package:crm_task_manager/screens/chats/chats_widgets/compact_reaction_chip.dart';
 
 class VoiceMessageWidget extends StatefulWidget {
   final Message message;
   final String baseUrl;
+  final bool isLeadChat;
+  final bool? isGroupChat;
+  final List<MessageReaction> reactions;
+  final Function(String)? onReactionTap;
 
   const VoiceMessageWidget({
     Key? key,
     required this.message,
     required this.baseUrl,
+    this.isLeadChat = false,
+    this.isGroupChat,
+    this.reactions = const [],
+    this.onReactionTap,
   }) : super(key: key);
 
   @override
@@ -41,7 +51,8 @@ class _VoiceMessageWidgetState extends State<VoiceMessageWidget>
       },
       onError: (err) {
         // Обработка ошибок воспроизведения
-        debugPrint('Ошибка воспроизведения аудио: $err, filePath: ${widget.message.filePath}');
+        debugPrint(
+            'Ошибка воспроизведения аудио: $err, filePath: ${widget.message.filePath}');
       },
       maxDuration: widget.message.duration.inSeconds > 0
           ? widget.message.duration
@@ -77,10 +88,21 @@ class _VoiceMessageWidgetState extends State<VoiceMessageWidget>
             : CrossAxisAlignment.start,
         children: [
           SizedBox(height: 4),
-          if (widget.message.isMyMessage == false)
+          // ✅ Логика отображения имени отправителя:
+          // - В лид-чатах: показываем имя для ОБЕИХ сторон (несколько менеджеров могут отвечать)
+          // - В корпоративных группах: показываем имя только для собеседника
+          // - В корпоративных чатах (не группа): показываем имя хотя бы для собеседника
+          if (widget.isLeadChat ||
+              widget.isGroupChat == true ||
+              !widget.message.isMyMessage)
             Text(
               widget.message.senderName,
-              style: TextStyle(fontWeight: FontWeight.w600),
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                color: widget.message.isMyMessage
+                    ? Colors.grey.shade600
+                    : Colors.black87,
+              ),
             ),
           VoiceMessageView(
             innerPadding: 8,
@@ -100,9 +122,26 @@ class _VoiceMessageWidgetState extends State<VoiceMessageWidget>
                   : ChatSmsStyles.messageBubbleSenderColor,
             ),
           ),
-          SizedBox(height: 4),
+          if (widget.reactions.isNotEmpty)
+            Transform.translate(
+              offset: const Offset(0, -4),
+              child: Padding(
+                padding: EdgeInsets.only(
+                  left: widget.message.isMyMessage ? 0 : 6,
+                  right: widget.message.isMyMessage ? 6 : 0,
+                  bottom: 2,
+                ),
+                child: ReactionCapsule(
+                  reactions: widget.reactions,
+                  isSender: widget.message.isMyMessage,
+                  onReactionTap: widget.onReactionTap,
+                ),
+              ),
+            ),
+          SizedBox(height: 2),
           Row(
             mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
                 time(widget.message.createMessateTime),

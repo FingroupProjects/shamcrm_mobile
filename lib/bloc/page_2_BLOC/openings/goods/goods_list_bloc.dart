@@ -7,7 +7,8 @@ import 'package:crm_task_manager/bloc/page_2_BLOC/openings/goods/goods_list_stat
 import 'package:crm_task_manager/models/page_2/good_variants_model.dart';
 import 'package:flutter/foundation.dart';
 
-class GetAllGoodsListBloc extends Bloc<GetAllGoodsListEvent, GetAllGoodsListState> {
+class GetAllGoodsListBloc
+    extends Bloc<GetAllGoodsListEvent, GetAllGoodsListState> {
   List<GoodVariantItem>? _cachedGoods;
   int _currentPage = 1;
   int _totalPages = 1;
@@ -15,13 +16,9 @@ class GetAllGoodsListBloc extends Bloc<GetAllGoodsListEvent, GetAllGoodsListStat
   static const Duration _cacheExpiration = Duration(minutes: 1);
   final apiService = ApiService();
 
-  // Флаг для отслеживания фоновой загрузки
-  bool _isBackgroundLoading = false;
-
   GetAllGoodsListBloc() : super(GetAllGoodsListInitial()) {
     on<GetAllGoodsListEv>(_getGoods);
     on<RefreshAllGoodsListEv>(_refreshGoods);
-    on<UpdateGoodsListInBackground>(_updateGoodsInBackground);
   }
 
   bool get _isCacheValid {
@@ -31,7 +28,8 @@ class GetAllGoodsListBloc extends Bloc<GetAllGoodsListEvent, GetAllGoodsListStat
     return DateTime.now().difference(_lastLoadTime!) < _cacheExpiration;
   }
 
-  Future<void> _getGoods(GetAllGoodsListEv event, Emitter<GetAllGoodsListState> emit) async {
+  Future<void> _getGoods(
+      GetAllGoodsListEv event, Emitter<GetAllGoodsListState> emit) async {
     // Если у нас есть валидный кэш, используем его
     if (_isCacheValid && _cachedGoods != null) {
       if (kDebugMode) {
@@ -48,7 +46,8 @@ class GetAllGoodsListBloc extends Bloc<GetAllGoodsListEvent, GetAllGoodsListStat
     await _loadGoodsProgressive(emit);
   }
 
-  Future<void> _refreshGoods(RefreshAllGoodsListEv event, Emitter<GetAllGoodsListState> emit) async {
+  Future<void> _refreshGoods(
+      RefreshAllGoodsListEv event, Emitter<GetAllGoodsListState> emit) async {
     _cachedGoods = null;
     _lastLoadTime = null;
     _currentPage = 1;
@@ -59,8 +58,8 @@ class GetAllGoodsListBloc extends Bloc<GetAllGoodsListEvent, GetAllGoodsListStat
   Future<void> _loadGoodsProgressive(Emitter<GetAllGoodsListState> emit) async {
     if (!await _checkInternetConnection()) {
       emit(GetAllGoodsListError(
-          message: 'Ошибка подключения к интернету. Проверьте ваше соединение и попробуйте снова.'
-      ));
+          message:
+              'Ошибка подключения к интернету. Проверьте ваше соединение и попробуйте снова.'));
       return;
     }
 
@@ -72,7 +71,8 @@ class GetAllGoodsListBloc extends Bloc<GetAllGoodsListEvent, GetAllGoodsListStat
       }
 
       // Загружаем только первую страницу
-      var firstPageResponse = await apiService.getGoodVariantsForDropdown(page: 1, perPage: 20);
+      var firstPageResponse =
+          await apiService.getGoodVariantsForDropdown(page: 1, perPage: 20);
       var firstPageGoods = firstPageResponse.result?.data ?? [];
 
       if (kDebugMode) {
@@ -91,116 +91,12 @@ class GetAllGoodsListBloc extends Bloc<GetAllGoodsListEvent, GetAllGoodsListStat
         currentPage: _currentPage,
         totalPages: _totalPages,
       ));
-
-      // Проверяем, есть ли еще страницы из пагинации
-      final hasMorePages = _currentPage < _totalPages;
-
-      if (hasMorePages && !_isBackgroundLoading) {
-        if (kDebugMode) {
-          //print('GetAllGoodsListBloc: Starting background loading of remaining pages...');
-        }
-        // Загружаем остальные страницы в фоне
-        _loadRemainingPagesInBackground();
-      }
-
     } catch (e) {
       if (kDebugMode) {
         //print('GetAllGoodsListBloc: Error loading goods: $e');
       }
       emit(GetAllGoodsListError(message: e.toString()));
     }
-  }
-
-  void _loadRemainingPagesInBackground() {
-    _isBackgroundLoading = true;
-
-    // Запускаем асинхронную загрузку без await
-    _fetchRemainingPages().then((_) {
-      if (kDebugMode) {
-        //print('GetAllGoodsListBloc: Background loading completed. Total goods: ${_cachedGoods?.length ?? 0}');
-      }
-      _isBackgroundLoading = false;
-    }).catchError((error) {
-      if (kDebugMode) {
-        //print('GetAllGoodsListBloc: Error in background loading: $error');
-      }
-      _isBackgroundLoading = false;
-    });
-  }
-
-  Future<void> _fetchRemainingPages() async {
-    try {
-      List<GoodVariantItem> allGoods = List.from(_cachedGoods ?? []);
-      int currentPage = 2;
-      bool hasMorePages = true;
-
-      while (hasMorePages) {
-        try {
-          if (kDebugMode) {
-            //print('GetAllGoodsListBloc: Loading page $currentPage in background...');
-          }
-
-          final pageResponse = await apiService.getGoodVariantsForDropdown(page: currentPage, perPage: 20);
-          final pageGoods = pageResponse.result?.data ?? [];
-          final pagination = pageResponse.result?.pagination;
-
-          if (pageGoods.isNotEmpty) {
-            allGoods.addAll(pageGoods);
-
-            // Обновляем кэш
-            _cachedGoods = allGoods;
-            _currentPage = pagination?.currentPage ?? currentPage;
-            _totalPages = pagination?.totalPages ?? currentPage;
-
-            // Проверяем есть ли еще страницы из пагинации
-            if (pagination != null && 
-                pagination.currentPage != null && 
-                pagination.totalPages != null &&
-                pagination.currentPage! >= pagination.totalPages!) {
-              hasMorePages = false;
-            } else {
-              currentPage++;
-            }
-
-            // Отправляем событие для обновления UI
-            add(UpdateGoodsListInBackground(allGoods, _totalPages));
-
-            if (kDebugMode) {
-              //print('GetAllGoodsListBloc: Background loaded page $currentPage, total: ${allGoods.length}');
-            }
-          } else {
-            hasMorePages = false;
-          }
-
-          // Небольшая задержка между запросами
-          if (hasMorePages) {
-            await Future.delayed(const Duration(milliseconds: 100));
-          }
-
-        } catch (e) {
-          if (kDebugMode) {
-            //print('GetAllGoodsListBloc: Error loading page $currentPage in background: $e');
-          }
-          hasMorePages = false;
-        }
-      }
-
-      _lastLoadTime = DateTime.now();
-
-    } catch (e) {
-      if (kDebugMode) {
-        //print('GetAllGoodsListBloc: Error in _fetchRemainingPages: $e');
-      }
-    }
-  }
-
-  Future<void> _updateGoodsInBackground(UpdateGoodsListInBackground event, Emitter<GetAllGoodsListState> emit) async {
-    // Обновляем состояние без показа загрузки
-    emit(GetAllGoodsListSuccess(
-      goodsList: event.data,
-      currentPage: _currentPage,
-      totalPages: event.totalPages,
-    ));
   }
 
   Future<bool> _checkInternetConnection() async {
@@ -216,4 +112,3 @@ class GetAllGoodsListBloc extends Bloc<GetAllGoodsListEvent, GetAllGoodsListStat
     return _isCacheValid ? _cachedGoods : null;
   }
 }
-

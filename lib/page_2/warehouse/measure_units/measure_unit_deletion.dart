@@ -45,7 +45,7 @@ class MeasureUnitDeleteDialog extends StatelessWidget {
         title: Center(
           child: Text(
             AppLocalizations.of(context)!.translate('delete_measure_unit') ??
-                'Удалить единицу измерения',
+                'Удалить',
             style: const TextStyle(
               fontSize: 20,
               fontFamily: 'Gilroy',

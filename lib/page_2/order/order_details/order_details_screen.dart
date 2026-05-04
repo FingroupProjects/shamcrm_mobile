@@ -5,10 +5,14 @@ import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_bloc
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_state.dart';
 import 'package:crm_task_manager/main.dart';
+import 'package:crm_task_manager/models/field_configuration.dart';
 import 'package:crm_task_manager/models/page_2/order_card.dart';
 import 'package:crm_task_manager/page_2/order/order_details/order_edits.dart';
+import 'package:crm_task_manager/page_2/order/order_details/order_dropdown_bottom_dialog.dart';
+import 'package:crm_task_manager/page_2/order/order_details/order_field_config_utils.dart';
 import 'package:crm_task_manager/page_2/order/order_details/order_good_screen.dart';
 import 'package:crm_task_manager/page_2/order/order_details/order_history_widget.dart';
+import 'package:crm_task_manager/screens/deal/tabBar/deal_details_screen.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/foundation.dart';
@@ -39,17 +43,65 @@ class OrderDetailsScreen extends StatefulWidget {
 class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
   List<Map<String, String>> details = [];
   final ApiService _apiService = ApiService();
+  late final int _initialStatusId;
+  int? _currentStatusId;
+  bool _statusChangedFromDetails = false;
   bool _canEditOrder = false;
   int? currencyId; // Поле для хранения currency_id
   Map<String, dynamic>? _editResult; // Сохраняем результат редактирования
   Order? _currentOrderDetails; // Текущие детали заказа для AppBar
+  List<FieldConfiguration> _fieldConfiguration = [];
+  bool _isConfigurationLoaded = false;
 
   @override
   void initState() {
     super.initState();
+    _initialStatusId = widget.order.orderStatus.id;
+    _currentStatusId = widget.order.orderStatus.id;
     _checkPermissions();
     _loadCurrencyId(); // Загружаем currencyId
+    _loadFieldConfiguration();
     context.read<OrderBloc>().add(FetchOrderDetails(widget.orderId));
+  }
+
+  Map<String, dynamic> _buildNavigationResult() {
+    return {
+      'success': _editResult?['success'] == true || _statusChangedFromDetails,
+      'refresh': _statusChangedFromDetails,
+      'statusId': _initialStatusId,
+      'newStatusId': _currentStatusId ?? _initialStatusId,
+    };
+  }
+
+  void _refreshOrderView() {
+    setState(() {
+      _currentOrderDetails = null;
+      details.clear();
+      _isConfigurationLoaded = false;
+    });
+    _loadFieldConfiguration();
+    context.read<OrderBloc>().add(FetchOrderStatuses(forceRefresh: true));
+    context.read<OrderBloc>().add(FetchOrderDetails(widget.orderId));
+  }
+
+  void _openStatusChangeSheet() {
+    final currentOrder = _currentOrderDetails ?? widget.order;
+
+    OrderDropdownBottomSheet(
+      context,
+      currentOrder.orderStatus.name,
+      (String _, int newStatusId) {
+        if (!mounted) return;
+        setState(() {
+          _statusChangedFromDetails = true;
+          _currentStatusId = newStatusId;
+          _editResult = _buildNavigationResult();
+        });
+        _refreshOrderView();
+      },
+      currentOrder,
+      onTabChange: (_) {},
+    );
   }
 
   // Метод загрузки currencyId из SharedPreferences
@@ -158,7 +210,9 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
   Future<void> _makePhoneCall(String phoneNumber) async {
     if (phoneNumber.isEmpty || phoneNumber.trim() == '') {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(AppLocalizations.of(context)!.translate('phone_number_empty'))),
+        SnackBar(
+            content: Text(
+                AppLocalizations.of(context)!.translate('phone_number_empty'))),
       );
       return;
     }
@@ -168,7 +222,9 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
     );
     if (!await launchUrl(launchUri)) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(AppLocalizations.of(context)!.translate('call_failed'))),
+        SnackBar(
+            content:
+                Text(AppLocalizations.of(context)!.translate('call_failed'))),
       );
     }
   }
@@ -188,60 +244,301 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
     }
   }
 
+  String _withColon(String value) {
+    if (value.trim().endsWith(':')) return value;
+    return '$value:';
+  }
+
+  String _getFieldName(FieldConfiguration fc) {
+    if (fc.isCustomField || fc.isDirectory) {
+      return _withColon(fc.fieldName);
+    }
+
+    switch (fc.fieldName) {
+      case 'lead_id':
+        return _withColon(
+            AppLocalizations.of(context)!.translate('client_label'));
+      case 'manager_id':
+        return _withColon(
+            AppLocalizations.of(context)!.translate('manager_label'));
+      case 'author' || 'author_id':
+        return _withColon(
+            AppLocalizations.of(context)!.translate('author_label'));
+      case 'phone':
+        return _withColon(
+            AppLocalizations.of(context)!.translate('phone_label'));
+      case 'order_date':
+        return _withColon(
+            AppLocalizations.of(context)!.translate('order_date_label'));
+      case 'created_at':
+        return _withColon(
+            AppLocalizations.of(context)!.translate('creation_date_label'));
+      case 'order_status_id':
+      case 'status_id':
+        return _withColon(
+            AppLocalizations.of(context)!.translate('order_status_label'));
+      case 'integration_id':
+        return _withColon(
+            AppLocalizations.of(context)!.translate('internet_store_label'));
+      case 'payment_type':
+      case 'payment_method':
+        return _withColon(
+            AppLocalizations.of(context)!.translate('payment_method_label'));
+      case 'deal_id':
+        return _withColon(
+            AppLocalizations.of(context)!.translate('deal_label'));
+      case 'order_type':
+      case 'order_type_id':
+      case 'type':
+        return _withColon(
+            AppLocalizations.of(context)!.translate('order_type_label'));
+      case 'deliveryType':
+      case 'delivery_type':
+      case 'delivery':
+        return _withColon(AppLocalizations.of(context)!.translate('delivery'));
+      case 'delivery_address_id':
+        return _withColon(
+            AppLocalizations.of(context)!.translate('order_address_label'));
+      case 'branch_id':
+      case 'storage_id':
+        return _withColon(
+            AppLocalizations.of(context)!.translate('branch_label'));
+      case 'comment_to_courier':
+      case 'comment':
+        return _withColon(
+            AppLocalizations.of(context)!.translate('comment_label'));
+      case 'sum':
+        return _withColon(AppLocalizations.of(context)!.translate('price'));
+      case 'payment_status':
+        return _withColon(
+            AppLocalizations.of(context)!.translate('payment_status'));
+      default:
+        return _withColon(fc.fieldName);
+    }
+  }
+
+  String _getFieldValue(FieldConfiguration fc, Order order) {
+    if (fc.isCustomField && fc.customFieldId != null) {
+      for (final field in order.customFieldValues) {
+        if (field.customField?.name == fc.fieldName) {
+          if (field.value.isNotEmpty) {
+            return field.value;
+          }
+          break;
+        }
+      }
+      return '';
+    }
+
+    if (fc.isDirectory && fc.directoryId != null) {
+      for (var dirValue in order.directoryValues) {
+        if (dirValue.entry.directory.name == fc.fieldName) {
+          final value = dirValue.entry.values.entries.isNotEmpty
+              ? dirValue.entry.values.entries.first.value
+              : null;
+          if (value != null && value.toString().isNotEmpty) {
+            return value.toString();
+          }
+        }
+      }
+      return '';
+    }
+
+    switch (fc.fieldName) {
+      case 'lead_id':
+        return order.lead.name;
+      case 'deal_id':
+        return order.deal?.name ?? '';
+      case 'manager_id':
+        return order.manager?.name ?? 'become_manager';
+      case 'author' || 'author_id':
+        return order.manager?.name ?? '';
+      case 'phone':
+        return order.phone;
+      case 'order_date':
+        return order.lead.createdAt != null
+            ? DateFormat('dd.MM.yyyy').format(order.lead.createdAt!)
+            : '';
+      case 'created_at':
+        return order.createdAt != null
+            ? DateFormat('dd.MM.yyyy').format(order.createdAt!)
+            : '';
+      case 'order_status_id':
+      case 'status_id':
+        return order.orderStatus.name;
+      case 'delivery_address_id':
+        return order.delivery
+            ? (order.deliveryAddress ?? '')
+            : (order.branchName ?? '');
+      case 'branch_id':
+        return order.branchName ?? '';
+      case 'comment_to_courier':
+        return order.commentToCourier ?? '';
+      case 'sum':
+        return _formatPrice(order.sum);
+      case 'payment_type':
+        return formatPaymentType(order.paymentMethod, context);
+      case 'payment_status':
+        return formatPaymentType(order.paymentStatus, context);
+      default:
+        return '';
+    }
+  }
+
   void _updateDetails(Order order) {
+    _currentOrderDetails = order;
     String formattedDate = order.lead.createdAt != null
         ? DateFormat('dd.MM.yyyy').format(order.lead.createdAt!)
         : AppLocalizations.of(context)!.translate('');
+    String createdAtDate = order.createdAt != null
+        ? DateFormat('dd.MM.yyyy').format(order.createdAt!)
+        : AppLocalizations.of(context)!.translate('');
 
-    details = [
-      {
-        'label': AppLocalizations.of(context)!.translate('client'),
-        'value': order.lead.name
-      },
-      {
-        'label': AppLocalizations.of(context)!.translate('manager_details'),
-        'value': order.manager?.name ?? 'become_manager'
-      },
-      {
-        'label': AppLocalizations.of(context)!.translate('client_phone'),
-        'value': order.phone
-      },
-      {
-        'label': AppLocalizations.of(context)!.translate('order_date'),
-        'value': formattedDate
-      },
-      {
-        'label': AppLocalizations.of(context)!.translate('order_status'),
-        'value': order.orderStatus.name
-      },
-      {
-        'label': order.delivery
-            ? AppLocalizations.of(context)!.translate('order_address')
-            : AppLocalizations.of(context)!.translate('branch_order'),
-        'value': order.delivery
-            ? (order.deliveryAddress ??
-                AppLocalizations.of(context)!.translate(''))
-            : (order.branchName ??
-                AppLocalizations.of(context)!.translate('')),
-      },
-      {
-        'label': AppLocalizations.of(context)!.translate('comment_client'),
-        'value': order.commentToCourier ??
-            AppLocalizations.of(context)!.translate('no_comment')
-      },
-      {
-        'label': AppLocalizations.of(context)!.translate('price'),
-        'value': _formatPrice(order.sum)
-      },
-      {
-        'label': AppLocalizations.of(context)!.translate('payment_method_title'),
-        'value': formatPaymentType(order.paymentMethod, context)
-      },
-      {
-        'label': AppLocalizations.of(context)!.translate('payment_status_title'),
-        'value': formatPaymentType(order.paymentStatus, context)
-      },
-    ];
+    if (!_isConfigurationLoaded) {
+      details = [
+        if (order.lead.name.isNotEmpty)
+          {
+            'label': AppLocalizations.of(context)!.translate('client'),
+            'value': order.lead.name
+          },
+        if ((order.deal?.name ?? '').isNotEmpty)
+          {
+            'label': AppLocalizations.of(context)!.translate('deal_label'),
+            'value': order.deal!.name
+          },
+        {
+          'label': AppLocalizations.of(context)!.translate('manager_details'),
+          'value': order.manager?.name ?? 'become_manager'
+        },
+        {
+          'label': AppLocalizations.of(context)!.translate('author_details'),
+          'value': order.manager?.name ?? ''
+        },
+        {
+          'label': AppLocalizations.of(context)!.translate('client_phone'),
+          'value': order.phone
+        },
+        {
+          'label': AppLocalizations.of(context)!.translate('order_date'),
+          'value': formattedDate
+        },
+        {
+          'label':
+              AppLocalizations.of(context)!.translate('creation_date_details'),
+          'value': createdAtDate
+        },
+        {
+          'label': AppLocalizations.of(context)!.translate('order_status'),
+          'value': order.orderStatus.name
+        },
+        {
+          'label': order.delivery
+              ? AppLocalizations.of(context)!.translate('order_address')
+              : AppLocalizations.of(context)!.translate('branch_order'),
+          'value': order.delivery
+              ? (order.deliveryAddress ??
+                  AppLocalizations.of(context)!.translate(''))
+              : (order.branchName ??
+                  AppLocalizations.of(context)!.translate('')),
+        },
+        {
+          'label': AppLocalizations.of(context)!.translate('comment_client'),
+          'value': order.commentToCourier ??
+              AppLocalizations.of(context)!.translate('no_comment')
+        },
+        {
+          'label': AppLocalizations.of(context)!.translate('price'),
+          'value': _formatPrice(order.sum)
+        },
+        {
+          'label':
+              AppLocalizations.of(context)!.translate('payment_method_title'),
+          'value': formatPaymentType(order.paymentMethod, context)
+        },
+        {
+          'label':
+              AppLocalizations.of(context)!.translate('payment_status_title'),
+          'value': formatPaymentType(order.paymentStatus, context)
+        },
+      ];
+      final refusalReason = (order.refusalReasonText ?? '').trim();
+      final refusalComment = (order.reasonForRefusalComment ?? '').trim();
+      if (refusalReason.isNotEmpty || refusalComment.isNotEmpty) {
+        details.add({
+          'label': 'Причина отказа:',
+          'value': refusalReason.isNotEmpty ? refusalReason : refusalComment,
+        });
+        if (refusalReason.isNotEmpty && refusalComment.isNotEmpty) {
+          details.add({
+            'label': 'Комментарий отказа:',
+            'value': refusalComment,
+          });
+        }
+      }
+      return;
+    }
+
+    details.clear();
+    for (final fc in _fieldConfiguration) {
+      final fieldValue = _getFieldValue(fc, order);
+      final fieldName = _getFieldName(fc);
+      details.add({
+        'label': fieldName,
+        'value': fieldValue,
+      });
+    }
+
+    final hasCreatedAtField =
+        _fieldConfiguration.any((fc) => fc.fieldName == 'created_at');
+    if (!hasCreatedAtField && order.createdAt != null) {
+      details.add({
+        'label': _withColon(
+            AppLocalizations.of(context)!.translate('creation_date_label')),
+        'value': DateFormat('dd.MM.yyyy').format(order.createdAt!),
+      });
+    }
+
+    final refusalReason = (order.refusalReasonText ?? '').trim();
+    final refusalComment = (order.reasonForRefusalComment ?? '').trim();
+    if (refusalReason.isNotEmpty || refusalComment.isNotEmpty) {
+      details.add({
+        'label': 'Причина отказа:',
+        'value': refusalReason.isNotEmpty ? refusalReason : refusalComment,
+      });
+      if (refusalReason.isNotEmpty && refusalComment.isNotEmpty) {
+        details.add({
+          'label': 'Комментарий отказа:',
+          'value': refusalComment,
+        });
+      }
+    }
+  }
+
+  Future<void> _loadFieldConfiguration() async {
+    try {
+      final response = await _apiService.getFieldPositions(tableName: 'orders');
+      if (!mounted) return;
+
+      final activeFields =
+          response.result.where((field) => field.isActive).toList();
+      final normalizedFields =
+          deduplicateOrderFieldConfigurations(activeFields);
+
+      setState(() {
+        _fieldConfiguration = normalizedFields;
+        _isConfigurationLoaded = true;
+      });
+
+      if (_currentOrderDetails != null) {
+        _updateDetails(_currentOrderDetails!);
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isConfigurationLoaded = true;
+        });
+      }
+    }
   }
 
   void _showFullTextDialog(String title, String content) {
@@ -250,7 +547,8 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
       builder: (BuildContext context) {
         return Dialog(
           backgroundColor: Colors.white,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -315,11 +613,11 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
           create: (context) => OrderHistoryBloc(context.read<ApiService>()),
         ),
       ],
-      child: WillPopScope(
-        onWillPop: () async {
-          // Передаем результат редактирования при закрытии экрана
-          Navigator.pop(context, _editResult);
-          return false;
+      child: PopScope(
+        canPop: false,
+        onPopInvokedWithResult: (didPop, result) {
+          if (didPop) return;
+          Navigator.pop(context, _buildNavigationResult());
         },
         child: BlocBuilder<OrderBloc, OrderState>(
           builder: (context, state) {
@@ -332,7 +630,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
               }
               _updateDetails(state.orderDetails!);
             }
-            
+
             return Scaffold(
               backgroundColor: Colors.white,
               appBar: _buildAppBar(context, orderForAppBar),
@@ -345,7 +643,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
   }
 
   Widget _buildBody(OrderState state) {
-    if (state is OrderLoading) {
+    if (state is OrderLoading || !_isConfigurationLoaded) {
       return const Center(child: CircularProgressIndicator());
     } else if (state is OrderLoaded && state.orderDetails != null) {
       return Padding(
@@ -378,7 +676,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
         icon: const Icon(Icons.arrow_back, color: Color(0xff1E2E52)),
         onPressed: () {
           // Передаем результат редактирования при закрытии экрана
-          Navigator.pop(context, _editResult);
+          Navigator.pop(context, _buildNavigationResult());
         },
       ),
       title: Text(
@@ -408,9 +706,12 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                 ),
               );
               if (result != null) {
-                context.read<OrderBloc>().add(FetchOrderDetails(widget.orderId));
+                context
+                    .read<OrderBloc>()
+                    .add(FetchOrderDetails(widget.orderId));
                 // Сохраняем результат редактирования для последующей передачи
-                if (result is Map<String, dynamic> && result['success'] == true) {
+                if (result is Map<String, dynamic> &&
+                    result['success'] == true) {
                   setState(() {
                     _editResult = result;
                   });
@@ -440,19 +741,70 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
   }
 
   Widget _buildDetailItem(String label, String value) {
-    final String clientLabel = AppLocalizations.of(context)!.translate('client');
-    final String phoneLabel = AppLocalizations.of(context)!.translate('client_phone');
-    final String addressLabel = AppLocalizations.of(context)!.translate('order_address');
-    final String commentLabel = AppLocalizations.of(context)!.translate('comment_client');
+    final String clientLabel =
+        AppLocalizations.of(context)!.translate('client');
+    final String dealLabel =
+        AppLocalizations.of(context)!.translate('deal_label');
+    final String phoneLabel =
+        AppLocalizations.of(context)!.translate('client_phone');
+    final String addressLabel =
+        AppLocalizations.of(context)!.translate('order_address');
+    final String commentLabel =
+        AppLocalizations.of(context)!.translate('comment_client');
+    final String statusLabel =
+        AppLocalizations.of(context)!.translate('order_status_label');
+    final String statusFallbackLabel =
+        AppLocalizations.of(context)!.translate('order_status');
+
+    if (label == statusLabel || label == statusFallbackLabel) {
+      return GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: _openStatusChangeSheet,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildLabel(label),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Flexible(
+                    child: Text(
+                      value,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontFamily: 'Gilroy',
+                        fontWeight: FontWeight.w500,
+                        color: Color(0xff1E2E52),
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  const Icon(
+                    Icons.keyboard_arrow_down_rounded,
+                    color: Color(0xff1E2E52),
+                    size: 16,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
 
     if (label == clientLabel && value.isNotEmpty) {
       return GestureDetector(
         onTap: () {
-          if (widget.order.lead?.id != null) {
+          final currentOrder = _currentOrderDetails ?? widget.order;
+          if (currentOrder.lead.id != 0) {
             navigatorKey.currentState?.push(
               MaterialPageRoute(
                 builder: (context) => LeadDetailsScreen(
-                  leadId: widget.order.lead!.id.toString(),
+                  leadId: currentOrder.lead.id.toString(),
                   leadName: value,
                   leadStatus: "",
                   statusId: 0,
@@ -461,7 +813,51 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
             );
           } else {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(AppLocalizations.of(context)!.translate('lead_not_found'))),
+              SnackBar(
+                  content: Text(AppLocalizations.of(context)!
+                      .translate('lead_not_found'))),
+            );
+          }
+        },
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildLabel(label),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                value,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontFamily: 'Gilroy',
+                  fontWeight: FontWeight.w500,
+                  color: Color(0xff1E2E52),
+                  decoration: TextDecoration.underline,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (label == dealLabel && value.isNotEmpty) {
+      return GestureDetector(
+        onTap: () {
+          final currentOrder = _currentOrderDetails ?? widget.order;
+          if (currentOrder.deal?.id != null) {
+            navigatorKey.currentState?.push(
+              MaterialPageRoute(
+                builder: (context) => DealDetailsScreen(
+                  dealId: currentOrder.deal!.id.toString(),
+                  dealName: currentOrder.deal!.name,
+                  sum: '',
+                  dealStatus: '',
+                  statusId: 0,
+                ),
+              ),
             );
           }
         },

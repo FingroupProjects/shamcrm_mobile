@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../api/service/api_service.dart';
@@ -20,13 +21,41 @@ class CashRegisterOpeningsBloc extends Bloc<CashRegisterOpeningsEvent, CashRegis
     LoadCashRegisterOpenings event,
     Emitter<CashRegisterOpeningsState> emit,
   ) async {
+    if (kDebugMode) {
+      debugPrint('🟡 CashRegisterOpeningsBloc: _onLoadCashRegisterOpenings - начало, search: ${event.search}');
+    }
     try {
-        emit(CashRegisterOpeningsLoading());
-      final response = await _apiService.getCashRegisterOpenings();
+      emit(CashRegisterOpeningsLoading());
+      
+      if (kDebugMode) {
+        debugPrint('🟡 CashRegisterOpeningsBloc: вызван getCashRegisterOpenings');
+      }
+      
+      final response = await _apiService.getCashRegisterOpenings(search: event.search);
+
+      if (kDebugMode) {
+        debugPrint('🟡 CashRegisterOpeningsBloc: получен response, result: ${response.result?.length ?? 0} элементов');
+      }
 
       final cashRegisters = response.result ?? [];
-      emit(CashRegisterOpeningsLoaded(cashRegisters: cashRegisters,));
-    } catch (e) {
+      
+      if (kDebugMode) {
+        debugPrint('🟡 CashRegisterOpeningsBloc: cashRegisters count: ${cashRegisters.length}');
+        if (cashRegisters.isNotEmpty) {
+          debugPrint('🟡 CashRegisterOpeningsBloc: первый элемент id: ${cashRegisters[0].id}, name: ${cashRegisters[0].cashRegister?.name}');
+        }
+      }
+      
+      emit(CashRegisterOpeningsLoaded(cashRegisters: cashRegisters, search: event.search));
+      
+      if (kDebugMode) {
+        debugPrint('🟢 CashRegisterOpeningsBloc: успешно загружено ${cashRegisters.length} касс');
+      }
+    } catch (e, stackTrace) {
+      if (kDebugMode) {
+        debugPrint('🔴 CashRegisterOpeningsBloc: ОШИБКА при загрузке: $e');
+        debugPrint('🔴 CashRegisterOpeningsBloc: STACK TRACE: $stackTrace');
+      }
       emit(CashRegisterOpeningsPaginationError(message: e.toString()));
     }
   }
@@ -35,8 +64,15 @@ class CashRegisterOpeningsBloc extends Bloc<CashRegisterOpeningsEvent, CashRegis
     RefreshCashRegisterOpenings event,
     Emitter<CashRegisterOpeningsState> emit,
   ) async {
-    add(LoadCashRegisterOpenings(
-    ));
+    // Сохраняем текущий search при обновлении
+    final currentState = state;
+    String? currentSearch;
+    if (currentState is CashRegisterOpeningsLoaded) {
+      currentSearch = currentState.search;
+    } else if (event.search != null) {
+      currentSearch = event.search;
+    }
+    add(LoadCashRegisterOpenings(search: currentSearch));
   }
 
   Future<void> _onDeleteCashRegisterOpening(
@@ -49,7 +85,13 @@ class CashRegisterOpeningsBloc extends Bloc<CashRegisterOpeningsEvent, CashRegis
       // Emit success state
       emit(CashRegisterOpeningDeleteSuccess());
       
-      add(LoadCashRegisterOpenings());
+      // Сохраняем search при перезагрузке
+      final currentState = state;
+      String? currentSearch;
+      if (currentState is CashRegisterOpeningsLoaded) {
+        currentSearch = currentState.search;
+      }
+      add(LoadCashRegisterOpenings(search: currentSearch));
     } catch (e) {
       // Сохраняем текущее состояние и эмитим операционную ошибку
       emit(CashRegisterOpeningsOperationError(
@@ -76,7 +118,13 @@ class CashRegisterOpeningsBloc extends Bloc<CashRegisterOpeningsEvent, CashRegis
       emit(CashRegisterOpeningCreateSuccess());
       
       // Reload the list after successful creation
-      add(LoadCashRegisterOpenings());
+      // Сохраняем search при перезагрузке
+      final currentState = state;
+      String? currentSearch;
+      if (currentState is CashRegisterOpeningsLoaded) {
+        currentSearch = currentState.search;
+      }
+      add(LoadCashRegisterOpenings(search: currentSearch));
     } catch (e) {
       // Эмитим ошибку создания
       emit(CashRegisterOpeningCreateError(
@@ -102,7 +150,13 @@ class CashRegisterOpeningsBloc extends Bloc<CashRegisterOpeningsEvent, CashRegis
       emit(CashRegisterOpeningUpdateSuccess());
       
       // Reload the list after successful update
-      add(LoadCashRegisterOpenings());
+      // Сохраняем search при перезагрузке
+      final currentState = state;
+      String? currentSearch;
+      if (currentState is CashRegisterOpeningsLoaded) {
+        currentSearch = currentState.search;
+      }
+      add(LoadCashRegisterOpenings(search: currentSearch));
     } catch (e) {
       // Эмитим ошибку обновления для показа в snackbar
       emit(CashRegisterOpeningUpdateError(
