@@ -877,6 +877,15 @@ class MessagingCubit extends Cubit<MessagingState> {
           )) {
         return index;
       }
+
+      if (incomingMessage.type == 'location' &&
+          _locationMatches(message, incomingMessage) &&
+          _isWithinPendingMatchWindow(
+            localMessage: message,
+            incomingCreatedAt: incomingCreatedAt,
+          )) {
+        return index;
+      }
     }
 
     return -1;
@@ -898,6 +907,24 @@ class MessagingCubit extends Cubit<MessagingState> {
     final difference =
         localCreatedAt.difference(incomingCreatedAt).inSeconds.abs();
     return difference <= 30;
+  }
+
+  bool _locationMatches(Message localMessage, Message incomingMessage) {
+    final localLatitude = localMessage.latitude;
+    final localLongitude = localMessage.longitude;
+    final incomingLatitude = incomingMessage.latitude;
+    final incomingLongitude = incomingMessage.longitude;
+
+    if (localLatitude == null ||
+        localLongitude == null ||
+        incomingLatitude == null ||
+        incomingLongitude == null) {
+      return false;
+    }
+
+    const epsilon = 0.00002;
+    return (localLatitude - incomingLatitude).abs() <= epsilon &&
+        (localLongitude - incomingLongitude).abs() <= epsilon;
   }
 
   List<Message> _replaceMessageById(
