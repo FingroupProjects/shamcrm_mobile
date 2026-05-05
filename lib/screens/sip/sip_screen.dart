@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:math' as math;
+import 'dart:ui';
 
 import 'package:audioplayers/audioplayers.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
@@ -11,6 +12,101 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'sip_service.dart';
 import 'sip_state.dart';
+
+abstract class _G {
+  static const activeBg = [
+    Color(0xFF080C18),
+    Color(0xFF0D1730),
+    Color(0xFF0A1A2E),
+  ];
+
+  static const glassFill = Color(0x18FFFFFF);
+  static const glassBorder = Color(0x30FFFFFF);
+
+  static const accent = Color(0xFF3D8EFF);
+  static const green = Color(0xFF34C759);
+  static const red = Color(0xFFFF3B30);
+  static const amber = Color(0xFFFFCC00);
+
+  static const textPrimary = Colors.white;
+  static const textSecondary = Color(0xAAFFFFFF);
+  static const textTertiary = Color(0x66FFFFFF);
+
+  static const lightBg = Color(0xFFF2F6FF);
+  static const lightSurface = Colors.white;
+  static const lightText = Color(0xFF0F172A);
+  static const lightSubtext = Color(0xFF64748B);
+  static const lightAccent = Color(0xFF0A84FF);
+  static const lightGreen = Color(0xFF25A344);
+}
+
+class _GlassContainer extends StatelessWidget {
+  const _GlassContainer({
+    required this.child,
+    this.padding,
+    this.borderRadius = 24,
+  });
+
+  final Widget child;
+  final EdgeInsetsGeometry? padding;
+  final double borderRadius;
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(borderRadius),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+        child: Container(
+          padding: padding,
+          decoration: BoxDecoration(
+            color: _G.glassFill,
+            borderRadius: BorderRadius.circular(borderRadius),
+            border: Border.all(color: _G.glassBorder, width: 0.8),
+          ),
+          child: child,
+        ),
+      ),
+    );
+  }
+}
+
+class _GlassButton extends StatelessWidget {
+  const _GlassButton({
+    required this.child,
+    required this.onPressed,
+    this.borderRadius = 20,
+    this.padding,
+  });
+
+  final Widget child;
+  final VoidCallback onPressed;
+  final double borderRadius;
+  final EdgeInsetsGeometry? padding;
+
+  @override
+  Widget build(BuildContext context) {
+    return CupertinoButton(
+      padding: EdgeInsets.zero,
+      onPressed: onPressed,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(borderRadius),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+          child: Container(
+            padding: padding ?? const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: _G.glassFill,
+              borderRadius: BorderRadius.circular(borderRadius),
+              border: Border.all(color: _G.glassBorder, width: 0.8),
+            ),
+            child: child,
+          ),
+        ),
+      ),
+    );
+  }
+}
 
 class SipScreen extends StatefulWidget {
   const SipScreen({super.key});
@@ -46,6 +142,9 @@ class _SipScreenState extends State<SipScreen>
   List<Contact> _contacts = const [];
   List<_SipIndexedContact> _indexedContacts = const [];
   List<_SipContactSuggestion> _contactSuggestions = const [];
+  bool _showInCallKeypad = false;
+  String _inCallDigits = '';
+  double _incomingAnswerDrag = 0;
   Timer? _contactSearchDebounce;
   Timer? _draftSaveDebounce;
   bool _suspendDraftAutosave = false;
@@ -754,23 +853,6 @@ class _SipScreenState extends State<SipScreen>
     return value;
   }
 
-  Color _callAccent(SipCallUiStatus status) {
-    switch (status) {
-      case SipCallUiStatus.incoming:
-        return const Color(0xFFF59E0B);
-      case SipCallUiStatus.calling:
-      case SipCallUiStatus.ringing:
-        return const Color(0xFF2563EB);
-      case SipCallUiStatus.inCall:
-        return const Color(0xFF10B981);
-      case SipCallUiStatus.failed:
-        return const Color(0xFFEF4444);
-      case SipCallUiStatus.idle:
-      case SipCallUiStatus.ended:
-        return const Color(0xFF64748B);
-    }
-  }
-
   String _callHint(SipCallUiStatus status) {
     switch (status) {
       case SipCallUiStatus.incoming:
@@ -985,10 +1067,8 @@ class _SipScreenState extends State<SipScreen>
       builder: (context, child) {
         if (!_sipService.isConfigLoaded) {
           return const Scaffold(
-            backgroundColor: Color(0xFFF3F6FD),
-            body: Center(
-              child: CircularProgressIndicator.adaptive(),
-            ),
+            backgroundColor: _G.lightBg,
+            body: Center(child: CircularProgressIndicator.adaptive()),
           );
         }
 
@@ -1003,7 +1083,7 @@ class _SipScreenState extends State<SipScreen>
 
         return Scaffold(
           resizeToAvoidBottomInset: false,
-          backgroundColor: const Color(0xFFF3F6FD),
+          backgroundColor: _G.lightBg,
           body: Container(
             decoration: const BoxDecoration(
               gradient: LinearGradient(
@@ -1039,7 +1119,7 @@ class _SipScreenState extends State<SipScreen>
                                     : _journalView(context, state),
                               ),
                             ),
-                            if (_bottomTabIndex == 1) _bottomSwitcher(context),
+                            if (_bottomTabIndex != 0) _bottomSwitcher(context),
                           ],
                         ),
                 ),
@@ -1054,46 +1134,41 @@ class _SipScreenState extends State<SipScreen>
   Widget _buildTopBar(BuildContext context, SipUiState state) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(18, 10, 18, 8),
-      child: Row(
-        children: [
-          _buildTopIconButton(
-            icon: CupertinoIcons.back,
-            onPressed: () => Navigator.of(context).maybePop(),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Телефония',
-                  style: TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF0F172A),
-                    letterSpacing: -0.8,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  state.registrationStatus == SipRegistrationUiStatus.registered
-                      ? 'Линия активна и готова к входящим'
-                      : 'Подключите линию для звонков в фоне',
-                  style: const TextStyle(
-                    fontSize: 13,
-                    color: Color(0xFF64748B),
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
+      child: Row(children: [
+        _buildTopIconButton(
+          icon: CupertinoIcons.back,
+          onPressed: () => Navigator.of(context).maybePop(),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            const Text(
+              'Телефония',
+              style: TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.w700,
+                color: _G.lightText,
+                letterSpacing: -0.8,
+              ),
             ),
-          ),
-          _buildTopIconButton(
-            icon: CupertinoIcons.gear_alt_fill,
-            onPressed: _showSettingsSheet,
-          ),
-        ],
-      ),
+            const SizedBox(height: 2),
+            Text(
+              state.registrationStatus == SipRegistrationUiStatus.registered
+                  ? 'Линия активна и готова к входящим'
+                  : 'Подключите линию для звонков в фоне',
+              style: const TextStyle(
+                fontSize: 13,
+                color: _G.lightSubtext,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ]),
+        ),
+        _buildTopIconButton(
+          icon: CupertinoIcons.gear_alt_fill,
+          onPressed: _showSettingsSheet,
+        ),
+      ]),
     );
   }
 
@@ -1118,11 +1193,7 @@ class _SipScreenState extends State<SipScreen>
             ),
           ],
         ),
-        child: Icon(
-          icon,
-          size: 21,
-          color: const Color(0xFF1F2937),
-        ),
+        child: Icon(icon, size: 21, color: _G.lightText),
       ),
     );
   }
@@ -1133,7 +1204,7 @@ class _SipScreenState extends State<SipScreen>
         state.registrationStatus == SipRegistrationUiStatus.registering;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF2F6FF),
+      backgroundColor: _G.lightBg,
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
@@ -1164,53 +1235,51 @@ class _SipScreenState extends State<SipScreen>
                       gradient: const LinearGradient(
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
-                        colors: [Color(0xFF17A1C9), Color(0xFF0A6AB8)],
+                        colors: [Color(0xFF2563EB), Color(0xFF1D4ED8)],
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color:
-                              const Color(0xFF0A6AB8).withValues(alpha: 0.24),
-                          blurRadius: 24,
-                          offset: const Offset(0, 10),
+                          color: const Color(0xFF2563EB)
+                              .withValues(alpha: 0.3),
+                          blurRadius: 28,
+                          offset: const Offset(0, 12),
                         ),
                       ],
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Row(
-                          children: [
-                            Container(
-                              width: 42,
-                              height: 42,
-                              decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.22),
-                                borderRadius: BorderRadius.circular(13),
-                              ),
-                              child: const Icon(
-                                CupertinoIcons.phone_circle_fill,
-                                color: Colors.white,
-                                size: 24,
-                              ),
+                        Row(children: [
+                          Container(
+                            width: 44,
+                            height: 44,
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.18),
+                              borderRadius: BorderRadius.circular(14),
                             ),
-                            const SizedBox(width: 10),
-                            Text(
-                              l10n.translate('sip_welcome_title'),
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 20,
-                                fontWeight: FontWeight.w700,
-                              ),
+                            child: const Icon(
+                              CupertinoIcons.phone_circle_fill,
+                              color: Colors.white,
+                              size: 26,
                             ),
-                          ],
-                        ),
+                          ),
+                          const SizedBox(width: 10),
+                          Text(
+                            l10n.translate('sip_welcome_title'),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 20,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ]),
                         const SizedBox(height: 12),
                         Text(
                           l10n.translate('sip_welcome_subtitle'),
                           style: const TextStyle(
-                            color: Colors.white,
+                            color: Colors.white70,
                             fontSize: 14,
-                            height: 1.3,
+                            height: 1.4,
                           ),
                         ),
                       ],
@@ -1220,7 +1289,7 @@ class _SipScreenState extends State<SipScreen>
                   Container(
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: _G.lightSurface,
                       borderRadius: BorderRadius.circular(22),
                       boxShadow: [
                         BoxShadow(
@@ -1270,7 +1339,7 @@ class _SipScreenState extends State<SipScreen>
                         SizedBox(
                           width: double.infinity,
                           child: CupertinoButton(
-                            color: const Color(0xFF0A84FF),
+                            color: _G.lightAccent,
                             borderRadius: BorderRadius.circular(15),
                             onPressed: isRegistering
                                 ? null
@@ -1282,8 +1351,9 @@ class _SipScreenState extends State<SipScreen>
                               isRegistering
                                   ? 'Подключение...'
                                   : 'Подключить телефонию',
-                              style:
-                                  const TextStyle(fontWeight: FontWeight.w600),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           ),
                         ),
@@ -1294,7 +1364,7 @@ class _SipScreenState extends State<SipScreen>
                             child: Text(
                               state.errorMessage!,
                               style: const TextStyle(
-                                color: Color(0xFFDC2626),
+                                color: _G.red,
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
@@ -1317,12 +1387,12 @@ class _SipScreenState extends State<SipScreen>
     final bool isRegistered =
         state.registrationStatus == SipRegistrationUiStatus.registered;
     final Color toneColor = state.callStatus == SipCallUiStatus.incoming
-        ? const Color(0xFFF59E0B)
+        ? _G.amber
         : isRegistered
-            ? const Color(0xFF16A34A)
+            ? _G.green
             : state.registrationStatus == SipRegistrationUiStatus.failed
-                ? const Color(0xFFDC2626)
-                : const Color(0xFF64748B);
+                ? _G.red
+                : _G.lightSubtext;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -1367,7 +1437,7 @@ class _SipScreenState extends State<SipScreen>
                       : 'Телефония не подключена',
                   style: const TextStyle(
                     fontWeight: FontWeight.w700,
-                    color: Color(0xFF111827),
+                    color: _G.lightText,
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -1375,7 +1445,7 @@ class _SipScreenState extends State<SipScreen>
                   '${l10n.translate('sip_call_state')}: ${_callLabel(context, state.callStatus)}',
                   style: const TextStyle(
                     fontSize: 12,
-                    color: Color(0xFF64748B),
+                    color: _G.lightSubtext,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -1397,7 +1467,7 @@ class _SipScreenState extends State<SipScreen>
                 padding:
                     const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF0F172A),
+                  color: _G.lightText,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
@@ -1416,7 +1486,7 @@ class _SipScreenState extends State<SipScreen>
                     padding:
                         const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF22C55E),
+                      color: _G.green,
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Text(
@@ -1433,7 +1503,7 @@ class _SipScreenState extends State<SipScreen>
                     padding:
                         const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFEF4444),
+                      color: _G.red,
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Text(
@@ -1486,7 +1556,7 @@ class _SipScreenState extends State<SipScreen>
                                 style: TextStyle(
                                   fontSize: 17,
                                   fontWeight: FontWeight.w700,
-                                  color: Color(0xFF0F172A),
+                                  color: _G.lightText,
                                 ),
                               ),
                               const Spacer(),
@@ -1496,7 +1566,7 @@ class _SipScreenState extends State<SipScreen>
                                   onPressed: _showContactsSheet,
                                   child: const Icon(
                                     CupertinoIcons.person_2_fill,
-                                    color: Color(0xFF64748B),
+                                    color: _G.lightSubtext,
                                     size: 20,
                                   ),
                                 ),
@@ -1529,7 +1599,7 @@ class _SipScreenState extends State<SipScreen>
                                   ? 'Начните вводить номер или откройте контакты'
                                   : 'Телефония готова к набору',
                               style: const TextStyle(
-                                color: Color(0xFF94A3B8),
+                                color: _G.lightSubtext,
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
@@ -1561,7 +1631,7 @@ class _SipScreenState extends State<SipScreen>
                                 focusNode: _dialFocusNode,
                                 readOnly: true,
                                 showCursor: true,
-                                cursorColor: const Color(0xFF111827),
+                                cursorColor: _G.lightText,
                                 cursorWidth: 1.3,
                                 cursorHeight: numberFont + 2,
                                 keyboardType: TextInputType.phone,
@@ -1571,7 +1641,7 @@ class _SipScreenState extends State<SipScreen>
                                       constraints.maxWidth < 380 ? 30 : 36,
                                   height: 1,
                                   fontWeight: FontWeight.w400,
-                                  color: const Color(0xFF0B1220),
+                                  color: _G.lightText,
                                 ),
                                 placeholder: 'Введите номер',
                                 placeholderStyle: TextStyle(
@@ -1657,9 +1727,21 @@ class _SipScreenState extends State<SipScreen>
                             decoration: BoxDecoration(
                               color: state.registrationStatus ==
                                       SipRegistrationUiStatus.registered
-                                  ? const Color(0xFF25A344)
+                                  ? _G.lightGreen
                                   : const Color(0xFF9CA3AF),
                               borderRadius: BorderRadius.circular(22),
+                              boxShadow: state.registrationStatus ==
+                                      SipRegistrationUiStatus.registered
+                                  ? [
+                                      BoxShadow(
+                                        color: _G.lightGreen.withValues(
+                                          alpha: 0.35,
+                                        ),
+                                        blurRadius: 20,
+                                        offset: const Offset(0, 8),
+                                      ),
+                                    ]
+                                  : null,
                             ),
                             child: const Row(
                               mainAxisAlignment: MainAxisAlignment.center,
@@ -1697,378 +1779,594 @@ class _SipScreenState extends State<SipScreen>
   }
 
   Widget _activeCallView(BuildContext context, SipUiState state) {
-    final accent = _callAccent(state.callStatus);
     final target = _displayIdentity(state);
+    final isConnected = state.callStatus == SipCallUiStatus.inCall;
+    final statusText = isConnected
+        ? _formatDuration(_connectedDuration)
+        : _callHint(state.callStatus);
 
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 10),
-      child: Column(
-        children: [
-          _buildTopBar(context, state),
-          Expanded(
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                return SingleChildScrollView(
-                  padding: const EdgeInsets.only(top: 10, bottom: 8),
-                  physics: const BouncingScrollPhysics(),
-                  child: ConstrainedBox(
-                    constraints:
-                        BoxConstraints(minHeight: constraints.maxHeight),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        _callHeroCard(
-                          context: context,
-                          state: state,
-                          target: target,
-                          accent: accent,
-                        ),
-                        const SizedBox(height: 20),
-                        _soundIndicatorCard(state, accent),
-                        const SizedBox(height: 20),
-                        _callControlPanel(context, state, accent),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _callHeroCard({
-    required BuildContext context,
-    required SipUiState state,
-    required String target,
-    required Color accent,
-  }) {
-    final l10n = AppLocalizations.of(context)!;
+    if (state.callStatus == SipCallUiStatus.incoming) {
+      return _incomingCallView(
+        context,
+        target: target,
+      );
+    }
 
     return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 22),
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            Colors.white,
-            accent.withValues(alpha: 0.14),
-          ],
+          colors: _G.activeBg,
         ),
-        borderRadius: BorderRadius.circular(28),
-        boxShadow: [
-          BoxShadow(
-            color: accent.withValues(alpha: 0.14),
-            blurRadius: 26,
-            offset: const Offset(0, 14),
-          ),
-        ],
       ),
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(22, 8, 22, 18),
+          child: Column(
             children: [
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                decoration: BoxDecoration(
-                  color: accent.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(999),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
+              _buildActiveCallTopBar(context),
+              Expanded(
+                child: Column(
                   children: [
-                    _waveBars(accent),
-                    const SizedBox(width: 10),
-                    Text(
-                      _callLabel(context, state.callStatus),
-                      style: TextStyle(
-                        color: accent,
-                        fontWeight: FontWeight.w700,
+                    const Spacer(flex: 2),
+                    _GlassContainer(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
+                      borderRadius: 20,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 8,
+                            height: 8,
+                            decoration: BoxDecoration(
+                              color: isConnected ? _G.green : _G.accent,
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: (isConnected ? _G.green : _G.accent)
+                                      .withValues(alpha: 0.6),
+                                  blurRadius: 6,
+                                  spreadRadius: 1,
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            isConnected
+                                ? 'Вызов активен'
+                                : _callLabel(context, state.callStatus),
+                            style: const TextStyle(
+                              color: _G.textSecondary,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 18),
-          _pulseOrb(accent, state.callStatus),
-          const SizedBox(height: 18),
-          Text(
-            target,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 38,
-              height: 1,
-              fontWeight: FontWeight.w300,
-              letterSpacing: 1.2,
-              color: Color(0xFF0F172A),
-            ),
-          ),
-          const SizedBox(height: 10),
-          Text(
-            _callHint(state.callStatus),
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 15,
-              height: 1.35,
-              color: Color(0xFF475569),
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          const SizedBox(height: 14),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.86),
-              borderRadius: BorderRadius.circular(18),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  CupertinoIcons.clock_fill,
-                  color: accent,
-                  size: 18,
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    state.callStatus == SipCallUiStatus.inCall
-                        ? _formatDuration(_connectedDuration)
-                        : l10n.translate('sip_call_state'),
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFF0F172A),
+                    const SizedBox(height: 20),
+                    Text(
+                      target,
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: _G.textPrimary,
+                        fontSize: 62,
+                        height: 0.96,
+                        fontWeight: FontWeight.w300,
+                        letterSpacing: -2.4,
+                      ),
                     ),
-                  ),
-                ),
-                Text(
-                  state.callStatus == SipCallUiStatus.inCall
-                      ? 'В разговоре'
-                      : _callLabel(context, state.callStatus),
-                  style: TextStyle(
-                    color: accent,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _pulseOrb(Color accent, SipCallUiStatus status) {
-    final icon = status == SipCallUiStatus.incoming
-        ? CupertinoIcons.phone_down_fill
-        : CupertinoIcons.phone_fill;
-
-    return AnimatedBuilder(
-      animation: _pulseController,
-      builder: (context, child) {
-        final firstWave = 1 + (_pulseController.value * 0.34);
-        final secondWave = 1 + (((_pulseController.value + 0.45) % 1) * 0.26);
-
-        return SizedBox(
-          width: 180,
-          height: 180,
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              Transform.scale(
-                scale: firstWave,
-                child: Container(
-                  width: 92,
-                  height: 92,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: accent.withValues(
-                      alpha: (0.16 * (1 - _pulseController.value))
-                          .clamp(0.02, 0.16),
+                    const SizedBox(height: 12),
+                    Text(
+                      statusText,
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: _G.textTertiary,
+                        fontSize: 18,
+                        height: 1.3,
+                        fontWeight: FontWeight.w400,
+                      ),
                     ),
-                  ),
-                ),
-              ),
-              Transform.scale(
-                scale: secondWave,
-                child: Container(
-                  width: 116,
-                  height: 116,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: accent.withValues(
-                      alpha:
-                          (0.11 * (1 - ((_pulseController.value + 0.45) % 1)))
-                              .clamp(0.01, 0.11),
-                    ),
-                  ),
-                ),
-              ),
-              Container(
-                width: 88,
-                height: 88,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      accent.withValues(alpha: 0.84),
-                      accent,
+                    if (_showInCallKeypad) ...[
+                      const SizedBox(height: 24),
+                      _inCallKeypadPanel(),
                     ],
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: accent.withValues(alpha: 0.35),
-                      blurRadius: 26,
-                      offset: const Offset(0, 12),
-                    ),
+                    const Spacer(flex: 3),
+                    _iosCallControls(context, state),
                   ],
                 ),
-                child: Icon(icon, color: Colors.white, size: 36),
               ),
             ],
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 
-  Widget _soundIndicatorCard(SipUiState state, Color accent) {
-    final isRinging = state.callStatus == SipCallUiStatus.incoming ||
-        state.callStatus == SipCallUiStatus.calling ||
-        state.callStatus == SipCallUiStatus.ringing;
-    final isInCall = state.callStatus == SipCallUiStatus.inCall;
-    final icon = isRinging
-        ? CupertinoIcons.waveform_path_ecg
-        : isInCall
-            ? CupertinoIcons.speaker_2_fill
-            : CupertinoIcons.info_circle_fill;
-    final title = isRinging
-        ? 'Идёт сигнал вызова'
-        : isInCall
-            ? 'Разговор активен'
-            : 'Звук появится во время звонка';
-    final subtitle = isRinging
-        ? 'Входящий или исходящий вызов сейчас сопровождается сигналом.'
-        : isInCall
-            ? 'Микрофон и динамик работают во время активного разговора.'
-            : 'Это нормальное состояние. До начала вызова приложение не воспроизводит аудио.';
-
+  Widget _incomingCallView(
+    BuildContext context, {
+    required String target,
+  }) {
     return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF0F172A).withValues(alpha: 0.06),
-            blurRadius: 18,
-            offset: const Offset(0, 10),
-          ),
-        ],
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          stops: [0, 0.35, 0.65, 1],
+          colors: [
+            Color(0xFF0A0E1A),
+            Color(0xFF0F1E4A),
+            Color(0xFF112960),
+            Color(0xFF0D1F45),
+          ],
+        ),
       ),
-      child: Row(
+      child: Stack(
         children: [
-          Container(
-            width: 54,
-            height: 54,
-            decoration: BoxDecoration(
-              color: accent.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(18),
-            ),
-            child: Icon(
-              icon,
-              color: accent,
-              size: 24,
+          Positioned(
+            top: -80,
+            left: -60,
+            child: Container(
+              width: 300,
+              height: 300,
+              decoration: const BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [Color(0x303D8EFF), Colors.transparent],
+                ),
+              ),
             ),
           ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF0F172A),
-                  ),
+          Positioned(
+            bottom: 120,
+            right: -80,
+            child: Container(
+              width: 260,
+              height: 260,
+              decoration: const BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [Color(0x252563EB), Colors.transparent],
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  subtitle,
-                  style: const TextStyle(
-                    color: Color(0xFF64748B),
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
-          _waveBars(accent),
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
+              child: Column(
+                children: [
+                  const SizedBox(height: 16),
+                  _GlassContainer(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 8,
+                    ),
+                    borderRadius: 16,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 24,
+                          height: 24,
+                          decoration: BoxDecoration(
+                            color: _G.accent.withValues(alpha: 0.3),
+                            borderRadius: BorderRadius.circular(7),
+                          ),
+                          child: const Icon(
+                            CupertinoIcons.sparkles,
+                            color: _G.accent,
+                            size: 14,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        const Text(
+                          'Аудиовызов shamCRM',
+                          style: TextStyle(
+                            color: _G.textSecondary,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 32),
+                  Container(
+                    width: 92,
+                    height: 92,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF3D8EFF), Color(0xFF2563EB)],
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF3D8EFF)
+                              .withValues(alpha: 0.4),
+                          blurRadius: 32,
+                          spreadRadius: 4,
+                        ),
+                        BoxShadow(
+                          color: const Color(0xFF3D8EFF)
+                              .withValues(alpha: 0.2),
+                          blurRadius: 60,
+                          spreadRadius: 10,
+                        ),
+                      ],
+                    ),
+                    child: const Icon(
+                      CupertinoIcons.person_fill,
+                      color: Colors.white,
+                      size: 44,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Text(
+                    target,
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: _G.textPrimary,
+                      fontSize: 42,
+                      fontWeight: FontWeight.w300,
+                      letterSpacing: -1.6,
+                      height: 1.0,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  AnimatedBuilder(
+                    animation: _pulseController,
+                    builder: (context, _) {
+                      return Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: List.generate(3, (i) {
+                          final delay = i * 0.28;
+                          final t =
+                              (_pulseController.value - delay).clamp(0.0, 1.0);
+                          final opacity =
+                              (math.sin(t * math.pi)).clamp(0.2, 1.0);
+                          return Container(
+                            margin: const EdgeInsets.symmetric(horizontal: 3),
+                            width: 6,
+                            height: 6,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: _G.textSecondary.withValues(
+                                alpha: opacity,
+                              ),
+                            ),
+                          );
+                        }),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'Входящий звонок',
+                    style: TextStyle(
+                      color: _G.textTertiary,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w400,
+                    ),
+                  ),
+                  const Spacer(),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _GlassContainer(
+                          borderRadius: 36,
+                          child: const SizedBox(
+                            width: 64,
+                            height: 64,
+                            child: Center(
+                              child: Icon(
+                                CupertinoIcons.alarm,
+                                color: _G.textSecondary,
+                                size: 28,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        const Text(
+                          'Напомнить',
+                          style: TextStyle(
+                            color: _G.textSecondary,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 28),
+                  _incomingAnswerSlider(),
+                  const SizedBox(height: 16),
+                  CupertinoButton(
+                    padding: EdgeInsets.zero,
+                    onPressed: _sipService.decline,
+                    child: _GlassContainer(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 12,
+                      ),
+                      borderRadius: 22,
+                      child: const Text(
+                        'Отклонить',
+                        style: TextStyle(
+                          color: _G.textSecondary,
+                          fontSize: 17,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _callControlPanel(
-    BuildContext context,
-    SipUiState state,
-    Color accent,
-  ) {
+  Widget _buildActiveCallTopBar(BuildContext context) {
+    return Row(children: [
+      _GlassButton(
+        onPressed: () => Navigator.of(context).maybePop(),
+        padding: const EdgeInsets.all(10),
+        borderRadius: 16,
+        child: const Icon(
+          CupertinoIcons.chevron_back,
+          color: _G.textPrimary,
+          size: 22,
+        ),
+      ),
+      const Spacer(),
+      const SizedBox(width: 44, height: 44),
+    ]);
+  }
+
+  Widget _iosCallControls(BuildContext context, SipUiState state) {
     final l10n = AppLocalizations.of(context)!;
 
     if (state.callStatus == SipCallUiStatus.incoming) {
       return _incomingActionPanel(context);
     }
 
-    return Wrap(
-      spacing: 12,
-      runSpacing: 12,
-      alignment: WrapAlignment.center,
+    return Column(
       children: [
-        _callControlTile(
-          icon: state.isMuted
-              ? CupertinoIcons.mic_slash_fill
-              : CupertinoIcons.mic_fill,
-          label: state.isMuted
-              ? l10n.translate('sip_unmute')
-              : l10n.translate('sip_mute'),
-          onTap: _sipService.toggleMute,
-          background: Colors.white,
-          foreground: const Color(0xFF0F172A),
+        Row(
+          children: [
+            Expanded(
+              child: _iosCircleAction(
+                icon: state.isSpeakerOn
+                    ? CupertinoIcons.speaker_slash_fill
+                    : CupertinoIcons.speaker_3_fill,
+                label: state.isSpeakerOn
+                    ? l10n.translate('sip_speaker_off')
+                    : l10n.translate('sip_speaker_on'),
+                onTap: _sipService.toggleSpeaker,
+              ),
+            ),
+            Expanded(
+              child: _iosCircleAction(
+                icon: CupertinoIcons.circle_grid_3x3_fill,
+                label: 'Клавиши',
+                onTap: _toggleInCallKeypad,
+              ),
+            ),
+            Expanded(
+              child: _iosCircleAction(
+                icon: state.isMuted
+                    ? CupertinoIcons.mic_slash_fill
+                    : CupertinoIcons.mic_fill,
+                label: state.isMuted
+                    ? l10n.translate('sip_unmute')
+                    : l10n.translate('sip_mute'),
+                onTap: _sipService.toggleMute,
+              ),
+            ),
+          ],
         ),
-        _callControlTile(
-          icon: state.isSpeakerOn
-              ? CupertinoIcons.speaker_slash_fill
-              : CupertinoIcons.speaker_2_fill,
-          label: state.isSpeakerOn
-              ? l10n.translate('sip_speaker_off')
-              : l10n.translate('sip_speaker_on'),
-          onTap: _sipService.toggleSpeaker,
-          background: accent.withValues(alpha: 0.10),
-          foreground: accent,
-        ),
-        _callControlTile(
-          icon: CupertinoIcons.phone_down_fill,
-          label: l10n.translate('sip_hangup'),
-          onTap: _sipService.hangup,
-          background: const Color(0xFFEF4444),
-          foreground: Colors.white,
-          emphasized: true,
+        const SizedBox(height: 30),
+        Center(
+          child: _iosCircleAction(
+            icon: CupertinoIcons.phone_down_fill,
+            label: 'Отбой',
+            onTap: _sipService.hangup,
+            destructive: true,
+          ),
         ),
       ],
+    );
+  }
+
+  Future<void> _handleInCallTone(String tone) async {
+    setState(() {
+      _inCallDigits = '$_inCallDigits$tone';
+    });
+    await _sipService.sendDtmf(tone);
+  }
+
+  void _toggleInCallKeypad() {
+    setState(() {
+      _showInCallKeypad = !_showInCallKeypad;
+      if (!_showInCallKeypad) {
+        _inCallDigits = '';
+      }
+    });
+  }
+
+  Widget _inCallKeypadPanel() {
+    return _GlassContainer(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
+      borderRadius: 28,
+      child: Column(
+        children: [
+          Container(
+            height: 44,
+            alignment: Alignment.center,
+            child: Text(
+              _inCallDigits.isEmpty ? 'Введите тон' : _inCallDigits,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color:
+                    _inCallDigits.isEmpty ? _G.textTertiary : _G.textPrimary,
+                fontSize: 24,
+                fontWeight: FontWeight.w400,
+                letterSpacing: -0.6,
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          ...List.generate(4, (row) {
+            final start = row * 3;
+            return Padding(
+              padding: EdgeInsets.only(bottom: row == 3 ? 0 : 12),
+              child: Row(
+                children: List.generate(3, (col) {
+                  final item = _dialPadItems[start + col];
+                  return Expanded(
+                    child: Padding(
+                      padding: EdgeInsets.only(right: col == 2 ? 0 : 10),
+                      child: _inCallKeypadButton(
+                        value: item['key']!,
+                        letters: item['letters']!,
+                        onTap: () => _handleInCallTone(item['key']!),
+                      ),
+                    ),
+                  );
+                }),
+              ),
+            );
+          }),
+        ],
+      ),
+    );
+  }
+
+  Widget _inCallKeypadButton({
+    required String value,
+    required String letters,
+    required VoidCallback onTap,
+  }) {
+    return CupertinoButton(
+      padding: EdgeInsets.zero,
+      onPressed: onTap,
+      child: _GlassContainer(
+        borderRadius: 20,
+        child: SizedBox(
+          height: 72,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                value,
+                style: const TextStyle(
+                  color: _G.textPrimary,
+                  fontSize: 28,
+                  fontWeight: FontWeight.w300,
+                  height: 1,
+                ),
+              ),
+              if (letters.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Text(
+                  letters,
+                  style: const TextStyle(
+                    color: _G.textTertiary,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.8,
+                    height: 1,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _iosCircleAction({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+    bool destructive = false,
+  }) {
+    return CupertinoButton(
+      padding: EdgeInsets.zero,
+      onPressed: onTap,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          destructive
+              ? Container(
+                  width: 84,
+                  height: 84,
+                  decoration: BoxDecoration(
+                    color: _G.red,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: _G.red.withValues(alpha: 0.5),
+                        blurRadius: 20,
+                        spreadRadius: 2,
+                      ),
+                    ],
+                  ),
+                  child: Icon(icon, color: Colors.white, size: 32),
+                )
+              : ClipRRect(
+                  borderRadius: BorderRadius.circular(42),
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+                    child: Container(
+                      width: 84,
+                      height: 84,
+                      decoration: BoxDecoration(
+                        color: _G.glassFill,
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: _G.glassBorder,
+                          width: 0.8,
+                        ),
+                      ),
+                      child: Icon(icon, color: _G.textPrimary, size: 30),
+                    ),
+                  ),
+                ),
+          const SizedBox(height: 10),
+          Text(
+            label,
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              color: _G.textSecondary,
+              fontSize: 15,
+              height: 1.2,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -2099,6 +2397,124 @@ class _SipScreenState extends State<SipScreen>
           ),
         ),
       ],
+    );
+  }
+
+  Widget _incomingAnswerSlider() {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        const knobSize = 80.0;
+        const horizontalPadding = 10.0;
+        final maxDrag =
+            math.max(0.0, constraints.maxWidth - knobSize - horizontalPadding * 2);
+        final knobOffset = (_incomingAnswerDrag * maxDrag).clamp(0.0, maxDrag);
+
+        return GestureDetector(
+          onHorizontalDragUpdate: (details) {
+            if (maxDrag <= 0) return;
+            setState(() {
+              _incomingAnswerDrag = (_incomingAnswerDrag +
+                      details.delta.dx / maxDrag)
+                  .clamp(0.0, 1.0);
+            });
+          },
+          onHorizontalDragEnd: (_) {
+            if (_incomingAnswerDrag >= 0.82) {
+              _incomingAnswerDrag = 0;
+              _sipService.acceptCall();
+              return;
+            }
+            setState(() {
+              _incomingAnswerDrag = 0;
+            });
+          },
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(52),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+              child: Container(
+                height: 100,
+                decoration: BoxDecoration(
+                  color: const Color(0x14FFFFFF),
+                  borderRadius: BorderRadius.circular(52),
+                  border: Border.all(
+                    color: const Color(0x28FFFFFF),
+                    width: 0.8,
+                  ),
+                ),
+                child: Stack(
+                  alignment: Alignment.centerLeft,
+                  children: [
+                    Positioned(
+                      left: horizontalPadding,
+                      child: Container(
+                        width: knobOffset + knobSize / 2,
+                        height: 100,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              _G.green.withValues(alpha: 0.4),
+                              _G.green.withValues(alpha: 0),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    Positioned.fill(
+                      child: Center(
+                        child: Opacity(
+                          opacity: 1 - (_incomingAnswerDrag * 0.9),
+                          child: const Text(
+                            'Ответьте',
+                            style: TextStyle(
+                              color: Color(0x99FFFFFF),
+                              fontSize: 22,
+                              fontWeight: FontWeight.w300,
+                              letterSpacing: -0.6,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      left: horizontalPadding + knobOffset,
+                      child: Container(
+                        width: knobSize,
+                        height: knobSize,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white,
+                          boxShadow: [
+                            BoxShadow(
+                              color: _G.green.withValues(
+                                alpha: _incomingAnswerDrag * 0.5,
+                              ),
+                              blurRadius: 20,
+                              spreadRadius: 2,
+                            ),
+                            const BoxShadow(
+                              color: Color(0x33000000),
+                              blurRadius: 16,
+                              offset: Offset(0, 6),
+                            ),
+                          ],
+                        ),
+                        child: Icon(
+                          CupertinoIcons.chevron_forward,
+                          color: _incomingAnswerDrag > 0.5
+                              ? _G.green
+                              : _G.accent,
+                          size: 36,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -2147,32 +2563,6 @@ class _SipScreenState extends State<SipScreen>
           ],
         ),
       ),
-    );
-  }
-
-  Widget _waveBars(Color color) {
-    return AnimatedBuilder(
-      animation: _pulseController,
-      builder: (context, child) {
-        return Row(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: List.generate(4, (index) {
-            final phase =
-                ((_pulseController.value + index * 0.16) % 1) * math.pi * 2;
-            final height = 8 + math.sin(phase).abs() * 14;
-            return Container(
-              width: 4,
-              height: height,
-              margin: EdgeInsets.only(right: index == 3 ? 0 : 3),
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.45 + index * 0.1),
-                borderRadius: BorderRadius.circular(999),
-              ),
-            );
-          }),
-        );
-      },
     );
   }
 
@@ -2479,36 +2869,43 @@ class _SipScreenState extends State<SipScreen>
     return CupertinoButton(
       padding: EdgeInsets.zero,
       onPressed: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        decoration: BoxDecoration(
-          color: selected ? const Color(0xFFE9F2FF) : Colors.transparent,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              icon,
-              size: 18,
-              color:
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          decoration: BoxDecoration(
+            color: selected ? const Color(0xFFE9F2FF) : Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                icon,
+                size: 18,
+                color:
                   selected ? const Color(0xFF0A84FF) : const Color(0xFF94A3B8),
-            ),
-            const SizedBox(width: 6),
-            Text(
-              label,
-              style: TextStyle(
-                color: selected
-                    ? const Color(0xFF0A84FF)
-                    : const Color(0xFF94A3B8),
-                fontWeight: FontWeight.w600,
               ),
-            ),
-          ],
+              const SizedBox(width: 6),
+              Flexible(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  softWrap: false,
+                  style: TextStyle(
+                    color: selected
+                        ? const Color(0xFF0A84FF)
+                        : const Color(0xFF94A3B8),
+                    fontWeight: FontWeight.w600,
+                    fontSize: 15,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
-      ),
-    );
+      );
   }
 }
 

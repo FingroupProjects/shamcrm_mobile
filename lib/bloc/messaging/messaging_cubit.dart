@@ -827,11 +827,7 @@ class MessagingCubit extends Cubit<MessagingState> {
         _findPendingLocalMessageIndex(updatedMessages, incomingMessage);
 
     if (pendingIndex != -1) {
-      final pendingMessage = updatedMessages[pendingIndex];
-      updatedMessages[pendingIndex] = _mergePendingLocalWithIncoming(
-        pendingMessage,
-        incomingMessage,
-      );
+      updatedMessages[pendingIndex] = incomingMessage;
       return List<Message>.unmodifiable(updatedMessages);
     }
 
@@ -850,22 +846,44 @@ class MessagingCubit extends Cubit<MessagingState> {
     List<Message> messages,
     Message incomingMessage,
   ) {
+    final incomingCreatedAt =
+        _tryParseMessageDate(incomingMessage.createMessateTime);
+    final incomingNormalizedText =
+        _normalizeMessageContent(incomingMessage.text);
+
     for (int index = 0; index < messages.length; index++) {
       final message = messages[index];
-      if (message.id >= 0 || message.type != incomingMessage.type) {
+      if (message.id >= 0 ||
+          message.type != incomingMessage.type ||
+          message.isMyMessage != incomingMessage.isMyMessage) {
         continue;
       }
 
-      if (!_isFreshPendingMatch(message, incomingMessage)) {
-        continue;
-      }
-
-      if (_sameNormalizedText(message.text, incomingMessage.text)) {
+      final localNormalizedText = _normalizeMessageContent(message.text);
+      if (incomingNormalizedText.isNotEmpty &&
+          localNormalizedText == incomingNormalizedText &&
+          _isWithinPendingMatchWindow(
+            localMessage: message,
+            incomingCreatedAt: incomingCreatedAt,
+          )) {
         return index;
       }
 
       if (incomingMessage.filePath != null &&
-          message.filePath == incomingMessage.filePath) {
+          message.filePath == incomingMessage.filePath &&
+          _isWithinPendingMatchWindow(
+            localMessage: message,
+            incomingCreatedAt: incomingCreatedAt,
+          )) {
+        return index;
+      }
+
+      if (incomingMessage.type == 'location' &&
+          _locationMatches(message, incomingMessage) &&
+          _isWithinPendingMatchWindow(
+            localMessage: message,
+            incomingCreatedAt: incomingCreatedAt,
+          )) {
         return index;
       }
     }
@@ -873,44 +891,40 @@ class MessagingCubit extends Cubit<MessagingState> {
     return -1;
   }
 
-  Message _mergePendingLocalWithIncoming(
-    Message pendingMessage,
-    Message incomingMessage,
-  ) {
-    if (pendingMessage.isMyMessage && !incomingMessage.isMyMessage) {
-      return incomingMessage.copyWith(
-        isMyMessage: true,
-        senderName: pendingMessage.senderName,
-      );
-    }
-
-    return incomingMessage;
+  String _normalizeMessageContent(String value) {
+    return value.replaceAll(RegExp(r'\s+'), ' ').trim();
   }
 
-  bool _isFreshPendingMatch(Message pendingMessage, Message incomingMessage) {
-    if (pendingMessage.isMyMessage == incomingMessage.isMyMessage) {
+  bool _isWithinPendingMatchWindow({
+    required Message localMessage,
+    required DateTime? incomingCreatedAt,
+  }) {
+    final localCreatedAt = _tryParseMessageDate(localMessage.createMessateTime);
+    if (localCreatedAt == null || incomingCreatedAt == null) {
       return true;
     }
 
-    if (!pendingMessage.isMyMessage) {
-      return false;
-    }
-
-    final pendingDate = _tryParseMessageDate(pendingMessage.createMessateTime);
-    final incomingDate =
-        _tryParseMessageDate(incomingMessage.createMessateTime);
-    if (pendingDate == null || incomingDate == null) {
-      return false;
-    }
-
-    final difference = incomingDate.difference(pendingDate).abs();
-    return difference <= const Duration(minutes: 3);
+    final difference =
+        localCreatedAt.difference(incomingCreatedAt).inSeconds.abs();
+    return difference <= 30;
   }
 
-  bool _sameNormalizedText(String left, String right) {
-    final normalizedLeft = left.trim();
-    final normalizedRight = right.trim();
-    return normalizedLeft.isNotEmpty && normalizedLeft == normalizedRight;
+  bool _locationMatches(Message localMessage, Message incomingMessage) {
+    final localLatitude = localMessage.latitude;
+    final localLongitude = localMessage.longitude;
+    final incomingLatitude = incomingMessage.latitude;
+    final incomingLongitude = incomingMessage.longitude;
+
+    if (localLatitude == null ||
+        localLongitude == null ||
+        incomingLatitude == null ||
+        incomingLongitude == null) {
+      return false;
+    }
+
+    const epsilon = 0.00002;
+    return (localLatitude - incomingLatitude).abs() <= epsilon &&
+        (localLongitude - incomingLongitude).abs() <= epsilon;
   }
 
   List<Message> _replaceMessageById(

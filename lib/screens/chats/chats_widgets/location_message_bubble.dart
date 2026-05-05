@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class LocationMessageBubble extends StatelessWidget {
@@ -29,6 +30,7 @@ class LocationMessageBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context)!;
     return Align(
       alignment: isSender ? Alignment.centerRight : Alignment.centerLeft,
       child: Column(
@@ -64,7 +66,7 @@ class LocationMessageBubble extends StatelessWidget {
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.10),
+                    color: Colors.black.withValues(alpha: 0.10),
                     offset: const Offset(0, 4),
                     blurRadius: 8,
                   ),
@@ -116,10 +118,10 @@ class LocationMessageBubble extends StatelessWidget {
                           color: Color(0xff1E2E52),
                         ),
                         const SizedBox(width: 6),
-                        const Expanded(
+                        Expanded(
                           child: Text(
-                            'Местоположение',
-                            style: TextStyle(
+                            localizations.translate('geolocation'),
+                            style: const TextStyle(
                               fontFamily: 'Gilroy',
                               fontSize: 14,
                               fontWeight: FontWeight.w600,

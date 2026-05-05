@@ -56,6 +56,10 @@ class FirebaseApi {
   bool _backgroundHandlerRegistered = false;
   StreamSubscription<String>? _tokenRefreshSubscription;
 
+  static void ensureBackgroundHandlerRegistered() {
+    _instance._registerBackgroundHandler();
+  }
+
   Future<void> initNotifications() async {
     try {
       // КРИТИЧЕСКАЯ ПРОВЕРКА: Firebase должен быть инициализирован
@@ -404,7 +408,7 @@ class FirebaseApi {
 
         case 'corporate':
           final prefs = await SharedPreferences.getInstance();
-          String userId = prefs.getString('userID').toString();
+          final String userId = prefs.getString('userID') ?? '';
 
           if (getChatById.group != null) {
             chatName = getChatById.group!.name;
@@ -416,13 +420,13 @@ class FirebaseApi {
                 try {
                   final allChatsResponse =
                       await _apiService.getAllChats('corporate', 1);
-                  final allChats = allChatsResponse.data ?? [];
+                  final allChats = allChatsResponse.data;
                   final targetChat = allChats.firstWhere(
                       (chat) => chat.id == chatId,
                       orElse: () => throw Exception('Chat not found'));
                   chatName = targetChat.name;
                 } catch (e) {
-                  chatName = getChatById.name ?? 'Чат #$chatId';
+                  chatName = getChatById.name;
                 }
               }
             } else if (getChatById.chatUsers.length == 1) {
@@ -882,7 +886,7 @@ class FirebaseApi {
         );
         debugPrint('✅ MyTask screen opened');
       }
-    } catch (e, stackTrace) {
+    } catch (e) {
       debugPrint('❌ ERROR: $e');
     }
   }
@@ -900,7 +904,7 @@ class FirebaseApi {
         );
         debugPrint('✅ Event screen opened');
       }
-    } catch (e, stackTrace) {
+    } catch (e) {
       debugPrint('❌ ERROR: $e');
     }
   }
@@ -922,7 +926,7 @@ class FirebaseApi {
         );
         debugPrint('✅ Deal screen opened');
       }
-    } catch (e, stackTrace) {
+    } catch (e) {
       debugPrint('❌ ERROR: $e');
     }
   }
@@ -949,7 +953,7 @@ class FirebaseApi {
         );
         debugPrint('✅ Order screen opened');
       }
-    } catch (e, stackTrace) {
+    } catch (e) {
       debugPrint('❌ ERROR: $e');
     }
   }

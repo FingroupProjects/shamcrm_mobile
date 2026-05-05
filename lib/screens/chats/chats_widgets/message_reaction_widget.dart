@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:crm_task_manager/models/message_reaction_model.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 
 /// Виджет для отображения реакций под сообщением
 class MessageReactionWidget extends StatelessWidget {
@@ -85,6 +86,7 @@ class MessageReactionWidget extends StatelessWidget {
   /// Показывает список пользователей, поставивших реакцию
   void _showReactionUsers(BuildContext context, MessageReaction reaction) {
     if (reaction.users.isEmpty) return;
+    final localizations = AppLocalizations.of(context)!;
 
     showModalBottomSheet(
       context: context,
@@ -108,7 +110,10 @@ class MessageReactionWidget extends StatelessWidget {
                   ),
                   const SizedBox(width: 12),
                   Text(
-                    'Реакция (${reaction.count})',
+                    localizations.translate('reaction_title').replaceFirst(
+                          '{count}',
+                          reaction.count.toString(),
+                        ),
                     style: const TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.w600,

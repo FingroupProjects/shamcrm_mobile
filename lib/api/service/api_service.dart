@@ -1779,6 +1779,10 @@ class ApiService {
     if (hadToken) debugPrint('sendVoipToken: Отложенный токен удалён');
   }
 
+  Future<void> clearPendingVoipToken() async {
+    await _removePendingVoipToken();
+  }
+
   Future<void> sendPendingVoipTokenIfNeeded() async {
     final prefs = await SharedPreferences.getInstance();
     final pending = prefs.getString(_pendingVoipKey);
@@ -8624,16 +8628,18 @@ class ApiService {
     required double longitude,
     String? responseType,
   }) async {
-    final path = await _appendQueryParams('/v2/sendLocation/$chatId');
+    final path = await _appendQueryParams('/v2/chat/sendLocation/$chatId');
 
     final response = await _postRequest(path, {
+      'latitude': latitude,
+      // Backend still accepts the legacy misspelled key in some environments.
       'lattitude': latitude,
       'longitude': longitude,
       if (responseType != null) 'response_type': responseType,
     });
 
     if (response.statusCode != 200) {
-      throw Exception('Ошибка отправки местоположения!');
+      throw Exception('Ошибка отправки геопозиции!');
     }
   }
 

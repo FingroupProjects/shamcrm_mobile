@@ -5,6 +5,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
 import 'package:latlong2/latlong.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 
 class PickedLocation {
   final double latitude;
@@ -60,6 +61,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
   }
 
   Future<void> _loadCurrentLocation() async {
+    final localizations = AppLocalizations.of(context)!;
     setState(() {
       _isLoadingLocation = true;
       _locationError = null;
@@ -69,7 +71,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
       final serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
         setState(() {
-          _locationError = 'Геолокация выключена';
+          _locationError = localizations.translate('geolocation_disabled');
           _isLoadingLocation = false;
         });
         return;
@@ -82,7 +84,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
       if (permission == LocationPermission.denied ||
           permission == LocationPermission.deniedForever) {
         setState(() {
-          _locationError = 'Нет доступа к геолокации';
+          _locationError = localizations.translate('geolocation_access_denied');
           _isLoadingLocation = false;
         });
         return;
@@ -102,7 +104,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
       _mapController.move(point, 16);
     } catch (e) {
       setState(() {
-        _locationError = 'Не удалось получить геопозицию';
+        _locationError = localizations.translate('failed_to_get_geoposition');
         _isLoadingLocation = false;
       });
     }
@@ -284,6 +286,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context)!;
     return Scaffold(
       backgroundColor: const Color(0xff0F1B2A),
       appBar: AppBar(
@@ -294,16 +297,16 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                 controller: _searchController,
                 autofocus: true,
                 style: const TextStyle(color: Colors.white),
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   border: InputBorder.none,
-                  hintText: 'Поиск места',
-                  hintStyle: TextStyle(color: Colors.white70),
+                  hintText: localizations.translate('search_place'),
+                  hintStyle: const TextStyle(color: Colors.white70),
                 ),
                 onChanged: _searchPlaces,
               )
-            : const Text(
-                'Геопозиция',
-                style: TextStyle(
+            : Text(
+                localizations.translate('geoposition'),
+                style: const TextStyle(
                   fontFamily: 'Gilroy',
                   fontWeight: FontWeight.w600,
                 ),
@@ -472,9 +475,12 @@ class _BottomLocationPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context)!;
     final accuracyText = accuracy == null
-        ? 'Выберите точку на карте'
-        : 'С точностью до ${accuracy!.round()} метров';
+        ? localizations.translate('select_point_on_map')
+        : localizations
+            .translate('accuracy_in_meters')
+            .replaceFirst('{meters}', accuracy!.round().toString());
 
     return Container(
       width: double.infinity,
@@ -496,9 +502,9 @@ class _BottomLocationPanel extends StatelessWidget {
                   size: 30,
                 ),
               ),
-              title: const Text(
-                'Отправить выбранную геопозицию',
-                style: TextStyle(
+              title: Text(
+                localizations.translate('send_selected_geoposition'),
+                style: const TextStyle(
                   color: Color(0xff9BC8FF),
                   fontFamily: 'Gilroy',
                   fontWeight: FontWeight.w700,
@@ -531,11 +537,11 @@ extension _LocationMapTypeView on _LocationMapType {
   String get label {
     switch (this) {
       case _LocationMapType.street:
-        return 'Карта';
+        return 'map';
       case _LocationMapType.satellite:
-        return 'Спутник';
+        return 'satellite';
       case _LocationMapType.hybrid:
-        return 'Гибрид';
+        return 'hybrid';
     }
   }
 
@@ -577,7 +583,7 @@ class _MapTypeMenuButton extends StatelessWidget {
                   Icon(type.icon, color: Colors.white, size: 24),
                   const SizedBox(width: 16),
                   Text(
-                    type.label,
+                    AppLocalizations.of(context)!.translate(type.label),
                     style: const TextStyle(
                       color: Colors.white,
                       fontFamily: 'Gilroy',
@@ -650,7 +656,7 @@ class _PlaceResult {
     final lat = double.tryParse(json['lat']?.toString() ?? '');
     final lon = double.tryParse(json['lon']?.toString() ?? '');
     return _PlaceResult(
-      title: json['display_name']?.toString() ?? 'Место',
+      title: json['display_name']?.toString() ?? 'Place',
       point: lat == null || lon == null ? null : LatLng(lat, lon),
     );
   }

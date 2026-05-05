@@ -397,11 +397,18 @@ class NativeSipManager(
                 state: Call.State,
                 message: String,
             ) {
+                val mappedState = mapCallState(state.toString(), message)
+                val effectiveMessage =
+                    if (mappedState == "ended" && isRemoteDeclineMessage(message)) {
+                        "Call declined by remote party"
+                    } else {
+                        message.ifEmpty { state.toString() }
+                    }
                 Log.d(
                     TAG,
-                    "onCallStateChanged: rawState=${state.toString()}, remote=${remoteIdentityFor(call)}, message=$message",
+                    "onCallStateChanged: rawState=${state.toString()}, mappedState=$mappedState, remote=${remoteIdentityFor(call)}, message=$effectiveMessage",
                 )
-                currentCall = when (mapCallState(state.toString())) {
+                currentCall = when (mappedState) {
                     "ended", "failed", "idle" -> null
                     else -> call
                 }
@@ -412,9 +419,9 @@ class NativeSipManager(
                 }
 
                 emitCallState(
-                    state = mapCallState(state.toString()),
+                    state = mappedState,
                     remoteIdentity = remoteIdentity,
-                    message = message.ifEmpty { state.toString() },
+                    message = effectiveMessage,
                     muted = call.getMicrophoneMuted(),
                     speakerOn = isSpeakerOn,
                 )
@@ -489,16 +496,33 @@ class NativeSipManager(
         }
     }
 
-    private fun mapCallState(value: String?): String {
+    private fun mapCallState(value: String?, message: String = ""): String {
         return when (value) {
             "IncomingReceived" -> "incoming"
             "OutgoingInit" -> "calling"
             "OutgoingProgress", "OutgoingEarlyMedia", "OutgoingRinging" -> "ringing"
             "Connected", "StreamsRunning", "Paused", "PausedByRemote", "Resuming" -> "in_call"
-            "Error" -> "failed"
+            "Error" -> if (isRemoteDeclineMessage(message)) "ended" else "failed"
             "End", "Released" -> "ended"
             else -> "idle"
         }
+    }
+
+    private fun isRemoteDeclineMessage(message: String?): Boolean {
+        val normalized = message?.lowercase()?.trim().orEmpty()
+        if (normalized.isEmpty()) {
+            return false
+        }
+
+        return normalized.contains("486") ||
+            normalized.contains("603") ||
+            normalized.contains("decline") ||
+            normalized.contains("declined") ||
+            normalized.contains("busy here") ||
+            normalized.contains("busy") ||
+            normalized.contains("canceled") ||
+            normalized.contains("cancelled") ||
+            normalized.contains("request terminated")
     }
 
     private fun remoteIdentityFor(call: Call?): String? {

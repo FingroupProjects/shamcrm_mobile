@@ -193,6 +193,7 @@ void main() async {
     }
 
     final initialMessage = await _safeLoadInitialMessage();
+    await _safeInitializeSipRuntime();
     _safeConfigureSystemUi();
     final savedLocale = await _safeLoadLocale();
     runApp(MyApp(
@@ -233,6 +234,7 @@ Future<void> _safeInitializeOfflineRuntime() async {
 Future<void> _safeInitializeFirebase() async {
   try {
     await _initializeFirebase().timeout(const Duration(seconds: 8));
+    FirebaseApi.ensureBackgroundHandlerRegistered();
   } catch (e, stackTrace) {
     debugPrint('main: Firebase initialize error: $e');
     debugPrint('main: Firebase initialize stackTrace: $stackTrace');
@@ -337,7 +339,7 @@ Future<void> _initializeFirebase() async {
   }
 }
 
-Future<void> _initializeFirebaseMessaging(ApiService apiService) async {
+Future<void> _initializeFirebaseMessaging() async {
   try {
     if (Firebase.apps.isEmpty) return;
 
@@ -348,35 +350,6 @@ Future<void> _initializeFirebaseMessaging(ApiService apiService) async {
     }
 
     await Future.delayed(const Duration(milliseconds: 500));
-
-    await FirebaseMessaging.instance.requestPermission(
-      alert: true,
-      badge: true,
-      sound: true,
-    );
-
-    // ✅ УБРАНО: НЕ обрабатываем getInitialMessage здесь!
-    // FirebaseMessaging.instance.getInitialMessage() - УДАЛЕНО
-
-    // ✅ Обработка foreground сообщений
-    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      debugPrint('_initializeFirebaseMessaging: onMessage: ${message.data}');
-      debugPrint(
-          'Push-уведомление получено в foreground: {id: ${message.data['id']}, type: ${message.data['type']}}');
-    });
-
-    // ✅ КРИТИЧНО: Обработка background tap
-    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-      debugPrint(
-          '_initializeFirebaseMessaging: onMessageOpenedApp: ${message.data}');
-      debugPrint(
-          'Push-уведомление открыто из background: {id: ${message.data['id']}, type: ${message.data['type']}}');
-
-      // ⚠️ НЕ вызываем handleMessage здесь - пусть HomeScreen обработает!
-      // FirebaseApi().handleMessage(message); - УДАЛЕНО
-    });
-
-    // await getFCMTokens(apiService);
 
     try {
       FirebaseApi firebaseApi = FirebaseApi();
@@ -606,6 +579,7 @@ class _MyAppState extends State<MyApp> {
     await NativeInternetMonitor().initialize();
     if (widget.sessionValid) {
       unawaited(_safeInitializeSipRuntime());
+      unawaited(SipService().prepareSipRuntimePermissions());
     }
     _initializeDeferredStartup();
   }
@@ -617,7 +591,7 @@ class _MyAppState extends State<MyApp> {
     _deferredStartupInitialized = true;
 
     unawaited(AppTrackingTransparency.requestTrackingAuthorization());
-    unawaited(_initializeFirebaseMessaging(widget.apiService));
+    unawaited(_initializeFirebaseMessaging());
     if (widget.isDomainChecked && widget.sessionValid) {
       unawaited(widget.apiService.ensureSelectedSalesFunnelInitialized());
     }

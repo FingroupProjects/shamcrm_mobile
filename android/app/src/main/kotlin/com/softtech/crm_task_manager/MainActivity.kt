@@ -166,6 +166,7 @@ class MainActivity : FlutterFragmentActivity() {
         }
         
         handleWidgetIntent(intent)
+        handleSipNavigationIntent(intent)
         updateIncomingCallWindowMode(intent)
         
         val screenIdentifier = intent?.getStringExtra("screen_identifier")
@@ -346,20 +347,11 @@ class MainActivity : FlutterFragmentActivity() {
                 "openXiaomiSettings" -> {
                     result.success(openXiaomiAutoStartSettings())
                 }
-                "checkSystemAlertWindowPermission" -> {
-                    result.success(checkSystemAlertWindowPermission())
-                }
-                "requestSystemAlertWindowPermission" -> {
-                    result.success(requestSystemAlertWindowPermission())
-                }
                 "canUseFullScreenIntent" -> {
                     result.success(canUseFullScreenIntent())
                 }
                 "requestFullScreenIntentPermission" -> {
                     result.success(requestFullScreenIntentPermission())
-                }
-                "openXiaomiPopupPermissionSettings" -> {
-                    result.success(openXiaomiPopupPermissionSettings())
                 }
                 "dispose" -> {
                     result.success(true)
@@ -411,6 +403,7 @@ class MainActivity : FlutterFragmentActivity() {
         
         setIntent(intent)
         handleWidgetIntent(intent)
+        handleSipNavigationIntent(intent)
         updateIncomingCallWindowMode(intent)
         
         val screenIdentifier = intent.getStringExtra("screen_identifier")
@@ -540,38 +533,6 @@ class MainActivity : FlutterFragmentActivity() {
         return false
     }
 
-    private fun checkSystemAlertWindowPermission(): Boolean {
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            Settings.canDrawOverlays(this)
-        } else {
-            true
-        }
-    }
-
-    private fun requestSystemAlertWindowPermission(): Boolean {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            return try {
-                val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION).apply {
-                    data = Uri.parse("package:$packageName")
-                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                }
-                startActivity(intent)
-                true
-            } catch (error: Throwable) {
-                Log.e("MainActivity", "Failed to open overlay settings: ${error.message}")
-                try {
-                    startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION).apply {
-                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                    })
-                    true
-                } catch (_: Throwable) {
-                    false
-                }
-            }
-        }
-        return true
-    }
-
     private fun canUseFullScreenIntent(): Boolean {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
             return true
@@ -606,38 +567,6 @@ class MainActivity : FlutterFragmentActivity() {
                     data = Uri.parse("package:$packageName")
                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 })
-                true
-            } catch (_: Throwable) {
-                false
-            }
-        }
-    }
-
-    /**
-     * Пытается открыть настройки «Отображать всплывающие окна в фоновом режиме» для Xiaomi.
-     * Это КРИТИЧЕСКОЕ разрешение для того, чтобы IncomingCallActivity появлялось
-     * сразу при звонке, если приложение свернуто.
-     */
-    private fun openXiaomiPopupPermissionSettings(): Boolean {
-        try {
-            // Intent для открытия страницы всех разрешений конкретного приложения в MIUI/HyperOS
-            val intent = Intent("miui.intent.action.APP_PERM_EDITOR").apply {
-                setClassName("com.miui.securitycenter", "com.miui.permcenter.permissions.PermissionsEditorActivity")
-                putExtra("extra_pkgname", packageName)
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            }
-            startActivity(intent)
-            Log.d("MainActivity", "Opened Xiaomi app permissions editor")
-            return true
-        } catch (error: Throwable) {
-            Log.e("MainActivity", "Failed to open Xiaomi app permissions editor: ${error.message}")
-            // Fallback: пробуем открыть настройки приложения вообще
-            return try {
-                val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                    data = Uri.parse("package:$packageName")
-                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                }
-                startActivity(intent)
                 true
             } catch (_: Throwable) {
                 false
@@ -875,6 +804,17 @@ class MainActivity : FlutterFragmentActivity() {
             }
         }
     }
+
+    private fun handleSipNavigationIntent(intent: Intent?) {
+        if (intent?.getBooleanExtra("open_sip_call", false) != true) {
+            return
+        }
+
+        savePendingNavigation("sip")
+        handler.postDelayed({
+            sendScreenToFlutter("sip")
+        }, 150)
+    }
     
     private fun savePendingNavigation(screen: String) {
         getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -896,7 +836,13 @@ class MainActivity : FlutterFragmentActivity() {
     }
     
     private fun sendScreenToFlutter(screenIdentifier: String) {
-        methodChannel?.invokeMethod("navigateFromWidget", mapOf(
+        val channel = methodChannel
+        if (channel == null) {
+            savePendingNavigation(screenIdentifier)
+            return
+        }
+
+        channel.invokeMethod("navigateFromWidget", mapOf(
             "screen" to screenIdentifier
         ))
         clearPendingNavigation()

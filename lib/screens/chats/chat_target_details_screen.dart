@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/models/chatGetId_model.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -13,15 +14,16 @@ class ChatTargetDetailsScreen extends StatelessWidget {
   });
 
   Future<void> _openExternalLink(BuildContext context, String url) async {
+    final localizations = AppLocalizations.of(context)!;
     final uri = Uri.tryParse(url);
     if (uri == null) {
-      _showSnackBar(context, 'Некорректная ссылка');
+      _showSnackBar(context, localizations.translate('invalid_link'));
       return;
     }
 
     final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
     if (!opened && context.mounted) {
-      _showSnackBar(context, 'Не удалось открыть ссылку');
+      _showSnackBar(context, localizations.translate('failed_to_open_link'));
     }
   }
 
@@ -33,6 +35,7 @@ class ChatTargetDetailsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context)!;
     final description = (advertising.description?.trim().isNotEmpty ?? false)
         ? advertising.description!.trim()
         : (referralBody?.trim().isNotEmpty ?? false)
@@ -41,7 +44,7 @@ class ChatTargetDetailsScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Таргет'),
+        title: Text(localizations.translate('target')),
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
         elevation: 0.5,
@@ -68,7 +71,9 @@ class ChatTargetDetailsScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    advertising.name.isNotEmpty ? advertising.name : 'Реклама',
+                    advertising.name.isNotEmpty
+                        ? advertising.name
+                        : localizations.translate('advertising'),
                     style: const TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.w700,
@@ -80,11 +85,20 @@ class ChatTargetDetailsScreen extends StatelessWidget {
                     runSpacing: 8,
                     children: [
                       if ((advertising.type ?? '').isNotEmpty)
-                        _InfoChip(label: 'Тип: ${advertising.type}'),
+                        _InfoChip(
+                          label:
+                              '${localizations.translate('type_label')}: ${advertising.type}',
+                        ),
                       if ((advertising.source ?? '').isNotEmpty)
-                        _InfoChip(label: 'Источник: ${advertising.source}'),
+                        _InfoChip(
+                          label:
+                              '${localizations.translate('source_label')}: ${advertising.source}',
+                        ),
                       if ((advertising.status ?? '').isNotEmpty)
-                        _InfoChip(label: 'Статус: ${advertising.status}'),
+                        _InfoChip(
+                          label:
+                              '${localizations.translate('status')}: ${advertising.status}',
+                        ),
                     ],
                   ),
                   if (description != null) ...[
@@ -104,14 +118,14 @@ class ChatTargetDetailsScreen extends StatelessWidget {
             const SizedBox(height: 16),
             if ((advertising.mediaUrl ?? '').isNotEmpty)
               _ActionTile(
-                title: 'Открыть media_url',
+                title: localizations.translate('open_media_url'),
                 subtitle: advertising.mediaUrl!,
                 icon: Icons.open_in_browser,
                 onTap: () => _openExternalLink(context, advertising.mediaUrl!),
               ),
             if ((advertising.postId ?? '').isNotEmpty)
               _ActionTile(
-                title: 'Открыть post_id',
+                title: localizations.translate('open_post_id'),
                 subtitle: advertising.postId!,
                 icon: Icons.link,
                 onTap: () => _openExternalLink(context, advertising.postId!),

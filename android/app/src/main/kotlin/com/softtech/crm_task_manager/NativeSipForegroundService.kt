@@ -136,9 +136,6 @@ class NativeSipForegroundService : Service() {
     private val keyguardManager by lazy {
         getSystemService(Context.KEYGUARD_SERVICE) as KeyguardManager
     }
-    private val incomingCallOverlayController by lazy {
-        IncomingCallOverlayController(applicationContext)
-    }
 
     private val bridgeObserver: (HashMap<String, Any?>) -> Unit = { event ->
         handleBridgeEvent(event)
@@ -233,7 +230,6 @@ class NativeSipForegroundService : Service() {
     }
 
     override fun onDestroy() {
-        hideIncomingCallOverlay("service-destroy")
         stopIncomingCallRingtone()
         releaseIncomingCallWakeLock()
         stopRegistrationHeartbeat()
@@ -273,14 +269,14 @@ class NativeSipForegroundService : Service() {
                 val state = event["state"]?.toString()
                 Log.d(
                     TAG,
-                    "handleBridgeEvent(call): state=$state, remote=${event["remoteIdentity"]}, appForeground=${NativeSipBridge.isAppInForeground()}, deviceLocked=${isDeviceLocked()}, canDrawOverlays=${canDrawOverlays()}",
+                    "handleBridgeEvent(call): state=$state, remote=${event["remoteIdentity"]}, appForeground=${NativeSipBridge.isAppInForeground()}, deviceLocked=${isDeviceLocked()}",
                 )
                 when (state) {
                     "incoming" -> {
                         logIncomingUiDecision("call-event")
                         acquireIncomingCallWakeLock()
                         notificationManager.cancel(NOTIFICATION_CALL_ID)
-                        launchIncomingCallUiIfNeeded(event, "call-event")
+                        showIncomingCallNotification(event)
                         if (shouldPlaySystemIncomingRingtone()) {
                             startIncomingCallRingtone()
                         } else {
@@ -290,7 +286,6 @@ class NativeSipForegroundService : Service() {
                     }
                     "calling", "ringing", "in_call", "ended", "failed", "idle" -> {
                         cancelIncomingUiWatchdog()
-                        hideIncomingCallOverlay("call-state-$state")
                         stopIncomingCallRingtone()
                         releaseIncomingCallWakeLock()
                         notificationManager.cancel(NOTIFICATION_CALL_ID)
@@ -309,11 +304,10 @@ class NativeSipForegroundService : Service() {
         val callState = event["callState"]?.toString()
         Log.d(
             TAG,
-            "handleAppVisibilityEvent: appForeground=${event["appForeground"]}, callState=$callState, remote=${event["remoteIdentity"]}, deviceLocked=${isDeviceLocked()}, canDrawOverlays=${canDrawOverlays()}",
+            "handleAppVisibilityEvent: appForeground=${event["appForeground"]}, callState=$callState, remote=${event["remoteIdentity"]}, deviceLocked=${isDeviceLocked()}",
         )
         if (callState != "incoming") {
             cancelIncomingUiWatchdog()
-            hideIncomingCallOverlay("app-visibility-non-incoming-$callState")
             stopIncomingCallRingtone()
             return
         }
@@ -475,10 +469,7 @@ class NativeSipForegroundService : Service() {
         try {
             notificationManager.notify(NOTIFICATION_CALL_ID, notification)
             Log.d(TAG, "Incoming call notification posted with fullScreenIntent")
-            if (!shouldUseIncomingCallOverlay()) {
-                Log.d(TAG, "Incoming UI fallback selected: launching IncomingCallActivity via PendingIntent")
-                launchIncomingCallUiFallback(event)
-            }
+            launchIncomingCallUiIfNeeded(event, "notification")
         } catch (error: Throwable) {
             Log.e(TAG, "showIncomingCallNotification failed: ${error.message}", error)
         }
@@ -644,26 +635,8 @@ class NativeSipForegroundService : Service() {
         }
     }
 
-    private fun shouldUseIncomingCallOverlay(): Boolean {
-        if (NativeSipBridge.isAppInForeground()) {
-            return false
-        }
-        if (isDeviceLocked()) {
-            return false
-        }
-        return canDrawOverlays()
-    }
-
     private fun shouldPlaySystemIncomingRingtone(): Boolean {
         return !NativeSipBridge.isAppInForeground()
-    }
-
-    private fun canDrawOverlays(): Boolean {
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            android.provider.Settings.canDrawOverlays(this)
-        } else {
-            true
-        }
     }
 
     private fun shouldLaunchIncomingCallUi(): Boolean {
@@ -679,40 +652,10 @@ class NativeSipForegroundService : Service() {
         }
     }
 
-    private fun showIncomingCallOverlay(event: HashMap<String, Any?>) {
-        val remoteIdentity = formatIdentity(event["remoteIdentity"]?.toString())
-        Log.d(
-            TAG,
-            "Showing incoming call overlay: remote=$remoteIdentity, appForeground=${NativeSipBridge.isAppInForeground()}, deviceLocked=${isDeviceLocked()}, canDrawOverlays=${canDrawOverlays()}",
-        )
-        incomingCallOverlayController.show(
-            callerName = remoteIdentity,
-            onAnswer = {
-                hideIncomingCallOverlay("overlay-answer")
-                stopIncomingCallRingtone()
-                NativeSipBridge.acceptCall()
-                openFlutterCallUi()
-            },
-            onDecline = {
-                hideIncomingCallOverlay("overlay-decline")
-                stopIncomingCallRingtone()
-                NativeSipBridge.declineCall()
-            },
-        )
-    }
-
-    private fun hideIncomingCallOverlay(reason: String) {
-        Log.d(
-            TAG,
-            "Hiding incoming call overlay: reason=$reason, wasShowing=${incomingCallOverlayController.isShowing()}",
-        )
-        incomingCallOverlayController.hide()
-    }
-
     private fun logIncomingUiDecision(source: String) {
         Log.d(
             TAG,
-            "Incoming UI decision[$source]: launchActivity=${shouldLaunchIncomingCallUi()}, activityVisible=${IncomingCallActivity.isVisible()}, playRingtone=${shouldPlaySystemIncomingRingtone()}, appForeground=${NativeSipBridge.isAppInForeground()}, deviceLocked=${isDeviceLocked()}, canDrawOverlays=${canDrawOverlays()}",
+            "Incoming UI decision[$source]: launchActivity=${shouldLaunchIncomingCallUi()}, activityVisible=${IncomingCallActivity.isVisible()}, playRingtone=${shouldPlaySystemIncomingRingtone()}, appForeground=${NativeSipBridge.isAppInForeground()}, deviceLocked=${isDeviceLocked()}",
         )
     }
 
@@ -727,7 +670,7 @@ class NativeSipForegroundService : Service() {
         }
         Log.d(
             TAG,
-            "Incoming UI launch[$source]: remote=${event["remoteIdentity"]}, deviceLocked=${isDeviceLocked()}, canDrawOverlays=${canDrawOverlays()}",
+            "Incoming UI launch[$source]: remote=${event["remoteIdentity"]}, deviceLocked=${isDeviceLocked()}",
         )
         launchIncomingCallUiFallback(event)
     }
