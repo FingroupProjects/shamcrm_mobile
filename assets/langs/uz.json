@@ -177,6 +177,7 @@
   "sip_unmute": "Ovoz yoq.",
   "sip_speaker_on": "Karnay",
   "sip_speaker_off": "Karnay o'ch.",
+  "sip_speaker": "Karnay",
   "sip_call_state": "Qo'ng'iroq holati",
   "sip_call_idle": "Kutilmoqda",
   "sip_call_incoming": "Kiruvchi qo'ng'iroq",

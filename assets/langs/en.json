@@ -178,6 +178,7 @@
   "sip_unmute": "Unmute",
   "sip_speaker_on": "Speaker On",
   "sip_speaker_off": "Speaker Off",
+  "sip_speaker": "Speaker",
   "sip_call_state": "Call State",
   "sip_call_idle": "Idle",
   "sip_call_incoming": "Incoming call",

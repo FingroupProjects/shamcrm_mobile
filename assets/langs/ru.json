@@ -177,6 +177,7 @@
   "sip_unmute": "Вкл. звук",
   "sip_speaker_on": "Динамик",
   "sip_speaker_off": "Динамик выкл.",
+  "sip_speaker": "Динамик",
   "sip_call_state": "Состояние звонка",
   "sip_call_idle": "Ожидание",
   "sip_call_incoming": "Входящий звонок",

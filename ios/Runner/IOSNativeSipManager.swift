@@ -618,6 +618,8 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
     private var pendingIncomingPayload: VoIPIncomingPayload?
     private var deferredAction: DeferredNativeCallAction?
     private var audioSessionObserversInstalled = false
+    private var callKitReportedForCurrentIncoming = false
+    private var incomingInviteTimeoutTimer: Timer?
 
     init(controller: FlutterViewController) {
         methodChannel = FlutterMethodChannel(
@@ -639,6 +641,7 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
     }
 
     deinit {
+        incomingInviteTimeoutTimer?.invalidate()
         teardownAudioSessionObservers()
         teardownLinphoneCore()
     }
@@ -677,6 +680,12 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
             snapshot.callState != "in_call" {
             _ = restoreRegistrationIfNeeded(reason: isForeground ? "app-foreground" : "app-background",
                                             emitRegisteringEvent: false)
+        }
+        if !isForeground,
+           snapshot.callState == "incoming",
+           !callKitReportedForCurrentIncoming,
+           let payload = pendingIncomingPayload {
+            reportIncomingCallToSystemIfNeeded(payload: payload)
         }
         persistSnapshot()
         emit([
@@ -1119,11 +1128,14 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
     }
 
     private func setSpeaker(enabled: Bool) -> Bool {
+        snapshot.speakerOn = enabled
+        persistSnapshot()
+
         guard let call = resolveCurrentCallForAction(), let core else {
-            snapshot.speakerOn = enabled
-            persistSnapshot()
+            configureAudioSessionForCallIfNeeded()
             emitAudioSessionEvent(state: "route_preference_updated", reason: "no_active_call")
-            return false
+            emitCallEvent(state: snapshot.callState, message: snapshot.message)
+            return true
         }
 
         let devices = linphone_core_get_audio_devices(core)
@@ -1439,6 +1451,7 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
         state: LinphoneCallState,
         message: String?
     ) {
+        let previousCallState = snapshot.callState
         if let call {
             currentCall = call
         }
@@ -1454,6 +1467,7 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
 
         switch state {
         case LinphoneCallStateIncomingReceived, LinphoneCallStatePushIncomingReceived:
+            cancelIncomingInviteTimeout()
             appendDiagnosticLog("invite_received", [
                 "call_id": linphoneCallId ?? "",
                 "remote_identity": remoteIdentity ?? "",
@@ -1489,16 +1503,19 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
             }
             applyDeferredCallActionIfPossible()
         case LinphoneCallStateOutgoingInit:
+            cancelIncomingInviteTimeout()
             snapshot.callState = "calling"
             snapshot.message = message ?? "Outgoing call initialized"
             persistSnapshot()
             emitCallEvent(state: "calling", remoteIdentity: remoteIdentity, callId: snapshot.callId, message: snapshot.message)
         case LinphoneCallStateOutgoingProgress, LinphoneCallStateOutgoingRinging:
+            cancelIncomingInviteTimeout()
             snapshot.callState = "ringing"
             snapshot.message = message ?? "Outgoing call ringing"
             persistSnapshot()
             emitCallEvent(state: "ringing", remoteIdentity: remoteIdentity, callId: snapshot.callId, message: snapshot.message)
         case LinphoneCallStateConnected, LinphoneCallStateStreamsRunning:
+            cancelIncomingInviteTimeout()
             if let uuid = resolvedCallUUID(from: nil) {
                 callKitManager.reportCallConnected(callUUID: uuid)
             }
@@ -1513,14 +1530,21 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
             persistSnapshot()
             emitCallEvent(state: "in_call", remoteIdentity: remoteIdentity, callId: snapshot.callId, message: snapshot.message)
         case LinphoneCallStateError:
+            cancelIncomingInviteTimeout()
             currentCall = nil
             let uuid = resolvedCallUUID(from: nil)
-            let remotelyDeclined = isRemoteDeclineMessage(message)
+            let earlyTermination = isEarlyCallState(previousCallState)
+            let remotelyDeclined = isRemoteDeclineMessage(message) || earlyTermination
             if let uuid {
-                callKitManager.reportCallEnded(callUUID: uuid, reason: remotelyDeclined ? .remoteEnded : .failed)
+                let endedReason: CXCallEndedReason =
+                    previousCallState == "incoming" ? .unanswered :
+                    (remotelyDeclined ? .remoteEnded : .failed)
+                callKitManager.reportCallEnded(callUUID: uuid, reason: endedReason)
             }
             snapshot.callState = remotelyDeclined ? "ended" : "failed"
             snapshot.message = message ?? (remotelyDeclined ? "Call declined by remote party" : "Call failed")
+            deferredAction = nil
+            pendingIncomingPayload = nil
             persistSnapshot()
             emitCallEvent(
                 state: remotelyDeclined ? "ended" : "failed",
@@ -1531,12 +1555,14 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
             )
             if let uuid {
                 handleCallEnded(
-                    reason: remotelyDeclined ? .remoteEnded : .failed,
+                    reason: previousCallState == "incoming" ? .unanswered :
+                        (remotelyDeclined ? .remoteEnded : .failed),
                     callUUID: uuid,
                     remoteIdentity: remoteIdentity
                 )
             }
         case LinphoneCallStateEnd, LinphoneCallStateReleased:
+            cancelIncomingInviteTimeout()
             currentCall = nil
             let uuid = resolvedCallUUID(from: nil)
             if let uuid {
@@ -1596,11 +1622,13 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
                 "call_uuid": payload.uuid.uuidString,
                 "call_id": payload.callId ?? "",
             ])
+            scheduleIncomingInviteTimeout(for: payload)
             completion?()
             return
         }
 
         pendingIncomingPayload = payload
+        callKitReportedForCurrentIncoming = false
         snapshot.callUUID = payload.uuid.uuidString
         snapshot.callId = payload.callId
         snapshot.callState = "incoming"
@@ -1620,6 +1648,28 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
             message: "Incoming VoIP push received",
             extra: payload.toFlutterDictionary()
         )
+        scheduleIncomingInviteTimeout(for: payload)
+
+        reportIncomingCallToSystemIfNeeded(payload: payload, completion: completion)
+    }
+
+    private func reportIncomingCallToSystemIfNeeded(
+        payload: VoIPIncomingPayload,
+        completion: (() -> Void)? = nil
+    ) {
+        if callKitReportedForCurrentIncoming {
+            completion?()
+            return
+        }
+
+        guard !snapshot.appForeground else {
+            appendDiagnosticLog("callkit_skipped_foreground", [
+                "call_uuid": payload.uuid.uuidString,
+                "call_id": payload.callId ?? "",
+            ])
+            completion?()
+            return
+        }
 
         callKitManager.reportIncomingCall(payload: payload) { [weak self] error in
             defer { completion?() }
@@ -1641,12 +1691,45 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
                     message: error.localizedDescription
                 )
             } else {
+                self.callKitReportedForCurrentIncoming = true
                 self.appendDiagnosticLog("callkit_reported", [
                     "call_uuid": payload.uuid.uuidString,
                     "call_id": payload.callId ?? "",
                 ])
             }
         }
+    }
+
+    private func scheduleIncomingInviteTimeout(for payload: VoIPIncomingPayload) {
+        incomingInviteTimeoutTimer?.invalidate()
+        incomingInviteTimeoutTimer = Timer.scheduledTimer(withTimeInterval: 12, repeats: false) { [weak self] _ in
+            guard let self else { return }
+            guard self.snapshot.callState == "incoming" else { return }
+            guard self.snapshot.callUUID == payload.uuid.uuidString else { return }
+            guard self.currentCall == nil else { return }
+
+            self.appendDiagnosticLog("incoming_invite_timeout", [
+                "call_uuid": payload.uuid.uuidString,
+                "call_id": payload.callId ?? "",
+            ])
+
+            if self.callKitReportedForCurrentIncoming {
+                self.callKitManager.reportCallEnded(callUUID: payload.uuid, reason: .unanswered)
+            }
+
+            self.pendingIncomingPayload = nil
+            self.deferredAction = nil
+            self.handleCallEnded(
+                reason: .unanswered,
+                callUUID: payload.uuid,
+                remoteIdentity: payload.handle
+            )
+        }
+    }
+
+    private func cancelIncomingInviteTimeout() {
+        incomingInviteTimeoutTimer?.invalidate()
+        incomingInviteTimeoutTimer = nil
     }
 
     private func isDuplicateIncomingPayload(_ payload: VoIPIncomingPayload) -> Bool {
@@ -1750,6 +1833,8 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
     }
 
     private func handleCallEnded(reason: CXCallEndedReason, callUUID: UUID, remoteIdentity: String?) {
+        cancelIncomingInviteTimeout()
+        callKitReportedForCurrentIncoming = false
         let endedCallId = snapshot.callId
         appendDiagnosticLog("call_end_reason", [
             "reason": endedReasonString(for: reason),
@@ -2013,6 +2098,10 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
             normalized.contains("request terminated")
     }
 
+    private func isEarlyCallState(_ value: String) -> Bool {
+        value == "incoming" || value == "calling" || value == "ringing"
+    }
+
     private func linphonePaths() -> (base: URL, config: URL, cache: URL) {
         let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
             .appendingPathComponent("linphone", isDirectory: true)
@@ -2189,6 +2278,8 @@ extension IOSNativeSipManager: IOSCallKitManagerDelegate {
     }
 
     func callKitManagerDidReset(_ manager: IOSCallKitManager) {
+        cancelIncomingInviteTimeout()
+        callKitReportedForCurrentIncoming = false
         currentCall = nil
         pendingIncomingPayload = nil
         deferredAction = nil

@@ -34,6 +34,7 @@ class NativeSipManager(
     private var isSpeakerOn = false
     private var currentDomain: String = ""
     private var desiredRegistrationEnabled = false
+    private var lastCallState: String = "idle"
 
     fun setEventListener(listener: ((HashMap<String, Any?>) -> Unit)?) {
         eventListener = listener
@@ -141,6 +142,7 @@ class NativeSipManager(
 
         currentCall = null
         isSpeakerOn = false
+        lastCallState = "ended"
 
         try {
             core?.clearAccounts()
@@ -269,7 +271,18 @@ class NativeSipManager(
     }
 
     fun setSpeaker(enabled: Boolean): Boolean {
-        val sipCore = core ?: return false
+        isSpeakerOn = enabled
+        val sipCore = core
+        if (sipCore == null) {
+            emitCallState(
+                state = lastCallState,
+                remoteIdentity = remoteIdentityFor(currentCall),
+                message = "Speaker preference updated",
+                muted = currentCall?.getMicrophoneMuted() ?: false,
+                speakerOn = isSpeakerOn,
+            )
+            return true
+        }
         return try {
             val desired = sipCore.getAudioDevices().firstOrNull { device ->
                 val typeName = device.getType().toString()
@@ -283,7 +296,6 @@ class NativeSipManager(
 
             if (desired != null) {
                 sipCore.setOutputAudioDevice(desired)
-                isSpeakerOn = enabled
                 emitCallState(
                     state = mapCallState(currentCall?.getState()?.toString()),
                     remoteIdentity = remoteIdentityFor(currentCall),
@@ -293,7 +305,14 @@ class NativeSipManager(
                 )
                 true
             } else {
-                false
+                emitCallState(
+                    state = mapCallState(currentCall?.getState()?.toString()),
+                    remoteIdentity = remoteIdentityFor(currentCall),
+                    message = "Speaker preference updated",
+                    muted = currentCall?.getMicrophoneMuted() ?: false,
+                    speakerOn = isSpeakerOn,
+                )
+                true
             }
         } catch (error: Throwable) {
             Log.e(TAG, "setSpeaker failed: ${error.message}", error)
@@ -398,17 +417,26 @@ class NativeSipManager(
                 message: String,
             ) {
                 val mappedState = mapCallState(state.toString(), message)
+                val previousCallState = lastCallState
+                val effectiveMappedState =
+                    if (shouldTreatEarlyTerminationAsEnded(mappedState, previousCallState)) {
+                        "ended"
+                    } else {
+                        mappedState
+                    }
                 val effectiveMessage =
-                    if (mappedState == "ended" && isRemoteDeclineMessage(message)) {
+                    if (effectiveMappedState == "ended" &&
+                        (isRemoteDeclineMessage(message) || isEarlyCallState(previousCallState))
+                    ) {
                         "Call declined by remote party"
                     } else {
                         message.ifEmpty { state.toString() }
                     }
                 Log.d(
                     TAG,
-                    "onCallStateChanged: rawState=${state.toString()}, mappedState=$mappedState, remote=${remoteIdentityFor(call)}, message=$effectiveMessage",
+                    "onCallStateChanged: rawState=${state.toString()}, mappedState=$mappedState, effectiveMappedState=$effectiveMappedState, previousCallState=$previousCallState, remote=${remoteIdentityFor(call)}, message=$effectiveMessage",
                 )
-                currentCall = when (mappedState) {
+                currentCall = when (effectiveMappedState) {
                     "ended", "failed", "idle" -> null
                     else -> call
                 }
@@ -418,8 +446,16 @@ class NativeSipManager(
                     isSpeakerOn = false
                 }
 
+                lastCallState = effectiveMappedState
+                if (effectiveMappedState == "calling" ||
+                    effectiveMappedState == "ringing" ||
+                    effectiveMappedState == "in_call"
+                ) {
+                    tryApplySpeakerPreference(core)
+                }
+
                 emitCallState(
-                    state = mappedState,
+                    state = effectiveMappedState,
                     remoteIdentity = remoteIdentity,
                     message = effectiveMessage,
                     muted = call.getMicrophoneMuted(),
@@ -432,6 +468,25 @@ class NativeSipManager(
         coreListener = listener
         core = createdCore
         return createdCore
+    }
+
+    private fun tryApplySpeakerPreference(sipCore: Core) {
+        try {
+            val desired = sipCore.getAudioDevices().firstOrNull { device ->
+                val typeName = device.getType().toString()
+                if (isSpeakerOn) {
+                    typeName.contains("Speaker", ignoreCase = true)
+                } else {
+                    typeName.contains("Earpiece", ignoreCase = true) ||
+                        typeName.contains("Microphone", ignoreCase = true)
+                }
+            }
+            if (desired != null) {
+                sipCore.setOutputAudioDevice(desired)
+            }
+        } catch (error: Throwable) {
+            Log.e(TAG, "tryApplySpeakerPreference failed: ${error.message}", error)
+        }
     }
 
     private fun emitRegistration(state: String, message: String) {
@@ -506,6 +561,17 @@ class NativeSipManager(
             "End", "Released" -> "ended"
             else -> "idle"
         }
+    }
+
+    private fun isEarlyCallState(state: String): Boolean {
+        return state == "incoming" || state == "calling" || state == "ringing"
+    }
+
+    private fun shouldTreatEarlyTerminationAsEnded(
+        mappedState: String,
+        previousCallState: String,
+    ): Boolean {
+        return mappedState == "failed" && isEarlyCallState(previousCallState)
     }
 
     private fun isRemoteDeclineMessage(message: String?): Boolean {

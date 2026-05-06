@@ -1194,6 +1194,12 @@ class SipService extends ChangeNotifier
         normalized.contains('request terminated');
   }
 
+  bool _wasEarlyCallStatus(SipCallUiStatus status) {
+    return status == SipCallUiStatus.incoming ||
+        status == SipCallUiStatus.calling ||
+        status == SipCallUiStatus.ringing;
+  }
+
   void _handleNativeCallActionEvent(Map<String, dynamic> payload) {
     _trackIosSystemCall(
       callUUID: payload['callUUID']?.toString(),
@@ -1546,6 +1552,12 @@ class SipService extends ChangeNotifier
         );
         break;
       case 'failed':
+        if (_isAuthorizationFailureMessage(message)) {
+          _stopReconnectOnAuthorizationFailure(
+            'SIP авторизация отклонена сервером. Проверьте логин, пароль и auth ID.',
+          );
+          return;
+        }
         _state = _state.copyWith(
           registrationStatus: SipRegistrationUiStatus.failed,
           errorMessage: message ?? 'Native SIP registration failed',
@@ -1985,6 +1997,22 @@ class SipService extends ChangeNotifier
     return message.contains('connection refused');
   }
 
+  bool _isAuthorizationFailureMessage(String? message) {
+    final normalized = message?.trim().toLowerCase() ?? '';
+    if (normalized.isEmpty) {
+      return false;
+    }
+
+    return normalized.contains('unauthorized') ||
+        normalized.contains('forbidden') ||
+        normalized.contains('authentication failed') ||
+        normalized.contains('auth failed') ||
+        normalized.contains('wrong password') ||
+        normalized.contains('invalid password') ||
+        normalized.contains('401') ||
+        normalized.contains('403');
+  }
+
   String _currentEndpointKey() {
     return _endpointKey(
       server: _state.server,
@@ -2075,6 +2103,21 @@ class SipService extends ChangeNotifier
     _notifyListenersSafely();
   }
 
+  void _stopReconnectOnAuthorizationFailure(String message) {
+    _shouldStayConnected = false;
+    _persistentSipEnabled = false;
+    _cancelReconnect();
+    _stopKeepAlive();
+
+    _state = _state.copyWith(
+      registrationStatus: SipRegistrationUiStatus.failed,
+      errorMessage: message,
+      callStatus: SipCallUiStatus.idle,
+      clearRemoteIdentity: true,
+    );
+    _notifyListenersSafely();
+  }
+
   @override
   void registrationStateChanged(RegistrationState state) {
     if (_shouldUseNativeSip()) return;
@@ -2090,6 +2133,12 @@ class SipService extends ChangeNotifier
         _startKeepAlive();
         break;
       case RegistrationStateEnum.REGISTRATION_FAILED:
+        if (_isAuthorizationFailureMessage(state.cause?.toString())) {
+          _stopReconnectOnAuthorizationFailure(
+            'SIP авторизация отклонена сервером. Проверьте логин, пароль и auth ID.',
+          );
+          break;
+        }
         _state = _state.copyWith(
           registrationStatus: SipRegistrationUiStatus.failed,
           errorMessage: state.cause?.toString() ?? 'Registration failed',
@@ -2143,6 +2192,8 @@ class SipService extends ChangeNotifier
         }
       }
     }
+
+    final previousCallStatus = _state.callStatus;
 
     switch (callState.state) {
       case CallStateEnum.CALL_INITIATION:
@@ -2201,7 +2252,8 @@ class SipService extends ChangeNotifier
       case CallStateEnum.FAILED:
         _releaseStreams();
         final rawError = callState.cause?.toString() ?? 'Call failed';
-        final remotelyDeclined = _isRemoteDeclineCause(rawError);
+        final remotelyDeclined =
+            _isRemoteDeclineCause(rawError) || _wasEarlyCallStatus(previousCallStatus);
         _appendCallLog(
           remotelyDeclined ? SipCallUiStatus.ended : SipCallUiStatus.failed,
         );
