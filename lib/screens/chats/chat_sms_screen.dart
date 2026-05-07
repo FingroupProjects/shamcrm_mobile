@@ -2702,7 +2702,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
       return const SizedBox.shrink();
     }
     if (_isInstagramCommentChannel && _instagramResponseType == null) {
-      return const SizedBox.shrink();
+      return _buildInstagramReplyHint();
     }
 
     return SafeArea(
@@ -2796,6 +2796,63 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
             },
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildInstagramReplyHint() {
+    return SafeArea(
+      bottom: true,
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 14),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: const Color(0xFFE6EAF2)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.04),
+                blurRadius: 14,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF3F6FC),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.swipe_left_alt_rounded,
+                  color: Color(0xFF5B6B8A),
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  AppLocalizations.of(context)!
+                      .translate('instagram_comment_reply_hint'),
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontFamily: 'Gilroy',
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF344054),
+                    height: 1.35,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

@@ -24,6 +24,7 @@ import 'package:crm_task_manager/custom_widget/file_utils.dart';
 import 'package:crm_task_manager/models/field_configuration.dart';
 import 'package:crm_task_manager/models/leadById_model.dart';
 import 'package:crm_task_manager/models/lead_model.dart';
+import 'package:crm_task_manager/models/sales_funnel_model.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/history_dialog.dart';
 import 'package:crm_task_manager/screens/lead/export_lead_to_contact.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_delete.dart';
@@ -218,6 +219,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
   bool _askReasonForRefusal = false;
   bool _isAcceptingLead = false;
   bool _isRejectingLead = false;
+  int? _loadedLeadActionFunnelId;
   late final int _initialStatusId;
   int? _currentStatusId;
   bool _statusChangedFromDetails = false;
@@ -370,10 +372,54 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
     final prefs = await SharedPreferences.getInstance();
     if (!mounted) return;
     setState(() {
-      _showAcceptDeclineButton =
-          prefs.getBool('show_accept_decline_button') ?? false;
       _askReasonForRefusal = prefs.getBool('ask_reason_for_refusal') ?? false;
     });
+  }
+
+  Future<void> _loadLeadActionAvailability({LeadById? lead}) async {
+    final targetLead = lead ?? currentLead;
+    final fallbackFunnelId =
+        int.tryParse(await _apiService.getSelectedSalesFunnel() ?? '');
+    final resolvedFunnelId = targetLead?.salesFunnel?.id ?? fallbackFunnelId;
+
+    if (_loadedLeadActionFunnelId == resolvedFunnelId) {
+      return;
+    }
+
+    _loadedLeadActionFunnelId = resolvedFunnelId;
+
+    Future<List<SalesFunnel>> loadFunnels() async {
+      try {
+        return await _apiService.getSalesFunnels();
+      } catch (_) {
+        return _apiService.getCachedSalesFunnels();
+      }
+    }
+
+    final funnels = await loadFunnels();
+    if (!mounted || _loadedLeadActionFunnelId != resolvedFunnelId) return;
+
+    final matchedFunnel = _findSalesFunnelById(funnels, resolvedFunnelId);
+
+    setState(() {
+      _showAcceptDeclineButton =
+          matchedFunnel?.showAcceptDeclineButton ?? false;
+    });
+  }
+
+  SalesFunnel? _findSalesFunnelById(List<SalesFunnel> funnels, int? funnelId) {
+    if (funnels.isEmpty) return null;
+    if (funnelId == null) {
+      return funnels.length == 1 ? funnels.first : null;
+    }
+
+    for (final funnel in funnels) {
+      if (funnel.id == funnelId) {
+        return funnel;
+      }
+    }
+
+    return null;
   }
 
   Future<void> _fetchTutorialProgress() async {
@@ -989,144 +1035,150 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
         await _handleBackNavigation();
       },
       child: Scaffold(
-        appBar: _buildAppBar(context,
-            AppLocalizations.of(context)!.translate('view_lead') + widget.leadId),
+        appBar: _buildAppBar(
+            context,
+            AppLocalizations.of(context)!.translate('view_lead') +
+                widget.leadId),
         backgroundColor: Colors.white,
         body: MultiBlocListener(
           listeners: [
-          BlocListener<LeadByIdBloc, LeadByIdState>(
-            listener: (context, state) {
-              if (state is LeadByIdLoaded || state is LeadByIdError) {
-                _leadDataReady = true;
-                _tryHideCombinedLoader();
-              }
-              if (state is LeadByIdError) {
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  showCustomSnackBar(
-                    context: context,
-                    message:
-                        AppLocalizations.of(context)!.translate(state.message),
-                    isSuccess: false,
-                  );
-                });
-              }
-            },
-          ),
-          BlocListener<NotesBloc, NotesState>(
-            listener: (context, state) {
-              if (state is NotesLoaded || state is NotesError) {
-                _notesDataReady = true;
-                _tryHideCombinedLoader();
-              }
-            },
-          ),
-          BlocListener<LeadDealsBloc, LeadDealsState>(
-            listener: (context, state) {
-              if (state is LeadDealsLoaded || state is LeadDealsError) {
-                _dealsDataReady = true;
-                _tryHideCombinedLoader();
-              }
-            },
-          ),
-          BlocListener<OrderByLeadBloc, OrderByLeadState>(
-            listener: (context, state) {
-              if (state is OrderByLeadLoaded || state is OrderByLeadError) {
-                _ordersDataReady = true;
-                _tryHideCombinedLoader();
-              }
-            },
-          ),
+            BlocListener<LeadByIdBloc, LeadByIdState>(
+              listener: (context, state) {
+                if (state is LeadByIdLoaded || state is LeadByIdError) {
+                  _leadDataReady = true;
+                  _tryHideCombinedLoader();
+                }
+                if (state is LeadByIdLoaded) {
+                  _loadLeadActionAvailability(lead: state.lead);
+                }
+                if (state is LeadByIdError) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    showCustomSnackBar(
+                      context: context,
+                      message: AppLocalizations.of(context)!
+                          .translate(state.message),
+                      isSuccess: false,
+                    );
+                  });
+                }
+              },
+            ),
+            BlocListener<NotesBloc, NotesState>(
+              listener: (context, state) {
+                if (state is NotesLoaded || state is NotesError) {
+                  _notesDataReady = true;
+                  _tryHideCombinedLoader();
+                }
+              },
+            ),
+            BlocListener<LeadDealsBloc, LeadDealsState>(
+              listener: (context, state) {
+                if (state is LeadDealsLoaded || state is LeadDealsError) {
+                  _dealsDataReady = true;
+                  _tryHideCombinedLoader();
+                }
+              },
+            ),
+            BlocListener<OrderByLeadBloc, OrderByLeadState>(
+              listener: (context, state) {
+                if (state is OrderByLeadLoaded || state is OrderByLeadError) {
+                  _ordersDataReady = true;
+                  _tryHideCombinedLoader();
+                }
+              },
+            ),
           ],
           child: BlocBuilder<LeadByIdBloc, LeadByIdState>(
             builder: (context, state) {
-            if (_showCombinedLoader || state is LeadByIdLoading) {
-              return Center(
-                child: CircularProgressIndicator(color: Color(0xff1E2E52)),
-              );
-            }
+              if (_showCombinedLoader || state is LeadByIdLoading) {
+                return Center(
+                  child: CircularProgressIndicator(color: Color(0xff1E2E52)),
+                );
+              }
 
-            if (state is LeadByIdLoaded) {
-              LeadById lead = state.lead;
-              _updateDetails(lead);
-              return Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: ListView(
-                  controller: _scrollController,
-                  children: [
-                    _buildDetailsList(),
-                    if (_shouldShowAcceptDeclineButtons)
-                      _buildAcceptDeclineActions(),
-                    const SizedBox(height: 8),
-                    LeadNavigateToChat(
-                      key: keyLeadNavigateChat,
-                      leadId: int.parse(widget.leadId),
-                      leadName: widget.leadName,
-                      chats: state.lead.chats
-                          .map((chat) => {
-                                'id': chat.id,
-                                'integration': chat.integration != null
-                                    ? {
-                                        'id': chat.integration!.id,
-                                        'name': chat.integration!.name,
-                                        'username': chat.integration!.username,
-                                      }
-                                    : null,
-                              })
-                          .toList(),
-                    ),
-                    const SizedBox(height: 8),
-                    if (selectedOrganization != null)
-                      LeadToC(
+              if (state is LeadByIdLoaded) {
+                LeadById lead = state.lead;
+                _updateDetails(lead);
+                return Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: ListView(
+                    controller: _scrollController,
+                    children: [
+                      _buildDetailsList(),
+                      if (_shouldShowAcceptDeclineButtons)
+                        _buildAcceptDeclineActions(),
+                      const SizedBox(height: 8),
+                      LeadNavigateToChat(
+                        key: keyLeadNavigateChat,
                         leadId: int.parse(widget.leadId),
-                        selectedOrganization: selectedOrganization!,
+                        leadName: widget.leadName,
+                        chats: state.lead.chats
+                            .map((chat) => {
+                                  'id': chat.id,
+                                  'integration': chat.integration != null
+                                      ? {
+                                          'id': chat.integration!.id,
+                                          'name': chat.integration!.name,
+                                          'username':
+                                              chat.integration!.username,
+                                        }
+                                      : null,
+                                })
+                            .toList(),
                       ),
-                    const SizedBox(height: 8),
-                    ActionHistoryWidget(leadId: int.parse(widget.leadId)),
-                    const SizedBox(height: 8),
-                    if (_canReadNotes)
-                      NotesWidget(
+                      const SizedBox(height: 8),
+                      if (selectedOrganization != null)
+                        LeadToC(
+                          leadId: int.parse(widget.leadId),
+                          selectedOrganization: selectedOrganization!,
+                        ),
+                      const SizedBox(height: 8),
+                      ActionHistoryWidget(leadId: int.parse(widget.leadId)),
+                      const SizedBox(height: 8),
+                      if (_canReadNotes)
+                        NotesWidget(
+                          leadId: int.parse(widget.leadId),
+                          key: keyLeadNotice,
+                          managerId: lead.manager?.id,
+                          autoFetch: false,
+                        ),
+                      if (_canReadDeal)
+                        DealsWidget(
+                          leadId: int.parse(widget.leadId),
+                          key: keyLeadDeal,
+                          autoFetch: false,
+                        ),
+                      if (_canReadOrders)
+                        OrdersWidget(
+                          entityId: int.parse(widget.leadId),
+                          clientPhone: lead.phone,
+                          autoFetch: false,
+                          key: GlobalKey(),
+                        ),
+                      ContactPersonWidget(
                         leadId: int.parse(widget.leadId),
-                        key: keyLeadNotice,
-                        managerId: lead.manager?.id,
-                        autoFetch: false,
+                        key: keyLeadContactPerson,
                       ),
-                    if (_canReadDeal)
-                      DealsWidget(
-                        leadId: int.parse(widget.leadId),
-                        key: keyLeadDeal,
-                        autoFetch: false,
-                      ),
-                    if (_canReadOrders)
-                      OrdersWidget(
-                        entityId: int.parse(widget.leadId),
-                        clientPhone: lead.phone,
-                        autoFetch: false,
-                        key: GlobalKey(),
-                      ),
-                    ContactPersonWidget(
-                      leadId: int.parse(widget.leadId),
-                      key: keyLeadContactPerson,
-                    ),
-                  ],
-                ),
-              );
-            }
-
-            if (state is LeadByIdError) {
-              return Center(
-                child: Text(
-                  _getLeadErrorMessage(state.message),
-                  style: TextStyle(
-                    fontFamily: 'Gilroy',
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.black,
+                    ],
                   ),
-                ),
-              );
-            }
-            return Center(child: Text(''));
+                );
+              }
+
+              if (state is LeadByIdError) {
+                return Center(
+                  child: Text(
+                    _getLeadErrorMessage(state.message),
+                    style: TextStyle(
+                      fontFamily: 'Gilroy',
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.black,
+                    ),
+                  ),
+                );
+              }
+              return Center(child: Text(''));
             },
           ),
         ),
