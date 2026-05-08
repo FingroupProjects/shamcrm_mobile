@@ -2252,8 +2252,8 @@ class SipService extends ChangeNotifier
       case CallStateEnum.FAILED:
         _releaseStreams();
         final rawError = callState.cause?.toString() ?? 'Call failed';
-        final remotelyDeclined =
-            _isRemoteDeclineCause(rawError) || _wasEarlyCallStatus(previousCallStatus);
+        final remotelyDeclined = _isRemoteDeclineCause(rawError) ||
+            _wasEarlyCallStatus(previousCallStatus);
         _appendCallLog(
           remotelyDeclined ? SipCallUiStatus.ended : SipCallUiStatus.failed,
         );

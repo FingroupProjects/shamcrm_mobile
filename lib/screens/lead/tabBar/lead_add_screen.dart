@@ -7,6 +7,7 @@ import 'package:crm_task_manager/bloc/lead/lead_state.dart';
 import 'package:crm_task_manager/bloc/source_lead/source_lead_bloc.dart';
 import 'package:crm_task_manager/bloc/source_lead/source_lead_event.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
+import 'package:crm_task_manager/custom_widget/country_data_list.dart';
 import 'package:crm_task_manager/custom_widget/custom_create_field_widget.dart';
 import 'package:crm_task_manager/custom_widget/custom_phone_number_input.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
@@ -43,11 +44,18 @@ import 'lead_details/price_type_widget.dart';
 
 class LeadAddScreen extends StatefulWidget {
   final int statusId;
+  final String? initialPhone;
+  final Country? initialCountry;
 
-  LeadAddScreen({required this.statusId});
+  const LeadAddScreen({
+    super.key,
+    required this.statusId,
+    this.initialPhone,
+    this.initialCountry,
+  });
 
   @override
-  _LeadAddScreenState createState() => _LeadAddScreenState();
+  State<LeadAddScreen> createState() => _LeadAddScreenState();
 }
 
 class _LeadAddScreenState extends State<LeadAddScreen> {
@@ -97,6 +105,14 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
   void initState() {
     super.initState();
     _selectedStatuses = widget.statusId;
+    if (widget.initialPhone != null && widget.initialPhone!.trim().isNotEmpty) {
+      phoneController.text = widget.initialPhone!.trim();
+    }
+    if (widget.initialCountry != null &&
+        phoneController.text.trim().isNotEmpty) {
+      selectedDialCode =
+          '${widget.initialCountry!.dialCode}${phoneController.text.trim()}';
+    }
     context.read<SourceLeadBloc>().add(FetchSourceLead());
     context.read<GetAllManagerBloc>().add(GetAllManagerEv());
     context.read<GetAllRegionBloc>().add(GetAllRegionEv());
@@ -236,6 +252,7 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
       case 'phone':
         return CustomPhoneNumberInput(
           controller: phoneController,
+          initialCountry: widget.initialCountry,
           onInputChanged: (String number) {
             setState(() {
               selectedDialCode = number;

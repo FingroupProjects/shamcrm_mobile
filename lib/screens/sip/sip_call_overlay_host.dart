@@ -363,9 +363,8 @@ class _SipCallOverlayHostState extends State<SipCallOverlayHost>
                           identity,
                           textAlign: TextAlign.center,
                           style: TextStyle(
-                            color: isDark
-                                ? Colors.white
-                                : const Color(0xFF0F172A),
+                            color:
+                                isDark ? Colors.white : const Color(0xFF0F172A),
                             fontSize: 38,
                             fontWeight: FontWeight.w300,
                             letterSpacing: 1.4,
@@ -571,7 +570,9 @@ class _SipCallOverlayHostState extends State<SipCallOverlayHost>
                   shape: BoxShape.circle,
                   gradient: RadialGradient(
                     colors: [
-                      isDark ? const Color(0x303D8EFF) : const Color(0x143D8EFF),
+                      isDark
+                          ? const Color(0x303D8EFF)
+                          : const Color(0x143D8EFF),
                       Colors.transparent,
                     ],
                   ),
@@ -588,7 +589,9 @@ class _SipCallOverlayHostState extends State<SipCallOverlayHost>
                   shape: BoxShape.circle,
                   gradient: RadialGradient(
                     colors: [
-                      isDark ? const Color(0x252563EB) : const Color(0x102563EB),
+                      isDark
+                          ? const Color(0x252563EB)
+                          : const Color(0x102563EB),
                       Colors.transparent,
                     ],
                   ),
@@ -624,7 +627,8 @@ class _SipCallOverlayHostState extends State<SipCallOverlayHost>
                             width: 24,
                             height: 24,
                             decoration: BoxDecoration(
-                              color: const Color(0xFF3D8EFF).withValues(alpha: 0.3),
+                              color: const Color(0xFF3D8EFF)
+                                  .withValues(alpha: 0.3),
                               borderRadius: BorderRadius.circular(7),
                             ),
                             child: const Icon(
@@ -658,12 +662,14 @@ class _SipCallOverlayHostState extends State<SipCallOverlayHost>
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFF3D8EFF).withValues(alpha: 0.4),
+                            color:
+                                const Color(0xFF3D8EFF).withValues(alpha: 0.4),
                             blurRadius: 32,
                             spreadRadius: 4,
                           ),
                           BoxShadow(
-                            color: const Color(0xFF3D8EFF).withValues(alpha: 0.2),
+                            color:
+                                const Color(0xFF3D8EFF).withValues(alpha: 0.2),
                             blurRadius: 60,
                             spreadRadius: 10,
                           ),
@@ -697,8 +703,10 @@ class _SipCallOverlayHostState extends State<SipCallOverlayHost>
                           mainAxisSize: MainAxisSize.min,
                           children: List.generate(3, (i) {
                             final delay = i * 0.28;
-                            final t = (_pulseController.value - delay).clamp(0.0, 1.0);
-                            final opacity = (math.sin(t * math.pi)).clamp(0.2, 1.0);
+                            final t = (_pulseController.value - delay)
+                                .clamp(0.0, 1.0);
+                            final opacity =
+                                (math.sin(t * math.pi)).clamp(0.2, 1.0);
                             return Container(
                               margin: const EdgeInsets.symmetric(horizontal: 3),
                               width: 6,
@@ -820,8 +828,8 @@ class _SipCallOverlayHostState extends State<SipCallOverlayHost>
         final isDark = _isDarkSipTheme(context);
         const knobSize = 80.0;
         const horizontalPadding = 10.0;
-        final maxDrag =
-            math.max(0.0, constraints.maxWidth - knobSize - horizontalPadding * 2);
+        final maxDrag = math.max(
+            0.0, constraints.maxWidth - knobSize - horizontalPadding * 2);
         final knobOffset = (_incomingAnswerDrag * maxDrag).clamp(0.0, maxDrag);
 
         return GestureDetector(
@@ -849,9 +857,8 @@ class _SipCallOverlayHostState extends State<SipCallOverlayHost>
               color: isDark ? const Color(0x14FFFFFF) : Colors.white,
               borderRadius: BorderRadius.circular(52),
               border: Border.all(
-                color: isDark
-                    ? const Color(0x28FFFFFF)
-                    : const Color(0xFFE1EAF6),
+                color:
+                    isDark ? const Color(0x28FFFFFF) : const Color(0xFFE1EAF6),
                 width: 0.8,
               ),
             ),
