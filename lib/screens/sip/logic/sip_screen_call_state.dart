@@ -149,7 +149,9 @@ extension _SipScreenCallStateExtension on _SipScreenState {
   }
 
   bool _isDarkSipTheme(BuildContext context) {
-    return MediaQuery.platformBrightnessOf(context) == Brightness.dark;
+    // Временно принудительно оставляем SIP только в светлой теме,
+    // чтобы пользователи не видели тёмный фон во время звонка.
+    return false;
   }
 
   List<Color> _callGradient(bool isDark) {

@@ -117,26 +117,32 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
         String? matchedDialCode;
         Country? matchedCountry;
         bool hasPlus = newText.startsWith('+');
-        String checkText = hasPlus ? newText : '+' + newText;
+        bool hasInternationalPrefix = hasPlus || newText.startsWith('00');
+        String checkText = hasPlus
+            ? newText
+            : (newText.startsWith('00') ? '+${newText.substring(2)}' : newText);
 
-        for (var code in countryCodes) {
-          if (checkText.startsWith(code) &&
-              (matchedDialCode == null ||
-                  code.length > matchedDialCode.length)) {
-            matchedDialCode = code;
-            matchedCountry = countries.firstWhere(
-              (country) => country.dialCode == code,
-              orElse: () => Country(name: '', flag: '', dialCode: ''),
-            );
+        // Без явного международного префикса не пытаемся угадывать чужую страну
+        // по первым цифрам. В этом режиме номер считается локальным для выбранной
+        // страны, чтобы 927724041 не превращался в +92....
+        if (hasInternationalPrefix) {
+          for (var code in countryCodes) {
+            if (checkText.startsWith(code) &&
+                (matchedDialCode == null ||
+                    code.length > matchedDialCode.length)) {
+              matchedDialCode = code;
+              matchedCountry = countries.firstWhere(
+                (country) => country.dialCode == code,
+                orElse: () => Country(name: '', flag: '', dialCode: ''),
+              );
+            }
           }
         }
 
         if (matchedDialCode != null &&
             matchedCountry != null &&
             matchedCountry.name.isNotEmpty) {
-          String phoneNumber = hasPlus
-              ? newText.substring(matchedDialCode.length)
-              : newText.substring(matchedDialCode.length - 1);
+          String phoneNumber = checkText.substring(matchedDialCode.length);
 
           if (RegExp(r'^\d*$').hasMatch(phoneNumber)) {
             int newMaxLength = phoneNumberLengths[matchedDialCode] ?? 0;

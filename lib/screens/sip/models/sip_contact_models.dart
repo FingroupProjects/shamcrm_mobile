@@ -32,3 +32,9 @@ class _SipIndexedContact {
   final String normalizedPhone;
   final Uint8List? photo;
 }
+
+enum _SipSearchSource {
+  calls,
+  contacts,
+  leads,
+}

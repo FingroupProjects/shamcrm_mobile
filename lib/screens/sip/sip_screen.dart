@@ -1,11 +1,11 @@
 import 'dart:async';
 import 'dart:math' as math;
-import 'dart:typed_data';
 import 'dart:ui';
 
 import 'package:audioplayers/audioplayers.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/custom_widget/country_data_list.dart';
+import 'package:crm_task_manager/models/lead_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/lead/lead_cache.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_add_screen.dart';
@@ -22,6 +22,7 @@ part 'models/sip_contact_models.dart';
 part 'logic/sip_screen_call_state.dart';
 part 'logic/sip_screen_contacts.dart';
 part 'logic/sip_screen_dialer.dart';
+part 'logic/sip_screen_search.dart';
 part 'widgets/sip_call_views.dart';
 part 'widgets/sip_glass_widgets.dart';
 part 'widgets/sip_main_views.dart';
@@ -72,6 +73,15 @@ class _SipScreenState extends State<SipScreen>
   bool _suspendDraftAutosave = false;
   bool _isDialPanelCollapsed = false;
   String _contactsViewQuery = '';
+  String _searchViewQuery = '';
+  double? _liquidNavDragIndex;
+  bool _isLiquidNavPressed = false;
+  bool _leadSearchEnabled = false;
+  bool _isLeadSearchLoading = false;
+  List<Lead> _searchLeadResults = const [];
+  Timer? _leadSearchDebounce;
+  int _leadSearchRequestId = 0;
+  _SipSearchSource _searchSource = _SipSearchSource.calls;
 
   static const List<Map<String, String>> _dialPadItems = [
     {'key': '1', 'letters': ''},
@@ -91,13 +101,6 @@ class _SipScreenState extends State<SipScreen>
   void _updateView(VoidCallback action) {
     if (!mounted) return;
     setState(action);
-  }
-
-  void _collapseDialPanel() {
-    if (_isDialPanelCollapsed) return;
-    _updateView(() {
-      _isDialPanelCollapsed = true;
-    });
   }
 
   void _expandDialPanel() {
@@ -137,6 +140,7 @@ class _SipScreenState extends State<SipScreen>
     await _sipService.initialize();
     await _sipService.prepareSipRuntimePermissions();
     await _loadContactsConfiguration();
+    await _loadSearchCapabilities();
     final state = _sipService.state;
 
     _suspendDraftAutosave = true;
@@ -160,6 +164,7 @@ class _SipScreenState extends State<SipScreen>
     _callDurationTimer?.cancel();
     _contactSearchDebounce?.cancel();
     _draftSaveDebounce?.cancel();
+    _leadSearchDebounce?.cancel();
     _pulseController.dispose();
     unawaited(_callFeedbackPlayer.stop());
     _callFeedbackPlayer.dispose();
@@ -233,6 +238,7 @@ class _SipScreenState extends State<SipScreen>
                                 child: switch (_bottomTabIndex) {
                                   0 => _dialPadView(context, state),
                                   2 => _contactsView(context),
+                                  3 => _searchView(context, state),
                                   _ => _journalView(context, state),
                                 },
                               ),

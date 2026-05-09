@@ -931,12 +931,18 @@ class SipService extends ChangeNotifier
 
   Future<void> toggleSpeaker() async {
     final targetSpeaker = !_state.isSpeakerOn;
+    debugPrint(
+      'SipService toggleSpeaker -> current=${_state.isSpeakerOn}, target=$targetSpeaker, callStatus=${_state.callStatus}',
+    );
     if (_shouldUseNativeSip()) {
       final success = await _invokeNativeSipMethod<bool>(
             'setSpeaker',
             <String, dynamic>{'speakerOn': targetSpeaker},
           ) ??
           false;
+      debugPrint(
+        'SipService toggleSpeaker native result -> success=$success, target=$targetSpeaker',
+      );
       if (!success) {
         _setError('Failed to change speaker state.');
         return;
@@ -951,6 +957,9 @@ class SipService extends ChangeNotifier
     }
 
     _state = _state.copyWith(isSpeakerOn: targetSpeaker);
+    debugPrint(
+      'SipService toggleSpeaker local state applied -> isSpeakerOn=${_state.isSpeakerOn}',
+    );
     _notifyListenersSafely();
   }
 
@@ -1224,7 +1233,14 @@ class SipService extends ChangeNotifier
     );
 
     if (speakerOn != null || output != null) {
-      final resolvedSpeakerOn = speakerOn ?? (output == 'speaker');
+      final resolvedSpeakerOn = _state.callStatus == SipCallUiStatus.ended ||
+              _state.callStatus == SipCallUiStatus.failed ||
+              _state.callStatus == SipCallUiStatus.idle
+          ? false
+          : (speakerOn ?? (output == 'speaker'));
+      debugPrint(
+        'SipService native audio session resolved -> previous=${_state.isSpeakerOn}, resolved=$resolvedSpeakerOn, output=$output, callStatus=${_state.callStatus}',
+      );
       _state = _state.copyWith(isSpeakerOn: resolvedSpeakerOn);
       _notifyListenersSafely();
     }
@@ -1510,13 +1526,22 @@ class SipService extends ChangeNotifier
       _shouldStayConnected = true;
     }
 
+    final resolvedSpeakerOn = mappedCall == SipCallUiStatus.ended ||
+            mappedCall == SipCallUiStatus.failed ||
+            mappedCall == SipCallUiStatus.idle
+        ? false
+        : speakerOn;
+    debugPrint(
+      'SipService applyNativeSnapshot -> callState=$callState, mappedCall=$mappedCall, snapshotSpeaker=$speakerOn, resolvedSpeaker=$resolvedSpeakerOn',
+    );
+
     _state = _state.copyWith(
       registrationStatus: mappedRegistration,
       callStatus: mappedCall,
       errorMessage: message,
       remoteIdentity: remoteIdentity,
       isMuted: muted,
-      isSpeakerOn: speakerOn,
+      isSpeakerOn: resolvedSpeakerOn,
       clearRemoteIdentity:
           remoteIdentity == null || remoteIdentity.trim().isEmpty,
     );
@@ -1617,25 +1642,34 @@ class SipService extends ChangeNotifier
         break;
       case 'calling':
         _currentCallDirection = SipCallDirection.outgoing;
+        debugPrint(
+          'SipService applying calling state -> previousSpeaker=${_state.isSpeakerOn}, incomingSpeaker=$speakerOn',
+        );
         _state = _state.copyWith(
           callStatus: SipCallUiStatus.calling,
           remoteIdentity: remoteIdentity,
           clearError: true,
           isMuted: muted ?? _state.isMuted,
-          isSpeakerOn: speakerOn ?? _state.isSpeakerOn,
+          isSpeakerOn: _state.isSpeakerOn,
         );
         break;
       case 'ringing':
+        debugPrint(
+          'SipService applying ringing state -> previousSpeaker=${_state.isSpeakerOn}, incomingSpeaker=$speakerOn',
+        );
         _state = _state.copyWith(
           callStatus: SipCallUiStatus.ringing,
           remoteIdentity: remoteIdentity,
           clearError: true,
           isMuted: muted ?? _state.isMuted,
-          isSpeakerOn: speakerOn ?? _state.isSpeakerOn,
+          isSpeakerOn: _state.isSpeakerOn,
         );
         break;
       case 'in_call':
         _currentCallStartedAt ??= DateTime.now();
+        debugPrint(
+          'SipService applying in_call state -> previousSpeaker=${_state.isSpeakerOn}, incomingSpeaker=$speakerOn',
+        );
         _state = _state.copyWith(
           callStatus: SipCallUiStatus.inCall,
           remoteIdentity: remoteIdentity,

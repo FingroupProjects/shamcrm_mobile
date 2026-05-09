@@ -106,7 +106,8 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
     super.initState();
     _selectedStatuses = widget.statusId;
     if (widget.initialPhone != null && widget.initialPhone!.trim().isNotEmpty) {
-      phoneController.text = widget.initialPhone!.trim();
+      phoneController.text =
+          widget.initialPhone!.trim().replaceAll(RegExp(r'[^0-9]'), '');
     }
     if (widget.initialCountry != null &&
         phoneController.text.trim().isNotEmpty) {

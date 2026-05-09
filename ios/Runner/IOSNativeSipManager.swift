@@ -1055,10 +1055,14 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
 
         currentCall = call
         snapshot.callState = "calling"
+        // Каждый новый исходящий звонок стартует с обычного разговорного маршрута.
+        // Это не даёт старому speaker-state из прошлого звонка залипать в UI.
+        snapshot.speakerOn = false
         snapshot.remoteIdentity = target
         snapshot.message = "Outgoing call started"
         snapshot.callId = callId(from: call) ?? snapshot.callId
         persistSnapshot()
+        configureAudioSessionForCallIfNeeded()
         emitCallEvent(state: "calling", remoteIdentity: target, callId: snapshot.callId, message: snapshot.message)
         return true
     }
@@ -1128,6 +1132,7 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
     }
 
     private func setSpeaker(enabled: Bool) -> Bool {
+        print("IOSNativeSipManager setSpeaker -> enabled=\(enabled), callState=\(snapshot.callState), previousSpeaker=\(snapshot.speakerOn)")
         snapshot.speakerOn = enabled
         persistSnapshot()
 
@@ -1169,6 +1174,7 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
             }
         }
 
+        print("IOSNativeSipManager setSpeaker applied -> enabled=\(enabled), route=\(audioRouteDescription(AVAudioSession.sharedInstance().currentRoute))")
         syncAudioRouteState(reason: enabled ? "speaker_enabled" : "speaker_disabled")
         return true
     }
@@ -1276,6 +1282,7 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
 
         let session = AVAudioSession.sharedInstance()
         do {
+            print("IOSNativeSipManager configureAudioSessionForCallIfNeeded -> callState=\(snapshot.callState), speakerOn=\(snapshot.speakerOn)")
             try session.setCategory(
                 .playAndRecord,
                 mode: .voiceChat,
@@ -1296,7 +1303,13 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
         let session = AVAudioSession.sharedInstance()
         let route = session.currentRoute
         let outputKind = currentAudioOutputKind(route: route)
-        snapshot.speakerOn = outputKind == "speaker"
+        let isCallActive =
+            snapshot.callState == "calling" ||
+            snapshot.callState == "ringing" ||
+            snapshot.callState == "incoming" ||
+            snapshot.callState == "in_call"
+        print("IOSNativeSipManager syncAudioRouteState -> reason=\(reason), callState=\(snapshot.callState), previousSpeaker=\(snapshot.speakerOn), output=\(outputKind), route=\(audioRouteDescription(route))")
+        snapshot.speakerOn = isCallActive && outputKind == "speaker"
         persistSnapshot()
         emitAudioSessionEvent(
             state: "route_changed",
@@ -1505,13 +1518,17 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
         case LinphoneCallStateOutgoingInit:
             cancelIncomingInviteTimeout()
             snapshot.callState = "calling"
+            snapshot.speakerOn = false
             snapshot.message = message ?? "Outgoing call initialized"
+            print("IOSNativeSipManager LinphoneCallStateOutgoingInit -> speakerOn=\(snapshot.speakerOn), remote=\(remoteIdentity ?? "nil")")
             persistSnapshot()
             emitCallEvent(state: "calling", remoteIdentity: remoteIdentity, callId: snapshot.callId, message: snapshot.message)
         case LinphoneCallStateOutgoingProgress, LinphoneCallStateOutgoingRinging:
             cancelIncomingInviteTimeout()
             snapshot.callState = "ringing"
+            snapshot.speakerOn = false
             snapshot.message = message ?? "Outgoing call ringing"
+            print("IOSNativeSipManager LinphoneCallStateOutgoingRinging -> speakerOn=\(snapshot.speakerOn), remote=\(remoteIdentity ?? "nil")")
             persistSnapshot()
             emitCallEvent(state: "ringing", remoteIdentity: remoteIdentity, callId: snapshot.callId, message: snapshot.message)
         case LinphoneCallStateConnected, LinphoneCallStateStreamsRunning:
@@ -1779,6 +1796,7 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
         message: String? = nil,
         extra: [String: Any] = [:]
     ) {
+        print("IOSNativeSipManager emitCallEvent -> state=\(state), speakerOn=\(snapshot.speakerOn), remote=\(remoteIdentity ?? snapshot.remoteIdentity ?? "nil"), message=\(message ?? snapshot.message ?? "nil")")
         var event: [String: Any] = [
             "type": "call",
             "state": state,
@@ -2264,7 +2282,9 @@ extension IOSNativeSipManager: IOSCallKitManagerDelegate {
 
     func callKitManagerDidActivateAudioSession(_ manager: IOSCallKitManager) {
         configureAudioSessionForCallIfNeeded()
-        syncAudioRouteState(reason: "callkit_activated")
+        // На ранней стадии исходящего звонка iOS/CallKit иногда временно
+        // сообщает speaker-route, хотя пользователь не включал громкую связь.
+        // Не продвигаем это состояние в UI автоматически.
         emitAudioSessionEvent(state: "activated")
     }
 

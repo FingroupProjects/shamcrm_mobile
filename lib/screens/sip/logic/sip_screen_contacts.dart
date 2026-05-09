@@ -182,41 +182,4 @@ extension _SipScreenContactsExtension on _SipScreenState {
         .take(6)
         .toList(growable: false);
   }
-
-  List<_SipContactSuggestion> _recommendedContacts() {
-    if (!_contactsEnabled || !_contactsLoaded) {
-      return const [];
-    }
-
-    if (_contactSuggestions.isNotEmpty) {
-      return _contactSuggestions.take(4).toList(growable: false);
-    }
-
-    final seen = <String>{};
-    final suggestions = <_SipContactSuggestion>[];
-    for (final contact in _indexedContacts) {
-      final key = '${contact.name}|${contact.normalizedPhone}';
-      if (!seen.add(key)) continue;
-      suggestions.add(
-        _SipContactSuggestion(
-          name: contact.name,
-          phone: contact.phone,
-          normalizedPhone: contact.normalizedPhone,
-          photo: contact.photo,
-        ),
-      );
-      if (suggestions.length == 4) break;
-    }
-    return suggestions;
-  }
-
-  Future<void> _showContactsSheet() async {
-    if (!_contactsEnabled) return;
-    await _loadContacts();
-    if (!mounted) return;
-
-    _updateView(() {
-      _bottomTabIndex = 2;
-    });
-  }
 }

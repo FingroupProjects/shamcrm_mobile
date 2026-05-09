@@ -26,7 +26,7 @@ extension _SipMainViewsExtension on _SipScreenState {
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w700,
-                    color: _G.brandPrimary,
+                    color: Color(0xFF111827),
                     letterSpacing: -0.8,
                   ),
                 ),
@@ -42,7 +42,7 @@ extension _SipMainViewsExtension on _SipScreenState {
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                           fontSize: 11,
-                          color: _G.brandMuted,
+                          color: Color(0xFF9CA3AF),
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -80,16 +80,16 @@ extension _SipMainViewsExtension on _SipScreenState {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: _G.brandPrimary.withValues(alpha: 0.08),
-              blurRadius: 20,
-              offset: const Offset(0, 10),
+              color: const Color(0xFF111827).withValues(alpha: 0.06),
+              blurRadius: 16,
+              offset: const Offset(0, 4),
             ),
           ],
           border: Border.all(
-            color: const Color(0xFFE4EBF6),
+            color: const Color(0xFFF0F0F0),
           ),
         ),
-        child: Icon(icon, size: 21, color: _G.brandPrimary),
+        child: Icon(icon, size: 21, color: const Color(0xFF374151)),
       ),
     );
   }
@@ -108,7 +108,7 @@ extension _SipMainViewsExtension on _SipScreenState {
           Icon(
             CupertinoIcons.check_mark_circled_solid,
             size: 12,
-            color: _G.lightGreen,
+            color: Color(0xFF22C55E),
           ),
           SizedBox(width: 4),
           Text(
@@ -116,7 +116,7 @@ extension _SipMainViewsExtension on _SipScreenState {
             style: TextStyle(
               fontSize: 10,
               fontWeight: FontWeight.w700,
-              color: _G.lightGreen,
+              color: Color(0xFF22C55E),
             ),
           ),
         ],
@@ -130,13 +130,13 @@ extension _SipMainViewsExtension on _SipScreenState {
         state.registrationStatus == SipRegistrationUiStatus.registering;
 
     return Scaffold(
-      backgroundColor: _G.lightBg,
+      backgroundColor: const Color(0xFFF8FAFF),
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [Color(0xFFE5EEFF), Color(0xFFF8FAFF)],
+            colors: [Color(0xFFEFF4FF), Color(0xFFF8FAFF)],
           ),
         ),
         child: SafeArea(
@@ -155,19 +155,16 @@ extension _SipMainViewsExtension on _SipScreenState {
                   ),
                   const SizedBox(height: 14),
                   Container(
-                    padding: const EdgeInsets.all(18),
+                    padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(24),
-                      gradient: const LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [Color(0xFF2563EB), Color(0xFF1D4ED8)],
-                      ),
+                      borderRadius: BorderRadius.circular(28),
+                      color: const Color(0xFF1C1C1E),
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFF2563EB).withValues(alpha: 0.3),
-                          blurRadius: 28,
-                          offset: const Offset(0, 12),
+                          color:
+                              const Color(0xFF000000).withValues(alpha: 0.18),
+                          blurRadius: 32,
+                          offset: const Offset(0, 16),
                         ),
                       ],
                     ),
@@ -177,19 +174,19 @@ extension _SipMainViewsExtension on _SipScreenState {
                         Row(
                           children: [
                             Container(
-                              width: 44,
-                              height: 44,
+                              width: 48,
+                              height: 48,
                               decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.18),
-                                borderRadius: BorderRadius.circular(14),
+                                color: Colors.white.withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(16),
                               ),
                               child: const Icon(
                                 CupertinoIcons.phone_circle_fill,
                                 color: Colors.white,
-                                size: 26,
+                                size: 28,
                               ),
                             ),
-                            const SizedBox(width: 10),
+                            const SizedBox(width: 12),
                             Text(
                               l10n.translate('sip_welcome_title'),
                               style: const TextStyle(
@@ -203,8 +200,8 @@ extension _SipMainViewsExtension on _SipScreenState {
                         const SizedBox(height: 12),
                         Text(
                           l10n.translate('sip_welcome_subtitle'),
-                          style: const TextStyle(
-                            color: Colors.white70,
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.55),
                             fontSize: 14,
                             height: 1.4,
                           ),
@@ -214,14 +211,15 @@ extension _SipMainViewsExtension on _SipScreenState {
                   ),
                   const SizedBox(height: 16),
                   Container(
-                    padding: const EdgeInsets.all(14),
+                    padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: _G.lightSurface,
-                      borderRadius: BorderRadius.circular(22),
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(28),
                       boxShadow: [
                         BoxShadow(
-                          color: _G.brandPrimary.withValues(alpha: 0.08),
-                          blurRadius: 18,
+                          color:
+                              const Color(0xFF111827).withValues(alpha: 0.05),
+                          blurRadius: 24,
                           offset: const Offset(0, 8),
                         ),
                       ],
@@ -234,10 +232,10 @@ extension _SipMainViewsExtension on _SipScreenState {
                           style: const TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.w700,
-                            color: _G.brandPrimary,
+                            color: Color(0xFF111827),
                           ),
                         ),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 14),
                         _iosField(
                           controller: _serverController,
                           placeholder: l10n.translate('sip_server'),
@@ -261,12 +259,12 @@ extension _SipMainViewsExtension on _SipScreenState {
                           placeholder: l10n.translate('sip_port'),
                           keyboardType: TextInputType.number,
                         ),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 18),
                         SizedBox(
                           width: double.infinity,
                           child: CupertinoButton(
-                            color: _G.lightAccent,
-                            borderRadius: BorderRadius.circular(15),
+                            color: const Color(0xFF1C1C1E),
+                            borderRadius: BorderRadius.circular(18),
                             onPressed: isRegistering
                                 ? null
                                 : () async {
@@ -279,6 +277,7 @@ extension _SipMainViewsExtension on _SipScreenState {
                                   : 'Подключить телефонию',
                               style: const TextStyle(
                                 fontWeight: FontWeight.w600,
+                                color: Colors.white,
                               ),
                             ),
                           ),
@@ -290,7 +289,7 @@ extension _SipMainViewsExtension on _SipScreenState {
                             child: Text(
                               state.errorMessage!,
                               style: const TextStyle(
-                                color: _G.red,
+                                color: Color(0xFFEF4444),
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
@@ -317,34 +316,34 @@ extension _SipMainViewsExtension on _SipScreenState {
     }
 
     final toneColor = state.callStatus == SipCallUiStatus.incoming
-        ? _G.amber
+        ? const Color(0xFFF59E0B)
         : isRegistered
-            ? _G.green
+            ? const Color(0xFF22C55E)
             : state.registrationStatus == SipRegistrationUiStatus.failed
-                ? _G.red
-                : _G.brandMuted;
+                ? const Color(0xFFEF4444)
+                : const Color(0xFF9CA3AF);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(22),
         boxShadow: [
           BoxShadow(
-            color: _G.brandPrimary.withValues(alpha: 0.05),
+            color: const Color(0xFF111827).withValues(alpha: 0.05),
             blurRadius: 18,
-            offset: const Offset(0, 10),
+            offset: const Offset(0, 6),
           ),
         ],
       ),
       child: Row(
         children: [
           Container(
-            width: 36,
-            height: 36,
+            width: 38,
+            height: 38,
             decoration: BoxDecoration(
-              color: toneColor.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(12),
+              color: toneColor.withValues(alpha: 0.10),
+              borderRadius: BorderRadius.circular(13),
             ),
             child: Icon(
               state.callStatus == SipCallUiStatus.incoming
@@ -367,7 +366,7 @@ extension _SipMainViewsExtension on _SipScreenState {
                       : 'Телефония не подключена',
                   style: const TextStyle(
                     fontWeight: FontWeight.w700,
-                    color: _G.brandPrimary,
+                    color: Color(0xFF111827),
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -375,7 +374,7 @@ extension _SipMainViewsExtension on _SipScreenState {
                   '${l10n.translate('sip_call_state')}: ${_callLabel(context, state.callStatus)}',
                   style: const TextStyle(
                     fontSize: 12,
-                    color: _G.brandMuted,
+                    color: Color(0xFF9CA3AF),
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -395,14 +394,18 @@ extension _SipMainViewsExtension on _SipScreenState {
                     },
               child: Container(
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
                 decoration: BoxDecoration(
-                  color: _G.brandPrimary,
-                  borderRadius: BorderRadius.circular(12),
+                  color: const Color(0xFF1C1C1E),
+                  borderRadius: BorderRadius.circular(14),
                 ),
                 child: const Text(
                   'Подключить',
-                  style: TextStyle(color: Colors.white),
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
+                  ),
                 ),
               ),
             ),
@@ -414,14 +417,17 @@ extension _SipMainViewsExtension on _SipScreenState {
                   onPressed: _sipRuntime.acceptCall,
                   child: Container(
                     padding:
-                        const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     decoration: BoxDecoration(
-                      color: _G.green,
-                      borderRadius: BorderRadius.circular(10),
+                      color: const Color(0xFF22C55E),
+                      borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
                       l10n.translate('sip_accept'),
-                      style: const TextStyle(color: Colors.white),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ),
@@ -431,14 +437,17 @@ extension _SipMainViewsExtension on _SipScreenState {
                   onPressed: _sipRuntime.decline,
                   child: Container(
                     padding:
-                        const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     decoration: BoxDecoration(
-                      color: _G.red,
-                      borderRadius: BorderRadius.circular(10),
+                      color: const Color(0xFFEF4444),
+                      borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
                       l10n.translate('sip_decline'),
-                      style: const TextStyle(color: Colors.white),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ),
@@ -455,10 +464,6 @@ extension _SipMainViewsExtension on _SipScreenState {
       builder: (context, constraints) {
         return Stack(
           children: [
-            Positioned.fill(
-              bottom: _isDialPanelCollapsed ? 128 : 420,
-              child: const SizedBox.shrink(),
-            ),
             Positioned(
               left: 0,
               right: 0,
@@ -492,22 +497,17 @@ extension _SipMainViewsExtension on _SipScreenState {
           height: 52,
           padding: const EdgeInsets.symmetric(horizontal: 16),
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.72),
+            color: Colors.white.withValues(alpha: 0.90),
             borderRadius: BorderRadius.circular(26),
             boxShadow: [
               BoxShadow(
-                color: Colors.white.withValues(alpha: 0.95),
-                blurRadius: 18,
-                spreadRadius: 1,
-              ),
-              BoxShadow(
-                color: const Color(0x1A7C8CA5),
-                blurRadius: 24,
-                offset: const Offset(0, 10),
+                color: const Color(0xFF111827).withValues(alpha: 0.06),
+                blurRadius: 20,
+                offset: const Offset(0, 8),
               ),
             ],
             border: Border.all(
-              color: Colors.white.withValues(alpha: 0.85),
+              color: const Color(0xFFF0F0F0),
             ),
           ),
           child: Row(
@@ -515,7 +515,7 @@ extension _SipMainViewsExtension on _SipScreenState {
               const Icon(
                 CupertinoIcons.person_crop_circle,
                 size: 20,
-                color: Color(0xFF111111),
+                color: Color(0xFF374151),
               ),
               const SizedBox(width: 10),
               Expanded(
@@ -524,7 +524,7 @@ extension _SipMainViewsExtension on _SipScreenState {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
-                    color: Color(0xFF7D7D84),
+                    color: Color(0xFF6B7280),
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
                   ),
@@ -538,9 +538,9 @@ extension _SipMainViewsExtension on _SipScreenState {
                   overflow: TextOverflow.ellipsis,
                   textAlign: TextAlign.right,
                   style: const TextStyle(
-                    color: Color(0xFF111111),
+                    color: Color(0xFF111827),
                     fontSize: 15,
-                    fontWeight: FontWeight.w500,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
@@ -611,7 +611,7 @@ extension _SipMainViewsExtension on _SipScreenState {
                           onPressed: _showAddDialDestinationSheet,
                           child: const Icon(
                             CupertinoIcons.person_crop_circle_badge_plus,
-                            color: Color(0xFF3C3C43),
+                            color: Color(0xFF6B7280),
                             size: 30,
                           ),
                         )
@@ -625,16 +625,16 @@ extension _SipMainViewsExtension on _SipScreenState {
                     decoration: BoxDecoration(
                       color: isRegistered
                           ? const Color(0xFF34C759)
-                          : const Color(0xFFAEAEB2),
+                          : const Color(0xFFD1D5DB),
                       shape: BoxShape.circle,
                       boxShadow: isRegistered
                           ? [
                               BoxShadow(
                                 color: const Color(0xFF34C759).withValues(
-                                  alpha: 0.4,
+                                  alpha: 0.35,
                                 ),
-                                blurRadius: 16,
-                                offset: const Offset(0, 6),
+                                blurRadius: 20,
+                                offset: const Offset(0, 8),
                               ),
                             ]
                           : null,
@@ -656,7 +656,7 @@ extension _SipMainViewsExtension on _SipScreenState {
                           onLongPress: _clearDial,
                           child: const Icon(
                             CupertinoIcons.delete_left_fill,
-                            color: Color(0xFF3C3C43),
+                            color: Color(0xFF6B7280),
                             size: 28,
                           ),
                         )
@@ -680,21 +680,21 @@ extension _SipMainViewsExtension on _SipScreenState {
         focusNode: _dialFocusNode,
         readOnly: true,
         showCursor: true,
-        cursorColor: Colors.black,
+        cursorColor: const Color(0xFF111827),
         cursorWidth: 2,
         cursorHeight: 40,
         textAlign: TextAlign.center,
         style: const TextStyle(
           fontSize: 40,
           fontWeight: FontWeight.w300,
-          color: Colors.black,
+          color: Color(0xFF111827),
           letterSpacing: 2,
         ),
         placeholder: 'Введите номер',
         placeholderStyle: const TextStyle(
           fontSize: 28,
           fontWeight: FontWeight.w300,
-          color: Color(0xFFAEAEB2),
+          color: Color(0xFFD1D5DB),
         ),
         magnifierConfiguration: TextMagnifierConfiguration.disabled,
         padding: const EdgeInsets.symmetric(
@@ -723,23 +723,27 @@ extension _SipMainViewsExtension on _SipScreenState {
           alignment: Alignment.center,
           children: [
             Container(
-              width: 92,
-              height: 92,
+              width: 88,
+              height: 88,
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.78),
+                color: Colors.white,
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.white.withValues(alpha: 0.95),
-                    blurRadius: 22,
+                    color: const Color(0xFF111827).withValues(alpha: 0.07),
+                    blurRadius: 20,
+                    offset: const Offset(0, 6),
+                  ),
+                  BoxShadow(
+                    color: Colors.white.withValues(alpha: 0.9),
+                    blurRadius: 4,
                     spreadRadius: 1,
                   ),
-                  const BoxShadow(
-                    color: Color(0x187C8CA5),
-                    blurRadius: 28,
-                    offset: Offset(0, 12),
-                  ),
                 ],
+                border: Border.all(
+                  color: const Color(0xFFF3F4F6),
+                  width: 1,
+                ),
               ),
             ),
             Column(
@@ -751,7 +755,7 @@ extension _SipMainViewsExtension on _SipScreenState {
                     fontSize: 34,
                     height: 1.0,
                     fontWeight: FontWeight.w300,
-                    color: Colors.black,
+                    color: Color(0xFF111827),
                   ),
                 ),
                 if (letters.isNotEmpty)
@@ -762,7 +766,7 @@ extension _SipMainViewsExtension on _SipScreenState {
                       fontSize: 10,
                       letterSpacing: 1.2,
                       fontWeight: FontWeight.w600,
-                      color: Colors.black,
+                      color: Color(0xFF9CA3AF),
                       height: 1.2,
                     ),
                   ),
@@ -786,21 +790,28 @@ extension _SipMainViewsExtension on _SipScreenState {
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(22),
-                border: Border.all(color: const Color(0xFFE3EAF5)),
+                border: Border.all(color: const Color(0xFFF0F0F0)),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF111827).withValues(alpha: 0.04),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
               child: Row(
                 children: [
                   Container(
-                    width: 34,
-                    height: 34,
+                    width: 40,
+                    height: 40,
                     decoration: BoxDecoration(
-                      color: _G.brandPrimary.withValues(alpha: 0.08),
+                      color: const Color(0xFFF3F4F6),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: const Icon(
                       CupertinoIcons.circle_grid_3x3_fill,
                       size: 18,
-                      color: _G.brandPrimary,
+                      color: Color(0xFF374151),
                     ),
                   ),
                   const SizedBox(width: 10),
@@ -814,7 +825,7 @@ extension _SipMainViewsExtension on _SipScreenState {
                           style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w700,
-                            color: _G.brandPrimary,
+                            color: Color(0xFF111827),
                           ),
                         ),
                         Text(
@@ -826,7 +837,7 @@ extension _SipMainViewsExtension on _SipScreenState {
                           style: const TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w500,
-                            color: _G.brandMuted,
+                            color: Color(0xFF9CA3AF),
                           ),
                         ),
                       ],
@@ -851,8 +862,15 @@ extension _SipMainViewsExtension on _SipScreenState {
               color:
                   state.registrationStatus == SipRegistrationUiStatus.registered
                       ? const Color(0xFF34C759)
-                      : _G.brandPrimary,
+                      : const Color(0xFF374151),
               shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF111827).withValues(alpha: 0.15),
+                  blurRadius: 16,
+                  offset: const Offset(0, 6),
+                ),
+              ],
             ),
             child: Icon(
               state.registrationStatus == SipRegistrationUiStatus.registered
@@ -867,65 +885,403 @@ extension _SipMainViewsExtension on _SipScreenState {
     );
   }
 
+  // ─── НОВЫЙ iOS 26 Liquid NavBar ─────────────────────────────────────────────
+  // Зеркальный стиль: таблетка с вкладками слева + кнопка поиска справа
   Widget _ios26LiquidNavBar(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    const segmentCount = 3;
 
-    return ClipRRect(
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-        child: Container(
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.70),
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-            border: Border.all(
-              color: Colors.white.withValues(alpha: 0.72),
-              width: 0.8,
-            ),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x14000000),
-                blurRadius: 24,
-                offset: Offset(0, -6),
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(14, 6, 14, 10),
+        child: Row(
+          children: [
+            Expanded(
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  const horizontalPadding = 5.0;
+                  const innerGap = 4.0;
+                  final maxIndex = segmentCount - 1;
+                  final selectedIndex = (_liquidNavDragIndex ??
+                          _bottomTabIndex.clamp(0, maxIndex).toDouble())
+                      .clamp(0.0, maxIndex.toDouble());
+                  final usableWidth =
+                      constraints.maxWidth - (horizontalPadding * 2);
+                  final segmentWidth =
+                      (usableWidth - innerGap * (segmentCount - 1)) /
+                          segmentCount;
+                  final thumbLeft = selectedIndex * (segmentWidth + innerGap);
+
+                  void snapToLocalPosition(double localDx) {
+                    final safeDx = localDx.clamp(0.0, usableWidth);
+                    final nextIndex = (safeDx / (usableWidth / segmentCount))
+                        .floor()
+                        .clamp(0, maxIndex);
+                    _updateView(() {
+                      _bottomTabIndex = nextIndex;
+                      _liquidNavDragIndex = nextIndex.toDouble();
+                    });
+                  }
+
+                  return GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onHorizontalDragStart: (_) {
+                      _updateView(() {
+                        _isLiquidNavPressed = true;
+                        _liquidNavDragIndex =
+                            _bottomTabIndex.clamp(0, maxIndex).toDouble();
+                      });
+                    },
+                    onHorizontalDragUpdate: (details) {
+                      final safeDx =
+                          (details.localPosition.dx - horizontalPadding)
+                              .clamp(0.0, usableWidth);
+                      final dragIndex = safeDx / (usableWidth / segmentCount);
+                      _updateView(() {
+                        _liquidNavDragIndex =
+                            dragIndex.clamp(0.0, maxIndex.toDouble());
+                      });
+                    },
+                    onHorizontalDragEnd: (_) {
+                      final snappedIndex =
+                          (_liquidNavDragIndex ?? _bottomTabIndex.toDouble())
+                              .round()
+                              .clamp(0, maxIndex);
+                      _updateView(() {
+                        _isLiquidNavPressed = false;
+                        _bottomTabIndex = snappedIndex;
+                        _liquidNavDragIndex = snappedIndex.toDouble();
+                      });
+                    },
+                    onHorizontalDragCancel: () {
+                      _updateView(() {
+                        _isLiquidNavPressed = false;
+                        _liquidNavDragIndex =
+                            _bottomTabIndex.clamp(0, maxIndex).toDouble();
+                      });
+                    },
+                    onTapDown: (details) {
+                      _updateView(() {
+                        _isLiquidNavPressed = true;
+                      });
+                      snapToLocalPosition(
+                        details.localPosition.dx - horizontalPadding,
+                      );
+                    },
+                    onTapUp: (_) {
+                      _updateView(() {
+                        _isLiquidNavPressed = false;
+                      });
+                    },
+                    onTapCancel: () {
+                      _updateView(() {
+                        _isLiquidNavPressed = false;
+                      });
+                    },
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(42),
+                      child: BackdropFilter(
+                        filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
+                        child: Container(
+                          height: 76,
+                          padding: const EdgeInsets.all(horizontalPadding),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(42),
+                            border: Border.all(
+                              color: Colors.white,
+                              width: 1.5,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFF111827).withValues(
+                                  alpha: 0.08,
+                                ),
+                                blurRadius: 28,
+                                offset: const Offset(0, 12),
+                              ),
+                            ],
+                          ),
+                          child: Stack(
+                            children: [
+                              AnimatedPositioned(
+                                duration: const Duration(milliseconds: 120),
+                                curve: Curves.easeOutCubic,
+                                left: thumbLeft,
+                                top: _isLiquidNavPressed ? 1 : 3,
+                                width: segmentWidth,
+                                height: _isLiquidNavPressed ? 64 : 60,
+                                child: _liquidMirrorThumb(
+                                  isPressed: _isLiquidNavPressed,
+                                ),
+                              ),
+                              IgnorePointer(
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      child: _liquidNavItem(
+                                        icon: CupertinoIcons.circle_grid_3x3,
+                                        iconFilled:
+                                            CupertinoIcons.circle_grid_3x3_fill,
+                                        label: l10n.translate('sip_tab_keypad'),
+                                        selected: _bottomTabIndex == 0,
+                                      ),
+                                    ),
+                                    const SizedBox(width: innerGap),
+                                    Expanded(
+                                      child: _liquidNavItem(
+                                        icon: CupertinoIcons.clock,
+                                        iconFilled: CupertinoIcons.clock_fill,
+                                        label:
+                                            l10n.translate('sip_tab_journal'),
+                                        selected: _bottomTabIndex == 1,
+                                      ),
+                                    ),
+                                    const SizedBox(width: innerGap),
+                                    Expanded(
+                                      child: _liquidNavItem(
+                                        icon: CupertinoIcons.person_2,
+                                        iconFilled:
+                                            CupertinoIcons.person_2_fill,
+                                        label: 'Контакты',
+                                        selected: _bottomTabIndex == 2,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                },
               ),
-            ],
+            ),
+            const SizedBox(width: 10),
+            _liquidSearchButton(
+              selected: _bottomTabIndex == 3,
+              onTap: () => _updateView(() => _bottomTabIndex = 3),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _liquidNavItem({
+    required IconData icon,
+    required IconData iconFilled,
+    required String label,
+    required bool selected,
+  }) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 140),
+      curve: Curves.easeOutCubic,
+      height: 66,
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(34),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 180),
+            child: Icon(
+              selected ? iconFilled : icon,
+              key: ValueKey(selected),
+              size: 22,
+              color: selected ? const Color(0xFF0A84FF) : Colors.black,
+            ),
           ),
-          child: SafeArea(
-            top: false,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  _ios26NavItem(
-                    icon: CupertinoIcons.clock,
-                    iconFilled: CupertinoIcons.clock_fill,
-                    label: l10n.translate('sip_tab_journal'),
-                    selected: _bottomTabIndex == 1,
-                    onTap: () => _updateView(() => _bottomTabIndex = 1),
+          const SizedBox(height: 3),
+          Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+              color: selected ? const Color(0xFF0A84FF) : Colors.black,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _liquidMirrorThumb({required bool isPressed}) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(34),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          BackdropFilter(
+            filter: ImageFilter.blur(
+              sigmaX: isPressed ? 24 : 20,
+              sigmaY: isPressed ? 24 : 20,
+            ),
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: RadialGradient(
+                  center: const Alignment(0, -0.2),
+                  radius: 1.05,
+                  colors: [
+                    Colors.white.withValues(alpha: isPressed ? 0.98 : 0.95),
+                    const Color(0xFFF8F8FA),
+                    const Color(0xFFF1F2F5),
+                  ],
+                  stops: const [0.0, 0.62, 1.0],
+                ),
+                borderRadius: BorderRadius.circular(34),
+                border: Border.all(
+                  color:
+                      Colors.white.withValues(alpha: isPressed ? 0.92 : 0.85),
+                  width: isPressed ? 1.4 : 1.2,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color:
+                        Colors.white.withValues(alpha: isPressed ? 0.92 : 0.82),
+                    blurRadius: isPressed ? 16 : 14,
+                    spreadRadius: 0.5,
+                    offset: const Offset(0, -2),
                   ),
-                  _ios26NavItem(
-                    icon: CupertinoIcons.person,
-                    iconFilled: CupertinoIcons.person_fill,
-                    label: 'Контакты',
-                    selected: _bottomTabIndex == 2,
-                    onTap: _contactsEnabled ? _showContactsSheet : null,
-                  ),
-                  _ios26NavItem(
-                    icon: CupertinoIcons.circle_grid_3x3,
-                    iconFilled: CupertinoIcons.circle_grid_3x3_fill,
-                    label: l10n.translate('sip_tab_keypad'),
-                    selected: _bottomTabIndex == 0,
-                    onTap: () => _updateView(() => _bottomTabIndex = 0),
-                  ),
-                  _ios26NavItem(
-                    icon: CupertinoIcons.search,
-                    iconFilled: CupertinoIcons.search,
-                    label: 'Поиск',
-                    selected: false,
-                    onTap: _contactsEnabled ? _showContactsSheet : null,
+                  BoxShadow(
+                    color: const Color(0xFF000000).withValues(
+                      alpha: isPressed ? 0.08 : 0.06,
+                    ),
+                    blurRadius: isPressed ? 18 : 14,
+                    offset: const Offset(0, 5),
                   ),
                 ],
               ),
+            ),
+          ),
+          Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(34),
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Colors.white.withValues(alpha: isPressed ? 0.40 : 0.30),
+                    Colors.white.withValues(alpha: 0.14),
+                    Colors.white.withValues(alpha: 0.04),
+                  ],
+                  stops: const [0.0, 0.38, 1.0],
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            left: 12,
+            right: 12,
+            top: 5,
+            child: Container(
+              height: 14,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(999),
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.white.withValues(alpha: isPressed ? 0.95 : 0.88),
+                    Colors.white.withValues(alpha: 0.18),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            left: 16,
+            right: 16,
+            top: 18,
+            child: Container(
+              height: 18,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(999),
+                gradient: RadialGradient(
+                  center: Alignment.topCenter,
+                  radius: 1.6,
+                  colors: [
+                    Colors.white.withValues(alpha: isPressed ? 0.30 : 0.22),
+                    Colors.white.withValues(alpha: 0.08),
+                    Colors.transparent,
+                  ],
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            left: 18,
+            right: 18,
+            bottom: 6,
+            height: 12,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(999),
+                gradient: LinearGradient(
+                  begin: Alignment.bottomCenter,
+                  end: Alignment.topCenter,
+                  colors: [
+                    Colors.white.withValues(alpha: isPressed ? 0.16 : 0.10),
+                    Colors.transparent,
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _liquidSearchButton({
+    required bool selected,
+    required VoidCallback onTap,
+  }) {
+    return CupertinoButton(
+      padding: EdgeInsets.zero,
+      onPressed: onTap,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(34),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 28, sigmaY: 28),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeOutCubic,
+            width: 68,
+            height: 76,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(34),
+              border: Border.all(
+                color: Colors.white,
+                width: 1.5,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF111827).withValues(
+                    alpha: selected ? 0.10 : 0.07,
+                  ),
+                  blurRadius: 24,
+                  offset: const Offset(0, 10),
+                ),
+              ],
+            ),
+            child: Icon(
+              selected
+                  ? CupertinoIcons.search_circle_fill
+                  : CupertinoIcons.search,
+              color: selected ? const Color(0xFF0A84FF) : Colors.black,
+              size: selected ? 28 : 24,
             ),
           ),
         ),
@@ -933,39 +1289,7 @@ extension _SipMainViewsExtension on _SipScreenState {
     );
   }
 
-  Widget _ios26NavItem({
-    required IconData icon,
-    required IconData iconFilled,
-    required String label,
-    required bool selected,
-    VoidCallback? onTap,
-  }) {
-    final color = selected ? const Color(0xFF007AFF) : const Color(0xFF8E8E93);
-
-    return CupertinoButton(
-      padding: EdgeInsets.zero,
-      onPressed: onTap,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            selected ? iconFilled : icon,
-            size: 24,
-            color: color,
-          ),
-          const SizedBox(height: 3),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.w500,
-              color: color,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  // ────────────────────────────────────────────────────────────────────────────
 
   Widget _contactTile({
     required _SipContactSuggestion suggestion,
@@ -975,7 +1299,7 @@ extension _SipMainViewsExtension on _SipScreenState {
   }) {
     return Container(
       padding: EdgeInsets.symmetric(
-        horizontal: compact ? 10 : 12,
+        horizontal: compact ? 10 : 14,
         vertical: compact ? 8 : 10,
       ),
       decoration: BoxDecoration(
@@ -983,9 +1307,9 @@ extension _SipMainViewsExtension on _SipScreenState {
         borderRadius: BorderRadius.circular(22),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF0F172A).withValues(alpha: 0.04),
-            blurRadius: 14,
-            offset: const Offset(0, 8),
+            color: const Color(0xFF111827).withValues(alpha: 0.04),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
           ),
         ],
       ),
@@ -993,7 +1317,7 @@ extension _SipMainViewsExtension on _SipScreenState {
         children: [
           CircleAvatar(
             radius: compact ? 18 : 20,
-            backgroundColor: const Color(0xFFE7ECF7),
+            backgroundColor: const Color(0xFFF3F4F6),
             backgroundImage: suggestion.photo != null
                 ? MemoryImage(suggestion.photo!)
                 : null,
@@ -1003,7 +1327,7 @@ extension _SipMainViewsExtension on _SipScreenState {
                         ? '?'
                         : suggestion.name[0].toUpperCase(),
                     style: const TextStyle(
-                      color: Color(0xFF111827),
+                      color: Color(0xFF374151),
                       fontWeight: FontWeight.w700,
                     ),
                   )
@@ -1031,8 +1355,9 @@ extension _SipMainViewsExtension on _SipScreenState {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
-                      color: Color(0xFF64748B),
+                      color: Color(0xFF9CA3AF),
                       fontWeight: FontWeight.w500,
+                      fontSize: 13,
                     ),
                   ),
                 ],
@@ -1048,7 +1373,7 @@ extension _SipMainViewsExtension on _SipScreenState {
               height: compact ? 38 : 44,
               decoration: BoxDecoration(
                 color: const Color(0xFF22C55E),
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(15),
               ),
               child: const Icon(
                 CupertinoIcons.phone_fill,
@@ -1092,7 +1417,8 @@ extension _SipMainViewsExtension on _SipScreenState {
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 10),
-          child: CupertinoSearchTextField(
+          child: _cleanSearchField(
+            placeholder: 'Поиск по контактам',
             onChanged: (value) {
               _updateView(() {
                 _contactsViewQuery = value;
@@ -1108,6 +1434,7 @@ extension _SipMainViewsExtension on _SipScreenState {
                     child: Text(
                       'Нет доступа к контактам.',
                       textAlign: TextAlign.center,
+                      style: TextStyle(color: Color(0xFF9CA3AF)),
                     ),
                   ),
                 )
@@ -1150,7 +1477,7 @@ extension _SipMainViewsExtension on _SipScreenState {
           child: Text(
             l10n.translate('sip_journal_empty'),
             style: const TextStyle(
-              color: Color(0xFF64748B),
+              color: Color(0xFF9CA3AF),
               fontSize: 16,
               fontWeight: FontWeight.w500,
             ),
@@ -1172,11 +1499,11 @@ extension _SipMainViewsExtension on _SipScreenState {
         return Container(
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(20),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFF0B1220).withValues(alpha: 0.05),
-                blurRadius: 12,
+                color: const Color(0xFF111827).withValues(alpha: 0.04),
+                blurRadius: 14,
                 offset: const Offset(0, 5),
               ),
             ],
@@ -1185,13 +1512,13 @@ extension _SipMainViewsExtension on _SipScreenState {
             contentPadding:
                 const EdgeInsets.symmetric(horizontal: 14, vertical: 3),
             leading: Container(
-              width: 36,
-              height: 36,
+              width: 38,
+              height: 38,
               decoration: BoxDecoration(
                 color: isFailed
                     ? const Color(0xFFFEF2F2)
-                    : const Color(0xFFEEF2FF),
-                borderRadius: BorderRadius.circular(10),
+                    : const Color(0xFFF0FDF4),
+                borderRadius: BorderRadius.circular(13),
               ),
               child: Icon(
                 isIncoming
@@ -1199,8 +1526,8 @@ extension _SipMainViewsExtension on _SipScreenState {
                     : CupertinoIcons.arrow_up_right,
                 color: isFailed
                     ? const Color(0xFFEF4444)
-                    : const Color(0xFF2563EB),
-                size: 20,
+                    : const Color(0xFF22C55E),
+                size: 18,
               ),
             ),
             title: Text(
@@ -1213,15 +1540,17 @@ extension _SipMainViewsExtension on _SipScreenState {
             subtitle: Text(
               '${_callLabel(context, item.result)} • ${_formatDuration(item.duration)}',
               style: const TextStyle(
-                color: Color(0xFF64748B),
+                color: Color(0xFF9CA3AF),
                 fontWeight: FontWeight.w500,
+                fontSize: 12,
               ),
             ),
             trailing: Text(
               _formatTime(item.timestamp),
               style: const TextStyle(
-                color: Color(0xFF94A3B8),
+                color: Color(0xFFD1D5DB),
                 fontWeight: FontWeight.w600,
+                fontSize: 12,
               ),
             ),
           ),
@@ -1230,9 +1559,487 @@ extension _SipMainViewsExtension on _SipScreenState {
     );
   }
 
+  // ─── УМНЫЙ ПОИСК: контакты + журнал одновременно ───────────────────────────
+  Widget _searchView(BuildContext context, SipUiState state) {
+    if (_contactsEnabled && !_contactsLoaded) {
+      unawaited(_loadContacts());
+    }
+
+    final query = _searchViewQuery.trim();
+    final lowerQuery = query.toLowerCase();
+    final queryDigits = _digitsOnly(query);
+    final availableSources = _availableSearchSources();
+    final recentCalls = state.callLogs.take(12).toList(growable: false);
+
+    final contactResults = (query.isEmpty
+            ? const <_SipContactSuggestion>[]
+            : _contacts
+                .expand((contact) => contact.phones.map((phone) {
+                      return _SipContactSuggestion(
+                        name: contact.displayName,
+                        phone: phone.number,
+                        normalizedPhone: _digitsOnly(phone.number),
+                        photo: contact.photo,
+                      );
+                    }))
+                .where((contact) {
+                return contact.name.toLowerCase().contains(lowerQuery) ||
+                    (queryDigits.isNotEmpty &&
+                        (contact.normalizedPhone.contains(queryDigits) ||
+                            _nameToT9Digits(contact.name)
+                                .contains(queryDigits)));
+              }).toList(growable: false))
+        .take(8)
+        .toList(growable: false);
+
+    final journalResults = query.isEmpty
+        ? const <SipCallLogEntry>[]
+        : state.callLogs
+            .where((item) {
+              final target = item.target.toLowerCase();
+              final targetDigits = _digitsOnly(item.target);
+              return target.contains(lowerQuery) ||
+                  (queryDigits.isNotEmpty &&
+                      targetDigits.contains(queryDigits));
+            })
+            .take(10)
+            .toList(growable: false);
+
+    final leadResults = query.isEmpty
+        ? const <Lead>[]
+        : _searchLeadResults.where((lead) {
+            final name = lead.name.toLowerCase();
+            final phone = (lead.phone ?? '').trim();
+            final phoneDigits = _digitsOnly(phone);
+            return name.contains(lowerQuery) ||
+                (queryDigits.isNotEmpty && phoneDigits.contains(queryDigits));
+          }).toList(growable: false);
+
+    final isEmpty = query.isEmpty;
+    final noResults = !isEmpty &&
+        contactResults.isEmpty &&
+        journalResults.isEmpty &&
+        (!_leadSearchEnabled || (!_isLeadSearchLoading && leadResults.isEmpty));
+
+    return Column(
+      key: const ValueKey('search'),
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 10),
+          child: _cleanSearchField(
+            placeholder: 'Поиск',
+            autofocus: true,
+            onChanged: _handleUnifiedSearchChanged,
+          ),
+        ),
+        if (availableSources.length > 1)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  for (final source in availableSources) ...[
+                    _searchSourceChip(
+                      source: source,
+                      selected: _searchSource == source,
+                      onTap: () => _selectSearchSource(source),
+                    ),
+                    const SizedBox(width: 8),
+                  ],
+                ],
+              ),
+            ),
+          ),
+        Expanded(
+          child: isEmpty
+              ? recentCalls.isEmpty
+                  ? const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(24),
+                        child: Text(
+                          'Недавних звонков пока нет',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Color(0xFF9CA3AF),
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    )
+                  : ListView(
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 18),
+                      children: [
+                        Row(
+                          children: const [
+                            Text(
+                              'Недавние звонки',
+                              style: TextStyle(
+                                color: Color(0xFF111827),
+                                fontSize: 18,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        ...recentCalls.map(
+                          (item) => Padding(
+                            padding: const EdgeInsets.only(bottom: 8),
+                            child: _journalSearchTile(context, item),
+                          ),
+                        ),
+                      ],
+                    )
+              : noResults
+                  ? const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(24),
+                        child: Text(
+                          'Ничего не найдено',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Color(0xFF9CA3AF),
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    )
+                  : ListView(
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 18),
+                      children: [
+                        if (_searchSource == _SipSearchSource.calls) ...[
+                          _sectionHeader('Вызовы', journalResults.length),
+                          const SizedBox(height: 10),
+                          ...journalResults.map(
+                            (item) => Padding(
+                              padding: const EdgeInsets.only(bottom: 8),
+                              child: _journalSearchTile(context, item),
+                            ),
+                          ),
+                        ],
+                        if (_searchSource == _SipSearchSource.contacts &&
+                            _contactsEnabled) ...[
+                          _sectionHeader('Контакты', contactResults.length),
+                          const SizedBox(height: 10),
+                          ...contactResults.map(
+                            (contact) => Padding(
+                              padding: const EdgeInsets.only(bottom: 8),
+                              child: _contactTile(
+                                suggestion: contact,
+                                onTap: () {
+                                  _fillContactNumber(contact);
+                                  _updateView(() => _bottomTabIndex = 0);
+                                },
+                                onCallTap: () async {
+                                  _updateView(() => _bottomTabIndex = 0);
+                                  await _fillAndCallContact(contact);
+                                },
+                              ),
+                            ),
+                          ),
+                        ],
+                        if (_searchSource == _SipSearchSource.leads &&
+                            _leadSearchEnabled) ...[
+                          _sectionHeader('Лиды', leadResults.length),
+                          const SizedBox(height: 10),
+                          if (_isLeadSearchLoading)
+                            const Padding(
+                              padding: EdgeInsets.only(bottom: 12),
+                              child: Center(
+                                child: CircularProgressIndicator.adaptive(),
+                              ),
+                            ),
+                          ...leadResults.map(
+                            (lead) => Padding(
+                              padding: const EdgeInsets.only(bottom: 8),
+                              child: _leadSearchTile(lead),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+        ),
+      ],
+    );
+  }
+
+  Widget _searchSourceChip({
+    required _SipSearchSource source,
+    required bool selected,
+    required VoidCallback onTap,
+  }) {
+    final label = switch (source) {
+      _SipSearchSource.calls => 'Вызовы',
+      _SipSearchSource.contacts => 'Контакты',
+      _SipSearchSource.leads => 'Лиды',
+    };
+
+    return CupertinoButton(
+      padding: EdgeInsets.zero,
+      onPressed: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        curve: Curves.easeOutCubic,
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+        decoration: BoxDecoration(
+          color: selected ? const Color(0xFF111827) : Colors.white,
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(
+            color: selected ? const Color(0xFF111827) : const Color(0xFFF0F0F0),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF111827).withValues(alpha: 0.04),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: selected ? Colors.white : const Color(0xFF111827),
+            fontSize: 13,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Заголовок секции с количеством результатов
+  Widget _sectionHeader(String title, int count) {
+    return Row(
+      children: [
+        Text(
+          title,
+          style: const TextStyle(
+            color: Color(0xFF111827),
+            fontSize: 17,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF3F4F6),
+            borderRadius: BorderRadius.circular(999),
+          ),
+          child: Text(
+            '$count',
+            style: const TextStyle(
+              color: Color(0xFF6B7280),
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _journalSearchTile(BuildContext context, SipCallLogEntry item) {
+    final isIncoming = item.direction == SipCallDirection.incoming;
+    final isFailed = item.result == SipCallUiStatus.failed;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(22),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF111827).withValues(alpha: 0.04),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+        onTap: () {
+          _sipIdController.value = TextEditingValue(
+            text: item.target,
+            selection: TextSelection.collapsed(offset: item.target.length),
+          );
+          _updateView(() => _bottomTabIndex = 0);
+        },
+        leading: Container(
+          width: 42,
+          height: 42,
+          decoration: BoxDecoration(
+            color: isFailed ? const Color(0xFFFEF2F2) : const Color(0xFFF0FDF4),
+            borderRadius: BorderRadius.circular(15),
+          ),
+          child: Icon(
+            isIncoming
+                ? CupertinoIcons.arrow_down_left
+                : CupertinoIcons.arrow_up_right,
+            color: isFailed ? const Color(0xFFEF4444) : const Color(0xFF22C55E),
+            size: 18,
+          ),
+        ),
+        title: Text(
+          item.target,
+          style: const TextStyle(
+            color: Color(0xFF111827),
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        subtitle: Text(
+          '${_callLabel(context, item.result)} • ${_formatTime(item.timestamp)}',
+          style: const TextStyle(
+            color: Color(0xFF9CA3AF),
+            fontWeight: FontWeight.w500,
+            fontSize: 12,
+          ),
+        ),
+        trailing: CupertinoButton(
+          padding: EdgeInsets.zero,
+          onPressed: () async {
+            _sipIdController.value = TextEditingValue(
+              text: item.target,
+              selection: TextSelection.collapsed(offset: item.target.length),
+            );
+            _updateView(() => _bottomTabIndex = 0);
+            await _startDialCall();
+          },
+          child: Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: const Color(0xFF22C55E),
+              borderRadius: BorderRadius.circular(15),
+            ),
+            child: const Icon(
+              CupertinoIcons.phone_fill,
+              size: 18,
+              color: Colors.white,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _leadSearchTile(Lead lead) {
+    final phone = (lead.phone ?? '').trim();
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(22),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF111827).withValues(alpha: 0.04),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+        onTap: () => _fillLeadPhone(lead),
+        leading: Container(
+          width: 42,
+          height: 42,
+          decoration: BoxDecoration(
+            color: const Color(0xFFF3F4F6),
+            borderRadius: BorderRadius.circular(15),
+          ),
+          child: const Icon(
+            CupertinoIcons.person_crop_circle,
+            color: Color(0xFF6B7280),
+            size: 22,
+          ),
+        ),
+        title: Text(
+          lead.name.trim().isEmpty ? 'Без имени' : lead.name,
+          style: const TextStyle(
+            color: Color(0xFF111827),
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        subtitle: Text(
+          phone.isEmpty ? 'Нет телефона' : phone,
+          style: const TextStyle(
+            color: Color(0xFF9CA3AF),
+            fontWeight: FontWeight.w500,
+            fontSize: 12,
+          ),
+        ),
+        trailing: phone.isEmpty
+            ? null
+            : CupertinoButton(
+                padding: EdgeInsets.zero,
+                onPressed: () async => _callLead(lead),
+                child: Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF22C55E),
+                    borderRadius: BorderRadius.circular(15),
+                  ),
+                  child: const Icon(
+                    CupertinoIcons.phone_fill,
+                    size: 18,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+      ),
+    );
+  }
+
+  // ─── ЧИСТОЕ ПОЛЕ ПОИСКА (белое, без стекла, тёмные буквы) ─────────────────
+  Widget _cleanSearchField({
+    required String placeholder,
+    required ValueChanged<String> onChanged,
+    bool autofocus = false,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF111827).withValues(alpha: 0.05),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
+        ],
+        border: Border.all(
+          color: const Color(0xFFF0F0F0),
+        ),
+      ),
+      child: CupertinoSearchTextField(
+        autofocus: autofocus,
+        backgroundColor: Colors.transparent,
+        itemColor: const Color(0xFF9CA3AF),
+        style: const TextStyle(
+          color: Color(0xFF111827),
+          fontSize: 15,
+          fontWeight: FontWeight.w500,
+        ),
+        placeholderStyle: const TextStyle(
+          color: Color(0xFFD1D5DB),
+          fontSize: 15,
+          fontWeight: FontWeight.w400,
+        ),
+        prefixInsets: const EdgeInsetsDirectional.fromSTEB(14, 0, 10, 0),
+        suffixInsets: const EdgeInsetsDirectional.fromSTEB(8, 0, 12, 0),
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 14),
+        placeholder: placeholder,
+        onChanged: onChanged,
+      ),
+    );
+  }
+
   Widget _bottomSwitcher(BuildContext context, {bool embedded = false}) {
     if (embedded) return const SizedBox.shrink();
-
     return _ios26LiquidNavBar(context);
   }
 }

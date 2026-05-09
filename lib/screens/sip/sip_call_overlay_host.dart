@@ -184,7 +184,9 @@ class _SipCallOverlayHostState extends State<SipCallOverlayHost>
   }
 
   bool _isDarkSipTheme(BuildContext context) {
-    return MediaQuery.platformBrightnessOf(context) == Brightness.dark;
+    // Временно скрываем тёмную SIP-тему и overlay от пользователей,
+    // даже если системная тема устройства тёмная.
+    return false;
   }
 
   List<Color> _callGradient(bool isDark) {
@@ -545,17 +547,21 @@ class _SipCallOverlayHostState extends State<SipCallOverlayHost>
 
   Widget _incomingOverlayView(SipUiState state) {
     final identity = _displayIdentity(state);
-    final isDark = _isDarkSipTheme(context);
 
     return Material(
       color: Colors.transparent,
       child: Container(
         decoration: BoxDecoration(
-          gradient: LinearGradient(
+          gradient: const LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             stops: [0, 0.35, 0.65, 1],
-            colors: _callGradient(isDark),
+            colors: [
+              Color(0xFF6A676C),
+              Color(0xFF535D8F),
+              Color(0xFF3D6E82),
+              Color(0xFF2B7D88),
+            ],
           ),
         ),
         child: Stack(
@@ -568,11 +574,9 @@ class _SipCallOverlayHostState extends State<SipCallOverlayHost>
                 height: 300,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  gradient: RadialGradient(
+                  gradient: const RadialGradient(
                     colors: [
-                      isDark
-                          ? const Color(0x303D8EFF)
-                          : const Color(0x143D8EFF),
+                      Color(0x223D8EFF),
                       Colors.transparent,
                     ],
                   ),
@@ -587,11 +591,9 @@ class _SipCallOverlayHostState extends State<SipCallOverlayHost>
                 height: 260,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  gradient: RadialGradient(
+                  gradient: const RadialGradient(
                     colors: [
-                      isDark
-                          ? const Color(0x252563EB)
-                          : const Color(0x102563EB),
+                      Color(0x1F2563EB),
                       Colors.transparent,
                     ],
                   ),
@@ -610,14 +612,10 @@ class _SipCallOverlayHostState extends State<SipCallOverlayHost>
                         vertical: 8,
                       ),
                       decoration: BoxDecoration(
-                        color: isDark
-                            ? Colors.white.withValues(alpha: 0.12)
-                            : Colors.white,
+                        color: Colors.white.withValues(alpha: 0.10),
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
-                          color: isDark
-                              ? Colors.white.withValues(alpha: 0.10)
-                              : const Color(0xFFE1EAF6),
+                          color: Colors.white.withValues(alpha: 0.12),
                         ),
                       ),
                       child: Row(
@@ -640,10 +638,8 @@ class _SipCallOverlayHostState extends State<SipCallOverlayHost>
                           const SizedBox(width: 8),
                           Text(
                             'Аудиовызов shamCRM',
-                            style: TextStyle(
-                              color: isDark
-                                  ? const Color(0xAAFFFFFF)
-                                  : const Color(0xFF64748B),
+                            style: const TextStyle(
+                              color: Color(0xCCFFFFFF),
                               fontSize: 15,
                               fontWeight: FontWeight.w600,
                             ),
@@ -688,7 +684,7 @@ class _SipCallOverlayHostState extends State<SipCallOverlayHost>
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        color: isDark ? Colors.white : const Color(0xFF0F172A),
+                        color: Colors.white,
                         fontSize: 42,
                         fontWeight: FontWeight.w300,
                         letterSpacing: -1.6,
@@ -713,10 +709,7 @@ class _SipCallOverlayHostState extends State<SipCallOverlayHost>
                               height: 6,
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
-                                color: (isDark
-                                        ? Colors.white
-                                        : const Color(0xFF64748B))
-                                    .withValues(alpha: opacity),
+                                color: Colors.white.withValues(alpha: opacity),
                               ),
                             );
                           }),
@@ -726,10 +719,8 @@ class _SipCallOverlayHostState extends State<SipCallOverlayHost>
                     const SizedBox(height: 4),
                     Text(
                       'Входящий звонок',
-                      style: TextStyle(
-                        color: isDark
-                            ? const Color(0x66FFFFFF)
-                            : const Color(0xFF7C8CA5),
+                      style: const TextStyle(
+                        color: Color(0xAAFFFFFF),
                         fontSize: 15,
                         fontWeight: FontWeight.w400,
                       ),
@@ -744,22 +735,16 @@ class _SipCallOverlayHostState extends State<SipCallOverlayHost>
                             width: 64,
                             height: 64,
                             decoration: BoxDecoration(
-                              color: isDark
-                                  ? Colors.white.withValues(alpha: 0.10)
-                                  : Colors.white,
+                              color: Colors.white.withValues(alpha: 0.10),
                               borderRadius: BorderRadius.circular(36),
                               border: Border.all(
-                                color: isDark
-                                    ? Colors.white.withValues(alpha: 0.12)
-                                    : const Color(0xFFE1EAF6),
+                                color: Colors.white.withValues(alpha: 0.12),
                               ),
                             ),
                             child: Center(
                               child: Icon(
                                 CupertinoIcons.alarm,
-                                color: isDark
-                                    ? const Color(0xAAFFFFFF)
-                                    : const Color(0xFF64748B),
+                                color: const Color(0xCCFFFFFF),
                                 size: 28,
                               ),
                             ),
@@ -767,10 +752,8 @@ class _SipCallOverlayHostState extends State<SipCallOverlayHost>
                           const SizedBox(height: 8),
                           Text(
                             'Напомнить',
-                            style: TextStyle(
-                              color: isDark
-                                  ? const Color(0xAAFFFFFF)
-                                  : const Color(0xFF64748B),
+                            style: const TextStyle(
+                              color: Color(0xCCFFFFFF),
                               fontSize: 14,
                               fontWeight: FontWeight.w500,
                             ),
@@ -790,22 +773,16 @@ class _SipCallOverlayHostState extends State<SipCallOverlayHost>
                           vertical: 12,
                         ),
                         decoration: BoxDecoration(
-                          color: isDark
-                              ? Colors.white.withValues(alpha: 0.10)
-                              : Colors.white,
+                          color: Colors.white.withValues(alpha: 0.10),
                           borderRadius: BorderRadius.circular(22),
                           border: Border.all(
-                            color: isDark
-                                ? Colors.white.withValues(alpha: 0.10)
-                                : const Color(0xFFE1EAF6),
+                            color: Colors.white.withValues(alpha: 0.12),
                           ),
                         ),
                         child: Text(
                           'Отклонить',
-                          style: TextStyle(
-                            color: isDark
-                                ? const Color(0xAAFFFFFF)
-                                : const Color(0xFF64748B),
+                          style: const TextStyle(
+                            color: Color(0xCCFFFFFF),
                             fontSize: 17,
                             fontWeight: FontWeight.w500,
                           ),
@@ -825,7 +802,6 @@ class _SipCallOverlayHostState extends State<SipCallOverlayHost>
   Widget _incomingOverlayAnswerSlider() {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final isDark = _isDarkSipTheme(context);
         const knobSize = 80.0;
         const horizontalPadding = 10.0;
         final maxDrag = math.max(
@@ -854,11 +830,10 @@ class _SipCallOverlayHostState extends State<SipCallOverlayHost>
           child: Container(
             height: 100,
             decoration: BoxDecoration(
-              color: isDark ? const Color(0x14FFFFFF) : Colors.white,
+              color: Colors.white.withValues(alpha: 0.10),
               borderRadius: BorderRadius.circular(52),
               border: Border.all(
-                color:
-                    isDark ? const Color(0x28FFFFFF) : const Color(0xFFE1EAF6),
+                color: const Color(0x3300D9FF),
                 width: 0.8,
               ),
             ),
@@ -871,10 +846,8 @@ class _SipCallOverlayHostState extends State<SipCallOverlayHost>
                       opacity: 1 - (_incomingAnswerDrag * 0.9),
                       child: Text(
                         'Ответьте',
-                        style: TextStyle(
-                          color: isDark
-                              ? const Color(0x99FFFFFF)
-                              : const Color(0xFF7C8CA5),
+                        style: const TextStyle(
+                          color: Color(0x99FFFFFF),
                           fontSize: 22,
                           fontWeight: FontWeight.w300,
                           letterSpacing: -0.6,
@@ -893,9 +866,7 @@ class _SipCallOverlayHostState extends State<SipCallOverlayHost>
                       color: Colors.white,
                       boxShadow: [
                         BoxShadow(
-                          color: isDark
-                              ? const Color(0x33000000)
-                              : const Color(0x140F172A),
+                          color: const Color(0x33000000),
                           blurRadius: 16,
                           offset: const Offset(0, 6),
                         ),
@@ -903,7 +874,7 @@ class _SipCallOverlayHostState extends State<SipCallOverlayHost>
                     ),
                     child: const Icon(
                       CupertinoIcons.chevron_forward,
-                      color: Color(0xFF3D8EFF),
+                      color: Color(0xFF2563EB),
                       size: 36,
                     ),
                   ),

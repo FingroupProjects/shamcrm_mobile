@@ -297,7 +297,13 @@ extension _SipScreenDialerExtension on _SipScreenState {
     final sanitized = rawNumber.replaceAll(RegExp(r'[^0-9+]'), '');
     if (sanitized.isEmpty) return null;
 
-    final withPlus = sanitized.startsWith('+') ? sanitized : '+$sanitized';
+    final hasInternationalPrefix =
+        sanitized.startsWith('+') || sanitized.startsWith('00');
+    final normalizedInternational =
+        sanitized.startsWith('00') ? '+${sanitized.substring(2)}' : sanitized;
+    final withPlus = normalizedInternational.startsWith('+')
+        ? normalizedInternational
+        : '+$normalizedInternational';
     Country? matchedCountry;
 
     for (final country in countries) {
@@ -309,25 +315,16 @@ extension _SipScreenDialerExtension on _SipScreenState {
       }
     }
 
-    if (sanitized.startsWith('+') && matchedCountry != null) {
-      final localNumber = sanitized
+    if (hasInternationalPrefix && matchedCountry != null) {
+      final localNumber = normalizedInternational
           .substring(matchedCountry.dialCode.length)
           .replaceAll(RegExp(r'[^0-9]'), '');
       return (matchedCountry, localNumber);
     }
 
     final digitOnly = sanitized.replaceAll(RegExp(r'[^0-9]'), '');
-    for (final country in countries) {
-      final dialDigits = country.dialCode.replaceAll('+', '');
-      if (digitOnly.startsWith(dialDigits) &&
-          digitOnly.length > dialDigits.length) {
-        return (
-          country,
-          digitOnly.substring(dialDigits.length),
-        );
-      }
-    }
-
+    // Без явного международного префикса номер считаем локальным для текущей
+    // страны. Иначе 927... ошибочно распознаётся как +92 вместо +992.
     return (defaultCountry, digitOnly);
   }
 
