@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:audioplayers/audioplayers.dart';
+import 'package:crm_task_manager/main.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
@@ -33,6 +34,9 @@ class _SipCallOverlayHostState extends State<SipCallOverlayHost>
   DateTime? _connectedAt;
   Duration _connectedDuration = Duration.zero;
   double _incomingAnswerDrag = 0;
+  Offset _miniCallOffset = Offset.zero;
+  bool _isMiniCallDragging = false;
+  bool _isMiniCallDockedAway = false;
 
   @override
   void initState() {
@@ -189,22 +193,6 @@ class _SipCallOverlayHostState extends State<SipCallOverlayHost>
     return false;
   }
 
-  List<Color> _callGradient(bool isDark) {
-    return isDark
-        ? const [
-            Color(0xFF0A0E1A),
-            Color(0xFF0F1E4A),
-            Color(0xFF112960),
-            Color(0xFF0D1F45),
-          ]
-        : const [
-            Color(0xFFF8FAFD),
-            Color(0xFFEFF4FF),
-            Color(0xFFF4F8FF),
-            Color(0xFFF7FAFD),
-          ];
-  }
-
   Color _accent(SipCallUiStatus status) {
     switch (status) {
       case SipCallUiStatus.incoming:
@@ -223,8 +211,9 @@ class _SipCallOverlayHostState extends State<SipCallOverlayHost>
   }
 
   Future<void> _openSipScreen() async {
-    if (!mounted) return;
-    await Navigator.of(context).push(
+    final navigator = navigatorKey.currentState;
+    if (navigator == null) return;
+    await navigator.push(
       MaterialPageRoute<void>(
         builder: (_) => const SipScreen(),
         fullscreenDialog: true,
@@ -240,7 +229,6 @@ class _SipCallOverlayHostState extends State<SipCallOverlayHost>
         final state = _sipService.state;
         final showOverlay = _shouldShowOverlay(state);
         _syncFeedback(state, showOverlay);
-        final isDark = _isDarkSipTheme(context);
 
         if (!showOverlay) {
           return widget.child;
@@ -255,293 +243,187 @@ class _SipCallOverlayHostState extends State<SipCallOverlayHost>
           );
         }
 
-        final accent = _accent(state.callStatus);
-        final identity = _displayIdentity(state);
-        final pulse = CurvedAnimation(
-          parent: _pulseController,
-          curve: Curves.easeInOut,
-        );
-
         return Stack(
           children: [
             widget.child,
             Positioned.fill(
-              child: Material(
-                color: isDark
-                    ? const Color(0xFF071120).withValues(alpha: 0.76)
-                    : const Color(0xFFF4F8FF).withValues(alpha: 0.94),
-                child: SafeArea(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(18, 18, 18, 24),
-                    child: Column(
+              child: _activeCallMiniOverlay(state),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _activeCallMiniOverlay(SipUiState state) {
+    final isDark = _isDarkSipTheme(context);
+    final accent = _accent(state.callStatus);
+    final identity = _displayIdentity(state);
+    final statusText = state.callStatus == SipCallUiStatus.inCall
+        ? _formatDuration(_connectedDuration)
+        : _callLabel(state.callStatus);
+    final compactMode = _isMiniCallDragging || _isMiniCallDockedAway;
+    final displayText = state.callStatus == SipCallUiStatus.inCall
+        ? _formatDuration(_connectedDuration)
+        : statusText;
+
+    return IgnorePointer(
+      ignoring: false,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final topInset = MediaQuery.of(context).padding.top + 6;
+          final capsuleWidth = compactMode ? 220.0 : 240.0;
+          final capsuleHeight = compactMode ? 38.0 : 40.0;
+          final defaultLeft = (constraints.maxWidth - capsuleWidth) / 2;
+          final defaultTop = topInset;
+          final maxLeft =
+              math.max(0.0, constraints.maxWidth - capsuleWidth - 12);
+          final maxTop =
+              math.max(defaultTop, constraints.maxHeight - capsuleHeight - 24);
+          final left = (defaultLeft + _miniCallOffset.dx).clamp(12.0, maxLeft);
+          final top =
+              (defaultTop + _miniCallOffset.dy).clamp(defaultTop, maxTop);
+
+          return Stack(
+            children: [
+              Positioned(
+                left: left,
+                top: top,
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: _openSipScreen,
+                  onPanStart: (_) {
+                    if (!mounted) return;
+                    setState(() {
+                      _isMiniCallDragging = true;
+                    });
+                  },
+                  onPanUpdate: (details) {
+                    if (!mounted) return;
+                    setState(() {
+                      _miniCallOffset += details.delta;
+                    });
+                  },
+                  onPanEnd: (_) {
+                    if (!mounted) return;
+                    final shouldSnapBack = _miniCallOffset.distance <= 56;
+                    setState(() {
+                      _isMiniCallDragging = false;
+                      if (shouldSnapBack) {
+                        _miniCallOffset = Offset.zero;
+                        _isMiniCallDockedAway = false;
+                      } else {
+                        _isMiniCallDockedAway = true;
+                      }
+                    });
+                  },
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 180),
+                    curve: Curves.easeOutCubic,
+                    width: compactMode ? null : 240.0,
+                    height: capsuleHeight,
+                    constraints: BoxConstraints(
+                      minWidth: compactMode ? 76.0 : 240.0,
+                      maxWidth: compactMode ? 220.0 : 240.0,
+                    ),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: compactMode ? 12 : 16,
+                      vertical: compactMode ? 6 : 8,
+                    ),
+                    decoration: BoxDecoration(
+                      color: isDark
+                          ? const Color(0xFF101826).withValues(alpha: 0.94)
+                          : Colors.white.withValues(alpha: 0.98),
+                      borderRadius: BorderRadius.circular(999),
+                      border: Border.all(
+                        color: isDark
+                            ? Colors.white.withValues(alpha: 0.10)
+                            : const Color(0xFFE1EAF6),
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF111827)
+                              .withValues(alpha: compactMode ? 0.10 : 0.08),
+                          blurRadius: compactMode ? 16 : 14,
+                          offset: Offset(0, compactMode ? 8 : 6),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 8,
-                              ),
-                              decoration: BoxDecoration(
-                                color: isDark
-                                    ? Colors.white.withValues(alpha: 0.12)
-                                    : Colors.white,
-                                borderRadius: BorderRadius.circular(20),
-                                border: Border.all(
-                                  color: isDark
-                                      ? Colors.white.withValues(alpha: 0.10)
-                                      : const Color(0xFFE1EAF6),
-                                ),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    CupertinoIcons.phone_fill,
-                                    color: isDark
-                                        ? Colors.white
-                                        : const Color(0xFF0F172A),
-                                    size: 16,
-                                  ),
-                                  SizedBox(width: 8),
-                                  Text(
-                                    'SHAMCRM SIP',
-                                    style: TextStyle(
-                                      color: isDark
-                                          ? Colors.white
-                                          : const Color(0xFF0F172A),
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const Spacer(),
-                            CupertinoButton(
-                              padding: EdgeInsets.zero,
-                              onPressed: _openSipScreen,
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 8,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: isDark
-                                      ? Colors.white.withValues(alpha: 0.12)
-                                      : Colors.white,
-                                  borderRadius: BorderRadius.circular(18),
-                                  border: Border.all(
-                                    color: isDark
-                                        ? Colors.white.withValues(alpha: 0.10)
-                                        : const Color(0xFFE1EAF6),
-                                  ),
-                                ),
-                                child: Text(
-                                  'Открыть SIP',
-                                  style: TextStyle(
-                                    color: isDark
-                                        ? Colors.white
-                                        : const Color(0xFF0F172A),
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const Spacer(),
-                        Text(
-                          _callLabel(state.callStatus),
-                          style: TextStyle(
-                            color: isDark
-                                ? Colors.white.withValues(alpha: 0.88)
-                                : const Color(0xFF64748B),
-                            fontSize: 18,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          identity,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
+                        AnimatedContainer(
+                          duration: const Duration(milliseconds: 180),
+                          width: compactMode ? 24 : 26,
+                          height: compactMode ? 22 : 24,
+                          decoration: BoxDecoration(
                             color:
-                                isDark ? Colors.white : const Color(0xFF0F172A),
-                            fontSize: 38,
-                            fontWeight: FontWeight.w300,
-                            letterSpacing: 1.4,
+                                accent.withValues(alpha: isDark ? 0.22 : 0.12),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            CupertinoIcons.phone_fill,
+                            color: accent,
+                            size: compactMode ? 12 : 13,
                           ),
                         ),
-                        const SizedBox(height: 20),
-                        AnimatedBuilder(
-                          animation: pulse,
-                          builder: (context, child) {
-                            final outerScale = 0.92 + pulse.value * 0.14;
-                            final midScale = 0.96 + pulse.value * 0.08;
-                            return SizedBox(
-                              width: 230,
-                              height: 230,
-                              child: Stack(
-                                alignment: Alignment.center,
-                                children: [
-                                  Transform.scale(
-                                    scale: outerScale,
-                                    child: Container(
-                                      width: 220,
-                                      height: 220,
-                                      decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        color: accent.withValues(
-                                          alpha: isDark ? 0.10 : 0.06,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                  Transform.scale(
-                                    scale: midScale,
-                                    child: Container(
-                                      width: 170,
-                                      height: 170,
-                                      decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        color: accent.withValues(
-                                          alpha: isDark ? 0.16 : 0.10,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                  Container(
-                                    width: 118,
-                                    height: 118,
-                                    decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      gradient: LinearGradient(
-                                        begin: Alignment.topLeft,
-                                        end: Alignment.bottomRight,
-                                        colors: [
-                                          accent.withValues(alpha: 0.95),
-                                          accent.withValues(alpha: 0.72),
-                                        ],
-                                      ),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: accent.withValues(alpha: 0.42),
-                                          blurRadius: 28,
-                                          offset: const Offset(0, 10),
-                                        ),
-                                      ],
-                                    ),
-                                    child: Icon(
-                                      state.callStatus ==
-                                              SipCallUiStatus.incoming
-                                          ? CupertinoIcons.phone_down_fill
-                                          : CupertinoIcons.phone_fill,
-                                      color: Colors.white,
-                                      size: 40,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            );
-                          },
-                        ),
-                        const SizedBox(height: 18),
-                        if (state.callStatus == SipCallUiStatus.inCall)
+                        const SizedBox(width: 8),
+                        if (compactMode)
                           Text(
-                            _formatDuration(_connectedDuration),
+                            displayText,
+                            maxLines: 1,
                             style: TextStyle(
                               color: isDark
-                                  ? Colors.white.withValues(alpha: 0.96)
+                                  ? Colors.white
                                   : const Color(0xFF0F172A),
-                              fontSize: 22,
+                              fontSize: 12,
                               fontWeight: FontWeight.w700,
+                              decoration: TextDecoration.none,
                             ),
                           )
                         else
-                          Text(
-                            state.callStatus == SipCallUiStatus.incoming
-                                ? 'Примите или отклоните вызов'
-                                : 'Поддерживаем звонок внутри CRM',
-                            style: TextStyle(
-                              color: isDark
-                                  ? Colors.white.withValues(alpha: 0.76)
-                                  : const Color(0xFF64748B),
-                              fontSize: 15,
-                              fontWeight: FontWeight.w500,
+                          Expanded(
+                            child: Text(
+                              displayText,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: isDark
+                                    ? Colors.white
+                                    : const Color(0xFF0F172A),
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                decoration: TextDecoration.none,
+                              ),
                             ),
                           ),
-                        const Spacer(),
-                        if (state.callStatus == SipCallUiStatus.incoming)
-                          Row(
-                            children: [
-                              Expanded(
-                                child: _actionButton(
-                                  label: 'Отклонить',
-                                  color: const Color(0xFFEF4444),
-                                  icon: CupertinoIcons.phone_down_fill,
-                                  onPressed: _sipService.decline,
-                                ),
+                        if (!compactMode) ...[
+                          const SizedBox(width: 8),
+                          Flexible(
+                            child: Text(
+                              identity,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: isDark
+                                    ? Colors.white.withValues(alpha: 0.74)
+                                    : const Color(0xFF64748B),
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                decoration: TextDecoration.none,
                               ),
-                              const SizedBox(width: 14),
-                              Expanded(
-                                child: _actionButton(
-                                  label: 'Ответить',
-                                  color: const Color(0xFF22C55E),
-                                  icon: CupertinoIcons.phone_fill,
-                                  onPressed: _sipService.acceptCall,
-                                ),
-                              ),
-                            ],
-                          )
-                        else
-                          Column(
-                            children: [
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: _miniControl(
-                                      label: state.isMuted
-                                          ? 'Микрофон выкл'
-                                          : 'Микрофон',
-                                      icon: state.isMuted
-                                          ? CupertinoIcons.mic_slash_fill
-                                          : CupertinoIcons.mic_fill,
-                                      active: state.isMuted,
-                                      onPressed: _sipService.toggleMute,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: _miniControl(
-                                      label: 'Динамик',
-                                      icon: CupertinoIcons.speaker_3_fill,
-                                      active: state.isSpeakerOn,
-                                      onPressed: _sipService.toggleSpeaker,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 14),
-                              SizedBox(
-                                width: double.infinity,
-                                child: _actionButton(
-                                  label: 'Завершить',
-                                  color: const Color(0xFFEF4444),
-                                  icon: CupertinoIcons.phone_down_fill,
-                                  onPressed: _sipService.hangup,
-                                ),
-                              ),
-                            ],
+                            ),
                           ),
+                        ],
                       ],
                     ),
                   ),
                 ),
               ),
-            ),
-          ],
-        );
-      },
+            ],
+          );
+        },
+      ),
     );
   }
 
@@ -884,86 +766,6 @@ class _SipCallOverlayHostState extends State<SipCallOverlayHost>
           ),
         );
       },
-    );
-  }
-
-  Widget _actionButton({
-    required String label,
-    required Color color,
-    required IconData icon,
-    required VoidCallback onPressed,
-  }) {
-    return CupertinoButton(
-      padding: EdgeInsets.zero,
-      onPressed: onPressed,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-        decoration: BoxDecoration(
-          color: color,
-          borderRadius: BorderRadius.circular(18),
-          boxShadow: [
-            BoxShadow(
-              color: color.withValues(alpha: 0.34),
-              blurRadius: 18,
-              offset: const Offset(0, 8),
-            ),
-          ],
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, color: Colors.white, size: 20),
-            const SizedBox(width: 10),
-            Text(
-              label,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _miniControl({
-    required String label,
-    required IconData icon,
-    required bool active,
-    required VoidCallback onPressed,
-  }) {
-    return CupertinoButton(
-      padding: EdgeInsets.zero,
-      onPressed: onPressed,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: active ? 0.22 : 0.10),
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(
-            color: Colors.white.withValues(alpha: active ? 0.24 : 0.08),
-          ),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, color: Colors.white, size: 18),
-            const SizedBox(width: 8),
-            Flexible(
-              child: Text(
-                label,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

@@ -56,6 +56,7 @@ class _SipScreenState extends State<SipScreen>
   late final AnimationController _pulseController;
   Timer? _callDurationTimer;
   SipCallUiStatus? _lastObservedCallStatus;
+  String? _lastShownSipNoticeKey;
   String? _activeFeedbackAsset;
   DateTime? _connectedAt;
   Duration _connectedDuration = Duration.zero;
@@ -199,6 +200,7 @@ class _SipScreenState extends State<SipScreen>
         final isActiveCall = _isActiveCallState(state.callStatus);
 
         _syncCallEffects(state);
+        _syncSipNotifications(state);
 
         if (!_hasCredentials(state)) {
           return _buildAuthorizationView(context, state);

@@ -7,6 +7,15 @@ extension _SipMainViewsExtension on _SipScreenState {
         state.registrationStatus == SipRegistrationUiStatus.registered;
     final showCompactStatus =
         isRegistered && state.callStatus != SipCallUiStatus.incoming;
+    final isReconnectInProgress = _isReconnectInProgress(state);
+    final isNetworkUnavailable = _isNetworkUnavailableState(state);
+    final subtitle = isReconnectInProgress
+        ? 'Восстанавливаем SIP-соединение...'
+        : isNetworkUnavailable
+            ? 'Сеть потеряна. Ждём восстановление соединения'
+            : isRegistered
+                ? 'Линия готова к звонкам'
+                : 'Подключите линию для звонков в фоне';
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(18, 10, 18, 12),
@@ -35,9 +44,7 @@ extension _SipMainViewsExtension on _SipScreenState {
                   children: [
                     Flexible(
                       child: Text(
-                        isRegistered
-                            ? 'Линия готова к звонкам'
-                            : 'Подключите линию для звонков в фоне',
+                        subtitle,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
@@ -311,17 +318,35 @@ extension _SipMainViewsExtension on _SipScreenState {
 
     final isRegistered =
         state.registrationStatus == SipRegistrationUiStatus.registered;
+    final isReconnectInProgress = _isReconnectInProgress(state);
+    final isNetworkUnavailable = _isNetworkUnavailableState(state);
     if (isRegistered && state.callStatus != SipCallUiStatus.incoming) {
       return const SizedBox.shrink();
     }
 
     final toneColor = state.callStatus == SipCallUiStatus.incoming
         ? const Color(0xFFF59E0B)
-        : isRegistered
-            ? const Color(0xFF22C55E)
-            : state.registrationStatus == SipRegistrationUiStatus.failed
-                ? const Color(0xFFEF4444)
-                : const Color(0xFF9CA3AF);
+        : isReconnectInProgress
+            ? const Color(0xFF2563EB)
+            : isNetworkUnavailable
+                ? const Color(0xFFF59E0B)
+                : isRegistered
+                    ? const Color(0xFF22C55E)
+                    : state.registrationStatus == SipRegistrationUiStatus.failed
+                        ? const Color(0xFFEF4444)
+                        : const Color(0xFF9CA3AF);
+    final title = isReconnectInProgress
+        ? 'Восстанавливаем соединение'
+        : isNetworkUnavailable
+            ? 'Сеть недоступна'
+            : isRegistered
+                ? 'Телефония подключена'
+                : 'Телефония не подключена';
+    final subtitle = isReconnectInProgress
+        ? 'Сеть восстановлена. Переподключаем SIP-линию'
+        : isNetworkUnavailable
+            ? 'Как только сеть вернётся, SIP подключится автоматически'
+            : '${l10n.translate('sip_call_state')}: ${_resolvedCallLabel(context, state)}';
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -361,9 +386,7 @@ extension _SipMainViewsExtension on _SipScreenState {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  isRegistered
-                      ? 'Телефония подключена'
-                      : 'Телефония не подключена',
+                  title,
                   style: const TextStyle(
                     fontWeight: FontWeight.w700,
                     color: Color(0xFF111827),
@@ -371,7 +394,7 @@ extension _SipMainViewsExtension on _SipScreenState {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  '${l10n.translate('sip_call_state')}: ${_callLabel(context, state.callStatus)}',
+                  subtitle,
                   style: const TextStyle(
                     fontSize: 12,
                     color: Color(0xFF9CA3AF),
@@ -1493,8 +1516,9 @@ extension _SipMainViewsExtension on _SipScreenState {
       separatorBuilder: (_, __) => const SizedBox(height: 10),
       itemBuilder: (context, index) {
         final item = state.callLogs[index];
-        final isIncoming = item.direction == SipCallDirection.incoming;
-        final isFailed = item.result == SipCallUiStatus.failed;
+        final accentColor = _callLogAccentColor(item);
+        final fillColor = _callLogFillColor(item);
+        final logIcon = _callLogIcon(item);
 
         return Container(
           decoration: BoxDecoration(
@@ -1515,18 +1539,12 @@ extension _SipMainViewsExtension on _SipScreenState {
               width: 38,
               height: 38,
               decoration: BoxDecoration(
-                color: isFailed
-                    ? const Color(0xFFFEF2F2)
-                    : const Color(0xFFF0FDF4),
+                color: fillColor,
                 borderRadius: BorderRadius.circular(13),
               ),
               child: Icon(
-                isIncoming
-                    ? CupertinoIcons.arrow_down_left
-                    : CupertinoIcons.arrow_up_right,
-                color: isFailed
-                    ? const Color(0xFFEF4444)
-                    : const Color(0xFF22C55E),
+                logIcon,
+                color: accentColor,
                 size: 18,
               ),
             ),
@@ -1538,7 +1556,7 @@ extension _SipMainViewsExtension on _SipScreenState {
               ),
             ),
             subtitle: Text(
-              '${_callLabel(context, item.result)} • ${_formatDuration(item.duration)}',
+              '${_resolvedCallLogLabel(context, item)} • ${_formatDuration(item.duration)}',
               style: const TextStyle(
                 color: Color(0xFF9CA3AF),
                 fontWeight: FontWeight.w500,
@@ -1843,8 +1861,9 @@ extension _SipMainViewsExtension on _SipScreenState {
   }
 
   Widget _journalSearchTile(BuildContext context, SipCallLogEntry item) {
-    final isIncoming = item.direction == SipCallDirection.incoming;
-    final isFailed = item.result == SipCallUiStatus.failed;
+    final accentColor = _callLogAccentColor(item);
+    final fillColor = _callLogFillColor(item);
+    final logIcon = _callLogIcon(item);
 
     return Container(
       decoration: BoxDecoration(
@@ -1871,14 +1890,12 @@ extension _SipMainViewsExtension on _SipScreenState {
           width: 42,
           height: 42,
           decoration: BoxDecoration(
-            color: isFailed ? const Color(0xFFFEF2F2) : const Color(0xFFF0FDF4),
+            color: fillColor,
             borderRadius: BorderRadius.circular(15),
           ),
           child: Icon(
-            isIncoming
-                ? CupertinoIcons.arrow_down_left
-                : CupertinoIcons.arrow_up_right,
-            color: isFailed ? const Color(0xFFEF4444) : const Color(0xFF22C55E),
+            logIcon,
+            color: accentColor,
             size: 18,
           ),
         ),
@@ -1890,7 +1907,7 @@ extension _SipMainViewsExtension on _SipScreenState {
           ),
         ),
         subtitle: Text(
-          '${_callLabel(context, item.result)} • ${_formatTime(item.timestamp)}',
+          '${_resolvedCallLogLabel(context, item)} • ${_formatTime(item.timestamp)}',
           style: const TextStyle(
             color: Color(0xFF9CA3AF),
             fontWeight: FontWeight.w500,

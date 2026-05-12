@@ -5,9 +5,8 @@ extension _SipCallViewsExtension on _SipScreenState {
   Widget _activeCallView(BuildContext context, SipUiState state) {
     final target = _displayIdentity(state);
     final isConnected = state.callStatus == SipCallUiStatus.inCall;
-    final statusText = isConnected
-        ? _formatDuration(_connectedDuration)
-        : _callHint(state.callStatus);
+    final statusText =
+        isConnected ? _formatDuration(_connectedDuration) : _callHint(state);
     final isDark = _isDarkSipTheme(context);
 
     if (state.callStatus == SipCallUiStatus.incoming) {
@@ -80,7 +79,7 @@ extension _SipCallViewsExtension on _SipScreenState {
                               Text(
                                 isConnected
                                     ? 'Вызов активен'
-                                    : _callLabel(context, state.callStatus),
+                                    : _resolvedCallLabel(context, state),
                                 style: TextStyle(
                                   color: _callSecondaryText(isDark),
                                   fontSize: 15,
@@ -148,7 +147,7 @@ extension _SipCallViewsExtension on _SipScreenState {
         ? _inCallDigits
         : (isConnected
             ? _formatDuration(_connectedDuration)
-            : _callLabel(context, state.callStatus));
+            : _resolvedCallLabel(context, state));
     final subtitle =
         _inCallDigits.isNotEmpty ? 'Тональный набор' : (isConnected ? '' : '');
 
@@ -188,7 +187,7 @@ extension _SipCallViewsExtension on _SipScreenState {
                     Text(
                       isConnected
                           ? 'Вызов активен'
-                          : _callLabel(context, state.callStatus),
+                          : _resolvedCallLabel(context, state),
                       style: TextStyle(
                         color: _callSecondaryText(isDark),
                         fontSize: 15,

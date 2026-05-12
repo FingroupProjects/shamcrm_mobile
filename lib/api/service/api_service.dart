@@ -20225,7 +20225,6 @@ class ApiService {
     // }
   }
 
-  // not used
 // Метод для загрузки и кэширования всех конфигураций
   Future<void> loadAndCacheAllFieldConfigurations() async {
     try {

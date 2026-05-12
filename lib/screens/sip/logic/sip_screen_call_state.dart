@@ -2,6 +2,55 @@
 part of 'package:crm_task_manager/screens/sip/sip_screen.dart';
 
 extension _SipScreenCallStateExtension on _SipScreenState {
+  bool _isAnsweredElsewhereMessage(String? message) {
+    final normalized = message?.trim().toLowerCase() ?? '';
+    return normalized.contains('answered elsewhere') ||
+        normalized.contains('answered_elsewhere');
+  }
+
+  bool _isDeclinedElsewhereMessage(String? message) {
+    final normalized = message?.trim().toLowerCase() ?? '';
+    return normalized.contains('declined elsewhere') ||
+        normalized.contains('declined_elsewhere');
+  }
+
+  bool _isServerNumberNotFoundMessage(String? message) {
+    final normalized = message?.trim().toLowerCase() ?? '';
+    return normalized.contains('not found') ||
+        normalized.contains(' 404 ') ||
+        normalized.startsWith('404') ||
+        normalized.contains(' 399 ');
+  }
+
+  bool _isServerForbiddenMessage(String? message) {
+    final normalized = message?.trim().toLowerCase() ?? '';
+    return normalized.contains('forbidden') ||
+        normalized.contains(' 403 ') ||
+        normalized.startsWith('403');
+  }
+
+  bool _isNetworkLostMessage(String? message) {
+    final normalized = message?.trim().toLowerCase() ?? '';
+    return normalized.contains('network lost') ||
+        normalized.contains('waiting for reconnection');
+  }
+
+  bool _isNetworkReconnectMessage(String? message) {
+    final normalized = message?.trim().toLowerCase() ?? '';
+    return normalized.contains('network restored') ||
+        normalized.contains('reconnecting sip');
+  }
+
+  bool _isReconnectInProgress(SipUiState state) {
+    return state.registrationStatus == SipRegistrationUiStatus.registering &&
+        _isNetworkReconnectMessage(state.errorMessage);
+  }
+
+  bool _isNetworkUnavailableState(SipUiState state) {
+    return state.registrationStatus == SipRegistrationUiStatus.failed &&
+        _isNetworkLostMessage(state.errorMessage);
+  }
+
   void _syncCallEffects(SipUiState state) {
     final status = state.callStatus;
     if (_lastObservedCallStatus == status) return;
@@ -29,6 +78,60 @@ extension _SipScreenCallStateExtension on _SipScreenState {
         unawaited(_stopFeedbackLoop());
         break;
     }
+  }
+
+  void _syncSipNotifications(SipUiState state) {
+    final notice = _resolveSipNotice(state);
+    final sourceMessage = state.errorMessage?.trim();
+    if (notice == null) {
+      return;
+    }
+
+    final noticeKey =
+        '${state.callStatus.name}|${state.errorMessage ?? ''}|${notice.$1}';
+
+    if (noticeKey == _lastShownSipNoticeKey) {
+      return;
+    }
+
+    _lastShownSipNoticeKey = noticeKey;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _showSipSnackBar(notice.$1, isError: notice.$2);
+      _sipRuntime.clearTransientError(sourceMessage);
+    });
+  }
+
+  (String, bool)? _resolveSipNotice(SipUiState state) {
+    final message = state.errorMessage?.trim();
+    if (message == null || message.isEmpty) {
+      return null;
+    }
+
+    if (_isAnsweredElsewhereMessage(message)) {
+      return ('На другом устройстве уже ответили на этот звонок', false);
+    }
+
+    if (_isDeclinedElsewhereMessage(message)) {
+      return ('На другом устройстве уже отклонили этот звонок', false);
+    }
+
+    if (_isServerNumberNotFoundMessage(message)) {
+      return ('Сервер не смог найти маршрут для этого номера', true);
+    }
+
+    if (_isServerForbiddenMessage(message)) {
+      return (
+        'Сервер отклонил этот вызов. Проверьте права или формат номера',
+        true
+      );
+    }
+
+    if (state.callStatus == SipCallUiStatus.failed) {
+      return (message, true);
+    }
+
+    return null;
   }
 
   Future<void> _playFeedbackLoop(String assetPath) async {
@@ -91,6 +194,64 @@ extension _SipScreenCallStateExtension on _SipScreenState {
     }
   }
 
+  String _resolvedCallLabel(BuildContext context, SipUiState state) {
+    if (_isAnsweredElsewhereMessage(state.errorMessage)) {
+      return 'Ответили на другом устройстве';
+    }
+    if (_isDeclinedElsewhereMessage(state.errorMessage)) {
+      return 'Отклонено на другом устройстве';
+    }
+    return _callLabel(context, state.callStatus);
+  }
+
+  String _resolvedCallLogLabel(BuildContext context, SipCallLogEntry entry) {
+    if (_isAnsweredElsewhereMessage(entry.endReason)) {
+      return 'Ответили на другом устройстве';
+    }
+    if (_isDeclinedElsewhereMessage(entry.endReason)) {
+      return 'Отклонено на другом устройстве';
+    }
+    return _callLabel(context, entry.result);
+  }
+
+  Color _callLogAccentColor(SipCallLogEntry entry) {
+    if (_isAnsweredElsewhereMessage(entry.endReason)) {
+      return const Color(0xFF2563EB);
+    }
+    if (_isDeclinedElsewhereMessage(entry.endReason)) {
+      return const Color(0xFFF59E0B);
+    }
+    if (entry.result == SipCallUiStatus.failed) {
+      return const Color(0xFFEF4444);
+    }
+    return const Color(0xFF22C55E);
+  }
+
+  Color _callLogFillColor(SipCallLogEntry entry) {
+    if (_isAnsweredElsewhereMessage(entry.endReason)) {
+      return const Color(0xFFEFF6FF);
+    }
+    if (_isDeclinedElsewhereMessage(entry.endReason)) {
+      return const Color(0xFFFFF7ED);
+    }
+    if (entry.result == SipCallUiStatus.failed) {
+      return const Color(0xFFFEF2F2);
+    }
+    return const Color(0xFFF0FDF4);
+  }
+
+  IconData _callLogIcon(SipCallLogEntry entry) {
+    if (_isAnsweredElsewhereMessage(entry.endReason)) {
+      return CupertinoIcons.check_mark_circled_solid;
+    }
+    if (_isDeclinedElsewhereMessage(entry.endReason)) {
+      return CupertinoIcons.xmark_circle_fill;
+    }
+    return entry.direction == SipCallDirection.incoming
+        ? CupertinoIcons.arrow_down_left
+        : CupertinoIcons.arrow_up_right;
+  }
+
   String _formatTime(DateTime dateTime) {
     final hour = dateTime.hour.toString().padLeft(2, '0');
     final minute = dateTime.minute.toString().padLeft(2, '0');
@@ -129,8 +290,15 @@ extension _SipScreenCallStateExtension on _SipScreenState {
     return value;
   }
 
-  String _callHint(SipCallUiStatus status) {
-    switch (status) {
+  String _callHint(SipUiState state) {
+    if (_isAnsweredElsewhereMessage(state.errorMessage)) {
+      return 'Этот вызов уже приняли на другом устройстве.';
+    }
+    if (_isDeclinedElsewhereMessage(state.errorMessage)) {
+      return 'Этот вызов уже отклонили на другом устройстве.';
+    }
+
+    switch (state.callStatus) {
       case SipCallUiStatus.incoming:
         return 'Входящий вызов. Звучит сигнал вызова.';
       case SipCallUiStatus.calling:

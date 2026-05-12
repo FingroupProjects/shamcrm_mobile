@@ -35,6 +35,7 @@ class SipCallLogEntry {
   final SipCallUiStatus result;
   final DateTime timestamp;
   final Duration? duration;
+  final String? endReason;
 
   const SipCallLogEntry({
     required this.target,
@@ -42,6 +43,7 @@ class SipCallLogEntry {
     required this.result,
     required this.timestamp,
     this.duration,
+    this.endReason,
   });
 }
 

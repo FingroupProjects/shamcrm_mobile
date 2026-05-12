@@ -87,6 +87,16 @@ class SipService extends ChangeNotifier
       <Map<String, dynamic>>[];
   String? _iosSystemCallUUID;
   bool _iosSystemCallConnectedReported = false;
+  String? _activeIncomingCallUUID;
+  String? _activeIncomingCallId;
+  String? _activeIncomingRemoteIdentity;
+  String? _activeNativeCallUUID;
+  String? _activeNativeCallId;
+  String? _activeNativeRemoteIdentity;
+  String? _lastTerminalNativeCallUUID;
+  String? _lastTerminalNativeCallId;
+  String? _lastTerminalNativeRemoteIdentity;
+  DateTime? _lastTerminalNativeCallAt;
 
   Future<void> initialize() async {
     if (_disposed) return;
@@ -231,6 +241,22 @@ class SipService extends ChangeNotifier
   void setSipScreenVisible(bool visible) {
     if (_sipScreenVisible == visible) return;
     _sipScreenVisible = visible;
+    _notifyListenersSafely();
+  }
+
+  void clearTransientError([String? expectedMessage]) {
+    final currentMessage = _state.errorMessage?.trim();
+    if (currentMessage == null || currentMessage.isEmpty) {
+      return;
+    }
+
+    if (expectedMessage != null &&
+        expectedMessage.trim().isNotEmpty &&
+        currentMessage != expectedMessage.trim()) {
+      return;
+    }
+
+    _state = _state.copyWith(clearError: true);
     _notifyListenersSafely();
   }
 
@@ -1203,10 +1229,241 @@ class SipService extends ChangeNotifier
         normalized.contains('request terminated');
   }
 
+  bool _isElsewhereTerminationMessage(String? message) {
+    final normalized = message?.trim().toLowerCase() ?? '';
+    if (normalized.isEmpty) {
+      return false;
+    }
+
+    return normalized.contains('answered elsewhere') ||
+        normalized.contains('declined elsewhere') ||
+        normalized.contains('answered_elsewhere') ||
+        normalized.contains('declined_elsewhere');
+  }
+
+  bool _isTerminalUiCallStatus(SipCallUiStatus status) {
+    return status == SipCallUiStatus.idle ||
+        status == SipCallUiStatus.ended ||
+        status == SipCallUiStatus.failed;
+  }
+
+  SipCallUiStatus _mapNativeCallStateToUiStatus(String? callState) {
+    return switch (callState) {
+      'incoming' => SipCallUiStatus.incoming,
+      'calling' => SipCallUiStatus.calling,
+      'ringing' => SipCallUiStatus.ringing,
+      'in_call' => SipCallUiStatus.inCall,
+      'ended' => SipCallUiStatus.ended,
+      'failed' => SipCallUiStatus.failed,
+      _ => SipCallUiStatus.idle,
+    };
+  }
+
+  bool _isDuplicateIncomingEvent({
+    required String? callUUID,
+    required String? callId,
+    required String? remoteIdentity,
+  }) {
+    final normalizedUuid = callUUID?.trim();
+    final normalizedCallId = callId?.trim();
+    final normalizedRemote = remoteIdentity?.trim();
+
+    if (_state.callStatus != SipCallUiStatus.incoming) {
+      return false;
+    }
+
+    if (normalizedUuid != null &&
+        normalizedUuid.isNotEmpty &&
+        normalizedUuid == _activeIncomingCallUUID) {
+      return true;
+    }
+
+    if (normalizedCallId != null &&
+        normalizedCallId.isNotEmpty &&
+        normalizedCallId == _activeIncomingCallId) {
+      return true;
+    }
+
+    if ((normalizedUuid == null || normalizedUuid.isEmpty) &&
+        (normalizedCallId == null || normalizedCallId.isEmpty) &&
+        normalizedRemote != null &&
+        normalizedRemote.isNotEmpty &&
+        normalizedRemote == _activeIncomingRemoteIdentity) {
+      return true;
+    }
+
+    return false;
+  }
+
+  void _rememberIncomingFingerprint({
+    required String? callUUID,
+    required String? callId,
+    required String? remoteIdentity,
+  }) {
+    _activeIncomingCallUUID = callUUID?.trim();
+    _activeIncomingCallId = callId?.trim();
+    _activeIncomingRemoteIdentity = remoteIdentity?.trim();
+  }
+
+  void _clearIncomingFingerprint() {
+    _activeIncomingCallUUID = null;
+    _activeIncomingCallId = null;
+    _activeIncomingRemoteIdentity = null;
+  }
+
+  void _rememberActiveNativeCallFingerprint({
+    required String? callUUID,
+    required String? callId,
+    required String? remoteIdentity,
+  }) {
+    _activeNativeCallUUID = callUUID?.trim();
+    _activeNativeCallId = callId?.trim();
+    _activeNativeRemoteIdentity = remoteIdentity?.trim();
+    _lastTerminalNativeCallAt = null;
+  }
+
+  void _markTerminalNativeCallFingerprint() {
+    _lastTerminalNativeCallUUID = _activeNativeCallUUID;
+    _lastTerminalNativeCallId = _activeNativeCallId;
+    _lastTerminalNativeRemoteIdentity = _activeNativeRemoteIdentity;
+    _lastTerminalNativeCallAt = DateTime.now();
+    _activeNativeCallUUID = null;
+    _activeNativeCallId = null;
+    _activeNativeRemoteIdentity = null;
+  }
+
+  bool _matchesNativeCallFingerprint({
+    required String? callUUID,
+    required String? callId,
+    required String? remoteIdentity,
+    required String? expectedUUID,
+    required String? expectedCallId,
+    required String? expectedRemoteIdentity,
+  }) {
+    final normalizedUuid = callUUID?.trim();
+    final normalizedCallId = callId?.trim();
+    final normalizedRemote = remoteIdentity?.trim();
+
+    if (normalizedUuid != null &&
+        normalizedUuid.isNotEmpty &&
+        expectedUUID != null &&
+        expectedUUID.isNotEmpty) {
+      return normalizedUuid == expectedUUID;
+    }
+
+    if (normalizedCallId != null &&
+        normalizedCallId.isNotEmpty &&
+        expectedCallId != null &&
+        expectedCallId.isNotEmpty) {
+      return normalizedCallId == expectedCallId;
+    }
+
+    if (normalizedRemote != null &&
+        normalizedRemote.isNotEmpty &&
+        expectedRemoteIdentity != null &&
+        expectedRemoteIdentity.isNotEmpty) {
+      return normalizedRemote == expectedRemoteIdentity;
+    }
+
+    return false;
+  }
+
+  bool _hasAnyNativeCallFingerprint({
+    required String? callUUID,
+    required String? callId,
+    required String? remoteIdentity,
+  }) {
+    return (callUUID?.trim().isNotEmpty ?? false) ||
+        (callId?.trim().isNotEmpty ?? false) ||
+        (remoteIdentity?.trim().isNotEmpty ?? false);
+  }
+
+  bool _shouldIgnoreLateNativeCallEvent({
+    required String nativeState,
+    required String? callUUID,
+    required String? callId,
+    required String? remoteIdentity,
+  }) {
+    if (nativeState == 'incoming') {
+      return false;
+    }
+
+    final hasCurrentFingerprint = _hasAnyNativeCallFingerprint(
+      callUUID: _activeNativeCallUUID,
+      callId: _activeNativeCallId,
+      remoteIdentity: _activeNativeRemoteIdentity,
+    );
+    final eventHasFingerprint = _hasAnyNativeCallFingerprint(
+      callUUID: callUUID,
+      callId: callId,
+      remoteIdentity: remoteIdentity,
+    );
+
+    if (hasCurrentFingerprint && eventHasFingerprint) {
+      final matchesCurrent = _matchesNativeCallFingerprint(
+        callUUID: callUUID,
+        callId: callId,
+        remoteIdentity: remoteIdentity,
+        expectedUUID: _activeNativeCallUUID,
+        expectedCallId: _activeNativeCallId,
+        expectedRemoteIdentity: _activeNativeRemoteIdentity,
+      );
+      if (!matchesCurrent) {
+        return true;
+      }
+    }
+
+    final terminalAt = _lastTerminalNativeCallAt;
+    if (terminalAt == null ||
+        DateTime.now().difference(terminalAt) > const Duration(seconds: 5)) {
+      return false;
+    }
+
+    return _matchesNativeCallFingerprint(
+      callUUID: callUUID,
+      callId: callId,
+      remoteIdentity: remoteIdentity,
+      expectedUUID: _lastTerminalNativeCallUUID,
+      expectedCallId: _lastTerminalNativeCallId,
+      expectedRemoteIdentity: _lastTerminalNativeRemoteIdentity,
+    );
+  }
+
   bool _wasEarlyCallStatus(SipCallUiStatus status) {
     return status == SipCallUiStatus.incoming ||
         status == SipCallUiStatus.calling ||
         status == SipCallUiStatus.ringing;
+  }
+
+  bool _shouldIgnoreLateAudioSessionEvent({
+    required String? callState,
+    required String? reason,
+  }) {
+    final eventStatus = _mapNativeCallStateToUiStatus(callState);
+    final currentStatus = _state.callStatus;
+    final terminalAt = _lastTerminalNativeCallAt;
+    final hasRecentTerminal = terminalAt != null &&
+        DateTime.now().difference(terminalAt) <= const Duration(seconds: 5);
+
+    if (_isActiveUiCallStatus(currentStatus) &&
+        _isTerminalUiCallStatus(eventStatus)) {
+      return true;
+    }
+
+    if (_isTerminalUiCallStatus(currentStatus) &&
+        hasRecentTerminal &&
+        (reason == 'override' || reason == 'category_change')) {
+      return true;
+    }
+
+    return false;
+  }
+
+  bool _isActiveUiCallStatus(SipCallUiStatus status) {
+    return status == SipCallUiStatus.incoming ||
+        status == SipCallUiStatus.calling ||
+        status == SipCallUiStatus.ringing ||
+        status == SipCallUiStatus.inCall;
   }
 
   void _handleNativeCallActionEvent(Map<String, dynamic> payload) {
@@ -1227,10 +1484,21 @@ class SipService extends ChangeNotifier
     final output = payload['output']?.toString();
     final speakerOn = payload['speakerOn'] as bool?;
     final reason = payload['reason']?.toString();
+    final callState = payload['callState']?.toString();
 
     debugPrint(
-      'SipService native audio session event -> state=$state, output=$output, speaker=$speakerOn, reason=$reason',
+      'SipService native audio session event -> state=$state, output=$output, speaker=$speakerOn, reason=$reason, callState=$callState',
     );
+
+    if (_shouldIgnoreLateAudioSessionEvent(
+      callState: callState,
+      reason: reason,
+    )) {
+      debugPrint(
+        'SipService late audio session event ignored -> state=$state, output=$output, reason=$reason, callState=$callState, currentCallStatus=${_state.callStatus}',
+      );
+      return;
+    }
 
     if (speakerOn != null || output != null) {
       final resolvedSpeakerOn = _state.callStatus == SipCallUiStatus.ended ||
@@ -1492,6 +1760,7 @@ class SipService extends ChangeNotifier
     final muted = snapshot['muted'] as bool? ?? false;
     final speakerOn = snapshot['speakerOn'] as bool? ?? false;
     final callUUID = snapshot['callUUID']?.toString();
+    final callId = snapshot['callId']?.toString();
 
     _trackIosSystemCall(callUUID: callUUID, stateHint: callState);
 
@@ -1518,6 +1787,30 @@ class SipService extends ChangeNotifier
         mappedCall == SipCallUiStatus.ended ||
         mappedCall == SipCallUiStatus.failed) {
       _currentCallStartedAt = null;
+    }
+
+    if (mappedCall == SipCallUiStatus.incoming) {
+      _rememberIncomingFingerprint(
+        callUUID: callUUID,
+        callId: callId,
+        remoteIdentity: remoteIdentity,
+      );
+      _rememberActiveNativeCallFingerprint(
+        callUUID: callUUID,
+        callId: callId,
+        remoteIdentity: remoteIdentity,
+      );
+    } else if (mappedCall == SipCallUiStatus.calling ||
+        mappedCall == SipCallUiStatus.ringing ||
+        mappedCall == SipCallUiStatus.inCall) {
+      _rememberActiveNativeCallFingerprint(
+        callUUID: callUUID,
+        callId: callId,
+        remoteIdentity: remoteIdentity,
+      );
+    } else if (_isTerminalUiCallStatus(mappedCall)) {
+      _clearIncomingFingerprint();
+      _markTerminalNativeCallFingerprint();
     }
 
     if (_persistentSipEnabled &&
@@ -1577,6 +1870,16 @@ class SipService extends ChangeNotifier
         );
         break;
       case 'failed':
+        if (_shouldIgnoreTransientAuthorizationChallenge(message)) {
+          debugPrint(
+            'SipService native registration transient auth challenge ignored -> message=$message',
+          );
+          _state = _state.copyWith(
+            registrationStatus: SipRegistrationUiStatus.registering,
+            clearError: true,
+          );
+          break;
+        }
         if (_isAuthorizationFailureMessage(message)) {
           _stopReconnectOnAuthorizationFailure(
             'SIP авторизация отклонена сервером. Проверьте логин, пароль и auth ID.',
@@ -1619,6 +1922,7 @@ class SipService extends ChangeNotifier
     final muted = payload['muted'] as bool?;
     final speakerOn = payload['speakerOn'] as bool?;
     final callUUID = payload['callUUID']?.toString();
+    final callId = payload['callId']?.toString();
 
     _trackIosSystemCall(callUUID: callUUID, stateHint: nativeState);
 
@@ -1626,11 +1930,47 @@ class SipService extends ChangeNotifier
       'SipService native call event -> state=$nativeState, remote=$remoteIdentity, message=$message, muted=$muted, speaker=$speakerOn',
     );
 
+    if (_shouldIgnoreLateNativeCallEvent(
+      nativeState: nativeState,
+      callUUID: callUUID,
+      callId: callId,
+      remoteIdentity: remoteIdentity,
+    )) {
+      debugPrint(
+        'SipService late native call event ignored -> state=$nativeState, callUUID=$callUUID, callId=$callId, remote=$remoteIdentity',
+      );
+      return;
+    }
+
+    final wasTerminal = _isTerminalUiCallStatus(_state.callStatus);
+    final treatAsEnded = _isRemoteDeclineCause(message) ||
+        _isElsewhereTerminationMessage(message);
+
     switch (nativeState) {
       case 'incoming':
+        if (_isDuplicateIncomingEvent(
+          callUUID: callUUID,
+          callId: callId,
+          remoteIdentity: remoteIdentity,
+        )) {
+          debugPrint(
+            'SipService duplicate incoming ignored -> callUUID=$callUUID, callId=$callId, remote=$remoteIdentity',
+          );
+          return;
+        }
         _currentCallDirection = SipCallDirection.incoming;
         _currentCallTarget = remoteIdentity ?? _state.sipId;
         _currentCallStartedAt = null;
+        _rememberActiveNativeCallFingerprint(
+          callUUID: callUUID,
+          callId: callId,
+          remoteIdentity: remoteIdentity,
+        );
+        _rememberIncomingFingerprint(
+          callUUID: callUUID,
+          callId: callId,
+          remoteIdentity: remoteIdentity,
+        );
         _state = _state.copyWith(
           callStatus: SipCallUiStatus.incoming,
           remoteIdentity: remoteIdentity,
@@ -1642,6 +1982,11 @@ class SipService extends ChangeNotifier
         break;
       case 'calling':
         _currentCallDirection = SipCallDirection.outgoing;
+        _rememberActiveNativeCallFingerprint(
+          callUUID: callUUID,
+          callId: callId,
+          remoteIdentity: remoteIdentity,
+        );
         debugPrint(
           'SipService applying calling state -> previousSpeaker=${_state.isSpeakerOn}, incomingSpeaker=$speakerOn',
         );
@@ -1654,6 +1999,11 @@ class SipService extends ChangeNotifier
         );
         break;
       case 'ringing':
+        _rememberActiveNativeCallFingerprint(
+          callUUID: callUUID,
+          callId: callId,
+          remoteIdentity: remoteIdentity,
+        );
         debugPrint(
           'SipService applying ringing state -> previousSpeaker=${_state.isSpeakerOn}, incomingSpeaker=$speakerOn',
         );
@@ -1667,6 +2017,12 @@ class SipService extends ChangeNotifier
         break;
       case 'in_call':
         _currentCallStartedAt ??= DateTime.now();
+        _clearIncomingFingerprint();
+        _rememberActiveNativeCallFingerprint(
+          callUUID: callUUID,
+          callId: callId,
+          remoteIdentity: remoteIdentity,
+        );
         debugPrint(
           'SipService applying in_call state -> previousSpeaker=${_state.isSpeakerOn}, incomingSpeaker=$speakerOn',
         );
@@ -1679,28 +2035,47 @@ class SipService extends ChangeNotifier
         );
         break;
       case 'failed':
-        _appendCallLog(SipCallUiStatus.failed);
+        _clearIncomingFingerprint();
+        _markTerminalNativeCallFingerprint();
+        if (!(wasTerminal &&
+            (_state.callStatus == SipCallUiStatus.failed || treatAsEnded))) {
+          _appendCallLog(
+            treatAsEnded ? SipCallUiStatus.ended : SipCallUiStatus.failed,
+            endReason: message,
+          );
+        }
         _currentInviteUri = null;
         _state = _state.copyWith(
-          callStatus: SipCallUiStatus.failed,
-          errorMessage: message ?? 'Native SIP call failed',
+          callStatus:
+              treatAsEnded ? SipCallUiStatus.ended : SipCallUiStatus.failed,
+          errorMessage:
+              treatAsEnded ? null : (message ?? 'Native SIP call failed'),
+          clearError: treatAsEnded,
           clearRemoteIdentity: true,
           isMuted: false,
           isSpeakerOn: false,
         );
         break;
       case 'ended':
-        _appendCallLog(SipCallUiStatus.ended);
+        _clearIncomingFingerprint();
+        _markTerminalNativeCallFingerprint();
+        if (!wasTerminal || _state.callStatus == SipCallUiStatus.inCall) {
+          _appendCallLog(SipCallUiStatus.ended, endReason: message);
+        }
         _currentInviteUri = null;
         _state = _state.copyWith(
           callStatus: SipCallUiStatus.ended,
+          errorMessage:
+              _isElsewhereTerminationMessage(message) ? message : null,
           clearRemoteIdentity: true,
-          clearError: true,
+          clearError: !_isElsewhereTerminationMessage(message),
           isMuted: false,
           isSpeakerOn: false,
         );
         break;
       case 'idle':
+        _clearIncomingFingerprint();
+        _markTerminalNativeCallFingerprint();
       default:
         _state = _state.copyWith(
           isMuted: muted ?? _state.isMuted,
@@ -1732,7 +2107,8 @@ class SipService extends ChangeNotifier
     if (!online) {
       _lastReconnectAttemptAt = null;
       _cancelReconnect();
-      if (_state.registrationStatus == SipRegistrationUiStatus.registered) {
+      if (_state.registrationStatus == SipRegistrationUiStatus.registered ||
+          _state.registrationStatus == SipRegistrationUiStatus.registering) {
         _state = _state.copyWith(
           registrationStatus: SipRegistrationUiStatus.failed,
           errorMessage: 'Network lost. Waiting for reconnection...',
@@ -1743,6 +2119,13 @@ class SipService extends ChangeNotifier
     }
 
     if (_shouldStayConnected) {
+      if (_state.registrationStatus != SipRegistrationUiStatus.registered) {
+        _state = _state.copyWith(
+          registrationStatus: SipRegistrationUiStatus.registering,
+          errorMessage: 'Network restored. Reconnecting SIP...',
+        );
+        _notifyListenersSafely();
+      }
       if (_shouldUseNativeSip()) {
         unawaited(_restoreNativeRegistrationIfNeeded('network-restored'));
       }
@@ -2047,6 +2430,31 @@ class SipService extends ChangeNotifier
         normalized.contains('403');
   }
 
+  bool _isAuthorizationChallengeMessage(String? message) {
+    final normalized = message?.trim().toLowerCase() ?? '';
+    if (normalized.isEmpty) {
+      return false;
+    }
+
+    return (normalized.contains('unauthorized') ||
+            normalized.contains('401')) &&
+        !normalized.contains('forbidden') &&
+        !normalized.contains('403');
+  }
+
+  bool _shouldIgnoreTransientAuthorizationChallenge(String? message) {
+    if (!_isAuthorizationChallengeMessage(message)) {
+      return false;
+    }
+
+    final startedAt = _lastReconnectAttemptAt;
+    if (startedAt == null) {
+      return false;
+    }
+
+    return DateTime.now().difference(startedAt) <= const Duration(seconds: 8);
+  }
+
   String _currentEndpointKey() {
     return _endpointKey(
       server: _state.server,
@@ -2167,6 +2575,15 @@ class SipService extends ChangeNotifier
         _startKeepAlive();
         break;
       case RegistrationStateEnum.REGISTRATION_FAILED:
+        if (_shouldIgnoreTransientAuthorizationChallenge(
+          state.cause?.toString(),
+        )) {
+          _state = _state.copyWith(
+            registrationStatus: SipRegistrationUiStatus.registering,
+            clearError: true,
+          );
+          break;
+        }
         if (_isAuthorizationFailureMessage(state.cause?.toString())) {
           _stopReconnectOnAuthorizationFailure(
             'SIP авторизация отклонена сервером. Проверьте логин, пароль и auth ID.',
@@ -2272,7 +2689,10 @@ class SipService extends ChangeNotifier
         break;
       case CallStateEnum.ENDED:
         _releaseStreams();
-        _appendCallLog(SipCallUiStatus.ended);
+        _appendCallLog(
+          SipCallUiStatus.ended,
+          endReason: callState.cause?.toString(),
+        );
         _activeCall = null;
         _currentInviteUri = null;
         _state = _state.copyWith(
@@ -2290,6 +2710,7 @@ class SipService extends ChangeNotifier
             _wasEarlyCallStatus(previousCallStatus);
         _appendCallLog(
           remotelyDeclined ? SipCallUiStatus.ended : SipCallUiStatus.failed,
+          endReason: rawError,
         );
         _activeCall = null;
         final errorMessage = rawError.contains('408')
@@ -2407,7 +2828,7 @@ class SipService extends ChangeNotifier
     }
   }
 
-  void _appendCallLog(SipCallUiStatus result) {
+  void _appendCallLog(SipCallUiStatus result, {String? endReason}) {
     final now = DateTime.now();
     final startedAt = _currentCallStartedAt;
     final duration = startedAt != null ? now.difference(startedAt) : null;
@@ -2424,6 +2845,7 @@ class SipService extends ChangeNotifier
         result: result,
         timestamp: now,
         duration: duration,
+        endReason: endReason?.trim().isEmpty == true ? null : endReason?.trim(),
       ),
       ..._state.callLogs,
     ];
