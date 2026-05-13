@@ -35,6 +35,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:html/parser.dart' show parse;
 import 'package:intl/intl.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:path_provider/path_provider.dart';
@@ -4103,7 +4104,9 @@ class MessageItemWidget extends StatelessWidget {
       },
       child: PremiumHapticWrapper(
         onLongPress: () {
-          _showMessageContextMenu(context, message, focusNode);
+          if (message.type != 'location') {
+            _showMessageContextMenu(context, message, focusNode);
+          }
         },
         child: Container(
           width: double.infinity,
@@ -4251,6 +4254,9 @@ class MessageItemWidget extends StatelessWidget {
             isLeadChat: isLeadChat,
             isGroupChat: isGroupChat,
             isHighlighted: highlightedMessageId == message.id,
+            onTap: () => _openLocationInMap(message),
+            onLongPress: () =>
+                _showMessageContextMenu(context, message, focusNode),
           );
         }
         break;
@@ -4404,7 +4410,7 @@ class MessageItemWidget extends StatelessWidget {
         icon: 'assets/icons/chats/menu_icons/copy.svg',
         text: AppLocalizations.of(context)!.translate('copy'),
         onTap: () {
-          _copyMessageToClipboard(context, message.text);
+          _copyMessageToClipboardByType(context, message);
         },
       ),
     );
@@ -4499,6 +4505,58 @@ class MessageItemWidget extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
         duration: const Duration(seconds: 3),
       ),
+    );
+  }
+
+  void _copyMessageToClipboardByType(BuildContext context, Message message) {
+    _copyMessageToClipboard(context, _getCopyableMessageText(message));
+  }
+
+  String _getCopyableMessageText(Message message) {
+    if (message.type == 'location') {
+      if (message.latitude != null && message.longitude != null) {
+        return _buildLocationUrl(message.latitude!, message.longitude!);
+      }
+
+      final extractedUrl = _extractFirstUrl(message.text);
+      if (extractedUrl != null && extractedUrl.isNotEmpty) {
+        return extractedUrl;
+      }
+    }
+
+    return message.text;
+  }
+
+  String _buildLocationUrl(double latitude, double longitude) {
+    return 'https://www.google.com/maps/search/?api=1&query=$latitude,$longitude';
+  }
+
+  String? _extractFirstUrl(String rawText) {
+    try {
+      final document = parse(rawText);
+      final href = document.querySelector('a[href]')?.attributes['href'];
+      if (href != null && href.trim().isNotEmpty) {
+        return href.trim();
+      }
+    } catch (_) {}
+
+    final match = RegExp("https?://[^\\s'\"<]+", caseSensitive: false)
+        .firstMatch(rawText);
+    return match?.group(0);
+  }
+
+  Future<void> _openLocationInMap(Message message) async {
+    final locationUrl = message.latitude != null && message.longitude != null
+        ? _buildLocationUrl(message.latitude!, message.longitude!)
+        : _extractFirstUrl(message.text);
+
+    if (locationUrl == null || locationUrl.isEmpty) {
+      return;
+    }
+
+    await launchUrl(
+      Uri.parse(locationUrl),
+      mode: LaunchMode.externalApplication,
     );
   }
 

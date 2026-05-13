@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/api/service/biometric_service.dart';
 import 'package:crm_task_manager/bloc/deal/deal_bloc.dart';
 import 'package:crm_task_manager/bloc/deal/deal_event.dart';
 import 'package:crm_task_manager/bloc/lead/lead_bloc.dart';
@@ -15,11 +16,11 @@ import 'package:crm_task_manager/bloc/task/task_event.dart';
 import 'package:crm_task_manager/models/user_byId_model..dart';
 import 'package:crm_task_manager/screens/home_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/widgets/biometric_dialogs.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:local_auth/local_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class PinSetupScreen extends StatefulWidget {
@@ -41,11 +42,10 @@ class _PinSetupScreenState extends State<PinSetupScreen>
   bool _pinsDoNotMatch = false;
   static const String _biometricPromptShownKey =
       'biometric_prompt_shown_after_first_login';
-  static const String _biometricEnabledKey = 'biometric_auth_enabled';
 
   late AnimationController _animationController;
   late Animation<double> _shakeAnimation;
-  final LocalAuthentication _localAuth = LocalAuthentication();
+  final BiometricService _biometricService = BiometricService();
 
   int? userRoleId;
   bool isPermissionsLoaded = false;
@@ -584,35 +584,45 @@ class _PinSetupScreenState extends State<PinSetupScreen>
     try {
       final prefs = await SharedPreferences.getInstance();
       final wasShown = prefs.getBool(_biometricPromptShownKey) ?? false;
-      final isEnabled = prefs.getBool(_biometricEnabledKey) ?? false;
+      final isEnabled = await _biometricService.isBiometricEnabled();
 
       if (wasShown || isEnabled) {
         return;
       }
 
-      final isAvailable = await _isBiometricAvailable();
-      if (!isAvailable || !mounted) {
+      final availability = await _biometricService.getAvailability();
+      if (!mounted) {
         return;
       }
 
-      final shouldEnable = await _showBiometricPromptDialog();
+      final shouldEnable = await _showBiometricPromptDialog(availability);
       await prefs.setBool(_biometricPromptShownKey, true);
 
       if (shouldEnable != true || !mounted) {
         return;
       }
 
-      final didAuthenticate = await _localAuth.authenticate(
-        localizedReason:
-            'Подтвердите личность, чтобы включить быстрый вход в shamCRM',
-        options: const AuthenticationOptions(
-          biometricOnly: true,
-          stickyAuth: true,
-          useErrorDialogs: true,
-        ),
+      if (!availability.hasAnyBiometric) {
+        final localizations = AppLocalizations.of(context);
+        if (localizations == null) return;
+
+        final shouldOpenSettings = await showBiometricSetupRequiredDialog(
+          context: context,
+          localizations: localizations,
+          availability: availability,
+        );
+        if (shouldOpenSettings == true) {
+          await _biometricService.openBiometricSettings();
+        }
+        await _biometricService.setBiometricEnabled(false);
+        return;
+      }
+
+      final didAuthenticate = await _biometricService.authenticate(
+        reason: 'Подтвердите личность, чтобы включить быстрый вход в shamCRM',
       );
 
-      await prefs.setBool(_biometricEnabledKey, didAuthenticate);
+      await _biometricService.setBiometricEnabled(didAuthenticate);
 
       if (!didAuthenticate || !mounted) {
         return;
@@ -629,34 +639,14 @@ class _PinSetupScreenState extends State<PinSetupScreen>
     }
   }
 
-  Future<bool> _isBiometricAvailable() async {
-    try {
-      final canCheckBiometrics = await _localAuth.canCheckBiometrics;
-      final isDeviceSupported = await _localAuth.isDeviceSupported();
-      if (!canCheckBiometrics || !isDeviceSupported) {
-        return false;
-      }
-
-      final biometrics = await _localAuth.getAvailableBiometrics();
-      if (Platform.isIOS) {
-        return biometrics.contains(BiometricType.face) ||
-            biometrics.contains(BiometricType.fingerprint);
-      }
-
-      return biometrics.contains(BiometricType.strong) ||
-          biometrics.contains(BiometricType.fingerprint);
-    } catch (e) {
-      debugPrint('PinSetupScreen: Биометрия недоступна: $e');
-      return false;
-    }
-  }
-
-  Future<bool?> _showBiometricPromptDialog() {
-    final isIos = Platform.isIOS;
-    final title = isIos ? 'Включить Face ID?' : 'Включить биометрию?';
-    final description = isIos
-        ? 'Входите в аккаунт быстрее и безопаснее с помощью Face ID. PIN останется запасным способом входа.'
-        : 'Входите в аккаунт быстрее и безопаснее с помощью биометрии. PIN останется запасным способом входа.';
+  Future<bool?> _showBiometricPromptDialog(BiometricAvailability availability) {
+    final localizations = AppLocalizations.of(context);
+    final title = localizations == null
+        ? 'Enable biometric sign-in?'
+        : biometricEnableTitle(localizations, availability);
+    final description = localizations == null
+        ? 'Sign in faster and more securely with biometrics. PIN will remain a backup sign-in method.'
+        : biometricEnableDescription(localizations, availability);
 
     return showDialog<bool>(
       context: context,
@@ -681,10 +671,12 @@ class _PinSetupScreenState extends State<PinSetupScreen>
                     color: const Color(0xFF1E9E63).withValues(alpha: 0.12),
                     shape: BoxShape.circle,
                   ),
-                  child: Icon(
-                    isIos ? Icons.face_retouching_natural : Icons.fingerprint,
-                    color: const Color(0xFF1E9E63),
-                    size: 38,
+                  child: Center(
+                    child: biometricIconWidget(
+                      availability: availability,
+                      size: 38,
+                      color: const Color(0xFF1E9E63),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 18),
@@ -724,8 +716,8 @@ class _PinSetupScreenState extends State<PinSetupScreen>
                             borderRadius: BorderRadius.circular(12),
                           ),
                         ),
-                        child: const Text(
-                          'Позже',
+                        child: Text(
+                          localizations?.translate('later') ?? 'Later',
                           style: TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w600,
@@ -747,8 +739,9 @@ class _PinSetupScreenState extends State<PinSetupScreen>
                             borderRadius: BorderRadius.circular(12),
                           ),
                         ),
-                        child: const Text(
-                          'Включить',
+                        child: Text(
+                          localizations?.translate('biometric_enable_action') ??
+                              'Enable',
                           style: TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w700,

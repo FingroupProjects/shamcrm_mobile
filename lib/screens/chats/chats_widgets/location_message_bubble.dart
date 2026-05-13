@@ -14,6 +14,8 @@ class LocationMessageBubble extends StatelessWidget {
   final bool isLeadChat;
   final bool? isGroupChat;
   final bool isHighlighted;
+  final VoidCallback? onTap;
+  final VoidCallback? onLongPress;
 
   const LocationMessageBubble({
     super.key,
@@ -26,6 +28,8 @@ class LocationMessageBubble extends StatelessWidget {
     required this.isLeadChat,
     this.isGroupChat,
     this.isHighlighted = false,
+    this.onTap,
+    this.onLongPress,
   });
 
   @override
@@ -51,7 +55,9 @@ class LocationMessageBubble extends StatelessWidget {
               ),
             ),
           GestureDetector(
-            onTap: _openMap,
+            behavior: HitTestBehavior.opaque,
+            onTap: onTap ?? _openMap,
+            onLongPress: onLongPress,
             child: Container(
               width: MediaQuery.of(context).size.width * 0.72,
               margin: const EdgeInsets.symmetric(vertical: 5),

@@ -1,21 +1,19 @@
 import 'dart:async';
-import 'dart:convert';
-import 'dart:io';
 // import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/api/service/biometric_service.dart';
 import 'package:crm_task_manager/api/service/firebase_api.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/screens/auth/forgot_pin.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/services/chat_unread_counter_service.dart';
+import 'package:crm_task_manager/widgets/biometric_dialogs.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:new_version_plus/new_version_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:vibration/vibration.dart';
-import 'package:local_auth/local_auth.dart';
 import 'package:flutter/services.dart';
 
 import '../../update_dialog.dart';
@@ -36,12 +34,10 @@ class _PinScreenState extends State<PinScreen>
     with SingleTickerProviderStateMixin {
   String _pin = '';
   bool _isWrongPin = false;
-  bool _isIosVersionAbove15 = false;
   late AnimationController _animationController;
   late Animation<double> _shakeAnimation;
-  final LocalAuthentication _auth = LocalAuthentication();
-  bool _canCheckBiometrics = false;
-  List<BiometricType> _availableBiometrics = [];
+  final BiometricService _biometricService = BiometricService();
+  BiometricAvailability? _biometricAvailability;
   bool _isBiometricEnabled = false;
   String _userName = '';
   String _userNameProfile = '';
@@ -246,13 +242,14 @@ class _PinScreenState extends State<PinScreen>
 
   Future<void> _loadBiometricSetting() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      if (mounted) {
-        setState(() {
-          _isBiometricEnabled =
-              prefs.getBool('biometric_auth_enabled') ?? false;
-        });
-      }
+      final isEnabled = await _biometricService.isBiometricEnabled();
+      final availability = await _biometricService.getAvailability();
+      if (!mounted) return;
+
+      setState(() {
+        _biometricAvailability = availability;
+        _isBiometricEnabled = isEnabled && availability.hasAnyBiometric;
+      });
     } catch (e) {
       //print('PinScreen: Ошибка загрузки настройки биометрии: $e');
     }
@@ -265,26 +262,13 @@ class _PinScreenState extends State<PinScreen>
         return; // Biometric auth is disabled, don't show/trigger it
       }
 
-      final localizations = AppLocalizations.of(context);
-      if (localizations == null) return;
+      final availability =
+          _biometricAvailability ?? await _biometricService.getAvailability();
+      _biometricAvailability = availability;
 
-      _canCheckBiometrics = await _auth.canCheckBiometrics;
-
-      if (_canCheckBiometrics) {
-        _availableBiometrics = await _auth.getAvailableBiometrics();
-
-        if (_availableBiometrics.isNotEmpty) {
-          if (Platform.isIOS &&
-              _availableBiometrics.contains(BiometricType.face)) {
-            _authenticate();
-          } else if (Platform.isAndroid &&
-              _availableBiometrics.contains(BiometricType.strong)) {
-            _authenticate();
-          }
-        }
+      if (availability.hasAnyBiometric) {
+        _authenticate();
       }
-    } on PlatformException catch (e) {
-      //print('PinScreen: Ошибка инициализации биометрии: $e');
     } catch (e) {
       //print('PinScreen: Неожиданная ошибка биометрии: $e');
     }
@@ -295,15 +279,12 @@ class _PinScreenState extends State<PinScreen>
       final localizations = AppLocalizations.of(context);
       if (localizations == null) return;
 
-      if (!_canCheckBiometrics || _availableBiometrics.isEmpty) return;
+      final availability =
+          _biometricAvailability ?? await _biometricService.getAvailability();
+      if (!availability.hasAnyBiometric) return;
 
-      final bool didAuthenticate = await _auth.authenticate(
-        localizedReason: localizations.translate('confirm_identity'),
-        options: const AuthenticationOptions(
-          biometricOnly: true,
-          useErrorDialogs: true,
-          stickyAuth: true,
-        ),
+      final bool didAuthenticate = await _biometricService.authenticate(
+        reason: localizations.translate('confirm_identity'),
       );
 
       if (didAuthenticate && mounted) {
@@ -313,8 +294,6 @@ class _PinScreenState extends State<PinScreen>
         });
         _navigateToHome();
       }
-    } on PlatformException catch (e) {
-      //print('PinScreen: Ошибка биометрической аутентификации: $e');
     } catch (e) {
       //print('PinScreen: Неожиданная ошибка аутентификации: $e');
     }
@@ -727,19 +706,22 @@ class _PinScreenState extends State<PinScreen>
                         style: TextStyle(fontSize: 24, color: Colors.black),
                       ),
                     ),
-                    if (!_isIosVersionAbove15 && _isBiometricEnabled)
+                    if (_isBiometricEnabled &&
+                        (_biometricAvailability?.hasAnyBiometric ?? false))
                       TextButton(
                         onPressed: _pin.isEmpty ? _authenticate : _onDelete,
-                        child: Icon(
-                          _pin.isEmpty
-                              ? Icons.fingerprint
-                              : Icons.backspace_outlined,
-                          color: const Color.fromARGB(255, 33, 41, 188),
-                        ),
+                        child: _pin.isEmpty
+                            ? biometricIconWidget(
+                                availability: _biometricAvailability!,
+                                size: 24,
+                                color: const Color.fromARGB(255, 33, 41, 188),
+                              )
+                            : const Icon(
+                                Icons.backspace_outlined,
+                                color: Color.fromARGB(255, 33, 41, 188),
+                              ),
                       )
-                    else if (!_isIosVersionAbove15 &&
-                        !_isBiometricEnabled &&
-                        _pin.isNotEmpty)
+                    else if (!_isBiometricEnabled && _pin.isNotEmpty)
                       TextButton(
                         onPressed: _onDelete,
                         child: const Icon(

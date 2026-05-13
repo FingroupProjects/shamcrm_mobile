@@ -1,9 +1,8 @@
-import 'dart:io';
+import 'package:crm_task_manager/api/service/biometric_service.dart';
 import 'package:crm_task_manager/custom_widget/custom_chat_styles.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/widgets/biometric_dialogs.dart';
 import 'package:flutter/material.dart';
-import 'package:local_auth/local_auth.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class BiometricToggleWidget extends StatefulWidget {
   const BiometricToggleWidget({super.key});
@@ -13,109 +12,129 @@ class BiometricToggleWidget extends StatefulWidget {
 }
 
 class _BiometricToggleWidgetState extends State<BiometricToggleWidget> {
+  final BiometricService _biometricService = BiometricService();
+
   bool _isBiometricEnabled = false;
-  bool _isBiometricAvailable = false;
-  final LocalAuthentication _auth = LocalAuthentication();
+  BiometricAvailability? _availability;
 
   @override
   void initState() {
     super.initState();
-    _checkBiometricAvailability();
-    _loadBiometricState();
+    _loadState();
   }
 
-  Future<void> _checkBiometricAvailability() async {
-    try {
-      final canCheckBiometrics = await _auth.canCheckBiometrics;
-      if (canCheckBiometrics) {
-        final availableBiometrics = await _auth.getAvailableBiometrics();
-        if (availableBiometrics.isNotEmpty) {
-          // Check if device has Face ID (iOS) or strong biometrics (Android)
-          final hasBiometric = Platform.isIOS
-              ? availableBiometrics.contains(BiometricType.face)
-              : availableBiometrics.contains(BiometricType.strong);
-          
-          if (mounted) {
-            setState(() {
-              _isBiometricAvailable = hasBiometric;
-            });
-          }
-        }
-      }
-    } catch (e) {
-      // Biometric not available
-      if (mounted) {
-        setState(() {
-          _isBiometricAvailable = false;
-        });
-      }
-    }
-  }
+  Future<void> _loadState() async {
+    final availability = await _biometricService.getAvailability();
+    final isEnabled = await _biometricService.isBiometricEnabled();
 
-  Future<void> _loadBiometricState() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    if (mounted) {
-      setState(() {
-        _isBiometricEnabled = prefs.getBool('biometric_auth_enabled') ?? false;
-      });
-    }
+    if (!mounted) return;
+
+    setState(() {
+      _availability = availability;
+      _isBiometricEnabled = availability.hasAnyBiometric && isEnabled;
+    });
   }
 
   Future<void> _toggleBiometric(bool value) async {
-    if (!_isBiometricAvailable) {
-      final localizations = AppLocalizations.of(context);
-      if (localizations != null && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              localizations.translate('biometric_not_available'),
-            ),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
+    final localizations = AppLocalizations.of(context);
+    final availability =
+        _availability ?? await _biometricService.getAvailability();
+
+    if (!value) {
+      await _biometricService.setBiometricEnabled(false);
+      if (!mounted) return;
+      setState(() {
+        _availability = availability;
+        _isBiometricEnabled = false;
+      });
       return;
     }
 
+    if (!availability.hasAnyBiometric) {
+      final shouldOpenSettings = await showBiometricSetupRequiredDialog(
+        context: context,
+        localizations: localizations!,
+        availability: availability,
+      );
+      if (shouldOpenSettings == true) {
+        await _biometricService.openBiometricSettings();
+      }
+
+      await _biometricService.setBiometricEnabled(false);
+      if (!mounted) return;
+      setState(() {
+        _availability = availability;
+        _isBiometricEnabled = false;
+      });
+      return;
+    }
+
+    final didAuthenticate = await _biometricService.authenticate(
+      reason: localizations?.translate('confirm_identity') ??
+          'Подтвердите личность',
+    );
+
+    await _biometricService.setBiometricEnabled(didAuthenticate);
+
+    if (!mounted) return;
+
     setState(() {
-      _isBiometricEnabled = value;
+      _availability = availability;
+      _isBiometricEnabled = didAuthenticate;
     });
-    
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('biometric_auth_enabled', _isBiometricEnabled);
+
+    if (!didAuthenticate && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            localizations?.translate('biometric_enable_cancelled') ??
+                'Biometric sign-in was not enabled',
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context);
-    if (localizations == null) {
+    final availability = _availability;
+
+    if (localizations == null || availability == null) {
       return const SizedBox.shrink();
     }
 
-    // Only show widget if biometric is available
-    if (!_isBiometricAvailable) {
+    if (!availability.hasAnyBiometric) {
       return const SizedBox.shrink();
     }
 
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 10),
       padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-      height: 80, // Increased height
+      height: 80,
       decoration: BoxDecoration(
         color: const Color(0xFFF4F7FD),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
         children: [
-          Switch(
-            value: _isBiometricEnabled,
-            onChanged: _toggleBiometric,
-            activeColor: const Color.fromARGB(255, 255, 255, 255),
-            inactiveTrackColor: const Color.fromARGB(255, 179, 179, 179).withOpacity(0.5),
-            activeTrackColor: ChatSmsStyles.messageBubbleSenderColor,
-            inactiveThumbColor: const Color.fromARGB(255, 255, 255, 255),
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: const Color.fromARGB(255, 223, 225, 249),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Center(
+              child: biometricIconWidget(
+                availability: availability,
+                size: 22,
+                color: const Color.fromARGB(255, 91, 77, 235),
+              ),
+            ),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: 12),
           Expanded(
             child: Text(
               _isBiometricEnabled
@@ -131,9 +150,21 @@ class _BiometricToggleWidgetState extends State<BiometricToggleWidget> {
               overflow: TextOverflow.ellipsis,
             ),
           ),
+          Switch(
+            value: _isBiometricEnabled,
+            onChanged: _toggleBiometric,
+            activeThumbColor: const Color.fromARGB(255, 255, 255, 255),
+            inactiveTrackColor: const Color.fromARGB(
+              255,
+              179,
+              179,
+              179,
+            ).withValues(alpha: 0.5),
+            activeTrackColor: ChatSmsStyles.messageBubbleSenderColor,
+            inactiveThumbColor: const Color.fromARGB(255, 255, 255, 255),
+          ),
         ],
       ),
     );
   }
 }
-
