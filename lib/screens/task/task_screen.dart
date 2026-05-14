@@ -619,6 +619,13 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
 
   Future<void> _handleUserSelected(Map filterData) async {
     debugPrint('TaskScreen: _handleUserSelected - START WITH NEW LOGIC');
+    final int? currentStatusIdBeforeFilter =
+        _tabTitles.isNotEmpty && _currentTabIndex < _tabTitles.length
+            ? _tabTitles[_currentTabIndex]['id'] as int
+            : null;
+    debugPrint(
+        'TaskScreen: _handleUserSelected - currentStatusIdBeforeFilter=$currentStatusIdBeforeFilter');
+    debugPrint('TaskScreen: _handleUserSelected - raw filterData=$filterData');
 
     if (mounted) {
       setState(() {
@@ -700,13 +707,24 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
     // await Future.delayed(Duration(milliseconds: 50));
 
     final taskBloc = BlocProvider.of<TaskBloc>(context);
+    debugPrint(
+        'TaskScreen: _handleUserSelected - clearing TaskBloc cache and ApiService cache before filtering');
+    await taskBloc.clearAllCountsAndCache();
+    await _apiService.clearTaskStatusesPersistentCache();
+    ApiService.clearAnalyticsResponseCache();
+    debugPrint(
+        'TaskScreen: _handleUserSelected - cache cleared, dispatching filtered statuses request');
 
     // Преобразуем project_ids в List<int>
     List<int>? projectIdsList = _selectedProjects.isNotEmpty
         ? _selectedProjects.map((id) => int.parse(id)).toList()
         : (_selectedProject != null ? [int.parse(_selectedProject!)] : null);
 
+    debugPrint(
+        'TaskScreen: _handleUserSelected - normalized filters: users=${_selectedUsers.map((e) => e.id).toList()}, selectedStatuses=$_selectedStatuses, projectIds=$projectIdsList, authors=$_selectedAuthors, department=$_selectedDepartment, directoryValues=$_selectedDirectoryValues');
+
     taskBloc.add(FetchTaskStatusesWithFilters(
+      preferredStatusId: currentStatusIdBeforeFilter,
       userIds: _selectedUsers.isNotEmpty
           ? _selectedUsers.map((user) => user.id).toList()
           : null,
@@ -1633,6 +1651,11 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
 
           if (mounted) {
             setState(() {
+              final previousActiveStatusId =
+                  _tabTitles.isNotEmpty && _currentTabIndex < _tabTitles.length
+                      ? _tabTitles[_currentTabIndex]['id'] as int
+                      : null;
+
               // Обновляем табы с новыми данными
               _tabTitles = state.taskStatuses
                   .where((status) => _canReadTaskStatus)
@@ -1748,7 +1771,16 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
 
                 // Установка правильного индекса
                 if (needNewController) {
-                  if (_currentTabIndex < _tabTitles.length &&
+                  final preservedIndex = previousActiveStatusId != null
+                      ? _tabTitles.indexWhere(
+                          (status) => status['id'] == previousActiveStatusId,
+                        )
+                      : -1;
+
+                  if (preservedIndex != -1) {
+                    _tabController.index = preservedIndex;
+                    _currentTabIndex = preservedIndex;
+                  } else if (_currentTabIndex < _tabTitles.length &&
                       _currentTabIndex >= 0) {
                     _tabController.index = _currentTabIndex;
                   } else {

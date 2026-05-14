@@ -506,69 +506,178 @@ extension _SipMainViewsExtension on _SipScreenState {
     );
   }
 
-  Widget _inlineDialSuggestion() {
-    if (_contactSuggestions.isEmpty || _sipIdController.text.trim().isEmpty) {
-      return const SizedBox(height: 52);
+  Widget _inlineDialSuggestion(BoxConstraints constraints) {
+    final query = _sipIdController.text.trim();
+    final isNarrow = constraints.maxWidth < 395;
+    final isTight = constraints.maxWidth < 370;
+    final horizontalPadding = isTight ? 12.0 : 16.0;
+    final rowHeight = isTight ? 46.0 : 50.0;
+    final extraRowHeight = isTight ? 42.0 : 46.0;
+    final reservedHeight = rowHeight + 1 + extraRowHeight + 2;
+    final iconSize = isTight ? 17.0 : 18.0;
+    final gap = isTight ? 8.0 : 10.0;
+    final hasQuery = query.isNotEmpty;
+    final hasSuggestion = _contactSuggestions.isNotEmpty && hasQuery;
+    final suggestion = hasSuggestion ? _contactSuggestions.first : null;
+    final extraResults =
+        hasSuggestion ? math.max(0, _contactSuggestionTotalCount - 1) : 0;
+    final nameStyle = TextStyle(
+      color: const Color(0xFF6B7280),
+      fontSize: isTight ? 12.0 : 13.0,
+      fontWeight: FontWeight.w500,
+      height: 1.1,
+    );
+    final phoneStyle = TextStyle(
+      color: const Color(0xFF111827),
+      fontSize: isTight ? 13.0 : 14.0,
+      fontWeight: FontWeight.w600,
+      height: 1.1,
+    );
+
+    if (!hasQuery) {
+      return SizedBox(height: reservedHeight + 8);
     }
 
-    final suggestion = _contactSuggestions.first;
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
-      child: GestureDetector(
-        onTap: () => _fillContactNumber(suggestion),
-        child: Container(
-          height: 52,
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.90),
-            borderRadius: BorderRadius.circular(26),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFF111827).withValues(alpha: 0.06),
-                blurRadius: 20,
-                offset: const Offset(0, 8),
-              ),
-            ],
-            border: Border.all(
-              color: const Color(0xFFF0F0F0),
-            ),
-          ),
-          child: Row(
-            children: [
-              const Icon(
-                CupertinoIcons.person_crop_circle,
-                size: 20,
-                color: Color(0xFF374151),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  suggestion.name,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Color(0xFF6B7280),
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
+      child: SizedBox(
+        height: reservedHeight,
+        child: Align(
+          alignment: Alignment.topCenter,
+          child: suggestion == null
+              ? const SizedBox.shrink()
+              : Container(
+                  padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.90),
+                    borderRadius: BorderRadius.circular(26),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF111827).withValues(alpha: 0.06),
+                        blurRadius: 20,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
+                    border: Border.all(
+                      color: const Color(0xFFF0F0F0),
+                    ),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onTap: () => _fillContactNumber(suggestion),
+                        child: SizedBox(
+                          height: rowHeight,
+                          child: isNarrow
+                              ? Row(
+                                  children: [
+                                    Icon(
+                                      CupertinoIcons.person_crop_circle,
+                                      size: iconSize,
+                                      color: const Color(0xFF374151),
+                                    ),
+                                    SizedBox(width: gap),
+                                    Expanded(
+                                      child: Column(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            suggestion.name,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: nameStyle,
+                                          ),
+                                          const SizedBox(height: 2),
+                                          Text(
+                                            suggestion.phone,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: phoneStyle,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                )
+                              : Row(
+                                  children: [
+                                    Icon(
+                                      CupertinoIcons.person_crop_circle,
+                                      size: iconSize,
+                                      color: const Color(0xFF374151),
+                                    ),
+                                    SizedBox(width: gap),
+                                    Expanded(
+                                      child: Text(
+                                        suggestion.name,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: nameStyle,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Flexible(
+                                      child: Text(
+                                        suggestion.phone,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        textAlign: TextAlign.right,
+                                        style: phoneStyle,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                        ),
+                      ),
+                      if (extraResults > 0) ...[
+                        const Divider(
+                          height: 1,
+                          thickness: 1,
+                          color: Color(0xFFF0F0F0),
+                        ),
+                        GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onTap: () => _openUnifiedSearchWithQuery(
+                            _sipIdController.text,
+                            preferredSource: _contactsEnabled
+                                ? _SipSearchSource.contacts
+                                : _SipSearchSource.calls,
+                          ),
+                          child: SizedBox(
+                            height: extraRowHeight,
+                            child: Row(
+                              children: [
+                                Icon(
+                                  CupertinoIcons.search,
+                                  size: iconSize,
+                                  color: const Color(0xFF111827),
+                                ),
+                                SizedBox(width: gap),
+                                Expanded(
+                                  child: Text(
+                                    'Еще $extraResults ${_declineSearchResultsLabel(extraResults)}',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      color: const Color(0xFF6B7280),
+                                      fontSize: isTight ? 12.0 : 13.0,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                 ),
-              ),
-              const SizedBox(width: 8),
-              Flexible(
-                child: Text(
-                  suggestion.phone,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  textAlign: TextAlign.right,
-                  style: const TextStyle(
-                    color: Color(0xFF111827),
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ],
-          ),
         ),
       ),
     );
@@ -581,6 +690,14 @@ extension _SipMainViewsExtension on _SipScreenState {
   ) {
     final isRegistered =
         state.registrationStatus == SipRegistrationUiStatus.registered;
+    final isNarrow = constraints.maxWidth < 395;
+    final isTight = constraints.maxWidth < 370;
+    final horizontalPadding = isTight ? 18.0 : (isNarrow ? 20.0 : 24.0);
+    final keyOuterSize =
+        ((constraints.maxWidth - (horizontalPadding * 2) - 12) / 3)
+            .clamp(80.0, 92.0);
+    final actionButtonSize = (keyOuterSize * 0.76).clamp(60.0, 68.0);
+    final actionIconSize = (actionButtonSize * 0.42).clamp(24.0, 32.0);
 
     return Container(
       decoration: const BoxDecoration(
@@ -591,16 +708,16 @@ extension _SipMainViewsExtension on _SipScreenState {
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 2, 20, 2),
-            child: _dialNumberHeader(),
+            child: _dialNumberHeader(constraints),
           ),
-          if (isRegistered) _inlineDialSuggestion(),
+          if (isRegistered) _inlineDialSuggestion(constraints),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 26),
+            padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
             child: Column(
               children: List.generate(4, (row) {
                 final start = row * 3;
                 return Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
+                  padding: EdgeInsets.only(bottom: isTight ? 10 : 12),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: List.generate(3, (col) {
@@ -609,6 +726,7 @@ extension _SipMainViewsExtension on _SipScreenState {
                       return _ios26DialKey(
                         value: key,
                         letters: item['letters']!,
+                        outerSize: keyOuterSize,
                         onTap: () => _insertDialText(key),
                         onLongPress:
                             key == '0' ? () => _insertDialText('+') : null,
@@ -619,23 +737,28 @@ extension _SipMainViewsExtension on _SipScreenState {
               }),
             ),
           ),
-          const SizedBox(height: 4),
+          SizedBox(height: isTight ? 0 : 2),
           Padding(
-            padding: const EdgeInsets.fromLTRB(28, 0, 28, 16),
+            padding: EdgeInsets.fromLTRB(
+              horizontalPadding + 2,
+              0,
+              horizontalPadding + 2,
+              isTight ? 10 : 12,
+            ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 SizedBox(
-                  width: 72,
-                  height: 72,
+                  width: actionButtonSize,
+                  height: actionButtonSize,
                   child: _sipIdController.text.isNotEmpty
                       ? CupertinoButton(
                           padding: EdgeInsets.zero,
                           onPressed: _showAddDialDestinationSheet,
-                          child: const Icon(
+                          child: Icon(
                             CupertinoIcons.person_crop_circle_badge_plus,
                             color: Color(0xFF6B7280),
-                            size: 30,
+                            size: actionIconSize,
                           ),
                         )
                       : const SizedBox.shrink(),
@@ -643,8 +766,8 @@ extension _SipMainViewsExtension on _SipScreenState {
                 GestureDetector(
                   onTap: isRegistered ? _startDialCall : null,
                   child: Container(
-                    width: 72,
-                    height: 72,
+                    width: actionButtonSize,
+                    height: actionButtonSize,
                     decoration: BoxDecoration(
                       color: isRegistered
                           ? const Color(0xFF34C759)
@@ -662,25 +785,25 @@ extension _SipMainViewsExtension on _SipScreenState {
                             ]
                           : null,
                     ),
-                    child: const Icon(
+                    child: Icon(
                       CupertinoIcons.phone_fill,
                       color: Colors.white,
-                      size: 32,
+                      size: actionIconSize + 2,
                     ),
                   ),
                 ),
                 SizedBox(
-                  width: 72,
-                  height: 72,
+                  width: actionButtonSize,
+                  height: actionButtonSize,
                   child: _sipIdController.text.isNotEmpty
                       ? CupertinoButton(
                           padding: EdgeInsets.zero,
                           onPressed: _backspaceDial,
                           onLongPress: _clearDial,
-                          child: const Icon(
+                          child: Icon(
                             CupertinoIcons.delete_left_fill,
                             color: Color(0xFF6B7280),
-                            size: 28,
+                            size: actionIconSize - 1,
                           ),
                         )
                       : const SizedBox.shrink(),
@@ -694,7 +817,12 @@ extension _SipMainViewsExtension on _SipScreenState {
     );
   }
 
-  Widget _dialNumberHeader() {
+  Widget _dialNumberHeader(BoxConstraints constraints) {
+    final isNarrow = constraints.maxWidth < 395;
+    final isTight = constraints.maxWidth < 370;
+    final fontSize = isTight ? 30.0 : (isNarrow ? 34.0 : 38.0);
+    final placeholderSize = isTight ? 21.0 : (isNarrow ? 24.0 : 27.0);
+    final cursorHeight = isTight ? 30.0 : (isNarrow ? 34.0 : 38.0);
     return GestureDetector(
       onTap: _expandDialPanel,
       onLongPress: _showDialActions,
@@ -705,24 +833,24 @@ extension _SipMainViewsExtension on _SipScreenState {
         showCursor: true,
         cursorColor: const Color(0xFF111827),
         cursorWidth: 2,
-        cursorHeight: 40,
+        cursorHeight: cursorHeight,
         textAlign: TextAlign.center,
-        style: const TextStyle(
-          fontSize: 40,
+        style: TextStyle(
+          fontSize: fontSize,
           fontWeight: FontWeight.w300,
-          color: Color(0xFF111827),
-          letterSpacing: 2,
+          color: const Color(0xFF111827),
+          letterSpacing: isTight ? 1.0 : 1.6,
         ),
         placeholder: 'Введите номер',
-        placeholderStyle: const TextStyle(
-          fontSize: 28,
+        placeholderStyle: TextStyle(
+          fontSize: placeholderSize,
           fontWeight: FontWeight.w300,
-          color: Color(0xFFD1D5DB),
+          color: const Color(0xFFD1D5DB),
         ),
         magnifierConfiguration: TextMagnifierConfiguration.disabled,
-        padding: const EdgeInsets.symmetric(
-          horizontal: 8,
-          vertical: 4,
+        padding: EdgeInsets.symmetric(
+          horizontal: isTight ? 4 : 8,
+          vertical: isTight ? 2 : 4,
         ),
         decoration: const BoxDecoration(),
       ),
@@ -732,22 +860,25 @@ extension _SipMainViewsExtension on _SipScreenState {
   Widget _ios26DialKey({
     required String value,
     required String letters,
+    required double outerSize,
     required VoidCallback onTap,
     VoidCallback? onLongPress,
   }) {
+    final innerSize = (outerSize - 8).clamp(74.0, 88.0);
+    final isTight = outerSize < 90;
     return GestureDetector(
       onTap: onTap,
       onLongPress: onLongPress,
       behavior: HitTestBehavior.opaque,
       child: SizedBox(
-        width: 96,
-        height: 96,
+        width: outerSize,
+        height: outerSize,
         child: Stack(
           alignment: Alignment.center,
           children: [
             Container(
-              width: 88,
-              height: 88,
+              width: innerSize,
+              height: innerSize,
               decoration: BoxDecoration(
                 color: Colors.white,
                 shape: BoxShape.circle,
@@ -774,22 +905,22 @@ extension _SipMainViewsExtension on _SipScreenState {
               children: [
                 Text(
                   value,
-                  style: const TextStyle(
-                    fontSize: 34,
+                  style: TextStyle(
+                    fontSize: isTight ? 30 : 34,
                     height: 1.0,
                     fontWeight: FontWeight.w300,
-                    color: Color(0xFF111827),
+                    color: const Color(0xFF111827),
                   ),
                 ),
                 if (letters.isNotEmpty)
                   Text(
                     letters,
                     textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontSize: 10,
-                      letterSpacing: 1.2,
+                    style: TextStyle(
+                      fontSize: isTight ? 9 : 10,
+                      letterSpacing: isTight ? 0.8 : 1.2,
                       fontWeight: FontWeight.w600,
-                      color: Color(0xFF9CA3AF),
+                      color: const Color(0xFF9CA3AF),
                       height: 1.2,
                     ),
                   ),
@@ -1044,9 +1175,10 @@ extension _SipMainViewsExtension on _SipScreenState {
                                   children: [
                                     Expanded(
                                       child: _liquidNavItem(
-                                        icon: CupertinoIcons.circle_grid_3x3,
-                                        iconFilled:
-                                            CupertinoIcons.circle_grid_3x3_fill,
+                                        iconAsset:
+                                            'assets/icons/sip/keypad_off.png',
+                                        activeIconAsset:
+                                            'assets/icons/sip/keypad_on.png',
                                         label: l10n.translate('sip_tab_keypad'),
                                         selected: _bottomTabIndex == 0,
                                       ),
@@ -1054,8 +1186,10 @@ extension _SipMainViewsExtension on _SipScreenState {
                                     const SizedBox(width: innerGap),
                                     Expanded(
                                       child: _liquidNavItem(
-                                        icon: CupertinoIcons.clock,
-                                        iconFilled: CupertinoIcons.clock_fill,
+                                        iconAsset:
+                                            'assets/icons/sip/recents_off.png',
+                                        activeIconAsset:
+                                            'assets/icons/sip/recents_on.png',
                                         label:
                                             l10n.translate('sip_tab_journal'),
                                         selected: _bottomTabIndex == 1,
@@ -1064,9 +1198,10 @@ extension _SipMainViewsExtension on _SipScreenState {
                                     const SizedBox(width: innerGap),
                                     Expanded(
                                       child: _liquidNavItem(
-                                        icon: CupertinoIcons.person_2,
-                                        iconFilled:
-                                            CupertinoIcons.person_2_fill,
+                                        iconAsset:
+                                            'assets/icons/sip/contact_off.png',
+                                        activeIconAsset:
+                                            'assets/icons/sip/contact_on.png',
                                         label: 'Контакты',
                                         selected: _bottomTabIndex == 2,
                                       ),
@@ -1095,8 +1230,8 @@ extension _SipMainViewsExtension on _SipScreenState {
   }
 
   Widget _liquidNavItem({
-    required IconData icon,
-    required IconData iconFilled,
+    required String iconAsset,
+    required String activeIconAsset,
     required String label,
     required bool selected,
   }) {
@@ -1115,11 +1250,13 @@ extension _SipMainViewsExtension on _SipScreenState {
         children: [
           AnimatedSwitcher(
             duration: const Duration(milliseconds: 180),
-            child: Icon(
-              selected ? iconFilled : icon,
+            child: Image.asset(
+              selected ? activeIconAsset : iconAsset,
               key: ValueKey(selected),
-              size: 22,
-              color: selected ? const Color(0xFF0A84FF) : Colors.black,
+              width: 22,
+              height: 22,
+              fit: BoxFit.contain,
+              filterQuality: FilterQuality.medium,
             ),
           ),
           const SizedBox(height: 3),
@@ -1647,6 +1784,7 @@ extension _SipMainViewsExtension on _SipScreenState {
           child: _cleanSearchField(
             placeholder: 'Поиск',
             autofocus: true,
+            controller: _searchViewController,
             onChanged: _handleUnifiedSearchChanged,
           ),
         ),
@@ -2014,6 +2152,7 @@ extension _SipMainViewsExtension on _SipScreenState {
   // ─── ЧИСТОЕ ПОЛЕ ПОИСКА (белое, без стекла, тёмные буквы) ─────────────────
   Widget _cleanSearchField({
     required String placeholder,
+    TextEditingController? controller,
     required ValueChanged<String> onChanged,
     bool autofocus = false,
   }) {
@@ -2033,6 +2172,7 @@ extension _SipMainViewsExtension on _SipScreenState {
         ),
       ),
       child: CupertinoSearchTextField(
+        controller: controller,
         autofocus: autofocus,
         backgroundColor: Colors.transparent,
         itemColor: const Color(0xFF9CA3AF),
@@ -2053,6 +2193,18 @@ extension _SipMainViewsExtension on _SipScreenState {
         onChanged: onChanged,
       ),
     );
+  }
+
+  String _declineSearchResultsLabel(int count) {
+    final mod10 = count % 10;
+    final mod100 = count % 100;
+    if (mod10 == 1 && mod100 != 11) {
+      return 'результат';
+    }
+    if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) {
+      return 'результата';
+    }
+    return 'результатов';
   }
 
   Widget _bottomSwitcher(BuildContext context, {bool embedded = false}) {

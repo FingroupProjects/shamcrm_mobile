@@ -46,6 +46,7 @@ class _SipScreenState extends State<SipScreen>
   final TextEditingController _loginController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _sipIdController = TextEditingController();
+  final TextEditingController _searchViewController = TextEditingController();
   final TextEditingController _portController = TextEditingController();
   final FocusNode _dialFocusNode = FocusNode();
   final AudioPlayer _callFeedbackPlayer = AudioPlayer();
@@ -66,6 +67,7 @@ class _SipScreenState extends State<SipScreen>
   List<Contact> _contacts = const [];
   List<_SipIndexedContact> _indexedContacts = const [];
   List<_SipContactSuggestion> _contactSuggestions = const [];
+  int _contactSuggestionTotalCount = 0;
   bool _showInCallKeypad = false;
   String _inCallDigits = '';
   double _incomingAnswerDrag = 0;
@@ -179,6 +181,7 @@ class _SipScreenState extends State<SipScreen>
     _loginController.dispose();
     _passwordController.dispose();
     _sipIdController.dispose();
+    _searchViewController.dispose();
     _portController.dispose();
     _dialFocusNode.dispose();
     super.dispose();

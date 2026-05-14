@@ -173,12 +173,12 @@ void main() async {
     await _safeInitializeOfflineRuntime();
     await _safeInitializeFirebase();
 
-    final sessionValidation = await _validateApplicationSession(apiService);
+    final sessionValidation = await _validateApplicationSession(apiService);      
 
     String? token;
     String? pin;
     bool isDomainChecked = false;
-    
+
     if (sessionValidation.isValid) {
       token = await apiService.getToken();
       pin = await authService.getPin();

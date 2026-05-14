@@ -60,8 +60,6 @@ class _DealColumnState extends State<DealColumn> {
     super.initState();
     //print('DealColumn: initState started for statusId: ${widget.statusId}');
     _dealBloc = context.read<DealBloc>();
-    _dealBloc
-        .add(FetchDeals(widget.statusId, salesFunnelId: widget.salesFunnelId));
     _scrollController = ScrollController();
     _scrollController.addListener(_onScroll);
 
@@ -303,16 +301,47 @@ class _DealColumnState extends State<DealColumn> {
   }
 
   void _onScroll() {
-    if (_scrollController.position.pixels ==
-        _scrollController.position.maxScrollExtent) {
+    if (!_scrollController.hasClients) return;
+    if (_scrollController.position.maxScrollExtent <= 0) return;
+
+    final position = _scrollController.position;
+    final reachedPaginationThreshold =
+        position.pixels >= (position.maxScrollExtent - 200);
+
+    if (reachedPaginationThreshold) {
       final currentState = _dealBloc.state;
       if (currentState is DealDataLoaded) {
-        if (!_dealBloc.allDealsFetched) {
+        if (!_dealBloc.allDealsFetched &&
+            !currentState.isLoadingMore &&
+            !_dealBloc.isFetching) {
           _dealBloc
               .add(FetchMoreDeals(widget.statusId, currentState.currentPage));
         }
       }
     }
+  }
+
+  void _ensurePaginationCanContinue(DealDataLoaded state, List<Deal> deals) {
+    if (!mounted || !_scrollController.hasClients) return;
+    if (deals.isEmpty ||
+        state.isLoadingMore ||
+        _dealBloc.allDealsFetched ||
+        _dealBloc.isFetching) {
+      return;
+    }
+    if (_scrollController.position.maxScrollExtent > 0) return;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final currentState = _dealBloc.state;
+      if (currentState is! DealDataLoaded) return;
+      if (currentState.isLoadingMore ||
+          _dealBloc.allDealsFetched ||
+          _dealBloc.isFetching) {
+        return;
+      }
+      _dealBloc.add(FetchMoreDeals(widget.statusId, currentState.currentPage));
+    });
   }
 
 // В DealColumn добавьте этот метод:
@@ -325,6 +354,10 @@ class _DealColumnState extends State<DealColumn> {
   }
 
   Widget _buildDealsList(List<Deal> deals) {
+    final currentState = _dealBloc.state;
+    final bool showPaginationLoader =
+        currentState is DealDataLoaded && currentState.isLoadingMore && deals.isNotEmpty;
+
     if (deals.isNotEmpty) {
       return RefreshIndicator(
         color: Color(0xff1E2E52),
@@ -333,8 +366,20 @@ class _DealColumnState extends State<DealColumn> {
         child: ListView.builder(
           controller: _scrollController,
           physics: const AlwaysScrollableScrollPhysics(),
-          itemCount: deals.length,
+          itemCount: deals.length + (showPaginationLoader ? 1 : 0),
           itemBuilder: (context, index) {
+            if (index >= deals.length) {
+              return const Padding(
+                padding: EdgeInsets.symmetric(vertical: 16),
+                child: Center(
+                  child: PlayStoreImageLoading(
+                    size: 56.0,
+                    duration: Duration(milliseconds: 1000),
+                  ),
+                ),
+              );
+            }
+
             return Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: DealCard(
@@ -407,6 +452,8 @@ class _DealColumnState extends State<DealColumn> {
             final deals = state.deals
                 .where((deal) => deal.statusId == widget.statusId)
                 .toList();
+
+            _ensurePaginationCanContinue(state, deals);
 
             if (deals.isNotEmpty) {
               return _buildDealsList(deals);

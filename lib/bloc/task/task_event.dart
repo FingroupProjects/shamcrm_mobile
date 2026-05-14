@@ -10,6 +10,7 @@ class FetchTaskStatuses extends TaskEvent {
 }
 
 class FetchTaskStatusesWithFilters extends TaskEvent {
+  final int? preferredStatusId;
   final List<int>? userIds;
   final int? statusIds;
   final DateTime? fromDate;
@@ -29,6 +30,7 @@ class FetchTaskStatusesWithFilters extends TaskEvent {
   final List<Map<String, dynamic>>? directoryValues;
 
   FetchTaskStatusesWithFilters({
+    this.preferredStatusId,
     this.userIds,
     this.statusIds,
     this.fromDate,

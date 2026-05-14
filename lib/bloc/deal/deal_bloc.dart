@@ -6,6 +6,7 @@ import 'package:crm_task_manager/offline/core/offline_runtime.dart';
 import 'package:crm_task_manager/offline/core/request_priority.dart';
 import 'package:crm_task_manager/screens/deal/deal_cache.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'deal_event.dart';
 import 'deal_state.dart';
@@ -15,6 +16,10 @@ class DealBloc extends Bloc<DealEvent, DealState> {
   bool allDealsFetched = false;
   bool isFetching = false;
   Map<int, int> _dealCounts = {};
+  FetchDeals? _activeFetchDealsEvent;
+  FetchDeals? _queuedFetchDealsEvent;
+  FetchMoreDeals? _queuedFetchMoreDealsEvent;
+  int? _currentTabStatusId;
   String? _currentQuery;
   List<int>? _currentManagerIds;
   List<int>? _currentRegionsIds;
@@ -82,6 +87,33 @@ class DealBloc extends Bloc<DealEvent, DealState> {
     return listsOrQuery || flagsOrDates;
   }
 
+  bool _sameFetchDealsRequest(FetchDeals? a, FetchDeals? b) {
+    if (a == null || b == null) return false;
+
+    return a.statusId == b.statusId &&
+        a.query == b.query &&
+        listEquals(a.managerIds, b.managerIds) &&
+        listEquals(a.regionsIds, b.regionsIds) &&
+        a.regionId == b.regionId &&
+        listEquals(a.cityIds, b.cityIds) &&
+        listEquals(a.executorIds, b.executorIds) &&
+        listEquals(a.sources, b.sources) &&
+        listEquals(a.leadIds, b.leadIds) &&
+        a.statusIds == b.statusIds &&
+        a.fromDate == b.fromDate &&
+        a.toDate == b.toDate &&
+        a.daysWithoutActivity == b.daysWithoutActivity &&
+        a.hasTasks == b.hasTasks &&
+        a.withoutNotices == b.withoutNotices &&
+        a.overdueNotices == b.overdueNotices &&
+        listEquals(a.leadStatuses, b.leadStatuses) &&
+        listEquals(a.reasonForRefusalIds, b.reasonForRefusalIds) &&
+        a.salesFunnelId == b.salesFunnelId &&
+        listEquals(a.names, b.names) &&
+        listEquals(a.directoryValues, b.directoryValues) &&
+        mapEquals(a.customFieldFilters, b.customFieldFilters);
+  }
+
   Future<void> _fetchDealStatus(
       FetchDealStatus event, Emitter<DealState> emit) async {
     emit(DealLoading());
@@ -95,22 +127,30 @@ class DealBloc extends Bloc<DealEvent, DealState> {
 
   Future<void> _fetchDeals(FetchDeals event, Emitter<DealState> emit) async {
     if (isFetching) {
-      debugPrint('⚠️ DealBloc: _fetchDeals - Already fetching, skipping');
+      if (_sameFetchDealsRequest(_activeFetchDealsEvent, event) ||
+          _sameFetchDealsRequest(_queuedFetchDealsEvent, event)) {
+        debugPrint(
+            '⏭️ DealBloc: _fetchDeals - Duplicate request ignored for status ${event.statusId}');
+        return;
+      }
+
+      debugPrint(
+          '⚠️ DealBloc: _fetchDeals - Already fetching, queueing latest request for status ${event.statusId}');
+      _queuedFetchDealsEvent = event;
       return;
     }
 
     isFetching = true;
+    _activeFetchDealsEvent = event;
+    _queuedFetchDealsEvent = null;
 
     debugPrint('🔍 DealBloc: _fetchDeals - START');
     debugPrint('🔍 DealBloc: statusId=${event.statusId}');
     debugPrint('🔍 DealBloc: salesFunnelId=${event.salesFunnelId}');
 
     try {
-      if (state is! DealDataLoaded) {
-        emit(DealLoading());
-      }
-
       // Сохраняем параметры текущего запроса
+      _currentTabStatusId = event.statusId;
       _currentQuery = event.query;
       _currentManagerIds = event.managerIds;
       _currentRegionsIds = event.regionsIds;
@@ -150,7 +190,19 @@ class DealBloc extends Bloc<DealEvent, DealState> {
         debugPrint(
             '✅ DealBloc: _fetchDeals - Emitting ${deals.length} cached deals for status ${event.statusId}');
         emit(DealDataLoaded(deals,
-            currentPage: 1, dealCounts: Map.from(_dealCounts)));
+            currentPage: 1,
+            dealCounts: Map.from(_dealCounts),
+            isLoadingMore: false));
+      } else {
+        final currentState = state;
+        final bool showsRequestedStatus = currentState is DealDataLoaded &&
+            currentState.deals.any((deal) => deal.statusId == event.statusId);
+
+        if (!showsRequestedStatus) {
+          debugPrint(
+              '⏳ DealBloc: _fetchDeals - No cache for status ${event.statusId}, showing loader');
+          emit(DealLoading());
+        }
       }
 
       if (await _checkInternetConnection()) {
@@ -213,13 +265,35 @@ class DealBloc extends Bloc<DealEvent, DealState> {
       debugPrint('✅ DealBloc: Final dealCounts: $_dealCounts');
 
       emit(DealDataLoaded(deals,
-          currentPage: 1, dealCounts: Map.from(_dealCounts)));
+          currentPage: 1,
+          dealCounts: Map.from(_dealCounts),
+          isLoadingMore: false));
     } catch (e) {
       debugPrint('❌ DealBloc: _fetchDeals - Error: $e');
       emit(DealError('Не удалось загрузить данные!'));
     } finally {
       isFetching = false;
+      _activeFetchDealsEvent = null;
       debugPrint('🏁 DealBloc: _fetchDeals - FINISHED');
+
+      final queuedFetchDeals = _queuedFetchDealsEvent;
+      _queuedFetchDealsEvent = null;
+
+      if (queuedFetchDeals != null) {
+        debugPrint(
+            '🔁 DealBloc: _fetchDeals - Running queued FetchDeals for status ${queuedFetchDeals.statusId}');
+        add(queuedFetchDeals);
+        return;
+      }
+
+      final queuedFetchMoreDeals = _queuedFetchMoreDealsEvent;
+      _queuedFetchMoreDealsEvent = null;
+
+      if (queuedFetchMoreDeals != null) {
+        debugPrint(
+            '🔁 DealBloc: _fetchDeals - Running queued FetchMoreDeals for status ${queuedFetchMoreDeals.statusId}, page ${queuedFetchMoreDeals.currentPage}');
+        add(queuedFetchMoreDeals);
+      }
     }
   }
 
@@ -451,14 +525,35 @@ class DealBloc extends Bloc<DealEvent, DealState> {
       FetchMoreDeals event, Emitter<DealState> emit) async {
     if (allDealsFetched) return;
 
+    if (isFetching) {
+      debugPrint(
+          '⚠️ DealBloc: _fetchMoreDeals - Already fetching, queueing request for status ${event.statusId}, page ${event.currentPage}');
+      _queuedFetchMoreDealsEvent = event;
+      return;
+    }
+
+    isFetching = true;
+    _queuedFetchMoreDealsEvent = null;
+
     if (!await _checkInternetConnection()) {
+      isFetching = false;
       emit(DealError('Нет подключения к интернету'));
       return;
     }
 
     try {
+      if (state is DealDataLoaded) {
+        final currentState = state as DealDataLoaded;
+        if (!currentState.isLoadingMore) {
+          emit(currentState.copyWith(isLoadingMore: true));
+        }
+      }
+
+      final pageStatusId = _currentTabStatusId ?? event.statusId;
+      final statusFilterForNextPage = _hasActiveFilters ? pageStatusId : null;
+
       final deals = await apiService.getDeals(
-        _currentStatusId ?? event.statusId,
+        statusFilterForNextPage == null ? pageStatusId : null,
         page: event.currentPage + 1,
         perPage: 20,
         search: _currentQuery,
@@ -468,7 +563,7 @@ class DealBloc extends Bloc<DealEvent, DealState> {
         cityIds: _currentCityIds,
         executorIds: _currentExecutorIds,
         sources: _currentSources,
-        statuses: _currentStatusId,
+        statuses: statusFilterForNextPage,
         fromDate: _currentFromDate,
         toDate: _currentToDate,
         leads: _currentLeadIds,
@@ -476,13 +571,20 @@ class DealBloc extends Bloc<DealEvent, DealState> {
         withoutNotices: _currentWithoutNotices,
         overdueNotices: _currentOverdueNotices,
         leadStatuses: _currentLeadStatuses,
+        reasonForRefusalIds: _currentReasonForRefusalIds,
         daysWithoutActivity: _currentDaysWithoutActivity,
         directoryValues: _currentDirectoryValues,
+        names: _currentNames,
+        salesFunnelId: currentSalesFunnelId,
         customFieldFilters: _currentCustomFieldFilters,
       );
 
       if (deals.isEmpty) {
         allDealsFetched = true;
+        if (state is DealDataLoaded) {
+          final currentState = state as DealDataLoaded;
+          emit(currentState.copyWith(isLoadingMore: false));
+        }
         return;
       }
 
@@ -492,6 +594,27 @@ class DealBloc extends Bloc<DealEvent, DealState> {
       }
     } catch (e) {
       emit(DealError('Не удалось загрузить дополнительные сделки!'));
+    } finally {
+      isFetching = false;
+
+      final queuedFetchDeals = _queuedFetchDealsEvent;
+      _queuedFetchDealsEvent = null;
+
+      if (queuedFetchDeals != null) {
+        debugPrint(
+            '🔁 DealBloc: _fetchMoreDeals - Running queued FetchDeals for status ${queuedFetchDeals.statusId}');
+        add(queuedFetchDeals);
+        return;
+      }
+
+      final queuedFetchMoreDeals = _queuedFetchMoreDealsEvent;
+      _queuedFetchMoreDealsEvent = null;
+
+      if (queuedFetchMoreDeals != null) {
+        debugPrint(
+            '🔁 DealBloc: _fetchMoreDeals - Running queued FetchMoreDeals for status ${queuedFetchMoreDeals.statusId}, page ${queuedFetchMoreDeals.currentPage}');
+        add(queuedFetchMoreDeals);
+      }
     }
   }
 
@@ -754,25 +877,58 @@ class DealBloc extends Bloc<DealEvent, DealState> {
     Emitter<DealState> emit,
   ) async {
     debugPrint('🔍 DealBloc: _fetchDealStatusesWithFilters - START');
+    debugPrint(
+        '🔍 DealBloc: requested funnel=${event.salesFunnelId}, statusIds=${event.statusIds}, managerIds=${event.managerIds}, preferredStatusId=${event.preferredStatusId}');
 
     emit(DealLoading());
 
     try {
+      final requestedFunnelId = event.salesFunnelId;
+      currentSalesFunnelId = requestedFunnelId;
+      debugPrint(
+          '🧭 DealBloc: currentSalesFunnelId updated to $currentSalesFunnelId before filtered request');
+
+      debugPrint(
+          '🧹 DealBloc: clearing in-memory state before filtered statuses request');
+      _dealCounts.clear();
+      allDealsFetched = false;
+      isFetching = false;
+
       // 1. Получаем ВСЕ статусы (метод getDealStatuses не поддерживает фильтры)
       // Фильтры применяются только при загрузке сделок
       final statuses = await apiService.getDealStatuses(
         salesFunnelId: event.salesFunnelId,
+        managers: event.managerIds,
+        regions: event.regionsIds,
+        regionId: event.regionId,
+        cityIds: event.cityIds,
+        executorIds: event.executorIds,
+        sources: event.sources,
+        leads: event.leadIds,
+        statuses: event.statusIds,
+        fromDate: event.fromDate,
+        toDate: event.toDate,
+        daysWithoutActivity: event.daysWithoutActivity,
+        hasTasks: event.hasTasks,
+        withoutNotices: event.withoutNotices,
+        overdueNotices: event.overdueNotices,
+        leadStatuses: event.leadStatuses,
         reasonForRefusalIds: event.reasonForRefusalIds,
+        directoryValues: event.directoryValues,
+        names: event.names,
+        bypassCache: true,
       );
 
       // КРИТИЧНО: Проверяем, не переключил ли пользователь воронку, пока мы ждали ответа
-      if (event.salesFunnelId != currentSalesFunnelId) {
+      if (requestedFunnelId != currentSalesFunnelId) {
         debugPrint(
-            '⚠️ DealBloc: _fetchDealStatusesWithFilters - Funnel changed, ignoring result');
+            '⚠️ DealBloc: _fetchDealStatusesWithFilters - Funnel changed during request, ignoring stale result. requested=$requestedFunnelId current=$currentSalesFunnelId');
         return;
       }
 
       debugPrint('✅ DealBloc: Got ${statuses.length} statuses');
+      debugPrint(
+          '✅ DealBloc: filtered status ids=${statuses.map((e) => e.id).toList()}');
 
       // 2. Обновляем счётчики из полученных статусов
       _dealCounts.clear();
@@ -795,11 +951,8 @@ class DealBloc extends Bloc<DealEvent, DealState> {
       // 4. Эмитим состояние со статусами
       emit(DealLoaded(statuses, dealCounts: Map.from(_dealCounts)));
 
-      // 5. СОХРАНЯЕМ ФИЛЬТРЫ В БЛОКЕ ПЕРЕД ПАРАЛЛЕЛЬНОЙ ЗАГРУЗКОЙ
+      // 5. СОХРАНЯЕМ ФИЛЬТРЫ В БЛОКЕ
       if (statuses.isNotEmpty) {
-        debugPrint(
-            '🚀 DealBloc: Starting parallel fetch for ${statuses.length} statuses');
-
         // Сохраняем фильтры для последующих запросов
         _currentQuery = null;
         _currentManagerIds = event.managerIds;
@@ -822,48 +975,46 @@ class DealBloc extends Bloc<DealEvent, DealState> {
         _currentNames = event.names;
         _currentCustomFieldFilters = event.customFieldFilters;
 
+        final DealStatus targetStatus = statuses.firstWhere(
+          (status) => status.id == event.preferredStatusId,
+          orElse: () => statuses.first,
+        );
+
         debugPrint('✅ DealBloc: Filters saved to bloc state');
+        _currentTabStatusId = targetStatus.id;
 
-        // Создаём список Future для параллельной загрузки
-        final List<Future<void>> fetchTasks = statuses.map((status) {
-          return _fetchDealsForStatusWithFilters(
-            status.id,
-            event.managerIds,
-            event.regionsIds,
-            event.regionId,
-            event.cityIds,
-            event.executorIds,
-            event.sources,
-            event.leadIds,
-            event.statusIds,
-            event.fromDate,
-            event.toDate,
-            event.hasTasks,
-            event.withoutNotices,
-            event.overdueNotices,
-            event.daysWithoutActivity,
-            event.leadStatuses,
-            event.reasonForRefusalIds,
-            event.directoryValues,
-            event.names,
-            event.salesFunnelId,
-            event.customFieldFilters,
-          );
-        }).toList();
+        debugPrint(
+            '🎯 DealBloc: target status after filtered statuses request = ${targetStatus.id}');
 
-        // Запускаем все запросы параллельно
-        await Future.wait(fetchTasks);
+        await _fetchDealsForStatusWithFilters(
+          targetStatus.id,
+          event.managerIds,
+          event.regionsIds,
+          event.regionId,
+          event.cityIds,
+          event.executorIds,
+          event.sources,
+          event.leadIds,
+          event.statusIds,
+          event.fromDate,
+          event.toDate,
+          event.hasTasks,
+          event.withoutNotices,
+          event.overdueNotices,
+          event.daysWithoutActivity,
+          event.leadStatuses,
+          event.reasonForRefusalIds,
+          event.directoryValues,
+          event.names,
+          event.salesFunnelId,
+          event.customFieldFilters,
+        );
 
-        debugPrint('✅ DealBloc: All parallel fetches completed');
+        final targetDeals = await DealCache.getDealsForStatus(targetStatus.id);
+        debugPrint(
+            '✅ DealBloc: Target status deals loaded and emitted for status ${targetStatus.id}, count=${targetDeals.length}');
 
-        // После загрузки всех данных эмитим финальное состояние
-        final allDeals = <Deal>[];
-        for (var status in statuses) {
-          final dealsForStatus = await DealCache.getDealsForStatus(status.id);
-          allDeals.addAll(dealsForStatus);
-        }
-
-        emit(DealDataLoaded(allDeals,
+        emit(DealDataLoaded(targetDeals,
             currentPage: 1, dealCounts: Map.from(_dealCounts)));
       }
     } catch (e) {
@@ -951,10 +1102,17 @@ class DealBloc extends Bloc<DealEvent, DealState> {
 
   /// РАДИКАЛЬНАЯ очистка - удаляет ВСЕ данные и сбрасывает состояние блока
   Future<void> clearAllCountsAndCache() async {
+    debugPrint('🧹 DealBloc.clearAllCountsAndCache: START');
+
     // Очищаем локальные переменные блока
     _dealCounts.clear();
     allDealsFetched = false;
     isFetching = false;
+    _activeFetchDealsEvent = null;
+    _queuedFetchDealsEvent = null;
+    _queuedFetchMoreDealsEvent = null;
+    currentSalesFunnelId = null;
+    _currentTabStatusId = null;
 
     // Сбрасываем все текущие параметры фильтрации
     _currentQuery = null;
@@ -976,6 +1134,7 @@ class DealBloc extends Bloc<DealEvent, DealState> {
 
     // Радикальная очистка кэша
     await DealCache.clearEverything();
+    debugPrint('🧹 DealBloc.clearAllCountsAndCache: FINISHED');
   }
 
   /// Дополнительный метод для принудительного сброса всех счетчиков

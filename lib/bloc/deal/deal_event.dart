@@ -13,6 +13,7 @@ class FetchDealStatuses extends DealEvent {
 }
 
 class FetchDealStatusesWithFilters extends DealEvent {
+  final int? preferredStatusId;
   final List<int>? managerIds;
   final List<int>? regionsIds;
   final int? regionId;
@@ -35,6 +36,7 @@ class FetchDealStatusesWithFilters extends DealEvent {
   final Map<String, List<String>>? customFieldFilters;
 
   FetchDealStatusesWithFilters({
+    this.preferredStatusId,
     this.managerIds,
     this.regionsIds,
     this.regionId,

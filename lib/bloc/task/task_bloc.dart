@@ -848,11 +848,22 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
   ) async {
     if (kDebugMode) {
       debugPrint('🔍 TaskBloc: _fetchTaskStatusesWithFilters - START');
+      debugPrint(
+          '🔍 TaskBloc: preferredStatusId=${event.preferredStatusId}, statusIds=${event.statusIds}, userIds=${event.userIds}');
     }
 
     emit(TaskLoading());
 
     try {
+      if (kDebugMode) {
+        debugPrint(
+            '🧹 TaskBloc: clearing in-memory state before filtered statuses request');
+      }
+      _taskCounts.clear();
+      allTasksFetched = false;
+      isFetching = false;
+      _queuedFetchTasksEvent = null;
+
       // ОПТИМИЗАЦИЯ: 1. Получаем статусы с учётом фильтров с timeout
       final statuses = await apiService
           .getTaskStatuses(
@@ -871,6 +882,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
         authors: event.authors,
         department: event.department,
         directoryValues: event.directoryValues,
+        bypassCache: true,
       )
           .timeout(
         Duration(seconds: 15),
@@ -882,6 +894,8 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
 
       if (kDebugMode) {
         debugPrint('✅ TaskBloc: Got ${statuses.length} statuses with filters');
+        debugPrint(
+            '✅ TaskBloc: filtered status ids=${statuses.map((e) => e.id).toList()}');
       }
 
       // 2. Обновляем счётчики из полученных статусов
@@ -937,16 +951,27 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
           debugPrint('✅ TaskBloc: Filters saved to bloc state');
         }
 
-        // ОПТИМИЗАЦИЯ: Загружаем только ПЕРВЫЙ статус, остальные по требованию
+        final TaskStatus targetStatus = statuses.firstWhere(
+          (status) => status.id == event.preferredStatusId,
+          orElse: () => statuses.first,
+        );
+
+        if (kDebugMode) {
+          debugPrint(
+              '🎯 TaskBloc: target status after filtered statuses request = ${targetStatus.id}');
+        }
+
+        // После полного запроса статусов загружаем задачи только для
+        // текущего активного статуса, а не всегда для первого.
         if (statuses.isNotEmpty) {
           if (kDebugMode) {
             debugPrint(
-                '🔄 TaskBloc: Loading tasks for first status only: ${statuses.first.id}');
+                '🔄 TaskBloc: Loading tasks for target status: ${targetStatus.id}');
           }
 
           try {
             await _fetchTasksForStatusWithFilters(
-              statuses.first.id,
+              targetStatus.id,
               event.userIds,
               event.statusIds,
               event.fromDate,
@@ -968,12 +993,13 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
 
             // После загрузки первого статуса эмитим состояние
             final firstStatusTasks =
-                await TaskCache.getTasksForStatus(statuses.first.id);
+                await TaskCache.getTasksForStatus(targetStatus.id);
             emit(TaskDataLoaded(firstStatusTasks,
                 currentPage: 1, taskCounts: Map.from(_taskCounts)));
 
             if (kDebugMode) {
-              debugPrint('✅ TaskBloc: First status tasks loaded and emitted');
+              debugPrint(
+                  '✅ TaskBloc: Target status tasks loaded and emitted for status ${targetStatus.id}');
             }
           } catch (e) {
             if (kDebugMode) {
@@ -1025,6 +1051,8 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
       if (kDebugMode) {
         debugPrint(
             '🔍 TaskBloc: _fetchTasksForStatusWithFilters for status $statusId');
+        debugPrint(
+            '🔍 TaskBloc: filters for task request -> statusIds=$statusIds, userIds=$userIds, from=$fromDate, to=$toDate, overdue=$overdue, hasFile=$hasFile, hasDeal=$hasDeal, urgent=$urgent, projectIds=$projectIds, authors=$authors, department=$department, directoryValues=$directoryValues');
       }
 
       // ОПТИМИЗАЦИЯ: Загружаем задачи для статуса с timeout
@@ -1059,6 +1087,8 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
       if (kDebugMode) {
         debugPrint(
             '✅ TaskBloc: Fetched ${tasks.length} tasks for status $statusId WITH FILTERS');
+        debugPrint(
+            '✅ TaskBloc: cache count for status $statusId will be ${_taskCounts[statusId]}');
       }
 
       // Кэшируем с сохранением реального счётчика
@@ -1080,6 +1110,10 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
 
   /// РАДИКАЛЬНАЯ очистка - удаляет ВСЕ данные и сбрасывает состояние блока
   Future<void> clearAllCountsAndCache() async {
+    if (kDebugMode) {
+      debugPrint('🧹 TaskBloc.clearAllCountsAndCache: START');
+    }
+
     // Очищаем локальные переменные блока
     _taskCounts.clear();
     allTasksFetched = false;
@@ -1108,6 +1142,10 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
 
     // Радикальная очистка кэша
     await TaskCache.clearEverything();
+
+    if (kDebugMode) {
+      debugPrint('🧹 TaskBloc.clearAllCountsAndCache: FINISHED');
+    }
   }
 
   /// Дополнительный метод для принудительного сброса всех счетчиков

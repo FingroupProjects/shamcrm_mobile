@@ -133,6 +133,7 @@ extension _SipScreenContactsExtension on _SipScreenState {
   void _refreshContactSuggestions() {
     if (!_contactsEnabled || !_contactsLoaded) {
       _contactSuggestions = const [];
+      _contactSuggestionTotalCount = 0;
       return;
     }
 
@@ -140,6 +141,7 @@ extension _SipScreenContactsExtension on _SipScreenState {
     final queryDigits = _digitsOnly(rawQuery);
     if (rawQuery.isEmpty) {
       _contactSuggestions = const [];
+      _contactSuggestionTotalCount = 0;
       return;
     }
 
@@ -174,12 +176,11 @@ extension _SipScreenContactsExtension on _SipScreenState {
     });
 
     final unique = <String>{};
-    _contactSuggestions = suggestions
-        .where((item) {
-          final key = '${item.name}|${item.normalizedPhone}';
-          return unique.add(key);
-        })
-        .take(6)
-        .toList(growable: false);
+    final uniqueSuggestions = suggestions.where((item) {
+      final key = '${item.name}|${item.normalizedPhone}';
+      return unique.add(key);
+    }).toList(growable: false);
+    _contactSuggestionTotalCount = uniqueSuggestions.length;
+    _contactSuggestions = uniqueSuggestions.take(6).toList(growable: false);
   }
 }

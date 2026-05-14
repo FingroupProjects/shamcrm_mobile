@@ -247,6 +247,43 @@ class ApiService {
     _analyticsResponseCache.clear();
   }
 
+  Future<void> clearTaskStatusesPersistentCache() async {
+    final prefs = await SharedPreferences.getInstance();
+    final organizationId = await getSelectedOrganization();
+    final cacheKey = 'cachedTaskStatuses_$organizationId';
+
+    if (kDebugMode) {
+      debugPrint(
+          '🧹 ApiService.clearTaskStatusesPersistentCache: removing key=$cacheKey');
+    }
+
+    await prefs.remove(cacheKey);
+  }
+
+  Future<void> clearDealStatusesPersistentCache({
+    bool includeAll = false,
+    int? salesFunnelId,
+  }) async {
+    final prefs = await SharedPreferences.getInstance();
+    final organizationId = await getSelectedOrganization();
+    String? funnelId = salesFunnelId?.toString();
+
+    if (funnelId == null || funnelId.isEmpty || funnelId == 'null') {
+      funnelId = await getSelectedDealSalesFunnel();
+    }
+
+    final cacheKey = includeAll
+        ? 'cachedDealStatuses_all_${organizationId}_funnel_${funnelId ?? "null"}'
+        : 'cachedDealStatuses_${organizationId}_funnel_${funnelId ?? "null"}';
+
+    if (kDebugMode) {
+      debugPrint(
+          '🧹 ApiService.clearDealStatusesPersistentCache: removing key=$cacheKey');
+    }
+
+    await prefs.remove(cacheKey);
+  }
+
   String _appendAnalyticsFiltersToPath(String path) {
     final filters = _analyticsFilters;
     if (filters == null || filters.isEmpty) {
@@ -4691,7 +4728,25 @@ class ApiService {
   Future<List<DealStatus>> getDealStatuses({
     bool includeAll = false,
     int? salesFunnelId, // ← КРИТИЧНО: Добавили явный параметр
+    List<int>? managers,
+    List<int>? regions,
+    int? regionId,
+    List<int>? cityIds,
+    List<int>? executorIds,
+    List<int>? sources,
+    List<int>? leads,
+    int? statuses,
+    DateTime? fromDate,
+    DateTime? toDate,
+    int? daysWithoutActivity,
+    bool? hasTasks,
+    bool? withoutNotices,
+    bool? overdueNotices,
+    List<int>? leadStatuses,
     List<int>? reasonForRefusalIds,
+    List<Map<String, dynamic>>? directoryValues,
+    List<String>? names,
+    bool bypassCache = false,
   }) async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
     final organizationId = await getSelectedOrganization();
@@ -4717,6 +4772,7 @@ class ApiService {
       debugPrint(
           '🔍 getDealStatuses - salesFunnelId (параметр): $salesFunnelId');
       debugPrint('🔍 getDealStatuses - funnelId (итоговый): $funnelId');
+      debugPrint('🔍 getDealStatuses - bypassCache: $bypassCache');
     }
 
     final basePath = includeAll ? '/deal/statuses/all' : '/deal/statuses';
@@ -4748,11 +4804,146 @@ class ApiService {
         }
       }
 
+      if (managers != null && managers.isNotEmpty) {
+        for (int i = 0; i < managers.length; i++) {
+          path += '&managers[$i]=${managers[i]}';
+        }
+      }
+
+      if (regions != null && regions.isNotEmpty) {
+        for (int i = 0; i < regions.length; i++) {
+          path += '&regions[$i]=${regions[i]}';
+        }
+      }
+
+      if (regionId != null) {
+        path += '&region_id=$regionId';
+      }
+
+      if (cityIds != null && cityIds.isNotEmpty) {
+        for (int i = 0; i < cityIds.length; i++) {
+          path += '&city_id[$i]=${cityIds[i]}';
+        }
+      }
+
+      if (executorIds != null && executorIds.isNotEmpty) {
+        for (int i = 0; i < executorIds.length; i++) {
+          path += '&users[$i]=${executorIds[i]}';
+        }
+      }
+
+      if (sources != null && sources.isNotEmpty) {
+        for (int i = 0; i < sources.length; i++) {
+          path += '&sources[$i]=${sources[i]}';
+        }
+      }
+
+      if (leads != null && leads.isNotEmpty) {
+        for (int i = 0; i < leads.length; i++) {
+          path += '&clients[$i]=${leads[i]}';
+        }
+      }
+
+      if (daysWithoutActivity != null) {
+        path += '&lastUpdate=$daysWithoutActivity';
+      }
+
+      if (hasTasks == true) {
+        path += '&withTasks=1';
+      }
+
+      if (withoutNotices == true) {
+        path += '&without_notices=1';
+      }
+
+      if (overdueNotices == true) {
+        path += '&overdue_notices=1';
+      }
+
+      if (statuses != null) {
+        path += '&deal_statuses=$statuses';
+      }
+
+      if (leadStatuses != null && leadStatuses.isNotEmpty) {
+        for (int i = 0; i < leadStatuses.length; i++) {
+          path += '&lead_statuses[$i]=${leadStatuses[i]}';
+        }
+      }
+
+      if (fromDate != null && toDate != null) {
+        final formattedFromDate =
+            "${fromDate.day.toString().padLeft(2, '0')}.${fromDate.month.toString().padLeft(2, '0')}.${fromDate.year}";
+        final formattedToDate =
+            "${toDate.day.toString().padLeft(2, '0')}.${toDate.month.toString().padLeft(2, '0')}.${toDate.year}";
+        path += '&from=$formattedFromDate&to=$formattedToDate';
+      }
+
+      if (directoryValues != null && directoryValues.isNotEmpty) {
+        final Map<String, LinkedHashSet<String>> groupedDirectoryValues = {};
+
+        for (final dynamic rawValue in directoryValues) {
+          if (rawValue is! Map) {
+            continue;
+          }
+
+          final Map value = rawValue;
+          final directoryIdRaw = value['directory_id'];
+          final entryIdRaw = value['entry_id'];
+
+          if (directoryIdRaw == null || entryIdRaw == null) {
+            continue;
+          }
+
+          final directoryId = directoryIdRaw.toString();
+          final Iterable<String> entryIds = entryIdRaw is List
+              ? entryIdRaw
+                  .where((entry) => entry != null && entry.toString().isNotEmpty)
+                  .map((entry) => entry.toString())
+              : [entryIdRaw.toString()];
+
+          if (entryIds.isEmpty) {
+            continue;
+          }
+
+          final entries = groupedDirectoryValues.putIfAbsent(
+            directoryId,
+            () => LinkedHashSet<String>(),
+          );
+          entries.addAll(entryIds);
+        }
+
+        if (groupedDirectoryValues.isNotEmpty) {
+          var directoryIndex = 0;
+          groupedDirectoryValues.forEach((directoryId, entryIds) {
+            if (entryIds.isEmpty) {
+              return;
+            }
+            path +=
+                '&directory_values[$directoryIndex][directory_id]=$directoryId';
+
+            var entryIndex = 0;
+            for (final entryId in entryIds) {
+              path +=
+                  '&directory_values[$directoryIndex][entry_id][$entryIndex]=$entryId';
+              entryIndex++;
+            }
+
+            directoryIndex++;
+          });
+        }
+      }
+
+      if (names != null && names.isNotEmpty) {
+        for (int i = 0; i < names.length; i++) {
+          path += '&names[$i]=${Uri.encodeComponent(names[i])}';
+        }
+      }
+
       if (kDebugMode) {
         debugPrint('📤 getDealStatuses - Final path: $path');
       }
 
-      final response = await _analyticsRequest(path);
+      final response = await _analyticsRequest(path, bypassCache: bypassCache);
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -4809,6 +5000,11 @@ class ApiService {
       }
     } catch (e) {
       debugPrint('⚠️ getDealStatuses - Ошибка: $e');
+      if (bypassCache) {
+        debugPrint(
+            '🛑 getDealStatuses - bypassCache=true, skip persistent fallback cache');
+        rethrow;
+      }
       debugPrint('⚠️ getDealStatuses - Используем кэш');
 
       final cachedStatuses = prefs.getString(cacheKey);
@@ -5732,6 +5928,7 @@ class ApiService {
     if (kDebugMode) {
       debugPrint('🔍 getTaskStatuses - START WITH FILTERS');
       debugPrint('🔍 getTaskStatuses - organizationId: $organizationId');
+      debugPrint('🔍 getTaskStatuses - bypassCache: $bypassCache');
     }
 
     try {
@@ -5843,6 +6040,18 @@ class ApiService {
         throw Exception('Ошибка ${response.statusCode}!');
       }
     } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ getTaskStatuses WITH FILTERS - request failed: $e');
+      }
+
+      if (bypassCache) {
+        if (kDebugMode) {
+          debugPrint(
+              '🛑 getTaskStatuses WITH FILTERS - bypassCache=true, skip persistent fallback cache');
+        }
+        rethrow;
+      }
+
       ////debugPrint('Ошибка загрузки статусов задач. Используем кэшированные данные.');
       // Если запрос не удался, пытаемся загрузить данные из кэша
       final cachedStatuses =

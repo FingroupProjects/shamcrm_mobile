@@ -37,6 +37,31 @@ extension _SipScreenSearchExtension on _SipScreenState {
     });
   }
 
+  void _openUnifiedSearchWithQuery(
+    String query, {
+    _SipSearchSource? preferredSource,
+  }) {
+    final trimmed = query.trim();
+    final availableSources = _availableSearchSources();
+    final resolvedSource =
+        preferredSource != null && availableSources.contains(preferredSource)
+            ? preferredSource
+            : _searchSource;
+
+    _searchViewController.value = TextEditingValue(
+      text: trimmed,
+      selection: TextSelection.collapsed(offset: trimmed.length),
+    );
+
+    _updateView(() {
+      _bottomTabIndex = 3;
+      _searchSource = resolvedSource;
+      _searchViewQuery = trimmed;
+    });
+
+    _handleUnifiedSearchChanged(trimmed);
+  }
+
   void _handleUnifiedSearchChanged(String value) {
     _leadSearchDebounce?.cancel();
     _searchLeadRequestIdSafeBump();

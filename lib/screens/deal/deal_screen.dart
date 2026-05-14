@@ -49,7 +49,8 @@ class DealScreen extends StatefulWidget {
 
 class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
   late TabController _tabController;
-  late ScrollController _scrollController;
+  late ScrollController _tabScrollController;
+  late ScrollController _listScrollController;
   List<Map<String, dynamic>> _tabTitles = [];
   int _currentTabIndex = 0;
   List<GlobalKey> _tabKeys = [];
@@ -74,6 +75,7 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
   bool _shouldShowLoader = false;
   bool _skipNextTabListener =
       false; // КРИТИЧНО: Флаг для пропуска TabListener при фильтрации
+  int? _skipNextTabListenerIndex;
   String _lastSearchQuery = "";
   int _dealColumnsVersion = 0;
   int? _pendingStatusNavigationId;
@@ -139,8 +141,9 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
     context.read<GetAllManagerBloc>().add(GetAllManagerEv());
     context.read<SalesFunnelBloc>().add(FetchSalesFunnels());
 
-    _scrollController = ScrollController();
-    _scrollController.addListener(_onScroll);
+    _tabScrollController = ScrollController();
+    _listScrollController = ScrollController();
+    _listScrollController.addListener(_onScroll);
     // НЕ загружаем состояние фильтров - каждый раз начинаем с чистого листа
     _checkPermissions();
 
@@ -527,12 +530,20 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
   }
 
   void _onScroll() {
-    if (_scrollController.position.pixels ==
-        _scrollController.position.maxScrollExtent) {
+    if (!_listScrollController.hasClients) return;
+    if (_listScrollController.position.maxScrollExtent <= 0) return;
+
+    final position = _listScrollController.position;
+    final reachedPaginationThreshold =
+        position.pixels >= (position.maxScrollExtent - 200);
+
+    if (reachedPaginationThreshold) {
       final dealBloc = BlocProvider.of<DealBloc>(context);
       if (dealBloc.state is DealDataLoaded) {
         final state = dealBloc.state as DealDataLoaded;
         if (!dealBloc.allDealsFetched &&
+            !state.isLoadingMore &&
+            !dealBloc.isFetching &&
             _tabTitles.isNotEmpty &&
             _currentTabIndex < _tabTitles.length) {
           final currentStatusId = _tabTitles[_currentTabIndex]['id'];
@@ -540,6 +551,31 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
         }
       }
     }
+  }
+
+  void _ensureFilteredPaginationCanContinue(DealDataLoaded state) {
+    if (!mounted || !_listScrollController.hasClients) return;
+    if (state.deals.isEmpty ||
+        state.isLoadingMore ||
+        _dealBloc.allDealsFetched ||
+        _dealBloc.isFetching) {
+      return;
+    }
+    if (_tabTitles.isEmpty || _currentTabIndex >= _tabTitles.length) return;
+    if (_listScrollController.position.maxScrollExtent > 0) return;
+
+    final currentStatusId = _tabTitles[_currentTabIndex]['id'];
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final currentState = _dealBloc.state;
+      if (currentState is! DealDataLoaded) return;
+      if (currentState.isLoadingMore ||
+          _dealBloc.allDealsFetched ||
+          _dealBloc.isFetching) {
+        return;
+      }
+      _dealBloc.add(FetchMoreDeals(currentStatusId, currentState.currentPage));
+    });
   }
 
   Future<void> _setupDealSocket() async {
@@ -683,7 +719,9 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
       subscription.cancel();
     }
     _dealSocketClient?.disconnect();
-    _scrollController.dispose();
+    _listScrollController.removeListener(_onScroll);
+    _listScrollController.dispose();
+    _tabScrollController.dispose();
     _tabController.dispose();
     _searchController.dispose();
     super.dispose();
@@ -922,6 +960,15 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
 
   Future<void> _handleManagerSelected(Map managers) async {
     debugPrint('DealScreen: _handleManagerSelected - START WITH NEW LOGIC');
+    debugPrint('DealScreen: _handleManagerSelected - raw managers=$managers');
+    debugPrint(
+        'DealScreen: _handleManagerSelected - current funnel=${_selectedFunnel?.id}');
+    final int? currentStatusIdBeforeFilter =
+        _tabTitles.isNotEmpty && _currentTabIndex < _tabTitles.length
+            ? _tabTitles[_currentTabIndex]['id'] as int
+            : null;
+    debugPrint(
+        'DealScreen: _handleManagerSelected - currentStatusIdBeforeFilter=$currentStatusIdBeforeFilter');
 
     if (mounted) {
       setState(() {
@@ -930,6 +977,7 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
         _showCustomTabBar = true;
         _skipNextTabListener =
             true; // ← КРИТИЧНО: Пропускаем следующий TabListener!
+        _skipNextTabListenerIndex = _currentTabIndex;
         _isSearching = false;
         _searchController.clear();
         _lastSearchQuery = '';
@@ -1001,9 +1049,23 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
       });
     }
 
+    debugPrint(
+        'DealScreen: _handleManagerSelected - clearing DealBloc cache and ApiService cache before filtering');
+    await _dealBloc.clearAllCountsAndCache();
+    await _apiService.clearDealStatusesPersistentCache(
+      salesFunnelId: _selectedFunnel?.id,
+    );
+    ApiService.clearAnalyticsResponseCache();
+    debugPrint(
+        'DealScreen: _handleManagerSelected - cache cleared, dispatching filtered statuses request');
+
     await Future.delayed(Duration(milliseconds: 50));
 
+    debugPrint(
+        'DealScreen: _handleManagerSelected - normalized filters: managers=${_selectedManagers.map((e) => e.id).toList()}, regions=${_selectedRegions.map((e) => e.id).toList()}, regionId=${_selectedState?.id}, cities=${_selectedCities.map((e) => e.id).toList()}, executors=${_selectedExecutors.map((e) => e.id).toList()}, sources=${_selectedSources.map((e) => e.id).toList()}, leads=${_selectedLeads.map((e) => e.id).toList()}, leadStatuses=$_selectedLeadStatusIds, reasonForRefusalIds=$_selectedReasonForRefusalIds, statusId=$_selectedStatuses, funnel=${_selectedFunnel?.id}');
+
     _dealBloc.add(FetchDealStatusesWithFilters(
+      preferredStatusId: currentStatusIdBeforeFilter,
       managerIds: _selectedManagers.isNotEmpty
           ? _selectedManagers.map((manager) => manager.id).toList()
           : null,
@@ -1510,7 +1572,7 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
       color: const Color(0xff1E2E52),
       backgroundColor: Colors.white,
       child: ListView.builder(
-        controller: _scrollController,
+        controller: _listScrollController,
         itemCount: deals.length,
         itemBuilder: (context, index) {
           final deal = deals[index];
@@ -1555,6 +1617,10 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
             _shouldShowLoader = false;
           });
         }
+
+        if (state is DealDataLoaded) {
+          _ensureFilteredPaginationCanContinue(state);
+        }
       },
       child: BlocBuilder<DealBloc, DealState>(
         builder: (context, state) {
@@ -1576,6 +1642,8 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
 
           if (state is DealDataLoaded) {
             final List<Deal> deals = state.deals;
+            final bool showPaginationLoader =
+                state.isLoadingMore && deals.isNotEmpty;
 
             // Безопасное получение statusId
             final statusId = _tabTitles.isNotEmpty &&
@@ -1617,8 +1685,22 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
               color: const Color(0xff1E2E52),
               backgroundColor: Colors.white,
               child: ListView.builder(
-                itemCount: filteredDeals.length,
+                controller: _listScrollController,
+                physics: const AlwaysScrollableScrollPhysics(),
+                itemCount: filteredDeals.length + (showPaginationLoader ? 1 : 0),
                 itemBuilder: (context, index) {
+                  if (index >= filteredDeals.length) {
+                    return const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 16),
+                      child: Center(
+                        child: PlayStoreImageLoading(
+                          size: 56.0,
+                          duration: Duration(milliseconds: 1000),
+                        ),
+                      ),
+                    );
+                  }
+
                   final deal = filteredDeals[index];
                   return Padding(
                     padding:
@@ -1671,7 +1753,7 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
   Widget _buildCustomTabBar() {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
-      controller: _scrollController,
+      controller: _tabScrollController,
       child: Row(
         children: [
           ...List.generate(_tabTitles.length, (index) {
@@ -1810,6 +1892,12 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
     return GestureDetector(
       key: _tabKeys[index],
       onTap: () {
+        if (_tabController.index != index) {
+          setState(() {
+            _isFilterLoading = true;
+            _shouldShowLoader = true;
+          });
+        }
         _tabController.animateTo(index);
       },
       onLongPress: () {
@@ -1918,6 +2006,8 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
             setState(() {
               _isFilterLoading = false;
               _shouldShowLoader = false;
+              _skipNextTabListener = false;
+              _skipNextTabListenerIndex = null;
             });
           }
         }
@@ -1969,11 +2059,13 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
                   _tabController.addListener(() {
                     if (!_tabController.indexIsChanging) {
                       // ← КРИТИЧНО: Проверяем флаг пропуска!
-                      if (_skipNextTabListener) {
+                      if (_skipNextTabListener &&
+                          _skipNextTabListenerIndex == _tabController.index) {
                         debugPrint(
                             'DealScreen: TabController listener - SKIPPED (filter just applied)');
                         setState(() {
                           _skipNextTabListener = false;
+                          _skipNextTabListenerIndex = null;
                           _currentTabIndex = _tabController.index;
                         });
                         return; // ← ВЫХОДИМ БЕЗ ЗАПРОСА!
@@ -1983,10 +2075,12 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
                           'DealScreen: TabController listener triggered, new index: ${_tabController.index}');
                       setState(() {
                         _currentTabIndex = _tabController.index;
+                        _isFilterLoading = true;
+                        _shouldShowLoader = true;
                       });
                       final currentStatusId =
                           _tabTitles[_currentTabIndex]['id'];
-                      if (_scrollController.hasClients) {
+                      if (_tabScrollController.hasClients) {
                         _scrollToActiveTab();
                       }
 
@@ -2093,8 +2187,19 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
                 }
 
                 // Прокручиваем к активному табу
-                if (_scrollController.hasClients) {
+                if (_tabScrollController.hasClients) {
                   _scrollToActiveTab();
+                }
+
+                if (_skipNextTabListener) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (mounted && _skipNextTabListener) {
+                      setState(() {
+                        _skipNextTabListener = false;
+                        _skipNextTabListenerIndex = null;
+                      });
+                    }
+                  });
                 }
 
                 // Обрабатываем специальные навигации
@@ -2123,26 +2228,19 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
                   }
                 }
 
-                // Автоматически загружаем сделки для активного статуса после refresh
-                Future.delayed(Duration(milliseconds: 150), () {
-                  if (mounted &&
-                      _tabTitles.isNotEmpty &&
-                      _currentTabIndex < _tabTitles.length) {
-                    final activeStatusId = _tabTitles[_currentTabIndex]['id'];
+                if (_tabTitles.isNotEmpty && !_hasActiveFilters()) {
+                  final activeStatusId = _tabTitles[_currentTabIndex]['id'];
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (!mounted || _hasActiveFilters()) return;
+                    debugPrint(
+                        'DealScreen: Initial FetchDeals dispatched for statusId: $activeStatusId');
+                    _dealBloc.add(FetchDeals(
+                      activeStatusId,
+                      salesFunnelId: _selectedFunnel?.id,
+                    ));
+                  });
+                }
 
-                    final bool hasActiveFilters = _hasActiveFilters();
-
-                    if (!hasActiveFilters) {
-                      _dealBloc.add(FetchDeals(
-                        activeStatusId,
-                        salesFunnelId: _selectedFunnel?.id,
-                      ));
-                    } else {
-                      debugPrint(
-                          'DealScreen: Skip auto FetchDeals due to active filters');
-                    }
-                  }
-                });
               } else {
                 // Если табы пустые, создаем пустой контроллер
                 if (_tabController.length > 0) {
@@ -2379,12 +2477,12 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
 
       if (position.dx < 0 ||
           (position.dx + tabWidth) > MediaQuery.of(context).size.width) {
-        double targetOffset = _scrollController.offset +
+        double targetOffset = _tabScrollController.offset +
             position.dx -
             (MediaQuery.of(context).size.width / 2) +
             (tabWidth / 2);
-        if (targetOffset != _scrollController.offset) {
-          _scrollController.animateTo(
+        if (targetOffset != _tabScrollController.offset) {
+          _tabScrollController.animateTo(
             targetOffset,
             duration: Duration(milliseconds: 100),
             curve: Curves.linear,

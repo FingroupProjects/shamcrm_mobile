@@ -29,8 +29,14 @@ class DealDataLoaded extends DealState {
   final List<Deal> deals;
   final int currentPage;
   final Map<int, int> dealCounts;
+  final bool isLoadingMore;
 
-  DealDataLoaded(this.deals, {this.currentPage = 1, required this.dealCounts});
+  DealDataLoaded(
+    this.deals, {
+    this.currentPage = 1,
+    required this.dealCounts,
+    this.isLoadingMore = false,
+  });
 
   // Метод для объединения с новыми сделками
   DealDataLoaded merge(List<Deal> newDeals) {
@@ -38,6 +44,7 @@ class DealDataLoaded extends DealState {
       [...deals, ...newDeals],
       currentPage: currentPage + 1,
       dealCounts: dealCounts,
+      isLoadingMore: false,
     );
   }
 
@@ -46,11 +53,13 @@ class DealDataLoaded extends DealState {
     List<Deal>? deals,
     int? currentPage,
     Map<int, int>? dealCounts,
+    bool? isLoadingMore,
   }) {
     return DealDataLoaded(
       deals ?? this.deals,
       currentPage: currentPage ?? this.currentPage,
       dealCounts: dealCounts ?? this.dealCounts,
+      isLoadingMore: isLoadingMore ?? this.isLoadingMore,
     );
   }
 }
