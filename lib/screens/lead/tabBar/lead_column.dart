@@ -62,14 +62,17 @@ class _LeadColumnState extends State<LeadColumn> {
 
   void _onScroll() {
     final bloc = context.read<LeadBloc>();
-    if (_scrollController.position.pixels ==
-            _scrollController.position.maxScrollExtent &&
-        !bloc.allLeadsFetched) {
-      final state = bloc.state;
-      if (state is LeadDataLoaded) {
-        bloc.add(FetchMoreLeads(widget.statusId, state.currentPage));
-      }
+    if (!_scrollController.hasClients || bloc.allLeadsFetched || bloc.isFetching) {
+      return;
     }
+
+    final state = bloc.state;
+    if (state is! LeadDataLoaded || state.isLoadingMore) return;
+
+    final threshold = _scrollController.position.maxScrollExtent - 200;
+    if (_scrollController.position.pixels < threshold) return;
+
+    bloc.add(FetchMoreLeads(widget.statusId, state.currentPage));
   }
 
   Future<void> _loadFeatureState() async {
@@ -122,8 +125,27 @@ class _LeadColumnState extends State<LeadColumn> {
         controller: _scrollController,
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.symmetric(vertical: 8),
-        itemCount: leads.length,
+        itemCount: leads.length +
+            ((context.watch<LeadBloc>().state is LeadDataLoaded &&
+                    (context.watch<LeadBloc>().state as LeadDataLoaded)
+                        .isLoadingMore)
+                ? 1
+                : 0),
         itemBuilder: (context, index) {
+          final state = context.watch<LeadBloc>().state;
+          if (state is LeadDataLoaded &&
+              state.isLoadingMore &&
+              index >= leads.length) {
+            return const Padding(
+              padding: EdgeInsets.symmetric(vertical: 16),
+              child: Center(
+                child: PlayStoreImageLoading(
+                  size: 56.0,
+                  duration: Duration(milliseconds: 1000),
+                ),
+              ),
+            );
+          }
           final lead = leads[index];
           return Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),

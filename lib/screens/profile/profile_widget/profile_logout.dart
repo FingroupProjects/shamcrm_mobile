@@ -1,9 +1,6 @@
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
-import 'package:crm_task_manager/api/service/secure_storage_service.dart';
-import 'package:crm_task_manager/screens/sip/sip_service.dart';
+import 'package:crm_task_manager/services/app_logout_service.dart';
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:crm_task_manager/api/service/api_service.dart';
 
 class LogoutButtonWidget extends StatelessWidget {
   const LogoutButtonWidget({super.key});
@@ -14,40 +11,7 @@ class LogoutButtonWidget extends StatelessWidget {
 
     return GestureDetector(
       onTap: () async {
-        final apiService = ApiService();
-        final authService = AuthService();
-
-        try {
-          await apiService.logoutAccount();
-        } catch (e) {
-          debugPrint('Ошибка серверного выхода: $e');
-        }
-
-        try {
-          await SipService().disconnect();
-        } catch (e) {
-          debugPrint('Ошибка отключения SIP при выходе: $e');
-        }
-
-        try {
-          await authService.clearAllAuthData();
-          await apiService.logout();
-          await apiService.reset();
-
-          final prefs = await SharedPreferences.getInstance();
-          await prefs.clear();
-        } catch (e) {
-          debugPrint('Ошибка локальной очистки при выходе: $e');
-        }
-
-        if (!context.mounted) {
-          return;
-        }
-
-        Navigator.of(context, rootNavigator: true).pushNamedAndRemoveUntil(
-          '/local_auth',
-          (route) => false,
-        );
+        await AppLogoutService.logoutAndReset(context: context);
       },
       child: _buildProfileOption(
         iconPath: 'assets/icons/Profile/logout.png',

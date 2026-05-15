@@ -33,6 +33,22 @@ class _SipIndexedContact {
   final Uint8List? photo;
 }
 
+class _SipInlineSuggestion {
+  const _SipInlineSuggestion({
+    required this.name,
+    required this.phone,
+    required this.normalizedPhone,
+    required this.sourceLabel,
+    this.photo,
+  });
+
+  final String name;
+  final String phone;
+  final String normalizedPhone;
+  final String sourceLabel;
+  final Uint8List? photo;
+}
+
 enum _SipSearchSource {
   calls,
   contacts,

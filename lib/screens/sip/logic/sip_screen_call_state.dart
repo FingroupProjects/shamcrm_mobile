@@ -51,6 +51,29 @@ extension _SipScreenCallStateExtension on _SipScreenState {
         _isNetworkLostMessage(state.errorMessage);
   }
 
+  bool _isRegistrationServerUnavailableMessage(String? message) {
+    final normalized = message?.trim().toLowerCase() ?? '';
+    return normalized.contains('timeout') ||
+        normalized.contains('timed out') ||
+        normalized.contains('socket') ||
+        normalized.contains('network') ||
+        normalized.contains('dns') ||
+        normalized.contains('unreachable') ||
+        normalized.contains('connection refused');
+  }
+
+  bool _isRegistrationAuthErrorMessage(String? message) {
+    final normalized = message?.trim().toLowerCase() ?? '';
+    return normalized.contains('auth') ||
+        normalized.contains('authorization') ||
+        normalized.contains('401') ||
+        normalized.contains('403') ||
+        normalized.contains('forbidden') ||
+        normalized.contains('unauthorized') ||
+        normalized.contains('логин') ||
+        normalized.contains('пароль');
+  }
+
   void _syncCallEffects(SipUiState state) {
     final status = state.callStatus;
     if (_lastObservedCallStatus == status) return;
@@ -81,6 +104,8 @@ extension _SipScreenCallStateExtension on _SipScreenState {
   }
 
   void _syncSipNotifications(SipUiState state) {
+    _syncRegistrationNotifications(state);
+
     final notice = _resolveSipNotice(state);
     final sourceMessage = state.errorMessage?.trim();
     if (notice == null) {
@@ -100,6 +125,73 @@ extension _SipScreenCallStateExtension on _SipScreenState {
       _showSipSnackBar(notice.$1, isError: notice.$2);
       _sipRuntime.clearTransientError(sourceMessage);
     });
+  }
+
+  void _syncRegistrationNotifications(SipUiState state) {
+    final previousStatus = _lastObservedRegistrationStatus;
+    _lastObservedRegistrationStatus = state.registrationStatus;
+
+    if (previousStatus == null) {
+      return;
+    }
+
+    final notice = _resolveRegistrationNotice(state, previousStatus);
+    if (notice == null) {
+      return;
+    }
+
+    final noticeKey =
+        'registration|${previousStatus.name}|${state.registrationStatus.name}|${state.errorMessage ?? ''}|${notice.$1}';
+    if (noticeKey == _lastShownRegistrationNoticeKey) {
+      return;
+    }
+
+    _lastShownRegistrationNoticeKey = noticeKey;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _showSipSnackBar(notice.$1, isError: notice.$2);
+    });
+  }
+
+  (String, bool)? _resolveRegistrationNotice(
+    SipUiState state,
+    SipRegistrationUiStatus previousStatus,
+  ) {
+    final message = state.errorMessage?.trim();
+
+    if (state.registrationStatus == SipRegistrationUiStatus.registered &&
+        previousStatus != SipRegistrationUiStatus.registered) {
+      return ('Телефония подключена', false);
+    }
+
+    if (state.registrationStatus == SipRegistrationUiStatus.disconnected &&
+        previousStatus == SipRegistrationUiStatus.registered) {
+      return ('Телефония отключена от сервера', false);
+    }
+
+    if (state.registrationStatus != SipRegistrationUiStatus.failed) {
+      return null;
+    }
+
+    if (_isRegistrationAuthErrorMessage(message)) {
+      return (
+        'Сервер отклонил авторизацию. Проверьте логин, пароль и auth ID',
+        true
+      );
+    }
+
+    if (_isRegistrationServerUnavailableMessage(message)) {
+      return (
+        'SIP сервер не отвечает. Проверьте интернет, адрес сервера и порт',
+        true
+      );
+    }
+
+    if (message == null || message.isEmpty) {
+      return ('Не удалось подключиться к SIP серверу', true);
+    }
+
+    return (message, true);
   }
 
   (String, bool)? _resolveSipNotice(SipUiState state) {
@@ -205,6 +297,9 @@ extension _SipScreenCallStateExtension on _SipScreenState {
   }
 
   String _resolvedCallLogLabel(BuildContext context, SipCallLogEntry entry) {
+    if (entry.isMissed) {
+      return 'Пропущенный';
+    }
     if (_isAnsweredElsewhereMessage(entry.endReason)) {
       return 'Ответили на другом устройстве';
     }
@@ -215,6 +310,9 @@ extension _SipScreenCallStateExtension on _SipScreenState {
   }
 
   Color _callLogAccentColor(SipCallLogEntry entry) {
+    if (entry.isMissed) {
+      return const Color(0xFFEF4444);
+    }
     if (_isAnsweredElsewhereMessage(entry.endReason)) {
       return const Color(0xFF2563EB);
     }
@@ -228,6 +326,9 @@ extension _SipScreenCallStateExtension on _SipScreenState {
   }
 
   Color _callLogFillColor(SipCallLogEntry entry) {
+    if (entry.isMissed) {
+      return const Color(0xFFFEF2F2);
+    }
     if (_isAnsweredElsewhereMessage(entry.endReason)) {
       return const Color(0xFFEFF6FF);
     }
@@ -241,6 +342,9 @@ extension _SipScreenCallStateExtension on _SipScreenState {
   }
 
   IconData _callLogIcon(SipCallLogEntry entry) {
+    if (entry.isMissed) {
+      return CupertinoIcons.phone_down_fill;
+    }
     if (_isAnsweredElsewhereMessage(entry.endReason)) {
       return CupertinoIcons.check_mark_circled_solid;
     }

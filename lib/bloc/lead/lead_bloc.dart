@@ -40,9 +40,12 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
   bool? _currentHasOrders;
   int? _currentDaysWithoutActivity;
   int? _currentNumberOfDaysDeal;
+  int? _currentTabStatusId;
   bool isFetching = false; // Новый флаг
   List<Map<String, dynamic>>? _currentDirectoryValues; // Новый параметр
   Map<String, List<String>>? _currentCustomFieldFilters;
+  FetchLeads? _queuedFetchLeadsEvent;
+  FetchMoreLeads? _queuedFetchMoreLeadsEvent;
 
   LeadBloc(this.apiService) : super(LeadInitial()) {
     on<FetchLeadStatuses>(_fetchLeadStatuses);
@@ -112,11 +115,19 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
 
   Future<void> _fetchLeads(FetchLeads event, Emitter<LeadState> emit) async {
     if (isFetching) {
-      debugPrint('⚠️ LeadBloc: _fetchLeads - Already fetching, skipping');
+      if (_isSameFetchRequest(event)) {
+        debugPrint(
+            '⚠️ LeadBloc: _fetchLeads - Duplicate request ignored for status ${event.statusId}');
+        return;
+      }
+      debugPrint(
+          '⚠️ LeadBloc: _fetchLeads - Already fetching, queueing latest request for status ${event.statusId}');
+      _queuedFetchLeadsEvent = event;
       return;
     }
 
     isFetching = true;
+    _currentTabStatusId = event.statusId;
 
     if (kDebugMode) {
       debugPrint('🔍 LeadBloc: _fetchLeads - START');
@@ -126,7 +137,11 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
     }
 
     try {
-      if (state is! LeadDataLoaded) {
+      final currentState = state;
+      final showingRequestedStatus = currentState is LeadDataLoaded &&
+          currentState.leads.any((lead) => lead.statusId == event.statusId);
+
+      if (!showingRequestedStatus) {
         emit(LeadLoading());
       }
 
@@ -182,7 +197,9 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
             debugPrint('✅ LeadBloc: Preserved counts: $_leadCounts');
           }
           emit(LeadDataLoaded(leads,
-              currentPage: 1, leadCounts: Map.from(_leadCounts)));
+              currentPage: 1,
+              leadCounts: Map.from(_leadCounts),
+              isLoadingMore: false));
         }
       } else {
         if (kDebugMode) {
@@ -286,7 +303,9 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
       }
 
       emit(LeadDataLoaded(leads,
-          currentPage: 1, leadCounts: Map.from(_leadCounts)));
+          currentPage: 1,
+          leadCounts: Map.from(_leadCounts),
+          isLoadingMore: false));
     } catch (e) {
       if (kDebugMode) {
         debugPrint('❌ LeadBloc: _fetchLeads - Error: $e');
@@ -294,8 +313,21 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
       emit(LeadError('Не удалось загрузить данные!'));
     } finally {
       isFetching = false;
+      final queuedFetchLeads = _queuedFetchLeadsEvent;
+      final queuedFetchMoreLeads = _queuedFetchMoreLeadsEvent;
+      _queuedFetchLeadsEvent = null;
+      _queuedFetchMoreLeadsEvent = null;
       if (kDebugMode) {
         debugPrint('🏁 LeadBloc: _fetchLeads - FINISHED');
+      }
+      if (queuedFetchLeads != null) {
+        debugPrint(
+            '🔁 LeadBloc: _fetchLeads - Running queued FetchLeads for status ${queuedFetchLeads.statusId}');
+        add(queuedFetchLeads);
+      } else if (queuedFetchMoreLeads != null) {
+        debugPrint(
+            '🔁 LeadBloc: _fetchLeads - Running queued FetchMoreLeads for status ${queuedFetchMoreLeads.statusId}');
+        add(queuedFetchMoreLeads);
       }
     }
   }
@@ -473,14 +505,27 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
       FetchMoreLeads event, Emitter<LeadState> emit) async {
     if (allLeadsFetched) return;
 
+    if (isFetching) {
+      debugPrint(
+          '⚠️ LeadBloc: _fetchMoreLeads - Already fetching, queueing latest request for status ${event.statusId}');
+      _queuedFetchMoreLeadsEvent = event;
+      return;
+    }
+
     if (!await _checkInternetConnection()) {
       emit(LeadError('Нет подключения к интернету'));
       return;
     }
 
     try {
+      isFetching = true;
+      final currentState = state;
+      if (currentState is LeadDataLoaded && !currentState.isLoadingMore) {
+        emit(currentState.copyWith(isLoadingMore: true));
+      }
+
       final leads = await apiService.getLeads(
-        _currentStatusId ?? event.statusId,
+        _currentTabStatusId ?? event.statusId,
         page: event.currentPage + 1,
         perPage: 20,
         search: _currentQuery,
@@ -513,6 +558,9 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
 
       if (leads.isEmpty) {
         allLeadsFetched = true;
+        if (state is LeadDataLoaded) {
+          emit((state as LeadDataLoaded).copyWith(isLoadingMore: false));
+        }
         return;
       }
 
@@ -522,6 +570,17 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
       }
     } catch (e) {
       emit(LeadError('Не удалось загрузить дополнительные лиды!'));
+    } finally {
+      isFetching = false;
+      final queuedFetchLeads = _queuedFetchLeadsEvent;
+      final queuedFetchMoreLeads = _queuedFetchMoreLeadsEvent;
+      _queuedFetchLeadsEvent = null;
+      _queuedFetchMoreLeadsEvent = null;
+      if (queuedFetchLeads != null) {
+        add(queuedFetchLeads);
+      } else if (queuedFetchMoreLeads != null) {
+        add(queuedFetchMoreLeads);
+      }
     }
   }
 
@@ -879,7 +938,10 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
     _currentHasOrders = null;
     _currentDaysWithoutActivity = null;
     _currentNumberOfDaysDeal = null;
+    _currentTabStatusId = null;
     _currentDirectoryValues = null;
+    _queuedFetchLeadsEvent = null;
+    _queuedFetchMoreLeadsEvent = null;
 
     // Радикальная очистка кэша
     await LeadCache.clearEverything(); // Используем новый метод полной очистки
@@ -1093,11 +1155,10 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
       // 4. Эмитим состояние со статусами
       emit(LeadLoaded(statuses, leadCounts: Map.from(_leadCounts)));
 
-      // 5. ← КРИТИЧНО: СОХРАНЯЕМ ФИЛЬТРЫ В БЛОКЕ ПЕРЕД ПАРАЛЛЕЛЬНОЙ ЗАГРУЗКОЙ!
+      // 5. Сохраняем фильтры в блоке перед загрузкой целевого статуса
       if (statuses.isNotEmpty) {
         if (kDebugMode) {
-          debugPrint(
-              '🚀 LeadBloc: Starting parallel fetch for ${statuses.length} statuses');
+          debugPrint('🎯 LeadBloc: Saving filters before filtered fetch');
           debugPrint('🔍 LeadBloc: SAVING FILTERS TO BLOC STATE:');
           debugPrint('   managerIds: ${event.managerIds}');
           debugPrint('   regionsIds: ${event.regionsIds}');
@@ -1133,58 +1194,57 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
         _currentDaysWithoutActivity = event.daysWithoutActivity;
         _currentNumberOfDaysDeal = event.numberOfDaysDeal;
         _currentDirectoryValues = event.directoryValues;
+        _currentCustomFieldFilters = null;
 
         if (kDebugMode) {
           debugPrint('✅ LeadBloc: Filters saved to bloc state');
         }
 
-        // Создаём список Future для параллельной загрузки
-        final List<Future<void>> fetchTasks = statuses.map((status) {
-          return _fetchLeadsForStatusWithFilters(
-            status.id,
-            event.managerIds,
-            event.regionsIds,
-            event.regionId,
-            event.cityIds,
-            event.sourcesIds,
-            event.channelIds,
-            event.advertisingCampaignIds,
-            event.reasonForRefusalIds,
-            event.fromDate,
-            event.toDate,
-            event.hasSuccessDeals,
-            event.hasInProgressDeals,
-            event.hasFailureDeals,
-            event.hasNotices,
-            event.hasContact,
-            event.hasChat,
-            event.hasNoReplies,
-            event.hasUnreadMessages,
-            event.hasDeal,
-            event.hasOrders,
-            event.daysWithoutActivity,
-            event.numberOfDaysDeal,
-            event.directoryValues,
-            event.salesFunnelId,
-          );
-        }).toList();
+        final targetStatus = statuses.any(
+                (status) => status.id == event.preferredStatusId)
+            ? event.preferredStatusId!
+            : statuses.first.id;
 
-        // Запускаем все запросы параллельно
-        await Future.wait(fetchTasks);
+        _currentTabStatusId = targetStatus;
 
         if (kDebugMode) {
-          debugPrint('✅ LeadBloc: All parallel fetches completed');
+          debugPrint(
+              '🎯 LeadBloc: target status after filtered statuses request = $targetStatus');
         }
 
-        // После загрузки всех данных эмитим финальное состояние
-        final allLeads = <Lead>[];
-        for (var status in statuses) {
-          final leadsForStatus = await LeadCache.getLeadsForStatus(status.id);
-          allLeads.addAll(leadsForStatus);
-        }
+        await _fetchLeadsForStatusWithFilters(
+          targetStatus,
+          event.managerIds,
+          event.regionsIds,
+          event.regionId,
+          event.cityIds,
+          event.sourcesIds,
+          event.channelIds,
+          event.advertisingCampaignIds,
+          event.reasonForRefusalIds,
+          event.fromDate,
+          event.toDate,
+          event.hasSuccessDeals,
+          event.hasInProgressDeals,
+          event.hasFailureDeals,
+          event.hasNotices,
+          event.hasContact,
+          event.hasChat,
+          event.hasNoReplies,
+          event.hasUnreadMessages,
+          event.hasDeal,
+          event.hasOrders,
+          event.daysWithoutActivity,
+          event.numberOfDaysDeal,
+          event.directoryValues,
+          event.salesFunnelId,
+        );
 
-        emit(LeadDataLoaded(allLeads,
-            currentPage: 1, leadCounts: Map.from(_leadCounts)));
+        final leadsForTarget = await LeadCache.getLeadsForStatus(targetStatus);
+        emit(LeadDataLoaded(leadsForTarget,
+            currentPage: 1,
+            leadCounts: Map.from(_leadCounts),
+            isLoadingMore: false));
       }
     } catch (e) {
       if (kDebugMode) {
@@ -1296,5 +1356,35 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
         debugPrint('❌ LeadBloc: Error fetching leads for status $statusId: $e');
       }
     }
+  }
+
+  bool _isSameFetchRequest(FetchLeads event) {
+    return _currentTabStatusId == event.statusId &&
+        _currentQuery == event.query &&
+        listEquals(_currentManagerIds, event.managerIds) &&
+        listEquals(_currentRegionIds, event.regionsIds) &&
+        _currentRegionId == event.regionId &&
+        listEquals(_currentCityIds, event.cityIds) &&
+        listEquals(_currentSourceIds, event.sourcesIds) &&
+        listEquals(_currentChannelIds, event.channelIds) &&
+        listEquals(
+            _currentAdvertisingCampaignIds, event.advertisingCampaignIds) &&
+        listEquals(
+            _currentReasonForRefusalIds, event.reasonForRefusalIds) &&
+        _currentStatusId == event.statusIds &&
+        _currentFromDate == event.fromDate &&
+        _currentToDate == event.toDate &&
+        _currentHasSuccessDeals == event.hasSuccessDeals &&
+        _currentHasInProgressDeals == event.hasInProgressDeals &&
+        _currentHasFailureDeals == event.hasFailureDeals &&
+        _currentHasNotices == event.hasNotices &&
+        _currentHasContact == event.hasContact &&
+        _currentHasChat == event.hasChat &&
+        _currentHasNoReplies == event.hasNoReplies &&
+        _currentHasUnreadMessages == event.hasUnreadMessages &&
+        _currentHasDeal == event.hasDeal &&
+        _currentHasOrders == event.hasOrders &&
+        _currentDaysWithoutActivity == event.daysWithoutActivity &&
+        _currentNumberOfDaysDeal == event.numberOfDaysDeal;
   }
 }

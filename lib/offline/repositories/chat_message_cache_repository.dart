@@ -77,6 +77,10 @@ class ChatMessageCacheRepository {
     return (row.read(countExpression) ?? 0) > 0;
   }
 
+  Future<void> clearAllMessages() async {
+    await _database.delete(_database.chatMessages).go();
+  }
+
   Map<String, dynamic> _messageToJson(Message message) {
     return {
       'id': message.id,

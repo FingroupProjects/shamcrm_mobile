@@ -86,6 +86,27 @@ class _TaskColumnState extends State<TaskColumn> {
         });
       }
     });
+    _scrollController.addListener(_onScroll);
+  }
+
+  void _onScroll() {
+    if (!_scrollController.hasClients) return;
+    if (_scrollController.position.maxScrollExtent <= 0) return;
+
+    final position = _scrollController.position;
+    final reachedPaginationThreshold =
+        position.pixels >= (position.maxScrollExtent - 200);
+
+    if (reachedPaginationThreshold) {
+      final taskBloc = context.read<TaskBloc>();
+      final currentState = taskBloc.state;
+      if (currentState is TaskDataLoaded &&
+          !taskBloc.allTasksFetched &&
+          !currentState.isLoadingMore &&
+          !taskBloc.isFetching) {
+        taskBloc.add(FetchMoreTasks(widget.statusId, currentState.currentPage));
+      }
+    }
   }
 
   void _initTutorialTargets() {
@@ -261,6 +282,7 @@ class _TaskColumnState extends State<TaskColumn> {
   @override
   void dispose() {
     // ОПТИМИЗАЦИЯ: Не закрываем блок, т.к. он принадлежит родителю
+    _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
     super.dispose();
   }
@@ -337,6 +359,8 @@ class _TaskColumnState extends State<TaskColumn> {
             final tasks = state.tasks
                 .where((task) => task.statusId == widget.statusId)
                 .toList();
+            final bool showPaginationLoader =
+                state.isLoadingMore && tasks.isNotEmpty;
 
             if (tasks.isNotEmpty) {
               // ✅ Сбрасываем флаг только когда есть задачи
@@ -346,19 +370,6 @@ class _TaskColumnState extends State<TaskColumn> {
                     setState(() {
                       _isInitialLoad = false;
                     });
-                  }
-                });
-              }
-
-              // ОПТИМИЗАЦИЯ: Используем один ScrollController для всего виджета
-              if (!_scrollListenerAdded) {
-                _scrollListenerAdded = true;
-                _scrollController.addListener(() {
-                  if (_scrollController.position.pixels ==
-                          _scrollController.position.maxScrollExtent &&
-                      !taskBloc.allTasksFetched) {
-                    taskBloc.add(
-                        FetchMoreTasks(widget.statusId, state.currentPage));
                   }
                 });
               }
@@ -374,8 +385,20 @@ class _TaskColumnState extends State<TaskColumn> {
                       child: ListView.builder(
                         controller: _scrollController,
                         physics: AlwaysScrollableScrollPhysics(),
-                        itemCount: tasks.length,
+                        itemCount: tasks.length + (showPaginationLoader ? 1 : 0),
                         itemBuilder: (context, index) {
+                          if (index >= tasks.length) {
+                            return const Padding(
+                              padding: EdgeInsets.symmetric(vertical: 16),
+                              child: Center(
+                                child: PlayStoreImageLoading(
+                                  size: 56.0,
+                                  duration: Duration(milliseconds: 1000),
+                                ),
+                              ),
+                            );
+                          }
+
                           if (index > 0 &&
                               tasks[index].id == tasks[index - 1].id) {
                             return SizedBox.shrink();

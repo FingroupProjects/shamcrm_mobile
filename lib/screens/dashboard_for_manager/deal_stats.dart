@@ -1,9 +1,8 @@
-import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/dashboard_for_manager/charts/dealStats/dealStats_bloc.dart';
 import 'package:crm_task_manager/bloc/dashboard_for_manager/charts/dealStats/dealStats_event.dart';
 import 'package:crm_task_manager/bloc/dashboard_for_manager/charts/dealStats/dealStats_state.dart';
-import 'package:crm_task_manager/screens/auth/login_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/services/app_logout_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:fl_chart/fl_chart.dart';
@@ -440,13 +439,9 @@ String formatNumber(double value, BuildContext context) {
   }
 
   Future<void> _handleLogout(BuildContext context) async {
-    ApiService apiService = ApiService();
-    await apiService.logout();
-
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(builder: (context) => LoginScreen()),
-      (Route<dynamic> route) => false,
+    await AppLogoutService.logoutAndReset(
+      context: context,
+      restartApp: false,
     );
   }
 }

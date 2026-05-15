@@ -45,6 +45,7 @@ extension _SipScreenDialerExtension on _SipScreenState {
     _contactSearchDebounce = Timer(const Duration(milliseconds: 60), () {
       if (!mounted) return;
       _refreshContactSuggestions();
+      _handleDialServerSuggestionsChanged(_sipIdController.text);
       _updateView(() {});
     });
   }
@@ -152,7 +153,13 @@ extension _SipScreenDialerExtension on _SipScreenState {
   Future<void> _showAddDialDestinationSheet() async {
     final rawNumber = _sipIdController.text.trim();
     if (rawNumber.isEmpty) return;
+    await _showAddNumberSheetFor(rawNumber);
+  }
 
+  Future<void> _showAddNumberSheetFor(
+    String rawNumber, {
+    String? suggestedName,
+  }) async {
     await showCupertinoModalPopup<void>(
       context: context,
       builder: (sheetContext) => CupertinoActionSheet(
@@ -162,14 +169,17 @@ extension _SipScreenDialerExtension on _SipScreenState {
           CupertinoActionSheetAction(
             onPressed: () async {
               Navigator.of(sheetContext).pop();
-              await _openLeadCreationFromDial();
+              await _openLeadCreationFromNumber(rawNumber);
             },
             child: const Text('Новый лид'),
           ),
           CupertinoActionSheetAction(
             onPressed: () async {
               Navigator.of(sheetContext).pop();
-              await _promptSaveDialContact();
+              await _promptSaveContactForNumber(
+                rawNumber,
+                suggestedName: suggestedName,
+              );
             },
             child: const Text('В контакты'),
           ),
@@ -182,11 +192,11 @@ extension _SipScreenDialerExtension on _SipScreenState {
     );
   }
 
-  Future<void> _promptSaveDialContact() async {
-    final rawNumber = _sipIdController.text.trim();
-    if (rawNumber.isEmpty) return;
-
-    final controller = TextEditingController();
+  Future<void> _promptSaveContactForNumber(
+    String rawNumber, {
+    String? suggestedName,
+  }) async {
+    final controller = TextEditingController(text: suggestedName ?? '');
     final saved = await showCupertinoDialog<bool>(
       context: context,
       builder: (dialogContext) => CupertinoAlertDialog(
@@ -226,11 +236,14 @@ extension _SipScreenDialerExtension on _SipScreenState {
         ? 'Новый контакт'
         : controller.text.trim();
     controller.dispose();
-    await _saveDialContact(contactName);
+    await _saveContactForNumber(rawNumber, contactName: contactName);
   }
 
-  Future<void> _saveDialContact(String contactName) async {
-    final resolvedPhone = await _resolveFullDialPhone();
+  Future<void> _saveContactForNumber(
+    String rawNumber, {
+    required String contactName,
+  }) async {
+    final resolvedPhone = await _resolveFullDialPhone(rawNumber: rawNumber);
     if (resolvedPhone == null) return;
 
     final normalizedPhone = _digitsOnly(resolvedPhone);
@@ -265,8 +278,8 @@ extension _SipScreenDialerExtension on _SipScreenState {
     }
   }
 
-  Future<void> _openLeadCreationFromDial() async {
-    final preparedPhone = await _prepareLeadPhoneSeed();
+  Future<void> _openLeadCreationFromNumber(String rawNumber) async {
+    final preparedPhone = await _prepareLeadPhoneSeed(rawNumber: rawNumber);
     if (preparedPhone == null) return;
 
     final statusId = await _resolveLeadStatusId();
@@ -289,12 +302,12 @@ extension _SipScreenDialerExtension on _SipScreenState {
     );
   }
 
-  Future<(Country, String)?> _prepareLeadPhoneSeed() async {
-    final rawNumber = _sipIdController.text.trim();
-    if (rawNumber.isEmpty) return null;
+  Future<(Country, String)?> _prepareLeadPhoneSeed({String? rawNumber}) async {
+    final sourceNumber = (rawNumber ?? _sipIdController.text).trim();
+    if (sourceNumber.isEmpty) return null;
 
     final defaultCountry = await _resolveDefaultCountry();
-    final sanitized = rawNumber.replaceAll(RegExp(r'[^0-9+]'), '');
+    final sanitized = sourceNumber.replaceAll(RegExp(r'[^0-9+]'), '');
     if (sanitized.isEmpty) return null;
 
     final hasInternationalPrefix =
@@ -328,8 +341,8 @@ extension _SipScreenDialerExtension on _SipScreenState {
     return (defaultCountry, digitOnly);
   }
 
-  Future<String?> _resolveFullDialPhone() async {
-    final prepared = await _prepareLeadPhoneSeed();
+  Future<String?> _resolveFullDialPhone({String? rawNumber}) async {
+    final prepared = await _prepareLeadPhoneSeed(rawNumber: rawNumber);
     if (prepared == null) return null;
 
     final country = prepared.$1;
@@ -396,19 +409,58 @@ extension _SipScreenDialerExtension on _SipScreenState {
 
   void _showSipSnackBar(String message, {bool isError = false}) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        behavior: SnackBarBehavior.floating,
-        backgroundColor:
-            isError ? Colors.red.shade600 : const Color(0xFF1E2E52),
-      ),
+    showCustomSnackBar(
+      context: context,
+      message: message,
+      isSuccess: !isError,
     );
   }
 
   Future<void> _startDialCall() async {
     await _saveDraft();
     await _sipRuntime.makeCall();
+  }
+
+  Future<void> _openCallLogDetails(SipCallLogEntry entry) async {
+    if (entry.serverCallId == null) {
+      _showSipSnackBar('Детали доступны только для серверных звонков',
+          isError: true);
+      return;
+    }
+
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => CallDetailsScreen(callEntry: entry.toCallLogEntry()),
+      ),
+    );
+    await _sipRuntime.refreshRecentCallLogs(
+      callType: _sipRuntime.state.serverCallFilter,
+      force: true,
+    );
+  }
+
+  Future<void> _openCallLogHistory(SipCallLogEntry entry) async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => _SipCallHistoryScreen(
+          entry: entry,
+          apiService: _apiService,
+        ),
+      ),
+    );
+  }
+
+  void _openDialerWithNumber(String phoneNumber) {
+    _sipIdController.value = TextEditingValue(
+      text: phoneNumber,
+      selection: TextSelection.collapsed(offset: phoneNumber.length),
+    );
+    _updateView(() {
+      _bottomTabIndex = 0;
+      _liquidNavDragIndex = 0;
+      _isLiquidNavPressed = false;
+      _expandedCallLogId = null;
+    });
   }
 
   Future<void> _fillAndCallContact(_SipContactSuggestion suggestion) async {

@@ -33,7 +33,6 @@ import 'package:crm_task_manager/bloc/task/task_event.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/models/organization_model.dart';
 import 'package:crm_task_manager/notification_cache.dart';
-import 'package:crm_task_manager/screens/auth/login_screen.dart';
 import 'package:crm_task_manager/screens/deal/deal_cache.dart';
 import 'package:crm_task_manager/screens/lead/lead_cache.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
@@ -54,6 +53,7 @@ import 'package:crm_task_manager/bloc/organization/organization_bloc.dart';
 import 'package:crm_task_manager/bloc/organization/organization_event.dart';
 import 'package:crm_task_manager/screens/profile/profile_widget/profile_organization_list.dart';
 import 'package:crm_task_manager/screens/profile/profile_widget/profile_logout.dart';
+import 'package:crm_task_manager/services/app_logout_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -278,24 +278,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
 // Новый метод для принудительного выхода при ошибках
   Future<void> _forceLogout() async {
     try {
-      await ApiService().logout();
-      if (mounted) {
-        Navigator.pushNamedAndRemoveUntil(
-          context,
-          '/local_auth',
-          (route) => false,
-        );
-      }
+      await AppLogoutService.logoutAndReset(
+        context: context,
+        restartApp: false,
+      );
     } catch (e) {
       debugPrint('ProfileScreen: Error in force logout: $e');
-      // Даже при ошибке пытаемся перейти на экран авторизации
-      if (mounted) {
-        Navigator.pushNamedAndRemoveUntil(
-          context,
-          '/local_auth',
-          (route) => false,
-        );
-      }
     }
   }
 

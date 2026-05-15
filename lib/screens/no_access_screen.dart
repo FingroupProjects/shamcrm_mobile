@@ -1,6 +1,5 @@
-import 'package:crm_task_manager/api/service/api_service.dart';
-import 'package:crm_task_manager/screens/auth/login_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/services/app_logout_service.dart';
 import 'package:flutter/material.dart';
 
 class NoAccessScreen extends StatelessWidget {
@@ -65,13 +64,7 @@ class NoAccessScreen extends StatelessWidget {
                 ),
                 child: TextButton(
                   onPressed: () async {
-                    final apiService = ApiService();
-                    await apiService.logout();
-                    Navigator.pushAndRemoveUntil(
-                      context,
-                      MaterialPageRoute(builder: (context) => LoginScreen()),
-                      (Route<dynamic> route) => false,
-                    );
+                    await AppLogoutService.logoutAndReset(context: context);
                   },
                   style: TextButton.styleFrom(
                     padding: EdgeInsets.symmetric(vertical: 16),

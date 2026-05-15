@@ -17,6 +17,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
   final ApiService apiService;
   bool allTasksFetched = false;
   Map<int, int> _taskCounts = {};
+  int? _currentTabStatusId;
   String? _currentQuery;
   List<int>? _currentUserIds;
   int? _currentStatusIds;
@@ -38,6 +39,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
       _currentDirectoryValues; // Добавляем для справочников
   bool isFetching = false; // Флаг для предотвращения параллельных запросов
   FetchTasks? _queuedFetchTasksEvent;
+  FetchMoreTasks? _queuedFetchMoreTasksEvent;
 
   TaskBloc(this.apiService) : super(TaskInitial()) {
     on<FetchTaskStatuses>(_fetchTaskStatuses);
@@ -50,6 +52,29 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
     on<DeleteTaskStatuses>(_deleteTaskStatuses);
     on<FetchTaskStatus>(_fetchTaskStatus);
     on<UpdateTaskStatusEdit>(_updateTaskStatusEdit);
+  }
+
+  bool _hasActiveFilters() {
+    return (_currentQuery != null && _currentQuery!.isNotEmpty) ||
+        (_currentUserIds != null && _currentUserIds!.isNotEmpty) ||
+        _currentStatusIds != null ||
+        _currentFromDate != null ||
+        _currentToDate != null ||
+        _currentOverdue == true ||
+        _currentHasFile == true ||
+        _currentHasDeal == true ||
+        _currentUrgent == true ||
+        (_currentProjectIds != null && _currentProjectIds!.isNotEmpty) ||
+        (_currentReasonForRefusalIds != null &&
+            _currentReasonForRefusalIds!.isNotEmpty) ||
+        (_currentAuthors != null && _currentAuthors!.isNotEmpty) ||
+        _currentDeadlineFromDate != null ||
+        _currentDeadlineToDate != null ||
+        _currentCompletedFromDate != null ||
+        _currentCompletedToDate != null ||
+        (_currentDepartment != null && _currentDepartment!.isNotEmpty) ||
+        (_currentDirectoryValues != null &&
+            _currentDirectoryValues!.isNotEmpty);
   }
 
   Future<void> _fetchTaskStatus(
@@ -308,6 +333,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
 
     isFetching = true;
     _queuedFetchTasksEvent = null;
+    _queuedFetchMoreTasksEvent = null;
 
     if (kDebugMode) {
       debugPrint('🔍 TaskBloc: _fetchTasks - START');
@@ -317,8 +343,12 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
     try {
       // ОПТИМИЗАЦИЯ: Показываем загрузку только если нет кэшированных данных
       final cachedTasks = await TaskCache.getTasksForStatus(event.statusId);
+      _currentTabStatusId = event.statusId;
       if (cachedTasks.isEmpty) {
-        if (state is! TaskDataLoaded) {
+        final currentState = state;
+        final bool showsRequestedStatus = currentState is TaskDataLoaded &&
+            currentState.tasks.any((task) => task.statusId == event.statusId);
+        if (!showsRequestedStatus) {
           emit(TaskLoading());
         }
       }
@@ -368,7 +398,9 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
         }
         // Сразу показываем кэшированные данные
         emit(TaskDataLoaded(tasks,
-            currentPage: 1, taskCounts: Map.from(_taskCounts)));
+            currentPage: 1,
+            taskCounts: Map.from(_taskCounts),
+            isLoadingMore: false));
       }
 
       // ОПТИМИЗАЦИЯ: Проверяем интернет только если нужно обновить данные
@@ -484,7 +516,9 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
       // Финальное состояние (если не было показано ранее из кэша)
       if (!hasCachedData || tasks.isNotEmpty) {
         emit(TaskDataLoaded(tasks,
-            currentPage: 1, taskCounts: Map.from(_taskCounts)));
+            currentPage: 1,
+            taskCounts: Map.from(_taskCounts),
+            isLoadingMore: false));
       }
     } catch (e) {
       if (kDebugMode) {
@@ -510,6 +544,13 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
               '🔁 TaskBloc: _fetchTasks - Running queued request for status ${queuedEvent.statusId}');
         }
         add(queuedEvent);
+        return;
+      }
+
+      final queuedFetchMoreEvent = _queuedFetchMoreTasksEvent;
+      _queuedFetchMoreTasksEvent = null;
+      if (queuedFetchMoreEvent != null) {
+        add(queuedFetchMoreEvent);
       }
     }
   }
@@ -518,21 +559,41 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
       FetchMoreTasks event, Emitter<TaskState> emit) async {
     if (allTasksFetched) return;
 
+    if (isFetching) {
+      _queuedFetchMoreTasksEvent = event;
+      return;
+    }
+
+    isFetching = true;
+    _queuedFetchMoreTasksEvent = null;
+
     if (!await _checkInternetConnection()) {
+      isFetching = false;
       emit(TaskError('Нет подключения к интернету'));
       return;
     }
 
     try {
+      if (state is TaskDataLoaded) {
+        final currentState = state as TaskDataLoaded;
+        if (!currentState.isLoadingMore) {
+          emit(currentState.copyWith(isLoadingMore: true));
+        }
+      }
+
+      final pageStatusId = _currentTabStatusId ?? event.statusId;
+      final statusFilterForNextPage =
+          _hasActiveFilters() ? pageStatusId : null;
+
       // ОПТИМИЗАЦИЯ: Загружаем дополнительные задачи с timeout
       final tasks = await apiService
           .getTasks(
-            event.statusId,
+            pageStatusId,
             page: event.currentPage + 1,
             perPage: 20,
             search: event.query ?? _currentQuery,
             users: event.userIds ?? _currentUserIds,
-            statuses: event.statusIds ?? _currentStatusIds,
+            statuses: statusFilterForNextPage ?? event.statusIds ?? _currentStatusIds,
             fromDate: event.fromDate ?? _currentFromDate,
             toDate: event.toDate ?? _currentToDate,
             overdue: event.overdue ?? _currentOverdue,
@@ -559,6 +620,10 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
 
       if (tasks.isEmpty) {
         allTasksFetched = true;
+        if (state is TaskDataLoaded) {
+          final currentState = state as TaskDataLoaded;
+          emit(currentState.copyWith(isLoadingMore: false));
+        }
         return;
       }
 
@@ -568,6 +633,20 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
       }
     } catch (e) {
       emit(TaskError('Не удалось загрузить дополнительные задачи!'));
+    } finally {
+      isFetching = false;
+      final queuedFetchTasksEvent = _queuedFetchTasksEvent;
+      _queuedFetchTasksEvent = null;
+      if (queuedFetchTasksEvent != null) {
+        add(queuedFetchTasksEvent);
+        return;
+      }
+
+      final queuedFetchMoreEvent = _queuedFetchMoreTasksEvent;
+      _queuedFetchMoreTasksEvent = null;
+      if (queuedFetchMoreEvent != null) {
+        add(queuedFetchMoreEvent);
+      }
     }
   }
 
@@ -1118,7 +1197,9 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
     _taskCounts.clear();
     allTasksFetched = false;
     isFetching = false;
+    _currentTabStatusId = null;
     _queuedFetchTasksEvent = null;
+    _queuedFetchMoreTasksEvent = null;
 
     // Сбрасываем все текущие параметры фильтрации
     _currentQuery = null;

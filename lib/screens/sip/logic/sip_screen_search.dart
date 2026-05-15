@@ -84,6 +84,144 @@ extension _SipScreenSearchExtension on _SipScreenState {
     });
   }
 
+  void _handleJournalSearchChanged(String value) {
+    _journalSearchDebounce?.cancel();
+    _updateView(() {
+      _journalSearchQuery = value;
+    });
+
+    if (value.trim().isEmpty) {
+      unawaited(_refreshJournalCalls(force: true));
+      return;
+    }
+
+    _journalSearchDebounce = Timer(const Duration(milliseconds: 320), () async {
+      await _refreshJournalCalls(force: true);
+    });
+  }
+
+  Future<void> _refreshJournalCalls({bool force = false}) async {
+    await _sipRuntime.refreshRecentCallLogs(
+      callType: _sipRuntime.state.serverCallFilter,
+      searchQuery: _journalSearchQuery.trim(),
+      force: force,
+    );
+  }
+
+  void _clearJournalSearch() {
+    _journalSearchDebounce?.cancel();
+    _journalSearchController.clear();
+    _updateView(() {
+      _journalSearchQuery = '';
+      _expandedCallLogId = null;
+    });
+    unawaited(_refreshJournalCalls(force: true));
+  }
+
+  void _searchDialSuggestionRequestSafeBump() {
+    _dialSuggestionRequestId += 1;
+  }
+
+  void _handleDialServerSuggestionsChanged(String value) {
+    _serverDialSearchDebounce?.cancel();
+    _searchDialSuggestionRequestSafeBump();
+
+    final query = value.trim();
+    if (query.isEmpty) {
+      _rebuildDialSuggestions(serverSuggestions: const []);
+      return;
+    }
+
+    _serverDialSearchDebounce =
+        Timer(const Duration(milliseconds: 320), () async {
+      await _searchDialSuggestionsFromServer(query);
+    });
+  }
+
+  Future<void> _searchDialSuggestionsFromServer(String query) async {
+    final requestId = _dialSuggestionRequestId;
+
+    try {
+      final futures = <Future<dynamic>>[
+        _apiService.getAllCalls(page: 1, perPage: 6, searchQuery: query),
+      ];
+      if (_leadSearchEnabled) {
+        futures.add(
+          _apiService.getLeads(
+            null,
+            perPage: 6,
+            search: query,
+            bypassAnalyticsCache: true,
+          ),
+        );
+      }
+
+      final results = await Future.wait(futures);
+      if (!mounted ||
+          requestId != _dialSuggestionRequestId ||
+          _sipIdController.text.trim() != query) {
+        return;
+      }
+
+      final suggestions = <_SipInlineSuggestion>[];
+      final calls = results.first as Map<String, dynamic>;
+      final callEntries = calls['calls'] as List<CallLogEntry>;
+      for (final call in callEntries) {
+        final phone = call.phoneNumber.trim();
+        if (phone.isEmpty) continue;
+        suggestions.add(
+          _SipInlineSuggestion(
+            name: call.leadName.trim().isEmpty ? phone : call.leadName,
+            phone: phone,
+            normalizedPhone: _digitsOnly(phone),
+            sourceLabel: 'Вызов',
+          ),
+        );
+      }
+
+      if (_leadSearchEnabled && results.length > 1) {
+        final leads = results[1] as List<Lead>;
+        for (final lead in leads) {
+          final phone = (lead.phone ?? '').trim();
+          if (phone.isEmpty) continue;
+          suggestions.add(
+            _SipInlineSuggestion(
+              name: lead.name,
+              phone: phone,
+              normalizedPhone: _digitsOnly(phone),
+              sourceLabel: 'Лид',
+            ),
+          );
+        }
+      }
+
+      final queryDigits = _digitsOnly(query);
+      suggestions.sort((a, b) {
+        final aStarts =
+            queryDigits.isNotEmpty && a.normalizedPhone.startsWith(queryDigits);
+        final bStarts =
+            queryDigits.isNotEmpty && b.normalizedPhone.startsWith(queryDigits);
+        if (aStarts != bStarts) {
+          return aStarts ? -1 : 1;
+        }
+        return a.name.compareTo(b.name);
+      });
+
+      _rebuildDialSuggestions(serverSuggestions: suggestions);
+      if (mounted) {
+        _updateView(() {});
+      }
+    } catch (_) {
+      if (!mounted ||
+          requestId != _dialSuggestionRequestId ||
+          _sipIdController.text.trim() != query) {
+        return;
+      }
+      _rebuildDialSuggestions(serverSuggestions: const []);
+      _updateView(() {});
+    }
+  }
+
   void _searchLeadRequestIdSafeBump() {
     _leadSearchRequestId += 1;
   }

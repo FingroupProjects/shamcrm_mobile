@@ -9,6 +9,7 @@ extension _SipSettingsSheetExtension on _SipScreenState {
       context: context,
       builder: (context) {
         final mediaQuery = MediaQuery.of(context);
+        final state = _sipRuntime.state;
         return Material(
           color: Colors.transparent,
           child: GestureDetector(
@@ -89,7 +90,10 @@ extension _SipSettingsSheetExtension on _SipScreenState {
                                     child: CupertinoButton(
                                       color: const Color(0xFF0A84FF),
                                       borderRadius: BorderRadius.circular(14),
-                                      onPressed: () async {
+                                      onPressed: state.registrationStatus ==
+                                              SipRegistrationUiStatus.registering
+                                          ? null
+                                          : () async {
                                         await _saveDraft();
                                         if (context.mounted) {
                                           Navigator.of(context).pop();
@@ -99,8 +103,30 @@ extension _SipSettingsSheetExtension on _SipScreenState {
                                           unawaited(_sipRuntime.connect());
                                         });
                                       },
-                                      child: Text(
-                                        l10n.translate('sip_connect'),
+                                      child: Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          if (state.registrationStatus ==
+                                              SipRegistrationUiStatus
+                                                  .registering) ...[
+                                            const SizedBox(
+                                              width: 16,
+                                              height: 16,
+                                              child: CupertinoActivityIndicator(
+                                                color: Colors.white,
+                                              ),
+                                            ),
+                                            const SizedBox(width: 8),
+                                          ],
+                                          Text(
+                                            state.registrationStatus ==
+                                                    SipRegistrationUiStatus
+                                                        .registering
+                                                ? 'Подключение...'
+                                                : l10n.translate('sip_connect'),
+                                          ),
+                                        ],
                                       ),
                                     ),
                                   ),

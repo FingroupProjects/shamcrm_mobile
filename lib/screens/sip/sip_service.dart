@@ -3,6 +3,7 @@ import 'dart:async';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/models/page_2/call_center_model.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter/services.dart';
@@ -32,6 +33,8 @@ class SipService extends ChangeNotifier
   static const String _voipPushTokenKey = 'sip_ios_voip_push_token';
   static const String _backgroundReliabilityPromptedKey =
       'sip_background_reliability_prompted_v2';
+  static const String _fullScreenIntentPromptedKey =
+      'sip_full_screen_intent_prompted_v1';
   static const String _xiaomiAutoStartPromptedKey =
       'sip_xiaomi_autostart_prompted_v1';
   static const MethodChannel _nativeSipMethodChannel =
@@ -74,7 +77,11 @@ class SipService extends ChangeNotifier
   StreamSubscription<dynamic>? _nativeSipEventsSubscription;
   bool _nativeSipBridgeAvailable = false;
   Future<void>? _nativeSipBridgeInitializationFuture;
+  Future<void>? _prepareRuntimePermissionsFuture;
   String? _lastSyncedIosVoipPushToken;
+  Future<void>? _recentCallLogsRequest;
+  DateTime? _recentCallLogsFetchedAt;
+  int _recentCallLogsRequestToken = 0;
 
   Call? _activeCall;
   MediaStream? _localStream;
@@ -155,6 +162,7 @@ class SipService extends ChangeNotifier
       _startConnectivityMonitoring();
       _startRegistrationWatchdog();
       _configLoaded = true;
+      unawaited(refreshRecentCallLogs(force: true));
       unawaited(_restorePersistentConnection());
       _notifyListenersSafely();
       completer.complete();
@@ -241,7 +249,168 @@ class SipService extends ChangeNotifier
   void setSipScreenVisible(bool visible) {
     if (_sipScreenVisible == visible) return;
     _sipScreenVisible = visible;
+    if (visible) {
+      unawaited(refreshRecentCallLogs());
+    }
     _notifyListenersSafely();
+  }
+
+  Future<void> refreshRecentCallLogs({
+    CallType? callType,
+    String? searchQuery,
+    bool force = false,
+  }) async {
+    final normalizedSearchQuery = searchQuery?.trim() ?? '';
+    final fetchedAt = _recentCallLogsFetchedAt;
+    if (!force &&
+        callType == _state.serverCallFilter &&
+        normalizedSearchQuery == _state.serverCallSearchQuery &&
+        fetchedAt != null &&
+        DateTime.now().difference(fetchedAt) < const Duration(seconds: 30)) {
+      return;
+    }
+
+    final inFlight = _recentCallLogsRequest;
+    if (inFlight != null) {
+      await inFlight;
+      return;
+    }
+
+    final request = _loadRecentCallLogs(
+      page: 1,
+      callType: callType,
+      searchQuery: normalizedSearchQuery,
+      append: false,
+    );
+    _recentCallLogsRequest = request;
+    try {
+      await request;
+    } finally {
+      if (identical(_recentCallLogsRequest, request)) {
+        _recentCallLogsRequest = null;
+      }
+    }
+  }
+
+  Future<void> loadMoreRecentCallLogs() async {
+    if (_state.isServerCallLogsLoading ||
+        _state.isServerCallLogsLoadingMore ||
+        _state.allServerCallLogsFetched) {
+      return;
+    }
+
+    await _loadRecentCallLogs(
+      page: _state.serverCallLogsCurrentPage + 1,
+      callType: _state.serverCallFilter,
+      searchQuery: _state.serverCallSearchQuery,
+      append: true,
+    );
+  }
+
+  Future<void> _loadRecentCallLogs({
+    required int page,
+    required CallType? callType,
+    required String searchQuery,
+    required bool append,
+  }) async {
+    final requestToken = ++_recentCallLogsRequestToken;
+    _state = _state.copyWith(
+      isServerCallLogsLoading: !append,
+      isServerCallLogsLoadingMore: append,
+      serverCallFilter: callType,
+      serverCallSearchQuery: searchQuery,
+      serverCallLogs: append ? null : <SipCallLogEntry>[],
+      serverCallLogsCurrentPage: append ? null : 1,
+      serverCallLogsTotalPages: append ? null : 1,
+      allServerCallLogsFetched: append ? null : false,
+    );
+    _notifyListenersSafely();
+
+    try {
+      final response = await _fetchCallLogsPage(
+        page: page,
+        perPage: 20,
+        callType: callType,
+        searchQuery: searchQuery.isEmpty ? null : searchQuery,
+      );
+      if (requestToken != _recentCallLogsRequestToken) {
+        return;
+      }
+
+      final calls = (response['calls'] as List<CallLogEntry>)
+          .map(SipCallLogEntry.fromServerCall)
+          .toList();
+      final pagination = response['pagination'] as Map<String, dynamic>;
+      final currentPage = pagination['current_page'] as int? ?? page;
+      final totalPages = pagination['total_pages'] as int? ?? currentPage;
+      final existing =
+          append ? _state.serverCallLogs : const <SipCallLogEntry>[];
+      final merged = append
+          ? <SipCallLogEntry>[
+              ...existing,
+              ...calls.where(
+                (item) => existing
+                    .every((existingItem) => existingItem.id != item.id),
+              ),
+            ]
+          : calls;
+
+      _state = _state.copyWith(
+        serverCallLogs: merged,
+        isServerCallLogsLoading: false,
+        isServerCallLogsLoadingMore: false,
+        serverCallFilter: callType,
+        serverCallSearchQuery: searchQuery,
+        serverCallLogsCurrentPage: currentPage,
+        serverCallLogsTotalPages: totalPages,
+        allServerCallLogsFetched: merged.isEmpty || currentPage >= totalPages,
+      );
+      _recentCallLogsFetchedAt = DateTime.now();
+    } catch (_) {
+      if (requestToken != _recentCallLogsRequestToken) {
+        return;
+      }
+      _state = _state.copyWith(
+        isServerCallLogsLoading: false,
+        isServerCallLogsLoadingMore: false,
+      );
+    }
+
+    _notifyListenersSafely();
+  }
+
+  Future<Map<String, dynamic>> _fetchCallLogsPage({
+    required int page,
+    required int perPage,
+    required CallType? callType,
+    String? searchQuery,
+  }) {
+    switch (callType) {
+      case CallType.incoming:
+        return _apiService.getIncomingCalls(
+          page: page,
+          perPage: perPage,
+          searchQuery: searchQuery,
+        );
+      case CallType.outgoing:
+        return _apiService.getOutgoingCalls(
+          page: page,
+          perPage: perPage,
+          searchQuery: searchQuery,
+        );
+      case CallType.missed:
+        return _apiService.getMissedCalls(
+          page: page,
+          perPage: perPage,
+          searchQuery: searchQuery,
+        );
+      case null:
+        return _apiService.getAllCalls(
+          page: page,
+          perPage: perPage,
+          searchQuery: searchQuery,
+        );
+    }
   }
 
   void clearTransientError([String? expectedMessage]) {
@@ -536,6 +705,25 @@ class SipService extends ChangeNotifier
   }
 
   Future<void> prepareSipRuntimePermissions() async {
+    final inFlight = _prepareRuntimePermissionsFuture;
+    if (inFlight != null) {
+      await inFlight;
+      return;
+    }
+
+    final future = _prepareSipRuntimePermissionsInternal();
+    _prepareRuntimePermissionsFuture = future;
+
+    try {
+      await future;
+    } finally {
+      if (identical(_prepareRuntimePermissionsFuture, future)) {
+        _prepareRuntimePermissionsFuture = null;
+      }
+    }
+  }
+
+  Future<void> _prepareSipRuntimePermissionsInternal() async {
     if (!Platform.isAndroid) {
       return;
     }
@@ -551,8 +739,19 @@ class SipService extends ChangeNotifier
     if (_shouldUseNativeSip()) {
       final canUseFullScreenIntent =
           await _invokeNativeSipMethod<bool>('canUseFullScreenIntent') ?? true;
-      if (!canUseFullScreenIntent) {
-        await _invokeNativeSipMethod<bool>('requestFullScreenIntentPermission');
+      final promptedFullScreenIntent =
+          await _storage.read(key: _fullScreenIntentPromptedKey);
+      if (!canUseFullScreenIntent && promptedFullScreenIntent != 'true') {
+        final opened = await _invokeNativeSipMethod<bool>(
+              'requestFullScreenIntentPermission',
+            ) ??
+            false;
+        if (opened) {
+          await _storage.write(
+            key: _fullScreenIntentPromptedKey,
+            value: 'true',
+          );
+        }
       }
 
       final promptedBackgroundReliability =
@@ -2840,12 +3039,15 @@ class SipService extends ChangeNotifier
 
     final updated = <SipCallLogEntry>[
       SipCallLogEntry(
+        id: 'local_${now.microsecondsSinceEpoch}',
         target: target,
+        dialTarget: target,
         direction: _currentCallDirection,
         result: result,
         timestamp: now,
         duration: duration,
         endReason: endReason?.trim().isEmpty == true ? null : endReason?.trim(),
+        isMissed: false,
       ),
       ..._state.callLogs,
     ];
@@ -2853,5 +3055,6 @@ class SipService extends ChangeNotifier
     _state = _state.copyWith(callLogs: updated);
     _currentCallStartedAt = null;
     _currentCallTarget = null;
+    unawaited(refreshRecentCallLogs(force: true));
   }
 }

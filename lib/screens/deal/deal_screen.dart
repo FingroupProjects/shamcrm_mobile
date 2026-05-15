@@ -17,7 +17,6 @@ import 'package:crm_task_manager/models/region_model.dart';
 import 'package:crm_task_manager/models/sales_funnel_model.dart';
 import 'package:crm_task_manager/models/source_list_model.dart';
 import 'package:crm_task_manager/models/user_data_response.dart';
-import 'package:crm_task_manager/screens/auth/login_screen.dart';
 import 'package:crm_task_manager/screens/deal/deal_cache.dart';
 import 'package:crm_task_manager/screens/deal/deal_status_delete.dart';
 import 'package:crm_task_manager/screens/deal/deal_status_edit.dart';
@@ -26,6 +25,7 @@ import 'package:crm_task_manager/screens/deal/tabBar/deal_column.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_status_add.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/profile/profile_screen.dart';
+import 'package:crm_task_manager/services/app_logout_service.dart';
 import 'package:crm_task_manager/utils/TutorialStyleWidget.dart';
 import 'package:dart_pusher_channels/dart_pusher_channels.dart';
 import 'package:flutter/foundation.dart';
@@ -2255,11 +2255,9 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
           if (state.message.contains(
             AppLocalizations.of(context)!.translate('unauthorized_access'),
           )) {
-            await _apiService.logout();
-            Navigator.pushAndRemoveUntil(
-              context,
-              MaterialPageRoute(builder: (context) => LoginScreen()),
-              (Route<dynamic> route) => false,
+            await AppLogoutService.logoutAndReset(
+              context: context,
+              restartApp: false,
             );
           } else {
             // ✅ УБРАНО: Не показываем непереведенный SnackBar с кнопкой "Повторить"

@@ -7,7 +7,6 @@ import 'package:crm_task_manager/custom_widget/custom_app_bar.dart';
 import 'package:crm_task_manager/custom_widget/custom_tasks_tabBar.dart';
 import 'package:crm_task_manager/models/my-task_model.dart';
 import 'package:crm_task_manager/models/user_byId_model..dart';
-import 'package:crm_task_manager/screens/auth/login_screen.dart';
 import 'package:crm_task_manager/screens/my-task/my_task_status_edit.dart';
 import 'package:crm_task_manager/screens/my-task/my_task_cache.dart';
 import 'package:crm_task_manager/screens/my-task/my_task_details/my_task_card.dart';
@@ -16,6 +15,7 @@ import 'package:crm_task_manager/screens/my-task/my_task_details/my_task_status_
 import 'package:crm_task_manager/screens/my-task/task_status_delete.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/profile/profile_screen.dart';
+import 'package:crm_task_manager/services/app_logout_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -618,12 +618,9 @@ class _MyTaskScreenState extends State<MyTaskScreen>
           if (state.message.contains(
             AppLocalizations.of(context)!.translate('unauthorized_access'),
           )) {
-            ApiService apiService = ApiService();
-            await apiService.logout();
-            Navigator.pushAndRemoveUntil(
-              context,
-              MaterialPageRoute(builder: (context) => LoginScreen()),
-              (Route<dynamic> route) => false,
+            await AppLogoutService.logoutAndReset(
+              context: context,
+              restartApp: false,
             );
           } else if (state.message.contains(
             AppLocalizations.of(context)!.translate('no_internet_connection'),

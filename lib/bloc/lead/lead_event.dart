@@ -315,6 +315,7 @@ class FetchLeadStatusesWithFilters extends LeadEvent {
   final int? numberOfDaysDeal;
   final List<Map<String, dynamic>>? directoryValues;
   final int? salesFunnelId;
+  final int? preferredStatusId;
 
   FetchLeadStatusesWithFilters({
     this.managerIds,
@@ -341,5 +342,6 @@ class FetchLeadStatusesWithFilters extends LeadEvent {
     this.numberOfDaysDeal,
     this.directoryValues,
     this.salesFunnelId,
+    this.preferredStatusId,
   });
 }

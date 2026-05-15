@@ -97,4 +97,19 @@ class MessageCacheService {
       _memoryCacheTime.remove(chatId);
     }
   }
+
+  Future<void> clearAllCache() async {
+    _memoryCache.clear();
+    _memoryCacheTime.clear();
+
+    try {
+      final repository = _resolveRepository();
+      if (repository == null) {
+        return;
+      }
+      await repository.clearAllMessages();
+    } catch (e) {
+      debugPrint('MessageCache: clear all error: $e');
+    }
+  }
 }

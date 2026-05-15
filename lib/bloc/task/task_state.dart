@@ -42,12 +42,36 @@ class TaskDataLoaded extends TaskState {
   final List<Task> tasks;
   final int currentPage;
   final Map<int, int> taskCounts;
+  final bool isLoadingMore;
 
-  TaskDataLoaded(this.tasks, {this.currentPage = 1, required this.taskCounts});
+  TaskDataLoaded(
+    this.tasks, {
+    this.currentPage = 1,
+    required this.taskCounts,
+    this.isLoadingMore = false,
+  });
 
   TaskDataLoaded merge(List<Task> newtasks) {
-    return TaskDataLoaded([...tasks, ...newtasks],
-        currentPage: currentPage + 1, taskCounts: taskCounts);
+    return TaskDataLoaded(
+      [...tasks, ...newtasks],
+      currentPage: currentPage + 1,
+      taskCounts: taskCounts,
+      isLoadingMore: false,
+    );
+  }
+
+  TaskDataLoaded copyWith({
+    List<Task>? tasks,
+    int? currentPage,
+    Map<int, int>? taskCounts,
+    bool? isLoadingMore,
+  }) {
+    return TaskDataLoaded(
+      tasks ?? this.tasks,
+      currentPage: currentPage ?? this.currentPage,
+      taskCounts: taskCounts ?? this.taskCounts,
+      isLoadingMore: isLoadingMore ?? this.isLoadingMore,
+    );
   }
 }
 

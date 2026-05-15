@@ -17,7 +17,6 @@ import 'package:crm_task_manager/models/region_model.dart';
 import 'package:crm_task_manager/models/sales_funnel_model.dart';
 import 'package:crm_task_manager/models/source_list_model.dart';
 import 'package:crm_task_manager/models/advertising_campaign_model.dart';
-import 'package:crm_task_manager/screens/auth/login_screen.dart';
 import 'package:crm_task_manager/screens/lead/lead_cache.dart';
 import 'package:crm_task_manager/screens/lead/lead_status_delete.dart';
 import 'package:crm_task_manager/screens/lead/lead_status_edit.dart';
@@ -26,6 +25,7 @@ import 'package:crm_task_manager/screens/lead/tabBar/lead_column.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_status_add.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/profile/profile_screen.dart';
+import 'package:crm_task_manager/services/app_logout_service.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -50,7 +50,8 @@ class LeadScreen extends StatefulWidget {
 
 class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
   late TabController _tabController;
-  late ScrollController tabScrollController;
+  late ScrollController _tabScrollController;
+  late ScrollController _listScrollController;
   List<Map<String, dynamic>> _tabTitles = [];
   int _currentTabIndex = 0;
   List<GlobalKey> _tabKeys = [];
@@ -132,6 +133,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
   bool _isFilterLoading = false;
   bool _shouldShowLoader = false;
   bool _skipNextTabListener = false;
+  int? _skipNextTabListenerIndex;
   PusherChannelsClient? _leadSocketClient;
   final List<StreamSubscription<dynamic>> _leadSocketSubscriptions = [];
 
@@ -200,8 +202,9 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
     context.read<GetAllRegionBloc>().add(GetAllRegionEv());
     context.read<GetAllSourceBloc>().add(GetAllSourceEv());
     context.read<SalesFunnelBloc>().add(FetchSalesFunnels());
-    tabScrollController = ScrollController();
-    tabScrollController.addListener(_onScroll);
+    _tabScrollController = ScrollController();
+    _listScrollController = ScrollController();
+    _listScrollController.addListener(_onScroll);
     _loadFeatureState();
 
     _apiService.getSelectedSalesFunnel().then((funnelId) {
@@ -257,7 +260,19 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
   }
 
   void _onScroll() {
-    // Логика прокрутки табов
+    if (!_listScrollController.hasClients || _tabTitles.isEmpty) return;
+
+    final state = context.read<LeadBloc>().state;
+    if (state is! LeadDataLoaded || state.isLoadingMore) return;
+
+    final bloc = context.read<LeadBloc>();
+    if (bloc.allLeadsFetched || bloc.isFetching) return;
+
+    final threshold = _listScrollController.position.maxScrollExtent - 200;
+    if (_listScrollController.position.pixels < threshold) return;
+
+    final currentStatusId = _tabTitles[_currentTabIndex]['id'];
+    bloc.add(FetchMoreLeads(currentStatusId, state.currentPage));
   }
 
   Future<void> _setupLeadSocket() async {
@@ -673,14 +688,17 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
         managers['custom_field_filters'] as Map<String, dynamic>?;
     final parsedCustomFieldFilters =
         _parseCustomFieldFilters(customFieldFiltersRaw);
+    final currentStatusIdBeforeFilter = _tabTitles.isNotEmpty
+        ? _tabTitles[_currentTabIndex]['id'] as int
+        : null;
 
     if (mounted) {
       setState(() {
         _isFilterLoading = true;
         _shouldShowLoader = true;
         _showCustomTabBar = true;
-        _skipNextTabListener =
-            true; // ← КРИТИЧНО: Пропускаем следующий TabListener!
+        _skipNextTabListener = true;
+        _skipNextTabListenerIndex = _currentTabIndex;
 
         _selectedManagers = managers['managers'];
         _selectedRegions = managers['regions'];
@@ -797,6 +815,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
       numberOfDaysDeal: _numberOfDaysDeal,
       directoryValues: _directoryValues,
       salesFunnelId: _selectedFunnel?.id,
+      preferredStatusId: currentStatusIdBeforeFilter,
     ));
 
     debugPrint(
@@ -1406,8 +1425,28 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
       color: const Color(0xff1E2E52),
       backgroundColor: Colors.white,
       child: ListView.builder(
-        itemCount: leads.length,
+        controller: _listScrollController,
+        itemCount: leads.length +
+            ((context.watch<LeadBloc>().state is LeadDataLoaded &&
+                    (context.watch<LeadBloc>().state as LeadDataLoaded)
+                        .isLoadingMore)
+                ? 1
+                : 0),
         itemBuilder: (context, index) {
+          final state = context.watch<LeadBloc>().state;
+          if (state is LeadDataLoaded &&
+              state.isLoadingMore &&
+              index >= leads.length) {
+            return const Padding(
+              padding: EdgeInsets.symmetric(vertical: 16),
+              child: Center(
+                child: PlayStoreImageLoading(
+                  size: 56.0,
+                  duration: Duration(milliseconds: 1000),
+                ),
+              ),
+            );
+          }
           final lead = leads[index];
           return Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -1440,6 +1479,8 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
           setState(() {
             _isFilterLoading = false;
             _shouldShowLoader = false;
+            _skipNextTabListener = false;
+            _skipNextTabListenerIndex = null;
             //print('LeadScreen: _buildManagerView - Loader flags reset');
           });
         }
@@ -1498,8 +1539,21 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
               color: const Color(0xff1E2E52),
               backgroundColor: Colors.white,
               child: ListView.builder(
-                itemCount: filteredLeads.length,
+                controller: _listScrollController,
+                itemCount:
+                    filteredLeads.length + (state.isLoadingMore ? 1 : 0),
                 itemBuilder: (context, index) {
+                  if (index >= filteredLeads.length) {
+                    return const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 16),
+                      child: Center(
+                        child: PlayStoreImageLoading(
+                          size: 56.0,
+                          duration: Duration(milliseconds: 1000),
+                        ),
+                      ),
+                    );
+                  }
                   final lead = filteredLeads[index];
                   return Padding(
                     padding:
@@ -1552,7 +1606,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
   Widget _buildCustomTabBar() {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
-      controller: tabScrollController,
+      controller: _tabScrollController,
       child: Row(
         children: [
           ...List.generate(_tabTitles.length, (index) {
@@ -1692,6 +1746,12 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
     return GestureDetector(
       key: _tabKeys[index],
       onTap: () {
+        if (_tabController.index != index) {
+          setState(() {
+            _isFilterLoading = true;
+            _shouldShowLoader = true;
+          });
+        }
         _tabController.animateTo(index);
         //print('LeadScreen: Tab button tapped, index: $index');
       },
@@ -1820,6 +1880,8 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
               _isFilterLoading = false;
               _shouldShowLoader = false;
               _isSwitchingFunnel = false;
+              _skipNextTabListener = false;
+              _skipNextTabListenerIndex = null;
             });
           }
         }
@@ -1866,11 +1928,13 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
                   _tabController.addListener(() {
                     if (!_tabController.indexIsChanging) {
                       // ← КРИТИЧНО: Проверяем флаг пропуска!
-                      if (_skipNextTabListener) {
+                      if (_skipNextTabListener &&
+                          _skipNextTabListenerIndex == _tabController.index) {
                         debugPrint(
                             'LeadScreen: TabController listener - SKIPPED (filter just applied)');
                         setState(() {
                           _skipNextTabListener = false;
+                          _skipNextTabListenerIndex = null;
                           _currentTabIndex = _tabController.index;
                         });
                         return; // ← ВЫХОДИМ БЕЗ ЗАПРОСА!
@@ -1883,7 +1947,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
                       });
                       final currentStatusId =
                           _tabTitles[_currentTabIndex]['id'];
-                      if (tabScrollController.hasClients) {
+                      if (_tabScrollController.hasClients) {
                         _scrollToActiveTab();
                       }
 
@@ -1911,6 +1975,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
 
                       if (mounted) {
                         setState(() {
+                          _isFilterLoading = true;
                           _shouldShowLoader = true;
                         });
                       }
@@ -2026,7 +2091,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
                 }
 
                 // Прокручиваем к активному табу
-                if (tabScrollController.hasClients) {
+                if (_tabScrollController.hasClients) {
                   _scrollToActiveTab();
                 }
 
@@ -2058,50 +2123,6 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
                   }
                 }
 
-                // При радикальном обновлении (после refresh) автоматически загружаем лиды для активного статуса
-                // НО только если нет активных фильтров, иначе будет второй «чистый» запрос без фильтров
-                Future.delayed(Duration(milliseconds: 150), () {
-                  if (mounted && _tabTitles.isNotEmpty) {
-                    final activeStatusId = _tabTitles[_currentTabIndex]['id'];
-
-                    final bool hasActiveFilters =
-                        _selectedManagers.isNotEmpty ||
-                            _selectedRegions.isNotEmpty ||
-                            _selectedSources.isNotEmpty ||
-                            _selectedAdvertisingCampaigns.isNotEmpty ||
-                            _selectedReasonForRefusalIds.isNotEmpty ||
-                            _selectedStatuses != null ||
-                            _fromDate != null ||
-                            _toDate != null ||
-                            _hasSuccessDeals == true ||
-                            _hasInProgressDeals == true ||
-                            _hasFailureDeals == true ||
-                            _hasNotices == true ||
-                            _hasContact == true ||
-                            _hasChat == true ||
-                            _hasNoReplies == true ||
-                            _hasUnreadMessages == true ||
-                            _hasDeal == true ||
-                            _hasOrders == true ||
-                            _daysWithoutActivity != null ||
-                            _numberOfDaysDeal != null ||
-                            _directoryValues.isNotEmpty;
-
-                    if (!hasActiveFilters) {
-                      //print('LeadScreen: Auto-loading leads for active status after refresh: $activeStatusId');
-                      context.read<LeadBloc>().add(FetchLeads(
-                            activeStatusId,
-                            salesFunnelId: _selectedFunnel?.id,
-                            ignoreCache: true,
-                          ));
-                    } else {
-                      if (kDebugMode) {
-                        debugPrint(
-                            'LeadScreen: Skip auto FetchLeads due to active filters');
-                      }
-                    }
-                  }
-                });
               } else {
                 // Если табы пустые, создаем пустой контроллер
                 if (_tabController.length > 0) {
@@ -2119,11 +2140,9 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
           if (state.message.contains(
             AppLocalizations.of(context)!.translate('unauthorized_access'),
           )) {
-            await _apiService.logout();
-            Navigator.pushAndRemoveUntil(
-              context,
-              MaterialPageRoute(builder: (context) => LoginScreen()),
-              (Route<dynamic> route) => false,
+            await AppLogoutService.logoutAndReset(
+              context: context,
+              restartApp: false,
             );
           } else {
             // ✅ УБРАНО: Не показываем непереведенный SnackBar с кнопкой "Повторить"
@@ -2320,7 +2339,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
 
   void _scrollToActiveTab() {
     final keyContext = _tabKeys[_currentTabIndex].currentContext;
-    if (keyContext != null && tabScrollController.hasClients) {
+    if (keyContext != null && _tabScrollController.hasClients) {
       final box = keyContext.findRenderObject() as RenderBox;
       final position =
           box.localToGlobal(Offset.zero, ancestor: context.findRenderObject());
@@ -2328,12 +2347,12 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
 
       if (position.dx < 0 ||
           (position.dx + tabWidth) > MediaQuery.of(context).size.width) {
-        double targetOffset = tabScrollController.offset +
+        double targetOffset = _tabScrollController.offset +
             position.dx -
             (MediaQuery.of(context).size.width / 2) +
             (tabWidth / 2);
 
-        tabScrollController.animateTo(
+        _tabScrollController.animateTo(
           targetOffset,
           duration: Duration(milliseconds: 100),
           curve: Curves.linear,
@@ -2348,7 +2367,9 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
       subscription.cancel();
     }
     _leadSocketClient?.disconnect();
-    tabScrollController.dispose();
+    _listScrollController.removeListener(_onScroll);
+    _listScrollController.dispose();
+    _tabScrollController.dispose();
     _tabController.dispose();
     super.dispose();
   }

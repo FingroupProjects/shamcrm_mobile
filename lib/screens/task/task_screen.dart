@@ -11,7 +11,6 @@ import 'package:crm_task_manager/custom_widget/custom_tasks_tabBar.dart';
 import 'package:crm_task_manager/models/task_model.dart';
 import 'package:crm_task_manager/models/user_byId_model..dart';
 import 'package:crm_task_manager/models/user_data_response.dart';
-import 'package:crm_task_manager/screens/auth/login_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/profile/profile_screen.dart';
 import 'package:crm_task_manager/screens/task/task_cache.dart';
@@ -21,6 +20,7 @@ import 'package:crm_task_manager/screens/task/task_details/task_add_screen.dart'
 import 'package:crm_task_manager/screens/task/task_details/task_status_add.dart';
 import 'package:crm_task_manager/screens/task/task_status_delete.dart';
 import 'package:crm_task_manager/screens/task/task_status_edit.dart';
+import 'package:crm_task_manager/services/app_logout_service.dart';
 import 'package:crm_task_manager/utils/TutorialStyleWidget.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -39,7 +39,8 @@ class TaskScreen extends StatefulWidget {
 
 class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
   late TabController _tabController;
-  late ScrollController _scrollController;
+  late ScrollController _tabScrollController;
+  late ScrollController _listScrollController;
   List<Map<String, dynamic>> _tabTitles = [];
   int _currentTabIndex = 0;
   List<GlobalKey> _tabKeys = [];
@@ -68,6 +69,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
   bool _shouldShowLoader = false;
   bool _skipNextTabListener =
       false; // КРИТИЧНО: Флаг для пропуска TabListener при фильтрации
+  int? _skipNextTabListenerIndex;
   int? _pendingStatusIdAfterHardRefresh;
 
   String _lastSearchQuery = "";
@@ -135,8 +137,9 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       }
     });
 
-    _scrollController = ScrollController();
-    _scrollController.addListener(_onScroll);
+    _tabScrollController = ScrollController();
+    _listScrollController = ScrollController();
+    _listScrollController.addListener(_onScroll);
 
     // ОПТИМИЗАЦИЯ: Загружаем роли и разрешения асинхронно
     Future.microtask(() {
@@ -153,12 +156,22 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
   }
 
   void _onScroll() {
-    if (_scrollController.position.pixels ==
-        _scrollController.position.maxScrollExtent) {
+    if (!_listScrollController.hasClients) return;
+    if (_listScrollController.position.maxScrollExtent <= 0) return;
+
+    final position = _listScrollController.position;
+    final reachedPaginationThreshold =
+        position.pixels >= (position.maxScrollExtent - 200);
+
+    if (reachedPaginationThreshold) {
       final taskBloc = BlocProvider.of<TaskBloc>(context);
       if (taskBloc.state is TaskDataLoaded) {
         final state = taskBloc.state as TaskDataLoaded;
-        if (!taskBloc.allTasksFetched) {
+        if (!taskBloc.allTasksFetched &&
+            !state.isLoadingMore &&
+            !taskBloc.isFetching &&
+            _tabTitles.isNotEmpty &&
+            _currentTabIndex < _tabTitles.length) {
           final currentStatusId = _tabTitles[_currentTabIndex]['id'];
           // Преобразуем project_ids в List<int>
           List<int>? projectIdsList = _selectedProjects.isNotEmpty
@@ -191,10 +204,64 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
     }
   }
 
+  void _ensureFilteredPaginationCanContinue(TaskDataLoaded state) {
+    if (!mounted || !_listScrollController.hasClients) return;
+    if (state.tasks.isEmpty ||
+        state.isLoadingMore ||
+        context.read<TaskBloc>().allTasksFetched ||
+        context.read<TaskBloc>().isFetching) {
+      return;
+    }
+    if (_tabTitles.isEmpty || _currentTabIndex >= _tabTitles.length) return;
+    if (_listScrollController.position.maxScrollExtent > 0) return;
+
+    final currentStatusId = _tabTitles[_currentTabIndex]['id'];
+    final taskBloc = context.read<TaskBloc>();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final currentState = taskBloc.state;
+      if (currentState is! TaskDataLoaded) return;
+      if (currentState.isLoadingMore ||
+          taskBloc.allTasksFetched ||
+          taskBloc.isFetching) {
+        return;
+      }
+      List<int>? projectIdsList = _selectedProjects.isNotEmpty
+          ? _selectedProjects.map((id) => int.parse(id)).toList()
+          : null;
+      taskBloc.add(FetchMoreTasks(
+        currentStatusId,
+        currentState.currentPage,
+        query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
+        userIds: _selectedUsers.isNotEmpty
+            ? _selectedUsers.map((user) => user.id).toList()
+            : null,
+        statusIds: _selectedStatuses,
+        fromDate: _fromDate,
+        toDate: _toDate,
+        overdue: _isOverdue,
+        hasFile: _hasFile,
+        hasDeal: _hasDeal,
+        urgent: _isUrgent,
+        deadlinefromDate: _deadlinefromDate,
+        deadlinetoDate: _deadlinetoDate,
+        completedFromDate: _completedFromDate,
+        completedToDate: _completedToDate,
+        projectIds: projectIdsList,
+        authors: _selectedAuthors.isNotEmpty ? _selectedAuthors : null,
+        department: _selectedDepartment,
+        directoryValues:
+            _selectedDirectoryValues.isNotEmpty ? _selectedDirectoryValues : null,
+      ));
+    });
+  }
+
   @override
   void dispose() {
     _searchDebounceTimer?.cancel();
-    _scrollController.dispose();
+    _listScrollController.removeListener(_onScroll);
+    _listScrollController.dispose();
+    _tabScrollController.dispose();
     _tabController.dispose();
     _searchController.dispose();
     super.dispose();
@@ -634,6 +701,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
         _showCustomTabBar = true;
         _skipNextTabListener =
             true; // ← КРИТИЧНО: Пропускаем следующий TabListener!
+        _skipNextTabListenerIndex = _currentTabIndex;
         _isSearching = false; // Выключаем режим поиска
         _searchController.clear();
         _lastSearchQuery = '';
@@ -1211,7 +1279,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       color: const Color(0xff1E2E52),
       backgroundColor: Colors.white,
       child: ListView.builder(
-        controller: _scrollController,
+                controller: _listScrollController,
         itemCount: tasks.length,
         itemBuilder: (context, index) {
           final task = tasks[index];
@@ -1245,7 +1313,13 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
           setState(() {
             _isFilterLoading = false;
             _shouldShowLoader = false;
+            _skipNextTabListener = false;
+            _skipNextTabListenerIndex = null;
           });
+        }
+
+        if (state is TaskDataLoaded) {
+          _ensureFilteredPaginationCanContinue(state);
         }
       },
       child: BlocBuilder<TaskBloc, TaskState>(
@@ -1281,6 +1355,8 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
             final statusId = _tabTitles[_tabController.index]['id'];
             final filteredTasks =
                 tasks.where((task) => task.statusId == statusId).toList();
+            final bool showPaginationLoader =
+                state.isLoadingMore && filteredTasks.isNotEmpty;
 
             if (filteredTasks.isEmpty) {
               return RefreshIndicator(
@@ -1312,8 +1388,22 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
               color: const Color(0xff1E2E52),
               backgroundColor: Colors.white,
               child: ListView.builder(
-                itemCount: filteredTasks.length,
+                controller: _listScrollController,
+                physics: const AlwaysScrollableScrollPhysics(),
+                itemCount: filteredTasks.length + (showPaginationLoader ? 1 : 0),
                 itemBuilder: (context, index) {
+                  if (index >= filteredTasks.length) {
+                    return const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 16),
+                      child: Center(
+                        child: PlayStoreImageLoading(
+                          size: 56.0,
+                          duration: Duration(milliseconds: 1000),
+                        ),
+                      ),
+                    );
+                  }
+
                   final task = filteredTasks[index];
                   return Padding(
                     padding:
@@ -1357,7 +1447,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
   Widget _buildCustomTabBar() {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
-      controller: _scrollController,
+      controller: _tabScrollController,
       child: Row(
         children: [
           ...List.generate(_tabTitles.length, (index) {
@@ -1455,6 +1545,12 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
     return GestureDetector(
       key: _tabKeys[index],
       onTap: () {
+        if (_tabController.index != index) {
+          setState(() {
+            _isFilterLoading = true;
+            _shouldShowLoader = true;
+          });
+        }
         _tabController.animateTo(index);
       },
       onLongPress: () {
@@ -1636,6 +1732,8 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
             setState(() {
               _isFilterLoading = false;
               _shouldShowLoader = false;
+              _skipNextTabListener = false;
+              _skipNextTabListenerIndex = null;
             });
           }
         }
@@ -1683,11 +1781,13 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
                   _tabController.addListener(() {
                     if (!_tabController.indexIsChanging) {
                       // ← КРИТИЧНО: Проверяем флаг пропуска!
-                      if (_skipNextTabListener) {
+                      if (_skipNextTabListener &&
+                          _skipNextTabListenerIndex == _tabController.index) {
                         debugPrint(
                             'TaskScreen: TabController listener - SKIPPED (filter just applied)');
                         setState(() {
                           _skipNextTabListener = false;
+                          _skipNextTabListenerIndex = null;
                           _currentTabIndex = _tabController.index;
                         });
                         return; // ← ВЫХОДИМ БЕЗ ЗАПРОСА!
@@ -1703,13 +1803,11 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
                       // ИСПРАВЛЕНО: Устанавливаем флаг загрузки при переключении табов
                       setState(() {
                         _currentTabIndex = _tabController.index;
-                        // Показываем лоадер только если есть активные фильтры или поиск
-                        if (hasActiveFilters || _lastSearchQuery.isNotEmpty) {
-                          _shouldShowLoader = true;
-                        }
+                        _isFilterLoading = true;
+                        _shouldShowLoader = true;
                       });
 
-                      if (_scrollController.hasClients) {
+                      if (_tabScrollController.hasClients) {
                         _scrollToActiveTab();
                       }
 
@@ -1803,8 +1901,19 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
                 }
 
                 // Прокручиваем к активному табу
-                if (_scrollController.hasClients) {
+                if (_tabScrollController.hasClients) {
                   _scrollToActiveTab();
+                }
+
+                if (_skipNextTabListener) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (mounted && _skipNextTabListener) {
+                      setState(() {
+                        _skipNextTabListener = false;
+                        _skipNextTabListenerIndex = null;
+                      });
+                    }
+                  });
                 }
 
                 // Обрабатываем специальные навигации
@@ -1849,51 +1958,20 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
 
                 // ОПТИМИЗАЦИЯ: Убираем задержку и проверяем состояние перед загрузкой
                 // Автоматически загружаем задачи для активного статуса после refresh только если нет активных фильтров
-                if (_tabTitles.isNotEmpty) {
+                if (_tabTitles.isNotEmpty && !_hasActiveFilters()) {
                   final activeStatusId = _tabTitles[_currentTabIndex]['id'];
-                  final bool hasActiveFilters = _hasActiveFilters();
                   final taskBloc = context.read<TaskBloc>();
 
-                  // Загружаем только если нет активных фильтров И нет уже загруженных данных
-                  if (!hasActiveFilters) {
-                    // Проверяем есть ли уже данные для этого статуса
-                    if (taskBloc.state is TaskDataLoaded) {
-                      final currentState = taskBloc.state as TaskDataLoaded;
-                      final hasTasksForStatus = currentState.tasks
-                          .any((task) => task.statusId == activeStatusId);
-
-                      // Загружаем только если нет данных
-                      if (!hasTasksForStatus) {
-                        WidgetsBinding.instance.addPostFrameCallback((_) {
-                          if (mounted) {
-                            taskBloc.add(FetchTasks(
-                              activeStatusId,
-                              reasonForRefusalIds:
-                                  _selectedReasonForRefusalIds.isNotEmpty
-                                      ? _selectedReasonForRefusalIds
-                                      : null,
-                            ));
-                          }
-                        });
-                      }
-                    } else {
-                      // Если нет состояния TaskDataLoaded, загружаем
-                      WidgetsBinding.instance.addPostFrameCallback((_) {
-                        if (mounted) {
-                          taskBloc.add(FetchTasks(
-                            activeStatusId,
-                            reasonForRefusalIds:
-                                _selectedReasonForRefusalIds.isNotEmpty
-                                    ? _selectedReasonForRefusalIds
-                                    : null,
-                          ));
-                        }
-                      });
-                    }
-                  } else {
-                    debugPrint(
-                        'TaskScreen: Skip auto FetchTasks due to active filters');
-                  }
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (!mounted || _hasActiveFilters()) return;
+                    taskBloc.add(FetchTasks(
+                      activeStatusId,
+                      reasonForRefusalIds:
+                          _selectedReasonForRefusalIds.isNotEmpty
+                              ? _selectedReasonForRefusalIds
+                              : null,
+                    ));
+                  });
                 }
               } else {
                 // Если табы пустые, создаем пустой контроллер
@@ -1909,12 +1987,9 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
           if (state.message.contains(
             AppLocalizations.of(context)!.translate('unauthorized_access'),
           )) {
-            ApiService apiService = ApiService();
-            await apiService.logout();
-            Navigator.pushAndRemoveUntil(
-              context,
-              MaterialPageRoute(builder: (context) => LoginScreen()),
-              (Route<dynamic> route) => false,
+            await AppLogoutService.logoutAndReset(
+              context: context,
+              restartApp: false,
             );
           } else {
             // ✅ УБРАНО: Не показываем SnackBar с кнопкой "Повторить"
@@ -2019,13 +2094,13 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
 
       if (position.dx < 0 ||
           (position.dx + tabWidth) > MediaQuery.of(context).size.width) {
-        double targetOffset = _scrollController.offset +
+        double targetOffset = _tabScrollController.offset +
             position.dx -
             (MediaQuery.of(context).size.width / 2) +
             (tabWidth / 2);
 
-        if (targetOffset != _scrollController.offset) {
-          _scrollController.animateTo(
+        if (targetOffset != _tabScrollController.offset) {
+          _tabScrollController.animateTo(
             targetOffset,
             duration: Duration(milliseconds: 100),
             curve: Curves.linear,

@@ -133,7 +133,7 @@ extension _SipScreenContactsExtension on _SipScreenState {
   void _refreshContactSuggestions() {
     if (!_contactsEnabled || !_contactsLoaded) {
       _contactSuggestions = const [];
-      _contactSuggestionTotalCount = 0;
+      _rebuildDialSuggestions();
       return;
     }
 
@@ -141,7 +141,7 @@ extension _SipScreenContactsExtension on _SipScreenState {
     final queryDigits = _digitsOnly(rawQuery);
     if (rawQuery.isEmpty) {
       _contactSuggestions = const [];
-      _contactSuggestionTotalCount = 0;
+      _rebuildDialSuggestions();
       return;
     }
 
@@ -180,7 +180,36 @@ extension _SipScreenContactsExtension on _SipScreenState {
       final key = '${item.name}|${item.normalizedPhone}';
       return unique.add(key);
     }).toList(growable: false);
-    _contactSuggestionTotalCount = uniqueSuggestions.length;
     _contactSuggestions = uniqueSuggestions.take(6).toList(growable: false);
+    _rebuildDialSuggestions();
+  }
+
+  void _rebuildDialSuggestions({
+    List<_SipInlineSuggestion>? serverSuggestions,
+  }) {
+    final merged = <_SipInlineSuggestion>[
+      ..._contactSuggestions.map(
+        (item) => _SipInlineSuggestion(
+          name: item.name,
+          phone: item.phone,
+          normalizedPhone: item.normalizedPhone,
+          sourceLabel: 'Контакт',
+          photo: item.photo,
+        ),
+      ),
+      ...(serverSuggestions ??
+          _dialSuggestions.where((item) {
+            return item.sourceLabel != 'Контакт';
+          })),
+    ];
+
+    final unique = <String>{};
+    final uniqueSuggestions = merged.where((item) {
+      final key = '${item.normalizedPhone}|${item.sourceLabel}|${item.name}';
+      return unique.add(key);
+    }).toList(growable: false);
+
+    _dialSuggestionTotalCount = uniqueSuggestions.length;
+    _dialSuggestions = uniqueSuggestions.take(8).toList(growable: false);
   }
 }

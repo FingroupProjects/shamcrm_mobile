@@ -36,12 +36,14 @@ class LeadDataLoaded extends LeadState {
   final List<Lead> leads;
   final int currentPage;
   final Map<int, int> leadCounts;
+  final bool isLoadingMore;
   final DateTime timestamp; // Добавляем временную метку для гарантии уникальности
 
   LeadDataLoaded(
     this.leads, {
     this.currentPage = 1,
     required this.leadCounts,
+    this.isLoadingMore = false,
     DateTime? timestamp,
   }) : this.timestamp = timestamp ?? DateTime.now();
 
@@ -50,7 +52,23 @@ class LeadDataLoaded extends LeadState {
       [...leads, ...newLeads],
       currentPage: currentPage + 1,
       leadCounts: leadCounts,
+      isLoadingMore: false,
       timestamp: DateTime.now(), // Обновляем временную метку
+    );
+  }
+
+  LeadDataLoaded copyWith({
+    List<Lead>? leads,
+    int? currentPage,
+    Map<int, int>? leadCounts,
+    bool? isLoadingMore,
+  }) {
+    return LeadDataLoaded(
+      leads ?? this.leads,
+      currentPage: currentPage ?? this.currentPage,
+      leadCounts: leadCounts ?? this.leadCounts,
+      isLoadingMore: isLoadingMore ?? this.isLoadingMore,
+      timestamp: DateTime.now(),
     );
   }
 
@@ -60,6 +78,7 @@ class LeadDataLoaded extends LeadState {
       newLeads,
       currentPage: 1, // Сбрасываем пагинацию
       leadCounts: newCounts ?? leadCounts,
+      isLoadingMore: false,
       timestamp: DateTime.now(), // Новая временная метка
     );
   }

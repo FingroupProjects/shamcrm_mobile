@@ -6,6 +6,8 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/custom_widget/country_data_list.dart';
 import 'package:crm_task_manager/models/lead_model.dart';
+import 'package:crm_task_manager/models/page_2/call_center_model.dart';
+import 'package:crm_task_manager/page_2/call_center/call_details_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/lead/lead_cache.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_add_screen.dart';
@@ -14,6 +16,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_contacts/flutter_contacts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 
 import 'sip_service.dart';
 import 'sip_state.dart';
@@ -25,6 +28,7 @@ part 'logic/sip_screen_dialer.dart';
 part 'logic/sip_screen_search.dart';
 part 'widgets/sip_call_views.dart';
 part 'widgets/sip_glass_widgets.dart';
+part 'widgets/sip_history_screen.dart';
 part 'widgets/sip_main_views.dart';
 part 'widgets/sip_settings_sheet.dart';
 
@@ -46,6 +50,8 @@ class _SipScreenState extends State<SipScreen>
   final TextEditingController _loginController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _sipIdController = TextEditingController();
+  final TextEditingController _journalSearchController =
+      TextEditingController();
   final TextEditingController _searchViewController = TextEditingController();
   final TextEditingController _portController = TextEditingController();
   final FocusNode _dialFocusNode = FocusNode();
@@ -58,6 +64,8 @@ class _SipScreenState extends State<SipScreen>
   Timer? _callDurationTimer;
   SipCallUiStatus? _lastObservedCallStatus;
   String? _lastShownSipNoticeKey;
+  SipRegistrationUiStatus? _lastObservedRegistrationStatus;
+  String? _lastShownRegistrationNoticeKey;
   String? _activeFeedbackAsset;
   DateTime? _connectedAt;
   Duration _connectedDuration = Duration.zero;
@@ -67,12 +75,15 @@ class _SipScreenState extends State<SipScreen>
   List<Contact> _contacts = const [];
   List<_SipIndexedContact> _indexedContacts = const [];
   List<_SipContactSuggestion> _contactSuggestions = const [];
-  int _contactSuggestionTotalCount = 0;
+  List<_SipInlineSuggestion> _dialSuggestions = const [];
+  int _dialSuggestionTotalCount = 0;
   bool _showInCallKeypad = false;
   String _inCallDigits = '';
   double _incomingAnswerDrag = 0;
   Timer? _contactSearchDebounce;
+  Timer? _serverDialSearchDebounce;
   Timer? _draftSaveDebounce;
+  Timer? _journalSearchDebounce;
   bool _suspendDraftAutosave = false;
   bool _isDialPanelCollapsed = false;
   String _contactsViewQuery = '';
@@ -84,7 +95,10 @@ class _SipScreenState extends State<SipScreen>
   List<Lead> _searchLeadResults = const [];
   Timer? _leadSearchDebounce;
   int _leadSearchRequestId = 0;
+  int _dialSuggestionRequestId = 0;
   _SipSearchSource _searchSource = _SipSearchSource.calls;
+  String? _expandedCallLogId;
+  String _journalSearchQuery = '';
 
   static const List<Map<String, String>> _dialPadItems = [
     {'key': '1', 'letters': ''},
@@ -111,6 +125,19 @@ class _SipScreenState extends State<SipScreen>
     _updateView(() {
       _isDialPanelCollapsed = false;
     });
+  }
+
+  int _resolveTabViewIndex(Key? key) {
+    return switch (key) {
+      const ValueKey('dial') => 0,
+      const ValueKey('journal') ||
+      const ValueKey('journal_loading') ||
+      const ValueKey('journal_empty') =>
+        1,
+      const ValueKey('contacts') => 2,
+      const ValueKey('search') => 3,
+      _ => _bottomTabIndex,
+    };
   }
 
   @override
@@ -166,7 +193,9 @@ class _SipScreenState extends State<SipScreen>
     _sipService.setSipScreenVisible(false);
     _callDurationTimer?.cancel();
     _contactSearchDebounce?.cancel();
+    _serverDialSearchDebounce?.cancel();
     _draftSaveDebounce?.cancel();
+    _journalSearchDebounce?.cancel();
     _leadSearchDebounce?.cancel();
     _pulseController.dispose();
     unawaited(_callFeedbackPlayer.stop());
@@ -181,6 +210,7 @@ class _SipScreenState extends State<SipScreen>
     _loginController.dispose();
     _passwordController.dispose();
     _sipIdController.dispose();
+    _journalSearchController.dispose();
     _searchViewController.dispose();
     _portController.dispose();
     _dialFocusNode.dispose();
@@ -239,7 +269,40 @@ class _SipScreenState extends State<SipScreen>
                               ),
                             Expanded(
                               child: AnimatedSwitcher(
-                                duration: const Duration(milliseconds: 220),
+                                duration: const Duration(milliseconds: 280),
+                                switchInCurve: Curves.easeOutCubic,
+                                switchOutCurve: Curves.easeInCubic,
+                                transitionBuilder: (child, animation) {
+                                  final childIndex =
+                                      _resolveTabViewIndex(child.key);
+                                  final slidesFromLeft =
+                                      childIndex < _bottomTabIndex;
+                                  final slideAnimation = Tween<Offset>(
+                                    begin: Offset(
+                                      slidesFromLeft ? -0.08 : 0.08,
+                                      0,
+                                    ),
+                                    end: Offset.zero,
+                                  ).animate(
+                                    CurvedAnimation(
+                                      parent: animation,
+                                      curve: Curves.easeOutCubic,
+                                    ),
+                                  );
+
+                                  final fadeAnimation = CurvedAnimation(
+                                    parent: animation,
+                                    curve: Curves.easeOut,
+                                  );
+
+                                  return FadeTransition(
+                                    opacity: fadeAnimation,
+                                    child: SlideTransition(
+                                      position: slideAnimation,
+                                      child: child,
+                                    ),
+                                  );
+                                },
                                 child: switch (_bottomTabIndex) {
                                   0 => _dialPadView(context, state),
                                   2 => _contactsView(context),
@@ -248,7 +311,7 @@ class _SipScreenState extends State<SipScreen>
                                 },
                               ),
                             ),
-                            if (_bottomTabIndex != 0) _bottomSwitcher(context),
+                            _bottomSwitcher(context),
                           ],
                         ),
                 ),

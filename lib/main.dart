@@ -138,6 +138,7 @@ import 'package:crm_task_manager/screens/profile/languages/local_manager_lang.da
 import 'package:crm_task_manager/screens/profile/profile_screen.dart';
 import 'package:crm_task_manager/screens/sip/sip_call_overlay_host.dart';
 import 'package:crm_task_manager/screens/sip/sip_service.dart';
+import 'package:crm_task_manager/services/app_logout_service.dart';
 import 'package:crm_task_manager/update_dialog.dart';
 import 'package:crm_task_manager/widgets/native_internet_aware_wrapper_WITH_GAME.dart';
 import 'package:crm_task_manager/widgets/native_internet_monitor_simple.dart';
@@ -151,7 +152,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:new_version_plus/new_version_plus.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'bloc/cash_register_list/cash_register_list_bloc.dart';
 import 'bloc/page_2_BLOC/document/incoming/incoming_document_history/incoming_document_history_bloc.dart';
 import 'bloc/supplier_list/supplier_list_bloc.dart';
@@ -178,7 +178,7 @@ void main() async {
     String? token;
     String? pin;
     bool isDomainChecked = false;
-
+    
     if (sessionValidation.isValid) {
       token = await apiService.getToken();
       pin = await authService.getPin();
@@ -458,16 +458,11 @@ Future<SessionValidationResult> _validateApplicationSession(
 
 Future<void> _clearAllApplicationData(
     ApiService apiService, AuthService authService) async {
-  try {
-    await apiService.logout();
-    await apiService.reset();
-    await authService.clearPin();
-
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.clear();
-  } catch (e) {
-    //print('main: Error clearing data: $e');
-  }
+  await AppLogoutService.logoutAndReset(
+    restartApp: false,
+    navigateToAuth: false,
+    notifyServer: false,
+  );
 }
 
 class ErrorApp extends StatelessWidget {

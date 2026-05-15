@@ -1,6 +1,7 @@
 // error_interceptor.dart
-import 'package:flutter/material.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/services/app_logout_service.dart';
+import 'package:flutter/material.dart';
 
 class ErrorInterceptor {
   static final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
@@ -47,19 +48,11 @@ class ErrorInterceptor {
   static Future<void> _forceRedirectToAuth() async {
     try {
       //print('ErrorInterceptor: Forcing redirect to auth');
-      
-      if (_apiService != null) {
-        await _apiService!.logout();
-        await _apiService!.reset();
-      }
-
       final context = _navigatorKey.currentContext;
-      if (context != null) {
-        Navigator.of(context).pushNamedAndRemoveUntil(
-          '/local_auth',
-          (route) => false,
-        );
-      }
+      await AppLogoutService.logoutAndReset(
+        context: context,
+        restartApp: false,
+      );
     } catch (e) {
       //print('ErrorInterceptor: Error in force redirect: $e');
     }
