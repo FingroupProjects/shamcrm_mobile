@@ -9,6 +9,13 @@ extension _SipScreenSearchExtension on _SipScreenState {
     } catch (_) {
       _leadSearchEnabled = false;
     }
+    if (_leadSearchEnabled) {
+      unawaited(_loadContactsLeadCount());
+    } else {
+      _leadTotalCount = 0;
+      _isLeadCountLoading = false;
+    }
+    _ensureValidBottomTabIndex();
     _ensureValidSearchSource();
   }
 

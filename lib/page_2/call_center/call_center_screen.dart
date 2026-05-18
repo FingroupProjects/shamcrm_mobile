@@ -18,7 +18,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
 class CallCenterScreen extends StatefulWidget {
-  const CallCenterScreen({Key? key}) : super(key: key);
+  const CallCenterScreen({super.key});
 
   @override
   State<CallCenterScreen> createState() => _CallCenterScreenState();
@@ -195,25 +195,6 @@ class _CallCenterScreenState extends State<CallCenterScreen> {
     context
         .read<CallCenterBloc>()
         .add(FilterCalls(filters.cast<String, dynamic>()));
-  }
-
-  void _resetFilters() {
-    setState(() {
-      _selectedFilter = null;
-      _searchQuery = '';
-      _searchController.clear();
-      _isSearching = false;
-      _selectedCallTypes = [];
-      _selectedOperators = [];
-      _selectedStatuses = [];
-      _selectedRatings = [];
-      _selectedLeads = [];
-      selectedRemarkStatus = null;
-      startDate = null;
-      endDate = null;
-      _areFiltersApplied = false;
-      context.read<CallCenterBloc>().add(ResetFilters());
-    });
   }
 
   bool _hasAnyFiltersApplied() {
@@ -505,7 +486,7 @@ class _CallCenterScreenState extends State<CallCenterScreen> {
                     initialRatings:
                         _selectedRatings.map((r) => r.id.toString()).toList(),
                     initialLeads:
-                        _selectedLeads.map((l) => l.id.toString()).toList(),
+                        _selectedLeads.map((l) => l.id as int).toList(),
                     initialRemarkStatus: selectedRemarkStatus,
                     initialStartDate: startDate?.toIso8601String(),
                     initialEndDate: endDate?.toIso8601String(),

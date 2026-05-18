@@ -33,6 +33,7 @@ enum SipTransportUi {
 class SipCallLogEntry {
   final String id;
   final String? serverCallId;
+  final int? serverLeadId;
   final String target;
   final String dialTarget;
   final SipCallDirection direction;
@@ -46,6 +47,7 @@ class SipCallLogEntry {
   const SipCallLogEntry({
     required this.id,
     this.serverCallId,
+    this.serverLeadId,
     required this.target,
     required this.dialTarget,
     required this.direction,
@@ -62,6 +64,7 @@ class SipCallLogEntry {
     return SipCallLogEntry(
       id: 'server_${entry.id}',
       serverCallId: entry.id,
+      serverLeadId: entry.leadId,
       target: entry.leadName.trim().isNotEmpty && entry.leadName != 'Неизвестно'
           ? entry.leadName
           : entry.phoneNumber,
@@ -81,6 +84,7 @@ class SipCallLogEntry {
   CallLogEntry toCallLogEntry() {
     return CallLogEntry(
       id: serverCallId ?? id,
+      leadId: serverLeadId,
       leadName: target,
       phoneNumber: dialTarget,
       callDate: timestamp,

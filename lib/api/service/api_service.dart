@@ -2644,6 +2644,31 @@ class ApiService {
     }
   }
 
+  Future<int> getLeadCountAll() async {
+    final path = await _appendQueryParams('/lead/count-all');
+    final response = await _getRequest(path);
+
+    if (response.statusCode != 200) {
+      throw Exception('Failed to load lead count');
+    }
+
+    final data = jsonDecode(response.body);
+    final result = data['result'];
+
+    if (result is int) return result;
+    if (result is String) return int.tryParse(result) ?? 0;
+    if (result is Map<String, dynamic>) {
+      final dynamic count = result['count'] ??
+          result['total'] ??
+          result['all'] ??
+          result['leads_count'];
+      if (count is int) return count;
+      if (count is String) return int.tryParse(count) ?? 0;
+    }
+
+    return 0;
+  }
+
   Future<List<LeadStatus>> getLeadStatuses({
     List<int>? managers,
     List<int>? regions,
@@ -3935,9 +3960,15 @@ class ApiService {
   }
 
 //Метод для получения Менеджера
-  Future<LeadsMultiDataResponse> getAllLeadMulti() async {
+  Future<LeadsMultiDataResponse> getAllLeadMulti({
+    String? search,
+  }) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
-    final path = await _appendQueryParams('/lead');
+    String basePath = '/lead';
+    if (search != null && search.trim().isNotEmpty) {
+      basePath += '?search=${Uri.encodeQueryComponent(search.trim())}';
+    }
+    final path = await _appendQueryParams(basePath);
     if (kDebugMode) {
       //debugPrint('ApiService: getAllLeadMulti - Generated path: $path');
     }
@@ -4897,7 +4928,8 @@ class ApiService {
           final directoryId = directoryIdRaw.toString();
           final Iterable<String> entryIds = entryIdRaw is List
               ? entryIdRaw
-                  .where((entry) => entry != null && entry.toString().isNotEmpty)
+                  .where(
+                      (entry) => entry != null && entry.toString().isNotEmpty)
                   .map((entry) => entry.toString())
               : [entryIdRaw.toString()];
 
@@ -13459,7 +13491,7 @@ class ApiService {
           (filters['leads'] as List).isNotEmpty) {
         final leadIds = filters['leads'] as List<int>;
         for (var leadId in leadIds) {
-          path += '&lead_id[]=$leadId';
+          path += '&leads[]=$leadId';
         }
         if (kDebugMode) {
           //debugPrint('ApiService: Добавлены lead_id: $leadIds');
@@ -13561,7 +13593,7 @@ class ApiService {
           (filters['leads'] as List).isNotEmpty) {
         final leadIds = filters['leads'] as List<int>;
         for (var leadId in leadIds) {
-          path += '&lead_id[]=$leadId';
+          path += '&leads[]=$leadId';
         }
         if (kDebugMode) {
           //debugPrint('ApiService: Добавлены lead_id: $leadIds');
@@ -13663,7 +13695,7 @@ class ApiService {
           (filters['leads'] as List).isNotEmpty) {
         final leadIds = filters['leads'] as List<int>;
         for (var leadId in leadIds) {
-          path += '&lead_id[]=$leadId';
+          path += '&leads[]=$leadId';
         }
         if (kDebugMode) {
           //debugPrint('ApiService: Добавлены lead_id: $leadIds');
@@ -13765,7 +13797,7 @@ class ApiService {
           (filters['leads'] as List).isNotEmpty) {
         final leadIds = filters['leads'] as List<int>;
         for (var leadId in leadIds) {
-          path += '&lead_id[]=$leadId';
+          path += '&leads[]=$leadId';
         }
         if (kDebugMode) {
           //debugPrint('ApiService: Добавлены lead_id: $leadIds');
@@ -13859,6 +13891,38 @@ class ApiService {
     } else {
       throw ('Failed to load call data');
     }
+  }
+
+  Future<Map<String, dynamic>> getCallHistoryById({
+    required int callId,
+    required int page,
+    required int perPage,
+  }) async {
+    var path = '/calls/$callId/history?page=$page&per_page=$perPage';
+    path = await _appendQueryParams(path);
+
+    final response = await _getRequest(path);
+
+    if (response.statusCode != 200) {
+      throw ('Ошибка загрузки истории звонков');
+    }
+
+    final data = json.decode(response.body);
+    if (data['result'] == null || data['result']['data'] == null) {
+      throw ('Нет данных истории звонков в ответе');
+    }
+
+    final calls = (data['result']['data'] as List)
+        .map((json) => CallLogEntry.fromJson(json))
+        .toList();
+    final pagination =
+        (data['result']['pagination'] as Map?)?.cast<String, dynamic>() ??
+            <String, dynamic>{};
+
+    return {
+      'calls': calls,
+      'pagination': pagination,
+    };
   }
 
   Future<CallStatistics> getCallStatistics() async {

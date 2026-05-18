@@ -37,6 +37,15 @@ class SipService extends ChangeNotifier
       'sip_full_screen_intent_prompted_v1';
   static const String _xiaomiAutoStartPromptedKey =
       'sip_xiaomi_autostart_prompted_v1';
+  static const List<String> _sipSecureStorageKeys = <String>[
+    _serverKey,
+    _loginKey,
+    _passwordKey,
+    _sipIdKey,
+    _transportKey,
+    _portKey,
+    _enabledKey,
+  ];
   static const MethodChannel _nativeSipMethodChannel =
       MethodChannel('com.shamcrm/native_sip/methods');
   static const EventChannel _nativeSipEventChannel =
@@ -104,6 +113,8 @@ class SipService extends ChangeNotifier
   String? _lastTerminalNativeCallId;
   String? _lastTerminalNativeRemoteIdentity;
   DateTime? _lastTerminalNativeCallAt;
+  bool _secureStorageRecoveryTriggered = false;
+  String? _pendingStorageRecoveryMessage;
 
   Future<void> initialize() async {
     if (_disposed) return;
@@ -122,13 +133,41 @@ class SipService extends ChangeNotifier
         WidgetsBinding.instance.addObserver(this);
       }
 
-      final server = await _storage.read(key: _serverKey) ?? '';
-      final login = await _storage.read(key: _loginKey) ?? '';
-      final password = await _storage.read(key: _passwordKey) ?? '';
-      final sipId = await _storage.read(key: _sipIdKey) ?? '';
-      final transportRaw = await _storage.read(key: _transportKey) ?? 'udp';
-      final portRaw = await _storage.read(key: _portKey) ?? '5060';
-      final enabledRaw = await _storage.read(key: _enabledKey) ?? 'false';
+      final server = await _readSecureStorageValue(
+            _serverKey,
+            fallback: '',
+          ) ??
+          '';
+      final login = await _readSecureStorageValue(
+            _loginKey,
+            fallback: '',
+          ) ??
+          '';
+      final password = await _readSecureStorageValue(
+            _passwordKey,
+            fallback: '',
+          ) ??
+          '';
+      final sipId = await _readSecureStorageValue(
+            _sipIdKey,
+            fallback: '',
+          ) ??
+          '';
+      final transportRaw = await _readSecureStorageValue(
+            _transportKey,
+            fallback: 'udp',
+          ) ??
+          'udp';
+      final portRaw = await _readSecureStorageValue(
+            _portKey,
+            fallback: '5060',
+          ) ??
+          '5060';
+      final enabledRaw = await _readSecureStorageValue(
+            _enabledKey,
+            fallback: 'false',
+          ) ??
+          'false';
       final parsedPort = int.tryParse(portRaw) ?? 5060;
       final hasStoredCredentials = server.trim().isNotEmpty &&
           login.trim().isNotEmpty &&
@@ -151,9 +190,11 @@ class SipService extends ChangeNotifier
         sipId: sipId,
         transport: transport,
         port: parsedPort,
-        clearError: true,
+        errorMessage: _pendingStorageRecoveryMessage,
+        clearError: _pendingStorageRecoveryMessage == null,
         clearRemoteIdentity: true,
       );
+      _pendingStorageRecoveryMessage = null;
       await _ensureRenderersInitializedForCurrentMode();
       await _initializeNativeSipBridge();
       await _syncNativeSnapshot();
@@ -167,14 +208,65 @@ class SipService extends ChangeNotifier
       _notifyListenersSafely();
       completer.complete();
     } catch (error, stackTrace) {
+      debugPrint('SipService.initialize failed: $error');
+      debugPrint('SipService.initialize stackTrace: $stackTrace');
       _initialized = false;
-      _configLoaded = false;
+      _configLoaded = true;
+      _state = SipUiState.initial().copyWith(
+        errorMessage:
+            'Не удалось открыть сохраненные SIP-настройки. Проверьте данные и попробуйте снова.',
+      );
+      _notifyListenersSafely();
       if (!completer.isCompleted) {
-        completer.completeError(error, stackTrace);
+        completer.complete();
       }
-      rethrow;
     } finally {
       _initializationCompleter = null;
+    }
+  }
+
+  Future<String?> _readSecureStorageValue(
+    String key, {
+    String? fallback,
+  }) async {
+    try {
+      return await _storage.read(key: key) ?? fallback;
+    } on PlatformException catch (error, stackTrace) {
+      debugPrint('SipService secure storage read failed for $key: $error');
+      debugPrint('SipService secure storage read stackTrace: $stackTrace');
+      if (_isSecureStorageDecryptError(error)) {
+        await _resetCorruptedSipStorage();
+      }
+      return fallback;
+    } catch (error, stackTrace) {
+      debugPrint('SipService secure storage read failed for $key: $error');
+      debugPrint('SipService secure storage read stackTrace: $stackTrace');
+      return fallback;
+    }
+  }
+
+  bool _isSecureStorageDecryptError(PlatformException error) {
+    final message =
+        '${error.code} ${error.message} ${error.details}'.toUpperCase();
+    return message.contains('BAD_DECRYPT') ||
+        message.contains('BAD PADDING') ||
+        message.contains('BADPADDINGEXCEPTION');
+  }
+
+  Future<void> _resetCorruptedSipStorage() async {
+    if (_secureStorageRecoveryTriggered) {
+      return;
+    }
+    _secureStorageRecoveryTriggered = true;
+    _pendingStorageRecoveryMessage =
+        'Сохраненные SIP-настройки были повреждены и сброшены. Введите их заново.';
+
+    for (final key in _sipSecureStorageKeys) {
+      try {
+        await _storage.delete(key: key);
+      } catch (error) {
+        debugPrint('SipService secure storage delete failed for $key: $error');
+      }
     }
   }
 
@@ -2023,6 +2115,10 @@ class SipService extends ChangeNotifier
             mappedCall == SipCallUiStatus.idle
         ? false
         : speakerOn;
+    final resolvedMessage = _sanitizeRegistrationMessage(
+      message,
+      registrationStatus: mappedRegistration,
+    );
     debugPrint(
       'SipService applyNativeSnapshot -> callState=$callState, mappedCall=$mappedCall, snapshotSpeaker=$speakerOn, resolvedSpeaker=$resolvedSpeakerOn',
     );
@@ -2030,7 +2126,7 @@ class SipService extends ChangeNotifier
     _state = _state.copyWith(
       registrationStatus: mappedRegistration,
       callStatus: mappedCall,
-      errorMessage: message,
+      errorMessage: resolvedMessage,
       remoteIdentity: remoteIdentity,
       isMuted: muted,
       isSpeakerOn: resolvedSpeakerOn,
@@ -2054,9 +2150,10 @@ class SipService extends ChangeNotifier
       case 'registering':
         _state = _state.copyWith(
           registrationStatus: SipRegistrationUiStatus.registering,
-          errorMessage: message == null || message == 'Registration in progress'
-              ? null
-              : message,
+          errorMessage: _sanitizeRegistrationMessage(
+            message,
+            registrationStatus: SipRegistrationUiStatus.registering,
+          ),
         );
         break;
       case 'registered':
@@ -2111,6 +2208,30 @@ class SipService extends ChangeNotifier
     }
 
     _notifyListenersSafely();
+  }
+
+  String? _sanitizeRegistrationMessage(
+    String? message, {
+    required SipRegistrationUiStatus registrationStatus,
+  }) {
+    final trimmed = message?.trim();
+    if (trimmed == null || trimmed.isEmpty) {
+      return null;
+    }
+
+    final normalized = trimmed.toLowerCase();
+    final isInformationalSuccess = normalized == 'registration successful' ||
+        normalized == 'registered' ||
+        normalized == 'registration in progress' ||
+        normalized == 'registration disabled' ||
+        normalized == 'unregistration done';
+
+    if (isInformationalSuccess &&
+        registrationStatus != SipRegistrationUiStatus.failed) {
+      return null;
+    }
+
+    return trimmed;
   }
 
   void _handleNativeCallEvent(Map<String, dynamic> payload) {
@@ -2747,8 +2868,10 @@ class SipService extends ChangeNotifier
   void _stopReconnectOnAuthorizationFailure(String message) {
     _shouldStayConnected = false;
     _persistentSipEnabled = false;
+    _sipEnabled = false;
     _cancelReconnect();
     _stopKeepAlive();
+    unawaited(_storage.write(key: _enabledKey, value: 'false'));
 
     _state = _state.copyWith(
       registrationStatus: SipRegistrationUiStatus.failed,
@@ -2767,6 +2890,10 @@ class SipService extends ChangeNotifier
     );
     switch (state.state) {
       case RegistrationStateEnum.REGISTERED:
+        _persistentSipEnabled = true;
+        _shouldStayConnected = true;
+        _sipEnabled = true;
+        unawaited(_storage.write(key: _enabledKey, value: 'true'));
         _state = _state.copyWith(
           registrationStatus: SipRegistrationUiStatus.registered,
           clearError: true,

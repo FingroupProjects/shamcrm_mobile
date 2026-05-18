@@ -2,53 +2,265 @@
 part of 'package:crm_task_manager/screens/sip/sip_screen.dart';
 
 extension _SipScreenContactsExtension on _SipScreenState {
+  static const double _contactsListItemExtent = 84;
+  static const int _contactsFirstChunkSize = 24;
+  static const int _contactsChunkSize = 120;
+  static const String _contactsCacheKey = 'sip_contacts_cache_v2';
+
+  Future<void> _refreshContactsTabState() async {
+    if (_isRefreshingContactsTabState) return;
+    _isRefreshingContactsTabState = true;
+    try {
+      await _loadContactsConfiguration();
+      await _loadSearchCapabilities();
+      if (_leadSearchEnabled) {
+        await _loadContactsLeadResults(reset: true);
+      }
+    } finally {
+      _isRefreshingContactsTabState = false;
+    }
+  }
+
+  Future<void> _refreshContactsView() async {
+    if (_isRefreshingContactsTabState) return;
+
+    _isRefreshingContactsTabState = true;
+    try {
+      await _loadSearchCapabilities();
+      await _loadContactsConfiguration();
+
+      if (_contactsEnabled) {
+        _contactsLoaded = false;
+        _isContactsLoading = false;
+        _contactsPermissionDenied = false;
+        _contactsTotalCount = 0;
+        _displayContacts = const [];
+        _indexedContacts = const [];
+        if (mounted) {
+          _updateView(() {});
+        }
+        await _loadContacts();
+      }
+
+      if (_leadSearchEnabled) {
+        await _loadContactsLeadCount();
+        await _loadContactsLeadResults(reset: true);
+      }
+    } finally {
+      _isRefreshingContactsTabState = false;
+    }
+  }
+
   Future<void> _loadContactsConfiguration() async {
     final prefs = await SharedPreferences.getInstance();
     _contactsEnabled = prefs.getBool('switchContact') ?? false;
+    if (!_contactsEnabled) {
+      _contactsTotalCount = 0;
+      _displayContacts = const [];
+      _contactsLoaded = false;
+    }
+    _ensureValidBottomTabIndex();
+    _ensureValidSearchSource();
     if (_contactsEnabled) {
-      await _loadContacts();
+      unawaited(_loadContacts());
     }
   }
 
   Future<void> _loadContacts() async {
-    if (_contactsLoaded || !_contactsEnabled) return;
+    if (_contactsLoaded || !_contactsEnabled || _isContactsLoading) return;
+    _isContactsLoading = true;
+    if (mounted) {
+      _updateView(() {});
+    }
 
     try {
+      await _restoreCachedContacts();
+
       final granted = await FlutterContacts.requestPermission();
       if (!granted) {
         _contactsPermissionDenied = true;
+        _contactsTotalCount = 0;
+        _ensureValidBottomTabIndex();
+        _ensureValidSearchSource();
+        if (_leadSearchEnabled) {
+          unawaited(_loadContactsLeadResults(reset: true));
+        }
         return;
       }
 
       final contacts = await FlutterContacts.getContacts(
         withProperties: true,
-        withPhoto: true,
+        withPhoto: false,
       );
-
-      _contacts = contacts
+      final filteredContacts = contacts
           .where((contact) =>
               contact.displayName.trim().isNotEmpty &&
               contact.phones.isNotEmpty)
-          .toList(growable: false);
-      _indexedContacts = _contacts.expand((contact) {
-        final lowerName = contact.displayName.toLowerCase();
-        final t9Name = _nameToT9Digits(lowerName);
-        return contact.phones.map(
+          .toList(growable: true)
+        ..sort((a, b) => a.displayName.compareTo(b.displayName));
+      _contactsTotalCount = filteredContacts.length;
+
+      final visibleContacts = <_SipContactSuggestion>[];
+      final indexedContacts = <_SipIndexedContact>[];
+
+      _displayContacts = const [];
+      _indexedContacts = const [];
+      _contactsPermissionDenied = false;
+      _ensureValidBottomTabIndex();
+      _ensureValidSearchSource();
+
+      for (var start = 0;
+          start < filteredContacts.length;
+          start += _contactsChunkSize) {
+        final end =
+            math.min(start + _contactsChunkSize, filteredContacts.length);
+        final batch = filteredContacts.sublist(start, end);
+
+        for (final contact in batch) {
+          final mapped = _mapContact(contact);
+          if (mapped == null) continue;
+          visibleContacts.add(mapped.$1);
+          indexedContacts.addAll(mapped.$2);
+        }
+
+        final reachedFirstPaint =
+            visibleContacts.length >= _contactsFirstChunkSize ||
+                end == filteredContacts.length;
+        if (reachedFirstPaint || start > 0) {
+          _displayContacts = List<_SipContactSuggestion>.unmodifiable(
+            visibleContacts,
+          );
+          _indexedContacts = List<_SipIndexedContact>.unmodifiable(
+            indexedContacts,
+          );
+          _contactsLoaded = true;
+          _refreshContactSuggestions();
+          if (mounted) {
+            _updateView(() {});
+          }
+          await Future<void>.delayed(Duration.zero);
+        }
+      }
+
+      await _persistCachedContacts(_displayContacts);
+    } catch (_) {
+      _contactsPermissionDenied = true;
+      _ensureValidBottomTabIndex();
+      _ensureValidSearchSource();
+    } finally {
+      _isContactsLoading = false;
+      if (mounted) {
+        _updateView(() {});
+      }
+    }
+  }
+
+  (_SipContactSuggestion, List<_SipIndexedContact>)? _mapContact(
+      Contact contact) {
+    final displayName = contact.displayName.trim();
+    if (displayName.isEmpty || contact.phones.isEmpty) return null;
+
+    final primaryPhone = contact.phones.first.number;
+    final lowerName = displayName.toLowerCase();
+    final t9Name = _nameToT9Digits(lowerName);
+    final photo = contact.photo;
+    final indexedPhones = contact.phones
+        .map(
           (phone) => _SipIndexedContact(
-            name: contact.displayName,
+            name: displayName,
             lowerName: lowerName,
             t9Name: t9Name,
             phone: phone.number,
             normalizedPhone: _digitsOnly(phone.number),
-            photo: contact.photo,
+            photo: photo,
           ),
-        );
-      }).toList(growable: false);
+        )
+        .toList(growable: false);
+
+    return (
+      _SipContactSuggestion(
+        name: displayName,
+        phone: primaryPhone,
+        normalizedPhone: _digitsOnly(primaryPhone),
+        photo: photo,
+      ),
+      indexedPhones,
+    );
+  }
+
+  Future<void> _restoreCachedContacts() async {
+    if (_displayContacts.isNotEmpty || _contactsLoaded) return;
+
+    final prefs = await SharedPreferences.getInstance();
+    final rawCache = prefs.getString(_contactsCacheKey);
+    if (rawCache == null || rawCache.isEmpty) return;
+
+    try {
+      final decoded = jsonDecode(rawCache);
+      if (decoded is! List) return;
+
+      final cached = decoded
+          .whereType<Map>()
+          .map((item) => item.cast<String, dynamic>())
+          .map(
+            (item) => _SipContactSuggestion(
+              name: (item['name'] as String? ?? '').trim(),
+              phone: (item['phone'] as String? ?? '').trim(),
+              normalizedPhone:
+                  (item['normalizedPhone'] as String? ?? '').trim(),
+            ),
+          )
+          .where((item) => item.name.isNotEmpty && item.phone.isNotEmpty)
+          .toList(growable: false);
+
+      if (cached.isEmpty) return;
+
+      _displayContacts = cached;
+      _contactsTotalCount = cached.length;
       _contactsLoaded = true;
-      _contactsPermissionDenied = false;
-      _refreshContactSuggestions();
+      if (mounted) {
+        _updateView(() {});
+      }
     } catch (_) {
-      _contactsPermissionDenied = true;
+      // Ignore broken cache and continue with a fresh native load.
+    }
+  }
+
+  Future<void> _persistCachedContacts(
+    List<_SipContactSuggestion> contacts,
+  ) async {
+    if (contacts.isEmpty) return;
+
+    final prefs = await SharedPreferences.getInstance();
+    final payload = contacts
+        .map(
+          (contact) => <String, String>{
+            'name': contact.name,
+            'phone': contact.phone,
+            'normalizedPhone': contact.normalizedPhone,
+          },
+        )
+        .toList(growable: false);
+    await prefs.setString(_contactsCacheKey, jsonEncode(payload));
+  }
+
+  Future<void> _loadContactsLeadCount() async {
+    if (!_leadSearchEnabled || _isLeadCountLoading) return;
+
+    _isLeadCountLoading = true;
+    if (mounted) {
+      _updateView(() {});
+    }
+
+    try {
+      _leadTotalCount = await _apiService.getLeadCountAll();
+    } catch (_) {
+      _leadTotalCount = 0;
+    } finally {
+      _isLeadCountLoading = false;
+      if (mounted) {
+        _updateView(() {});
+      }
     }
   }
 
@@ -211,5 +423,182 @@ extension _SipScreenContactsExtension on _SipScreenState {
 
     _dialSuggestionTotalCount = uniqueSuggestions.length;
     _dialSuggestions = uniqueSuggestions.take(8).toList(growable: false);
+  }
+
+  void _handleContactsViewChanged(String value) {
+    _updateView(() {
+      _contactsViewQuery = value;
+    });
+
+    if (_resolvedContactsTabSource() == _SipContactsTabSource.leads) {
+      _contactsLeadSearchDebounce?.cancel();
+      _contactsLeadSearchDebounce =
+          Timer(const Duration(milliseconds: 320), () async {
+        await _loadContactsLeadResults(reset: true);
+      });
+    }
+  }
+
+  _SipContactsTabSource _resolvedContactsTabSource() {
+    if (!_contactsEnabled && _leadSearchEnabled) {
+      return _SipContactsTabSource.leads;
+    }
+    if (_contactsPermissionDenied) {
+      return _SipContactsTabSource.leads;
+    }
+    if (_contactsTabSource == _SipContactsTabSource.leads &&
+        !_leadSearchEnabled) {
+      return _SipContactsTabSource.contacts;
+    }
+    return _contactsTabSource;
+  }
+
+  void _selectContactsTabSource(_SipContactsTabSource source) {
+    if (_contactsPermissionDenied && source == _SipContactsTabSource.contacts) {
+      return;
+    }
+    if (source == _SipContactsTabSource.leads && !_leadSearchEnabled) return;
+    if (source == _SipContactsTabSource.contacts && !_contactsEnabled) return;
+    if (_contactsTabSource == source) return;
+    _updateView(() {
+      _contactsTabSource = source;
+    });
+    if (source == _SipContactsTabSource.leads) {
+      unawaited(_loadContactsLeadResults(reset: true));
+    }
+  }
+
+  Future<void> _loadContactsLeadResults({bool reset = false}) async {
+    if (!_leadSearchEnabled) return;
+    if (_isContactsLeadLoading || _isContactsLeadLoadingMore) return;
+
+    const perPage = 20;
+    final nextPage = reset ? 1 : _contactsLeadCurrentPage + 1;
+    if (!reset && !_contactsLeadHasMore) return;
+
+    final requestId = ++_contactsLeadRequestId;
+    _updateView(() {
+      if (reset) {
+        _isContactsLeadLoading = true;
+        _contactsLeadCurrentPage = 0;
+        _contactsLeadHasMore = true;
+      } else {
+        _isContactsLeadLoadingMore = true;
+      }
+    });
+
+    try {
+      final leads = await _apiService.getLeads(
+        null,
+        page: nextPage,
+        perPage: perPage,
+        search: _contactsViewQuery.trim().isEmpty
+            ? null
+            : _contactsViewQuery.trim(),
+        bypassAnalyticsCache: true,
+      );
+
+      if (!mounted || requestId != _contactsLeadRequestId) return;
+
+      _updateView(() {
+        final filteredLeads = leads
+            .where((lead) => (lead.phone ?? '').trim().isNotEmpty)
+            .toList(growable: false);
+        if (reset) {
+          _contactsLeadResults = filteredLeads;
+        } else {
+          _contactsLeadResults = [
+            ..._contactsLeadResults,
+            ...filteredLeads,
+          ];
+        }
+        _contactsLeadCurrentPage = nextPage;
+        _contactsLeadHasMore = leads.length >= perPage;
+        _isContactsLeadLoading = false;
+        _isContactsLeadLoadingMore = false;
+      });
+    } catch (_) {
+      if (!mounted || requestId != _contactsLeadRequestId) return;
+
+      _updateView(() {
+        if (reset) {
+          _contactsLeadResults = const [];
+          _contactsLeadCurrentPage = 0;
+          _contactsLeadHasMore = true;
+        }
+        _isContactsLeadLoading = false;
+        _isContactsLeadLoadingMore = false;
+      });
+    }
+  }
+
+  Future<void> _loadMoreContactsLeadResults() async {
+    await _loadContactsLeadResults();
+  }
+
+  String _contactIndexLetter(String name) {
+    final trimmed = name.trim();
+    if (trimmed.isEmpty) return '#';
+    final first = String.fromCharCode(trimmed.runes.first).toUpperCase();
+    return RegExp(r'[A-ZА-ЯЁ]').hasMatch(first) ? first : '#';
+  }
+
+  List<String> _contactIndexLetters(List<_SipContactSuggestion> contacts) {
+    final letters = <String>[];
+    final seen = <String>{};
+    for (final contact in contacts) {
+      final letter = _contactIndexLetter(contact.name);
+      if (seen.add(letter)) {
+        letters.add(letter);
+      }
+    }
+    return letters;
+  }
+
+  int _contactIndexPositionForLetter(
+    List<_SipContactSuggestion> contacts,
+    String letter,
+  ) {
+    for (var i = 0; i < contacts.length; i++) {
+      if (_contactIndexLetter(contacts[i].name) == letter) {
+        return i;
+      }
+    }
+    return 0;
+  }
+
+  void _showContactsIndexOverlay(String letter, {double? top}) {
+    _contactsIndexOverlayTimer?.cancel();
+    _updateView(() {
+      _contactsIndexOverlayLetter = letter;
+      if (top != null) {
+        _contactsIndexOverlayTop = top;
+      }
+    });
+    _contactsIndexOverlayTimer = Timer(const Duration(milliseconds: 720), () {
+      if (!mounted) return;
+      _updateView(() {
+        _contactsIndexOverlayLetter = null;
+        _contactsIndexOverlayTop = null;
+      });
+    });
+  }
+
+  void _jumpToContactsLetter(
+    String letter,
+    List<_SipContactSuggestion> contacts,
+    {double? overlayTop}
+  ) {
+    if (!_contactsListController.hasClients || contacts.isEmpty) return;
+    final targetIndex = _contactIndexPositionForLetter(contacts, letter);
+    final maxExtent = _contactsListController.position.maxScrollExtent;
+    final targetOffset =
+        (targetIndex * _contactsListItemExtent).clamp(0.0, maxExtent);
+    _contactsListController.animateTo(
+      targetOffset,
+      duration: const Duration(milliseconds: 220),
+      curve: Curves.easeOutCubic,
+    );
+    _showContactsIndexOverlay(letter, top: overlayTop);
   }
 }

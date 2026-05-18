@@ -1,4 +1,5 @@
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
+import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/lead_multi_list/lead_multi_bloc.dart';
 import 'package:crm_task_manager/models/lead_multi_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
@@ -6,10 +7,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class LeadMultiSelectWidget extends StatefulWidget {
-  final List<String>? selectedLeads;
+  final List<dynamic>? selectedLeads;
   final Function(List<LeadData>) onSelectLeads;
 
-  LeadMultiSelectWidget({
+  const LeadMultiSelectWidget({
     super.key,
     required this.onSelectLeads,
     this.selectedLeads,
@@ -20,8 +21,47 @@ class LeadMultiSelectWidget extends StatefulWidget {
 }
 
 class _LeadsMultiSelectWidgetState extends State<LeadMultiSelectWidget> {
+  final ApiService _apiService = ApiService();
   List<LeadData> leadsList = [];
   List<LeadData> selectedLeadsData = [];
+
+  Set<int> _selectedLeadIds() {
+    return (widget.selectedLeads ?? const <dynamic>[])
+        .map((item) => int.tryParse(item.toString()))
+        .whereType<int>()
+        .toSet();
+  }
+
+  Future<List<LeadData>> _searchLeads(String query) async {
+    final response = await _apiService.getAllLeadMulti(
+      search: query,
+    );
+    final result = response.result ?? <LeadData>[];
+
+    if (!mounted) {
+      return result;
+    }
+
+    setState(() {
+      leadsList = result;
+      if (widget.selectedLeads != null && leadsList.isNotEmpty) {
+        final selectedIds = _selectedLeadIds();
+        final selectedBySearch = leadsList
+            .where((lead) => selectedIds.contains(lead.id))
+            .toList();
+
+        for (final lead in selectedLeadsData) {
+          if (!selectedBySearch.any((item) => item.id == lead.id)) {
+            selectedBySearch.add(lead);
+          }
+        }
+
+        selectedLeadsData = selectedBySearch;
+      }
+    });
+
+    return result;
+  }
 
   @override
   void initState() {
@@ -52,111 +92,114 @@ class _LeadsMultiSelectWidgetState extends State<LeadMultiSelectWidget> {
                   setState(() {
                     leadsList = state.dataLead.result ?? [];
                     if (widget.selectedLeads != null && leadsList.isNotEmpty) {
+                      final selectedIds = _selectedLeadIds();
                       selectedLeadsData = leadsList
-                          .where((lead) =>
-                              widget.selectedLeads!.contains(lead.id.toString()))
+                          .where((lead) => selectedIds.contains(lead.id))
                           .toList();
                     }
                   });
                 }
               },
-              child: Container(
-                child: CustomDropdown<LeadData>.multiSelectSearch(
-                  items: leadsList,
-                  initialItems: selectedLeadsData,
-                  searchHintText:
-                      AppLocalizations.of(context)!.translate('search'),
-                  overlayHeight: 400,
-                  decoration: CustomDropdownDecoration(
-                    closedFillColor: Color(0xffF4F7FD),
-                    expandedFillColor: Colors.white,
-                    closedBorder: Border.all(
-                      color: Color(0xffF4F7FD),
-                      width: 1,
-                    ),
-                    closedBorderRadius: BorderRadius.circular(12),
-                    expandedBorder: Border.all(
-                      color: Color(0xffF4F7FD),
-                      width: 1,
-                    ),
-                    expandedBorderRadius: BorderRadius.circular(12),
+              child: CustomDropdown<LeadData>.multiSelectSearchRequest(
+                futureRequest: _searchLeads,
+                futureRequestDelay: const Duration(milliseconds: 350),
+                closeDropDownOnClearFilterSearch: true,
+                items: leadsList,
+                initialItems: selectedLeadsData,
+                searchHintText:
+                    AppLocalizations.of(context)!.translate('search'),
+                overlayHeight: 400,
+                decoration: CustomDropdownDecoration(
+                  closedFillColor: Color(0xffF4F7FD),
+                  expandedFillColor: Colors.white,
+                  closedBorder: Border.all(
+                    color: Color(0xffF4F7FD),
+                    width: 1,
                   ),
-                  listItemBuilder: (context, item, isSelected, onItemSelect) {
-                    return ListTile(
-                      minTileHeight: 1,
-                      minVerticalPadding: 2,
-                      contentPadding: EdgeInsets.zero,
-                      dense: true,
-                      title: Padding(
-                        padding: EdgeInsets.zero,
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Container(
-                              width: 18,
-                              height: 18,
-                              decoration: BoxDecoration(
-                                border:
-                                    Border.all(color: Color(0xff1E2E52), width: 1),
-                                color:
-                                    isSelected ? Color(0xff1E2E52) : Colors.transparent,
-                              ),
-                              child: isSelected
-                                  ? Icon(Icons.check, color: Colors.white, size: 16)
-                                  : null,
-                            ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: Text(
-                                '${item.name} ${item.lastname}',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w500,
-                                  fontFamily: 'Gilroy',
-                                  color: Color(0xff1E2E52),
-                                ),
-                                overflow: TextOverflow.ellipsis,
-                                maxLines: 1,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      onTap: () {
-                        onItemSelect();
-                        FocusScope.of(context).unfocus();
-                      },
-                    );
-                  },
-                  headerListBuilder: (context, hint, enabled) {
-                    int selectedLeadsCount = selectedLeadsData.length;
-                    return Text(
-                      selectedLeadsCount == 0
-                          ? AppLocalizations.of(context)!.translate('select_lead')
-                          : '${AppLocalizations.of(context)!.translate('select_leads')} $selectedLeadsCount',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                        fontFamily: 'Gilroy',
-                        color: Color(0xff1E2E52),
-                      ),
-                    );
-                  },
-                  hintBuilder: (context, hint, enabled) => Text(
-                      AppLocalizations.of(context)!.translate('select_leads'),
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        fontFamily: 'Gilroy',
-                        color: Color(0xff1E2E52),
-                      )),
-                  onListChanged: (values) {
-                    widget.onSelectLeads(values);
-                    setState(() {
-                      selectedLeadsData = values;
-                    });
-                  },
+                  closedBorderRadius: BorderRadius.circular(12),
+                  expandedBorder: Border.all(
+                    color: Color(0xffF4F7FD),
+                    width: 1,
+                  ),
+                  expandedBorderRadius: BorderRadius.circular(12),
                 ),
+                listItemBuilder: (context, item, isSelected, onItemSelect) {
+                  return ListTile(
+                    minTileHeight: 1,
+                    minVerticalPadding: 2,
+                    contentPadding: EdgeInsets.zero,
+                    dense: true,
+                    title: Padding(
+                      padding: EdgeInsets.zero,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 18,
+                            height: 18,
+                            decoration: BoxDecoration(
+                              border: Border.all(
+                                  color: Color(0xff1E2E52), width: 1),
+                              color: isSelected
+                                  ? Color(0xff1E2E52)
+                                  : Colors.transparent,
+                            ),
+                            child: isSelected
+                                ? Icon(Icons.check,
+                                    color: Colors.white, size: 16)
+                                : null,
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              '${item.name} ${item.lastname}',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                                fontFamily: 'Gilroy',
+                                color: Color(0xff1E2E52),
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 1,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    onTap: () {
+                      onItemSelect();
+                      FocusScope.of(context).unfocus();
+                    },
+                  );
+                },
+                headerListBuilder: (context, hint, enabled) {
+                  int selectedLeadsCount = selectedLeadsData.length;
+                  return Text(
+                    selectedLeadsCount == 0
+                        ? AppLocalizations.of(context)!.translate('select_lead')
+                        : '${AppLocalizations.of(context)!.translate('select_leads')} $selectedLeadsCount',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      fontFamily: 'Gilroy',
+                      color: Color(0xff1E2E52),
+                    ),
+                  );
+                },
+                hintBuilder: (context, hint, enabled) => Text(
+                    AppLocalizations.of(context)!.translate('select_leads'),
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      fontFamily: 'Gilroy',
+                      color: Color(0xff1E2E52),
+                    )),
+                onListChanged: (values) {
+                  widget.onSelectLeads(values);
+                  setState(() {
+                    selectedLeadsData = values;
+                  });
+                },
               ),
             ),
           ],

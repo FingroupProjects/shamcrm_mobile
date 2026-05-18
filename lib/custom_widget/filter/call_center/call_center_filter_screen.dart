@@ -28,10 +28,10 @@ class CallCenterFilterScreen extends StatefulWidget {
   final bool? initialRemarkStatus;
   final String? initialStartDate;
   final String? initialEndDate;
-  final List<String>? initialLeads;
+  final List<int>? initialLeads;
 
   const CallCenterFilterScreen({
-    Key? key,
+    super.key,
     this.onSelectedDataFilter,
     this.onResetFilters,
     this.initialCallTypes,
@@ -43,10 +43,10 @@ class CallCenterFilterScreen extends StatefulWidget {
     this.initialStartDate,
     this.initialEndDate,
     this.initialLeads,
-  }) : super(key: key);
+  });
 
   @override
-  _CallCenterFilterScreenState createState() => _CallCenterFilterScreenState();
+  CallCenterFilterScreenState createState() => CallCenterFilterScreenState();
 }
 
 class CallCache {
@@ -56,7 +56,7 @@ class CallCache {
   }
 }
 
-class _CallCenterFilterScreenState extends State<CallCenterFilterScreen> {
+class CallCenterFilterScreenState extends State<CallCenterFilterScreen> {
   List<CallTypeData> _selectedCallTypes = [];
   List<Operator> _selectedOperators = [];
   List<StatusData> _selectedStatuses = [];
@@ -70,6 +70,7 @@ class _CallCenterFilterScreenState extends State<CallCenterFilterScreen> {
 
   Key _operatorSelectKey = UniqueKey();
   Key _ratingSelectKey = UniqueKey();
+  bool _isClosing = false;
 
   @override
   void initState() {
@@ -105,22 +106,19 @@ class _CallCenterFilterScreenState extends State<CallCenterFilterScreen> {
             ?.map((id) => RatingData(id: int.parse(id), name: ''))
             .toList() ??
         [];
-    _selectedLeads = widget.initialLeads
-            ?.map((id) => LeadData(id: int.parse(id), name: ''))
-            .toList() ??
-        [];
+    _selectedLeads =
+        widget.initialLeads?.map((id) => LeadData(id: id, name: '')).toList() ??
+            [];
     selectedRemarkStatus = widget.initialRemarkStatus;
     if (widget.initialStartDate != null) {
       startDate = DateTime.tryParse(widget.initialStartDate!);
-      _startDateController.text = startDate != null
-          ? DateFormat('dd/MM/yyyy').format(startDate!)
-          : '';
+      _startDateController.text =
+          startDate != null ? DateFormat('dd/MM/yyyy').format(startDate!) : '';
     }
     if (widget.initialEndDate != null) {
       endDate = DateTime.tryParse(widget.initialEndDate!);
-      _endDateController.text = endDate != null
-          ? DateFormat('dd/MM/yyyy').format(endDate!)
-          : '';
+      _endDateController.text =
+          endDate != null ? DateFormat('dd/MM/yyyy').format(endDate!) : '';
     }
     _loadFilterState();
   }
@@ -145,7 +143,8 @@ class _CallCenterFilterScreenState extends State<CallCenterFilterScreen> {
 
       if (callTypesJson != null) {
         _selectedCallTypes = (jsonDecode(callTypesJson) as List)
-            .map((item) => CallTypeData(id: int.parse(item['id'].toString()), name: item['name'] ?? ''))
+            .map((item) => CallTypeData(
+                id: int.parse(item['id'].toString()), name: item['name'] ?? ''))
             .toList();
       }
       if (operatorsJson != null) {
@@ -170,17 +169,20 @@ class _CallCenterFilterScreenState extends State<CallCenterFilterScreen> {
       }
       if (statusesJson != null) {
         _selectedStatuses = (jsonDecode(statusesJson) as List)
-            .map((item) => StatusData(id: int.parse(item['id'].toString()), name: item['name'] ?? ''))
+            .map((item) => StatusData(
+                id: int.parse(item['id'].toString()), name: item['name'] ?? ''))
             .toList();
       }
       if (ratingsJson != null) {
         _selectedRatings = (jsonDecode(ratingsJson) as List)
-            .map((item) => RatingData(id: int.parse(item['id'].toString()), name: item['name'] ?? ''))
+            .map((item) => RatingData(
+                id: int.parse(item['id'].toString()), name: item['name'] ?? ''))
             .toList();
       }
       if (leadsJson != null) {
         _selectedLeads = (jsonDecode(leadsJson) as List)
-            .map((item) => LeadData(id: int.parse(item['id'].toString()), name: item['name'] ?? ''))
+            .map((item) => LeadData(
+                id: int.parse(item['id'].toString()), name: item['name'] ?? ''))
             .toList();
       }
       selectedRemarkStatus = prefs.getBool('call_center_remark_status');
@@ -192,9 +194,8 @@ class _CallCenterFilterScreenState extends State<CallCenterFilterScreen> {
       }
       if (endDateString != null) {
         endDate = DateTime.tryParse(endDateString);
-        _endDateController.text = endDate != null
-            ? DateFormat('dd/MM/yyyy').format(endDate!)
-            : '';
+        _endDateController.text =
+            endDate != null ? DateFormat('dd/MM/yyyy').format(endDate!) : '';
       }
     });
   }
@@ -222,60 +223,72 @@ class _CallCenterFilterScreenState extends State<CallCenterFilterScreen> {
       // Сохраняем фильтры
       await prefs.setString(
           'call_center_call_types',
-          jsonEncode(_selectedCallTypes.map((c) => {'id': c.id, 'name': c.name}).toList()));
+          jsonEncode(_selectedCallTypes
+              .map((c) => {'id': c.id, 'name': c.name})
+              .toList()));
       await prefs.setString(
           'call_center_operators',
-          jsonEncode(_selectedOperators.map((o) => {'id': o.id, 'name': o.fullName}).toList()));
+          jsonEncode(_selectedOperators
+              .map((o) => {'id': o.id, 'name': o.fullName})
+              .toList()));
       await prefs.setString(
           'call_center_statuses',
-          jsonEncode(_selectedStatuses.map((s) => {'id': s.id, 'name': s.name}).toList()));
+          jsonEncode(_selectedStatuses
+              .map((s) => {'id': s.id, 'name': s.name})
+              .toList()));
       await prefs.setString(
           'call_center_ratings',
-          jsonEncode(_selectedRatings.map((r) => {'id': r.id, 'name': r.name}).toList()));
+          jsonEncode(_selectedRatings
+              .map((r) => {'id': r.id, 'name': r.name})
+              .toList()));
       await prefs.setString(
           'call_center_leads',
-          jsonEncode(_selectedLeads.map((l) => {'id': l.id, 'name': l.name}).toList()));
+          jsonEncode(_selectedLeads
+              .map((l) => {'id': l.id, 'name': l.name})
+              .toList()));
       if (selectedRemarkStatus != null) {
         await prefs.setBool('call_center_remark_status', selectedRemarkStatus!);
       } else {
         await prefs.remove('call_center_remark_status');
       }
       if (startDate != null) {
-        await prefs.setString('call_center_start_date', startDate!.toIso8601String());
+        await prefs.setString(
+            'call_center_start_date', startDate!.toIso8601String());
       } else {
         await prefs.remove('call_center_start_date');
       }
       if (endDate != null) {
-        await prefs.setString('call_center_end_date', endDate!.toIso8601String());
+        await prefs.setString(
+            'call_center_end_date', endDate!.toIso8601String());
       } else {
         await prefs.remove('call_center_end_date');
       }
     }
   }
 
-void _resetFilters() {
-  setState(() {
-    _selectedCallTypes.clear();
-    _selectedOperators.clear();
-    _selectedStatuses.clear();
-    _selectedRatings.clear();
-    _selectedLeads.clear();
-    selectedRemarkStatus = null;
-    startDate = null;
-    endDate = null;
-    _startDateController.clear();
-    _endDateController.clear();
-    _operatorSelectKey = UniqueKey();
-    _ratingSelectKey = UniqueKey();
-  });
+  void _resetFilters() {
+    setState(() {
+      _selectedCallTypes.clear();
+      _selectedOperators.clear();
+      _selectedStatuses.clear();
+      _selectedRatings.clear();
+      _selectedLeads.clear();
+      selectedRemarkStatus = null;
+      startDate = null;
+      endDate = null;
+      _startDateController.clear();
+      _endDateController.clear();
+      _operatorSelectKey = UniqueKey();
+      _ratingSelectKey = UniqueKey();
+    });
 
-  widget.onResetFilters?.call();
-  _saveFilterState();
-  context.read<CallCenterBloc>().add(ResetFilters());
+    widget.onResetFilters?.call();
+    _saveFilterState();
+    context.read<CallCenterBloc>().add(ResetFilters());
 
-  // Уведомляем о сбросе фильтров
-  widget.onSelectedDataFilter?.call({});
-}
+    // Уведомляем о сбросе фильтров
+    widget.onSelectedDataFilter?.call({});
+  }
 
   bool _isAnyFilterSelected() {
     return _selectedCallTypes.isNotEmpty ||
@@ -292,67 +305,69 @@ void _resetFilters() {
     setState(() {
       selectedRemarkStatus = status;
       if (kDebugMode) {
-        debugPrint('CallCenterFilterScreen: Remark status changed to: $selectedRemarkStatus');
+        debugPrint(
+            'CallCenterFilterScreen: Remark status changed to: $selectedRemarkStatus');
       }
     });
   }
 
-void _applyFilters() async {
-  final prefs = await SharedPreferences.getInstance();
+  void _applyFilters() async {
+    if (_isClosing) return;
+    final prefs = await SharedPreferences.getInstance();
 
-  if (!_isAnyFilterSelected()) {
-    await prefs.setBool('call_center_filters_active', false);
+    if (!_isAnyFilterSelected()) {
+      _isClosing = true;
+      await prefs.setBool('call_center_filters_active', false);
+      Navigator.pop(context);
+      return;
+    }
+
+    await _saveFilterState();
+    await CallCache.clearAllCalls();
+
+    final filters = {
+      'callTypes': _selectedCallTypes.isNotEmpty
+          ? _selectedCallTypes.map((callType) => callType.id).toList()
+          : null,
+      'operators': _selectedOperators.isNotEmpty
+          ? _selectedOperators.map((operator) => operator.id).toList()
+          : null,
+      'statuses': _selectedStatuses.isNotEmpty
+          ? _selectedStatuses.map((status) => status.id).toList()
+          : null,
+      'ratings': _selectedRatings.isNotEmpty
+          ? _selectedRatings.map((rating) => rating.id).toList()
+          : null,
+      'leads': _selectedLeads.isNotEmpty
+          ? _selectedLeads.map((lead) => lead.id).toList()
+          : null,
+      'remarks': selectedRemarkStatus != null
+          ? [selectedRemarkStatus == true ? 1 : 0]
+          : null,
+      'startDate': startDate?.toIso8601String(),
+      'endDate': endDate?.toIso8601String(),
+    };
+
+    if (kDebugMode) {
+      debugPrint('CallCenterFilterScreen: Applying filters: $filters');
+    }
+
+    widget.onSelectedDataFilter?.call(filters);
+    context.read<CallCenterBloc>().add(FilterCalls(filters));
+    _isClosing = true;
     Navigator.pop(context);
-    return;
   }
 
-
-  await _saveFilterState();
-  await CallCache.clearAllCalls();
-
-  final filters = {
-    'callTypes': _selectedCallTypes.isNotEmpty
-        ? _selectedCallTypes.map((callType) => callType.id).toList()
-        : null,
-    'operators': _selectedOperators.isNotEmpty
-        ? _selectedOperators.map((operator) => operator.id).toList()
-        : null,
-    'statuses': _selectedStatuses.isNotEmpty
-        ? _selectedStatuses.map((status) => status.id).toList()
-        : null,
-    'ratings': _selectedRatings.isNotEmpty
-        ? _selectedRatings.map((rating) => rating.id).toList()
-        : null,
-    'leads': _selectedLeads.isNotEmpty
-        ? _selectedLeads.map((lead) => lead.id).toList()
-        : null,
-    'remarks': selectedRemarkStatus != null
-        ? [selectedRemarkStatus == true ? 1 : 0]
-        : null,
-    'startDate': startDate != null ? startDate!.toIso8601String() : null,
-    'endDate': endDate != null ? endDate!.toIso8601String() : null,
-  };
-
-  if (kDebugMode) {
-    debugPrint('CallCenterFilterScreen: Applying filters: $filters');
+  void _handleBackPressed() {
+    if (_isClosing) return;
+    _isClosing = true;
+    Navigator.pop(context);
   }
 
-  widget.onSelectedDataFilter?.call(filters);
-  context.read<CallCenterBloc>().add(FilterCalls(filters));
-  Navigator.pop(context);
-}
- void _handleBackPressed() {
-  // Просто закрываем экран без дополнительных действий
-  Navigator.pop(context);
-}
-
-@override
-Widget build(BuildContext context) {
-  return WillPopScope(
-    onWillPop: () async {
-      _handleBackPressed();
-      return false; // Возвращаем false, так как мы сами управляем навигацией
-    },
+  @override
+  Widget build(BuildContext context) {
+    return PopScope(
+      canPop: true,
       child: Scaffold(
         backgroundColor: const Color(0xffF4F7FD),
         appBar: AppBar(
@@ -370,15 +385,16 @@ Widget build(BuildContext context) {
           forceMaterialTransparency: true,
           elevation: 0,
           leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: _handleBackPressed,
-        ),
+            icon: const Icon(Icons.arrow_back, color: Colors.black),
+            onPressed: _handleBackPressed,
+          ),
           actions: [
             TextButton(
               onPressed: _resetFilters,
               style: TextButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                backgroundColor: Colors.blueAccent.withOpacity(0.1),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                backgroundColor: Colors.blueAccent.withValues(alpha: 0.1),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -398,8 +414,9 @@ Widget build(BuildContext context) {
             TextButton(
               onPressed: _applyFilters,
               style: TextButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                backgroundColor: Colors.blueAccent.withOpacity(0.1),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                backgroundColor: Colors.blueAccent.withValues(alpha: 0.1),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -419,155 +436,168 @@ Widget build(BuildContext context) {
           ],
         ),
         body: Padding(
-          padding: const EdgeInsets.only(left: 16, right: 16, top: 4, bottom: 4),
-          child: Column(
-            children: [
-              Expanded(
-                child: SingleChildScrollView(
-                  child: Column(
-                    children: [
-                      // From Date
-                      Card(
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        color: Colors.white,
-                        child: Padding(
-                          padding: const EdgeInsets.all(8),
-                          child: DateFieldWithFromTo(
-                            isFrom: true,
-                            controller: _startDateController,
-                            label: AppLocalizations.of(context)!.translate('date'),
-                            withTime: false,
-                            onDateSelected: (date) {
-                              if (mounted) {
-                                setState(() {
-                                  _startDateController.text = date;
-                                  List<String> parts = date.split('/');
-                                  if (parts.length == 3) {
-                                    startDate = DateTime(
-                                      int.parse(parts[2]),
-                                      int.parse(parts[1]),
-                                      int.parse(parts[0]),
-                                    );
-                                  }
-                                });
-                              }
-                            },
-                          ),
+          padding:
+              const EdgeInsets.only(left: 16, right: 16, top: 4, bottom: 4),
+          child: Column(children: [
+            Expanded(
+              child: SingleChildScrollView(
+                child: Column(
+                  children: [
+                    // From Date
+                    Card(
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                      color: Colors.white,
+                      child: Padding(
+                        padding: const EdgeInsets.all(8),
+                        child: DateFieldWithFromTo(
+                          isFrom: true,
+                          controller: _startDateController,
+                          label:
+                              AppLocalizations.of(context)!.translate('date'),
+                          withTime: false,
+                          onDateSelected: (date) {
+                            if (mounted) {
+                              setState(() {
+                                _startDateController.text = date;
+                                List<String> parts = date.split('/');
+                                if (parts.length == 3) {
+                                  startDate = DateTime(
+                                    int.parse(parts[2]),
+                                    int.parse(parts[1]),
+                                    int.parse(parts[0]),
+                                  );
+                                }
+                              });
+                            }
+                          },
                         ),
                       ),
-                      const SizedBox(height: 8),
+                    ),
+                    const SizedBox(height: 8),
 
-                      // To Date
-                      Card(
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        color: Colors.white,
-                        child: Padding(
-                          padding: const EdgeInsets.all(8),
-                          child: DateFieldWithFromTo(
-                            isFrom: false,
-                            controller: _endDateController,
-                            label: AppLocalizations.of(context)!.translate('date') ?? 'До даты',
-                            withTime: false,
-                            onDateSelected: (date) {
-                              if (mounted) {
+                    // To Date
+                    Card(
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                      color: Colors.white,
+                      child: Padding(
+                        padding: const EdgeInsets.all(8),
+                        child: DateFieldWithFromTo(
+                          isFrom: false,
+                          controller: _endDateController,
+                          label:
+                              AppLocalizations.of(context)!.translate('date'),
+                          withTime: false,
+                          onDateSelected: (date) {
+                            if (mounted) {
+                              setState(() {
+                                _endDateController.text = date;
+                                List<String> parts = date.split('/');
+                                if (parts.length == 3) {
+                                  endDate = DateTime(
+                                    int.parse(parts[2]),
+                                    int.parse(parts[1]),
+                                    int.parse(parts[0]),
+                                  );
+                                }
+                              });
+                            }
+                          },
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Card(
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                      color: Colors.white,
+                      child: Padding(
+                        padding: const EdgeInsets.all(8),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            LeadMultiSelectWidget(
+                              selectedLeads: _selectedLeads
+                                  .map((lead) => lead.id)
+                                  .toList(),
+                              onSelectLeads:
+                                  (List<LeadData> selectedUsersData) {
                                 setState(() {
-                                  _endDateController.text = date;
-                                  List<String> parts = date.split('/');
-                                  if (parts.length == 3) {
-                                    endDate = DateTime(
-                                      int.parse(parts[2]),
-                                      int.parse(parts[1]),
-                                      int.parse(parts[0]),
-                                    );
+                                  _selectedLeads = selectedUsersData;
+                                  if (kDebugMode) {
+                                    debugPrint(
+                                        'CallCenterFilterScreen: Selected leads: ${_selectedLeads.map((l) => l.id).toList()}');
                                   }
                                 });
-                              }
-                            },
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Card(
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        color: Colors.white,
-                        child: Padding(
-                          padding: const EdgeInsets.all(8),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              LeadMultiSelectWidget(
-                                selectedLeads: _selectedLeads.map((lead) => lead.id.toString()).toList(),
-                                onSelectLeads: (List<LeadData> selectedUsersData) {
-                                  setState(() {
-                                    _selectedLeads = selectedUsersData;
-                                    if (kDebugMode) {
-                                      debugPrint('CallCenterFilterScreen: Selected leads: ${_selectedLeads.map((l) => l.id).toList()}');
-                                    }
-                                  });
-                                },
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Card(
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        color: Colors.white,
-                        child: Padding(
-                          padding: const EdgeInsets.all(8),
-                          child: OperatorMultiSelectWidget(
-                            key: _operatorSelectKey,
-                            selectedOperators: _selectedOperators
-                                .map((operator) => operator.id.toString())
-                                .toList(),
-                            onSelectOperators: (List<Operator> selectedOperators) {
-                              setState(() {
-                                _selectedOperators = selectedOperators;
-                              });
-                            },
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Card(
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        color: Colors.white,
-                        child: Padding(
-                          padding: const EdgeInsets.all(8),
-                          child: RatingMultiSelectWidget(
-                            key: _ratingSelectKey,
-                            selectedRatings: _selectedRatings
-                                .map((rating) => rating.id.toString())
-                                .toList(),
-                            onSelectRatings: (List<RatingData> selectedRatings) {
-                              setState(() {
-                                _selectedRatings = selectedRatings;
-                              });
-                            },
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Card(
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        color: Colors.white,
-                        child: Column(
-                          children: [
-                            _buildSwitchTile(
-                              AppLocalizations.of(context)!.translate('with_remarks'),
-                              selectedRemarkStatus ?? false,
-                              _handleRemarkStatusChanged,
+                              },
                             ),
                           ],
                         ),
                       ),
-                    ],
-                  ),
+                    ),
+                    const SizedBox(height: 8),
+                    Card(
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                      color: Colors.white,
+                      child: Padding(
+                        padding: const EdgeInsets.all(8),
+                        child: OperatorMultiSelectWidget(
+                          key: _operatorSelectKey,
+                          selectedOperators: _selectedOperators
+                              .map((operator) => operator.id.toString())
+                              .toList(),
+                          onSelectOperators:
+                              (List<Operator> selectedOperators) {
+                            setState(() {
+                              _selectedOperators = selectedOperators;
+                            });
+                          },
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Card(
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                      color: Colors.white,
+                      child: Padding(
+                        padding: const EdgeInsets.all(8),
+                        child: RatingMultiSelectWidget(
+                          key: _ratingSelectKey,
+                          selectedRatings: _selectedRatings
+                              .map((rating) => rating.id.toString())
+                              .toList(),
+                          onSelectRatings: (List<RatingData> selectedRatings) {
+                            setState(() {
+                              _selectedRatings = selectedRatings;
+                            });
+                          },
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Card(
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                      color: Colors.white,
+                      child: Column(
+                        children: [
+                          _buildSwitchTile(
+                            AppLocalizations.of(context)!
+                                .translate('with_remarks'),
+                            selectedRemarkStatus ?? false,
+                            _handleRemarkStatusChanged,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ),
-           ] ),
-
+            ),
+          ]),
         ),
       ),
     );
@@ -585,8 +615,9 @@ Widget build(BuildContext context) {
       ),
       value: selectedRemarkStatus ?? false,
       onChanged: _handleRemarkStatusChanged,
-      activeColor: const Color.fromARGB(255, 255, 255, 255),
-      inactiveTrackColor: const Color.fromARGB(255, 179, 179, 179).withOpacity(0.5),
+      activeThumbColor: const Color.fromARGB(255, 255, 255, 255),
+      inactiveTrackColor:
+          const Color.fromARGB(255, 179, 179, 179).withValues(alpha: 0.5),
       activeTrackColor: ChatSmsStyles.messageBubbleSenderColor,
       inactiveThumbColor: const Color.fromARGB(255, 255, 255, 255),
     );

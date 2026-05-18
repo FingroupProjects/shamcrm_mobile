@@ -135,196 +135,292 @@ extension _SipMainViewsExtension on _SipScreenState {
     final l10n = AppLocalizations.of(context)!;
     final isRegistering =
         state.registrationStatus == SipRegistrationUiStatus.registering;
+    final hasInlineStatusMessage =
+        state.registrationStatus == SipRegistrationUiStatus.failed &&
+            state.errorMessage != null &&
+            state.errorMessage!.trim().isNotEmpty;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFF),
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFFEFF4FF), Color(0xFFF8FAFF)],
-          ),
-        ),
-        child: SafeArea(
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 560),
-              child: ListView(
-                padding: const EdgeInsets.fromLTRB(18, 14, 18, 24),
-                children: [
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: _buildTopIconButton(
+      backgroundColor: const Color(0xffF4F7FD),
+      body: SafeArea(
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 560),
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
+              children: [
+                Row(
+                  children: [
+                    _buildTopIconButton(
                       icon: CupertinoIcons.back,
                       onPressed: () => Navigator.of(context).maybePop(),
                     ),
-                  ),
-                  const SizedBox(height: 14),
-                  Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(28),
-                      color: const Color(0xFF1C1C1E),
-                      boxShadow: [
-                        BoxShadow(
-                          color:
-                              const Color(0xFF000000).withValues(alpha: 0.18),
-                          blurRadius: 32,
-                          offset: const Offset(0, 16),
+                    const SizedBox(width: 12),
+                    const Expanded(
+                      child: Text(
+                        'Телефония',
+                        style: TextStyle(
+                          fontFamily: 'Gilroy',
+                          fontSize: 24,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xff1E2E52),
                         ),
-                      ],
+                      ),
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
+                  ],
+                ),
+                const SizedBox(height: 18),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xff1E2E52).withValues(alpha: 0.06),
+                        blurRadius: 18,
+                        offset: const Offset(0, 6),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        width: 50,
+                        height: 50,
+                        decoration: BoxDecoration(
+                          color: const Color(0xffEEF2FF),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: const Icon(
+                          CupertinoIcons.phone_fill,
+                          color: Color(0xff4F40EC),
+                          size: 24,
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Container(
-                              width: 48,
-                              height: 48,
-                              decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.12),
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                              child: const Icon(
-                                CupertinoIcons.phone_circle_fill,
-                                color: Colors.white,
-                                size: 28,
-                              ),
-                            ),
-                            const SizedBox(width: 12),
                             Text(
                               l10n.translate('sip_welcome_title'),
                               style: const TextStyle(
-                                color: Colors.white,
+                                fontFamily: 'Gilroy',
                                 fontSize: 20,
                                 fontWeight: FontWeight.w700,
+                                color: Color(0xff1E2E52),
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              l10n.translate('sip_welcome_subtitle'),
+                              style: const TextStyle(
+                                fontFamily: 'Gilroy',
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                                color: Color(0xff99A4BA),
+                                height: 1.35,
                               ),
                             ),
                           ],
                         ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xff1E2E52).withValues(alpha: 0.06),
+                        blurRadius: 18,
+                        offset: const Offset(0, 6),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        l10n.translate('sip_settings'),
+                        style: const TextStyle(
+                          fontFamily: 'Gilroy',
+                          fontSize: 22,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xff1E2E52),
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                      CustomTextField(
+                        controller: _serverController,
+                        hintText: l10n.translate('sip_server'),
+                        label: l10n.translate('sip_server'),
+                      ),
+                      const SizedBox(height: 12),
+                      CustomTextField(
+                        controller: _loginController,
+                        hintText: l10n.translate('sip_login'),
+                        label: l10n.translate('sip_login'),
+                      ),
+                      const SizedBox(height: 12),
+                      CustomTextField(
+                        controller: _passwordController,
+                        hintText: l10n.translate('sip_password'),
+                        label: l10n.translate('sip_password'),
+                        isPassword: true,
+                      ),
+                      const SizedBox(height: 12),
+                      _projectTransportSelector(context),
+                      const SizedBox(height: 12),
+                      CustomTextField(
+                        controller: _portController,
+                        hintText: l10n.translate('sip_port'),
+                        label: l10n.translate('sip_port'),
+                        keyboardType: TextInputType.number,
+                      ),
+                      if (hasInlineStatusMessage) ...[
                         const SizedBox(height: 12),
-                        Text(
-                          l10n.translate('sip_welcome_subtitle'),
-                          style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.55),
-                            fontSize: 14,
-                            height: 1.4,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(28),
-                      boxShadow: [
-                        BoxShadow(
-                          color:
-                              const Color(0xFF111827).withValues(alpha: 0.05),
-                          blurRadius: 24,
-                          offset: const Offset(0, 8),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          l10n.translate('sip_settings'),
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w700,
-                            color: Color(0xFF111827),
-                          ),
-                        ),
-                        const SizedBox(height: 14),
-                        _iosField(
-                          controller: _serverController,
-                          placeholder: l10n.translate('sip_server'),
-                        ),
-                        const SizedBox(height: 10),
-                        _iosField(
-                          controller: _loginController,
-                          placeholder: l10n.translate('sip_login'),
-                        ),
-                        const SizedBox(height: 10),
-                        _iosField(
-                          controller: _passwordController,
-                          placeholder: l10n.translate('sip_password'),
-                          obscureText: true,
-                        ),
-                        const SizedBox(height: 10),
-                        _transportSelector(context),
-                        const SizedBox(height: 10),
-                        _iosField(
-                          controller: _portController,
-                          placeholder: l10n.translate('sip_port'),
-                          keyboardType: TextInputType.number,
-                        ),
-                        const SizedBox(height: 18),
-                        SizedBox(
+                        Container(
                           width: double.infinity,
-                          child: CupertinoButton(
-                            color: const Color(0xFF1C1C1E),
-                            borderRadius: BorderRadius.circular(18),
-                            onPressed: isRegistering
-                                ? null
-                                : () async {
-                                    await _saveDraft();
-                                    await _sipRuntime.connect();
-                                  },
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                if (isRegistering) ...[
-                                  const SizedBox(
-                                    width: 16,
-                                    height: 16,
-                                    child: CupertinoActivityIndicator(
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 10),
-                                ],
-                                Text(
-                                  isRegistering
-                                      ? 'Подключение...'
-                                      : 'Подключить телефонию',
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                              ],
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 12,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(0xffFFF1F1),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: const Color(0xffFFD4D4),
+                            ),
+                          ),
+                          child: Text(
+                            state.errorMessage!,
+                            style: TextStyle(
+                              fontFamily: 'Gilroy',
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: const Color(0xffE45454),
                             ),
                           ),
                         ),
-                        if (state.errorMessage != null &&
-                            state.errorMessage!.trim().isNotEmpty)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 10),
-                            child: Text(
-                              state.errorMessage!,
-                              style: const TextStyle(
-                                color: Color(0xFFEF4444),
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ),
                       ],
-                    ),
+                      const SizedBox(height: 16),
+                      CustomButton(
+                        buttonText: isRegistering
+                            ? 'Подключение...'
+                            : 'Подключить телефонию',
+                        buttonColor: const Color(0xff4F40EC),
+                        textColor: Colors.white,
+                        isLoading: isRegistering,
+                        onPressed: isRegistering
+                            ? null
+                            : () async {
+                                await _saveDraft();
+                                await _sipRuntime.connect();
+                              },
+                      ),
+                    ],
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ),
       ),
+    );
+  }
+
+  Widget _projectTransportSelector(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final items = <(SipTransportUi, String)>[
+      (SipTransportUi.ws, l10n.translate('sip_transport_ws')),
+      (SipTransportUi.udp, 'UDP'),
+      (SipTransportUi.tcp, l10n.translate('sip_transport_tcp')),
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Транспорт',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            fontFamily: 'Gilroy',
+            color: Color(0xff1E2E52),
+          ),
+        ),
+        const SizedBox(height: 4),
+        Container(
+          padding: const EdgeInsets.all(6),
+          decoration: BoxDecoration(
+            color: const Color(0xffF4F7FD),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            children: [
+              for (var i = 0; i < items.length; i++) ...[
+                if (i > 0) const SizedBox(width: 8),
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () {
+                      _updateView(() {
+                        _selectedTransport = items[i].$1;
+                        if (_portController.text.trim().isEmpty) {
+                          _portController.text =
+                              items[i].$1 == SipTransportUi.ws
+                                  ? '7443'
+                                  : '5060';
+                        }
+                      });
+                      _handleDraftChanged();
+                    },
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 180),
+                      curve: Curves.easeOut,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      decoration: BoxDecoration(
+                        color: _selectedTransport == items[i].$1
+                            ? Colors.white
+                            : Colors.transparent,
+                        borderRadius: BorderRadius.circular(10),
+                        boxShadow: _selectedTransport == items[i].$1
+                            ? [
+                                BoxShadow(
+                                  color: const Color(0xff1E2E52)
+                                      .withValues(alpha: 0.08),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 3),
+                                ),
+                              ]
+                            : null,
+                      ),
+                      child: Text(
+                        items[i].$2,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontFamily: 'Gilroy',
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: _selectedTransport == items[i].$1
+                              ? const Color(0xff1E2E52)
+                              : const Color(0xff5A6B87),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ],
     );
   }
 
@@ -1093,7 +1189,33 @@ extension _SipMainViewsExtension on _SipScreenState {
   // Зеркальный стиль: таблетка с вкладками слева + кнопка поиска справа
   Widget _ios26LiquidNavBar(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    const segmentCount = 3;
+    final navItems = <({
+      int index,
+      String iconAsset,
+      String activeIconAsset,
+      String label,
+    })>[
+      (
+        index: 0,
+        iconAsset: 'assets/icons/sip/keypad_off.png',
+        activeIconAsset: 'assets/icons/sip/keypad_on.png',
+        label: l10n.translate('sip_tab_keypad'),
+      ),
+      (
+        index: 1,
+        iconAsset: 'assets/icons/sip/recents_off.png',
+        activeIconAsset: 'assets/icons/sip/recents_on.png',
+        label: 'Вызовы',
+      ),
+      if (_hasContactsTab)
+        (
+          index: 2,
+          iconAsset: 'assets/icons/sip/contact_off.png',
+          activeIconAsset: 'assets/icons/sip/contact_on.png',
+          label: 'Контакты',
+        ),
+    ];
+    final segmentCount = navItems.length;
 
     return SafeArea(
       top: false,
@@ -1107,8 +1229,15 @@ extension _SipMainViewsExtension on _SipScreenState {
                   const horizontalPadding = 5.0;
                   const innerGap = 4.0;
                   final maxIndex = segmentCount - 1;
+                  final currentNavPosition = navItems
+                      .indexWhere((item) => item.index == _bottomTabIndex);
+                  final fallbackNavPosition = navItems.indexWhere(
+                    (item) => item.index == 1,
+                  );
                   final selectedIndex = (_liquidNavDragIndex ??
-                          _bottomTabIndex.clamp(0, maxIndex).toDouble())
+                          (currentNavPosition >= 0
+                              ? currentNavPosition.toDouble()
+                              : math.max(0, fallbackNavPosition).toDouble()))
                       .clamp(0.0, maxIndex.toDouble());
                   final usableWidth =
                       constraints.maxWidth - (horizontalPadding * 2);
@@ -1124,54 +1253,42 @@ extension _SipMainViewsExtension on _SipScreenState {
                   Widget buildItemsRow(bool Function(int index) isSelected) {
                     return Row(
                       children: [
-                        Expanded(
-                          child: _liquidNavItem(
-                            iconAsset: 'assets/icons/sip/keypad_off.png',
-                            activeIconAsset: 'assets/icons/sip/keypad_on.png',
-                            label: l10n.translate('sip_tab_keypad'),
-                            selected: isSelected(0),
+                        for (var i = 0; i < navItems.length; i++) ...[
+                          if (i > 0) const SizedBox(width: innerGap),
+                          Expanded(
+                            child: _liquidNavItem(
+                              iconAsset: navItems[i].iconAsset,
+                              activeIconAsset: navItems[i].activeIconAsset,
+                              label: navItems[i].label,
+                              selected: isSelected(i),
+                            ),
                           ),
-                        ),
-                        const SizedBox(width: innerGap),
-                        Expanded(
-                          child: _liquidNavItem(
-                            iconAsset: 'assets/icons/sip/recents_off.png',
-                            activeIconAsset: 'assets/icons/sip/recents_on.png',
-                            label: 'Вызовы',
-                            selected: isSelected(1),
-                          ),
-                        ),
-                        const SizedBox(width: innerGap),
-                        Expanded(
-                          child: _liquidNavItem(
-                            iconAsset: 'assets/icons/sip/contact_off.png',
-                            activeIconAsset: 'assets/icons/sip/contact_on.png',
-                            label: 'Контакты',
-                            selected: isSelected(2),
-                          ),
-                        ),
+                        ],
                       ],
                     );
                   }
 
                   void snapToLocalPosition(double localDx) {
                     final safeDx = localDx.clamp(0.0, usableWidth);
-                    final nextIndex = (safeDx / (usableWidth / segmentCount))
+                    final nextPosition = (safeDx / (usableWidth / segmentCount))
                         .floor()
                         .clamp(0, maxIndex);
+                    final nextIndex = navItems[nextPosition].index;
                     _updateView(() {
                       _bottomTabIndex = nextIndex;
-                      _liquidNavDragIndex = nextIndex.toDouble();
+                      _liquidNavDragIndex = nextPosition.toDouble();
                     });
                   }
 
                   return GestureDetector(
                     behavior: HitTestBehavior.opaque,
                     onHorizontalDragStart: (_) {
+                      final dragStartPosition = currentNavPosition >= 0
+                          ? currentNavPosition
+                          : math.max(0, fallbackNavPosition);
                       _updateView(() {
                         _isLiquidNavPressed = true;
-                        _liquidNavDragIndex =
-                            _bottomTabIndex.clamp(0, maxIndex).toDouble();
+                        _liquidNavDragIndex = dragStartPosition.toDouble();
                       });
                     },
                     onHorizontalDragUpdate: (details) {
@@ -1185,21 +1302,24 @@ extension _SipMainViewsExtension on _SipScreenState {
                       });
                     },
                     onHorizontalDragEnd: (_) {
-                      final snappedIndex =
+                      final snappedPosition =
                           (_liquidNavDragIndex ?? _bottomTabIndex.toDouble())
                               .round()
                               .clamp(0, maxIndex);
+                      final snappedIndex = navItems[snappedPosition].index;
                       _updateView(() {
                         _isLiquidNavPressed = false;
                         _bottomTabIndex = snappedIndex;
-                        _liquidNavDragIndex = snappedIndex.toDouble();
+                        _liquidNavDragIndex = snappedPosition.toDouble();
                       });
                     },
                     onHorizontalDragCancel: () {
+                      final resetPosition = currentNavPosition >= 0
+                          ? currentNavPosition
+                          : math.max(0, fallbackNavPosition);
                       _updateView(() {
                         _isLiquidNavPressed = false;
-                        _liquidNavDragIndex =
-                            _bottomTabIndex.clamp(0, maxIndex).toDouble();
+                        _liquidNavDragIndex = resetPosition.toDouble();
                       });
                     },
                     onTapDown: (details) {
@@ -1615,1154 +1735,4 @@ extension _SipMainViewsExtension on _SipScreenState {
   }
 
   // ────────────────────────────────────────────────────────────────────────────
-
-  Widget _contactTile({
-    required _SipContactSuggestion suggestion,
-    required VoidCallback onTap,
-    required VoidCallback onCallTap,
-    bool compact = false,
-  }) {
-    return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: compact ? 10 : 14,
-        vertical: compact ? 8 : 10,
-      ),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(22),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF111827).withValues(alpha: 0.04),
-            blurRadius: 16,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          CircleAvatar(
-            radius: compact ? 18 : 20,
-            backgroundColor: const Color(0xFFF3F4F6),
-            backgroundImage: suggestion.photo != null
-                ? MemoryImage(suggestion.photo!)
-                : null,
-            child: suggestion.photo == null
-                ? Text(
-                    suggestion.name.isEmpty
-                        ? '?'
-                        : suggestion.name[0].toUpperCase(),
-                    style: const TextStyle(
-                      color: Color(0xFF374151),
-                      fontWeight: FontWeight.w700,
-                    ),
-                  )
-                : null,
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: GestureDetector(
-              onTap: onTap,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    suggestion.name,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFF111827),
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    suggestion.phone,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: Color(0xFF9CA3AF),
-                      fontWeight: FontWeight.w500,
-                      fontSize: 13,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-          CupertinoButton(
-            padding: EdgeInsets.zero,
-            onPressed: onCallTap,
-            child: Container(
-              width: compact ? 38 : 44,
-              height: compact ? 38 : 44,
-              decoration: BoxDecoration(
-                color: const Color(0xFF22C55E),
-                borderRadius: BorderRadius.circular(15),
-              ),
-              child: const Icon(
-                CupertinoIcons.phone_fill,
-                color: Colors.white,
-                size: 18,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _contactsView(BuildContext context) {
-    if (_contactsEnabled && !_contactsLoaded) {
-      unawaited(_loadContacts());
-    }
-
-    final contacts = _contacts
-        .map((contact) => _SipContactSuggestion(
-              name: contact.displayName,
-              phone: contact.phones.first.number,
-              normalizedPhone: _digitsOnly(contact.phones.first.number),
-              photo: contact.photo,
-            ))
-        .toList(growable: false)
-      ..sort((a, b) => a.name.compareTo(b.name));
-
-    final query = _contactsViewQuery.trim().toLowerCase();
-    final queryDigits = _digitsOnly(_contactsViewQuery);
-    final filtered = query.isEmpty && queryDigits.isEmpty
-        ? contacts
-        : contacts.where((contact) {
-            return contact.name.toLowerCase().contains(query) ||
-                contact.normalizedPhone.contains(queryDigits) ||
-                _nameToT9Digits(contact.name).contains(queryDigits);
-          }).toList(growable: false);
-
-    return Column(
-      key: const ValueKey('contacts'),
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 10),
-          child: _cleanSearchField(
-            placeholder: 'Поиск по контактам',
-            onChanged: (value) {
-              _updateView(() {
-                _contactsViewQuery = value;
-              });
-            },
-          ),
-        ),
-        Expanded(
-          child: _contactsPermissionDenied
-              ? const Center(
-                  child: Padding(
-                    padding: EdgeInsets.all(24),
-                    child: Text(
-                      'Нет доступа к контактам.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(color: Color(0xFF9CA3AF)),
-                    ),
-                  ),
-                )
-              : ListView.separated(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                  itemCount: filtered.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 8),
-                  itemBuilder: (context, index) {
-                    final contact = filtered[index];
-                    return _contactTile(
-                      suggestion: contact,
-                      onTap: () {
-                        _fillContactNumber(contact);
-                        _updateView(() {
-                          _bottomTabIndex = 0;
-                        });
-                      },
-                      onCallTap: () async {
-                        _updateView(() {
-                          _bottomTabIndex = 0;
-                        });
-                        await _fillAndCallContact(contact);
-                      },
-                    );
-                  },
-                ),
-        ),
-      ],
-    );
-  }
-
-  Widget _journalView(BuildContext context, SipUiState state) {
-    final l10n = AppLocalizations.of(context)!;
-    final entries =
-        state.serverCallLogs.isNotEmpty ? state.serverCallLogs : state.callLogs;
-    final items = _buildJournalItemsWithHeaders(entries);
-    final filters = <(CallType?, String)>[
-      (null, 'Все'),
-      (CallType.incoming, 'Входящие'),
-      (CallType.outgoing, 'Исходящие'),
-      (CallType.missed, 'Пропущенные'),
-    ];
-
-    return Column(
-      key: const ValueKey('journal'),
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 6),
-          child: Column(
-            children: [
-              _cleanSearchField(
-                placeholder: 'Поиск звонков',
-                controller: _journalSearchController,
-                onChanged: _handleJournalSearchChanged,
-                onClear: _clearJournalSearch,
-              ),
-              const SizedBox(height: 10),
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: [
-                    for (final filter in filters) ...[
-                      _journalFilterChip(
-                        label: filter.$2,
-                        selected: state.serverCallFilter == filter.$1,
-                        onTap: () async {
-                          _updateView(() {
-                            _expandedCallLogId = null;
-                          });
-                          await _sipRuntime.refreshRecentCallLogs(
-                            callType: filter.$1,
-                            searchQuery: _journalSearchQuery.trim(),
-                            force: true,
-                          );
-                        },
-                      ),
-                      const SizedBox(width: 8),
-                    ],
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-        Expanded(
-          child: state.isServerCallLogsLoading && items.isEmpty
-              ? const Padding(
-                  key: ValueKey('journal_loading'),
-                  padding: EdgeInsets.all(24),
-                  child: Center(child: CircularProgressIndicator.adaptive()),
-                )
-              : items.isEmpty
-                  ? Padding(
-                      key: const ValueKey('journal_empty'),
-                      padding: const EdgeInsets.all(24),
-                      child: Center(
-                        child: Text(
-                          l10n.translate('sip_journal_empty'),
-                          style: const TextStyle(
-                            color: Color(0xFF9CA3AF),
-                            fontSize: 16,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                    )
-                  : RefreshIndicator.adaptive(
-                      onRefresh: () => _refreshJournalCalls(force: true),
-                      child: NotificationListener<ScrollNotification>(
-                        onNotification: (notification) {
-                          if (notification.metrics.pixels >=
-                              notification.metrics.maxScrollExtent - 120) {
-                            _sipRuntime.loadMoreRecentCallLogs();
-                          }
-                          return false;
-                        },
-                        child: ListView.builder(
-                          physics: const AlwaysScrollableScrollPhysics(),
-                          padding: const EdgeInsets.fromLTRB(16, 6, 16, 10),
-                          itemCount: items.length +
-                              (state.isServerCallLogsLoadingMore ? 1 : 0),
-                          itemBuilder: (context, index) {
-                            if (index >= items.length) {
-                              return const Padding(
-                                padding: EdgeInsets.symmetric(vertical: 16),
-                                child: Center(
-                                  child: CircularProgressIndicator.adaptive(),
-                                ),
-                              );
-                            }
-
-                            final item = items[index];
-                            if (item is Map<String, String>) {
-                              return Padding(
-                                padding: const EdgeInsets.fromLTRB(2, 12, 2, 8),
-                                child: Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Text(
-                                      item['date'] ?? '',
-                                      style: const TextStyle(
-                                        color: Color(0xFF6B7280),
-                                        fontFamily: 'Gilroy',
-                                        fontSize: 15,
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                    ),
-                                    Text(
-                                      item['year'] ?? '',
-                                      style: const TextStyle(
-                                        color: Color(0xFF9CA3AF),
-                                        fontFamily: 'Gilroy',
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            }
-
-                            final callItem = item as SipCallLogEntry;
-                            return Padding(
-                              padding: const EdgeInsets.only(bottom: 10),
-                              child: _journalLogCard(
-                                context,
-                                callItem,
-                                expanded: _expandedCallLogId == callItem.id,
-                                onTap: () {
-                                  _updateView(() {
-                                    _expandedCallLogId =
-                                        _expandedCallLogId == callItem.id
-                                            ? null
-                                            : callItem.id;
-                                  });
-                                },
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                    ),
-        ),
-      ],
-    );
-  }
-
-  List<Object> _buildJournalItemsWithHeaders(List<SipCallLogEntry> calls) {
-    final sorted = [...calls]
-      ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
-    final result = <Object>[];
-    DateTime? lastDate;
-
-    for (final call in sorted) {
-      final dateOnly = DateTime(
-        call.timestamp.year,
-        call.timestamp.month,
-        call.timestamp.day,
-      );
-      if (lastDate == null || dateOnly != lastDate) {
-        result.add(_formatJournalDateHeader(call.timestamp));
-        lastDate = dateOnly;
-      }
-      result.add(call);
-    }
-
-    return result;
-  }
-
-  Map<String, String> _formatJournalDateHeader(DateTime date) {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final itemDate = DateTime(date.year, date.month, date.day);
-    final difference = today.difference(itemDate).inDays;
-
-    if (difference == 0) {
-      return {'date': 'Сегодня', 'year': '${date.year}'};
-    }
-    if (difference == 1) {
-      return {'date': 'Вчера', 'year': '${date.year}'};
-    }
-
-    final months = <int, String>{
-      1: 'января',
-      2: 'февраля',
-      3: 'марта',
-      4: 'апреля',
-      5: 'мая',
-      6: 'июня',
-      7: 'июля',
-      8: 'августа',
-      9: 'сентября',
-      10: 'октября',
-      11: 'ноября',
-      12: 'декабря',
-    };
-
-    return {
-      'date': '${date.day} ${months[date.month] ?? ''}',
-      'year': '${date.year}',
-    };
-  }
-
-  Widget _journalFilterChip({
-    required String label,
-    required bool selected,
-    required VoidCallback onTap,
-  }) {
-    return CupertinoButton(
-      padding: EdgeInsets.zero,
-      onPressed: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
-        decoration: BoxDecoration(
-          color: selected ? const Color(0xFF111827) : Colors.white,
-          borderRadius: BorderRadius.circular(999),
-          border: Border.all(
-            color: selected ? const Color(0xFF111827) : const Color(0xFFE5E7EB),
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFF111827).withValues(alpha: 0.04),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: selected ? Colors.white : const Color(0xFF111827),
-            fontSize: 13,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _journalLogCard(
-    BuildContext context,
-    SipCallLogEntry item, {
-    required bool expanded,
-    required VoidCallback onTap,
-    bool compact = false,
-  }) {
-    final accentColor = _callLogAccentColor(item);
-    final fillColor = _callLogFillColor(item);
-    final logIcon = _callLogIcon(item);
-
-    final tile = ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-      onTap: onTap,
-      leading: Container(
-        width: 42,
-        height: 42,
-        decoration: BoxDecoration(
-          color: fillColor,
-          borderRadius: BorderRadius.circular(15),
-        ),
-        child: Icon(
-          logIcon,
-          color: accentColor,
-          size: 18,
-        ),
-      ),
-      title: Text(
-        item.target,
-        style: const TextStyle(
-          color: Color(0xFF111827),
-          fontWeight: FontWeight.w700,
-        ),
-      ),
-      subtitle: Text(
-        _buildCallLogSubtitle(item, compact: compact),
-        style: const TextStyle(
-          color: Color(0xFF9CA3AF),
-          fontWeight: FontWeight.w500,
-          fontSize: 12,
-        ),
-      ),
-      trailing: compact
-          ? CupertinoButton(
-              padding: EdgeInsets.zero,
-              onPressed: () async {
-                _openDialerWithNumber(item.dialTarget);
-                await _startDialCall();
-              },
-              child: Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF22C55E),
-                  borderRadius: BorderRadius.circular(15),
-                ),
-                child: const Icon(
-                  CupertinoIcons.phone_fill,
-                  size: 18,
-                  color: Colors.white,
-                ),
-              ),
-            )
-          : Text(
-              _formatTime(item.timestamp),
-              style: const TextStyle(
-                color: Color(0xFFD1D5DB),
-                fontWeight: FontWeight.w600,
-                fontSize: 12,
-              ),
-            ),
-    );
-
-    final card = Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(22),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF111827).withValues(alpha: 0.04),
-            blurRadius: 16,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          tile,
-          AnimatedCrossFade(
-            duration: const Duration(milliseconds: 180),
-            crossFadeState:
-                expanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
-            firstChild: const SizedBox.shrink(),
-            secondChild: Padding(
-              padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
-              child: Column(
-                children: [
-                  const Divider(height: 1),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _callActionButton(
-                          label: 'В набор',
-                          icon: CupertinoIcons.circle_grid_3x3_fill,
-                          onTap: () => _openDialerWithNumber(item.dialTarget),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: _callActionButton(
-                          label: 'Добавить',
-                          icon: CupertinoIcons.add_circled,
-                          onTap: () => _showAddNumberSheetFor(
-                            item.dialTarget,
-                            suggestedName: item.target == item.dialTarget
-                                ? null
-                                : item.target,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: _callActionButton(
-                          label: 'История',
-                          icon: CupertinoIcons.clock,
-                          onTap: () => _openCallLogHistory(item),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: _callActionButton(
-                          label: 'Инфо',
-                          icon: CupertinoIcons.info_circle,
-                          onTap: () => _openCallLogDetails(item),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-
-    return Dismissible(
-      key: ValueKey('swipe_call_${item.id}_${compact ? 'compact' : 'full'}'),
-      direction: DismissDirection.startToEnd,
-      dismissThresholds: const {DismissDirection.startToEnd: 0.32},
-      confirmDismiss: (_) async {
-        _openDialerWithNumber(item.dialTarget);
-        await _startDialCall();
-        return false;
-      },
-      background: Container(
-        decoration: BoxDecoration(
-          color: const Color(0xFF22C55E),
-          borderRadius: BorderRadius.circular(22),
-        ),
-        padding: const EdgeInsets.symmetric(horizontal: 24),
-        alignment: Alignment.centerLeft,
-        child: const Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              CupertinoIcons.phone_fill,
-              color: Colors.white,
-              size: 22,
-            ),
-            SizedBox(width: 10),
-            Text(
-              'Позвонить',
-              style: TextStyle(
-                color: Colors.white,
-                fontFamily: 'Gilroy',
-                fontSize: 15,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ],
-        ),
-      ),
-      secondaryBackground: const SizedBox.shrink(),
-      child: card,
-    );
-  }
-
-  // ─── УМНЫЙ ПОИСК: контакты + журнал одновременно ───────────────────────────
-  Widget _searchView(BuildContext context, SipUiState state) {
-    if (_contactsEnabled && !_contactsLoaded) {
-      unawaited(_loadContacts());
-    }
-
-    final query = _searchViewQuery.trim();
-    final lowerQuery = query.toLowerCase();
-    final queryDigits = _digitsOnly(query);
-    final availableSources = _availableSearchSources();
-    final callEntries =
-        state.serverCallLogs.isNotEmpty ? state.serverCallLogs : state.callLogs;
-    final recentCalls = callEntries.take(12).toList(growable: false);
-
-    final contactResults = (query.isEmpty
-            ? const <_SipContactSuggestion>[]
-            : _contacts
-                .expand((contact) => contact.phones.map((phone) {
-                      return _SipContactSuggestion(
-                        name: contact.displayName,
-                        phone: phone.number,
-                        normalizedPhone: _digitsOnly(phone.number),
-                        photo: contact.photo,
-                      );
-                    }))
-                .where((contact) {
-                return contact.name.toLowerCase().contains(lowerQuery) ||
-                    (queryDigits.isNotEmpty &&
-                        (contact.normalizedPhone.contains(queryDigits) ||
-                            _nameToT9Digits(contact.name)
-                                .contains(queryDigits)));
-              }).toList(growable: false))
-        .take(8)
-        .toList(growable: false);
-
-    final journalResults = query.isEmpty
-        ? const <SipCallLogEntry>[]
-        : callEntries
-            .where((item) {
-              final target = item.target.toLowerCase();
-              final targetDigits = _digitsOnly(item.dialTarget);
-              final phoneMatch =
-                  queryDigits.isNotEmpty && targetDigits.contains(queryDigits);
-              return target.contains(lowerQuery) || phoneMatch;
-            })
-            .take(10)
-            .toList(growable: false);
-
-    final leadResults = query.isEmpty
-        ? const <Lead>[]
-        : _searchLeadResults.where((lead) {
-            final name = lead.name.toLowerCase();
-            final phone = (lead.phone ?? '').trim();
-            final phoneDigits = _digitsOnly(phone);
-            return name.contains(lowerQuery) ||
-                (queryDigits.isNotEmpty && phoneDigits.contains(queryDigits));
-          }).toList(growable: false);
-
-    final isEmpty = query.isEmpty;
-    final noResults = !isEmpty &&
-        contactResults.isEmpty &&
-        journalResults.isEmpty &&
-        (!_leadSearchEnabled || (!_isLeadSearchLoading && leadResults.isEmpty));
-
-    return Column(
-      key: const ValueKey('search'),
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 10),
-          child: _cleanSearchField(
-            placeholder: 'Поиск',
-            autofocus: true,
-            controller: _searchViewController,
-            onChanged: _handleUnifiedSearchChanged,
-          ),
-        ),
-        if (availableSources.length > 1)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: [
-                  for (final source in availableSources) ...[
-                    _searchSourceChip(
-                      source: source,
-                      selected: _searchSource == source,
-                      onTap: () => _selectSearchSource(source),
-                    ),
-                    const SizedBox(width: 8),
-                  ],
-                ],
-              ),
-            ),
-          ),
-        Expanded(
-          child: isEmpty
-              ? recentCalls.isEmpty
-                  ? const Center(
-                      child: Padding(
-                        padding: EdgeInsets.all(24),
-                        child: Text(
-                          'Недавних звонков пока нет',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: Color(0xFF9CA3AF),
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    )
-                  : ListView(
-                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 18),
-                      children: [
-                        Row(
-                          children: const [
-                            Text(
-                              'Недавние звонки',
-                              style: TextStyle(
-                                color: Color(0xFF111827),
-                                fontSize: 18,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 10),
-                        ...recentCalls.map(
-                          (item) => Padding(
-                            padding: const EdgeInsets.only(bottom: 8),
-                            child: _journalLogCard(
-                              context,
-                              item,
-                              compact: true,
-                              expanded: _expandedCallLogId == item.id,
-                              onTap: () {
-                                _updateView(() {
-                                  _expandedCallLogId =
-                                      _expandedCallLogId == item.id
-                                          ? null
-                                          : item.id;
-                                });
-                              },
-                            ),
-                          ),
-                        ),
-                      ],
-                    )
-              : noResults
-                  ? const Center(
-                      child: Padding(
-                        padding: EdgeInsets.all(24),
-                        child: Text(
-                          'Ничего не найдено',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: Color(0xFF9CA3AF),
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    )
-                  : ListView(
-                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 18),
-                      children: [
-                        if (_searchSource == _SipSearchSource.calls) ...[
-                          _sectionHeader('Вызовы', journalResults.length),
-                          const SizedBox(height: 10),
-                          ...journalResults.map(
-                            (item) => Padding(
-                              padding: const EdgeInsets.only(bottom: 8),
-                              child: _journalLogCard(
-                                context,
-                                item,
-                                compact: true,
-                                expanded: _expandedCallLogId == item.id,
-                                onTap: () {
-                                  _updateView(() {
-                                    _expandedCallLogId =
-                                        _expandedCallLogId == item.id
-                                            ? null
-                                            : item.id;
-                                  });
-                                },
-                              ),
-                            ),
-                          ),
-                        ],
-                        if (_searchSource == _SipSearchSource.contacts &&
-                            _contactsEnabled) ...[
-                          _sectionHeader('Контакты', contactResults.length),
-                          const SizedBox(height: 10),
-                          ...contactResults.map(
-                            (contact) => Padding(
-                              padding: const EdgeInsets.only(bottom: 8),
-                              child: _contactTile(
-                                suggestion: contact,
-                                onTap: () {
-                                  _fillContactNumber(contact);
-                                  _updateView(() => _bottomTabIndex = 0);
-                                },
-                                onCallTap: () async {
-                                  _updateView(() => _bottomTabIndex = 0);
-                                  await _fillAndCallContact(contact);
-                                },
-                              ),
-                            ),
-                          ),
-                        ],
-                        if (_searchSource == _SipSearchSource.leads &&
-                            _leadSearchEnabled) ...[
-                          _sectionHeader('Лиды', leadResults.length),
-                          const SizedBox(height: 10),
-                          if (_isLeadSearchLoading)
-                            const Padding(
-                              padding: EdgeInsets.only(bottom: 12),
-                              child: Center(
-                                child: CircularProgressIndicator.adaptive(),
-                              ),
-                            ),
-                          ...leadResults.map(
-                            (lead) => Padding(
-                              padding: const EdgeInsets.only(bottom: 8),
-                              child: _leadSearchTile(lead),
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-        ),
-      ],
-    );
-  }
-
-  Widget _searchSourceChip({
-    required _SipSearchSource source,
-    required bool selected,
-    required VoidCallback onTap,
-  }) {
-    final label = switch (source) {
-      _SipSearchSource.calls => 'Вызовы',
-      _SipSearchSource.contacts => 'Контакты',
-      _SipSearchSource.leads => 'Лиды',
-    };
-
-    return CupertinoButton(
-      padding: EdgeInsets.zero,
-      onPressed: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        curve: Curves.easeOutCubic,
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
-        decoration: BoxDecoration(
-          color: selected ? const Color(0xFF111827) : Colors.white,
-          borderRadius: BorderRadius.circular(999),
-          border: Border.all(
-            color: selected ? const Color(0xFF111827) : const Color(0xFFF0F0F0),
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFF111827).withValues(alpha: 0.04),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: selected ? Colors.white : const Color(0xFF111827),
-            fontSize: 13,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-      ),
-    );
-  }
-
-  /// Заголовок секции с количеством результатов
-  Widget _sectionHeader(String title, int count) {
-    return Row(
-      children: [
-        Text(
-          title,
-          style: const TextStyle(
-            color: Color(0xFF111827),
-            fontSize: 17,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        const SizedBox(width: 8),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-          decoration: BoxDecoration(
-            color: const Color(0xFFF3F4F6),
-            borderRadius: BorderRadius.circular(999),
-          ),
-          child: Text(
-            '$count',
-            style: const TextStyle(
-              color: Color(0xFF6B7280),
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  String _buildCallLogSubtitle(SipCallLogEntry item, {required bool compact}) {
-    final label = _resolvedCallLogLabel(context, item);
-    final time = _formatTime(item.timestamp);
-    final duration = item.isMissed ? null : _formatDuration(item.duration);
-
-    if (compact) {
-      if (item.dialTarget == item.target) {
-        return '$label • $time';
-      }
-      return '${item.dialTarget} • $time';
-    }
-
-    if (item.dialTarget == item.target) {
-      return duration == null ? '$label • $time' : '$label • $duration';
-    }
-
-    return duration == null
-        ? '$label • ${item.dialTarget}'
-        : '$label • $duration • ${item.dialTarget}';
-  }
-
-  Widget _callActionButton({
-    required String label,
-    required IconData icon,
-    required VoidCallback onTap,
-  }) {
-    return CupertinoButton(
-      padding: EdgeInsets.zero,
-      onPressed: onTap,
-      child: Container(
-        height: 74,
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-        decoration: BoxDecoration(
-          color: const Color(0xFFF8FAFC),
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: const Color(0xFFE5E7EB)),
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFF111827).withValues(alpha: 0.03),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 22, color: const Color(0xFF374151)),
-            const SizedBox(height: 6),
-            SizedBox(
-              width: double.infinity,
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Text(
-                  label,
-                  maxLines: 1,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    color: Color(0xFF111827),
-                    fontFamily: 'Gilroy',
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _leadSearchTile(Lead lead) {
-    final phone = (lead.phone ?? '').trim();
-
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(22),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF111827).withValues(alpha: 0.04),
-            blurRadius: 16,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-        onTap: () => _fillLeadPhone(lead),
-        leading: Container(
-          width: 42,
-          height: 42,
-          decoration: BoxDecoration(
-            color: const Color(0xFFF3F4F6),
-            borderRadius: BorderRadius.circular(15),
-          ),
-          child: const Icon(
-            CupertinoIcons.person_crop_circle,
-            color: Color(0xFF6B7280),
-            size: 22,
-          ),
-        ),
-        title: Text(
-          lead.name.trim().isEmpty ? 'Без имени' : lead.name,
-          style: const TextStyle(
-            color: Color(0xFF111827),
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        subtitle: Text(
-          phone.isEmpty ? 'Нет телефона' : phone,
-          style: const TextStyle(
-            color: Color(0xFF9CA3AF),
-            fontWeight: FontWeight.w500,
-            fontSize: 12,
-          ),
-        ),
-        trailing: phone.isEmpty
-            ? null
-            : CupertinoButton(
-                padding: EdgeInsets.zero,
-                onPressed: () async => _callLead(lead),
-                child: Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF22C55E),
-                    borderRadius: BorderRadius.circular(15),
-                  ),
-                  child: const Icon(
-                    CupertinoIcons.phone_fill,
-                    size: 18,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-      ),
-    );
-  }
-
-  // ─── ЧИСТОЕ ПОЛЕ ПОИСКА (белое, без стекла, тёмные буквы) ─────────────────
-  Widget _cleanSearchField({
-    required String placeholder,
-    TextEditingController? controller,
-    required ValueChanged<String> onChanged,
-    bool autofocus = false,
-    VoidCallback? onClear,
-  }) {
-    final hasText = controller?.text.trim().isNotEmpty ?? false;
-
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF111827).withValues(alpha: 0.05),
-            blurRadius: 16,
-            offset: const Offset(0, 4),
-          ),
-        ],
-        border: Border.all(
-          color: const Color(0xFFF0F0F0),
-        ),
-      ),
-      child: CupertinoTextField(
-        controller: controller,
-        autofocus: autofocus,
-        textInputAction: TextInputAction.search,
-        decoration: const BoxDecoration(),
-        style: const TextStyle(
-          color: Color(0xFF111827),
-          fontSize: 15,
-          fontWeight: FontWeight.w500,
-        ),
-        placeholderStyle: const TextStyle(
-          color: Color(0xFFD1D5DB),
-          fontSize: 15,
-          fontWeight: FontWeight.w400,
-        ),
-        prefix: const Padding(
-          padding: EdgeInsetsDirectional.fromSTEB(14, 0, 10, 0),
-          child: Icon(
-            CupertinoIcons.search,
-            color: Color(0xFF9CA3AF),
-            size: 18,
-          ),
-        ),
-        suffix: hasText && onClear != null
-            ? CupertinoButton(
-                padding: const EdgeInsetsDirectional.fromSTEB(8, 0, 12, 0),
-                minimumSize: Size.zero,
-                onPressed: onClear,
-                child: const Icon(
-                  CupertinoIcons.xmark_circle_fill,
-                  color: Color(0xFF9CA3AF),
-                  size: 18,
-                ),
-              )
-            : const SizedBox(width: 12),
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 14),
-        placeholder: placeholder,
-        onChanged: onChanged,
-      ),
-    );
-  }
-
-  String _declineSearchResultsLabel(int count) {
-    final mod10 = count % 10;
-    final mod100 = count % 100;
-    if (mod10 == 1 && mod100 != 11) {
-      return 'результат';
-    }
-    if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) {
-      return 'результата';
-    }
-    return 'результатов';
-  }
-
-  Widget _bottomSwitcher(BuildContext context, {bool embedded = false}) {
-    if (embedded) return const SizedBox.shrink();
-    return _ios26LiquidNavBar(context);
-  }
 }

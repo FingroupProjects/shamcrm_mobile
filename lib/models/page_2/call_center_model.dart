@@ -2,6 +2,7 @@ enum CallType { incoming, outgoing, missed }
 
 class CallLogEntry {
   final String id;
+  final int? leadId;
   final String leadName;
   final String phoneNumber;
   final DateTime callDate;
@@ -13,6 +14,7 @@ class CallLogEntry {
 
   CallLogEntry({
     required this.id,
+    this.leadId,
     required this.leadName,
     required this.phoneNumber,
     required this.callDate,
@@ -32,7 +34,7 @@ class CallLogEntry {
             : CallType.outgoing;
 
     // Вспомогательная функция для парсинга нестандартного формата "YYYY-MM-DD HH:mm"
-    DateTime? _parseCustomDate(String? dateStr) {
+    DateTime? parseCustomDate(String? dateStr) {
       if (dateStr == null) return null;
       try {
         // Предполагаем формат "2025-07-02 06:36"
@@ -41,7 +43,7 @@ class CallLogEntry {
         final dateParts = parts[0].split('-');
         final timeParts = parts[1].split(':');
         if (dateParts.length != 3 || timeParts.length != 2) return null;
-        
+
         return DateTime(
           int.parse(dateParts[0]),
           int.parse(dateParts[1]),
@@ -59,14 +61,18 @@ class CallLogEntry {
     if (json['call_started_at'] != null) {
       callDate = DateTime.parse(json['call_started_at']);
     } else {
-      callDate = _parseCustomDate(json['created_at']) ??
-                 _parseCustomDate(json['updated_at']) ??
-                 DateTime.now();
+      callDate = parseCustomDate(json['created_at']) ??
+          parseCustomDate(json['updated_at']) ??
+          DateTime.now();
     }
 
     return CallLogEntry(
       id: json['id'].toString(),
-      leadName: lead != null && lead['name'] != null ? lead['name'] : 'Неизвестно',
+      leadId: lead?['id'] is int
+          ? lead!['id'] as int
+          : int.tryParse(lead?['id']?.toString() ?? ''),
+      leadName:
+          lead != null && lead['name'] != null ? lead['name'] : 'Неизвестно',
       phoneNumber: json['caller'] ?? json['destination_number'] ?? 'Неизвестно',
       callDate: callDate,
       callType: callType,

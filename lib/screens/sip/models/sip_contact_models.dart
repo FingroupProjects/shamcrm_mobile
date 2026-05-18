@@ -54,3 +54,8 @@ enum _SipSearchSource {
   contacts,
   leads,
 }
+
+enum _SipContactsTabSource {
+  contacts,
+  leads,
+}

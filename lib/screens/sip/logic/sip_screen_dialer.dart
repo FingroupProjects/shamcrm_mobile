@@ -159,6 +159,8 @@ extension _SipScreenDialerExtension on _SipScreenState {
   Future<void> _showAddNumberSheetFor(
     String rawNumber, {
     String? suggestedName,
+    int? leadId,
+    bool showCreateLead = true,
   }) async {
     await showCupertinoModalPopup<void>(
       context: context,
@@ -166,22 +168,37 @@ extension _SipScreenDialerExtension on _SipScreenState {
         title: const Text('Добавить номер'),
         message: Text(rawNumber),
         actions: [
+          if (showCreateLead)
+            CupertinoActionSheetAction(
+              onPressed: () async {
+                Navigator.of(sheetContext).pop();
+                await _openLeadCreationFromNumber(rawNumber);
+              },
+              child: const Text('Создать лид'),
+            ),
           CupertinoActionSheetAction(
             onPressed: () async {
               Navigator.of(sheetContext).pop();
-              await _openLeadCreationFromNumber(rawNumber);
+              await _openLeadUpdateFromNumber(rawNumber, leadId: leadId);
             },
-            child: const Text('Новый лид'),
+            child: const Text('Обновить лид'),
           ),
           CupertinoActionSheetAction(
             onPressed: () async {
               Navigator.of(sheetContext).pop();
-              await _promptSaveContactForNumber(
+              await _openSystemContactCreationForNumber(
                 rawNumber,
                 suggestedName: suggestedName,
               );
             },
-            child: const Text('В контакты'),
+            child: const Text('Добавить в контакт'),
+          ),
+          CupertinoActionSheetAction(
+            onPressed: () async {
+              Navigator.of(sheetContext).pop();
+              await _updateExistingSystemContactForNumber(rawNumber);
+            },
+            child: const Text('Обновить существующий контакт'),
           ),
         ],
         cancelButton: CupertinoActionSheetAction(
@@ -192,56 +209,9 @@ extension _SipScreenDialerExtension on _SipScreenState {
     );
   }
 
-  Future<void> _promptSaveContactForNumber(
+  Future<void> _openSystemContactCreationForNumber(
     String rawNumber, {
     String? suggestedName,
-  }) async {
-    final controller = TextEditingController(text: suggestedName ?? '');
-    final saved = await showCupertinoDialog<bool>(
-      context: context,
-      builder: (dialogContext) => CupertinoAlertDialog(
-        title: const Text('Сохранить контакт'),
-        content: Column(
-          children: [
-            const SizedBox(height: 12),
-            Text(rawNumber),
-            const SizedBox(height: 12),
-            CupertinoTextField(
-              controller: controller,
-              placeholder: 'Имя контакта',
-              textCapitalization: TextCapitalization.words,
-            ),
-          ],
-        ),
-        actions: [
-          CupertinoDialogAction(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('Отмена'),
-          ),
-          CupertinoDialogAction(
-            isDefaultAction: true,
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text('Сохранить'),
-          ),
-        ],
-      ),
-    );
-
-    if (saved != true) {
-      controller.dispose();
-      return;
-    }
-
-    final contactName = controller.text.trim().isEmpty
-        ? 'Новый контакт'
-        : controller.text.trim();
-    controller.dispose();
-    await _saveContactForNumber(rawNumber, contactName: contactName);
-  }
-
-  Future<void> _saveContactForNumber(
-    String rawNumber, {
-    required String contactName,
   }) async {
     final resolvedPhone = await _resolveFullDialPhone(rawNumber: rawNumber);
     if (resolvedPhone == null) return;
@@ -256,7 +226,7 @@ extension _SipScreenDialerExtension on _SipScreenState {
       return;
     }
 
-    final granted = await FlutterContacts.requestPermission();
+    final granted = await FlutterContacts.requestPermission(readonly: false);
     if (!granted) {
       _showSipSnackBar('Нет доступа к контактам', isError: true);
       return;
@@ -264,17 +234,71 @@ extension _SipScreenDialerExtension on _SipScreenState {
 
     try {
       final newContact = Contact()
-        ..name.first = contactName
+        ..name.first = (suggestedName ?? '').trim()
         ..phones = [Phone(resolvedPhone)];
 
-      await newContact.insert();
+      final createdContact = await FlutterContacts.openExternalInsert(
+        newContact,
+      );
       _contactsLoaded = false;
       await _loadContacts();
       if (!mounted) return;
       _updateView(() {});
-      _showSipSnackBar('Контакт сохранён');
+      if (createdContact != null) {
+        _showSipSnackBar('Контакт сохранён');
+      }
     } catch (_) {
-      _showSipSnackBar('Не удалось сохранить контакт', isError: true);
+      _showSipSnackBar('Не удалось открыть системные контакты', isError: true);
+    }
+  }
+
+  Future<void> _updateExistingSystemContactForNumber(String rawNumber) async {
+    final resolvedPhone = await _resolveFullDialPhone(rawNumber: rawNumber);
+    if (resolvedPhone == null) return;
+
+    final granted = await FlutterContacts.requestPermission(readonly: false);
+    if (!granted) {
+      _showSipSnackBar('Нет доступа к контактам', isError: true);
+      return;
+    }
+
+    try {
+      final picked = await FlutterContacts.openExternalPick();
+      if (picked == null || picked.id.isEmpty) return;
+
+      final contact = await FlutterContacts.getContact(
+        picked.id,
+        withProperties: true,
+        withPhoto: true,
+        withAccounts: true,
+      );
+      if (contact == null) {
+        _showSipSnackBar('Контакт не найден', isError: true);
+        return;
+      }
+
+      final normalizedPhone = _digitsOnly(resolvedPhone);
+      final hasPhone = contact.phones.any(
+        (phone) => _digitsOnly(phone.number) == normalizedPhone,
+      );
+      if (!hasPhone) {
+        contact.phones = [
+          ...contact.phones,
+          Phone(resolvedPhone),
+        ];
+        final updated = await FlutterContacts.updateContact(contact);
+        await FlutterContacts.openExternalEdit(updated.id);
+      } else {
+        await FlutterContacts.openExternalEdit(contact.id);
+      }
+
+      _contactsLoaded = false;
+      await _loadContacts();
+      if (mounted) {
+        _updateView(() {});
+      }
+    } catch (_) {
+      _showSipSnackBar('Не удалось обновить контакт', isError: true);
     }
   }
 
@@ -297,6 +321,91 @@ extension _SipScreenDialerExtension on _SipScreenState {
           statusId: statusId,
           initialPhone: preparedPhone.$2,
           initialCountry: preparedPhone.$1,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _openLeadUpdateFromNumber(
+    String rawNumber, {
+    int? leadId,
+  }) async {
+    final resolvedLeadId = leadId ?? await _findLeadIdByNumber(rawNumber);
+    if (!mounted) return;
+
+    if (resolvedLeadId == null) {
+      _showSipSnackBar('Лид с этим номером не найден', isError: true);
+      return;
+    }
+
+    try {
+      final lead = await _apiService.getLeadById(resolvedLeadId);
+      if (!mounted) return;
+      await _openLeadEditScreen(lead);
+    } catch (_) {
+      _showSipSnackBar('Не удалось открыть лид', isError: true);
+    }
+  }
+
+  Future<int?> _findLeadIdByNumber(String rawNumber) async {
+    final digits = _digitsOnly(rawNumber);
+    if (digits.isEmpty) return null;
+
+    try {
+      final leads = await _apiService.getLeads(
+        null,
+        page: 1,
+        perPage: 10,
+        search: digits,
+        bypassAnalyticsCache: true,
+      );
+      if (leads.isEmpty) return null;
+
+      for (final lead in leads) {
+        if (_digitsOnly(lead.phone ?? '').endsWith(digits) ||
+            digits.endsWith(_digitsOnly(lead.phone ?? ''))) {
+          return lead.id;
+        }
+      }
+      return leads.first.id;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> _openLeadEditScreen(LeadById lead) async {
+    String? formatLeadDate(String? raw) {
+      if (raw == null || raw.trim().isEmpty) return null;
+      final parsed = DateTime.tryParse(raw);
+      if (parsed == null) return raw;
+      return DateFormat('dd/MM/yyyy').format(parsed);
+    }
+
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => LeadEditScreen(
+          leadId: lead.id,
+          leadName: lead.name,
+          statusId: lead.statusId,
+          sourceId: lead.source?.id.toString() ?? '',
+          salesFunnelId: lead.salesFunnel?.id.toString() ?? '',
+          region: lead.region?.id.toString() ?? '',
+          manager: lead.manager?.id.toString() ?? '',
+          birthday: formatLeadDate(lead.birthday),
+          cityId: lead.cityId,
+          createAt: formatLeadDate(lead.createdAt),
+          instagram: lead.instagram,
+          facebook: lead.facebook,
+          telegram: lead.telegram,
+          phone: lead.phone,
+          whatsApp: lead.whatsApp,
+          email: lead.email,
+          description: lead.description,
+          leadCustomFieldValues: lead.leadCustomFieldValues,
+          directoryValues: lead.directoryValues,
+          existedFiles: lead.files,
+          priceTypeId: lead.priceType?.id.toString(),
+          priceTypeName: lead.priceType?.name,
         ),
       ),
     );

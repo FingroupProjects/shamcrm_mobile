@@ -524,8 +524,7 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
           child: Padding(
             padding: const EdgeInsets.all(8),
             child: LeadMultiSelectWidget(
-              selectedLeads:
-                  _selectedLeads.map((lead) => lead.id.toString()).toList(),
+              selectedLeads: _selectedLeads.map((lead) => lead.id).toList(),
               onSelectLeads: (List<LeadData> selectedUsersData) {
                 setState(() {
                   _selectedLeads = selectedUsersData;
@@ -1235,7 +1234,7 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
                                   padding: const EdgeInsets.all(8),
                                   child: LeadMultiSelectWidget(
                                     selectedLeads: _selectedLeads
-                                        .map((lead) => lead.id.toString())
+                                        .map((lead) => lead.id)
                                         .toList(),
                                     onSelectLeads:
                                         (List<LeadData> selectedUsersData) {
@@ -1478,7 +1477,7 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
                                       child: Text(
                                         "${_daysWithoutActivity ?? '0'}",
                                         style: TextStyle(
-                                          fontSize: 20,
+                                          fontSize: 20, 
                                           fontWeight: FontWeight.w500,
                                           fontFamily: 'Gilroy',
                                           color: Color(0xff1E2E52),

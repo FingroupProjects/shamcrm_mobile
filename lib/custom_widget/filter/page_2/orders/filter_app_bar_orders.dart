@@ -791,7 +791,7 @@ class _OrdersFilterScreenState extends State<OrdersFilterScreen> {
                                 padding: const EdgeInsets.all(8),
                                 child: LeadMultiSelectWidget(
                                   selectedLeads: _selectedLeads
-                                      .map((lead) => lead.id.toString())
+                                      .map((lead) => lead.id)
                                       .toList(),
                                   onSelectLeads:
                                       (List<LeadData> selectedUsersData) {

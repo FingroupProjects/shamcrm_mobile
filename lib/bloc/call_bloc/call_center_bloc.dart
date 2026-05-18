@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/call_bloc/call_center_event.dart';
 import 'package:crm_task_manager/bloc/call_bloc/call_center_state.dart';
@@ -200,6 +199,7 @@ class CallCenterBloc extends Bloc<CallCenterEvent, CallCenterState> {
           calls: calls,
           currentPage: currentPage,
           totalPages: totalPages,
+          currentFilter: _currentCallType,
         ));
       }
     } catch (e) {
@@ -249,6 +249,7 @@ class CallCenterBloc extends Bloc<CallCenterEvent, CallCenterState> {
           calls: calls,
           currentPage: currentPage,
           totalPages: totalPages,
+          currentFilter: _currentCallType,
         ));
       }
     } catch (e) {
@@ -288,6 +289,7 @@ class CallCenterBloc extends Bloc<CallCenterEvent, CallCenterState> {
           calls: _lastCalls,
           currentPage: _lastPage,
           totalPages: _totalPages,
+          currentFilter: _currentCallType,
         ));
       } else {
         emit(CallCenterError('Не удалось загрузить данные звонка: ${e.toString()}'));

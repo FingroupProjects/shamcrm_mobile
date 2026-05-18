@@ -1,20 +1,27 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:math' as math;
 import 'dart:ui';
 
 import 'package:audioplayers/audioplayers.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/custom_widget/custom_button.dart';
+import 'package:crm_task_manager/custom_widget/custom_tasks_tabBar.dart';
+import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/country_data_list.dart';
+import 'package:crm_task_manager/models/leadById_model.dart';
 import 'package:crm_task_manager/models/lead_model.dart';
 import 'package:crm_task_manager/models/page_2/call_center_model.dart';
 import 'package:crm_task_manager/page_2/call_center/call_details_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/lead/lead_cache.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_add_screen.dart';
+import 'package:crm_task_manager/screens/lead/tabBar/lead_edit_screen.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_contacts/flutter_contacts.dart';
+import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 
@@ -29,6 +36,8 @@ part 'logic/sip_screen_search.dart';
 part 'widgets/sip_call_views.dart';
 part 'widgets/sip_glass_widgets.dart';
 part 'widgets/sip_history_screen.dart';
+part 'widgets/sip_contacts_views.dart';
+part 'widgets/sip_journal_search_views.dart';
 part 'widgets/sip_main_views.dart';
 part 'widgets/sip_settings_sheet.dart';
 
@@ -56,6 +65,8 @@ class _SipScreenState extends State<SipScreen>
   final TextEditingController _portController = TextEditingController();
   final FocusNode _dialFocusNode = FocusNode();
   final AudioPlayer _callFeedbackPlayer = AudioPlayer();
+  final ScrollController _contactsListController = ScrollController();
+  final ScrollController _journalListController = ScrollController();
 
   SipTransportUi _selectedTransport = SipTransportUi.ws;
 
@@ -71,8 +82,10 @@ class _SipScreenState extends State<SipScreen>
   Duration _connectedDuration = Duration.zero;
   bool _contactsEnabled = false;
   bool _contactsLoaded = false;
+  bool _isContactsLoading = false;
   bool _contactsPermissionDenied = false;
-  List<Contact> _contacts = const [];
+  List<_SipContactSuggestion> _displayContacts = const [];
+  int _contactsTotalCount = 0;
   List<_SipIndexedContact> _indexedContacts = const [];
   List<_SipContactSuggestion> _contactSuggestions = const [];
   List<_SipInlineSuggestion> _dialSuggestions = const [];
@@ -87,18 +100,35 @@ class _SipScreenState extends State<SipScreen>
   bool _suspendDraftAutosave = false;
   bool _isDialPanelCollapsed = false;
   String _contactsViewQuery = '';
+  _SipContactsTabSource _contactsTabSource = _SipContactsTabSource.contacts;
   String _searchViewQuery = '';
   double? _liquidNavDragIndex;
   bool _isLiquidNavPressed = false;
   bool _leadSearchEnabled = false;
+  bool _isLeadCountLoading = false;
+  int _leadTotalCount = 0;
+  bool _isRefreshingContactsTabState = false;
   bool _isLeadSearchLoading = false;
   List<Lead> _searchLeadResults = const [];
+  bool _isContactsLeadLoading = false;
+  bool _isContactsLeadLoadingMore = false;
+  List<Lead> _contactsLeadResults = const [];
+  int _contactsLeadCurrentPage = 0;
+  bool _contactsLeadHasMore = true;
   Timer? _leadSearchDebounce;
+  Timer? _contactsLeadSearchDebounce;
+  Timer? _contactsIndexOverlayTimer;
+  Timer? _journalDateRailOverlayTimer;
   int _leadSearchRequestId = 0;
+  int _contactsLeadRequestId = 0;
   int _dialSuggestionRequestId = 0;
   _SipSearchSource _searchSource = _SipSearchSource.calls;
   String? _expandedCallLogId;
   String _journalSearchQuery = '';
+  String? _contactsIndexOverlayLetter;
+  double? _contactsIndexOverlayTop;
+  String? _journalDateRailLabel;
+  double? _journalDateRailTop;
 
   static const List<Map<String, String>> _dialPadItems = [
     {'key': '1', 'letters': ''},
@@ -125,6 +155,13 @@ class _SipScreenState extends State<SipScreen>
     _updateView(() {
       _isDialPanelCollapsed = false;
     });
+  }
+
+  bool get _hasContactsTab => true;
+
+  void _ensureValidBottomTabIndex() {
+    if (_hasContactsTab || _bottomTabIndex != 2) return;
+    _bottomTabIndex = 1;
   }
 
   int _resolveTabViewIndex(Key? key) {
@@ -169,8 +206,10 @@ class _SipScreenState extends State<SipScreen>
   Future<void> _initializeSip() async {
     await _sipService.initialize();
     await _sipService.prepareSipRuntimePermissions();
-    await _loadContactsConfiguration();
-    await _loadSearchCapabilities();
+    await Future.wait([
+      _loadSearchCapabilities(),
+      _loadContactsConfiguration(),
+    ]);
     final state = _sipService.state;
 
     _suspendDraftAutosave = true;
@@ -183,7 +222,11 @@ class _SipScreenState extends State<SipScreen>
     _suspendDraftAutosave = false;
 
     if (mounted) {
+      _ensureValidBottomTabIndex();
       _refreshContactSuggestions();
+      if (_contactsPermissionDenied || _leadSearchEnabled) {
+        unawaited(_loadContactsLeadResults(reset: true));
+      }
       setState(() {});
     }
   }
@@ -197,6 +240,9 @@ class _SipScreenState extends State<SipScreen>
     _draftSaveDebounce?.cancel();
     _journalSearchDebounce?.cancel();
     _leadSearchDebounce?.cancel();
+    _contactsLeadSearchDebounce?.cancel();
+    _contactsIndexOverlayTimer?.cancel();
+    _journalDateRailOverlayTimer?.cancel();
     _pulseController.dispose();
     unawaited(_callFeedbackPlayer.stop());
     _callFeedbackPlayer.dispose();
@@ -214,6 +260,8 @@ class _SipScreenState extends State<SipScreen>
     _searchViewController.dispose();
     _portController.dispose();
     _dialFocusNode.dispose();
+    _contactsListController.dispose();
+    _journalListController.dispose();
     super.dispose();
   }
 
@@ -231,6 +279,8 @@ class _SipScreenState extends State<SipScreen>
 
         final state = _sipService.state;
         final isActiveCall = _isActiveCallState(state.callStatus);
+        final visibleBottomTabIndex =
+            _hasContactsTab || _bottomTabIndex != 2 ? _bottomTabIndex : 1;
 
         _syncCallEffects(state);
         _syncSipNotifications(state);
@@ -276,7 +326,7 @@ class _SipScreenState extends State<SipScreen>
                                   final childIndex =
                                       _resolveTabViewIndex(child.key);
                                   final slidesFromLeft =
-                                      childIndex < _bottomTabIndex;
+                                      childIndex < visibleBottomTabIndex;
                                   final slideAnimation = Tween<Offset>(
                                     begin: Offset(
                                       slidesFromLeft ? -0.08 : 0.08,
@@ -303,9 +353,11 @@ class _SipScreenState extends State<SipScreen>
                                     ),
                                   );
                                 },
-                                child: switch (_bottomTabIndex) {
+                                child: switch (visibleBottomTabIndex) {
                                   0 => _dialPadView(context, state),
-                                  2 => _contactsView(context),
+                                  2 when _hasContactsTab => _contactsView(
+                                      context,
+                                    ),
                                   3 => _searchView(context, state),
                                   _ => _journalView(context, state),
                                 },
