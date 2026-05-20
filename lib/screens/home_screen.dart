@@ -14,6 +14,7 @@ import 'package:crm_task_manager/page_2/money/money_outcome/money_outcome_screen
 import 'package:crm_task_manager/page_2/money/money_references/cash_desk/cash_desk_screen.dart';
 import 'package:crm_task_manager/page_2/money/money_references/expense/expense_screen.dart';
 import 'package:crm_task_manager/page_2/money/money_references/income/income_screen.dart';
+import 'package:crm_task_manager/page_2/rmk/rmk_screen.dart';
 import 'package:crm_task_manager/page_2/warehouse/client_return/client_return_screen.dart';
 import 'package:crm_task_manager/page_2/warehouse/client_sale/client_sales_screen.dart';
 import 'package:crm_task_manager/page_2/warehouse/incoming/incoming_screen.dart';
@@ -90,7 +91,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
   bool _shouldSkipResumeSideEffects() {
     if (_hasActiveSipInteraction()) {
-      debugPrint('HomeScreen: resume side effects skipped during active SIP call');
+      debugPrint(
+          'HomeScreen: resume side effects skipped during active SIP call');
       return true;
     }
 
@@ -273,6 +275,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
     // Handle accounting document screen identifiers
     final accountingScreenIdentifiers = [
+      'rmk',
       'client_sale',
       'client_return',
       'income_goods',
@@ -443,6 +446,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
           Widget? targetScreen;
           switch (screenIdentifier) {
+            case 'rmk':
+              targetScreen = const RmkScreen();
+              break;
             case 'client_sale':
               targetScreen = ClientSaleScreen();
               break;

@@ -2223,6 +2223,1845 @@ class ChatMessagesCompanion extends UpdateCompanion<ChatMessage> {
   }
 }
 
+class $RmkGoodsTable extends RmkGoods with TableInfo<$RmkGoodsTable, RmkGood> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $RmkGoodsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+      'id', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+      'name', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _normalizedNameMeta =
+      const VerificationMeta('normalizedName');
+  @override
+  late final GeneratedColumn<String> normalizedName = GeneratedColumn<String>(
+      'normalized_name', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _categoryIdMeta =
+      const VerificationMeta('categoryId');
+  @override
+  late final GeneratedColumn<int> categoryId = GeneratedColumn<int>(
+      'category_id', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _categoryNameMeta =
+      const VerificationMeta('categoryName');
+  @override
+  late final GeneratedColumn<String> categoryName = GeneratedColumn<String>(
+      'category_name', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _parentCategoryIdMeta =
+      const VerificationMeta('parentCategoryId');
+  @override
+  late final GeneratedColumn<int> parentCategoryId = GeneratedColumn<int>(
+      'parent_category_id', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _priceMeta = const VerificationMeta('price');
+  @override
+  late final GeneratedColumn<double> price = GeneratedColumn<double>(
+      'price', aliasedName, false,
+      type: DriftSqlType.double,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
+  static const VerificationMeta _quantityMeta =
+      const VerificationMeta('quantity');
+  @override
+  late final GeneratedColumn<double> quantity = GeneratedColumn<double>(
+      'quantity', aliasedName, false,
+      type: DriftSqlType.double,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
+  static const VerificationMeta _imageUrlMeta =
+      const VerificationMeta('imageUrl');
+  @override
+  late final GeneratedColumn<String> imageUrl = GeneratedColumn<String>(
+      'image_url', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _payloadMeta =
+      const VerificationMeta('payload');
+  @override
+  late final GeneratedColumn<String> payload = GeneratedColumn<String>(
+      'payload', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _serverCreatedAtMeta =
+      const VerificationMeta('serverCreatedAt');
+  @override
+  late final GeneratedColumn<DateTime> serverCreatedAt =
+      GeneratedColumn<DateTime>('server_created_at', aliasedName, true,
+          type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _serverUpdatedAtMeta =
+      const VerificationMeta('serverUpdatedAt');
+  @override
+  late final GeneratedColumn<DateTime> serverUpdatedAt =
+      GeneratedColumn<DateTime>('server_updated_at', aliasedName, true,
+          type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _localUpdatedAtMeta =
+      const VerificationMeta('localUpdatedAt');
+  @override
+  late final GeneratedColumn<DateTime> localUpdatedAt =
+      GeneratedColumn<DateTime>('local_updated_at', aliasedName, false,
+          type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  static const VerificationMeta _isDeletedMeta =
+      const VerificationMeta('isDeleted');
+  @override
+  late final GeneratedColumn<bool> isDeleted = GeneratedColumn<bool>(
+      'is_deleted', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('CHECK ("is_deleted" IN (0, 1))'),
+      defaultValue: const Constant(false));
+  @override
+  List<GeneratedColumn> get $columns => [
+        id,
+        name,
+        normalizedName,
+        categoryId,
+        categoryName,
+        parentCategoryId,
+        price,
+        quantity,
+        imageUrl,
+        payload,
+        serverCreatedAt,
+        serverUpdatedAt,
+        localUpdatedAt,
+        isDeleted
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'rmk_goods';
+  @override
+  VerificationContext validateIntegrity(Insertable<RmkGood> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+          _nameMeta, name.isAcceptableOrUnknown(data['name']!, _nameMeta));
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('normalized_name')) {
+      context.handle(
+          _normalizedNameMeta,
+          normalizedName.isAcceptableOrUnknown(
+              data['normalized_name']!, _normalizedNameMeta));
+    } else if (isInserting) {
+      context.missing(_normalizedNameMeta);
+    }
+    if (data.containsKey('category_id')) {
+      context.handle(
+          _categoryIdMeta,
+          categoryId.isAcceptableOrUnknown(
+              data['category_id']!, _categoryIdMeta));
+    }
+    if (data.containsKey('category_name')) {
+      context.handle(
+          _categoryNameMeta,
+          categoryName.isAcceptableOrUnknown(
+              data['category_name']!, _categoryNameMeta));
+    }
+    if (data.containsKey('parent_category_id')) {
+      context.handle(
+          _parentCategoryIdMeta,
+          parentCategoryId.isAcceptableOrUnknown(
+              data['parent_category_id']!, _parentCategoryIdMeta));
+    }
+    if (data.containsKey('price')) {
+      context.handle(
+          _priceMeta, price.isAcceptableOrUnknown(data['price']!, _priceMeta));
+    }
+    if (data.containsKey('quantity')) {
+      context.handle(_quantityMeta,
+          quantity.isAcceptableOrUnknown(data['quantity']!, _quantityMeta));
+    }
+    if (data.containsKey('image_url')) {
+      context.handle(_imageUrlMeta,
+          imageUrl.isAcceptableOrUnknown(data['image_url']!, _imageUrlMeta));
+    }
+    if (data.containsKey('payload')) {
+      context.handle(_payloadMeta,
+          payload.isAcceptableOrUnknown(data['payload']!, _payloadMeta));
+    } else if (isInserting) {
+      context.missing(_payloadMeta);
+    }
+    if (data.containsKey('server_created_at')) {
+      context.handle(
+          _serverCreatedAtMeta,
+          serverCreatedAt.isAcceptableOrUnknown(
+              data['server_created_at']!, _serverCreatedAtMeta));
+    }
+    if (data.containsKey('server_updated_at')) {
+      context.handle(
+          _serverUpdatedAtMeta,
+          serverUpdatedAt.isAcceptableOrUnknown(
+              data['server_updated_at']!, _serverUpdatedAtMeta));
+    }
+    if (data.containsKey('local_updated_at')) {
+      context.handle(
+          _localUpdatedAtMeta,
+          localUpdatedAt.isAcceptableOrUnknown(
+              data['local_updated_at']!, _localUpdatedAtMeta));
+    } else if (isInserting) {
+      context.missing(_localUpdatedAtMeta);
+    }
+    if (data.containsKey('is_deleted')) {
+      context.handle(_isDeletedMeta,
+          isDeleted.isAcceptableOrUnknown(data['is_deleted']!, _isDeletedMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  RmkGood map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return RmkGood(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
+      name: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}name'])!,
+      normalizedName: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}normalized_name'])!,
+      categoryId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}category_id']),
+      categoryName: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}category_name']),
+      parentCategoryId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}parent_category_id']),
+      price: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}price'])!,
+      quantity: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}quantity'])!,
+      imageUrl: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}image_url']),
+      payload: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}payload'])!,
+      serverCreatedAt: attachedDatabase.typeMapping.read(
+          DriftSqlType.dateTime, data['${effectivePrefix}server_created_at']),
+      serverUpdatedAt: attachedDatabase.typeMapping.read(
+          DriftSqlType.dateTime, data['${effectivePrefix}server_updated_at']),
+      localUpdatedAt: attachedDatabase.typeMapping.read(
+          DriftSqlType.dateTime, data['${effectivePrefix}local_updated_at'])!,
+      isDeleted: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}is_deleted'])!,
+    );
+  }
+
+  @override
+  $RmkGoodsTable createAlias(String alias) {
+    return $RmkGoodsTable(attachedDatabase, alias);
+  }
+}
+
+class RmkGood extends DataClass implements Insertable<RmkGood> {
+  final int id;
+  final String name;
+  final String normalizedName;
+  final int? categoryId;
+  final String? categoryName;
+  final int? parentCategoryId;
+  final double price;
+  final double quantity;
+  final String? imageUrl;
+  final String payload;
+  final DateTime? serverCreatedAt;
+  final DateTime? serverUpdatedAt;
+  final DateTime localUpdatedAt;
+  final bool isDeleted;
+  const RmkGood(
+      {required this.id,
+      required this.name,
+      required this.normalizedName,
+      this.categoryId,
+      this.categoryName,
+      this.parentCategoryId,
+      required this.price,
+      required this.quantity,
+      this.imageUrl,
+      required this.payload,
+      this.serverCreatedAt,
+      this.serverUpdatedAt,
+      required this.localUpdatedAt,
+      required this.isDeleted});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['name'] = Variable<String>(name);
+    map['normalized_name'] = Variable<String>(normalizedName);
+    if (!nullToAbsent || categoryId != null) {
+      map['category_id'] = Variable<int>(categoryId);
+    }
+    if (!nullToAbsent || categoryName != null) {
+      map['category_name'] = Variable<String>(categoryName);
+    }
+    if (!nullToAbsent || parentCategoryId != null) {
+      map['parent_category_id'] = Variable<int>(parentCategoryId);
+    }
+    map['price'] = Variable<double>(price);
+    map['quantity'] = Variable<double>(quantity);
+    if (!nullToAbsent || imageUrl != null) {
+      map['image_url'] = Variable<String>(imageUrl);
+    }
+    map['payload'] = Variable<String>(payload);
+    if (!nullToAbsent || serverCreatedAt != null) {
+      map['server_created_at'] = Variable<DateTime>(serverCreatedAt);
+    }
+    if (!nullToAbsent || serverUpdatedAt != null) {
+      map['server_updated_at'] = Variable<DateTime>(serverUpdatedAt);
+    }
+    map['local_updated_at'] = Variable<DateTime>(localUpdatedAt);
+    map['is_deleted'] = Variable<bool>(isDeleted);
+    return map;
+  }
+
+  RmkGoodsCompanion toCompanion(bool nullToAbsent) {
+    return RmkGoodsCompanion(
+      id: Value(id),
+      name: Value(name),
+      normalizedName: Value(normalizedName),
+      categoryId: categoryId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(categoryId),
+      categoryName: categoryName == null && nullToAbsent
+          ? const Value.absent()
+          : Value(categoryName),
+      parentCategoryId: parentCategoryId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(parentCategoryId),
+      price: Value(price),
+      quantity: Value(quantity),
+      imageUrl: imageUrl == null && nullToAbsent
+          ? const Value.absent()
+          : Value(imageUrl),
+      payload: Value(payload),
+      serverCreatedAt: serverCreatedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(serverCreatedAt),
+      serverUpdatedAt: serverUpdatedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(serverUpdatedAt),
+      localUpdatedAt: Value(localUpdatedAt),
+      isDeleted: Value(isDeleted),
+    );
+  }
+
+  factory RmkGood.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return RmkGood(
+      id: serializer.fromJson<int>(json['id']),
+      name: serializer.fromJson<String>(json['name']),
+      normalizedName: serializer.fromJson<String>(json['normalizedName']),
+      categoryId: serializer.fromJson<int?>(json['categoryId']),
+      categoryName: serializer.fromJson<String?>(json['categoryName']),
+      parentCategoryId: serializer.fromJson<int?>(json['parentCategoryId']),
+      price: serializer.fromJson<double>(json['price']),
+      quantity: serializer.fromJson<double>(json['quantity']),
+      imageUrl: serializer.fromJson<String?>(json['imageUrl']),
+      payload: serializer.fromJson<String>(json['payload']),
+      serverCreatedAt: serializer.fromJson<DateTime?>(json['serverCreatedAt']),
+      serverUpdatedAt: serializer.fromJson<DateTime?>(json['serverUpdatedAt']),
+      localUpdatedAt: serializer.fromJson<DateTime>(json['localUpdatedAt']),
+      isDeleted: serializer.fromJson<bool>(json['isDeleted']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'name': serializer.toJson<String>(name),
+      'normalizedName': serializer.toJson<String>(normalizedName),
+      'categoryId': serializer.toJson<int?>(categoryId),
+      'categoryName': serializer.toJson<String?>(categoryName),
+      'parentCategoryId': serializer.toJson<int?>(parentCategoryId),
+      'price': serializer.toJson<double>(price),
+      'quantity': serializer.toJson<double>(quantity),
+      'imageUrl': serializer.toJson<String?>(imageUrl),
+      'payload': serializer.toJson<String>(payload),
+      'serverCreatedAt': serializer.toJson<DateTime?>(serverCreatedAt),
+      'serverUpdatedAt': serializer.toJson<DateTime?>(serverUpdatedAt),
+      'localUpdatedAt': serializer.toJson<DateTime>(localUpdatedAt),
+      'isDeleted': serializer.toJson<bool>(isDeleted),
+    };
+  }
+
+  RmkGood copyWith(
+          {int? id,
+          String? name,
+          String? normalizedName,
+          Value<int?> categoryId = const Value.absent(),
+          Value<String?> categoryName = const Value.absent(),
+          Value<int?> parentCategoryId = const Value.absent(),
+          double? price,
+          double? quantity,
+          Value<String?> imageUrl = const Value.absent(),
+          String? payload,
+          Value<DateTime?> serverCreatedAt = const Value.absent(),
+          Value<DateTime?> serverUpdatedAt = const Value.absent(),
+          DateTime? localUpdatedAt,
+          bool? isDeleted}) =>
+      RmkGood(
+        id: id ?? this.id,
+        name: name ?? this.name,
+        normalizedName: normalizedName ?? this.normalizedName,
+        categoryId: categoryId.present ? categoryId.value : this.categoryId,
+        categoryName:
+            categoryName.present ? categoryName.value : this.categoryName,
+        parentCategoryId: parentCategoryId.present
+            ? parentCategoryId.value
+            : this.parentCategoryId,
+        price: price ?? this.price,
+        quantity: quantity ?? this.quantity,
+        imageUrl: imageUrl.present ? imageUrl.value : this.imageUrl,
+        payload: payload ?? this.payload,
+        serverCreatedAt: serverCreatedAt.present
+            ? serverCreatedAt.value
+            : this.serverCreatedAt,
+        serverUpdatedAt: serverUpdatedAt.present
+            ? serverUpdatedAt.value
+            : this.serverUpdatedAt,
+        localUpdatedAt: localUpdatedAt ?? this.localUpdatedAt,
+        isDeleted: isDeleted ?? this.isDeleted,
+      );
+  RmkGood copyWithCompanion(RmkGoodsCompanion data) {
+    return RmkGood(
+      id: data.id.present ? data.id.value : this.id,
+      name: data.name.present ? data.name.value : this.name,
+      normalizedName: data.normalizedName.present
+          ? data.normalizedName.value
+          : this.normalizedName,
+      categoryId:
+          data.categoryId.present ? data.categoryId.value : this.categoryId,
+      categoryName: data.categoryName.present
+          ? data.categoryName.value
+          : this.categoryName,
+      parentCategoryId: data.parentCategoryId.present
+          ? data.parentCategoryId.value
+          : this.parentCategoryId,
+      price: data.price.present ? data.price.value : this.price,
+      quantity: data.quantity.present ? data.quantity.value : this.quantity,
+      imageUrl: data.imageUrl.present ? data.imageUrl.value : this.imageUrl,
+      payload: data.payload.present ? data.payload.value : this.payload,
+      serverCreatedAt: data.serverCreatedAt.present
+          ? data.serverCreatedAt.value
+          : this.serverCreatedAt,
+      serverUpdatedAt: data.serverUpdatedAt.present
+          ? data.serverUpdatedAt.value
+          : this.serverUpdatedAt,
+      localUpdatedAt: data.localUpdatedAt.present
+          ? data.localUpdatedAt.value
+          : this.localUpdatedAt,
+      isDeleted: data.isDeleted.present ? data.isDeleted.value : this.isDeleted,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('RmkGood(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('normalizedName: $normalizedName, ')
+          ..write('categoryId: $categoryId, ')
+          ..write('categoryName: $categoryName, ')
+          ..write('parentCategoryId: $parentCategoryId, ')
+          ..write('price: $price, ')
+          ..write('quantity: $quantity, ')
+          ..write('imageUrl: $imageUrl, ')
+          ..write('payload: $payload, ')
+          ..write('serverCreatedAt: $serverCreatedAt, ')
+          ..write('serverUpdatedAt: $serverUpdatedAt, ')
+          ..write('localUpdatedAt: $localUpdatedAt, ')
+          ..write('isDeleted: $isDeleted')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+      id,
+      name,
+      normalizedName,
+      categoryId,
+      categoryName,
+      parentCategoryId,
+      price,
+      quantity,
+      imageUrl,
+      payload,
+      serverCreatedAt,
+      serverUpdatedAt,
+      localUpdatedAt,
+      isDeleted);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is RmkGood &&
+          other.id == this.id &&
+          other.name == this.name &&
+          other.normalizedName == this.normalizedName &&
+          other.categoryId == this.categoryId &&
+          other.categoryName == this.categoryName &&
+          other.parentCategoryId == this.parentCategoryId &&
+          other.price == this.price &&
+          other.quantity == this.quantity &&
+          other.imageUrl == this.imageUrl &&
+          other.payload == this.payload &&
+          other.serverCreatedAt == this.serverCreatedAt &&
+          other.serverUpdatedAt == this.serverUpdatedAt &&
+          other.localUpdatedAt == this.localUpdatedAt &&
+          other.isDeleted == this.isDeleted);
+}
+
+class RmkGoodsCompanion extends UpdateCompanion<RmkGood> {
+  final Value<int> id;
+  final Value<String> name;
+  final Value<String> normalizedName;
+  final Value<int?> categoryId;
+  final Value<String?> categoryName;
+  final Value<int?> parentCategoryId;
+  final Value<double> price;
+  final Value<double> quantity;
+  final Value<String?> imageUrl;
+  final Value<String> payload;
+  final Value<DateTime?> serverCreatedAt;
+  final Value<DateTime?> serverUpdatedAt;
+  final Value<DateTime> localUpdatedAt;
+  final Value<bool> isDeleted;
+  const RmkGoodsCompanion({
+    this.id = const Value.absent(),
+    this.name = const Value.absent(),
+    this.normalizedName = const Value.absent(),
+    this.categoryId = const Value.absent(),
+    this.categoryName = const Value.absent(),
+    this.parentCategoryId = const Value.absent(),
+    this.price = const Value.absent(),
+    this.quantity = const Value.absent(),
+    this.imageUrl = const Value.absent(),
+    this.payload = const Value.absent(),
+    this.serverCreatedAt = const Value.absent(),
+    this.serverUpdatedAt = const Value.absent(),
+    this.localUpdatedAt = const Value.absent(),
+    this.isDeleted = const Value.absent(),
+  });
+  RmkGoodsCompanion.insert({
+    this.id = const Value.absent(),
+    required String name,
+    required String normalizedName,
+    this.categoryId = const Value.absent(),
+    this.categoryName = const Value.absent(),
+    this.parentCategoryId = const Value.absent(),
+    this.price = const Value.absent(),
+    this.quantity = const Value.absent(),
+    this.imageUrl = const Value.absent(),
+    required String payload,
+    this.serverCreatedAt = const Value.absent(),
+    this.serverUpdatedAt = const Value.absent(),
+    required DateTime localUpdatedAt,
+    this.isDeleted = const Value.absent(),
+  })  : name = Value(name),
+        normalizedName = Value(normalizedName),
+        payload = Value(payload),
+        localUpdatedAt = Value(localUpdatedAt);
+  static Insertable<RmkGood> custom({
+    Expression<int>? id,
+    Expression<String>? name,
+    Expression<String>? normalizedName,
+    Expression<int>? categoryId,
+    Expression<String>? categoryName,
+    Expression<int>? parentCategoryId,
+    Expression<double>? price,
+    Expression<double>? quantity,
+    Expression<String>? imageUrl,
+    Expression<String>? payload,
+    Expression<DateTime>? serverCreatedAt,
+    Expression<DateTime>? serverUpdatedAt,
+    Expression<DateTime>? localUpdatedAt,
+    Expression<bool>? isDeleted,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (name != null) 'name': name,
+      if (normalizedName != null) 'normalized_name': normalizedName,
+      if (categoryId != null) 'category_id': categoryId,
+      if (categoryName != null) 'category_name': categoryName,
+      if (parentCategoryId != null) 'parent_category_id': parentCategoryId,
+      if (price != null) 'price': price,
+      if (quantity != null) 'quantity': quantity,
+      if (imageUrl != null) 'image_url': imageUrl,
+      if (payload != null) 'payload': payload,
+      if (serverCreatedAt != null) 'server_created_at': serverCreatedAt,
+      if (serverUpdatedAt != null) 'server_updated_at': serverUpdatedAt,
+      if (localUpdatedAt != null) 'local_updated_at': localUpdatedAt,
+      if (isDeleted != null) 'is_deleted': isDeleted,
+    });
+  }
+
+  RmkGoodsCompanion copyWith(
+      {Value<int>? id,
+      Value<String>? name,
+      Value<String>? normalizedName,
+      Value<int?>? categoryId,
+      Value<String?>? categoryName,
+      Value<int?>? parentCategoryId,
+      Value<double>? price,
+      Value<double>? quantity,
+      Value<String?>? imageUrl,
+      Value<String>? payload,
+      Value<DateTime?>? serverCreatedAt,
+      Value<DateTime?>? serverUpdatedAt,
+      Value<DateTime>? localUpdatedAt,
+      Value<bool>? isDeleted}) {
+    return RmkGoodsCompanion(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      normalizedName: normalizedName ?? this.normalizedName,
+      categoryId: categoryId ?? this.categoryId,
+      categoryName: categoryName ?? this.categoryName,
+      parentCategoryId: parentCategoryId ?? this.parentCategoryId,
+      price: price ?? this.price,
+      quantity: quantity ?? this.quantity,
+      imageUrl: imageUrl ?? this.imageUrl,
+      payload: payload ?? this.payload,
+      serverCreatedAt: serverCreatedAt ?? this.serverCreatedAt,
+      serverUpdatedAt: serverUpdatedAt ?? this.serverUpdatedAt,
+      localUpdatedAt: localUpdatedAt ?? this.localUpdatedAt,
+      isDeleted: isDeleted ?? this.isDeleted,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (normalizedName.present) {
+      map['normalized_name'] = Variable<String>(normalizedName.value);
+    }
+    if (categoryId.present) {
+      map['category_id'] = Variable<int>(categoryId.value);
+    }
+    if (categoryName.present) {
+      map['category_name'] = Variable<String>(categoryName.value);
+    }
+    if (parentCategoryId.present) {
+      map['parent_category_id'] = Variable<int>(parentCategoryId.value);
+    }
+    if (price.present) {
+      map['price'] = Variable<double>(price.value);
+    }
+    if (quantity.present) {
+      map['quantity'] = Variable<double>(quantity.value);
+    }
+    if (imageUrl.present) {
+      map['image_url'] = Variable<String>(imageUrl.value);
+    }
+    if (payload.present) {
+      map['payload'] = Variable<String>(payload.value);
+    }
+    if (serverCreatedAt.present) {
+      map['server_created_at'] = Variable<DateTime>(serverCreatedAt.value);
+    }
+    if (serverUpdatedAt.present) {
+      map['server_updated_at'] = Variable<DateTime>(serverUpdatedAt.value);
+    }
+    if (localUpdatedAt.present) {
+      map['local_updated_at'] = Variable<DateTime>(localUpdatedAt.value);
+    }
+    if (isDeleted.present) {
+      map['is_deleted'] = Variable<bool>(isDeleted.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('RmkGoodsCompanion(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('normalizedName: $normalizedName, ')
+          ..write('categoryId: $categoryId, ')
+          ..write('categoryName: $categoryName, ')
+          ..write('parentCategoryId: $parentCategoryId, ')
+          ..write('price: $price, ')
+          ..write('quantity: $quantity, ')
+          ..write('imageUrl: $imageUrl, ')
+          ..write('payload: $payload, ')
+          ..write('serverCreatedAt: $serverCreatedAt, ')
+          ..write('serverUpdatedAt: $serverUpdatedAt, ')
+          ..write('localUpdatedAt: $localUpdatedAt, ')
+          ..write('isDeleted: $isDeleted')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $RmkCategoriesTable extends RmkCategories
+    with TableInfo<$RmkCategoriesTable, RmkCategory> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $RmkCategoriesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+      'id', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _parentIdMeta =
+      const VerificationMeta('parentId');
+  @override
+  late final GeneratedColumn<int> parentId = GeneratedColumn<int>(
+      'parent_id', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+      'name', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _normalizedNameMeta =
+      const VerificationMeta('normalizedName');
+  @override
+  late final GeneratedColumn<String> normalizedName = GeneratedColumn<String>(
+      'normalized_name', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _levelMeta = const VerificationMeta('level');
+  @override
+  late final GeneratedColumn<int> level = GeneratedColumn<int>(
+      'level', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
+  static const VerificationMeta _localUpdatedAtMeta =
+      const VerificationMeta('localUpdatedAt');
+  @override
+  late final GeneratedColumn<DateTime> localUpdatedAt =
+      GeneratedColumn<DateTime>('local_updated_at', aliasedName, false,
+          type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  @override
+  List<GeneratedColumn> get $columns =>
+      [id, parentId, name, normalizedName, level, localUpdatedAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'rmk_categories';
+  @override
+  VerificationContext validateIntegrity(Insertable<RmkCategory> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('parent_id')) {
+      context.handle(_parentIdMeta,
+          parentId.isAcceptableOrUnknown(data['parent_id']!, _parentIdMeta));
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+          _nameMeta, name.isAcceptableOrUnknown(data['name']!, _nameMeta));
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('normalized_name')) {
+      context.handle(
+          _normalizedNameMeta,
+          normalizedName.isAcceptableOrUnknown(
+              data['normalized_name']!, _normalizedNameMeta));
+    } else if (isInserting) {
+      context.missing(_normalizedNameMeta);
+    }
+    if (data.containsKey('level')) {
+      context.handle(
+          _levelMeta, level.isAcceptableOrUnknown(data['level']!, _levelMeta));
+    }
+    if (data.containsKey('local_updated_at')) {
+      context.handle(
+          _localUpdatedAtMeta,
+          localUpdatedAt.isAcceptableOrUnknown(
+              data['local_updated_at']!, _localUpdatedAtMeta));
+    } else if (isInserting) {
+      context.missing(_localUpdatedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  RmkCategory map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return RmkCategory(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
+      parentId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}parent_id']),
+      name: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}name'])!,
+      normalizedName: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}normalized_name'])!,
+      level: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}level'])!,
+      localUpdatedAt: attachedDatabase.typeMapping.read(
+          DriftSqlType.dateTime, data['${effectivePrefix}local_updated_at'])!,
+    );
+  }
+
+  @override
+  $RmkCategoriesTable createAlias(String alias) {
+    return $RmkCategoriesTable(attachedDatabase, alias);
+  }
+}
+
+class RmkCategory extends DataClass implements Insertable<RmkCategory> {
+  final int id;
+  final int? parentId;
+  final String name;
+  final String normalizedName;
+  final int level;
+  final DateTime localUpdatedAt;
+  const RmkCategory(
+      {required this.id,
+      this.parentId,
+      required this.name,
+      required this.normalizedName,
+      required this.level,
+      required this.localUpdatedAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    if (!nullToAbsent || parentId != null) {
+      map['parent_id'] = Variable<int>(parentId);
+    }
+    map['name'] = Variable<String>(name);
+    map['normalized_name'] = Variable<String>(normalizedName);
+    map['level'] = Variable<int>(level);
+    map['local_updated_at'] = Variable<DateTime>(localUpdatedAt);
+    return map;
+  }
+
+  RmkCategoriesCompanion toCompanion(bool nullToAbsent) {
+    return RmkCategoriesCompanion(
+      id: Value(id),
+      parentId: parentId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(parentId),
+      name: Value(name),
+      normalizedName: Value(normalizedName),
+      level: Value(level),
+      localUpdatedAt: Value(localUpdatedAt),
+    );
+  }
+
+  factory RmkCategory.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return RmkCategory(
+      id: serializer.fromJson<int>(json['id']),
+      parentId: serializer.fromJson<int?>(json['parentId']),
+      name: serializer.fromJson<String>(json['name']),
+      normalizedName: serializer.fromJson<String>(json['normalizedName']),
+      level: serializer.fromJson<int>(json['level']),
+      localUpdatedAt: serializer.fromJson<DateTime>(json['localUpdatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'parentId': serializer.toJson<int?>(parentId),
+      'name': serializer.toJson<String>(name),
+      'normalizedName': serializer.toJson<String>(normalizedName),
+      'level': serializer.toJson<int>(level),
+      'localUpdatedAt': serializer.toJson<DateTime>(localUpdatedAt),
+    };
+  }
+
+  RmkCategory copyWith(
+          {int? id,
+          Value<int?> parentId = const Value.absent(),
+          String? name,
+          String? normalizedName,
+          int? level,
+          DateTime? localUpdatedAt}) =>
+      RmkCategory(
+        id: id ?? this.id,
+        parentId: parentId.present ? parentId.value : this.parentId,
+        name: name ?? this.name,
+        normalizedName: normalizedName ?? this.normalizedName,
+        level: level ?? this.level,
+        localUpdatedAt: localUpdatedAt ?? this.localUpdatedAt,
+      );
+  RmkCategory copyWithCompanion(RmkCategoriesCompanion data) {
+    return RmkCategory(
+      id: data.id.present ? data.id.value : this.id,
+      parentId: data.parentId.present ? data.parentId.value : this.parentId,
+      name: data.name.present ? data.name.value : this.name,
+      normalizedName: data.normalizedName.present
+          ? data.normalizedName.value
+          : this.normalizedName,
+      level: data.level.present ? data.level.value : this.level,
+      localUpdatedAt: data.localUpdatedAt.present
+          ? data.localUpdatedAt.value
+          : this.localUpdatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('RmkCategory(')
+          ..write('id: $id, ')
+          ..write('parentId: $parentId, ')
+          ..write('name: $name, ')
+          ..write('normalizedName: $normalizedName, ')
+          ..write('level: $level, ')
+          ..write('localUpdatedAt: $localUpdatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(id, parentId, name, normalizedName, level, localUpdatedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is RmkCategory &&
+          other.id == this.id &&
+          other.parentId == this.parentId &&
+          other.name == this.name &&
+          other.normalizedName == this.normalizedName &&
+          other.level == this.level &&
+          other.localUpdatedAt == this.localUpdatedAt);
+}
+
+class RmkCategoriesCompanion extends UpdateCompanion<RmkCategory> {
+  final Value<int> id;
+  final Value<int?> parentId;
+  final Value<String> name;
+  final Value<String> normalizedName;
+  final Value<int> level;
+  final Value<DateTime> localUpdatedAt;
+  const RmkCategoriesCompanion({
+    this.id = const Value.absent(),
+    this.parentId = const Value.absent(),
+    this.name = const Value.absent(),
+    this.normalizedName = const Value.absent(),
+    this.level = const Value.absent(),
+    this.localUpdatedAt = const Value.absent(),
+  });
+  RmkCategoriesCompanion.insert({
+    this.id = const Value.absent(),
+    this.parentId = const Value.absent(),
+    required String name,
+    required String normalizedName,
+    this.level = const Value.absent(),
+    required DateTime localUpdatedAt,
+  })  : name = Value(name),
+        normalizedName = Value(normalizedName),
+        localUpdatedAt = Value(localUpdatedAt);
+  static Insertable<RmkCategory> custom({
+    Expression<int>? id,
+    Expression<int>? parentId,
+    Expression<String>? name,
+    Expression<String>? normalizedName,
+    Expression<int>? level,
+    Expression<DateTime>? localUpdatedAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (parentId != null) 'parent_id': parentId,
+      if (name != null) 'name': name,
+      if (normalizedName != null) 'normalized_name': normalizedName,
+      if (level != null) 'level': level,
+      if (localUpdatedAt != null) 'local_updated_at': localUpdatedAt,
+    });
+  }
+
+  RmkCategoriesCompanion copyWith(
+      {Value<int>? id,
+      Value<int?>? parentId,
+      Value<String>? name,
+      Value<String>? normalizedName,
+      Value<int>? level,
+      Value<DateTime>? localUpdatedAt}) {
+    return RmkCategoriesCompanion(
+      id: id ?? this.id,
+      parentId: parentId ?? this.parentId,
+      name: name ?? this.name,
+      normalizedName: normalizedName ?? this.normalizedName,
+      level: level ?? this.level,
+      localUpdatedAt: localUpdatedAt ?? this.localUpdatedAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (parentId.present) {
+      map['parent_id'] = Variable<int>(parentId.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (normalizedName.present) {
+      map['normalized_name'] = Variable<String>(normalizedName.value);
+    }
+    if (level.present) {
+      map['level'] = Variable<int>(level.value);
+    }
+    if (localUpdatedAt.present) {
+      map['local_updated_at'] = Variable<DateTime>(localUpdatedAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('RmkCategoriesCompanion(')
+          ..write('id: $id, ')
+          ..write('parentId: $parentId, ')
+          ..write('name: $name, ')
+          ..write('normalizedName: $normalizedName, ')
+          ..write('level: $level, ')
+          ..write('localUpdatedAt: $localUpdatedAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $RmkCartItemsTable extends RmkCartItems
+    with TableInfo<$RmkCartItemsTable, RmkCartItem> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $RmkCartItemsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _goodIdMeta = const VerificationMeta('goodId');
+  @override
+  late final GeneratedColumn<int> goodId = GeneratedColumn<int>(
+      'good_id', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+      'name', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _quantityMeta =
+      const VerificationMeta('quantity');
+  @override
+  late final GeneratedColumn<double> quantity = GeneratedColumn<double>(
+      'quantity', aliasedName, false,
+      type: DriftSqlType.double,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
+  static const VerificationMeta _priceMeta = const VerificationMeta('price');
+  @override
+  late final GeneratedColumn<double> price = GeneratedColumn<double>(
+      'price', aliasedName, false,
+      type: DriftSqlType.double,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
+  static const VerificationMeta _customTotalMeta =
+      const VerificationMeta('customTotal');
+  @override
+  late final GeneratedColumn<double> customTotal = GeneratedColumn<double>(
+      'custom_total', aliasedName, true,
+      type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _imageUrlMeta =
+      const VerificationMeta('imageUrl');
+  @override
+  late final GeneratedColumn<String> imageUrl = GeneratedColumn<String>(
+      'image_url', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _updatedAtMeta =
+      const VerificationMeta('updatedAt');
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+      'updated_at', aliasedName, false,
+      type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  @override
+  List<GeneratedColumn> get $columns =>
+      [goodId, name, quantity, price, customTotal, imageUrl, updatedAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'rmk_cart_items';
+  @override
+  VerificationContext validateIntegrity(Insertable<RmkCartItem> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('good_id')) {
+      context.handle(_goodIdMeta,
+          goodId.isAcceptableOrUnknown(data['good_id']!, _goodIdMeta));
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+          _nameMeta, name.isAcceptableOrUnknown(data['name']!, _nameMeta));
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('quantity')) {
+      context.handle(_quantityMeta,
+          quantity.isAcceptableOrUnknown(data['quantity']!, _quantityMeta));
+    }
+    if (data.containsKey('price')) {
+      context.handle(
+          _priceMeta, price.isAcceptableOrUnknown(data['price']!, _priceMeta));
+    }
+    if (data.containsKey('custom_total')) {
+      context.handle(
+          _customTotalMeta,
+          customTotal.isAcceptableOrUnknown(
+              data['custom_total']!, _customTotalMeta));
+    }
+    if (data.containsKey('image_url')) {
+      context.handle(_imageUrlMeta,
+          imageUrl.isAcceptableOrUnknown(data['image_url']!, _imageUrlMeta));
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(_updatedAtMeta,
+          updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta));
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {goodId};
+  @override
+  RmkCartItem map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return RmkCartItem(
+      goodId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}good_id'])!,
+      name: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}name'])!,
+      quantity: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}quantity'])!,
+      price: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}price'])!,
+      customTotal: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}custom_total']),
+      imageUrl: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}image_url']),
+      updatedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}updated_at'])!,
+    );
+  }
+
+  @override
+  $RmkCartItemsTable createAlias(String alias) {
+    return $RmkCartItemsTable(attachedDatabase, alias);
+  }
+}
+
+class RmkCartItem extends DataClass implements Insertable<RmkCartItem> {
+  final int goodId;
+  final String name;
+  final double quantity;
+  final double price;
+  final double? customTotal;
+  final String? imageUrl;
+  final DateTime updatedAt;
+  const RmkCartItem(
+      {required this.goodId,
+      required this.name,
+      required this.quantity,
+      required this.price,
+      this.customTotal,
+      this.imageUrl,
+      required this.updatedAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['good_id'] = Variable<int>(goodId);
+    map['name'] = Variable<String>(name);
+    map['quantity'] = Variable<double>(quantity);
+    map['price'] = Variable<double>(price);
+    if (!nullToAbsent || customTotal != null) {
+      map['custom_total'] = Variable<double>(customTotal);
+    }
+    if (!nullToAbsent || imageUrl != null) {
+      map['image_url'] = Variable<String>(imageUrl);
+    }
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  RmkCartItemsCompanion toCompanion(bool nullToAbsent) {
+    return RmkCartItemsCompanion(
+      goodId: Value(goodId),
+      name: Value(name),
+      quantity: Value(quantity),
+      price: Value(price),
+      customTotal: customTotal == null && nullToAbsent
+          ? const Value.absent()
+          : Value(customTotal),
+      imageUrl: imageUrl == null && nullToAbsent
+          ? const Value.absent()
+          : Value(imageUrl),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory RmkCartItem.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return RmkCartItem(
+      goodId: serializer.fromJson<int>(json['goodId']),
+      name: serializer.fromJson<String>(json['name']),
+      quantity: serializer.fromJson<double>(json['quantity']),
+      price: serializer.fromJson<double>(json['price']),
+      customTotal: serializer.fromJson<double?>(json['customTotal']),
+      imageUrl: serializer.fromJson<String?>(json['imageUrl']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'goodId': serializer.toJson<int>(goodId),
+      'name': serializer.toJson<String>(name),
+      'quantity': serializer.toJson<double>(quantity),
+      'price': serializer.toJson<double>(price),
+      'customTotal': serializer.toJson<double?>(customTotal),
+      'imageUrl': serializer.toJson<String?>(imageUrl),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  RmkCartItem copyWith(
+          {int? goodId,
+          String? name,
+          double? quantity,
+          double? price,
+          Value<double?> customTotal = const Value.absent(),
+          Value<String?> imageUrl = const Value.absent(),
+          DateTime? updatedAt}) =>
+      RmkCartItem(
+        goodId: goodId ?? this.goodId,
+        name: name ?? this.name,
+        quantity: quantity ?? this.quantity,
+        price: price ?? this.price,
+        customTotal: customTotal.present ? customTotal.value : this.customTotal,
+        imageUrl: imageUrl.present ? imageUrl.value : this.imageUrl,
+        updatedAt: updatedAt ?? this.updatedAt,
+      );
+  RmkCartItem copyWithCompanion(RmkCartItemsCompanion data) {
+    return RmkCartItem(
+      goodId: data.goodId.present ? data.goodId.value : this.goodId,
+      name: data.name.present ? data.name.value : this.name,
+      quantity: data.quantity.present ? data.quantity.value : this.quantity,
+      price: data.price.present ? data.price.value : this.price,
+      customTotal:
+          data.customTotal.present ? data.customTotal.value : this.customTotal,
+      imageUrl: data.imageUrl.present ? data.imageUrl.value : this.imageUrl,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('RmkCartItem(')
+          ..write('goodId: $goodId, ')
+          ..write('name: $name, ')
+          ..write('quantity: $quantity, ')
+          ..write('price: $price, ')
+          ..write('customTotal: $customTotal, ')
+          ..write('imageUrl: $imageUrl, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+      goodId, name, quantity, price, customTotal, imageUrl, updatedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is RmkCartItem &&
+          other.goodId == this.goodId &&
+          other.name == this.name &&
+          other.quantity == this.quantity &&
+          other.price == this.price &&
+          other.customTotal == this.customTotal &&
+          other.imageUrl == this.imageUrl &&
+          other.updatedAt == this.updatedAt);
+}
+
+class RmkCartItemsCompanion extends UpdateCompanion<RmkCartItem> {
+  final Value<int> goodId;
+  final Value<String> name;
+  final Value<double> quantity;
+  final Value<double> price;
+  final Value<double?> customTotal;
+  final Value<String?> imageUrl;
+  final Value<DateTime> updatedAt;
+  const RmkCartItemsCompanion({
+    this.goodId = const Value.absent(),
+    this.name = const Value.absent(),
+    this.quantity = const Value.absent(),
+    this.price = const Value.absent(),
+    this.customTotal = const Value.absent(),
+    this.imageUrl = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+  });
+  RmkCartItemsCompanion.insert({
+    this.goodId = const Value.absent(),
+    required String name,
+    this.quantity = const Value.absent(),
+    this.price = const Value.absent(),
+    this.customTotal = const Value.absent(),
+    this.imageUrl = const Value.absent(),
+    required DateTime updatedAt,
+  })  : name = Value(name),
+        updatedAt = Value(updatedAt);
+  static Insertable<RmkCartItem> custom({
+    Expression<int>? goodId,
+    Expression<String>? name,
+    Expression<double>? quantity,
+    Expression<double>? price,
+    Expression<double>? customTotal,
+    Expression<String>? imageUrl,
+    Expression<DateTime>? updatedAt,
+  }) {
+    return RawValuesInsertable({
+      if (goodId != null) 'good_id': goodId,
+      if (name != null) 'name': name,
+      if (quantity != null) 'quantity': quantity,
+      if (price != null) 'price': price,
+      if (customTotal != null) 'custom_total': customTotal,
+      if (imageUrl != null) 'image_url': imageUrl,
+      if (updatedAt != null) 'updated_at': updatedAt,
+    });
+  }
+
+  RmkCartItemsCompanion copyWith(
+      {Value<int>? goodId,
+      Value<String>? name,
+      Value<double>? quantity,
+      Value<double>? price,
+      Value<double?>? customTotal,
+      Value<String?>? imageUrl,
+      Value<DateTime>? updatedAt}) {
+    return RmkCartItemsCompanion(
+      goodId: goodId ?? this.goodId,
+      name: name ?? this.name,
+      quantity: quantity ?? this.quantity,
+      price: price ?? this.price,
+      customTotal: customTotal ?? this.customTotal,
+      imageUrl: imageUrl ?? this.imageUrl,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (goodId.present) {
+      map['good_id'] = Variable<int>(goodId.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (quantity.present) {
+      map['quantity'] = Variable<double>(quantity.value);
+    }
+    if (price.present) {
+      map['price'] = Variable<double>(price.value);
+    }
+    if (customTotal.present) {
+      map['custom_total'] = Variable<double>(customTotal.value);
+    }
+    if (imageUrl.present) {
+      map['image_url'] = Variable<String>(imageUrl.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('RmkCartItemsCompanion(')
+          ..write('goodId: $goodId, ')
+          ..write('name: $name, ')
+          ..write('quantity: $quantity, ')
+          ..write('price: $price, ')
+          ..write('customTotal: $customTotal, ')
+          ..write('imageUrl: $imageUrl, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $RmkOutboxSalesTable extends RmkOutboxSales
+    with TableInfo<$RmkOutboxSalesTable, RmkOutboxSale> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $RmkOutboxSalesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+      'id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _payloadMeta =
+      const VerificationMeta('payload');
+  @override
+  late final GeneratedColumn<String> payload = GeneratedColumn<String>(
+      'payload', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _idempotencyKeyMeta =
+      const VerificationMeta('idempotencyKey');
+  @override
+  late final GeneratedColumn<String> idempotencyKey = GeneratedColumn<String>(
+      'idempotency_key', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
+  @override
+  late final GeneratedColumn<String> status = GeneratedColumn<String>(
+      'status', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _attemptCountMeta =
+      const VerificationMeta('attemptCount');
+  @override
+  late final GeneratedColumn<int> attemptCount = GeneratedColumn<int>(
+      'attempt_count', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
+  static const VerificationMeta _lastErrorMeta =
+      const VerificationMeta('lastError');
+  @override
+  late final GeneratedColumn<String> lastError = GeneratedColumn<String>(
+      'last_error', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _createdAtMeta =
+      const VerificationMeta('createdAt');
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+      'created_at', aliasedName, false,
+      type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  static const VerificationMeta _updatedAtMeta =
+      const VerificationMeta('updatedAt');
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+      'updated_at', aliasedName, false,
+      type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  @override
+  List<GeneratedColumn> get $columns => [
+        id,
+        payload,
+        idempotencyKey,
+        status,
+        attemptCount,
+        lastError,
+        createdAt,
+        updatedAt
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'rmk_outbox_sales';
+  @override
+  VerificationContext validateIntegrity(Insertable<RmkOutboxSale> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('payload')) {
+      context.handle(_payloadMeta,
+          payload.isAcceptableOrUnknown(data['payload']!, _payloadMeta));
+    } else if (isInserting) {
+      context.missing(_payloadMeta);
+    }
+    if (data.containsKey('idempotency_key')) {
+      context.handle(
+          _idempotencyKeyMeta,
+          idempotencyKey.isAcceptableOrUnknown(
+              data['idempotency_key']!, _idempotencyKeyMeta));
+    } else if (isInserting) {
+      context.missing(_idempotencyKeyMeta);
+    }
+    if (data.containsKey('status')) {
+      context.handle(_statusMeta,
+          status.isAcceptableOrUnknown(data['status']!, _statusMeta));
+    } else if (isInserting) {
+      context.missing(_statusMeta);
+    }
+    if (data.containsKey('attempt_count')) {
+      context.handle(
+          _attemptCountMeta,
+          attemptCount.isAcceptableOrUnknown(
+              data['attempt_count']!, _attemptCountMeta));
+    }
+    if (data.containsKey('last_error')) {
+      context.handle(_lastErrorMeta,
+          lastError.isAcceptableOrUnknown(data['last_error']!, _lastErrorMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(_createdAtMeta,
+          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(_updatedAtMeta,
+          updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta));
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  RmkOutboxSale map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return RmkOutboxSale(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}id'])!,
+      payload: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}payload'])!,
+      idempotencyKey: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}idempotency_key'])!,
+      status: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}status'])!,
+      attemptCount: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}attempt_count'])!,
+      lastError: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}last_error']),
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
+      updatedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}updated_at'])!,
+    );
+  }
+
+  @override
+  $RmkOutboxSalesTable createAlias(String alias) {
+    return $RmkOutboxSalesTable(attachedDatabase, alias);
+  }
+}
+
+class RmkOutboxSale extends DataClass implements Insertable<RmkOutboxSale> {
+  final String id;
+  final String payload;
+  final String idempotencyKey;
+  final String status;
+  final int attemptCount;
+  final String? lastError;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  const RmkOutboxSale(
+      {required this.id,
+      required this.payload,
+      required this.idempotencyKey,
+      required this.status,
+      required this.attemptCount,
+      this.lastError,
+      required this.createdAt,
+      required this.updatedAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['payload'] = Variable<String>(payload);
+    map['idempotency_key'] = Variable<String>(idempotencyKey);
+    map['status'] = Variable<String>(status);
+    map['attempt_count'] = Variable<int>(attemptCount);
+    if (!nullToAbsent || lastError != null) {
+      map['last_error'] = Variable<String>(lastError);
+    }
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  RmkOutboxSalesCompanion toCompanion(bool nullToAbsent) {
+    return RmkOutboxSalesCompanion(
+      id: Value(id),
+      payload: Value(payload),
+      idempotencyKey: Value(idempotencyKey),
+      status: Value(status),
+      attemptCount: Value(attemptCount),
+      lastError: lastError == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastError),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory RmkOutboxSale.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return RmkOutboxSale(
+      id: serializer.fromJson<String>(json['id']),
+      payload: serializer.fromJson<String>(json['payload']),
+      idempotencyKey: serializer.fromJson<String>(json['idempotencyKey']),
+      status: serializer.fromJson<String>(json['status']),
+      attemptCount: serializer.fromJson<int>(json['attemptCount']),
+      lastError: serializer.fromJson<String?>(json['lastError']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'payload': serializer.toJson<String>(payload),
+      'idempotencyKey': serializer.toJson<String>(idempotencyKey),
+      'status': serializer.toJson<String>(status),
+      'attemptCount': serializer.toJson<int>(attemptCount),
+      'lastError': serializer.toJson<String?>(lastError),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  RmkOutboxSale copyWith(
+          {String? id,
+          String? payload,
+          String? idempotencyKey,
+          String? status,
+          int? attemptCount,
+          Value<String?> lastError = const Value.absent(),
+          DateTime? createdAt,
+          DateTime? updatedAt}) =>
+      RmkOutboxSale(
+        id: id ?? this.id,
+        payload: payload ?? this.payload,
+        idempotencyKey: idempotencyKey ?? this.idempotencyKey,
+        status: status ?? this.status,
+        attemptCount: attemptCount ?? this.attemptCount,
+        lastError: lastError.present ? lastError.value : this.lastError,
+        createdAt: createdAt ?? this.createdAt,
+        updatedAt: updatedAt ?? this.updatedAt,
+      );
+  RmkOutboxSale copyWithCompanion(RmkOutboxSalesCompanion data) {
+    return RmkOutboxSale(
+      id: data.id.present ? data.id.value : this.id,
+      payload: data.payload.present ? data.payload.value : this.payload,
+      idempotencyKey: data.idempotencyKey.present
+          ? data.idempotencyKey.value
+          : this.idempotencyKey,
+      status: data.status.present ? data.status.value : this.status,
+      attemptCount: data.attemptCount.present
+          ? data.attemptCount.value
+          : this.attemptCount,
+      lastError: data.lastError.present ? data.lastError.value : this.lastError,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('RmkOutboxSale(')
+          ..write('id: $id, ')
+          ..write('payload: $payload, ')
+          ..write('idempotencyKey: $idempotencyKey, ')
+          ..write('status: $status, ')
+          ..write('attemptCount: $attemptCount, ')
+          ..write('lastError: $lastError, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, payload, idempotencyKey, status,
+      attemptCount, lastError, createdAt, updatedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is RmkOutboxSale &&
+          other.id == this.id &&
+          other.payload == this.payload &&
+          other.idempotencyKey == this.idempotencyKey &&
+          other.status == this.status &&
+          other.attemptCount == this.attemptCount &&
+          other.lastError == this.lastError &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class RmkOutboxSalesCompanion extends UpdateCompanion<RmkOutboxSale> {
+  final Value<String> id;
+  final Value<String> payload;
+  final Value<String> idempotencyKey;
+  final Value<String> status;
+  final Value<int> attemptCount;
+  final Value<String?> lastError;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<int> rowid;
+  const RmkOutboxSalesCompanion({
+    this.id = const Value.absent(),
+    this.payload = const Value.absent(),
+    this.idempotencyKey = const Value.absent(),
+    this.status = const Value.absent(),
+    this.attemptCount = const Value.absent(),
+    this.lastError = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  RmkOutboxSalesCompanion.insert({
+    required String id,
+    required String payload,
+    required String idempotencyKey,
+    required String status,
+    this.attemptCount = const Value.absent(),
+    this.lastError = const Value.absent(),
+    required DateTime createdAt,
+    required DateTime updatedAt,
+    this.rowid = const Value.absent(),
+  })  : id = Value(id),
+        payload = Value(payload),
+        idempotencyKey = Value(idempotencyKey),
+        status = Value(status),
+        createdAt = Value(createdAt),
+        updatedAt = Value(updatedAt);
+  static Insertable<RmkOutboxSale> custom({
+    Expression<String>? id,
+    Expression<String>? payload,
+    Expression<String>? idempotencyKey,
+    Expression<String>? status,
+    Expression<int>? attemptCount,
+    Expression<String>? lastError,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (payload != null) 'payload': payload,
+      if (idempotencyKey != null) 'idempotency_key': idempotencyKey,
+      if (status != null) 'status': status,
+      if (attemptCount != null) 'attempt_count': attemptCount,
+      if (lastError != null) 'last_error': lastError,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  RmkOutboxSalesCompanion copyWith(
+      {Value<String>? id,
+      Value<String>? payload,
+      Value<String>? idempotencyKey,
+      Value<String>? status,
+      Value<int>? attemptCount,
+      Value<String?>? lastError,
+      Value<DateTime>? createdAt,
+      Value<DateTime>? updatedAt,
+      Value<int>? rowid}) {
+    return RmkOutboxSalesCompanion(
+      id: id ?? this.id,
+      payload: payload ?? this.payload,
+      idempotencyKey: idempotencyKey ?? this.idempotencyKey,
+      status: status ?? this.status,
+      attemptCount: attemptCount ?? this.attemptCount,
+      lastError: lastError ?? this.lastError,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (payload.present) {
+      map['payload'] = Variable<String>(payload.value);
+    }
+    if (idempotencyKey.present) {
+      map['idempotency_key'] = Variable<String>(idempotencyKey.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<String>(status.value);
+    }
+    if (attemptCount.present) {
+      map['attempt_count'] = Variable<int>(attemptCount.value);
+    }
+    if (lastError.present) {
+      map['last_error'] = Variable<String>(lastError.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('RmkOutboxSalesCompanion(')
+          ..write('id: $id, ')
+          ..write('payload: $payload, ')
+          ..write('idempotencyKey: $idempotencyKey, ')
+          ..write('status: $status, ')
+          ..write('attemptCount: $attemptCount, ')
+          ..write('lastError: $lastError, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -2231,12 +4070,24 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $OutboxOperationsTable outboxOperations =
       $OutboxOperationsTable(this);
   late final $ChatMessagesTable chatMessages = $ChatMessagesTable(this);
+  late final $RmkGoodsTable rmkGoods = $RmkGoodsTable(this);
+  late final $RmkCategoriesTable rmkCategories = $RmkCategoriesTable(this);
+  late final $RmkCartItemsTable rmkCartItems = $RmkCartItemsTable(this);
+  late final $RmkOutboxSalesTable rmkOutboxSales = $RmkOutboxSalesTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
   @override
-  List<DatabaseSchemaEntity> get allSchemaEntities =>
-      [cachedRecords, syncStates, outboxOperations, chatMessages];
+  List<DatabaseSchemaEntity> get allSchemaEntities => [
+        cachedRecords,
+        syncStates,
+        outboxOperations,
+        chatMessages,
+        rmkGoods,
+        rmkCategories,
+        rmkCartItems,
+        rmkOutboxSales
+      ];
 }
 
 typedef $$CachedRecordsTableCreateCompanionBuilder = CachedRecordsCompanion
@@ -3274,6 +5125,916 @@ typedef $$ChatMessagesTableProcessedTableManager = ProcessedTableManager<
     ),
     ChatMessage,
     PrefetchHooks Function()>;
+typedef $$RmkGoodsTableCreateCompanionBuilder = RmkGoodsCompanion Function({
+  Value<int> id,
+  required String name,
+  required String normalizedName,
+  Value<int?> categoryId,
+  Value<String?> categoryName,
+  Value<int?> parentCategoryId,
+  Value<double> price,
+  Value<double> quantity,
+  Value<String?> imageUrl,
+  required String payload,
+  Value<DateTime?> serverCreatedAt,
+  Value<DateTime?> serverUpdatedAt,
+  required DateTime localUpdatedAt,
+  Value<bool> isDeleted,
+});
+typedef $$RmkGoodsTableUpdateCompanionBuilder = RmkGoodsCompanion Function({
+  Value<int> id,
+  Value<String> name,
+  Value<String> normalizedName,
+  Value<int?> categoryId,
+  Value<String?> categoryName,
+  Value<int?> parentCategoryId,
+  Value<double> price,
+  Value<double> quantity,
+  Value<String?> imageUrl,
+  Value<String> payload,
+  Value<DateTime?> serverCreatedAt,
+  Value<DateTime?> serverUpdatedAt,
+  Value<DateTime> localUpdatedAt,
+  Value<bool> isDeleted,
+});
+
+class $$RmkGoodsTableFilterComposer
+    extends Composer<_$AppDatabase, $RmkGoodsTable> {
+  $$RmkGoodsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get name => $composableBuilder(
+      column: $table.name, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get normalizedName => $composableBuilder(
+      column: $table.normalizedName,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get categoryId => $composableBuilder(
+      column: $table.categoryId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get categoryName => $composableBuilder(
+      column: $table.categoryName, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get parentCategoryId => $composableBuilder(
+      column: $table.parentCategoryId,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get price => $composableBuilder(
+      column: $table.price, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get quantity => $composableBuilder(
+      column: $table.quantity, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get imageUrl => $composableBuilder(
+      column: $table.imageUrl, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get payload => $composableBuilder(
+      column: $table.payload, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get serverCreatedAt => $composableBuilder(
+      column: $table.serverCreatedAt,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get serverUpdatedAt => $composableBuilder(
+      column: $table.serverUpdatedAt,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get localUpdatedAt => $composableBuilder(
+      column: $table.localUpdatedAt,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get isDeleted => $composableBuilder(
+      column: $table.isDeleted, builder: (column) => ColumnFilters(column));
+}
+
+class $$RmkGoodsTableOrderingComposer
+    extends Composer<_$AppDatabase, $RmkGoodsTable> {
+  $$RmkGoodsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get name => $composableBuilder(
+      column: $table.name, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get normalizedName => $composableBuilder(
+      column: $table.normalizedName,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get categoryId => $composableBuilder(
+      column: $table.categoryId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get categoryName => $composableBuilder(
+      column: $table.categoryName,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get parentCategoryId => $composableBuilder(
+      column: $table.parentCategoryId,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<double> get price => $composableBuilder(
+      column: $table.price, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<double> get quantity => $composableBuilder(
+      column: $table.quantity, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get imageUrl => $composableBuilder(
+      column: $table.imageUrl, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get payload => $composableBuilder(
+      column: $table.payload, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get serverCreatedAt => $composableBuilder(
+      column: $table.serverCreatedAt,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get serverUpdatedAt => $composableBuilder(
+      column: $table.serverUpdatedAt,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get localUpdatedAt => $composableBuilder(
+      column: $table.localUpdatedAt,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get isDeleted => $composableBuilder(
+      column: $table.isDeleted, builder: (column) => ColumnOrderings(column));
+}
+
+class $$RmkGoodsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $RmkGoodsTable> {
+  $$RmkGoodsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<String> get normalizedName => $composableBuilder(
+      column: $table.normalizedName, builder: (column) => column);
+
+  GeneratedColumn<int> get categoryId => $composableBuilder(
+      column: $table.categoryId, builder: (column) => column);
+
+  GeneratedColumn<String> get categoryName => $composableBuilder(
+      column: $table.categoryName, builder: (column) => column);
+
+  GeneratedColumn<int> get parentCategoryId => $composableBuilder(
+      column: $table.parentCategoryId, builder: (column) => column);
+
+  GeneratedColumn<double> get price =>
+      $composableBuilder(column: $table.price, builder: (column) => column);
+
+  GeneratedColumn<double> get quantity =>
+      $composableBuilder(column: $table.quantity, builder: (column) => column);
+
+  GeneratedColumn<String> get imageUrl =>
+      $composableBuilder(column: $table.imageUrl, builder: (column) => column);
+
+  GeneratedColumn<String> get payload =>
+      $composableBuilder(column: $table.payload, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get serverCreatedAt => $composableBuilder(
+      column: $table.serverCreatedAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get serverUpdatedAt => $composableBuilder(
+      column: $table.serverUpdatedAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get localUpdatedAt => $composableBuilder(
+      column: $table.localUpdatedAt, builder: (column) => column);
+
+  GeneratedColumn<bool> get isDeleted =>
+      $composableBuilder(column: $table.isDeleted, builder: (column) => column);
+}
+
+class $$RmkGoodsTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $RmkGoodsTable,
+    RmkGood,
+    $$RmkGoodsTableFilterComposer,
+    $$RmkGoodsTableOrderingComposer,
+    $$RmkGoodsTableAnnotationComposer,
+    $$RmkGoodsTableCreateCompanionBuilder,
+    $$RmkGoodsTableUpdateCompanionBuilder,
+    (RmkGood, BaseReferences<_$AppDatabase, $RmkGoodsTable, RmkGood>),
+    RmkGood,
+    PrefetchHooks Function()> {
+  $$RmkGoodsTableTableManager(_$AppDatabase db, $RmkGoodsTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$RmkGoodsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$RmkGoodsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$RmkGoodsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            Value<String> name = const Value.absent(),
+            Value<String> normalizedName = const Value.absent(),
+            Value<int?> categoryId = const Value.absent(),
+            Value<String?> categoryName = const Value.absent(),
+            Value<int?> parentCategoryId = const Value.absent(),
+            Value<double> price = const Value.absent(),
+            Value<double> quantity = const Value.absent(),
+            Value<String?> imageUrl = const Value.absent(),
+            Value<String> payload = const Value.absent(),
+            Value<DateTime?> serverCreatedAt = const Value.absent(),
+            Value<DateTime?> serverUpdatedAt = const Value.absent(),
+            Value<DateTime> localUpdatedAt = const Value.absent(),
+            Value<bool> isDeleted = const Value.absent(),
+          }) =>
+              RmkGoodsCompanion(
+            id: id,
+            name: name,
+            normalizedName: normalizedName,
+            categoryId: categoryId,
+            categoryName: categoryName,
+            parentCategoryId: parentCategoryId,
+            price: price,
+            quantity: quantity,
+            imageUrl: imageUrl,
+            payload: payload,
+            serverCreatedAt: serverCreatedAt,
+            serverUpdatedAt: serverUpdatedAt,
+            localUpdatedAt: localUpdatedAt,
+            isDeleted: isDeleted,
+          ),
+          createCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            required String name,
+            required String normalizedName,
+            Value<int?> categoryId = const Value.absent(),
+            Value<String?> categoryName = const Value.absent(),
+            Value<int?> parentCategoryId = const Value.absent(),
+            Value<double> price = const Value.absent(),
+            Value<double> quantity = const Value.absent(),
+            Value<String?> imageUrl = const Value.absent(),
+            required String payload,
+            Value<DateTime?> serverCreatedAt = const Value.absent(),
+            Value<DateTime?> serverUpdatedAt = const Value.absent(),
+            required DateTime localUpdatedAt,
+            Value<bool> isDeleted = const Value.absent(),
+          }) =>
+              RmkGoodsCompanion.insert(
+            id: id,
+            name: name,
+            normalizedName: normalizedName,
+            categoryId: categoryId,
+            categoryName: categoryName,
+            parentCategoryId: parentCategoryId,
+            price: price,
+            quantity: quantity,
+            imageUrl: imageUrl,
+            payload: payload,
+            serverCreatedAt: serverCreatedAt,
+            serverUpdatedAt: serverUpdatedAt,
+            localUpdatedAt: localUpdatedAt,
+            isDeleted: isDeleted,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$RmkGoodsTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $RmkGoodsTable,
+    RmkGood,
+    $$RmkGoodsTableFilterComposer,
+    $$RmkGoodsTableOrderingComposer,
+    $$RmkGoodsTableAnnotationComposer,
+    $$RmkGoodsTableCreateCompanionBuilder,
+    $$RmkGoodsTableUpdateCompanionBuilder,
+    (RmkGood, BaseReferences<_$AppDatabase, $RmkGoodsTable, RmkGood>),
+    RmkGood,
+    PrefetchHooks Function()>;
+typedef $$RmkCategoriesTableCreateCompanionBuilder = RmkCategoriesCompanion
+    Function({
+  Value<int> id,
+  Value<int?> parentId,
+  required String name,
+  required String normalizedName,
+  Value<int> level,
+  required DateTime localUpdatedAt,
+});
+typedef $$RmkCategoriesTableUpdateCompanionBuilder = RmkCategoriesCompanion
+    Function({
+  Value<int> id,
+  Value<int?> parentId,
+  Value<String> name,
+  Value<String> normalizedName,
+  Value<int> level,
+  Value<DateTime> localUpdatedAt,
+});
+
+class $$RmkCategoriesTableFilterComposer
+    extends Composer<_$AppDatabase, $RmkCategoriesTable> {
+  $$RmkCategoriesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get parentId => $composableBuilder(
+      column: $table.parentId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get name => $composableBuilder(
+      column: $table.name, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get normalizedName => $composableBuilder(
+      column: $table.normalizedName,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get level => $composableBuilder(
+      column: $table.level, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get localUpdatedAt => $composableBuilder(
+      column: $table.localUpdatedAt,
+      builder: (column) => ColumnFilters(column));
+}
+
+class $$RmkCategoriesTableOrderingComposer
+    extends Composer<_$AppDatabase, $RmkCategoriesTable> {
+  $$RmkCategoriesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get parentId => $composableBuilder(
+      column: $table.parentId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get name => $composableBuilder(
+      column: $table.name, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get normalizedName => $composableBuilder(
+      column: $table.normalizedName,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get level => $composableBuilder(
+      column: $table.level, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get localUpdatedAt => $composableBuilder(
+      column: $table.localUpdatedAt,
+      builder: (column) => ColumnOrderings(column));
+}
+
+class $$RmkCategoriesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $RmkCategoriesTable> {
+  $$RmkCategoriesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<int> get parentId =>
+      $composableBuilder(column: $table.parentId, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<String> get normalizedName => $composableBuilder(
+      column: $table.normalizedName, builder: (column) => column);
+
+  GeneratedColumn<int> get level =>
+      $composableBuilder(column: $table.level, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get localUpdatedAt => $composableBuilder(
+      column: $table.localUpdatedAt, builder: (column) => column);
+}
+
+class $$RmkCategoriesTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $RmkCategoriesTable,
+    RmkCategory,
+    $$RmkCategoriesTableFilterComposer,
+    $$RmkCategoriesTableOrderingComposer,
+    $$RmkCategoriesTableAnnotationComposer,
+    $$RmkCategoriesTableCreateCompanionBuilder,
+    $$RmkCategoriesTableUpdateCompanionBuilder,
+    (
+      RmkCategory,
+      BaseReferences<_$AppDatabase, $RmkCategoriesTable, RmkCategory>
+    ),
+    RmkCategory,
+    PrefetchHooks Function()> {
+  $$RmkCategoriesTableTableManager(_$AppDatabase db, $RmkCategoriesTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$RmkCategoriesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$RmkCategoriesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$RmkCategoriesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            Value<int?> parentId = const Value.absent(),
+            Value<String> name = const Value.absent(),
+            Value<String> normalizedName = const Value.absent(),
+            Value<int> level = const Value.absent(),
+            Value<DateTime> localUpdatedAt = const Value.absent(),
+          }) =>
+              RmkCategoriesCompanion(
+            id: id,
+            parentId: parentId,
+            name: name,
+            normalizedName: normalizedName,
+            level: level,
+            localUpdatedAt: localUpdatedAt,
+          ),
+          createCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            Value<int?> parentId = const Value.absent(),
+            required String name,
+            required String normalizedName,
+            Value<int> level = const Value.absent(),
+            required DateTime localUpdatedAt,
+          }) =>
+              RmkCategoriesCompanion.insert(
+            id: id,
+            parentId: parentId,
+            name: name,
+            normalizedName: normalizedName,
+            level: level,
+            localUpdatedAt: localUpdatedAt,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$RmkCategoriesTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $RmkCategoriesTable,
+    RmkCategory,
+    $$RmkCategoriesTableFilterComposer,
+    $$RmkCategoriesTableOrderingComposer,
+    $$RmkCategoriesTableAnnotationComposer,
+    $$RmkCategoriesTableCreateCompanionBuilder,
+    $$RmkCategoriesTableUpdateCompanionBuilder,
+    (
+      RmkCategory,
+      BaseReferences<_$AppDatabase, $RmkCategoriesTable, RmkCategory>
+    ),
+    RmkCategory,
+    PrefetchHooks Function()>;
+typedef $$RmkCartItemsTableCreateCompanionBuilder = RmkCartItemsCompanion
+    Function({
+  Value<int> goodId,
+  required String name,
+  Value<double> quantity,
+  Value<double> price,
+  Value<double?> customTotal,
+  Value<String?> imageUrl,
+  required DateTime updatedAt,
+});
+typedef $$RmkCartItemsTableUpdateCompanionBuilder = RmkCartItemsCompanion
+    Function({
+  Value<int> goodId,
+  Value<String> name,
+  Value<double> quantity,
+  Value<double> price,
+  Value<double?> customTotal,
+  Value<String?> imageUrl,
+  Value<DateTime> updatedAt,
+});
+
+class $$RmkCartItemsTableFilterComposer
+    extends Composer<_$AppDatabase, $RmkCartItemsTable> {
+  $$RmkCartItemsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get goodId => $composableBuilder(
+      column: $table.goodId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get name => $composableBuilder(
+      column: $table.name, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get quantity => $composableBuilder(
+      column: $table.quantity, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get price => $composableBuilder(
+      column: $table.price, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get customTotal => $composableBuilder(
+      column: $table.customTotal, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get imageUrl => $composableBuilder(
+      column: $table.imageUrl, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnFilters(column));
+}
+
+class $$RmkCartItemsTableOrderingComposer
+    extends Composer<_$AppDatabase, $RmkCartItemsTable> {
+  $$RmkCartItemsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get goodId => $composableBuilder(
+      column: $table.goodId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get name => $composableBuilder(
+      column: $table.name, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<double> get quantity => $composableBuilder(
+      column: $table.quantity, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<double> get price => $composableBuilder(
+      column: $table.price, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<double> get customTotal => $composableBuilder(
+      column: $table.customTotal, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get imageUrl => $composableBuilder(
+      column: $table.imageUrl, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnOrderings(column));
+}
+
+class $$RmkCartItemsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $RmkCartItemsTable> {
+  $$RmkCartItemsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get goodId =>
+      $composableBuilder(column: $table.goodId, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<double> get quantity =>
+      $composableBuilder(column: $table.quantity, builder: (column) => column);
+
+  GeneratedColumn<double> get price =>
+      $composableBuilder(column: $table.price, builder: (column) => column);
+
+  GeneratedColumn<double> get customTotal => $composableBuilder(
+      column: $table.customTotal, builder: (column) => column);
+
+  GeneratedColumn<String> get imageUrl =>
+      $composableBuilder(column: $table.imageUrl, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+}
+
+class $$RmkCartItemsTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $RmkCartItemsTable,
+    RmkCartItem,
+    $$RmkCartItemsTableFilterComposer,
+    $$RmkCartItemsTableOrderingComposer,
+    $$RmkCartItemsTableAnnotationComposer,
+    $$RmkCartItemsTableCreateCompanionBuilder,
+    $$RmkCartItemsTableUpdateCompanionBuilder,
+    (
+      RmkCartItem,
+      BaseReferences<_$AppDatabase, $RmkCartItemsTable, RmkCartItem>
+    ),
+    RmkCartItem,
+    PrefetchHooks Function()> {
+  $$RmkCartItemsTableTableManager(_$AppDatabase db, $RmkCartItemsTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$RmkCartItemsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$RmkCartItemsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$RmkCartItemsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<int> goodId = const Value.absent(),
+            Value<String> name = const Value.absent(),
+            Value<double> quantity = const Value.absent(),
+            Value<double> price = const Value.absent(),
+            Value<double?> customTotal = const Value.absent(),
+            Value<String?> imageUrl = const Value.absent(),
+            Value<DateTime> updatedAt = const Value.absent(),
+          }) =>
+              RmkCartItemsCompanion(
+            goodId: goodId,
+            name: name,
+            quantity: quantity,
+            price: price,
+            customTotal: customTotal,
+            imageUrl: imageUrl,
+            updatedAt: updatedAt,
+          ),
+          createCompanionCallback: ({
+            Value<int> goodId = const Value.absent(),
+            required String name,
+            Value<double> quantity = const Value.absent(),
+            Value<double> price = const Value.absent(),
+            Value<double?> customTotal = const Value.absent(),
+            Value<String?> imageUrl = const Value.absent(),
+            required DateTime updatedAt,
+          }) =>
+              RmkCartItemsCompanion.insert(
+            goodId: goodId,
+            name: name,
+            quantity: quantity,
+            price: price,
+            customTotal: customTotal,
+            imageUrl: imageUrl,
+            updatedAt: updatedAt,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$RmkCartItemsTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $RmkCartItemsTable,
+    RmkCartItem,
+    $$RmkCartItemsTableFilterComposer,
+    $$RmkCartItemsTableOrderingComposer,
+    $$RmkCartItemsTableAnnotationComposer,
+    $$RmkCartItemsTableCreateCompanionBuilder,
+    $$RmkCartItemsTableUpdateCompanionBuilder,
+    (
+      RmkCartItem,
+      BaseReferences<_$AppDatabase, $RmkCartItemsTable, RmkCartItem>
+    ),
+    RmkCartItem,
+    PrefetchHooks Function()>;
+typedef $$RmkOutboxSalesTableCreateCompanionBuilder = RmkOutboxSalesCompanion
+    Function({
+  required String id,
+  required String payload,
+  required String idempotencyKey,
+  required String status,
+  Value<int> attemptCount,
+  Value<String?> lastError,
+  required DateTime createdAt,
+  required DateTime updatedAt,
+  Value<int> rowid,
+});
+typedef $$RmkOutboxSalesTableUpdateCompanionBuilder = RmkOutboxSalesCompanion
+    Function({
+  Value<String> id,
+  Value<String> payload,
+  Value<String> idempotencyKey,
+  Value<String> status,
+  Value<int> attemptCount,
+  Value<String?> lastError,
+  Value<DateTime> createdAt,
+  Value<DateTime> updatedAt,
+  Value<int> rowid,
+});
+
+class $$RmkOutboxSalesTableFilterComposer
+    extends Composer<_$AppDatabase, $RmkOutboxSalesTable> {
+  $$RmkOutboxSalesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get payload => $composableBuilder(
+      column: $table.payload, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get idempotencyKey => $composableBuilder(
+      column: $table.idempotencyKey,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get status => $composableBuilder(
+      column: $table.status, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get attemptCount => $composableBuilder(
+      column: $table.attemptCount, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get lastError => $composableBuilder(
+      column: $table.lastError, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnFilters(column));
+}
+
+class $$RmkOutboxSalesTableOrderingComposer
+    extends Composer<_$AppDatabase, $RmkOutboxSalesTable> {
+  $$RmkOutboxSalesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get payload => $composableBuilder(
+      column: $table.payload, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get idempotencyKey => $composableBuilder(
+      column: $table.idempotencyKey,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get status => $composableBuilder(
+      column: $table.status, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get attemptCount => $composableBuilder(
+      column: $table.attemptCount,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get lastError => $composableBuilder(
+      column: $table.lastError, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnOrderings(column));
+}
+
+class $$RmkOutboxSalesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $RmkOutboxSalesTable> {
+  $$RmkOutboxSalesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get payload =>
+      $composableBuilder(column: $table.payload, builder: (column) => column);
+
+  GeneratedColumn<String> get idempotencyKey => $composableBuilder(
+      column: $table.idempotencyKey, builder: (column) => column);
+
+  GeneratedColumn<String> get status =>
+      $composableBuilder(column: $table.status, builder: (column) => column);
+
+  GeneratedColumn<int> get attemptCount => $composableBuilder(
+      column: $table.attemptCount, builder: (column) => column);
+
+  GeneratedColumn<String> get lastError =>
+      $composableBuilder(column: $table.lastError, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+}
+
+class $$RmkOutboxSalesTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $RmkOutboxSalesTable,
+    RmkOutboxSale,
+    $$RmkOutboxSalesTableFilterComposer,
+    $$RmkOutboxSalesTableOrderingComposer,
+    $$RmkOutboxSalesTableAnnotationComposer,
+    $$RmkOutboxSalesTableCreateCompanionBuilder,
+    $$RmkOutboxSalesTableUpdateCompanionBuilder,
+    (
+      RmkOutboxSale,
+      BaseReferences<_$AppDatabase, $RmkOutboxSalesTable, RmkOutboxSale>
+    ),
+    RmkOutboxSale,
+    PrefetchHooks Function()> {
+  $$RmkOutboxSalesTableTableManager(
+      _$AppDatabase db, $RmkOutboxSalesTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$RmkOutboxSalesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$RmkOutboxSalesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$RmkOutboxSalesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<String> id = const Value.absent(),
+            Value<String> payload = const Value.absent(),
+            Value<String> idempotencyKey = const Value.absent(),
+            Value<String> status = const Value.absent(),
+            Value<int> attemptCount = const Value.absent(),
+            Value<String?> lastError = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+            Value<DateTime> updatedAt = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              RmkOutboxSalesCompanion(
+            id: id,
+            payload: payload,
+            idempotencyKey: idempotencyKey,
+            status: status,
+            attemptCount: attemptCount,
+            lastError: lastError,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String id,
+            required String payload,
+            required String idempotencyKey,
+            required String status,
+            Value<int> attemptCount = const Value.absent(),
+            Value<String?> lastError = const Value.absent(),
+            required DateTime createdAt,
+            required DateTime updatedAt,
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              RmkOutboxSalesCompanion.insert(
+            id: id,
+            payload: payload,
+            idempotencyKey: idempotencyKey,
+            status: status,
+            attemptCount: attemptCount,
+            lastError: lastError,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$RmkOutboxSalesTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $RmkOutboxSalesTable,
+    RmkOutboxSale,
+    $$RmkOutboxSalesTableFilterComposer,
+    $$RmkOutboxSalesTableOrderingComposer,
+    $$RmkOutboxSalesTableAnnotationComposer,
+    $$RmkOutboxSalesTableCreateCompanionBuilder,
+    $$RmkOutboxSalesTableUpdateCompanionBuilder,
+    (
+      RmkOutboxSale,
+      BaseReferences<_$AppDatabase, $RmkOutboxSalesTable, RmkOutboxSale>
+    ),
+    RmkOutboxSale,
+    PrefetchHooks Function()>;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -3286,4 +6047,12 @@ class $AppDatabaseManager {
       $$OutboxOperationsTableTableManager(_db, _db.outboxOperations);
   $$ChatMessagesTableTableManager get chatMessages =>
       $$ChatMessagesTableTableManager(_db, _db.chatMessages);
+  $$RmkGoodsTableTableManager get rmkGoods =>
+      $$RmkGoodsTableTableManager(_db, _db.rmkGoods);
+  $$RmkCategoriesTableTableManager get rmkCategories =>
+      $$RmkCategoriesTableTableManager(_db, _db.rmkCategories);
+  $$RmkCartItemsTableTableManager get rmkCartItems =>
+      $$RmkCartItemsTableTableManager(_db, _db.rmkCartItems);
+  $$RmkOutboxSalesTableTableManager get rmkOutboxSales =>
+      $$RmkOutboxSalesTableTableManager(_db, _db.rmkOutboxSales);
 }

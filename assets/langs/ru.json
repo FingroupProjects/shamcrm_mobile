@@ -2086,6 +2086,8 @@
   "sip_welcome_subtitle": "Подключите SIP аккаунт и получите современный интерфейс звонков прямо внутри CRM.",
   "sip_enter_dialer": "Войти в SIP",
   "sip_add_number_hint": "Добавить номер",
+  "sip_not_connected": "SIP не подключен",
+  "call_via_phone_number": "Номер телефона",
   "sip_journal_empty": "Журнал звонков пока пуст",
   "analytics_chart_load_failed": "Не удалось загрузить данные графика. Попробуйте позже.",
   "analytics_chart_settings_error": "Не удалось загрузить настройки графиков.",

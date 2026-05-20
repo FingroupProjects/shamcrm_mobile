@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:minWidth="72dp"
+    android:minHeight="72dp"
+    android:targetCellWidth="1"
+    android:targetCellHeight="1"
+    android:updatePeriodMillis="1800000"
+    android:previewImage="@drawable/ic_rmk"
+    android:initialLayout="@layout/rmk_widget"
+    android:resizeMode="none"
+    android:widgetCategory="home_screen"
+    android:description="@string/rmk_widget_description" />

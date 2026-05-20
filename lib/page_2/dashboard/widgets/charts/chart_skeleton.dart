@@ -1,54 +1,28 @@
 import 'package:flutter/material.dart';
+import 'package:crm_task_manager/custom_widget/shimmer_wave.dart';
 
-/// Skeleton loader for charts while data is loading
-class ChartSkeleton extends StatefulWidget {
+/// Skeleton loader for charts while data is loading.
+/// Uses the same shimmer wave animation as CRM analytics charts.
+class ChartSkeleton extends StatelessWidget {
   final double height;
   final String title;
 
   const ChartSkeleton({
-    Key? key,
+    super.key,
     this.height = 300,
     this.title = '',
-  }) : super(key: key);
-
-  @override
-  State<ChartSkeleton> createState() => _ChartSkeletonState();
-}
-
-class _ChartSkeletonState extends State<ChartSkeleton>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _animation;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      duration: const Duration(milliseconds: 1500),
-      vsync: this,
-    )..repeat(reverse: true);
-
-    _animation = Tween<double>(begin: 0.3, end: 0.7).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
+  });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: widget.height,
+      height: height,
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -59,73 +33,71 @@ class _ChartSkeletonState extends State<ChartSkeleton>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Title skeleton
-            if (widget.title.isNotEmpty)
+            if (title.isNotEmpty)
               Text(
-                widget.title,
+                title,
                 style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
                   color: Color(0xff1E2E52),
                 ),
               ),
-            if (widget.title.isNotEmpty) const SizedBox(height: 16),
-
-            // Chart skeleton
-            Expanded(
-              child: AnimatedBuilder(
-                animation: _animation,
-                builder: (context, child) {
-                  return Row(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: List.generate(
-                      6,
-                          (index) => Flexible(
-                        child: Container(
-                          margin: const EdgeInsets.symmetric(horizontal: 4),
-                          height: (index + 1) * 30.0,
-                          decoration: BoxDecoration(
-                            color: const Color(0xff1E2E52)
-                                .withOpacity(_animation.value * 0.3),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                        ),
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-
-            // Loading text
-            const SizedBox(height: 12),
-            Center(
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                        const Color(0xff1E2E52).withOpacity(0.5),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Загрузка...',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: const Color(0xff1E2E52).withOpacity(0.5),
-                    ),
-                  ),
-                ],
+            if (title.isNotEmpty) const SizedBox(height: 16),
+            const Expanded(
+              child: ShimmerWave(
+                child: _ChartBarsSkeleton(),
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ChartBarsSkeleton extends StatelessWidget {
+  const _ChartBarsSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: const [
+        _Bar(heightFactor: 0.35),
+        SizedBox(width: 10),
+        _Bar(heightFactor: 0.65),
+        SizedBox(width: 10),
+        _Bar(heightFactor: 0.45),
+        SizedBox(width: 10),
+        _Bar(heightFactor: 0.8),
+        SizedBox(width: 10),
+        _Bar(heightFactor: 0.55),
+        SizedBox(width: 10),
+        _Bar(heightFactor: 0.7),
+      ],
+    );
+  }
+}
+
+class _Bar extends StatelessWidget {
+  final double heightFactor;
+
+  const _Bar({required this.heightFactor});
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Align(
+        alignment: Alignment.bottomCenter,
+        child: FractionallySizedBox(
+          heightFactor: heightFactor,
+          child: Container(
+            width: 18,
+            decoration: BoxDecoration(
+              color: const Color(0xffE5E7EB),
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
         ),
       ),
     );
@@ -139,11 +111,11 @@ class SimpleSkeleton extends StatelessWidget {
   final BorderRadius? borderRadius;
 
   const SimpleSkeleton({
-    Key? key,
+    super.key,
     required this.width,
     required this.height,
     this.borderRadius,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -151,7 +123,7 @@ class SimpleSkeleton extends StatelessWidget {
       width: width,
       height: height,
       decoration: BoxDecoration(
-        color: const Color(0xff1E2E52).withOpacity(0.1),
+        color: const Color(0xff1E2E52).withValues(alpha: 0.1),
         borderRadius: borderRadius ?? BorderRadius.circular(8),
       ),
     );

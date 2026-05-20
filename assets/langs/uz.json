@@ -2175,6 +2175,8 @@
   "sip_welcome_subtitle": "SIP akkauntni ulang va CRM ichida zamonaviy qo'ng'iroq interfeysidan foydalaning.",
   "sip_enter_dialer": "SIP ga kirish",
   "sip_add_number_hint": "Raqam qo'shish",
+  "sip_not_connected": "SIP ulanmagan",
+  "call_via_phone_number": "Telefon raqami",
   "sip_journal_empty": "Qo'ng'iroqlar jurnali hozircha bo'sh",
   "sip_tab_keypad": "Terish",
   "sip_tab_journal": "Jurnal",

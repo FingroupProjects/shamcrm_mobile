@@ -1089,21 +1089,27 @@ class SipService extends ChangeNotifier
   bool get isSipEnabled => _sipEnabled;
 
   Future<void> makeCall() async {
+    await makeCallTo(_state.sipId);
+  }
+
+  Future<void> makeCallTo(String dialTarget) async {
     if (_state.registrationStatus != SipRegistrationUiStatus.registered) {
       _setError('SIP is not registered. Connect first.');
       return;
     }
 
-    if (_state.sipId.trim().isEmpty) {
+    final normalizedTarget = dialTarget.trim();
+    if (normalizedTarget.isEmpty) {
       _setError('sipId is empty.');
       return;
     }
 
     _currentCallDirection = SipCallDirection.outgoing;
-    _currentCallTarget = _state.sipId.trim();
+    _currentCallTarget = normalizedTarget;
     _currentCallStartedAt = null;
 
-    final target = _buildTargetUri(_state.sipId, _extractDomain(_state.server));
+    final target =
+        _buildTargetUri(normalizedTarget, _extractDomain(_state.server));
     _currentInviteUri = target;
 
     if (_shouldUseNativeSip()) {
@@ -1116,7 +1122,7 @@ class SipService extends ChangeNotifier
         'nativeMakeCall',
         extra: <String, String>{
           'target': target,
-          'dialed': _state.sipId.trim(),
+          'dialed': normalizedTarget,
         },
       );
       final success = await _invokeNativeSipMethod<bool>(
@@ -1146,7 +1152,7 @@ class SipService extends ChangeNotifier
       'makeCall',
       extra: <String, String>{
         'target': target,
-        'dialed': _state.sipId.trim(),
+        'dialed': normalizedTarget,
       },
     );
     final success = await _helper.call(target, voiceOnly: true);

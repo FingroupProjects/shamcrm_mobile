@@ -55,7 +55,8 @@ class OutboxOperations extends Table {
   DateTimeColumn get nextAttemptAt => dateTime().nullable()();
   TextColumn get lastError => text().nullable()();
   TextColumn get conflictPayload => text().nullable()();
-  BoolColumn get requiresTextOnly => boolean().withDefault(const Constant(false))();
+  BoolColumn get requiresTextOnly =>
+      boolean().withDefault(const Constant(false))();
   DateTimeColumn get createdAt => dateTime()();
   DateTimeColumn get updatedAt => dateTime()();
 
@@ -78,12 +79,75 @@ class ChatMessages extends Table {
   Set<Column<Object>> get primaryKey => {localId};
 }
 
+class RmkGoods extends Table {
+  IntColumn get id => integer()();
+  TextColumn get name => text()();
+  TextColumn get normalizedName => text()();
+  IntColumn get categoryId => integer().nullable()();
+  TextColumn get categoryName => text().nullable()();
+  IntColumn get parentCategoryId => integer().nullable()();
+  RealColumn get price => real().withDefault(const Constant(0))();
+  RealColumn get quantity => real().withDefault(const Constant(0))();
+  TextColumn get imageUrl => text().nullable()();
+  TextColumn get payload => text()();
+  DateTimeColumn get serverCreatedAt => dateTime().nullable()();
+  DateTimeColumn get serverUpdatedAt => dateTime().nullable()();
+  DateTimeColumn get localUpdatedAt => dateTime()();
+  BoolColumn get isDeleted => boolean().withDefault(const Constant(false))();
+
+  @override
+  Set<Column<Object>> get primaryKey => {id};
+}
+
+class RmkCategories extends Table {
+  IntColumn get id => integer()();
+  IntColumn get parentId => integer().nullable()();
+  TextColumn get name => text()();
+  TextColumn get normalizedName => text()();
+  IntColumn get level => integer().withDefault(const Constant(0))();
+  DateTimeColumn get localUpdatedAt => dateTime()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {id};
+}
+
+class RmkCartItems extends Table {
+  IntColumn get goodId => integer()();
+  TextColumn get name => text()();
+  RealColumn get quantity => real().withDefault(const Constant(0))();
+  RealColumn get price => real().withDefault(const Constant(0))();
+  RealColumn get customTotal => real().nullable()();
+  TextColumn get imageUrl => text().nullable()();
+  DateTimeColumn get updatedAt => dateTime()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {goodId};
+}
+
+class RmkOutboxSales extends Table {
+  TextColumn get id => text()();
+  TextColumn get payload => text()();
+  TextColumn get idempotencyKey => text()();
+  TextColumn get status => text()();
+  IntColumn get attemptCount => integer().withDefault(const Constant(0))();
+  TextColumn get lastError => text().nullable()();
+  DateTimeColumn get createdAt => dateTime()();
+  DateTimeColumn get updatedAt => dateTime()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {id};
+}
+
 @DriftDatabase(
   tables: [
     CachedRecords,
     SyncStates,
     OutboxOperations,
     ChatMessages,
+    RmkGoods,
+    RmkCategories,
+    RmkCartItems,
+    RmkOutboxSales,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -96,7 +160,20 @@ class AppDatabase extends _$AppDatabase {
   }
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
+
+  @override
+  MigrationStrategy get migration => MigrationStrategy(
+        onCreate: (m) => m.createAll(),
+        onUpgrade: (m, from, to) async {
+          if (from < 2) {
+            await m.createTable(rmkGoods);
+            await m.createTable(rmkCategories);
+            await m.createTable(rmkCartItems);
+            await m.createTable(rmkOutboxSales);
+          }
+        },
+      );
 }
 
 LazyDatabase _openConnection() {

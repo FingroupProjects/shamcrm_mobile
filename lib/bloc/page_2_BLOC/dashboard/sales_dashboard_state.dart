@@ -27,11 +27,11 @@ class SalesDashboardPriorityLoaded extends SalesDashboardState {
 
   @override
   List<Object?> get props => [
-    salesDashboardTopPart,
-    topSellingData,
-    illiquidGoodsData,
-    graphErrors,
-  ];
+        salesDashboardTopPart,
+        topSellingData,
+        illiquidGoodsData,
+        graphErrors,
+      ];
 }
 
 /// Wave 2 loading - show Wave 1 data + loading indicators for Wave 2
@@ -39,22 +39,40 @@ class SalesDashboardLoadingSecondary extends SalesDashboardState {
   final DashboardTopPart salesDashboardTopPart;
   final List<AllTopSellingData> topSellingData;
   final IlliquidGoodsResponse illiquidGoodsData;
+  final List<AllSalesDynamicsData>? salesData;
+  final List<AllNetProfitData>? netProfitData;
+  final List<AllOrdersData>? orderDashboardData;
+  final List<AllExpensesData>? expenseStructureData;
+  final List<AllProfitabilityData>? profitabilityData;
+  final Set<String> loadedChartKeys;
   final Map<String, String> graphErrors;
 
   const SalesDashboardLoadingSecondary({
     required this.salesDashboardTopPart,
     required this.topSellingData,
     required this.illiquidGoodsData,
+    this.salesData,
+    this.netProfitData,
+    this.orderDashboardData,
+    this.expenseStructureData,
+    this.profitabilityData,
+    this.loadedChartKeys = const {},
     this.graphErrors = const {},
   });
 
   @override
   List<Object?> get props => [
-    salesDashboardTopPart,
-    topSellingData,
-    illiquidGoodsData,
-    graphErrors,
-  ];
+        salesDashboardTopPart,
+        topSellingData,
+        illiquidGoodsData,
+        salesData,
+        netProfitData,
+        orderDashboardData,
+        expenseStructureData,
+        profitabilityData,
+        loadedChartKeys,
+        graphErrors,
+      ];
 }
 
 /// All data loaded - complete dashboard
@@ -83,16 +101,16 @@ class SalesDashboardFullyLoaded extends SalesDashboardState {
 
   @override
   List<Object?> get props => [
-    salesDashboardTopPart,
-    topSellingData,
-    illiquidGoodsData,
-    salesData,
-    netProfitData,
-    orderDashboardData,
-    expenseStructureData,
-    profitabilityData,
-    graphErrors,
-  ];
+        salesDashboardTopPart,
+        topSellingData,
+        illiquidGoodsData,
+        salesData,
+        netProfitData,
+        orderDashboardData,
+        expenseStructureData,
+        profitabilityData,
+        graphErrors,
+      ];
 }
 
 /// Legacy state for backward compatibility
@@ -119,15 +137,15 @@ class SalesDashboardLoaded extends SalesDashboardState {
 
   @override
   List<Object?> get props => [
-    salesDashboardTopPart,
-    salesData,
-    netProfitData,
-    orderDashboardData,
-    expenseStructureData,
-    profitabilityData,
-    topSellingData,
-    illiquidGoodsData,
-  ];
+        salesDashboardTopPart,
+        salesData,
+        netProfitData,
+        orderDashboardData,
+        expenseStructureData,
+        profitabilityData,
+        topSellingData,
+        illiquidGoodsData,
+      ];
 }
 
 class SalesDashboardError extends SalesDashboardState {

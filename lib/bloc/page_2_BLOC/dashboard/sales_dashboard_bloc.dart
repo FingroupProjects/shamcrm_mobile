@@ -15,18 +15,19 @@ import '../../../models/page_2/dashboard/top_selling_model.dart';
 part 'sales_dashboard_event.dart';
 part 'sales_dashboard_state.dart';
 
-class SalesDashboardBloc extends Bloc<SalesDashboardEvent, SalesDashboardState> {
+class SalesDashboardBloc
+    extends Bloc<SalesDashboardEvent, SalesDashboardState> {
   final apiService = ApiService();
 
   SalesDashboardBloc() : super(SalesDashboardInitial()) {
-
-    // Wave 1 & 2: Load both in parallel, but emit progressively
+    // Wave 1: load priority data first, then request heavy charts in the background.
     on<LoadPriorityData>((event, emit) async {
-      debugPrint("📊 Starting parallel data loading...");
+      debugPrint("📊 Starting progressive dashboard loading...");
       emit(SalesDashboardLoading());
 
       // Helper function to safely load data and catch errors
-      Future<T?> safeLoad<T>(Future<T> Function() loader, String errorKey) async {
+      Future<T?> safeLoad<T>(
+          Future<T> Function() loader, String errorKey) async {
         try {
           return await loader();
         } catch (e) {
@@ -35,46 +36,35 @@ class SalesDashboardBloc extends Bloc<SalesDashboardEvent, SalesDashboardState> 
         }
       }
 
-      // Запускаем обе волны параллельно с обработкой ошибок
+      // Запускаем первую волну и сразу показываем ее, не ожидая тяжелые графики.
       final wave1Results = await Future.wait([
         safeLoad(() => apiService.getSalesDashboardTopPart(), 'topPart'),
         safeLoad(() => apiService.getTopSellingGoodsDashboard(), 'topSelling'),
         safeLoad(() => apiService.getIlliquidGoods(), 'illiquidGoods'),
       ]);
 
-      final wave2Results = await Future.wait([
-        safeLoad(() => apiService.getNetProfitData(), 'netProfit'),
-        safeLoad(() => apiService.getOrderDashboard(), 'orderDashboard'),
-        safeLoad(() => apiService.getExpenseStructure(), 'expenseStructure'),
-        safeLoad(() => apiService.getProfitability(), 'profitability'),
-        safeLoad(() => apiService.getSalesDynamics(), 'salesDynamics'),
-      ]);
-
       // Collect errors
       final Map<String, String> graphErrors = {};
-      
+
       final salesDashboardTopResponse = wave1Results[0] as DashboardTopPart?;
       final topSellingData = wave1Results[1] as List<AllTopSellingData>?;
       final illiquidGoodsData = wave1Results[2] as IlliquidGoodsResponse?;
 
-      final netProfitData = wave2Results[0] as List<AllNetProfitData>?;
-      final orderDashboardData = wave2Results[1] as List<AllOrdersData>?;
-      final expenseStructureData = wave2Results[2] as List<AllExpensesData>?;
-      final profitabilityData = wave2Results[3] as List<AllProfitabilityData>?;
-      final salesData = wave2Results[4] as List<AllSalesDynamicsData>?;
-
       // Track errors
-      if (salesDashboardTopResponse == null) graphErrors['topPart'] = 'Ошибка загрузки';
-      if (topSellingData == null) graphErrors['topSelling'] = 'Ошибка загрузки';
-      if (illiquidGoodsData == null) graphErrors['illiquidGoods'] = 'Ошибка загрузки';
-      if (netProfitData == null) graphErrors['netProfit'] = 'Ошибка загрузки';
-      if (orderDashboardData == null) graphErrors['orderDashboard'] = 'Ошибка загрузки';
-      if (expenseStructureData == null) graphErrors['expenseStructure'] = 'Ошибка загрузки';
-      if (profitabilityData == null) graphErrors['profitability'] = 'Ошибка загрузки';
-      if (salesData == null) graphErrors['salesDynamics'] = 'Ошибка загрузки';
+      if (salesDashboardTopResponse == null) {
+        graphErrors['topPart'] = 'Ошибка загрузки';
+      }
+      if (topSellingData == null) {
+        graphErrors['topSelling'] = 'Ошибка загрузки';
+      }
+      if (illiquidGoodsData == null) {
+        graphErrors['illiquidGoods'] = 'Ошибка загрузки';
+      }
 
       // Проверяем, есть ли хотя бы минимальные данные для показа
-      if (salesDashboardTopResponse == null && topSellingData == null && illiquidGoodsData == null) {
+      if (salesDashboardTopResponse == null &&
+          topSellingData == null &&
+          illiquidGoodsData == null) {
         debugPrint("❌ All Wave 1 data failed to load");
         emit(SalesDashboardError("Не удалось загрузить данные дашборда"));
         return;
@@ -84,33 +74,109 @@ class SalesDashboardBloc extends Bloc<SalesDashboardEvent, SalesDashboardState> 
 
       // Сразу показываем пользователю Wave 1 данные (используем значения по умолчанию для null)
       emit(SalesDashboardPriorityLoaded(
-        salesDashboardTopPart: salesDashboardTopResponse ?? DashboardTopPart(result: null, errors: null),
+        salesDashboardTopPart: salesDashboardTopResponse ??
+            DashboardTopPart(result: null, errors: null),
         topSellingData: topSellingData ?? [],
-        illiquidGoodsData: illiquidGoodsData ?? IlliquidGoodsResponse(result: null, errors: null),
-        graphErrors: graphErrors,
+        illiquidGoodsData: illiquidGoodsData ??
+            IlliquidGoodsResponse(result: null, errors: null),
+        graphErrors: Map<String, String>.from(graphErrors),
       ));
 
       // Показываем индикатор загрузки Wave 2
       emit(SalesDashboardLoadingSecondary(
-        salesDashboardTopPart: salesDashboardTopResponse ?? DashboardTopPart(result: null, errors: null),
+        salesDashboardTopPart: salesDashboardTopResponse ??
+            DashboardTopPart(result: null, errors: null),
         topSellingData: topSellingData ?? [],
-        illiquidGoodsData: illiquidGoodsData ?? IlliquidGoodsResponse(result: null, errors: null),
-        graphErrors: graphErrors,
+        illiquidGoodsData: illiquidGoodsData ??
+            IlliquidGoodsResponse(result: null, errors: null),
+        graphErrors: Map<String, String>.from(graphErrors),
       ));
+
+      List<AllSalesDynamicsData>? salesData;
+      List<AllNetProfitData>? netProfitData;
+      List<AllOrdersData>? orderDashboardData;
+      List<AllExpensesData>? expenseStructureData;
+      List<AllProfitabilityData>? profitabilityData;
+      final fullGraphErrors = Map<String, String>.from(graphErrors);
+      final loadedChartKeys = <String>{};
+      final chartFutures = [
+        _loadChartData(
+          'salesDynamics',
+          () => apiService.getSalesDynamics(),
+        ),
+        _loadChartData(
+          'netProfit',
+          () => apiService.getNetProfitData(),
+        ),
+        _loadChartData(
+          'profitability',
+          () => apiService.getProfitability(),
+        ),
+        _loadChartData(
+          'expenseStructure',
+          () => apiService.getExpenseStructure(),
+        ),
+        _loadChartData(
+          'orderDashboard',
+          () => apiService.getOrderDashboard(),
+        ),
+      ];
+
+      await for (final result in Stream.fromFutures(chartFutures)) {
+        loadedChartKeys.add(result.key);
+        if (result.data == null) {
+          fullGraphErrors[result.key] = 'Ошибка загрузки';
+        } else {
+          switch (result.key) {
+            case 'salesDynamics':
+              salesData = result.data as List<AllSalesDynamicsData>;
+              break;
+            case 'netProfit':
+              netProfitData = result.data as List<AllNetProfitData>;
+              break;
+            case 'profitability':
+              profitabilityData = result.data as List<AllProfitabilityData>;
+              break;
+            case 'expenseStructure':
+              expenseStructureData = result.data as List<AllExpensesData>;
+              break;
+            case 'orderDashboard':
+              orderDashboardData = result.data as List<AllOrdersData>;
+              break;
+          }
+        }
+
+        emit(SalesDashboardLoadingSecondary(
+          salesDashboardTopPart: salesDashboardTopResponse ??
+              DashboardTopPart(result: null, errors: null),
+          topSellingData: topSellingData ?? [],
+          illiquidGoodsData: illiquidGoodsData ??
+              IlliquidGoodsResponse(result: null, errors: null),
+          salesData: salesData,
+          netProfitData: netProfitData,
+          orderDashboardData: orderDashboardData,
+          expenseStructureData: expenseStructureData,
+          profitabilityData: profitabilityData,
+          loadedChartKeys: Set<String>.from(loadedChartKeys),
+          graphErrors: Map<String, String>.from(fullGraphErrors),
+        ));
+      }
 
       debugPrint("✅ Wave 2: Secondary data loaded (some may have failed)");
 
       // Показываем все данные
       emit(SalesDashboardFullyLoaded(
-        salesDashboardTopPart: salesDashboardTopResponse ?? DashboardTopPart(result: null, errors: null),
+        salesDashboardTopPart: salesDashboardTopResponse ??
+            DashboardTopPart(result: null, errors: null),
         topSellingData: topSellingData ?? [],
-        illiquidGoodsData: illiquidGoodsData ?? IlliquidGoodsResponse(result: null, errors: null),
+        illiquidGoodsData: illiquidGoodsData ??
+            IlliquidGoodsResponse(result: null, errors: null),
         netProfitData: netProfitData ?? [],
         orderDashboardData: orderDashboardData ?? [],
         expenseStructureData: expenseStructureData ?? [],
         profitabilityData: profitabilityData ?? [],
         salesData: salesData ?? [],
-        graphErrors: graphErrors,
+        graphErrors: fullGraphErrors,
       ));
     });
 
@@ -134,7 +200,8 @@ class SalesDashboardBloc extends Bloc<SalesDashboardEvent, SalesDashboardState> 
       ));
 
       // Helper function to safely load data and catch errors
-      Future<T?> safeLoad<T>(Future<T> Function() loader, String errorKey) async {
+      Future<T?> safeLoad<T>(
+          Future<T> Function() loader, String errorKey) async {
         try {
           return await loader();
         } catch (e) {
@@ -160,11 +227,21 @@ class SalesDashboardBloc extends Bloc<SalesDashboardEvent, SalesDashboardState> 
 
       // Merge errors with existing ones
       final graphErrors = Map<String, String>.from(currentState.graphErrors);
-      if (netProfitData == null) graphErrors['netProfit'] = 'Ошибка загрузки';
-      if (orderDashboardData == null) graphErrors['orderDashboard'] = 'Ошибка загрузки';
-      if (expenseStructureData == null) graphErrors['expenseStructure'] = 'Ошибка загрузки';
-      if (profitabilityData == null) graphErrors['profitability'] = 'Ошибка загрузки';
-      if (salesData == null) graphErrors['salesDynamics'] = 'Ошибка загрузки';
+      if (netProfitData == null) {
+        graphErrors['netProfit'] = 'Ошибка загрузки';
+      }
+      if (orderDashboardData == null) {
+        graphErrors['orderDashboard'] = 'Ошибка загрузки';
+      }
+      if (expenseStructureData == null) {
+        graphErrors['expenseStructure'] = 'Ошибка загрузки';
+      }
+      if (profitabilityData == null) {
+        graphErrors['profitability'] = 'Ошибка загрузки';
+      }
+      if (salesData == null) {
+        graphErrors['salesDynamics'] = 'Ошибка загрузки';
+      }
 
       debugPrint("✅ Wave 2: Secondary data loaded (some may have failed)");
 
@@ -199,21 +276,23 @@ class SalesDashboardBloc extends Bloc<SalesDashboardEvent, SalesDashboardState> 
 
     // Reload top selling data for specific period
     on<ReloadTopSellingData>((event, emit) async {
-      debugPrint("🔄 Reloading top selling data for period: ${event.period.name}");
-      
+      debugPrint(
+          "🔄 Reloading top selling data for period: ${event.period.name}");
+
       try {
         final currentState = state;
-        
+
         // Загружаем данные для нового периода
-        final newPeriodData = await apiService.getTopSellingGoodsForPeriod(event.period);
-        
+        final newPeriodData =
+            await apiService.getTopSellingGoodsForPeriod(event.period);
+
         // Обновляем в зависимости от текущего состояния
         if (currentState is SalesDashboardFullyLoaded) {
           final updatedTopSellingData = _updateTopSellingData(
-            currentState.topSellingData, 
+            currentState.topSellingData,
             newPeriodData,
           );
-          
+
           emit(SalesDashboardFullyLoaded(
             salesDashboardTopPart: currentState.salesDashboardTopPart,
             topSellingData: updatedTopSellingData,
@@ -226,10 +305,10 @@ class SalesDashboardBloc extends Bloc<SalesDashboardEvent, SalesDashboardState> 
           ));
         } else if (currentState is SalesDashboardPriorityLoaded) {
           final updatedTopSellingData = _updateTopSellingData(
-            currentState.topSellingData, 
+            currentState.topSellingData,
             newPeriodData,
           );
-          
+
           emit(SalesDashboardPriorityLoaded(
             salesDashboardTopPart: currentState.salesDashboardTopPart,
             topSellingData: updatedTopSellingData,
@@ -237,10 +316,10 @@ class SalesDashboardBloc extends Bloc<SalesDashboardEvent, SalesDashboardState> 
           ));
         } else if (currentState is SalesDashboardLoaded) {
           final updatedTopSellingData = _updateTopSellingData(
-            currentState.topSellingData, 
+            currentState.topSellingData,
             newPeriodData,
           );
-          
+
           emit(SalesDashboardLoaded(
             salesDashboardTopPart: currentState.salesDashboardTopPart,
             salesData: currentState.salesData,
@@ -252,31 +331,35 @@ class SalesDashboardBloc extends Bloc<SalesDashboardEvent, SalesDashboardState> 
             illiquidGoodsData: currentState.illiquidGoodsData,
           ));
         }
-        
-        debugPrint("✅ Top selling data reloaded for period: ${event.period.name}");
+
+        debugPrint(
+            "✅ Top selling data reloaded for period: ${event.period.name}");
       } catch (e) {
-        debugPrint("❌ Error reloading top selling data for period ${event.period.name}: $e");
+        debugPrint(
+            "❌ Error reloading top selling data for period ${event.period.name}: $e");
         // Не показываем ошибку пользователю, просто логируем
       }
     });
 
     // Reload sales dynamics data for specific period
     on<ReloadSalesDynamicsData>((event, emit) async {
-      debugPrint("🔄 Reloading sales dynamics data for period: ${event.period.name}");
-      
+      debugPrint(
+          "🔄 Reloading sales dynamics data for period: ${event.period.name}");
+
       try {
         final currentState = state;
-        
+
         // Загружаем данные для нового периода
-        final newPeriodData = await apiService.getSalesDynamicsForPeriod(event.period);
-        
+        final newPeriodData =
+            await apiService.getSalesDynamicsForPeriod(event.period);
+
         // Обновляем только если состояние SalesDashboardFullyLoaded
         if (currentState is SalesDashboardFullyLoaded) {
           final updatedSalesDynamicsData = _updateSalesDynamicsData(
-            currentState.salesData, 
+            currentState.salesData,
             newPeriodData,
           );
-          
+
           emit(SalesDashboardFullyLoaded(
             salesDashboardTopPart: currentState.salesDashboardTopPart,
             topSellingData: currentState.topSellingData,
@@ -288,31 +371,35 @@ class SalesDashboardBloc extends Bloc<SalesDashboardEvent, SalesDashboardState> 
             profitabilityData: currentState.profitabilityData,
           ));
         }
-        
-        debugPrint("✅ Sales dynamics data reloaded for period: ${event.period.name}");
+
+        debugPrint(
+            "✅ Sales dynamics data reloaded for period: ${event.period.name}");
       } catch (e) {
-        debugPrint("❌ Error reloading sales dynamics data for period ${event.period.name}: $e");
+        debugPrint(
+            "❌ Error reloading sales dynamics data for period ${event.period.name}: $e");
         // Не показываем ошибку пользователю, просто логируем
       }
     });
 
     // Reload profitability data for specific period
     on<ReloadProfitabilityData>((event, emit) async {
-      debugPrint("🔄 Reloading profitability data for period: ${event.period.name}");
-      
+      debugPrint(
+          "🔄 Reloading profitability data for period: ${event.period.name}");
+
       try {
         final currentState = state;
-        
+
         // Загружаем данные для нового периода
-        final newPeriodData = await apiService.getProfitabilityForPeriod(event.period);
-        
+        final newPeriodData =
+            await apiService.getProfitabilityForPeriod(event.period);
+
         // Обновляем только если состояние SalesDashboardFullyLoaded
         if (currentState is SalesDashboardFullyLoaded) {
           final updatedProfitabilityData = _updateProfitabilityData(
-            currentState.profitabilityData, 
+            currentState.profitabilityData,
             newPeriodData,
           );
-          
+
           emit(SalesDashboardFullyLoaded(
             salesDashboardTopPart: currentState.salesDashboardTopPart,
             topSellingData: currentState.topSellingData,
@@ -324,31 +411,35 @@ class SalesDashboardBloc extends Bloc<SalesDashboardEvent, SalesDashboardState> 
             profitabilityData: updatedProfitabilityData,
           ));
         }
-        
-        debugPrint("✅ Profitability data reloaded for period: ${event.period.name}");
+
+        debugPrint(
+            "✅ Profitability data reloaded for period: ${event.period.name}");
       } catch (e) {
-        debugPrint("❌ Error reloading profitability data for period ${event.period.name}: $e");
+        debugPrint(
+            "❌ Error reloading profitability data for period ${event.period.name}: $e");
         // Не показываем ошибку пользователю, просто логируем
       }
     });
 
     // Reload order quantity data for specific period
     on<ReloadOrderQuantityData>((event, emit) async {
-      debugPrint("🔄 Reloading order quantity data for period: ${event.period.name}");
-      
+      debugPrint(
+          "🔄 Reloading order quantity data for period: ${event.period.name}");
+
       try {
         final currentState = state;
-        
+
         // Загружаем данные для нового периода
-        final newPeriodData = await apiService.getOrderDashboardForPeriod(event.period);
-        
+        final newPeriodData =
+            await apiService.getOrderDashboardForPeriod(event.period);
+
         // Обновляем только если состояние SalesDashboardFullyLoaded
         if (currentState is SalesDashboardFullyLoaded) {
           final updatedOrderDashboardData = _updateOrderDashboardData(
-            currentState.orderDashboardData, 
+            currentState.orderDashboardData,
             newPeriodData,
           );
-          
+
           emit(SalesDashboardFullyLoaded(
             salesDashboardTopPart: currentState.salesDashboardTopPart,
             topSellingData: currentState.topSellingData,
@@ -360,31 +451,35 @@ class SalesDashboardBloc extends Bloc<SalesDashboardEvent, SalesDashboardState> 
             profitabilityData: currentState.profitabilityData,
           ));
         }
-        
-        debugPrint("✅ Order quantity data reloaded for period: ${event.period.name}");
+
+        debugPrint(
+            "✅ Order quantity data reloaded for period: ${event.period.name}");
       } catch (e) {
-        debugPrint("❌ Error reloading order quantity data for period ${event.period.name}: $e");
+        debugPrint(
+            "❌ Error reloading order quantity data for period ${event.period.name}: $e");
         // Не показываем ошибку пользователю, просто логируем
       }
     });
 
     // Reload net profit data for specific period
     on<ReloadNetProfitData>((event, emit) async {
-      debugPrint("🔄 Reloading net profit data for period: ${event.period.name}");
-      
+      debugPrint(
+          "🔄 Reloading net profit data for period: ${event.period.name}");
+
       try {
         final currentState = state;
-        
+
         // Загружаем данные для нового периода
-        final newPeriodData = await apiService.getNetProfitDataForPeriod(event.period);
-        
+        final newPeriodData =
+            await apiService.getNetProfitDataForPeriod(event.period);
+
         // Обновляем только если состояние SalesDashboardFullyLoaded
         if (currentState is SalesDashboardFullyLoaded) {
           final updatedNetProfitData = _updateNetProfitData(
-            currentState.netProfitData, 
+            currentState.netProfitData,
             newPeriodData,
           );
-          
+
           emit(SalesDashboardFullyLoaded(
             salesDashboardTopPart: currentState.salesDashboardTopPart,
             topSellingData: currentState.topSellingData,
@@ -396,31 +491,35 @@ class SalesDashboardBloc extends Bloc<SalesDashboardEvent, SalesDashboardState> 
             profitabilityData: currentState.profitabilityData,
           ));
         }
-        
-        debugPrint("✅ Net profit data reloaded for period: ${event.period.name}");
+
+        debugPrint(
+            "✅ Net profit data reloaded for period: ${event.period.name}");
       } catch (e) {
-        debugPrint("❌ Error reloading net profit data for period ${event.period.name}: $e");
+        debugPrint(
+            "❌ Error reloading net profit data for period ${event.period.name}: $e");
         // Не показываем ошибку пользователю, просто логируем
       }
     });
 
     // Reload expense structure data for specific period
     on<ReloadExpenseStructureData>((event, emit) async {
-      debugPrint("🔄 Reloading expense structure data for period: ${event.period.name}");
-      
+      debugPrint(
+          "🔄 Reloading expense structure data for period: ${event.period.name}");
+
       try {
         final currentState = state;
-        
+
         // Загружаем данные для нового периода
-        final newPeriodData = await apiService.getExpenseStructureForPeriod(event.period);
-        
+        final newPeriodData =
+            await apiService.getExpenseStructureForPeriod(event.period);
+
         // Обновляем только если состояние SalesDashboardFullyLoaded
         if (currentState is SalesDashboardFullyLoaded) {
           final updatedExpenseStructureData = _updateExpenseStructureData(
-            currentState.expenseStructureData, 
+            currentState.expenseStructureData,
             newPeriodData,
           );
-          
+
           emit(SalesDashboardFullyLoaded(
             salesDashboardTopPart: currentState.salesDashboardTopPart,
             topSellingData: currentState.topSellingData,
@@ -432,10 +531,12 @@ class SalesDashboardBloc extends Bloc<SalesDashboardEvent, SalesDashboardState> 
             profitabilityData: currentState.profitabilityData,
           ));
         }
-        
-        debugPrint("✅ Expense structure data reloaded for period: ${event.period.name}");
+
+        debugPrint(
+            "✅ Expense structure data reloaded for period: ${event.period.name}");
       } catch (e) {
-        debugPrint("❌ Error reloading expense structure data for period ${event.period.name}: $e");
+        debugPrint(
+            "❌ Error reloading expense structure data for period ${event.period.name}: $e");
         // Не показываем ошибку пользователю, просто логируем
       }
     });
@@ -444,14 +545,27 @@ class SalesDashboardBloc extends Bloc<SalesDashboardEvent, SalesDashboardState> 
     add(LoadPriorityData());
   }
 
+  Future<_DashboardChartLoadResult> _loadChartData(
+    String key,
+    Future<Object?> Function() loader,
+  ) async {
+    try {
+      return _DashboardChartLoadResult(key, await loader());
+    } catch (e) {
+      debugPrint("❌ Error loading $key: $e");
+      return _DashboardChartLoadResult(key, null);
+    }
+  }
+
   /// Обновляет список topSellingData новыми данными для периода
   List<AllTopSellingData> _updateTopSellingData(
     List<AllTopSellingData> currentData,
     AllTopSellingData newData,
   ) {
     final updatedList = [...currentData];
-    final index = updatedList.indexWhere((item) => item.period == newData.period);
-    
+    final index =
+        updatedList.indexWhere((item) => item.period == newData.period);
+
     if (index != -1) {
       // Заменяем существующие данные
       updatedList[index] = newData;
@@ -459,7 +573,7 @@ class SalesDashboardBloc extends Bloc<SalesDashboardEvent, SalesDashboardState> 
       // Добавляем новые данные
       updatedList.add(newData);
     }
-    
+
     return updatedList;
   }
 
@@ -469,8 +583,9 @@ class SalesDashboardBloc extends Bloc<SalesDashboardEvent, SalesDashboardState> 
     AllSalesDynamicsData newData,
   ) {
     final updatedList = [...currentData];
-    final index = updatedList.indexWhere((item) => item.period == newData.period);
-    
+    final index =
+        updatedList.indexWhere((item) => item.period == newData.period);
+
     if (index != -1) {
       // Заменяем существующие данные
       updatedList[index] = newData;
@@ -478,7 +593,7 @@ class SalesDashboardBloc extends Bloc<SalesDashboardEvent, SalesDashboardState> 
       // Добавляем новые данные
       updatedList.add(newData);
     }
-    
+
     return updatedList;
   }
 
@@ -488,8 +603,9 @@ class SalesDashboardBloc extends Bloc<SalesDashboardEvent, SalesDashboardState> 
     AllProfitabilityData newData,
   ) {
     final updatedList = [...currentData];
-    final index = updatedList.indexWhere((item) => item.period == newData.period);
-    
+    final index =
+        updatedList.indexWhere((item) => item.period == newData.period);
+
     if (index != -1) {
       // Заменяем существующие данные
       updatedList[index] = newData;
@@ -497,7 +613,7 @@ class SalesDashboardBloc extends Bloc<SalesDashboardEvent, SalesDashboardState> 
       // Добавляем новые данные
       updatedList.add(newData);
     }
-    
+
     return updatedList;
   }
 
@@ -507,8 +623,9 @@ class SalesDashboardBloc extends Bloc<SalesDashboardEvent, SalesDashboardState> 
     AllOrdersData newData,
   ) {
     final updatedList = [...currentData];
-    final index = updatedList.indexWhere((item) => item.period == newData.period);
-    
+    final index =
+        updatedList.indexWhere((item) => item.period == newData.period);
+
     if (index != -1) {
       // Заменяем существующие данные
       updatedList[index] = newData;
@@ -516,7 +633,7 @@ class SalesDashboardBloc extends Bloc<SalesDashboardEvent, SalesDashboardState> 
       // Добавляем новые данные
       updatedList.add(newData);
     }
-    
+
     return updatedList;
   }
 
@@ -526,8 +643,9 @@ class SalesDashboardBloc extends Bloc<SalesDashboardEvent, SalesDashboardState> 
     AllNetProfitData newData,
   ) {
     final updatedList = [...currentData];
-    final index = updatedList.indexWhere((item) => item.period == newData.period);
-    
+    final index =
+        updatedList.indexWhere((item) => item.period == newData.period);
+
     if (index != -1) {
       // Заменяем существующие данные
       updatedList[index] = newData;
@@ -535,7 +653,7 @@ class SalesDashboardBloc extends Bloc<SalesDashboardEvent, SalesDashboardState> 
       // Добавляем новые данные
       updatedList.add(newData);
     }
-    
+
     return updatedList;
   }
 
@@ -545,8 +663,9 @@ class SalesDashboardBloc extends Bloc<SalesDashboardEvent, SalesDashboardState> 
     AllExpensesData newData,
   ) {
     final updatedList = [...currentData];
-    final index = updatedList.indexWhere((item) => item.period == newData.period);
-    
+    final index =
+        updatedList.indexWhere((item) => item.period == newData.period);
+
     if (index != -1) {
       // Заменяем существующие данные
       updatedList[index] = newData;
@@ -554,7 +673,14 @@ class SalesDashboardBloc extends Bloc<SalesDashboardEvent, SalesDashboardState> 
       // Добавляем новые данные
       updatedList.add(newData);
     }
-    
+
     return updatedList;
   }
+}
+
+class _DashboardChartLoadResult {
+  final String key;
+  final Object? data;
+
+  const _DashboardChartLoadResult(this.key, this.data);
 }

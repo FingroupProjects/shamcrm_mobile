@@ -43,6 +43,8 @@ import 'package:crm_task_manager/screens/lead/tabBar/lead_edit_screen.dart';
 import 'package:crm_task_manager/screens/common/reason_for_refusal_modal.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_details_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/screens/sip/sip_service.dart';
+import 'package:crm_task_manager/screens/sip/sip_state.dart';
 import 'package:crm_task_manager/utils/TutorialStyleWidget.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/material.dart';
@@ -183,6 +185,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
   bool _canReadDeal = false;
   bool _canExportContact = false;
   bool _canReadOrders = true;
+  bool _canReadSip = false;
   bool _isExportContactEnabled = false;
   bool _isDownloading = false;
   Map<int, double> _downloadProgress = {};
@@ -645,6 +648,9 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
     final canReadDeal = await _apiService.hasPermission('deal.read');
     final canExportContact = await _apiService.hasPermission('lead.create');
     final canReadOrder = await _apiService.hasPermission('order.read');
+    final permissions = await _apiService.getPermissions();
+    final canReadSip = permissions.contains('sip.read') ||
+        !permissions.any((permission) => permission.startsWith('sip.'));
 
     setState(() {
       _canEditLead = canEdit;
@@ -653,6 +659,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       _canReadDeal = canReadDeal;
       _canExportContact = canExportContact;
       _canReadOrders = canReadOrder;
+      _canReadSip = canReadSip;
       _isExportContactEnabled = prefs.getBool('switchContact') ?? false;
     });
   }
@@ -1837,7 +1844,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           GestureDetector(
-            onTap: () => _makePhoneCall(value),
+            onTap: () => _handlePhoneTap(value),
             child: Text(
               value,
               style: TextStyle(
@@ -2018,7 +2025,120 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
     }
   }
 
-  Future<void> _makePhoneCall(String phoneNumber) async {
+  Future<void> _handlePhoneTap(String phoneNumber) async {
+    if (!_canReadSip) {
+      await _makeSystemPhoneCall(phoneNumber);
+      return;
+    }
+
+    await _showCallMethodSheet(phoneNumber);
+  }
+
+  Future<void> _showCallMethodSheet(String phoneNumber) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 44,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: const Color(0xffD7DEE9),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                ListTile(
+                  leading:
+                      const Icon(Icons.phone_in_talk, color: Color(0xff1E2E52)),
+                  title: const Text(
+                    'SHAM',
+                    style: TextStyle(
+                      fontFamily: 'Gilroy',
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xff1E2E52),
+                    ),
+                  ),
+                  subtitle: Text(
+                    phoneNumber,
+                    style: const TextStyle(
+                      fontFamily: 'Gilroy',
+                      fontSize: 14,
+                      color: Color(0xff99A4BA),
+                    ),
+                  ),
+                  onTap: () {
+                    Navigator.pop(sheetContext);
+                    _makeShamPhoneCall(phoneNumber);
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.call, color: Color(0xff1E2E52)),
+                  title: Text(
+                    AppLocalizations.of(context)!
+                        .translate('call_via_phone_number'),
+                    style: const TextStyle(
+                      fontFamily: 'Gilroy',
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xff1E2E52),
+                    ),
+                  ),
+                  subtitle: Text(
+                    phoneNumber,
+                    style: const TextStyle(
+                      fontFamily: 'Gilroy',
+                      fontSize: 14,
+                      color: Color(0xff99A4BA),
+                    ),
+                  ),
+                  onTap: () {
+                    Navigator.pop(sheetContext);
+                    _makeSystemPhoneCall(phoneNumber);
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _makeShamPhoneCall(String phoneNumber) async {
+    final sipService = SipService();
+    if (sipService.state.registrationStatus !=
+        SipRegistrationUiStatus.registered) {
+      showCustomSnackBar(
+        context: context,
+        message: AppLocalizations.of(context)!.translate('sip_not_connected'),
+        isSuccess: false,
+      );
+      return;
+    }
+
+    await sipService.makeCallTo(phoneNumber);
+    final errorMessage = sipService.state.errorMessage;
+    if (errorMessage != null && errorMessage.isNotEmpty && mounted) {
+      showCustomSnackBar(
+        context: context,
+        message: errorMessage,
+        isSuccess: false,
+      );
+    }
+  }
+
+  Future<void> _makeSystemPhoneCall(String phoneNumber) async {
     final Uri launchUri = Uri(
       scheme: 'tel',
       path: phoneNumber,

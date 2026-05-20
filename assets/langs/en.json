@@ -2069,6 +2069,8 @@
   "sip_welcome_subtitle": "Connect your SIP account and get a modern calling interface directly inside CRM.",
   "sip_enter_dialer": "Enter SIP",
   "sip_add_number_hint": "Add number",
+  "sip_not_connected": "SIP is not connected",
+  "call_via_phone_number": "Phone number",
   "sip_journal_empty": "Call journal is empty",
   "analytics_chart_load_failed": "Failed to load chart data. Please try again later.",
   "analytics_chart_settings_error": "Failed to load chart settings.",

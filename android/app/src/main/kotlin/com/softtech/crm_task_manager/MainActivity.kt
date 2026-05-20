@@ -855,7 +855,8 @@ class MainActivity : FlutterFragmentActivity() {
             val widgetProviders = listOf(
                 ShamCRMWidgetProvider::class.java,
                 ReferencesWidgetProvider::class.java,
-                AccountingWidgetProvider::class.java
+                AccountingWidgetProvider::class.java,
+                RmkWidgetProvider::class.java
             )
             
             widgetProviders.forEach { provider ->

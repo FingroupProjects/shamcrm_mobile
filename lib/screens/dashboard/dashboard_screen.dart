@@ -58,13 +58,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 
 import '../../models/page_2/dashboard/dashboard_top.dart';
-import '../../models/page_2/dashboard/expense_structure.dart';
 import '../../models/page_2/dashboard/illiquids_model.dart';
-import '../../models/page_2/dashboard/net_profit_model.dart';
-import '../../models/page_2/dashboard/order_dashboard_model.dart';
-import '../../models/page_2/dashboard/profitability_dashboard_model.dart';
-import '../../models/page_2/dashboard/sales_model.dart';
-import '../../models/page_2/dashboard/top_selling_model.dart';
 import '../../page_2/dashboard/widgets/charts/profitability_chart.dart';
 import '../../page_2/dashboard/widgets/dialogs/dialog_cash_balance_info.dart';
 import '../../page_2/dashboard/widgets/dialogs/dialog_debtors_info.dart';
@@ -790,6 +784,44 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
+  Widget _buildAccountingLoadingCharts() {
+    return const Column(
+      children: [
+        ChartSkeleton(height: 300, title: 'Топ продаваемых товаров'),
+        SizedBox(height: 16),
+        ChartSkeleton(height: 300, title: 'Динамика продаж'),
+        SizedBox(height: 16),
+        ChartSkeleton(height: 300, title: 'Чистая прибыль'),
+        SizedBox(height: 16),
+        ChartSkeleton(height: 300, title: 'Рентабельность'),
+        SizedBox(height: 16),
+        ChartSkeleton(height: 300, title: 'Структура расходов'),
+        SizedBox(height: 16),
+        ChartSkeleton(height: 300, title: 'Количество заказов'),
+        SizedBox(height: 16),
+      ],
+    );
+  }
+
+  Widget _buildAccountingChartSlot({
+    required bool isLoaded,
+    required String title,
+    required String graphKey,
+    required Map<String, String> graphErrors,
+    required Widget Function() chartBuilder,
+  }) {
+    if (!isLoaded) {
+      return ChartSkeleton(height: 300, title: title);
+    }
+
+    final errorMessage = graphErrors[graphKey];
+    if (errorMessage != null) {
+      return ChartErrorWidget(title: title, errorMessage: errorMessage);
+    }
+
+    return chartBuilder();
+  }
+
   List<Widget> _buildAccountingDashboard() {
     return [
       BlocConsumer<SalesDashboardBloc, SalesDashboardState>(
@@ -805,12 +837,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         builder: (context, state) {
           // Initial loading state
           if (state is SalesDashboardLoading) {
-            return const Center(
-              child: PlayStoreImageLoading(
-                size: 80.0,
-                duration: Duration(milliseconds: 1000),
-              ),
-            );
+            return _buildAccountingLoadingCharts();
           }
 
           // Wave 1 loaded - show priority data
@@ -832,13 +859,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
                 const SizedBox(height: 16),
 
-                // Fade-in animation for Wave 1 charts
-                _FadeInWidget(
-                  child: state.graphErrors.containsKey('topSelling')
-                      ? ChartErrorWidget(
-                          errorMessage: state.graphErrors['topSelling'])
-                      : TopSellingProductsChart(state.topSellingData),
-                ),
+                state.graphErrors.containsKey('topSelling')
+                    ? ChartErrorWidget(
+                        title: 'Топ продаваемых товаров',
+                        errorMessage: state.graphErrors['topSelling'],
+                      )
+                    : TopSellingProductsChart(state.topSellingData),
                 const SizedBox(height: 16),
 
                 // Wave 2 skeletons - loading
@@ -874,19 +900,59 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                 ),
                 const SizedBox(height: 16),
-                TopSellingProductsChart(state.topSellingData),
+                state.graphErrors.containsKey('topSelling')
+                    ? ChartErrorWidget(
+                        title: 'Топ продаваемых товаров',
+                        errorMessage: state.graphErrors['topSelling'],
+                      )
+                    : TopSellingProductsChart(state.topSellingData),
                 const SizedBox(height: 16),
 
-                // Wave 2 loading indicators
-                const ChartSkeleton(height: 300, title: 'Динамика продаж'),
+                _buildAccountingChartSlot(
+                  isLoaded: state.loadedChartKeys.contains('salesDynamics'),
+                  title: 'Динамика продаж',
+                  graphKey: 'salesDynamics',
+                  graphErrors: state.graphErrors,
+                  chartBuilder: () =>
+                      SalesDynamicsLineChart(state.salesData ?? []),
+                ),
                 const SizedBox(height: 16),
-                const ChartSkeleton(height: 300, title: 'Чистая прибыль'),
+                _buildAccountingChartSlot(
+                  isLoaded: state.loadedChartKeys.contains('netProfit'),
+                  title: 'Чистая прибыль',
+                  graphKey: 'netProfit',
+                  graphErrors: state.graphErrors,
+                  chartBuilder: () => NetProfitChart(state.netProfitData ?? []),
+                ),
                 const SizedBox(height: 16),
-                const ChartSkeleton(height: 300, title: 'Рентабельность'),
+                _buildAccountingChartSlot(
+                  isLoaded: state.loadedChartKeys.contains('profitability'),
+                  title: 'Рентабельность',
+                  graphKey: 'profitability',
+                  graphErrors: state.graphErrors,
+                  chartBuilder: () => ProfitabilityChart(
+                    profitabilityData: state.profitabilityData ?? [],
+                  ),
+                ),
                 const SizedBox(height: 16),
-                const ChartSkeleton(height: 300, title: 'Структура расходов'),
+                _buildAccountingChartSlot(
+                  isLoaded: state.loadedChartKeys.contains('expenseStructure'),
+                  title: 'Структура расходов',
+                  graphKey: 'expenseStructure',
+                  graphErrors: state.graphErrors,
+                  chartBuilder: () =>
+                      ExpenseStructureChart(state.expenseStructureData ?? []),
+                ),
                 const SizedBox(height: 16),
-                const ChartSkeleton(height: 300, title: 'Количество заказов'),
+                _buildAccountingChartSlot(
+                  isLoaded: state.loadedChartKeys.contains('orderDashboard'),
+                  title: 'Количество заказов',
+                  graphKey: 'orderDashboard',
+                  graphErrors: state.graphErrors,
+                  chartBuilder: () => OrderQuantityChart(
+                    orderDashboardData: state.orderDashboardData ?? [],
+                  ),
+                ),
                 const SizedBox(height: 16),
               ],
             );
@@ -912,55 +978,47 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 const SizedBox(height: 16),
                 state.graphErrors.containsKey('topSelling')
                     ? ChartErrorWidget(
-                        errorMessage: state.graphErrors['topSelling'])
+                        title: 'Топ продаваемых товаров',
+                        errorMessage: state.graphErrors['topSelling'],
+                      )
                     : TopSellingProductsChart(state.topSellingData),
                 const SizedBox(height: 16),
-
-                // Wave 2 data with fade-in animation
-                _FadeInWidget(
-                  child: state.graphErrors.containsKey('salesDynamics')
-                      ? ChartErrorWidget(
-                          errorMessage: state.graphErrors['salesDynamics'])
-                      : SalesDynamicsLineChart(state.salesData),
-                ),
+                state.graphErrors.containsKey('salesDynamics')
+                    ? ChartErrorWidget(
+                        title: 'Динамика продаж',
+                        errorMessage: state.graphErrors['salesDynamics'],
+                      )
+                    : SalesDynamicsLineChart(state.salesData),
                 const SizedBox(height: 16),
-
-                _FadeInWidget(
-                  delay: const Duration(milliseconds: 100),
-                  child: state.graphErrors.containsKey('netProfit')
-                      ? ChartErrorWidget(
-                          errorMessage: state.graphErrors['netProfit'])
-                      : NetProfitChart(state.netProfitData),
-                ),
+                state.graphErrors.containsKey('netProfit')
+                    ? ChartErrorWidget(
+                        title: 'Чистая прибыль',
+                        errorMessage: state.graphErrors['netProfit'],
+                      )
+                    : NetProfitChart(state.netProfitData),
                 const SizedBox(height: 16),
-
-                _FadeInWidget(
-                  delay: const Duration(milliseconds: 200),
-                  child: state.graphErrors.containsKey('profitability')
-                      ? ChartErrorWidget(
-                          errorMessage: state.graphErrors['profitability'])
-                      : ProfitabilityChart(
-                          profitabilityData: state.profitabilityData),
-                ),
+                state.graphErrors.containsKey('profitability')
+                    ? ChartErrorWidget(
+                        title: 'Рентабельность',
+                        errorMessage: state.graphErrors['profitability'],
+                      )
+                    : ProfitabilityChart(
+                        profitabilityData: state.profitabilityData),
                 const SizedBox(height: 16),
-
-                _FadeInWidget(
-                  delay: const Duration(milliseconds: 300),
-                  child: state.graphErrors.containsKey('expenseStructure')
-                      ? ChartErrorWidget(
-                          errorMessage: state.graphErrors['expenseStructure'])
-                      : ExpenseStructureChart(state.expenseStructureData),
-                ),
+                state.graphErrors.containsKey('expenseStructure')
+                    ? ChartErrorWidget(
+                        title: 'Структура расходов',
+                        errorMessage: state.graphErrors['expenseStructure'],
+                      )
+                    : ExpenseStructureChart(state.expenseStructureData),
                 const SizedBox(height: 16),
-
-                _FadeInWidget(
-                  delay: const Duration(milliseconds: 400),
-                  child: state.graphErrors.containsKey('orderDashboard')
-                      ? ChartErrorWidget(
-                          errorMessage: state.graphErrors['orderDashboard'])
-                      : OrderQuantityChart(
-                          orderDashboardData: state.orderDashboardData),
-                ),
+                state.graphErrors.containsKey('orderDashboard')
+                    ? ChartErrorWidget(
+                        title: 'Количество заказов',
+                        errorMessage: state.graphErrors['orderDashboard'],
+                      )
+                    : OrderQuantityChart(
+                        orderDashboardData: state.orderDashboardData),
                 const SizedBox(height: 16),
               ],
             );
@@ -1247,61 +1305,6 @@ class TopPart extends StatelessWidget {
           ],
         ),
       ],
-    );
-  }
-}
-
-/// Widget with fade-in animation
-class _FadeInWidget extends StatefulWidget {
-  final Widget child;
-  final Duration delay;
-
-  const _FadeInWidget({
-    required this.child,
-    this.delay = Duration.zero,
-  });
-
-  @override
-  State<_FadeInWidget> createState() => _FadeInWidgetState();
-}
-
-class _FadeInWidgetState extends State<_FadeInWidget>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _animation;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      duration: const Duration(milliseconds: 500),
-      vsync: this,
-    );
-
-    _animation = CurvedAnimation(
-      parent: _controller,
-      curve: Curves.easeIn,
-    );
-
-    // Start animation after delay
-    Future.delayed(widget.delay, () {
-      if (mounted) {
-        _controller.forward();
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return FadeTransition(
-      opacity: _animation,
-      child: widget.child,
     );
   }
 }

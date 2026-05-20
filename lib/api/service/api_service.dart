@@ -2632,8 +2632,11 @@ class ApiService {
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
       if (data['result']['data'] != null) {
-        debugPrint("getLeadsResponse: $data", wrapWidth: 999999);
-        return (data['result']['data'] as List)
+        final leadsData = data['result']['data'] as List;
+        if (kDebugMode) {
+          debugPrint('ApiService: getLeads loaded ${leadsData.length} leads');
+        }
+        return leadsData
             .map((json) => Lead.fromJson(json, leadStatusId ?? -1))
             .toList();
       } else {
@@ -14726,6 +14729,36 @@ class ApiService {
             message ?? 'Неизвестная ошибка при создании документа',
             response.statusCode);
       }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>> createRmkSale({
+    required Map<String, dynamic> payload,
+  }) async {
+    try {
+      final token = await getToken();
+      if (token == null) throw 'Токен не найден';
+
+      final path = await _appendQueryParams('/rmk/sales');
+      final response = await _postRequest(path, payload);
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        if (response.body.isEmpty) {
+          return {'success': true};
+        }
+        final decoded = json.decode(response.body);
+        return decoded is Map<String, dynamic>
+            ? decoded
+            : {'success': true, 'result': decoded};
+      }
+
+      final message = _extractErrorMessageFromResponse(response);
+      throw ApiException(
+        message ?? 'Неизвестная ошибка при создании продажи РМК',
+        response.statusCode,
+      );
     } catch (e) {
       rethrow;
     }

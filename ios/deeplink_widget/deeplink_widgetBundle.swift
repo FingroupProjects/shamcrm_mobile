@@ -14,5 +14,6 @@ struct deeplink_widgetBundle: WidgetBundle {
         deeplink_widget()
         accounting_widget()
         references_widget()
+        rmk_widget()
     }
 }
