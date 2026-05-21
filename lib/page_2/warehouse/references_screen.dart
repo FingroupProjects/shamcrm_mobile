@@ -15,13 +15,18 @@ import 'package:crm_task_manager/screens/profile/languages/app_localizations.dar
 import 'package:crm_task_manager/screens/profile/profile_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:crm_task_manager/screens/lead/lead_screen.dart';
+import 'package:reorderables/reorderables.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ReferencesScreen extends StatefulWidget {
+  const ReferencesScreen({super.key});
+
   @override
-  _ReferencesScreenState createState() => _ReferencesScreenState();
+  State<ReferencesScreen> createState() => _ReferencesScreenState();
 }
 
 class _ReferencesScreenState extends State<ReferencesScreen> {
+  static const String _referenceOrderPrefsKey = 'warehouse_reference_order';
   final ApiService _apiService = ApiService();
   bool isClickAvatarIcon = false;
   bool _isLoading = true;
@@ -70,10 +75,11 @@ class _ReferencesScreenState extends State<ReferencesScreen> {
       _hasCashRegister = await _apiService.hasPermission('cash_register.read');
       _hasRkoArticle = await _apiService.hasPermission('rko_article.read');
       _hasPkoArticle = await _apiService.hasPermission('pko_article.read');
-      _hasCategory = await _apiService.hasPermission('category.read'); // Проверка права для категорий
+      _hasCategory = await _apiService
+          .hasPermission('category.read'); // Проверка права для категорий
       _hasLead = await _apiService.hasPermission('lead.read');
-      _hasOpenings = await _apiService.hasPermission('initial_balance.read'); // TODO: Проверить правильное имя права
-
+      _hasOpenings = await _apiService.hasPermission(
+          'initial_balance.read'); // TODO: Проверить правильное имя права
     } catch (e) {
       debugPrint('Ошибка при проверке прав доступа: $e');
       _hasStorage = false;
@@ -103,7 +109,9 @@ class _ReferencesScreenState extends State<ReferencesScreen> {
     if (_hasStorage) {
       allReferences.add(
         ReferenceItem(
-          title: AppLocalizations.of(context)!.translate('warehouse') ?? 'Склад',
+          keyName: 'warehouse',
+          title:
+              AppLocalizations.of(context)!.translate('warehouse') ?? 'Склад',
           icon: Icons.warehouse_outlined,
           color: refColor,
         ),
@@ -113,7 +121,10 @@ class _ReferencesScreenState extends State<ReferencesScreen> {
     if (_hasUnit) {
       allReferences.add(
         ReferenceItem(
-          title: AppLocalizations.of(context)!.translate('units_of_measurement') ?? 'Единицы измерения',
+          keyName: 'unit',
+          title:
+              AppLocalizations.of(context)!.translate('units_of_measurement') ??
+                  'Единицы измерения',
           icon: Icons.straighten_outlined,
           color: refColor,
         ),
@@ -123,7 +134,9 @@ class _ReferencesScreenState extends State<ReferencesScreen> {
     if (_hasSupplier) {
       allReferences.add(
         ReferenceItem(
-          title: AppLocalizations.of(context)!.translate('supplier') ?? 'Поставщик',
+          keyName: 'supplier',
+          title: AppLocalizations.of(context)!.translate('supplier') ??
+              'Поставщик',
           icon: Icons.business_outlined,
           color: refColor,
         ),
@@ -133,6 +146,7 @@ class _ReferencesScreenState extends State<ReferencesScreen> {
     if (_hasProduct) {
       allReferences.add(
         ReferenceItem(
+          keyName: 'product',
           title: AppLocalizations.of(context)!.translate('product') ?? 'Товар',
           icon: Icons.inventory_2_outlined,
           color: refColor,
@@ -143,7 +157,9 @@ class _ReferencesScreenState extends State<ReferencesScreen> {
     if (_hasCategory) {
       allReferences.add(
         ReferenceItem(
-          title: AppLocalizations.of(context)!.translate('appbar_categories') ?? 'Категории',
+          keyName: 'category',
+          title: AppLocalizations.of(context)!.translate('appbar_categories') ??
+              'Категории',
           icon: Icons.category_outlined,
           color: refColor,
         ),
@@ -153,7 +169,9 @@ class _ReferencesScreenState extends State<ReferencesScreen> {
     if (_hasPriceType) {
       allReferences.add(
         ReferenceItem(
-          title: AppLocalizations.of(context)!.translate('price_type') ?? 'Тип цены',
+          keyName: 'price_type',
+          title: AppLocalizations.of(context)!.translate('price_type') ??
+              'Тип цены',
           icon: Icons.price_change_outlined,
           color: refColor,
         ),
@@ -163,7 +181,9 @@ class _ReferencesScreenState extends State<ReferencesScreen> {
     if (_hasCashRegister) {
       allReferences.add(
         ReferenceItem(
-          title: AppLocalizations.of(context)!.translate('cash_desk') ?? 'Касса',
+          keyName: 'cash_register',
+          title:
+              AppLocalizations.of(context)!.translate('cash_desk') ?? 'Касса',
           icon: Icons.account_balance_wallet,
           color: refColor,
         ),
@@ -173,7 +193,9 @@ class _ReferencesScreenState extends State<ReferencesScreen> {
     if (_hasRkoArticle) {
       allReferences.add(
         ReferenceItem(
-          title: AppLocalizations.of(context)!.translate('expense_articles') ?? 'Статьи расходов',
+          keyName: 'rko_article',
+          title: AppLocalizations.of(context)!.translate('expense_articles') ??
+              'Статьи расходов',
           icon: Icons.trending_down,
           color: refColor,
         ),
@@ -183,7 +205,9 @@ class _ReferencesScreenState extends State<ReferencesScreen> {
     if (_hasPkoArticle) {
       allReferences.add(
         ReferenceItem(
-          title: AppLocalizations.of(context)!.translate('income_articles') ?? 'Статьи доходов',
+          keyName: 'pko_article',
+          title: AppLocalizations.of(context)!.translate('income_articles') ??
+              'Статьи доходов',
           icon: Icons.trending_up,
           color: refColor,
         ),
@@ -193,7 +217,9 @@ class _ReferencesScreenState extends State<ReferencesScreen> {
     if (_hasLead) {
       allReferences.add(
         ReferenceItem(
-          title: AppLocalizations.of(context)!.translate('clients') ?? 'Клиенты',
+          keyName: 'clients',
+          title:
+              AppLocalizations.of(context)!.translate('clients') ?? 'Клиенты',
           icon: Icons.person_outline,
           color: refColor,
         ),
@@ -203,7 +229,9 @@ class _ReferencesScreenState extends State<ReferencesScreen> {
     if (_hasOpenings) {
       allReferences.add(
         ReferenceItem(
-          title: AppLocalizations.of(context)!.translate('openings') ?? 'Первоначальный остаток',
+          keyName: 'openings',
+          title: AppLocalizations.of(context)!.translate('openings') ??
+              'Первоначальный остаток',
           icon: Icons.account_balance_outlined,
           color: refColor,
         ),
@@ -213,60 +241,87 @@ class _ReferencesScreenState extends State<ReferencesScreen> {
     setState(() {
       _references = allReferences;
     });
+    _applySavedReferenceOrder(allReferences);
+  }
+
+  Future<void> _applySavedReferenceOrder(List<ReferenceItem> references) async {
+    final prefs = await SharedPreferences.getInstance();
+    final savedOrder = prefs.getStringList(_referenceOrderPrefsKey) ?? const [];
+    final byKey = {
+      for (final reference in references) reference.keyName: reference
+    };
+    final ordered = <ReferenceItem>[
+      for (final key in savedOrder)
+        if (byKey.containsKey(key)) byKey.remove(key)!,
+      ...references.where((reference) => byKey.containsKey(reference.keyName)),
+    ];
+
+    if (!mounted) return;
+    setState(() {
+      _references = ordered;
+    });
+  }
+
+  Future<void> _saveReferenceOrder() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(
+      _referenceOrderPrefsKey,
+      _references.map((reference) => reference.keyName).toList(),
+    );
   }
 
   void _navigateToReference(ReferenceItem reference) {
-    if (reference.title == (AppLocalizations.of(context)!.translate('supplier') ?? 'Поставщик')) {
+    if (reference.keyName == 'supplier') {
       Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => const SupplierCreen()),
       );
-    } else if (reference.title == (AppLocalizations.of(context)!.translate('warehouse') ?? 'Склад')) {
+    } else if (reference.keyName == 'warehouse') {
       Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => WareHouseScreen()),
       );
-    } else if (reference.title == (AppLocalizations.of(context)!.translate('units_of_measurement') ?? 'Единицы измерения')) {
+    } else if (reference.keyName == 'unit') {
       Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => const MeasureUnitsScreen()),
       );
-    } else if (reference.title == (AppLocalizations.of(context)!.translate('product') ?? 'Товар')) {
+    } else if (reference.keyName == 'product') {
       Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => GoodsScreen()),
       );
-    } else if (reference.title == (AppLocalizations.of(context)!.translate('appbar_categories') ?? 'Категории')) {
+    } else if (reference.keyName == 'category') {
       Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => CategoryScreen()),
       );
-    } else if (reference.title == (AppLocalizations.of(context)!.translate('price_type') ?? 'Тип цены')) {
+    } else if (reference.keyName == 'price_type') {
       Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => PriceTypeScreen()),
       );
-    } else if (reference.title == (AppLocalizations.of(context)!.translate('cash_desk') ?? 'Касса')) {
+    } else if (reference.keyName == 'cash_register') {
       Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => CashDeskScreen()),
       );
-    } else if (reference.title == (AppLocalizations.of(context)!.translate('expense_articles') ?? 'Статьи расходов')) {
+    } else if (reference.keyName == 'rko_article') {
       Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => ExpenseScreen()),
       );
-    } else if (reference.title == (AppLocalizations.of(context)!.translate('income_articles') ?? 'Статьи доходов')) {
+    } else if (reference.keyName == 'pko_article') {
       Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => IncomeScreen()),
       );
-    } else if (reference.title == (AppLocalizations.of(context)!.translate('clients') ?? 'Клиенты')) {
+    } else if (reference.keyName == 'clients') {
       Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => LeadScreen()),
       );
-    } else if (reference.title == (AppLocalizations.of(context)!.translate('openings') ?? 'Первоначальный остаток')) {
+    } else if (reference.keyName == 'openings') {
       Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => const OpeningsScreen()),
@@ -374,20 +429,33 @@ class _ReferencesScreenState extends State<ReferencesScreen> {
           childAspectRatio = 1.0;
         }
 
-        return  GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: crossAxisCount,
-            childAspectRatio: childAspectRatio,
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
-          ),
+        const spacing = 12.0;
+        final itemWidth =
+            (constraints.maxWidth - 32 - (spacing * (crossAxisCount - 1))) /
+                crossAxisCount;
+        final itemHeight = itemWidth / childAspectRatio;
+
+        return ReorderableWrap(
+          spacing: spacing,
+          runSpacing: spacing,
           padding: const EdgeInsets.all(16),
-          itemCount: _references.length,
-          itemBuilder: (context, index) {
-            return _buildReferenceCard(_references[index]);
+          needsLongPressDraggable: true,
+          onReorder: (oldIndex, newIndex) {
+            setState(() {
+              final item = _references.removeAt(oldIndex);
+              _references.insert(newIndex, item);
+            });
+            _saveReferenceOrder();
           },
+          children: [
+            for (final reference in _references)
+              SizedBox(
+                key: ValueKey(reference.keyName),
+                width: itemWidth,
+                height: itemHeight,
+                child: _buildReferenceCard(reference),
+              ),
+          ],
         );
       },
     );
@@ -407,7 +475,8 @@ class _ReferencesScreenState extends State<ReferencesScreen> {
             ),
             const SizedBox(height: 24),
             Text(
-              AppLocalizations.of(context)!.translate('no_permissions') ?? 'Нет доступа',
+              AppLocalizations.of(context)!.translate('no_permissions') ??
+                  'Нет доступа',
               style: const TextStyle(
                 fontSize: 20,
                 fontFamily: 'Gilroy',
@@ -417,7 +486,8 @@ class _ReferencesScreenState extends State<ReferencesScreen> {
             ),
             const SizedBox(height: 12),
             Text(
-              AppLocalizations.of(context)!.translate('no_permissions_description') ??
+              AppLocalizations.of(context)!
+                      .translate('no_permissions_description') ??
                   'У вас нет прав доступа к справочникам. Обратитесь к администратору.',
               textAlign: TextAlign.center,
               style: const TextStyle(
@@ -463,37 +533,39 @@ class _ReferencesScreenState extends State<ReferencesScreen> {
       body: isClickAvatarIcon
           ? ProfileScreen()
           : _isLoading
-          ? const Center(
-        child: PlayStoreImageLoading(
-          size: 80.0,
-          duration: Duration(milliseconds: 1000),
-        ),
-      )
-          : _references.isEmpty
-          ? _buildNoPermissionsWidget()
-          : Container(
-        color: const Color(0xffF8F9FB),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: SingleChildScrollView(
-                child: _buildReferencesLayout(),
-              ),
-            ),
-          ],
-        ),
-      ),
+              ? const Center(
+                  child: PlayStoreImageLoading(
+                    size: 80.0,
+                    duration: Duration(milliseconds: 1000),
+                  ),
+                )
+              : _references.isEmpty
+                  ? _buildNoPermissionsWidget()
+                  : Container(
+                      color: const Color(0xffF8F9FB),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: SingleChildScrollView(
+                              child: _buildReferencesLayout(),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
     );
   }
 }
 
 class ReferenceItem {
+  final String keyName;
   final String title;
   final IconData icon;
   final Color color;
 
   ReferenceItem({
+    required this.keyName,
     required this.title,
     required this.icon,
     required this.color,

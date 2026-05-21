@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class WidgetService {
   static const platform = MethodChannel('com.softtech.crm_task_manager/widget');
+  static const _pendingScreenKey = 'pending_widget_screen';
   static bool _isInitialized = false;
 
   // Callback для навигации (Android формат: group + screenIndex) - legacy
@@ -29,20 +30,29 @@ class WidgetService {
     platform.setMethodCallHandler(_handleMethodCall);
     debugPrint('WidgetService: MethodCallHandler set');
     
-    // Check for pending navigation from Android (cold start scenario)
-    _checkAndroidPendingNavigation();
+    // Check for pending navigation from native/SharedPreferences (cold start scenario)
+    _checkPendingNavigation();
   }
   
-  /// Check if Android has pending navigation stored (for cold start)
-  static Future<void> _checkAndroidPendingNavigation() async {
-    debugPrint('WidgetService: === _checkAndroidPendingNavigation() ===');
-    debugPrint('WidgetService: Platform.isAndroid = ${Platform.isAndroid}');
-    
-    if (!Platform.isAndroid) {
-      debugPrint('WidgetService: Not Android, skipping');
-      return;
+  /// Check if native side has pending navigation stored (for cold start).
+  static Future<void> _checkPendingNavigation() async {
+    debugPrint('WidgetService: === _checkPendingNavigation() ===');
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final localPendingScreen = prefs.getString(_pendingScreenKey);
+
+      if (localPendingScreen != null && localPendingScreen.isNotEmpty) {
+        debugPrint(
+          'WidgetService: Storing pending navigation from SharedPreferences: $localPendingScreen',
+        );
+        _pendingScreenNavigation = localPendingScreen;
+        return;
+      }
+    } catch (e) {
+      debugPrint('WidgetService: Error reading local pending navigation: $e');
     }
-    
+
     try {
       debugPrint('WidgetService: Calling getPendingNavigation on native...');
       final pendingScreen = await platform.invokeMethod<String>('getPendingNavigation');
@@ -51,6 +61,7 @@ class WidgetService {
       if (pendingScreen != null && pendingScreen.isNotEmpty) {
         debugPrint('WidgetService: Storing pending navigation: $pendingScreen');
         _pendingScreenNavigation = pendingScreen;
+        await _persistPendingNavigation(pendingScreen);
       } else {
         debugPrint('WidgetService: No pending navigation from native');
       }
@@ -59,6 +70,24 @@ class WidgetService {
     }
     
     debugPrint('WidgetService: _pendingScreenNavigation = $_pendingScreenNavigation');
+  }
+
+  static Future<void> _persistPendingNavigation(String screenIdentifier) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_pendingScreenKey, screenIdentifier);
+    } catch (e) {
+      debugPrint('WidgetService: Error persisting pending navigation: $e');
+    }
+  }
+
+  static Future<void> _clearPersistedPendingNavigation() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_pendingScreenKey);
+    } catch (e) {
+      debugPrint('WidgetService: Error clearing pending navigation: $e');
+    }
   }
 
   static Future<void> _handleMethodCall(MethodCall call) async {
@@ -100,6 +129,7 @@ class WidgetService {
           // Store for later when HomeScreen is ready
           debugPrint('WidgetService: Callback is NULL, storing for later');
           _pendingScreenNavigation = screenIdentifier;
+          await _persistPendingNavigation(screenIdentifier);
           debugPrint('WidgetService: Stored pending navigation: $screenIdentifier');
         }
       } else {
@@ -115,6 +145,7 @@ class WidgetService {
     
     final pending = _pendingScreenNavigation;
     _pendingScreenNavigation = null;
+    _clearPersistedPendingNavigation();
     
     if (pending != null) {
       debugPrint('WidgetService: Consuming and returning: $pending');

@@ -32,26 +32,44 @@ struct rmk_widgetEntryView: View {
     var body: some View {
         Link(destination: URL(string: "shamcrm://widget?screen=rmk")!) {
             ZStack {
-                Color(red: 0.12, green: 0.18, blue: 0.32)
+                Color(red: 0.10, green: 0.17, blue: 0.31)
 
-                VStack(spacing: 8) {
-                    ZStack {
-                        RoundedRectangle(cornerRadius: 18)
-                            .fill(Color.white.opacity(0.14))
-                            .frame(width: 58, height: 58)
-
-                        Image(systemName: "cash.register")
-                            .font(.system(size: 30, weight: .semibold))
-                            .foregroundColor(.white)
+                VStack(spacing: 12) {
+                    HStack {
+                        Image("ic_logo")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 30, height: 30)
+                            .clipShape(RoundedRectangle(cornerRadius: 7))
+                        Spacer()
                     }
+                    .padding(.horizontal, 4)
 
-                    Text("RMK")
-                        .font(.system(size: 18, weight: .bold))
-                        .foregroundColor(.white)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.8)
+                    Spacer(minLength: 0)
+
+                    VStack(spacing: 6) {
+                        Text("RMK")
+                            .font(.system(size: 34, weight: .black, design: .rounded))
+                            .foregroundColor(.white)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.75)
+
+                        HStack(spacing: 4) {
+                            Circle()
+                                .fill(Color(red: 0.20, green: 0.78, blue: 0.53))
+                                .frame(width: 7, height: 7)
+
+                            Text("Касса")
+                                .font(.system(size: 13, weight: .semibold))
+                                .foregroundColor(.white.opacity(0.82))
+                                .lineLimit(1)
+                        }
+                    }
+                    .frame(maxWidth: .infinity)
+
+                    Spacer(minLength: 0)
                 }
-                .padding(10)
+                .padding(14)
             }
         }
     }
@@ -63,7 +81,7 @@ struct rmk_widget: Widget {
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: kind, provider: RmkProvider()) { entry in
             rmk_widgetEntryView(entry: entry)
-                .containerBackground(Color(red: 0.12, green: 0.18, blue: 0.32), for: .widget)
+                .containerBackground(Color(red: 0.10, green: 0.17, blue: 0.31), for: .widget)
         }
         .configurationDisplayName("shamCRM RMK")
         .description("Быстрый вход в RMK")

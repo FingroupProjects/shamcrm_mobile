@@ -26,6 +26,7 @@ class ClientSalesDocumentDetailsScreen extends StatefulWidget {
   final int documentId;
   final String docNumber;
   final VoidCallback? onDocumentUpdated;
+  final bool isRmk;
   // НОВОЕ: Параметры прав доступа
   final bool hasUpdatePermission;
   final bool hasDeletePermission;
@@ -34,6 +35,7 @@ class ClientSalesDocumentDetailsScreen extends StatefulWidget {
     required this.documentId,
     required this.docNumber,
     this.onDocumentUpdated,
+    this.isRmk = false,
     this.hasUpdatePermission = false,
     this.hasDeletePermission = false,
     super.key,
@@ -114,7 +116,9 @@ class _ClientSalesDocumentDetailsScreenState
       _isLoading = true;
     });
     try {
-      final document = await _apiService.getClienSalesById(widget.documentId);
+      final document = widget.isRmk
+          ? await _apiService.getRmkSaleById(widget.documentId)
+          : await _apiService.getClienSalesById(widget.documentId);
       setState(() {
         currentDocument = document;
         _updateDetails(document);
@@ -560,6 +564,9 @@ class _ClientSalesDocumentDetailsScreenState
     // ИЗМЕНЕНО: showActions с правами
     final showActions = currentDocument?.deletedAt == null &&
         (widget.hasUpdatePermission || widget.hasDeletePermission);
+    final titlePrefix = widget.isRmk
+        ? 'Продажа РМК'
+        : AppLocalizations.of(context)!.translate('client_sale');
 
     return AppBar(
       backgroundColor: Colors.white,
@@ -584,7 +591,7 @@ class _ClientSalesDocumentDetailsScreenState
       title: Transform.translate(
         offset: const Offset(-10, 0),
         child: Text(
-          "${AppLocalizations.of(context)!.translate('client_sale') ?? 'Продажа'} №${widget.docNumber}",
+          "$titlePrefix №${widget.docNumber}",
           style: const TextStyle(
             fontSize: 20,
             fontFamily: 'Gilroy',

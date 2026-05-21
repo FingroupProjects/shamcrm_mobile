@@ -154,7 +154,7 @@
                        android:resource="@xml/references_widget_info" />
                         </receiver>
 
-<!-- ВИДЖЕТ RMK 1x1 -->
+<!-- ВИДЖЕТ RMK -->
 
          <receiver
              android:name=".RmkWidgetProvider"

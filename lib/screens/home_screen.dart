@@ -15,6 +15,7 @@ import 'package:crm_task_manager/page_2/money/money_references/cash_desk/cash_de
 import 'package:crm_task_manager/page_2/money/money_references/expense/expense_screen.dart';
 import 'package:crm_task_manager/page_2/money/money_references/income/income_screen.dart';
 import 'package:crm_task_manager/page_2/rmk/rmk_screen.dart';
+import 'package:crm_task_manager/page_2/rmk/rmk_sales_screen.dart';
 import 'package:crm_task_manager/page_2/warehouse/client_return/client_return_screen.dart';
 import 'package:crm_task_manager/page_2/warehouse/client_sale/client_sales_screen.dart';
 import 'package:crm_task_manager/page_2/warehouse/incoming/incoming_screen.dart';
@@ -276,6 +277,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     // Handle accounting document screen identifiers
     final accountingScreenIdentifiers = [
       'rmk',
+      'rmk_sales',
       'client_sale',
       'client_return',
       'income_goods',
@@ -448,6 +450,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           switch (screenIdentifier) {
             case 'rmk':
               targetScreen = const RmkScreen();
+              break;
+            case 'rmk_sales':
+              targetScreen = const RmkSalesScreen();
               break;
             case 'client_sale':
               targetScreen = ClientSaleScreen();

@@ -12,6 +12,7 @@ import WidgetKit
     private var nativeSipManager: IOSNativeSipManager?
 
     private let appGroupId = "group.com.softtech.crmTaskManager"
+    private let pendingWidgetScreenKey = "flutter.pending_widget_screen"
     private let networkMonitor = NWPathMonitor()
     private let networkQueue = DispatchQueue(label: "NetworkMonitor")
 
@@ -61,6 +62,8 @@ import WidgetKit
                 self.handleSyncPermissions(call: call, result: result)
             case "syncLanguageToWidget":
                 self.handleSyncLanguage(call: call, result: result)
+            case "getPendingNavigation":
+                self.handleGetPendingNavigation(result: result)
             default:
                 result(FlutterMethodNotImplemented)
             }
@@ -103,6 +106,12 @@ import WidgetKit
         result(true)
     }
 
+    private func handleGetPendingNavigation(result: @escaping FlutterResult) {
+        let screen = UserDefaults.standard.string(forKey: pendingWidgetScreenKey)
+        UserDefaults.standard.removeObject(forKey: pendingWidgetScreenKey)
+        result(screen)
+    }
+
     private func handleSyncLanguage(call: FlutterMethodCall, result: @escaping FlutterResult) {
         guard
             let args = call.arguments as? [String: Any],
@@ -135,6 +144,8 @@ import WidgetKit
         else {
             return false
         }
+
+        UserDefaults.standard.set(screen, forKey: pendingWidgetScreenKey)
 
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
             self?.widgetMethodChannel?.invokeMethod(

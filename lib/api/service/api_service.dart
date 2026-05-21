@@ -14741,7 +14741,7 @@ class ApiService {
       final token = await getToken();
       if (token == null) throw 'Токен не найден';
 
-      final path = await _appendQueryParams('/rmk/sales');
+      final path = await _appendQueryParams('/rmk-documents');
       final response = await _postRequest(path, payload);
 
       if (response.statusCode == 200 || response.statusCode == 201) {
@@ -14762,6 +14762,66 @@ class ApiService {
     } catch (e) {
       rethrow;
     }
+  }
+
+  Future<expense.ExpenseResponse> getRmkSales({
+    int page = 1,
+    int perPage = 20,
+    String? query,
+    DateTime? dateFrom,
+    DateTime? dateTo,
+    int? approved,
+    int? deleted,
+    int? storageId,
+  }) async {
+    var url = '/rmk-documents?page=$page&per_page=$perPage';
+    if (query != null && query.isNotEmpty) { 
+      url += '&search=$query'; 
+    }
+    if (dateFrom != null) {
+      url += '&date_from=${dateFrom.toIso8601String()}';
+    }
+    if (dateTo != null) {
+      url += '&date_to=${dateTo.toIso8601String()}';
+    }
+    if (approved != null) {
+      url += '&approved=$approved';
+    }
+    if (deleted != null) {
+      url += '&deleted=$deleted';
+    }
+    if (storageId != null) {
+      url += '&storage_id=$storageId';
+    }
+
+    final path = await _appendQueryParams(url);
+    final response = await _getRequest(path);
+    if (response.statusCode == 200) {
+      final decoded = json.decode(response.body);
+      final rawResult = decoded['result'];
+      final rawData = rawResult is Map<String, dynamic>
+          ? rawResult
+          : {'data': rawResult ?? const [], 'pagination': null};
+      return expense.ExpenseResponse.fromJson(rawData);
+    }
+
+    final message = _extractErrorMessageFromResponse(response);
+    throw ApiException(
+      message ?? 'Ошибка загрузки продаж РМК',
+      response.statusCode,
+    );
+  }
+
+  Future<expDoc.ExpenseDocumentDetail> getRmkSaleById(int documentId) async {
+    final path = await _appendQueryParams('/rmk-documents/$documentId');
+    final response = await _getRequest(path);
+    if (response.statusCode == 200) {
+      final rawData = json.decode(response.body)['result'];
+      return expDoc.ExpenseDocumentDetail.fromJson(rawData);
+    }
+
+    final message = _extractErrorMessageFromResponse(response);
+    throw ApiException(message ?? 'Ошибка сервера', response.statusCode);
   }
 
   //deleteClientSaleDocument

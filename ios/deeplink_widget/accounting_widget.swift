@@ -16,6 +16,7 @@ struct AccountingWidgetLocalizations {
     // Supported languages: ru, uz, en
     static let translations: [String: [String: String]] = [
         "ru": [
+            "rmk": "РМК",
             "client_sale": "Продажа",
             "client_return": "Возврат от клиента",
             "income_goods": "Приход товаров",
@@ -28,6 +29,7 @@ struct AccountingWidgetLocalizations {
             "login_prompt": "Войдите в приложение"
         ],
         "uz": [
+            "rmk": "RMK",
             "client_sale": "Mijozga realizatsiya",
             "client_return": "Mijozdan qaytish",
             "income_goods": "Tovar tushumi",
@@ -40,6 +42,7 @@ struct AccountingWidgetLocalizations {
             "login_prompt": "Ilovaga kiring"
         ],
         "en": [
+            "rmk": "RMK",
             "client_sale": "Client sale",
             "client_return": "Client return",
             "income_goods": "Goods receipt",
@@ -132,9 +135,15 @@ struct SimpleAccountingEntry: TimelineEntry {
 struct accounting_widgetEntryView : View {
     var entry: AccountingProvider.Entry
     
-    // All 8 accounting buttons with their permissions
+    // Accounting buttons with their permissions
     var allButtons: [AccountingButtonData] {
         return [
+            AccountingButtonData(
+                icon: "creditcard",
+                labelKey: "rmk",
+                screenIdentifier: "rmk",
+                requiredPermission: "expense_document.read"
+            ),
             AccountingButtonData(
                 icon: "cart",
                 labelKey: "client_sale",
@@ -354,4 +363,3 @@ struct accounting_widget: Widget {
         "checking_account_rko.read"
     ], language: "ru")
 }
-
