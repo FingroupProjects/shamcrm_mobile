@@ -427,7 +427,7 @@ Future<SessionValidationResult> _validateApplicationSession(
       String? qrDomain = qrData['domain'];
       String? qrMainDomain = qrData['mainDomain'];
 
-      if (qrDomain == null ||
+      if (qrDomain == null || 
           qrDomain.isEmpty ||
           qrMainDomain == null ||
           qrMainDomain.isEmpty) {

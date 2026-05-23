@@ -29,7 +29,7 @@ class RmkRepository {
 
   Stream<List<RmkGood>> watchGoods({
     String query = '',
-    int? categoryId,
+    Set<int>? categoryIds,
   }) {
     final normalizedQuery = _normalize(query);
     final statement = _db.select(_db.rmkGoods)
@@ -41,8 +41,8 @@ class RmkRepository {
       );
     }
 
-    if (categoryId != null) {
-      statement.where((tbl) => tbl.categoryId.equals(categoryId));
+    if (categoryIds != null && categoryIds.isNotEmpty) {
+      statement.where((tbl) => tbl.categoryId.isIn(categoryIds.toList()));
     }
 
     statement.orderBy([
@@ -109,6 +109,10 @@ class RmkRepository {
   Future<RmkSaleSubmitResult> submitSale(
     List<RmkCartItem> items, {
     required int storageId,
+    required String paymentMode,
+    required String? paymentMethod,
+    required double paidAmount,
+    required double debtAmount,
   }) async {
     if (items.isEmpty) {
       return const RmkSaleSubmitResult(sentToServer: false, savedLocal: false);
@@ -121,6 +125,10 @@ class RmkRepository {
       createdAt: now,
       items: items,
       storageId: storageId,
+      paymentMode: paymentMode,
+      paymentMethod: paymentMethod,
+      paidAmount: paidAmount,
+      debtAmount: debtAmount,
     );
 
     await _db.into(_db.rmkOutboxSales).insert(
@@ -137,11 +145,12 @@ class RmkRepository {
     try {
       await _apiService.createRmkSale(payload: payload);
       await _markSaleSynced(saleId);
+      await _deductSoldGoodsFromCache(items);
       await clearCart();
+      unawaited(_refreshSoldGoodsFromServer(items, storageId: storageId));
       return const RmkSaleSubmitResult(sentToServer: true, savedLocal: true);
     } catch (error) {
       await _markSalePending(saleId, error.toString());
-      await clearCart();
       return RmkSaleSubmitResult(
         sentToServer: false,
         savedLocal: true,
@@ -154,11 +163,147 @@ class RmkRepository {
     List<RmkCartItem> items, {
     required int storageId,
   }) async {
-    await submitSale(items, storageId: storageId);
+    final total = items.fold<double>(
+      0,
+      (sum, item) => sum + (item.customTotal ?? item.quantity * item.price),
+    );
+    await submitSale(
+      items,
+      storageId: storageId,
+      paymentMode: 'payment',
+      paymentMethod: 'cash',
+      paidAmount: total,
+      debtAmount: 0,
+    );
   }
 
   Future<List<WareHouse>> getStorages() {
     return _apiService.getStorage();
+  }
+
+  Future<void> _deductSoldGoodsFromCache(List<RmkCartItem> items) async {
+    if (items.isEmpty) return;
+
+    final now = DateTime.now();
+    await _db.transaction(() async {
+      for (final item in items) {
+        final good = await (_db.select(_db.rmkGoods)
+              ..where((tbl) => tbl.id.equals(item.goodId)))
+            .getSingleOrNull();
+        if (good == null) continue;
+
+        final newQuantity = (good.quantity - item.quantity)
+            .clamp(0, double.infinity)
+            .toDouble();
+        await (_db.update(_db.rmkGoods)
+              ..where((tbl) => tbl.id.equals(item.goodId)))
+            .write(
+          RmkGoodsCompanion(
+            quantity: Value(newQuantity),
+            payload:
+                Value(_goodsPayloadWithQuantity(good.payload, newQuantity)),
+            localUpdatedAt: Value(now),
+          ),
+        );
+      }
+    });
+  }
+
+  Future<void> _refreshSoldGoodsFromServer(
+    List<RmkCartItem> items, {
+    required int storageId,
+  }) async {
+    final ids = items.map((item) => item.goodId).toSet();
+    for (final id in ids) {
+      try {
+        await refreshGoodForStorage(variantId: id, storageId: storageId);
+      } catch (_) {
+        // Local deduction is already applied; the next catalog sync will fix it.
+      }
+    }
+  }
+
+  Future<RmkGood?> refreshGoodForStorage({
+    required int variantId,
+    required int storageId,
+  }) async {
+    var page = 1;
+    while (true) {
+      final response = await _apiService.getVariants(
+        page: page,
+        perPage: _syncPageSize,
+        filters: {'storage_id': storageId},
+      );
+      final variants = response.data;
+      if (variants.isEmpty) return null;
+
+      final variant =
+          variants.where((item) => item.id == variantId).firstOrNull;
+      if (variant != null) {
+        await _saveGoods([variant], page: page);
+        return (_db.select(_db.rmkGoods)
+              ..where((tbl) => tbl.id.equals(variantId)))
+            .getSingleOrNull();
+      }
+
+      if (page >= response.pagination.totalPages ||
+          variants.length < _syncPageSize) {
+        return null;
+      }
+      page += 1;
+    }
+  }
+
+  Future<RmkGood?> findGoodByBarcode(
+    String barcode, {
+    required int storageId,
+  }) async {
+    final normalizedBarcode = barcode.trim();
+    if (normalizedBarcode.isEmpty) return null;
+
+    final cachedGoods = await (_db.select(_db.rmkGoods)
+          ..where((tbl) => tbl.isDeleted.equals(false)))
+        .get();
+    for (final good in cachedGoods) {
+      try {
+        final payload = jsonDecode(good.payload);
+        if (payload is Map<String, dynamic> &&
+            payload['barcode']?.toString() == normalizedBarcode) {
+          return good;
+        }
+      } catch (_) {
+        // Ignore malformed legacy payloads.
+      }
+    }
+
+    var page = 1;
+    while (true) {
+      final response = await _apiService.getVariants(
+        page: page,
+        perPage: _syncPageSize,
+        search: normalizedBarcode,
+        filters: {'storage_id': storageId},
+      );
+      final variants = response.data;
+      if (variants.isEmpty) return null;
+
+      final exactMatch = variants
+          .where((variant) => variant.barcode == normalizedBarcode)
+          .firstOrNull;
+      final match = exactMatch ?? variants.firstOrNull;
+      if (match != null) {
+        await _saveGoods([match], page: page);
+        return (_db.select(_db.rmkGoods)
+              ..where((tbl) => tbl.id.equals(match.id)))
+            .getSingleOrNull();
+      }
+
+      if (page >= response.pagination.totalPages ||
+          variants.length < _syncPageSize) {
+        return null;
+      }
+      page += 1;
+    }
   }
 
   Future<void> syncInBackground({
@@ -217,6 +362,10 @@ class RmkRepository {
     required DateTime createdAt,
     required List<RmkCartItem> items,
     required int storageId,
+    required String paymentMode,
+    required String? paymentMethod,
+    required double paidAmount,
+    required double debtAmount,
   }) async {
     final saleItems = await Future.wait(items.map((item) async {
       final total = item.customTotal ?? item.quantity * item.price;
@@ -238,7 +387,7 @@ class RmkRepository {
       fallback: 1,
     );
 
-    return {
+    final payload = {
       'date': createdAt.toUtc().toIso8601String(),
       'storage_id': storageId,
       'comment': 'RMK',
@@ -246,8 +395,15 @@ class RmkRepository {
       'document_goods': saleItems,
       'organization_id': organizationId,
       'sales_funnel_id': salesFunnelId,
+      'payment_mode': paymentMode,
+      'paid_amount': paidAmount,
+      'debt_amount': debtAmount,
       'approve': true,
     };
+    if (paymentMethod != null) {
+      payload['payment_type'] = paymentMethod;
+    }
+    return payload;
   }
 
   Future<int> _requiredUnitIdForCartItem(RmkCartItem item) async {
@@ -601,6 +757,7 @@ class RmkRepository {
       'id': variant.id,
       'variant_id': variant.id,
       'good_id': variant.goodId,
+      'barcode': variant.barcode,
       'name': variant.fullName ?? good?.name,
       'article': good?.article,
       'category_id': good?.category.id,
@@ -622,6 +779,20 @@ class RmkRepository {
           .toList(),
       'image_url': good?.mainImageUrl,
     });
+  }
+
+  String _goodsPayloadWithQuantity(String payload, double quantity) {
+    try {
+      final decoded = jsonDecode(payload);
+      if (decoded is Map<String, dynamic>) {
+        decoded['quantity'] = quantity;
+        decoded['remainder'] = quantity;
+        return jsonEncode(decoded);
+      }
+    } catch (_) {
+      // Keep the original payload if legacy cached data is malformed.
+    }
+    return payload;
   }
 
   String _goodsLookupPayload(Goods good) {
@@ -676,6 +847,25 @@ class RmkRepository {
 
   static String _normalize(String value) {
     return value.toLowerCase().trim().replaceAll(RegExp(r'\s+'), ' ');
+  }
+
+  static Set<int> categoryIdsIncludingDescendants(
+    int categoryId,
+    List<RmkCategory> categories,
+  ) {
+    final ids = <int>{categoryId};
+
+    void collectChildren(int parentId) {
+      for (final category in categories) {
+        if (category.parentId == parentId) {
+          ids.add(category.id);
+          collectChildren(category.id);
+        }
+      }
+    }
+
+    collectChildren(categoryId);
+    return ids;
   }
 }
 

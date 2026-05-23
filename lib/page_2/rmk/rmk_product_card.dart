@@ -18,14 +18,16 @@ class RmkProductCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Material(
       color: Colors.white,
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(12),
       child: InkWell(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(12),
+        splashColor: const Color(0xff1E2E52).withValues(alpha: 0.05),
+        highlightColor: const Color(0xff1E2E52).withValues(alpha: 0.03),
         onTap: onTap,
         child: DecoratedBox(
           decoration: BoxDecoration(
-            border: Border.all(color: const Color(0xffE2E7F0)),
-            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: const Color(0xffE5EAF2)),
+            borderRadius: BorderRadius.circular(12),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -36,7 +38,7 @@ class RmkProductCard extends StatelessWidget {
                   children: [
                     ClipRRect(
                       borderRadius: const BorderRadius.vertical(
-                        top: Radius.circular(8),
+                        top: Radius.circular(12),
                       ),
                       child: _ProductImage(url: good.imageUrl),
                     ),

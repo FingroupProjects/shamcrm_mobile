@@ -2,7 +2,9 @@ import 'dart:async';
 
 import 'package:crm_task_manager/models/page_2/storage_model.dart';
 import 'package:crm_task_manager/offline/db/app_database.dart';
+import 'package:crm_task_manager/page_2/rmk/rmk_barcode_scanner_screen.dart';
 import 'package:crm_task_manager/page_2/rmk/rmk_filter_sheet.dart';
+import 'package:crm_task_manager/page_2/rmk/rmk_payment_screen.dart';
 import 'package:crm_task_manager/page_2/rmk/rmk_product_card.dart';
 import 'package:crm_task_manager/page_2/rmk/rmk_quantity_screen.dart';
 import 'package:crm_task_manager/page_2/rmk/rmk_repository.dart';
@@ -19,16 +21,19 @@ class RmkScreen extends StatefulWidget {
 class _RmkScreenState extends State<RmkScreen> {
   final RmkRepository _repository = RmkRepository();
   final TextEditingController _searchController = TextEditingController();
+  final FocusNode _searchFocusNode = FocusNode();
   final ScrollController _scrollController = ScrollController();
   Timer? _searchDebounce;
   DateTime? _lastBottomSyncAt;
   String _query = '';
   int? _categoryId;
+  List<RmkCategory> _latestCategories = const [];
   List<WareHouse> _storages = const [];
   WareHouse? _selectedStorage;
   bool _isSyncing = false;
   bool _isSubmitting = false;
   bool _isLoadingStorages = false;
+  bool _isSearching = false;
 
   @override
   void initState() {
@@ -42,6 +47,7 @@ class _RmkScreenState extends State<RmkScreen> {
     _searchDebounce?.cancel();
     _scrollController.dispose();
     _searchController.dispose();
+    _searchFocusNode.dispose();
     super.dispose();
   }
 
@@ -110,6 +116,7 @@ class _RmkScreenState extends State<RmkScreen> {
 
   Future<void> _selectStorage(WareHouse storage) async {
     if (_selectedStorage?.id == storage.id) return;
+    await _repository.clearCart();
     setState(() {
       _selectedStorage = storage;
       _lastBottomSyncAt = null;
@@ -131,31 +138,49 @@ class _RmkScreenState extends State<RmkScreen> {
       ),
       builder: (context) {
         return SafeArea(
-          child: ListView.separated(
-            shrinkWrap: true,
-            padding: const EdgeInsets.symmetric(vertical: 12),
-            itemBuilder: (context, index) {
-              final storage = _storages[index];
-              final isSelected = storage.id == _selectedStorage?.id;
-              return ListTile(
-                title: Text(
-                  storage.name,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Color(0xff1E2E52),
-                    fontFamily: 'Gilroy',
-                    fontWeight: FontWeight.w600,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 10),
+              Container(
+                width: 44,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: const Color(0xffD7DEE9),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+              ),
+              const Padding(
+                padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'Склад',
+                    style: TextStyle(
+                      color: Color(0xff1E2E52),
+                      fontFamily: 'Gilroy',
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                 ),
-                trailing: isSelected
-                    ? const Icon(Icons.check, color: Color(0xff1E2E52))
-                    : null,
-                onTap: () => Navigator.pop(context, storage),
-              );
-            },
-            separatorBuilder: (_, __) => const Divider(height: 1),
-            itemCount: _storages.length,
+              ),
+              Flexible(
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+                  itemCount: _storages.length,
+                  itemBuilder: (context, index) {
+                    final storage = _storages[index];
+                    return _StoragePickerTile(
+                      title: storage.name,
+                      isSelected: storage.id == _selectedStorage?.id,
+                      onTap: () => Navigator.pop(context, storage),
+                    );
+                  },
+                ),
+              ),
+            ],
           ),
         );
       },
@@ -174,6 +199,26 @@ class _RmkScreenState extends State<RmkScreen> {
     });
   }
 
+  void _toggleSearch() {
+    _searchDebounce?.cancel();
+    setState(() {
+      _isSearching = !_isSearching;
+      if (!_isSearching) {
+        _searchController.clear();
+        _query = '';
+        _searchFocusNode.unfocus();
+      }
+    });
+
+    if (_isSearching) {
+      Future.delayed(const Duration(milliseconds: 80), () {
+        if (mounted) {
+          _searchFocusNode.requestFocus();
+        }
+      });
+    }
+  }
+
   Future<void> _openFilter(List<RmkCategory> categories) async {
     final selected = await showRmkFilterSheet(
       context: context,
@@ -182,6 +227,85 @@ class _RmkScreenState extends State<RmkScreen> {
     );
     if (!mounted) return;
     setState(() => _categoryId = selected);
+  }
+
+  Future<void> _openMainFilter() async {
+    final action = await showModalBottomSheet<_RmkFilterAction>(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 10, 16, 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 44,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: const Color(0xffD7DEE9),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                const Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'Фильтр',
+                    style: TextStyle(
+                      color: Color(0xff1E2E52),
+                      fontFamily: 'Gilroy',
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                _RmkFilterOptionTile(
+                  icon: Icons.warehouse_outlined,
+                  title: 'Склад',
+                  value: _selectedStorage?.name ?? 'Выберите склад',
+                  isLoading: _isLoadingStorages,
+                  onTap: () => Navigator.pop(context, _RmkFilterAction.storage),
+                ),
+                const SizedBox(height: 8),
+                _RmkFilterOptionTile(
+                  icon: Icons.tune_rounded,
+                  title: 'Категория',
+                  value: _selectedCategoryTitle(_latestCategories),
+                  isActive: _categoryId != null,
+                  onTap: () =>
+                      Navigator.pop(context, _RmkFilterAction.category),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    if (!mounted || action == null) return;
+    switch (action) {
+      case _RmkFilterAction.storage:
+        await _openStoragePicker();
+        return;
+      case _RmkFilterAction.category:
+        await _openFilter(_latestCategories);
+        return;
+    }
+  }
+
+  String _selectedCategoryTitle(List<RmkCategory> categories) {
+    final id = _categoryId;
+    if (id == null) return 'Все товары';
+    for (final category in categories) {
+      if (category.id == id) return category.name;
+    }
+    return 'Все товары';
   }
 
   Future<void> _finishSale(List<RmkCartItem> items) async {
@@ -196,11 +320,25 @@ class _RmkScreenState extends State<RmkScreen> {
       return;
     }
 
+    final total = items.fold<double>(
+      0,
+      (sum, item) => sum + (item.customTotal ?? item.quantity * item.price),
+    );
+    final payment = await Navigator.push<RmkPaymentResult>(
+      context,
+      MaterialPageRoute(builder: (_) => RmkPaymentScreen(total: total)),
+    );
+    if (!mounted || payment == null) return;
+
     setState(() => _isSubmitting = true);
     try {
       final result = await _repository.submitSale(
         items,
         storageId: storageId,
+        paymentMode: payment.mode.value,
+        paymentMethod: payment.method?.value,
+        paidAmount: payment.paidAmount,
+        debtAmount: payment.debtAmount,
       );
       if (!mounted) return;
 
@@ -218,20 +356,138 @@ class _RmkScreenState extends State<RmkScreen> {
     }
   }
 
+  Future<void> _openQuantityScreen(RmkGood good) async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => RmkQuantityScreen(
+          good: good,
+          repository: _repository,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _scanBarcode() async {
+    final storageId = _selectedStorage?.id;
+    if (storageId == null) {
+      showCustomSnackBar(
+        context: context,
+        message: 'Выберите склад',
+        isSuccess: false,
+      );
+      return;
+    }
+
+    final barcode = await Navigator.push<String>(
+      context,
+      MaterialPageRoute(builder: (_) => const RmkBarcodeScannerScreen()),
+    );
+    if (!mounted || barcode == null || barcode.isEmpty) return;
+
+    final good = await _repository.findGoodByBarcode(
+      barcode,
+      storageId: storageId,
+    );
+    if (!mounted) return;
+    if (good == null) {
+      showCustomSnackBar(
+        context: context,
+        message: 'Товар по штрихкоду не найден',
+        isSuccess: false,
+      );
+      return;
+    }
+    await _openQuantityScreen(good);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xffF8F9FB),
       appBar: AppBar(
         forceMaterialTransparency: true,
-        title: const Text(
-          'РМК',
-          style: TextStyle(
-            color: Color(0xff1E2E52),
-            fontFamily: 'Gilroy',
-            fontWeight: FontWeight.w700,
-          ),
-        ),
+        backgroundColor: Colors.white,
+        elevation: 0,
+        titleSpacing: 16,
+        title: _isSearching
+            ? _AppBarSearchField(
+                controller: _searchController,
+                focusNode: _searchFocusNode,
+                onChanged: _onSearchChanged,
+              )
+            : const Text(
+                'РМК',
+                style: TextStyle(
+                  color: Color(0xff1E2E52),
+                  fontFamily: 'Gilroy',
+                  fontWeight: FontWeight.w600,
+                  fontSize: 20,
+                ),
+              ),
+        actions: _isSearching
+            ? [
+                IconButton(
+                  tooltip: 'Закрыть поиск',
+                  style: IconButton.styleFrom(
+                    foregroundColor: const Color(0xff1E2E52),
+                    overlayColor:
+                        const Color(0xff1E2E52).withValues(alpha: 0.06),
+                  ),
+                  icon: const Icon(
+                    Icons.close,
+                    color: Color(0xff1E2E52),
+                    size: 24,
+                  ),
+                  onPressed: _toggleSearch,
+                ),
+                const SizedBox(width: 6),
+              ]
+            : [
+                IconButton(
+                  tooltip: 'Поиск',
+                  style: IconButton.styleFrom(
+                    foregroundColor: const Color(0xff1E2E52),
+                    overlayColor:
+                        const Color(0xff1E2E52).withValues(alpha: 0.06),
+                  ),
+                  icon: Image.asset(
+                    'assets/icons/AppBar/search.png',
+                    width: 24,
+                    height: 24,
+                  ),
+                  onPressed: _toggleSearch,
+                ),
+                IconButton(
+                  tooltip: 'Фильтр',
+                  style: IconButton.styleFrom(
+                    foregroundColor: const Color(0xff1E2E52),
+                    overlayColor:
+                        const Color(0xff1E2E52).withValues(alpha: 0.06),
+                  ),
+                  icon: Image.asset(
+                    'assets/icons/AppBar/filter.png',
+                    width: 24,
+                    height: 24,
+                  ),
+                  onPressed: _openMainFilter,
+                ),
+                IconButton(
+                  tooltip: 'Сканер',
+                  style: IconButton.styleFrom(
+                    foregroundColor: const Color(0xff1E2E52),
+                    overlayColor:
+                        const Color(0xff1E2E52).withValues(alpha: 0.06),
+                  ),
+                  icon: Image.asset(
+                    'assets/icons/AppBar/scanner.png',
+                    width: 24,
+                    height: 24,
+                  ),
+                  onPressed: _scanBarcode,
+                ),
+                const SizedBox(width: 6),
+              ],
       ),
       body: StreamBuilder<List<RmkCartItem>>(
         stream: _repository.watchCart(),
@@ -250,27 +506,18 @@ class _RmkScreenState extends State<RmkScreen> {
             stream: _repository.watchCategories(),
             builder: (context, categorySnapshot) {
               final categories = categorySnapshot.data ?? const <RmkCategory>[];
+              _latestCategories = categories;
 
               return Column(
                 children: [
                   Container(
                     color: const Color(0xffF8F9FB),
-                    padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
-                    child: Column(
-                      children: [
-                        _StorageButton(
-                          storageName: _selectedStorage?.name,
-                          isLoading: _isLoadingStorages,
-                          onTap: _openStoragePicker,
-                        ),
-                        const SizedBox(height: 8),
-                        _DoneButton(
-                          total: total,
-                          count: cartItems.length,
-                          isLoading: _isSubmitting,
-                          onTap: () => _finishSale(cartItems),
-                        ),
-                      ],
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 10),
+                    child: _DoneButton(
+                      total: total,
+                      count: cartItems.length,
+                      isLoading: _isSubmitting,
+                      onTap: () => _finishSale(cartItems),
                     ),
                   ),
                   Expanded(
@@ -283,35 +530,15 @@ class _RmkScreenState extends State<RmkScreen> {
                         keyboardDismissBehavior:
                             ScrollViewKeyboardDismissBehavior.onDrag,
                         slivers: [
-                          SliverPersistentHeader(
-                            pinned: true,
-                            delegate: _SearchHeaderDelegate(
-                              child: Container(
-                                color: const Color(0xffF8F9FB),
-                                padding:
-                                    const EdgeInsets.fromLTRB(16, 6, 16, 10),
-                                child: Row(
-                                  children: [
-                                    Expanded(
-                                      child: _SearchField(
-                                        controller: _searchController,
-                                        onChanged: _onSearchChanged,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    _FilterButton(
-                                      isActive: _categoryId != null,
-                                      onTap: () => _openFilter(categories),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
                           StreamBuilder<List<RmkGood>>(
                             stream: _repository.watchGoods(
                               query: _query,
-                              categoryId: _categoryId,
+                              categoryIds: _categoryId == null
+                                  ? null
+                                  : RmkRepository.categoryIdsIncludingDescendants(
+                                      _categoryId!,
+                                      categories,
+                                    ),
                             ),
                             builder: (context, goodsSnapshot) {
                               final goods =
@@ -357,17 +584,7 @@ class _RmkScreenState extends State<RmkScreen> {
                                         good: good,
                                         selectedQuantity:
                                             cartQuantities[good.id] ?? 0,
-                                        onTap: () {
-                                          Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                              builder: (_) => RmkQuantityScreen(
-                                                good: good,
-                                                repository: _repository,
-                                              ),
-                                            ),
-                                          );
-                                        },
+                                        onTap: () => _openQuantityScreen(good),
                                       );
                                     },
                                     childCount: goods.length,
@@ -406,51 +623,151 @@ class _RmkScreenState extends State<RmkScreen> {
   }
 }
 
-class _StorageButton extends StatelessWidget {
-  const _StorageButton({
-    required this.storageName,
-    required this.isLoading,
+class _StoragePickerTile extends StatelessWidget {
+  const _StoragePickerTile({
+    required this.title,
+    required this.isSelected,
     required this.onTap,
   });
 
-  final String? storageName;
-  final bool isLoading;
+  final String title;
+  final bool isSelected;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      height: 44,
-      child: OutlinedButton.icon(
-        style: OutlinedButton.styleFrom(
-          backgroundColor: Colors.white,
-          foregroundColor: const Color(0xff1E2E52),
-          side: const BorderSide(color: Color(0xffE2E8F0)),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-        ),
-        onPressed: isLoading ? null : onTap,
-        icon: isLoading
-            ? const SizedBox(
-                width: 16,
-                height: 16,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: Color(0xff1E2E52),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Material(
+        color: isSelected ? const Color(0xffF4F7FD) : Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          splashColor: const Color(0xff1E2E52).withValues(alpha: 0.05),
+          highlightColor: const Color(0xff1E2E52).withValues(alpha: 0.03),
+          onTap: onTap,
+          child: Container(
+            constraints: const BoxConstraints(minHeight: 46),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.warehouse_outlined,
+                  color: Color(0xff99A4BA),
+                  size: 20,
                 ),
-              )
-            : const Icon(Icons.warehouse_outlined, size: 18),
-        label: Align(
-          alignment: Alignment.centerLeft,
-          child: Text(
-            storageName ?? 'Выберите склад',
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              fontFamily: 'Gilroy',
-              fontWeight: FontWeight.w700,
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: const Color(0xff1E2E52),
+                      fontFamily: 'Gilroy',
+                      fontSize: 14,
+                      fontWeight:
+                          isSelected ? FontWeight.w700 : FontWeight.w600,
+                    ),
+                  ),
+                ),
+                if (isSelected)
+                  const Icon(
+                    Icons.check_rounded,
+                    color: Color(0xff1E2E52),
+                    size: 20,
+                  ),
+              ],
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+enum _RmkFilterAction { storage, category }
+
+class _RmkFilterOptionTile extends StatelessWidget {
+  const _RmkFilterOptionTile({
+    required this.icon,
+    required this.title,
+    required this.value,
+    required this.onTap,
+    this.isActive = false,
+    this.isLoading = false,
+  });
+
+  final IconData icon;
+  final String title;
+  final String value;
+  final VoidCallback onTap;
+  final bool isActive;
+  final bool isLoading;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = isActive ? const Color(0xff1E2E52) : const Color(0xff99A4BA);
+    return Material(
+      color: const Color(0xffF4F7FD),
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        splashColor: const Color(0xff1E2E52).withValues(alpha: 0.06),
+        highlightColor: const Color(0xff1E2E52).withValues(alpha: 0.04),
+        onTap: isLoading ? null : onTap,
+        child: Container(
+          constraints: const BoxConstraints(minHeight: 54),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          child: Row(
+            children: [
+              if (isLoading)
+                const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Color(0xff1E2E52),
+                  ),
+                )
+              else
+                Icon(icon, color: color, size: 20),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        color: Color(0xff718096),
+                        fontFamily: 'Gilroy',
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      value,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Color(0xff1E2E52),
+                        fontFamily: 'Gilroy',
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(
+                Icons.keyboard_arrow_right_rounded,
+                color: Color(0xff99A4BA),
+                size: 22,
+              ),
+            ],
           ),
         ),
       ),
@@ -476,14 +793,15 @@ class _DoneButton extends StatelessWidget {
     final isEnabled = count > 0 && !isLoading;
     return SizedBox(
       width: double.infinity,
-      height: 54,
+      height: 52,
       child: ElevatedButton(
         style: ElevatedButton.styleFrom(
           backgroundColor:
               isEnabled ? const Color(0xff1E2E52) : const Color(0xffCBD5E0),
           foregroundColor: Colors.white,
           elevation: 0,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
         onPressed: isEnabled ? onTap : null,
         child: isLoading
@@ -502,7 +820,7 @@ class _DoneButton extends StatelessWidget {
                 style: const TextStyle(
                   fontFamily: 'Gilroy',
                   fontWeight: FontWeight.w700,
-                  fontSize: 17,
+                  fontSize: 16,
                 ),
               ),
       ),
@@ -510,96 +828,72 @@ class _DoneButton extends StatelessWidget {
   }
 }
 
-class _SearchField extends StatelessWidget {
-  const _SearchField({
+class _AppBarSearchField extends StatelessWidget {
+  const _AppBarSearchField({
     required this.controller,
+    required this.focusNode,
     required this.onChanged,
   });
 
   final TextEditingController controller;
+  final FocusNode focusNode;
   final ValueChanged<String> onChanged;
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 44,
-      child: TextField(
-        controller: controller,
-        onChanged: onChanged,
-        textInputAction: TextInputAction.search,
-        decoration: InputDecoration(
-          hintText: 'Поиск',
-          prefixIcon: const Icon(Icons.search, size: 21),
-          filled: true,
-          fillColor: Colors.white,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 12),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-            borderSide: const BorderSide(color: Color(0xffE2E7F0)),
+      height: 42,
+      child: TextSelectionTheme(
+        data: const TextSelectionThemeData(
+          cursorColor: Color(0xff1E2E52),
+          selectionColor: Color(0x331E2E52),
+          selectionHandleColor: Color(0xff1E2E52),
+        ),
+        child: TextField(
+          controller: controller,
+          focusNode: focusNode,
+          onChanged: onChanged,
+          autofocus: true,
+          cursorColor: const Color(0xff1E2E52),
+          textInputAction: TextInputAction.search,
+          style: const TextStyle(
+            color: Color(0xff1E2E52),
+            fontSize: 16,
+            fontFamily: 'Gilroy',
+            fontWeight: FontWeight.w500,
           ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-            borderSide: const BorderSide(color: Color(0xff1E2E52)),
+          decoration: InputDecoration(
+            hintText: 'Поиск',
+            hintStyle: const TextStyle(
+              color: Color(0xff99A4BA),
+              fontSize: 16,
+              fontFamily: 'Gilroy',
+              fontWeight: FontWeight.w500,
+            ),
+            prefixIcon: const Icon(
+              Icons.search,
+              size: 21,
+              color: Color(0xff99A4BA),
+            ),
+            prefixIconConstraints: const BoxConstraints(
+              minWidth: 42,
+              minHeight: 42,
+            ),
+            filled: true,
+            fillColor: const Color(0xffF4F7FD),
+            contentPadding: EdgeInsets.zero,
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Color(0xffF4F7FD)),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Color(0xffF4F7FD)),
+            ),
           ),
         ),
       ),
     );
-  }
-}
-
-class _FilterButton extends StatelessWidget {
-  const _FilterButton({
-    required this.isActive,
-    required this.onTap,
-  });
-
-  final bool isActive;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: 44,
-      height: 44,
-      child: Material(
-        color: isActive ? const Color(0xff1E2E52) : Colors.white,
-        borderRadius: BorderRadius.circular(8),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(8),
-          onTap: onTap,
-          child: Icon(
-            Icons.tune,
-            color: isActive ? Colors.white : const Color(0xff1E2E52),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _SearchHeaderDelegate extends SliverPersistentHeaderDelegate {
-  _SearchHeaderDelegate({required this.child});
-
-  final Widget child;
-
-  @override
-  double get minExtent => 60;
-
-  @override
-  double get maxExtent => 60;
-
-  @override
-  Widget build(
-    BuildContext context,
-    double shrinkOffset,
-    bool overlapsContent,
-  ) {
-    return child;
-  }
-
-  @override
-  bool shouldRebuild(covariant _SearchHeaderDelegate oldDelegate) {
-    return oldDelegate.child != child;
   }
 }
 

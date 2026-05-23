@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:crm_task_manager/offline/db/app_database.dart';
 import 'package:crm_task_manager/page_2/rmk/rmk_repository.dart';
 import 'package:flutter/material.dart';
@@ -19,32 +20,33 @@ class RmkQuantityScreen extends StatefulWidget {
 
 class _RmkQuantityScreenState extends State<RmkQuantityScreen> {
   final TextEditingController _quantityController = TextEditingController();
-  final TextEditingController _priceController = TextEditingController();
   final TextEditingController _totalController = TextEditingController();
   final FocusNode _quantityFocusNode = FocusNode();
-  final FocusNode _priceFocusNode = FocusNode();
   final FocusNode _totalFocusNode = FocusNode();
   _EditField _activeField = _EditField.quantity;
+  _EditField _panelField = _EditField.quantity;
+  late RmkGood _good;
   bool _isSaving = false;
   bool _isProgrammaticEdit = false;
 
   double get _quantity => double.tryParse(_quantityController.text) ?? 0;
 
-  double get _price =>
-      double.tryParse(_priceController.text) ?? widget.good.price;
+  double get _baseTotal => _quantity * _good.price;
+
+  double get _calculatedTotal => _baseTotal;
 
   double get _total {
-    final editedTotal = double.tryParse(_totalController.text);
-    if (_totalController.text.isNotEmpty && editedTotal != null) {
-      return editedTotal;
+    final manualTotal = double.tryParse(_totalController.text);
+    if (_totalController.text.isNotEmpty && manualTotal != null) {
+      return manualTotal;
     }
-    return _quantity * _price;
+    return _calculatedTotal;
   }
 
   @override
   void initState() {
     super.initState();
-    _setText(_priceController, _formatInput(widget.good.price));
+    _good = widget.good;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _selectField(_EditField.quantity);
     });
@@ -52,9 +54,9 @@ class _RmkQuantityScreenState extends State<RmkQuantityScreen> {
       if (!mounted || item == null) return;
       setState(() {
         _setText(_quantityController, _formatInput(item.quantity));
-        _setText(_priceController, _formatInput(item.price));
-        if (item.customTotal != null) {
-          _setText(_totalController, _formatInput(item.customTotal!));
+        final customTotal = item.customTotal;
+        if (customTotal != null) {
+          _setText(_totalController, _formatInput(customTotal));
         }
       });
     });
@@ -63,28 +65,33 @@ class _RmkQuantityScreenState extends State<RmkQuantityScreen> {
   @override
   void dispose() {
     _quantityController.dispose();
-    _priceController.dispose();
     _totalController.dispose();
     _quantityFocusNode.dispose();
-    _priceFocusNode.dispose();
     _totalFocusNode.dispose();
     super.dispose();
   }
 
   Future<void> _saveAndPop() async {
     if (_isSaving) return;
+    if (_quantity > _good.quantity) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'На складе доступно только ${_formatQuantity(_good.quantity)}',
+          ),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
     _isSaving = true;
     await widget.repository.upsertCartItem(
-      good: widget.good,
+      good: _good,
       quantity: _quantity,
-      price: _price,
-      customTotal: _totalController.text.isEmpty ? null : _total,
+      price: _good.price,
+      customTotal: _totalController.text.isNotEmpty ? _total : null,
     );
     if (mounted) Navigator.pop(context);
-  }
-
-  void _cancelAndPop() {
-    Navigator.pop(context);
   }
 
   Future<void> _deleteAndPop() async {
@@ -97,16 +104,13 @@ class _RmkQuantityScreenState extends State<RmkQuantityScreen> {
       final controller = _currentController;
       if (key == '⌫') {
         _deleteAtCursor(controller);
-        _recalculateAfterInput();
         return;
       }
       if (key == 'C') {
         _setText(controller, '');
-        _recalculateAfterInput();
         return;
       }
       _insertAtCursor(controller, key);
-      _recalculateAfterInput();
     });
   }
 
@@ -114,8 +118,6 @@ class _RmkQuantityScreenState extends State<RmkQuantityScreen> {
     switch (_activeField) {
       case _EditField.quantity:
         return _quantityController;
-      case _EditField.price:
-        return _priceController;
       case _EditField.total:
         return _totalController;
     }
@@ -123,12 +125,14 @@ class _RmkQuantityScreenState extends State<RmkQuantityScreen> {
 
   void _insertAtCursor(TextEditingController controller, String value) {
     final text = controller.text;
+    if (value == '.' && text.contains('.')) return;
+
     final selection = controller.selection;
     final start = selection.isValid ? selection.start : text.length;
     final end = selection.isValid ? selection.end : text.length;
     final nextText = text.replaceRange(start, end, value);
-    if (value == '.' && text.contains('.')) return;
     if (!_isValidNumberInput(nextText)) return;
+
     controller.value = TextEditingValue(
       text: nextText,
       selection: TextSelection.collapsed(offset: start + value.length),
@@ -170,62 +174,57 @@ class _RmkQuantityScreenState extends State<RmkQuantityScreen> {
     _isProgrammaticEdit = false;
   }
 
-  void _focusActiveField() {
-    switch (_activeField) {
+  void _selectField(_EditField field) {
+    setState(() {
+      _activeField = field;
+      if (field != _EditField.total) {
+        _panelField = field;
+      }
+    });
+    switch (field) {
       case _EditField.quantity:
         _quantityFocusNode.requestFocus();
         return;
-      case _EditField.price:
-        _priceFocusNode.requestFocus();
-        return;
       case _EditField.total:
+        if (_totalController.text.isEmpty) {
+          _setText(_totalController, _formatInput(_calculatedTotal));
+        }
         _totalFocusNode.requestFocus();
         return;
     }
   }
 
-  void _recalculateAfterInput() {
-    if (_activeField == _EditField.total) {
-      return;
-    }
-    _totalController.clear();
-  }
-
-  void _selectField(_EditField field) {
-    setState(() {
-      _activeField = field;
-      if (field == _EditField.total && _totalController.text.isEmpty) {
-        _setText(_totalController, _formatInput(_quantity * _price));
-      }
-    });
-    _focusActiveField();
-  }
-
   void _handleFieldChanged(_EditField field) {
     if (_isProgrammaticEdit) return;
-    _activeField = field;
-    setState(_recalculateAfterInput);
+    if (field == _EditField.quantity) {
+      _totalController.clear();
+    }
+    setState(() {
+      _activeField = field;
+      if (field != _EditField.total) {
+        _panelField = field;
+      }
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return PopScope(
       canPop: false,
-      onPopInvokedWithResult: (didPop, result) async {
-        if (!didPop) _cancelAndPop();
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop) Navigator.pop(context);
       },
       child: Scaffold(
-        backgroundColor: const Color(0xffF8F9FB),
+        backgroundColor: Colors.white,
         appBar: AppBar(
           forceMaterialTransparency: true,
-          title: Text(
-            widget.good.name,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
+          title: const Text(
+            'О товаре',
+            style: TextStyle(
               color: Color(0xff1E2E52),
               fontFamily: 'Gilroy',
               fontWeight: FontWeight.w700,
+              fontSize: 20,
             ),
           ),
           actions: [
@@ -242,149 +241,44 @@ class _RmkQuantityScreenState extends State<RmkQuantityScreen> {
         body: SafeArea(
           child: Column(
             children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    border: Border.all(color: const Color(0xffE2E7F0)),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Количество',
-                        style: TextStyle(
-                          color: Color(0xff718096),
-                          fontSize: 13,
-                          fontFamily: 'Gilroy',
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.symmetric(vertical: 4),
-                        decoration: BoxDecoration(
-                          border: Border(
-                            bottom: BorderSide(
-                              color: _activeField == _EditField.quantity
-                                  ? const Color(0xff1E2E52)
-                                  : Colors.transparent,
-                              width: 2,
-                            ),
-                          ),
-                        ),
-                        child: _NumberField(
-                          controller: _quantityController,
-                          focusNode: _quantityFocusNode,
-                          selected: _activeField == _EditField.quantity,
-                          hint: '0',
-                          fontSize: 38,
-                          onTap: () => _selectField(_EditField.quantity),
-                          onChanged: () =>
-                              _handleFieldChanged(_EditField.quantity),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _SummaryCell(
-                              selected: _activeField == _EditField.price,
-                              onTap: () => _selectField(_EditField.price),
-                              label: 'Цена',
-                              controller: _priceController,
-                              focusNode: _priceFocusNode,
-                              onChanged: () =>
-                                  _handleFieldChanged(_EditField.price),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: _SummaryCell(
-                              selected: _activeField == _EditField.total,
-                              onTap: () => _selectField(_EditField.total),
-                              label: 'Сумма',
-                              controller: _totalController,
-                              focusNode: _totalFocusNode,
-                              fallbackText: _formatMoney(_total),
-                              onChanged: () =>
-                                  _handleFieldChanged(_EditField.total),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
+              _ProductHeader(good: _good),
+              _TotalRow(
+                total: _total,
+                selected: _activeField == _EditField.total,
+                controller: _totalController,
+                focusNode: _totalFocusNode,
+                onTap: () => _selectField(_EditField.total),
+                onChanged: () => _handleFieldChanged(_EditField.total),
               ),
-              Expanded(
-                child: GridView.count(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-                  crossAxisCount: 3,
-                  mainAxisSpacing: 8,
-                  crossAxisSpacing: 8,
-                  childAspectRatio: 1.55,
-                  children: const [
-                    _KeyButton('1'),
-                    _KeyButton('2'),
-                    _KeyButton('3'),
-                    _KeyButton('4'),
-                    _KeyButton('5'),
-                    _KeyButton('6'),
-                    _KeyButton('7'),
-                    _KeyButton('8'),
-                    _KeyButton('9'),
-                    _KeyButton('.'),
-                    _KeyButton('0'),
-                    _KeyButton('⌫'),
-                  ].map((button) {
-                    return _KeyButton(
-                      button.label,
-                      onTap: () => _tapKey(button.label),
-                    );
-                  }).toList(),
-                ),
+              _ActiveFieldPanel(
+                activeField: _panelField,
+                quantityController: _quantityController,
+                totalController: _totalController,
+                quantityFocusNode: _quantityFocusNode,
+                totalFocusNode: _totalFocusNode,
+                onSelect: _selectField,
+                onChanged: _handleFieldChanged,
               ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton(
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: const Color(0xff1E2E52),
-                          minimumSize: const Size.fromHeight(50),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          side: const BorderSide(color: Color(0xffD9E1EC)),
-                        ),
-                        onPressed: _cancelAndPop,
-                        child: const Text('Отмена'),
-                      ),
+              Expanded(child: _NumberPad(onTap: _tapKey)),
+              SizedBox(
+                width: double.infinity,
+                height: 56,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xff1E2E52),
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    shape: const RoundedRectangleBorder(),
+                  ),
+                  onPressed: _saveAndPop,
+                  child: const Text(
+                    'OK',
+                    style: TextStyle(
+                      fontFamily: 'Gilroy',
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
                     ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      flex: 2,
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xff1E2E52),
-                          foregroundColor: Colors.white,
-                          minimumSize: const Size.fromHeight(50),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
-                        onPressed: _saveAndPop,
-                        child: const Text('Готово'),
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
               ),
             ],
@@ -398,75 +292,310 @@ class _RmkQuantityScreenState extends State<RmkQuantityScreen> {
     if (value == value.roundToDouble()) return value.toInt().toString();
     return value.toStringAsFixed(2);
   }
+}
 
-  static String _formatMoney(double value) {
-    if (value == value.roundToDouble()) return '${value.toInt()}';
+enum _EditField { quantity, total }
+
+class _ProductHeader extends StatelessWidget {
+  const _ProductHeader({required this.good});
+
+  final RmkGood good;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      color: const Color(0xff1E2E52),
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: SizedBox(
+              width: 96,
+              height: 96,
+              child: _ProductImage(url: good.imageUrl),
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  good.name,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontFamily: 'Gilroy',
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    height: 1.15,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                _InfoLine('Остаток', _formatQuantity(good.quantity)),
+                _InfoLine('Продажная цена', _formatMoney(good.price)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  static String _formatQuantity(double value) {
+    if (value == value.roundToDouble()) return value.toInt().toString();
     return value.toStringAsFixed(2);
   }
 }
 
-enum _EditField { quantity, price, total }
+class _InfoLine extends StatelessWidget {
+  const _InfoLine(this.label, this.value);
 
-class _SummaryCell extends StatelessWidget {
-  const _SummaryCell({
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 3),
+      child: Text(
+        '$label: $value',
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: const TextStyle(
+          color: Colors.white,
+          fontFamily: 'Gilroy',
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+    );
+  }
+}
+
+class _ProductImage extends StatelessWidget {
+  const _ProductImage({required this.url});
+
+  final String? url;
+
+  @override
+  Widget build(BuildContext context) {
+    if (url == null || url!.isEmpty) {
+      return const ColoredBox(
+        color: Colors.white,
+        child: Icon(
+          Icons.image_outlined,
+          color: Color(0xff99A4BA),
+          size: 42,
+        ),
+      );
+    }
+
+    return CachedNetworkImage(
+      imageUrl: url!,
+      fit: BoxFit.cover,
+      memCacheWidth: 320,
+      placeholder: (_, __) => const ColoredBox(color: Colors.white),
+      errorWidget: (_, __, ___) => const ColoredBox(
+        color: Colors.white,
+        child: Icon(
+          Icons.image_outlined,
+          color: Color(0xff99A4BA),
+          size: 42,
+        ),
+      ),
+    );
+  }
+}
+
+class _TotalRow extends StatelessWidget {
+  const _TotalRow({
+    required this.total,
+    required this.selected,
+    required this.controller,
+    required this.focusNode,
+    required this.onTap,
+    required this.onChanged,
+  });
+
+  final double total;
+  final bool selected;
+  final TextEditingController controller;
+  final FocusNode focusNode;
+  final VoidCallback onTap;
+  final VoidCallback onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.white,
+      child: InkWell(
+        onTap: onTap,
+        child: Container(
+          height: 58,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          decoration: BoxDecoration(
+            border: Border(
+              bottom: BorderSide(
+                color: selected
+                    ? const Color(0xff1E2E52)
+                    : const Color(0xffD9E1EC),
+                width: selected ? 2 : 1,
+              ),
+            ),
+          ),
+          child: Row(
+            children: [
+              const Text(
+                'Всего:',
+                style: TextStyle(
+                  color: Color(0xff1E2E52),
+                  fontFamily: 'Gilroy',
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const Spacer(),
+              SizedBox(
+                width: 150,
+                child: selected
+                    ? _NumberField(
+                        controller: controller,
+                        focusNode: focusNode,
+                        selected: true,
+                        hint: _formatMoney(total),
+                        textAlign: TextAlign.right,
+                        onTap: onTap,
+                        onChanged: onChanged,
+                      )
+                    : Text(
+                        _formatMoney(total),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.right,
+                        style: const TextStyle(
+                          color: Color(0xff1E2E52),
+                          fontFamily: 'Gilroy',
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ActiveFieldPanel extends StatelessWidget {
+  const _ActiveFieldPanel({
+    required this.activeField,
+    required this.quantityController,
+    required this.totalController,
+    required this.quantityFocusNode,
+    required this.totalFocusNode,
+    required this.onSelect,
+    required this.onChanged,
+  });
+
+  final _EditField activeField;
+  final TextEditingController quantityController;
+  final TextEditingController totalController;
+  final FocusNode quantityFocusNode;
+  final FocusNode totalFocusNode;
+  final ValueChanged<_EditField> onSelect;
+  final ValueChanged<_EditField> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 74,
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        border: Border(
+          bottom: BorderSide(color: Color(0xffE5EAF2)),
+        ),
+      ),
+      child: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 160),
+        child: switch (activeField) {
+          _EditField.quantity => _PanelNumberField(
+              key: const ValueKey('quantity'),
+              label: 'Количество',
+              controller: quantityController,
+              focusNode: quantityFocusNode,
+              suffix: 'шт',
+              onTap: () => onSelect(_EditField.quantity),
+              onChanged: () => onChanged(_EditField.quantity),
+            ),
+          _EditField.total => _PanelNumberField(
+              key: const ValueKey('total'),
+              label: 'Всего',
+              controller: totalController,
+              focusNode: totalFocusNode,
+              suffix: '',
+              onTap: () => onSelect(_EditField.total),
+              onChanged: () => onChanged(_EditField.total),
+            ),
+        },
+      ),
+    );
+  }
+}
+
+class _PanelNumberField extends StatelessWidget {
+  const _PanelNumberField({
+    super.key,
     required this.label,
     required this.controller,
     required this.focusNode,
-    required this.selected,
+    required this.suffix,
     required this.onTap,
     required this.onChanged,
-    this.fallbackText,
   });
 
   final String label;
   final TextEditingController controller;
   final FocusNode focusNode;
-  final bool selected;
+  final String suffix;
   final VoidCallback onTap;
   final VoidCallback onChanged;
-  final String? fallbackText;
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      behavior: HitTestBehavior.translucent,
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
-        decoration: BoxDecoration(
-          color: selected ? const Color(0xffEEF3FA) : const Color(0xffF8F9FB),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: selected ? const Color(0xff1E2E52) : const Color(0xffE2E7F0),
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            label,
+            style: const TextStyle(
+              color: Color(0xff718096),
+              fontFamily: 'Gilroy',
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
+            ),
           ),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                color: Color(0xff718096),
-                fontSize: 11,
-                fontFamily: 'Gilroy',
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            const SizedBox(height: 2),
-            _NumberField(
-              controller: controller,
-              focusNode: focusNode,
-              selected: selected,
-              hint: fallbackText ?? '0',
-              fontSize: 15,
-              onTap: onTap,
-              onChanged: onChanged,
-            ),
-          ],
+        SizedBox(
+          width: 160,
+          child: _NumberField(
+            controller: controller,
+            focusNode: focusNode,
+            selected: true,
+            hint: '',
+            suffix: suffix,
+            onTap: onTap,
+            onChanged: onChanged,
+          ),
         ),
-      ),
+      ],
     );
   }
 }
@@ -477,16 +606,18 @@ class _NumberField extends StatelessWidget {
     required this.focusNode,
     required this.selected,
     required this.hint,
-    required this.fontSize,
     required this.onTap,
     required this.onChanged,
+    this.suffix,
+    this.textAlign = TextAlign.center,
   });
 
   final TextEditingController controller;
   final FocusNode focusNode;
   final bool selected;
   final String hint;
-  final double fontSize;
+  final String? suffix;
+  final TextAlign textAlign;
   final VoidCallback onTap;
   final VoidCallback onChanged;
 
@@ -499,6 +630,7 @@ class _NumberField extends StatelessWidget {
       showCursor: selected,
       enableInteractiveSelection: true,
       keyboardType: TextInputType.none,
+      textAlign: textAlign,
       onTap: onTap,
       onChanged: (_) => onChanged(),
       inputFormatters: [
@@ -506,10 +638,9 @@ class _NumberField extends StatelessWidget {
       ],
       maxLines: 1,
       cursorColor: const Color(0xff1E2E52),
-      cursorWidth: 2,
-      style: TextStyle(
-        color: const Color(0xff1E2E52),
-        fontSize: fontSize,
+      style: const TextStyle(
+        color: Color(0xff1E2E52),
+        fontSize: 16,
         fontFamily: 'Gilroy',
         fontWeight: FontWeight.w700,
       ),
@@ -518,9 +649,15 @@ class _NumberField extends StatelessWidget {
         border: InputBorder.none,
         contentPadding: EdgeInsets.zero,
         hintText: hint,
-        hintStyle: TextStyle(
-          color: const Color(0xff1E2E52),
-          fontSize: fontSize,
+        suffixText: suffix,
+        suffixStyle: const TextStyle(
+          color: Color(0xff1E2E52),
+          fontFamily: 'Gilroy',
+          fontWeight: FontWeight.w700,
+        ),
+        hintStyle: const TextStyle(
+          color: Color(0xff1E2E52),
+          fontSize: 16,
           fontFamily: 'Gilroy',
           fontWeight: FontWeight.w700,
         ),
@@ -529,32 +666,75 @@ class _NumberField extends StatelessWidget {
   }
 }
 
+class _NumberPad extends StatelessWidget {
+  const _NumberPad({required this.onTap});
+
+  final ValueChanged<String> onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    const keys = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '.', '0', '⌫'];
+    return GridView.builder(
+      padding: EdgeInsets.zero,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 3,
+        childAspectRatio: 1.45,
+      ),
+      itemCount: keys.length,
+      itemBuilder: (context, index) {
+        final key = keys[index];
+        return _KeyButton(
+          label: key,
+          onTap: () => onTap(key),
+        );
+      },
+    );
+  }
+}
+
 class _KeyButton extends StatelessWidget {
-  const _KeyButton(this.label, {this.onTap});
+  const _KeyButton({
+    required this.label,
+    required this.onTap,
+  });
 
   final String label;
-  final VoidCallback? onTap;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     return Material(
       color: Colors.white,
-      borderRadius: BorderRadius.circular(8),
       child: InkWell(
-        borderRadius: BorderRadius.circular(8),
         onTap: onTap,
-        child: Center(
-          child: Text(
-            label,
-            style: const TextStyle(
-              color: Color(0xff1E2E52),
-              fontSize: 26,
-              fontFamily: 'Gilroy',
-              fontWeight: FontWeight.w700,
+        child: Container(
+          decoration: BoxDecoration(
+            border: Border.all(color: const Color(0xffE5EAF2), width: 0.5),
+          ),
+          child: Center(
+            child: Text(
+              label,
+              style: const TextStyle(
+                color: Color(0xff1E2E52),
+                fontSize: 26,
+                fontFamily: 'Gilroy',
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
         ),
       ),
     );
   }
+}
+
+String _formatMoney(double value) {
+  if (value == value.roundToDouble()) return '${value.toInt()}';
+  return value.toStringAsFixed(2);
+}
+
+String _formatQuantity(double value) {
+  if (value == value.roundToDouble()) return value.toInt().toString();
+  return value.toStringAsFixed(2);
 }

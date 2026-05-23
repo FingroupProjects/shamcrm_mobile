@@ -16,7 +16,8 @@ class VariantResponse {
               ?.map((item) => Variant.fromJson(item as Map<String, dynamic>))
               .toList() ??
           [],
-      pagination: VariantPagination.fromJson(json['pagination'] as Map<String, dynamic>),
+      pagination: VariantPagination.fromJson(
+          json['pagination'] as Map<String, dynamic>),
     );
   }
 }
@@ -51,6 +52,7 @@ class Variant {
   final int id;
   final int goodId;
   final bool isActive;
+  final String? barcode;
   final String? fullName;
   final double? price;
   final List<AttributeValue> attributeValues;
@@ -59,13 +61,13 @@ class Variant {
   int quantitySelected;
   String? selectedUnit;
   final List<Unit> availableUnits;
-    final double? remainder; // ← ДОБАВЛЯЕМ
-
+  final double? remainder; // ← ДОБАВЛЯЕМ
 
   Variant({
     required this.id,
     required this.goodId,
     required this.isActive,
+    this.barcode,
     this.fullName,
     this.price,
     required this.attributeValues,
@@ -81,12 +83,14 @@ class Variant {
     if (kDebugMode) {
       debugPrint('VariantModel: Парсинг варианта - id: ${json['id']}');
     }
-    final attributeValues = (json['attribute_values'] as List<dynamic>?)?.map((v) {
-      if (kDebugMode) {
-        debugPrint('VariantModel: Парсинг атрибута - value: ${v['value']}');
-      }
-      return AttributeValue.fromJson(v as Map<String, dynamic>);
-    }).toList() ?? [];
+    final attributeValues = (json['attribute_values'] as List<dynamic>?)
+            ?.map((v) {
+          if (kDebugMode) {
+            debugPrint('VariantModel: Парсинг атрибута - value: ${v['value']}');
+          }
+          return AttributeValue.fromJson(v as Map<String, dynamic>);
+        }).toList() ??
+        [];
 
     double? price;
     if (json['price'] != null) {
@@ -99,16 +103,18 @@ class Variant {
       }
     }
 
-    final good = json['good'] != null ? Goods.fromJson(json['good'] as Map<String, dynamic>) : null;
+    final good = json['good'] != null
+        ? Goods.fromJson(json['good'] as Map<String, dynamic>)
+        : null;
 
     // Парсим единицы измерения из good
     final units = <Unit>[];
-    
+
     // Добавляем единицы из good.units
     if (good?.units != null && good!.units!.isNotEmpty) {
       units.addAll(good.units!);
     }
-    
+
     //  ""НЕ"" Добавляем единицы из good.measurements
     // if (good?.measurements != null && good!.measurements!.isNotEmpty) {
     //   for (var measurement in good.measurements!) {
@@ -122,18 +128,19 @@ class Variant {
       id: json['id'] as int? ?? 0,
       goodId: json['good_id'] as int? ?? 0,
       isActive: json['is_active'] == 1,
+      barcode: json['barcode']?.toString(),
       fullName: json['full_name'] as String? ?? '',
       price: price,
       attributeValues: attributeValues,
       good: good,
       isSelected: false,
       quantitySelected: 1,
-      selectedUnit: units.isNotEmpty ? units.first.shortName ?? units.first.name : null,
+      selectedUnit:
+          units.isNotEmpty ? units.first.shortName ?? units.first.name : null,
       availableUnits: units, // Always non-null
       remainder: json['remainder'] != null
           ? double.tryParse(json['remainder'].toString())
           : null,
-
     );
   }
 }
@@ -160,7 +167,8 @@ class AttributeValue {
       id: json['id'] as int? ?? 0,
       categoryAttributeId: json['category_attribute_id'] as int? ?? 0,
       value: json['value'] as String? ?? '',
-      unitId: json['unit_id'] as int?, // ← Can fail if API sends "123" as string
+      unitId:
+          json['unit_id'] as int?, // ← Can fail if API sends "123" as string
       files: (json['files'] as List<dynamic>?)?.cast<String>(),
       categoryAttribute: json['category_attribute'] != null
           ? CategoryAttribute.fromJson(
