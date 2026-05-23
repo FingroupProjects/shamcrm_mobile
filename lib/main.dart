@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:app_tracking_transparency/app_tracking_transparency.dart';
+import 'package:crm_task_manager/app_feature_flags.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/api/service/firebase_api.dart';
 import 'package:crm_task_manager/api/service/secure_storage_service.dart';
@@ -193,7 +194,9 @@ void main() async {
     }
 
     final initialMessage = await _safeLoadInitialMessage();
-    await _safeInitializeSipRuntime();
+    if (kShowSip) {
+      await _safeInitializeSipRuntime();
+    }
     _safeConfigureSystemUi();
     final savedLocale = await _safeLoadLocale();
     runApp(MyApp(
@@ -572,7 +575,7 @@ class _MyAppState extends State<MyApp> {
 
     WidgetService.initialize();
     await NativeInternetMonitor().initialize();
-    if (widget.sessionValid) {
+    if (widget.sessionValid && kShowSip) {
       unawaited(_safeInitializeSipRuntime());
       unawaited(SipService().prepareSipRuntimePermissions());
     }
@@ -854,8 +857,7 @@ class _MyAppState extends State<MyApp> {
         },
         // ✅ ДОБАВЬТЕ/РАСКОММЕНТИРУЙТЕ builder
         builder: (context, child) {
-          return SipCallOverlayHost(
-            child: Stack(
+          final appChild = Stack(
               children: [
                 NativeInternetAwareWrapper(
                   // ← НОВОЕ ИМЯ
@@ -864,8 +866,10 @@ class _MyAppState extends State<MyApp> {
                 const InAppUpdateCornerIndicator(),
                 if (kDebugMode) const HttpInspectorFab(),
               ],
-            ),
-          );
+            );
+          return kShowSip
+              ? SipCallOverlayHost(child: appChild)
+              : appChild;
         },
         home: Builder(
           builder: (context) {

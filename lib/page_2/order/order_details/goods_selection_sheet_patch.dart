@@ -1027,14 +1027,22 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
                           overflow: TextOverflow.ellipsis,
                         ),
                         const SizedBox(height: 4),
-                        Text(
-                          _formatPrice(variant.price),
-                          style: const TextStyle(
-                            fontSize: 13,
-                            fontFamily: 'Gilroy',
-                            fontWeight: FontWeight.w500,
-                            color: Color(0xff4759FF),
+                        if (variant.price != null)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 4),
+                            child: Text(
+                              _formatPrice(variant.price),
+                              style: const TextStyle(
+                                fontSize: 13,
+                                fontFamily: 'Gilroy',
+                                fontWeight: FontWeight.w500,
+                                color: Color(0xff4759FF),
+                              ),
+                            ),
                           ),
+                        Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: _buildRemainderText(variant, localizations),
                         ),
                       ],
                     ),
@@ -1055,7 +1063,7 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      localizations.translate('stock_quantity_details'),
+                      localizations.translate('quantity'),
                       style: const TextStyle(
                         fontSize: 14,
                         fontFamily: 'Gilroy',
@@ -1130,6 +1138,23 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
             ],
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildRemainderText(Variant variant, AppLocalizations localizations) {
+    final remainder = variant.remainder;
+    final hasStock = remainder != null && remainder > 0;
+    final quantityText = localizations.translate('quantity');
+    final outOfStockText = localizations.translate('out_of_stock');
+
+    return Text(
+      hasStock ? '$quantityText: $remainder' : outOfStockText,
+      style: TextStyle(
+        fontSize: 12,
+        fontFamily: 'Gilroy',
+        fontWeight: FontWeight.w500,
+        color: hasStock ? const Color(0xff99A4BA) : const Color(0xffff5722),
       ),
     );
   }

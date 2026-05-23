@@ -7,9 +7,17 @@ import 'package:crm_task_manager/page_2/rmk/rmk_filter_sheet.dart';
 import 'package:crm_task_manager/page_2/rmk/rmk_payment_screen.dart';
 import 'package:crm_task_manager/page_2/rmk/rmk_product_card.dart';
 import 'package:crm_task_manager/page_2/rmk/rmk_quantity_screen.dart';
+import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/page_2/rmk/rmk_repository.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/material.dart';
+
+const _rmkLoading = Center(
+  child: PlayStoreImageLoading(
+    size: 80,
+    duration: Duration(milliseconds: 1000),
+  ),
+);
 
 class RmkScreen extends StatefulWidget {
   const RmkScreen({super.key});
@@ -33,6 +41,7 @@ class _RmkScreenState extends State<RmkScreen> {
   bool _isSyncing = false;
   bool _isSubmitting = false;
   bool _isLoadingStorages = false;
+  bool _hasCompletedInitialLoad = false;
   bool _isSearching = false;
 
   @override
@@ -104,14 +113,28 @@ class _RmkScreenState extends State<RmkScreen> {
       );
     } finally {
       if (mounted) {
-        setState(() => _isLoadingStorages = false);
+        setState(() {
+          _isLoadingStorages = false;
+          _hasCompletedInitialLoad = true;
+        });
       }
     }
   }
 
   Future<void> _handlePullRefresh() async {
-    unawaited(_runSync(resetCatalogCache: true));
-    await Future<void>.delayed(const Duration(milliseconds: 160));
+    await _runSync(resetCatalogCache: true);
+  }
+
+  bool get _isCatalogLoading => _isLoadingStorages || _isSyncing;
+
+  String _emptyCatalogMessage() {
+    if (_selectedStorage == null) {
+      return 'Выберите склад в фильтре';
+    }
+    if (_query.isNotEmpty || _categoryId != null) {
+      return 'Ничего не найдено';
+    }
+    return 'Нет товаров на выбранном складе';
   }
 
   Future<void> _selectStorage(WareHouse storage) async {
@@ -523,6 +546,7 @@ class _RmkScreenState extends State<RmkScreen> {
                   Expanded(
                     child: RefreshIndicator(
                       color: const Color(0xff1E2E52),
+                      backgroundColor: Colors.white,
                       onRefresh: _handlePullRefresh,
                       child: CustomScrollView(
                         controller: _scrollController,
@@ -543,16 +567,25 @@ class _RmkScreenState extends State<RmkScreen> {
                             builder: (context, goodsSnapshot) {
                               final goods =
                                   goodsSnapshot.data ?? const <RmkGood>[];
-                              if (goods.isEmpty) {
+                              if (_isCatalogLoading && goods.isEmpty) {
                                 return const SliverFillRemaining(
+                                  hasScrollBody: false,
+                                  child: _rmkLoading,
+                                );
+                              }
+
+                              if (goods.isEmpty) {
+                                return SliverFillRemaining(
                                   hasScrollBody: false,
                                   child: Center(
                                     child: Padding(
-                                      padding: EdgeInsets.all(24),
+                                      padding: const EdgeInsets.all(24),
                                       child: Text(
-                                        'Товары появятся после первой синхронизации',
+                                        _hasCompletedInitialLoad
+                                            ? _emptyCatalogMessage()
+                                            : 'Загрузка каталога...',
                                         textAlign: TextAlign.center,
-                                        style: TextStyle(
+                                        style: const TextStyle(
                                           color: Color(0xff718096),
                                           fontFamily: 'Gilroy',
                                           fontWeight: FontWeight.w600,
@@ -563,52 +596,63 @@ class _RmkScreenState extends State<RmkScreen> {
                                 );
                               }
 
-                              return SliverPadding(
-                                padding:
-                                    const EdgeInsets.fromLTRB(16, 0, 16, 18),
-                                sliver: SliverGrid(
-                                  gridDelegate:
-                                      SliverGridDelegateWithFixedCrossAxisCount(
-                                    crossAxisCount:
-                                        MediaQuery.sizeOf(context).width >= 520
-                                            ? 3
-                                            : 2,
-                                    mainAxisSpacing: 10,
-                                    crossAxisSpacing: 10,
-                                    childAspectRatio: 0.72,
+                              return SliverMainAxisGroup(
+                                slivers: [
+                                  SliverPadding(
+                                    padding: const EdgeInsets.fromLTRB(
+                                      16,
+                                      0,
+                                      16,
+                                      18,
+                                    ),
+                                    sliver: SliverGrid(
+                                      gridDelegate:
+                                          SliverGridDelegateWithFixedCrossAxisCount(
+                                        crossAxisCount:
+                                            MediaQuery.sizeOf(context).width >=
+                                                    520
+                                                ? 3
+                                                : 2,
+                                        mainAxisSpacing: 10,
+                                        crossAxisSpacing: 10,
+                                        childAspectRatio: 0.72,
+                                      ),
+                                      delegate: SliverChildBuilderDelegate(
+                                        (context, index) {
+                                          final good = goods[index];
+                                          return RmkProductCard(
+                                            good: good,
+                                            selectedQuantity:
+                                                cartQuantities[good.id] ?? 0,
+                                            onTap: () =>
+                                                _openQuantityScreen(good),
+                                          );
+                                        },
+                                        childCount: goods.length,
+                                      ),
+                                    ),
                                   ),
-                                  delegate: SliverChildBuilderDelegate(
-                                    (context, index) {
-                                      final good = goods[index];
-                                      return RmkProductCard(
-                                        good: good,
-                                        selectedQuantity:
-                                            cartQuantities[good.id] ?? 0,
-                                        onTap: () => _openQuantityScreen(good),
-                                      );
-                                    },
-                                    childCount: goods.length,
-                                  ),
-                                ),
+                                  if (_isSyncing)
+                                    const SliverToBoxAdapter(
+                                      child: Padding(
+                                        padding: EdgeInsets.fromLTRB(
+                                          16,
+                                          0,
+                                          16,
+                                          24,
+                                        ),
+                                        child: PlayStoreImageLoading(
+                                          size: 48,
+                                          duration: Duration(
+                                            milliseconds: 1000,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                ],
                               );
                             },
                           ),
-                          if (_isSyncing)
-                            const SliverToBoxAdapter(
-                              child: Padding(
-                                padding: EdgeInsets.fromLTRB(16, 0, 16, 24),
-                                child: Center(
-                                  child: SizedBox(
-                                    width: 24,
-                                    height: 24,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2.4,
-                                      color: Color(0xff1E2E52),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
                         ],
                       ),
                     ),
@@ -723,11 +767,11 @@ class _RmkFilterOptionTile extends StatelessWidget {
             children: [
               if (isLoading)
                 const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: Color(0xff1E2E52),
+                  width: 24,
+                  height: 24,
+                  child: PlayStoreImageLoading(
+                    size: 24,
+                    duration: Duration(milliseconds: 1000),
                   ),
                 )
               else

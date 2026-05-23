@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:audioplayers/audioplayers.dart';
+import 'package:crm_task_manager/app_feature_flags.dart';
 import 'package:crm_task_manager/main.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -67,6 +68,7 @@ class _SipCallOverlayHostState extends State<SipCallOverlayHost>
   }
 
   bool _shouldShowOverlay(SipUiState state) {
+    if (!kShowSip) return false;
     return !_sipService.isSipScreenVisible &&
         (state.callStatus == SipCallUiStatus.incoming ||
             state.callStatus == SipCallUiStatus.calling ||

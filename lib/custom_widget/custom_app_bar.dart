@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:crm_task_manager/app_feature_flags.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/custom_widget/calendar/calendar_screen.dart';
 import 'package:crm_task_manager/custom_widget/filter/call_center/call_center_filter_screen.dart';
@@ -676,7 +677,7 @@ class _CustomAppBarState extends State<CustomAppBar>
       _canReadCallCenter = canReadCallCenter;
       _canReadCallCenter = canReadCallCenter;
       _canReadGps = canReadGps;
-      _canReadSip = canReadSip;
+      _canReadSip = kShowSip && canReadSip;
     });
   }
 

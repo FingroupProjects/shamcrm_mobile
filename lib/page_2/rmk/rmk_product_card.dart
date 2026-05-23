@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:crm_task_manager/offline/db/app_database.dart';
+import 'package:crm_task_manager/page_2/rmk/rmk_repository.dart';
 import 'package:flutter/material.dart';
 
 class RmkProductCard extends StatelessWidget {
@@ -91,7 +92,7 @@ class RmkProductCard extends StatelessWidget {
                       children: [
                         Expanded(
                           child: Text(
-                            'Остаток: ${_formatQuantity(good.quantity)}',
+                            'Остаток: ${_formatQuantity(good.quantity)} ${RmkRepository.unitLabelForGood(good)}',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(

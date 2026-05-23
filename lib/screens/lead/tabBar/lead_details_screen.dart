@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'package:crm_task_manager/app_feature_flags.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/lead/lead_bloc.dart';
 import 'package:crm_task_manager/bloc/lead/lead_event.dart';
@@ -659,7 +660,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       _canReadDeal = canReadDeal;
       _canExportContact = canExportContact;
       _canReadOrders = canReadOrder;
-      _canReadSip = canReadSip;
+      _canReadSip = kShowSip && canReadSip;
       _isExportContactEnabled = prefs.getBool('switchContact') ?? false;
     });
   }

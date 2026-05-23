@@ -25,7 +25,7 @@ class RmkRepository {
   static const String _syncModule = 'rmk';
   static const String _goodsFullSyncScope = 'goods_full_sync';
   static const String _syncCompleteVersion = 'complete_v1';
-  bool _isSyncing = false;
+  Future<void>? _syncChain;
 
   Stream<List<RmkGood>> watchGoods({
     String query = '',
@@ -309,10 +309,20 @@ class RmkRepository {
   Future<void> syncInBackground({
     required int storageId,
     bool resetCatalogCache = false,
-  }) async {
-    if (_isSyncing) return;
-    _isSyncing = true;
+  }) {
+    _syncChain = (_syncChain ?? Future<void>.value()).then(
+      (_) => _executeSync(
+        storageId: storageId,
+        resetCatalogCache: resetCatalogCache,
+      ),
+    );
+    return _syncChain!;
+  }
 
+  Future<void> _executeSync({
+    required int storageId,
+    bool resetCatalogCache = false,
+  }) async {
     try {
       await _syncCategories(resetCache: resetCatalogCache);
       await _syncGoods(
@@ -322,8 +332,6 @@ class RmkRepository {
     } catch (error, stackTrace) {
       debugPrint('RMK sync failed: $error');
       debugPrintStack(stackTrace: stackTrace);
-    } finally {
-      _isSyncing = false;
     }
   }
 
@@ -479,6 +487,141 @@ class RmkRepository {
         return measurementUnitId;
       }
     }
+
+    return null;
+  }
+
+  static String unitLabelForGood(RmkGood good) {
+    return unitLabelFromPayload(good.payload);
+  }
+
+  static String unitLabelFromPayload(String payload) {
+    try {
+      final decoded = jsonDecode(payload);
+      if (decoded is! Map<String, dynamic>) return _defaultUnitLabel;
+
+      final cached = decoded['unit_label']?.toString().trim();
+      if (cached != null && cached.isNotEmpty) return cached;
+
+      return _extractUnitLabel(decoded) ?? _defaultUnitLabel;
+    } catch (_) {
+      return _defaultUnitLabel;
+    }
+  }
+
+  static const String _defaultUnitLabel = 'шт';
+
+  static String? _extractUnitLabel(Map<String, dynamic> payload) {
+    final unitId = _asInt(payload['unit_id']);
+
+    final units = payload['units'];
+    if (unitId != null && units is List) {
+      for (final item in units.whereType<Map<String, dynamic>>()) {
+        if (_asInt(item['id']) == unitId) {
+          final label = _unitNameFromMap(item);
+          if (label != null) return label;
+        }
+      }
+    }
+
+    final unit = payload['unit'];
+    if (unit is Map<String, dynamic>) {
+      if (unitId == null || _asInt(unit['id']) == unitId) {
+        final label = _unitNameFromMap(unit);
+        if (label != null) return label;
+      }
+    }
+
+    final measurements = payload['measurements'];
+    if (unitId != null && measurements is List) {
+      for (final measurement in measurements.whereType<Map<String, dynamic>>()) {
+        if (_asInt(measurement['unit_id']) == unitId) {
+          final measurementUnit = measurement['unit'];
+          if (measurementUnit is Map<String, dynamic>) {
+            final label = _unitNameFromMap(measurementUnit);
+            if (label != null) return label;
+          }
+        }
+      }
+    }
+
+    if (units is List) {
+      final baseUnit = units.whereType<Map<String, dynamic>>().where((item) {
+        return item['is_base'] == true || item['is_base'] == 1;
+      }).firstOrNull;
+      final baseLabel =
+          baseUnit != null ? _unitNameFromMap(baseUnit) : null;
+      if (baseLabel != null) return baseLabel;
+
+      final firstUnit = units.whereType<Map<String, dynamic>>().firstOrNull;
+      if (firstUnit != null) return _unitNameFromMap(firstUnit);
+    }
+
+    return null;
+  }
+
+  static String? _unitNameFromMap(Map<String, dynamic> unit) {
+    final shortName = unit['short_name']?.toString().trim();
+    if (shortName != null && shortName.isNotEmpty) return shortName;
+
+    final name = unit['name']?.toString().trim();
+    if (name != null && name.isNotEmpty) return name;
+
+    return null;
+  }
+
+  String? _resolveUnitLabel(Variant variant) {
+    final good = variant.good;
+    if (good == null) return null;
+    return _resolveUnitLabelForGood(good);
+  }
+
+  String? _resolveUnitLabelForGood(Goods good) {
+    final unitId = _resolveGoodUnitId(good);
+
+    if (unitId != null && good.units != null) {
+      for (final unit in good.units!) {
+        if (unit.id == unitId) {
+          return _unitDisplayName(unit.shortName, unit.name);
+        }
+      }
+    }
+
+    if (good.unit != null && (unitId == null || good.unit!.id == unitId)) {
+      return _unitDisplayName(good.unit!.shortName, good.unit!.name);
+    }
+
+    if (unitId != null && good.measurements != null) {
+      for (final measurement in good.measurements!) {
+        if (measurement.unitId == unitId && measurement.unit != null) {
+          return _unitDisplayName(
+            measurement.unit!.shortName,
+            measurement.unit!.name,
+          );
+        }
+      }
+    }
+
+    final baseUnit =
+        good.units?.where((unit) => unit.isBase == true).firstOrNull;
+    if (baseUnit != null) {
+      return _unitDisplayName(baseUnit.shortName, baseUnit.name);
+    }
+
+    final firstUnit = good.units?.firstOrNull;
+    if (firstUnit != null) {
+      return _unitDisplayName(firstUnit.shortName, firstUnit.name);
+    }
+
+    return null;
+  }
+
+  static String? _unitDisplayName(String? shortName, String? name) {
+    final short = shortName?.trim();
+    if (short != null && short.isNotEmpty) return short;
+
+    final fullName = name?.trim();
+    if (fullName != null && fullName.isNotEmpty) return fullName;
 
     return null;
   }
@@ -680,7 +823,10 @@ class RmkRepository {
 
   Future<bool> _hasCachedGoodsWithoutUnitInfo() async {
     final cachedGoods = await _db.select(_db.rmkGoods).get();
-    return cachedGoods.any((good) => !good.payload.contains('"unit_id"'));
+    return cachedGoods.any((good) {
+      final payload = good.payload;
+      return !payload.contains('"unit_id"') || !payload.contains('"unit_label"');
+    });
   }
 
   Future<bool> _isGoodsFullSyncComplete() async {
@@ -766,6 +912,7 @@ class RmkRepository {
       'remainder': variant.remainder,
       'price': variant.price,
       'unit_id': _resolveUnitId(variant),
+      'unit_label': _resolveUnitLabel(variant),
       'unit': good?.unit?.toJson(),
       'units': good?.units?.map((unit) => unit.toJson()).toList(),
       'measurements': good?.measurements
@@ -805,6 +952,7 @@ class RmkRepository {
       'quantity': good.quantity,
       'price': good.price,
       'unit_id': _resolveGoodUnitId(good),
+      'unit_label': _resolveUnitLabelForGood(good),
       'unit': good.unit?.toJson(),
       'units': good.units?.map((unit) => unit.toJson()).toList(),
       'measurements': good.measurements

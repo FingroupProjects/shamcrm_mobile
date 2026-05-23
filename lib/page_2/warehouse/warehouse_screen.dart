@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/app_feature_flags.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/custom_widget/custom_app_bar_page_2.dart';
@@ -154,22 +155,26 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
     // Добавляем заказы первыми
 
     if (_hasExpenseDocument) {
-      allDocuments.add(
-        WarehouseDocument(
-          keyName: 'rmk',
-          title: 'РМК',
-          icon: Icons.point_of_sale,
-          color: docColor,
-        ),
-      );
-      allDocuments.add(
-        WarehouseDocument(
-          keyName: 'rmk_sales',
-          title: 'Продажа РМК',
-          icon: Icons.receipt_long_outlined,
-          color: docColor,
-        ),
-      );
+      if (kShowRmk) {
+        allDocuments.add(
+          WarehouseDocument(
+            keyName: 'rmk',
+            title: 'РМК',
+            icon: Icons.point_of_sale,
+            color: docColor,
+          ),
+        );
+      }
+      if (kShowRmkSales) {
+        allDocuments.add(
+          WarehouseDocument(
+            keyName: 'rmk_sales',
+            title: 'Продажа РМК',
+            icon: Icons.receipt_long_outlined,
+            color: docColor,
+          ),
+        );
+      }
       allDocuments.add(
         WarehouseDocument(
           keyName: 'client_sale',

@@ -241,7 +241,10 @@ class _RmkQuantityScreenState extends State<RmkQuantityScreen> {
         body: SafeArea(
           child: Column(
             children: [
-              _ProductHeader(good: _good),
+              _ProductHeader(
+                good: _good,
+                unitLabel: RmkRepository.unitLabelForGood(_good),
+              ),
               _TotalRow(
                 total: _total,
                 selected: _activeField == _EditField.total,
@@ -256,6 +259,7 @@ class _RmkQuantityScreenState extends State<RmkQuantityScreen> {
                 totalController: _totalController,
                 quantityFocusNode: _quantityFocusNode,
                 totalFocusNode: _totalFocusNode,
+                unitLabel: RmkRepository.unitLabelForGood(_good),
                 onSelect: _selectField,
                 onChanged: _handleFieldChanged,
               ),
@@ -297,9 +301,13 @@ class _RmkQuantityScreenState extends State<RmkQuantityScreen> {
 enum _EditField { quantity, total }
 
 class _ProductHeader extends StatelessWidget {
-  const _ProductHeader({required this.good});
+  const _ProductHeader({
+    required this.good,
+    required this.unitLabel,
+  });
 
   final RmkGood good;
+  final String unitLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -336,7 +344,10 @@ class _ProductHeader extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 8),
-                _InfoLine('Остаток', _formatQuantity(good.quantity)),
+                _InfoLine(
+                  'Остаток',
+                  '${_formatQuantity(good.quantity)} $unitLabel',
+                ),
                 _InfoLine('Продажная цена', _formatMoney(good.price)),
               ],
             ),
@@ -500,6 +511,7 @@ class _ActiveFieldPanel extends StatelessWidget {
     required this.totalController,
     required this.quantityFocusNode,
     required this.totalFocusNode,
+    required this.unitLabel,
     required this.onSelect,
     required this.onChanged,
   });
@@ -509,6 +521,7 @@ class _ActiveFieldPanel extends StatelessWidget {
   final TextEditingController totalController;
   final FocusNode quantityFocusNode;
   final FocusNode totalFocusNode;
+  final String unitLabel;
   final ValueChanged<_EditField> onSelect;
   final ValueChanged<_EditField> onChanged;
 
@@ -531,7 +544,7 @@ class _ActiveFieldPanel extends StatelessWidget {
               label: 'Количество',
               controller: quantityController,
               focusNode: quantityFocusNode,
-              suffix: 'шт',
+              suffix: unitLabel,
               onTap: () => onSelect(_EditField.quantity),
               onChanged: () => onChanged(_EditField.quantity),
             ),

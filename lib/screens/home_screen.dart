@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/app_feature_flags.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/api/service/firebase_api.dart';
 import 'package:crm_task_manager/api/service/widget_service.dart';
@@ -256,7 +257,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       return;
     }
 
-    if (screenIdentifier == 'sip') {
+    if (screenIdentifier == 'sip' && kShowSip) {
       debugPrint('HomeScreen: SIP screen identifier detected');
       Future.microtask(() async {
         if (!mounted) return;
@@ -276,8 +277,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
     // Handle accounting document screen identifiers
     final accountingScreenIdentifiers = [
-      'rmk',
-      'rmk_sales',
+      if (kShowRmk) 'rmk',
+      if (kShowRmkSales) 'rmk_sales',
       'client_sale',
       'client_return',
       'income_goods',
