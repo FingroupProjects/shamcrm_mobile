@@ -314,6 +314,7 @@
 				97C146EC1CF9000F007C117D /* Resources */,
 				CBDE5A8D2EC5E06F00E8A9F1 /* Thin Binary */,
 				9346634C741D1191CF4E9F0A /* [CP] Embed Pods Frameworks */,
+				A1C5E9B72F4A4A5800D1A001 /* Generate WebRTC dSYM */,
 				DBBA79D786CF6BECD8941B8D /* [CP] Copy Pods Resources */,
 			);
 			buildRules = (
@@ -495,6 +496,27 @@
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-Runner/Pods-Runner-frameworks.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+		A1C5E9B72F4A4A5800D1A001 /* Generate WebRTC dSYM */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"${PODS_ROOT}/WebRTC-SDK/WebRTC.xcframework/ios-arm64/WebRTC.framework/WebRTC",
+			);
+			name = "Generate WebRTC dSYM";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"${DWARF_DSYM_FOLDER_PATH}/WebRTC.framework.dSYM/Contents/Resources/DWARF/WebRTC",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "if [ \"${CONFIGURATION}\" = \"Debug\" ]; then\n  exit 0\nfi\n\nWEBRTC_BINARY=\"${PODS_ROOT}/WebRTC-SDK/WebRTC.xcframework/ios-arm64/WebRTC.framework/WebRTC\"\nWEBRTC_DSYM_DIR=\"${DWARF_DSYM_FOLDER_PATH}/WebRTC.framework.dSYM\"\nWEBRTC_DSYM_FILE=\"${WEBRTC_DSYM_DIR}/Contents/Resources/DWARF/WebRTC\"\n\nif [ ! -f \"${WEBRTC_BINARY}\" ] || [ -z \"${DWARF_DSYM_FOLDER_PATH}\" ]; then\n  exit 0\nfi\n\nif [ -f \"${WEBRTC_DSYM_FILE}\" ]; then\n  exit 0\nfi\n\nmkdir -p \"${DWARF_DSYM_FOLDER_PATH}\"\nrm -rf \"${WEBRTC_DSYM_DIR}\"\n\nif dsymutil \"${WEBRTC_BINARY}\" -o \"${WEBRTC_DSYM_DIR}\"; then\n  if [ -f \"${WEBRTC_DSYM_FILE}\" ]; then\n    echo \"Generated WebRTC.framework.dSYM at ${WEBRTC_DSYM_DIR}\"\n  else\n    echo \"warning: dsymutil completed, but WebRTC.framework.dSYM was not created\"\n  fi\nelse\n  echo \"warning: Failed to generate WebRTC.framework.dSYM\"\nfi\n";
 			showEnvVarsInLog = 0;
 		};
 		9740EEB61CF901F6004384FC /* Run Script */ = {
