@@ -1646,7 +1646,6 @@ class ApiService {
 
 // ОТЛОЖЕННЫЙ ТОКЕН — ОДИН РАЗ, НАДЁЖНО
   static const String _pendingFcmKey = 'pending_fcm_token';
-  static const String _pendingVoipKey = 'pending_ios_voip_token';
 
   Future<void> sendDeviceToken(String deviceToken) async {
     try {
@@ -1738,100 +1737,6 @@ class ApiService {
         'sendPendingFCMTokenIfNeeded: Найден отложенный токен → отправляем');
     await sendDeviceToken(pending); // ← внутри уже всё обработается
     // НЕ удаляем здесь! Удаление только в sendDeviceToken при успехе
-  }
-
-  Future<void> sendVoipToken(String voipToken) async {
-    try {
-      debugPrint('═══════════════════════════════════════════════════════════');
-      debugPrint('sendVoipToken: Начало отправки iOS VoIP токена');
-      debugPrint(
-          'sendVoipToken: Token: ${voipToken.substring(0, voipToken.length > 20 ? 20 : voipToken.length)}...');
-
-      await ensureInitialized();
-      if (baseUrl == null || baseUrl!.isEmpty) {
-        debugPrint(
-            'sendVoipToken: baseUrl не готов → сохраняем как отложенный');
-        await _savePendingVoipToken(voipToken);
-        return;
-      }
-
-      final token = await getToken();
-      if (token == null || token.isEmpty) {
-        debugPrint('sendVoipToken: Нет авторизационного токена → отложенный');
-        await _savePendingVoipToken(voipToken);
-        return;
-      }
-
-      final organizationId = await getSelectedOrganization();
-      final url =
-          '$baseUrl/add-fcm-token${organizationId != null ? '?organization_id=$organizationId' : ''}';
-
-      debugPrint('sendVoipToken: URL: $url');
-
-      final response = await http.post(
-        Uri.parse(url),
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'Authorization': 'Bearer $token',
-          'Device': 'mobile',
-        },
-        body: json.encode({
-          'type': 'mobile',
-          'token': voipToken,
-          'platform': 'ios',
-          'push_type': 'voip',
-          'provider': 'apns_voip',
-        }),
-      );
-
-      debugPrint(
-          'sendVoipToken: Ответ: ${response.statusCode} ${response.body}');
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        debugPrint('sendVoipToken: УСПЕШНО отправлен');
-        await _removePendingVoipToken();
-      } else {
-        debugPrint('sendVoipToken: Ошибка ${response.statusCode} → отложенный');
-        await _savePendingVoipToken(voipToken);
-      }
-    } catch (e, s) {
-      debugPrint('sendVoipToken: Исключение: $e\n$s');
-      await _savePendingVoipToken(voipToken);
-    } finally {
-      debugPrint('═══════════════════════════════════════════════════════════');
-    }
-  }
-
-  Future<void> _savePendingVoipToken(String token) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_pendingVoipKey, token);
-    debugPrint('sendVoipToken: Токен сохранён как отложенный');
-  }
-
-  Future<void> _removePendingVoipToken() async {
-    final prefs = await SharedPreferences.getInstance();
-    final hadToken = prefs.containsKey(_pendingVoipKey);
-    await prefs.remove(_pendingVoipKey);
-    if (hadToken) debugPrint('sendVoipToken: Отложенный токен удалён');
-  }
-
-  Future<void> clearPendingVoipToken() async {
-    await _removePendingVoipToken();
-  }
-
-  Future<void> sendPendingVoipTokenIfNeeded() async {
-    final prefs = await SharedPreferences.getInstance();
-    final pending = prefs.getString(_pendingVoipKey);
-
-    if (pending == null || pending.isEmpty) {
-      debugPrint('sendPendingVoipTokenIfNeeded: Нет отложенного токена');
-      return;
-    }
-
-    debugPrint(
-        'sendPendingVoipTokenIfNeeded: Найден отложенный токен → отправляем');
-    await sendVoipToken(pending);
   }
 
   // Гарантируем, что baseUrl готов (вызывать везде, где нужен ApiService)

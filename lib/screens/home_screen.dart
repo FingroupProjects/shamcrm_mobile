@@ -1,4 +1,3 @@
-import 'package:crm_task_manager/app_feature_flags.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/api/service/firebase_api.dart';
 import 'package:crm_task_manager/api/service/widget_service.dart';
@@ -15,8 +14,6 @@ import 'package:crm_task_manager/page_2/money/money_outcome/money_outcome_screen
 import 'package:crm_task_manager/page_2/money/money_references/cash_desk/cash_desk_screen.dart';
 import 'package:crm_task_manager/page_2/money/money_references/expense/expense_screen.dart';
 import 'package:crm_task_manager/page_2/money/money_references/income/income_screen.dart';
-import 'package:crm_task_manager/page_2/rmk/rmk_screen.dart';
-import 'package:crm_task_manager/page_2/rmk/rmk_sales_screen.dart';
 import 'package:crm_task_manager/page_2/warehouse/client_return/client_return_screen.dart';
 import 'package:crm_task_manager/page_2/warehouse/client_sale/client_sales_screen.dart';
 import 'package:crm_task_manager/page_2/warehouse/incoming/incoming_screen.dart';
@@ -37,9 +34,6 @@ import 'package:crm_task_manager/screens/empty_screen.dart';
 import 'package:crm_task_manager/screens/no_access_screen.dart';
 import 'package:crm_task_manager/screens/lead/lead_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
-import 'package:crm_task_manager/screens/sip/sip_screen.dart';
-import 'package:crm_task_manager/screens/sip/sip_service.dart';
-import 'package:crm_task_manager/screens/sip/sip_state.dart';
 import 'package:crm_task_manager/screens/task/task_screen.dart';
 import 'package:crm_task_manager/services/chat_unread_counter_service.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -75,29 +69,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   List<String> _inactiveIconsGroup2 = [];
 
   void _refreshChatUnreadCounters() {
-    if (_hasActiveSipInteraction()) {
-      debugPrint(
-          'HomeScreen: skip chat unread refresh while SIP call is active');
-      return;
-    }
     ChatUnreadCounterService.instance.refreshCounts(silent: true);
   }
 
-  bool _hasActiveSipInteraction() {
-    final callStatus = SipService().state.callStatus;
-    return callStatus == SipCallUiStatus.incoming ||
-        callStatus == SipCallUiStatus.calling ||
-        callStatus == SipCallUiStatus.ringing ||
-        callStatus == SipCallUiStatus.inCall;
-  }
-
   bool _shouldSkipResumeSideEffects() {
-    if (_hasActiveSipInteraction()) {
-      debugPrint(
-          'HomeScreen: resume side effects skipped during active SIP call');
-      return true;
-    }
-
     final now = DateTime.now();
     if (_lastResumeSyncAt != null &&
         now.difference(_lastResumeSyncAt!) < const Duration(seconds: 2)) {
@@ -205,12 +180,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     debugPrint(
         'HomeScreen: _widgetOptionsGroup1.length = ${_widgetOptionsGroup1.length}');
 
-    if (_hasActiveSipInteraction()) {
-      debugPrint(
-          'HomeScreen: skip pending widget navigation while SIP call is active');
-      return;
-    }
-
     final pendingScreen = WidgetService.consumePendingNavigation();
     debugPrint('HomeScreen: pendingScreen from WidgetService: $pendingScreen');
 
@@ -257,28 +226,12 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       return;
     }
 
-    if (screenIdentifier == 'sip' && kShowSip) {
-      debugPrint('HomeScreen: SIP screen identifier detected');
-      Future.microtask(() async {
-        if (!mounted) return;
-        await navigatorKey.currentState?.push(
-          MaterialPageRoute<void>(
-            builder: (_) => const SipScreen(),
-            fullscreenDialog: true,
-          ),
-        );
-      });
-      return;
-    }
-
     // Маппинг идентификаторов экранов на их типы
     int? targetIndexGroup1;
     int? targetIndexGroup2;
 
     // Handle accounting document screen identifiers
     final accountingScreenIdentifiers = [
-      if (kShowRmk) 'rmk',
-      if (kShowRmkSales) 'rmk_sales',
       'client_sale',
       'client_return',
       'income_goods',
@@ -449,12 +402,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
           Widget? targetScreen;
           switch (screenIdentifier) {
-            case 'rmk':
-              targetScreen = const RmkScreen();
-              break;
-            case 'rmk_sales':
-              targetScreen = const RmkSalesScreen();
-              break;
             case 'client_sale':
               targetScreen = ClientSaleScreen();
               break;

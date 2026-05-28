@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:app_tracking_transparency/app_tracking_transparency.dart';
-import 'package:crm_task_manager/app_feature_flags.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/api/service/firebase_api.dart';
 import 'package:crm_task_manager/api/service/secure_storage_service.dart';
@@ -137,8 +136,6 @@ import 'package:crm_task_manager/screens/auth/auth_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/profile/languages/local_manager_lang.dart';
 import 'package:crm_task_manager/screens/profile/profile_screen.dart';
-import 'package:crm_task_manager/screens/sip/sip_call_overlay_host.dart';
-import 'package:crm_task_manager/screens/sip/sip_service.dart';
 import 'package:crm_task_manager/services/app_logout_service.dart';
 import 'package:crm_task_manager/update_dialog.dart';
 import 'package:crm_task_manager/widgets/native_internet_aware_wrapper_WITH_GAME.dart';
@@ -194,9 +191,6 @@ void main() async {
     }
 
     final initialMessage = await _safeLoadInitialMessage();
-    if (kShowSip) {
-      await _safeInitializeSipRuntime();
-    }
     _safeConfigureSystemUi();
     final savedLocale = await _safeLoadLocale();
     runApp(MyApp(
@@ -213,15 +207,6 @@ void main() async {
     debugPrint('main: startup error: $e');
     debugPrint('main: startup stackTrace: $stackTrace');
     runApp(ErrorApp(error: e.toString()));
-  }
-}
-
-Future<void> _safeInitializeSipRuntime() async {
-  try {
-    await SipService().initialize().timeout(const Duration(seconds: 8));
-  } catch (e, stackTrace) {
-    debugPrint('main: SipService initialize error: $e');
-    debugPrint('main: SipService initialize stackTrace: $stackTrace');
   }
 }
 
@@ -575,10 +560,6 @@ class _MyAppState extends State<MyApp> {
 
     WidgetService.initialize();
     await NativeInternetMonitor().initialize();
-    if (widget.sessionValid && kShowSip) {
-      unawaited(_safeInitializeSipRuntime());
-      unawaited(SipService().prepareSipRuntimePermissions());
-    }
     _initializeDeferredStartup();
   }
 
@@ -867,9 +848,7 @@ class _MyAppState extends State<MyApp> {
                 if (kDebugMode) const HttpInspectorFab(),
               ],
             );
-          return kShowSip
-              ? SipCallOverlayHost(child: appChild)
-              : appChild;
+          return appChild;
         },
         home: Builder(
           builder: (context) {

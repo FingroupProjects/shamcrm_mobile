@@ -2,7 +2,7 @@ name: crm_task_manager
 description: "A new Flutter project."
 publish_to: none
 
-version: 2.1.105+133 
+version: 2.1.107+135
 
 
 environment:
@@ -89,9 +89,6 @@ dependencies:
   json_annotation: ^4.9.0
   json_serializable: ^6.11.1
   build_runner: ^2.8.0
-  sip_ua:
-    path: third_party/sip_ua
-  flutter_webrtc: ^0.12.12+hotfix.1
   geolocator: ^14.0.2
   flutter_map: ^8.3.0
   latlong2: ^0.9.1
@@ -117,6 +114,8 @@ flutter_native_splash:
   image: assets/icons/playstore.png
 
 flutter:
+  config:
+    enable-swift-package-manager: false
 
   uses-material-design: true
 
@@ -169,7 +168,6 @@ flutter:
     - assets/page_2/icons/
     - assets/audio/voice_operator.mp3
     - assets/icons/MyNavBar/money_ON.png
-    - assets/icons/sip/
 
   fonts:
     - family: Gilroy

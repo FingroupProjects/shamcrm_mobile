@@ -1,6 +1,5 @@
 package com.softtech.crm_task_manager
 
-import android.app.NotificationManager
 import android.appwidget.AppWidgetManager
 import android.content.ComponentName
 import android.content.Context
@@ -9,15 +8,11 @@ import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
 import android.net.NetworkRequest
-import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
-import android.os.PowerManager
-import android.provider.Settings
 import android.util.Log
-import android.view.WindowManager
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.enableEdgeToEdge
 import androidx.core.content.FileProvider
@@ -40,20 +35,15 @@ class MainActivity : FlutterFragmentActivity() {
     private val NETWORK_EVENT_CHANNEL = "com.shamcrm/network_status"
     private val IN_APP_UPDATE_METHOD_CHANNEL = "com.shamcrm/in_app_update/methods"
     private val IN_APP_UPDATE_EVENT_CHANNEL = "com.shamcrm/in_app_update/events"
-    private val NATIVE_SIP_METHOD_CHANNEL = "com.shamcrm/native_sip/methods"
-    private val NATIVE_SIP_EVENT_CHANNEL = "com.shamcrm/native_sip/events"
     
     private var methodChannel: MethodChannel? = null
     private var networkEventChannel: EventChannel? = null
     private var inAppUpdateMethodChannel: MethodChannel? = null
     private var inAppUpdateEventChannel: EventChannel? = null
-    private var nativeSipMethodChannel: MethodChannel? = null
-    private var nativeSipEventChannel: EventChannel? = null
     private val handler = Handler(Looper.getMainLooper())
     
     private var networkEventSink: EventChannel.EventSink? = null
     private var inAppUpdateEventSink: EventChannel.EventSink? = null
-    private var nativeSipEventSink: EventChannel.EventSink? = null
     private val connectivityManager by lazy {
         getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
     }
@@ -159,15 +149,12 @@ class MainActivity : FlutterFragmentActivity() {
         
         Log.d("MainActivity", "=== onCreate ===")
         appUpdateManager = AppUpdateManagerFactory.create(this)
-        NativeSipBridge.initialize(applicationContext)
 
         if (Build.VERSION.SDK_INT >= 35) {
             enableEdgeToEdge()
         }
         
         handleWidgetIntent(intent)
-        handleSipNavigationIntent(intent)
-        updateIncomingCallWindowMode(intent)
         
         val screenIdentifier = intent?.getStringExtra("screen_identifier")
         if (!screenIdentifier.isNullOrEmpty()) {
@@ -273,128 +260,6 @@ class MainActivity : FlutterFragmentActivity() {
             }
         })
 
-        nativeSipMethodChannel = MethodChannel(
-            flutterEngine.dartExecutor.binaryMessenger,
-            NATIVE_SIP_METHOD_CHANNEL
-        )
-
-        nativeSipMethodChannel?.setMethodCallHandler { call, result ->
-            when (call.method) {
-                "initialize" -> {
-                    result.success(true)
-                }
-                "register" -> {
-                    val server = call.argument<String>("server")
-                    val login = call.argument<String>("login")
-                    val password = call.argument<String>("password")
-                    val port = call.argument<Int>("port")
-                    val transport = call.argument<String>("transport")
-                    val authUser = call.argument<String>("authUser")
-
-                    if (server.isNullOrBlank() ||
-                        login.isNullOrBlank() ||
-                        password.isNullOrBlank() ||
-                        port == null ||
-                        transport.isNullOrBlank()
-                    ) {
-                        result.error("INVALID_ARGS", "Missing native SIP registration args", null)
-                    } else {
-                        result.success(
-                            NativeSipBridge.register(
-                                server = server,
-                                login = login,
-                                password = password,
-                                port = port,
-                                transport = transport,
-                                authUser = authUser,
-                            )
-                        )
-                    }
-                }
-                "unregister" -> {
-                    Log.w("MainActivity", "Native SIP unregister invoked from Flutter method channel")
-                    NativeSipBridge.unregister()
-                    result.success(true)
-                }
-                "getStateSnapshot" -> {
-                    result.success(NativeSipBridge.getStateSnapshot())
-                }
-                "restoreRegistrationIfNeeded" -> {
-                    result.success(NativeSipBridge.restoreRegistrationIfNeeded())
-                }
-                "makeCall" -> {
-                    val target = call.argument<String>("target")
-                    if (target.isNullOrBlank()) {
-                        result.error("INVALID_TARGET", "Target is empty", null)
-                    } else {
-                        result.success(NativeSipBridge.makeCall(target))
-                    }
-                }
-                "acceptCall" -> result.success(NativeSipBridge.acceptCall())
-                "declineCall" -> result.success(NativeSipBridge.declineCall())
-                "hangup" -> result.success(NativeSipBridge.hangup())
-                "setMuted" -> {
-                    val muted = call.argument<Boolean>("muted") ?: false
-                    result.success(NativeSipBridge.setMuted(muted))
-                }
-                "setSpeaker" -> {
-                    val speakerOn = call.argument<Boolean>("speakerOn") ?: false
-                    result.success(NativeSipBridge.setSpeaker(speakerOn))
-                }
-                "requestBackgroundReliabilitySettings" -> {
-                    result.success(requestBackgroundReliabilitySettings())
-                }
-                "openXiaomiSettings" -> {
-                    result.success(openXiaomiAutoStartSettings())
-                }
-                "canUseFullScreenIntent" -> {
-                    result.success(canUseFullScreenIntent())
-                }
-                "requestFullScreenIntentPermission" -> {
-                    result.success(requestFullScreenIntentPermission())
-                }
-                "dispose" -> {
-                    result.success(true)
-                }
-                else -> result.notImplemented()
-            }
-        }
-
-        nativeSipEventChannel = EventChannel(
-            flutterEngine.dartExecutor.binaryMessenger,
-            NATIVE_SIP_EVENT_CHANNEL
-        )
-
-        nativeSipEventChannel?.setStreamHandler(object : EventChannel.StreamHandler {
-            override fun onListen(arguments: Any?, events: EventChannel.EventSink?) {
-                nativeSipEventSink = events
-                NativeSipBridge.setFlutterEventSink(object : EventChannel.EventSink {
-                    override fun success(event: Any?) {
-                        handler.post {
-                            nativeSipEventSink?.success(event)
-                        }
-                    }
-
-                    override fun error(code: String, message: String?, details: Any?) {
-                        handler.post {
-                            nativeSipEventSink?.error(code, message, details)
-                        }
-                    }
-
-                    override fun endOfStream() {
-                        handler.post {
-                            nativeSipEventSink?.endOfStream()
-                        }
-                    }
-                })
-            }
-
-            override fun onCancel(arguments: Any?) {
-                nativeSipEventSink = null
-                NativeSipBridge.setFlutterEventSink(null)
-            }
-        })
-        
         Log.d("MainActivity", "✅ Channels configured")
     }
 
@@ -403,8 +268,6 @@ class MainActivity : FlutterFragmentActivity() {
         
         setIntent(intent)
         handleWidgetIntent(intent)
-        handleSipNavigationIntent(intent)
-        updateIncomingCallWindowMode(intent)
         
         val screenIdentifier = intent.getStringExtra("screen_identifier")
         if (!screenIdentifier.isNullOrEmpty()) {
@@ -418,16 +281,6 @@ class MainActivity : FlutterFragmentActivity() {
         unregisterInstallStateListener()
         super.onDestroy()
         stopNetworkMonitoring()
-    }
-
-    override fun onResume() {
-        super.onResume()
-        NativeSipBridge.onAppForeground()
-    }
-
-    override fun onPause() {
-        NativeSipBridge.onAppBackground()
-        super.onPause()
     }
 
     // ✅ Network monitoring methods
@@ -454,155 +307,6 @@ class MainActivity : FlutterFragmentActivity() {
         }
     }
 
-    private fun requestBackgroundReliabilitySettings(): Boolean {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
-            return false
-        }
-
-        val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
-        if (powerManager.isIgnoringBatteryOptimizations(packageName)) {
-            // Уже исключено — открываем Xiaomi AutoStart настройки
-            return openXiaomiAutoStartSettings()
-        }
-
-        return try {
-            // Прямой запрос для нашего приложения — открывает диалог
-            // именно для нашего пакета, а не общий список
-            val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
-                data = Uri.parse("package:$packageName")
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            }
-            startActivity(intent)
-            true
-        } catch (error: Throwable) {
-            Log.e(
-                "MainActivity",
-                "Failed to open battery optimization request, fallback to list: ${error.message}",
-                error,
-            )
-            // Если прямой запрос не сработал — открываем общий список
-            try {
-                startActivity(
-                    Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS).apply {
-                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                    }
-                )
-                true
-            } catch (_: Throwable) {
-                false
-            }
-        }
-    }
-
-    /**
-     * Открывает Xiaomi/MIUI/HyperOS специфичные настройки AutoStart.
-     * На Xiaomi с HyperOS 2 без AutoStart приложение убивается даже если ForegroundService
-     * правильно настроен. Возвращает true если настройки были открыты.
-     */
-    private fun openXiaomiAutoStartSettings(): Boolean {
-        // Список известных Xiaomi/HyperOS intent-ов для AutoStart (MIUI 8..HyperOS 2)
-        val xiaomiIntents = listOf(
-            // HyperOS 2 / MIUI 14+
-            Triple("com.miui.securitycenter", "com.miui.permcenter.autostart.AutoStartManagementActivity", "HyperOS AutoStart"),
-            // MIUI 12–13
-            Triple("com.miui.securitycenter", "com.miui.powercenter.PowerSettings", "MIUI PowerSettings"),
-            // Старые версии MIUI
-            Triple("com.miui.securitycenter", "com.miui.securitycenter.MainActivity", "MIUI SecurityCenter"),
-            // Xiaomi Security app
-            Triple("com.xiaomi.xmsf", "com.xiaomi.xmsf.push.service.PushServiceSettingsActivity", "Xiaomi Push Settings"),
-        )
-
-        for ((pkg, cls, label) in xiaomiIntents) {
-            try {
-                val intent = Intent().apply {
-                    setClassName(pkg, cls)
-                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                }
-                val resolveInfo = packageManager.resolveActivity(intent, 0)
-                if (resolveInfo != null) {
-                    startActivity(intent)
-                    Log.d("MainActivity", "Opened Xiaomi settings via $label")
-                    return true
-                }
-            } catch (error: Throwable) {
-                Log.d("MainActivity", "Xiaomi intent $label not available: ${error.message}")
-            }
-        }
-
-        Log.d("MainActivity", "Не Xiaomi устройство — Xiaomi настройки недоступны")
-        return false
-    }
-
-    private fun canUseFullScreenIntent(): Boolean {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-            return true
-        }
-
-        return try {
-            val notificationManager =
-                getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            notificationManager.canUseFullScreenIntent()
-        } catch (error: Throwable) {
-            Log.e("MainActivity", "Failed to check full-screen intent permission: ${error.message}", error)
-            false
-        }
-    }
-
-    private fun requestFullScreenIntentPermission(): Boolean {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-            return true
-        }
-
-        return try {
-            val intent = Intent(Settings.ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT).apply {
-                data = Uri.parse("package:$packageName")
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            }
-            startActivity(intent)
-            true
-        } catch (error: Throwable) {
-            Log.e("MainActivity", "Failed to open full-screen intent settings: ${error.message}", error)
-            try {
-                startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                    data = Uri.parse("package:$packageName")
-                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                })
-                true
-            } catch (_: Throwable) {
-                false
-            }
-        }
-    }
-
-    private fun updateIncomingCallWindowMode(intent: Intent?) {
-        val shouldWakeForCall = intent?.getBooleanExtra("open_sip_call", false) == true
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
-            setShowWhenLocked(shouldWakeForCall)
-            setTurnScreenOn(shouldWakeForCall)
-        } else {
-            if (shouldWakeForCall) {
-                window.addFlags(
-                    WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or
-                        WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON or
-                        WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON,
-                )
-            } else {
-                window.clearFlags(
-                    WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or
-                        WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON or
-                        WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON,
-                )
-            }
-        }
-
-        if (shouldWakeForCall) {
-            window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-        } else {
-            window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-        }
-    }
-    
     private fun checkHasAnyNetwork(): Boolean {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             // ✅ Проверяем ВСЕ сети (WiFi, Mobile, Ethernet)
@@ -805,17 +509,6 @@ class MainActivity : FlutterFragmentActivity() {
         }
     }
 
-    private fun handleSipNavigationIntent(intent: Intent?) {
-        if (intent?.getBooleanExtra("open_sip_call", false) != true) {
-            return
-        }
-
-        savePendingNavigation("sip")
-        handler.postDelayed({
-            sendScreenToFlutter("sip")
-        }, 150)
-    }
-    
     private fun savePendingNavigation(screen: String) {
         getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             .edit()
@@ -855,8 +548,7 @@ class MainActivity : FlutterFragmentActivity() {
             val widgetProviders = listOf(
                 ShamCRMWidgetProvider::class.java,
                 ReferencesWidgetProvider::class.java,
-                AccountingWidgetProvider::class.java,
-                RmkWidgetProvider::class.java
+                AccountingWidgetProvider::class.java
             )
             
             widgetProviders.forEach { provider ->

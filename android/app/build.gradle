@@ -85,7 +85,6 @@ dependencies {
     implementation 'com.google.android.play:app-update-ktx:2.1.0'
     implementation 'androidx.security:security-crypto:1.1.0-alpha06'
     implementation 'org.linphone:linphone-sdk-android:5.4.106'
-    // WorkManager — надёжный резервный механизм перезапуска SIP-сервиса
-    // Использует JobScheduler (системный API), Xiaomi не может его блокировать
+    // WorkManager is used as a fallback mechanism for SIP service restart.
     implementation 'androidx.work:work-runtime-ktx:2.9.0'
 }

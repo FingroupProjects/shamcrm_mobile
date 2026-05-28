@@ -37,6 +37,20 @@ class _OverlayBuilderState extends State<_OverlayBuilder> {
   }
 
   void hideOverlay() {
+    final schedulerPhase = SchedulerBinding.instance.schedulerPhase;
+
+    if (schedulerPhase == SchedulerPhase.persistentCallbacks) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        overlayController.hide();
+
+        if (widget.visibility != null) {
+          widget.visibility!(false);
+        }
+      });
+      return;
+    }
+
     overlayController.hide();
 
     if (widget.visibility != null) {
