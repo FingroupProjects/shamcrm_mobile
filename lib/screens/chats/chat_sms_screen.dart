@@ -2574,12 +2574,14 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
                           endPointInTab: widget.endPointInTab,
                           isInstagramCommentChannel: _isInstagramCommentChannel,
                           onInstagramReplyTap: (type) {
-                            if (type == null) {
+                            final resolvedType =
+                                type ?? _instagramResponseType;
+                            if (resolvedType == null) {
                               _showInstagramResponseTypePicker(message);
                               return;
                             }
                             setState(() {
-                              _instagramResponseType = type;
+                              _instagramResponseType = resolvedType;
                             });
                             _focusNode.requestFocus();
                             context

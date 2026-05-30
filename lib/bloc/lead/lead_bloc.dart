@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/models/api_exception_model.dart';
 import 'package:crm_task_manager/models/lead_model.dart';
+import 'package:crm_task_manager/models/workday_status_model.dart';
 import 'package:crm_task_manager/offline/core/offline_module.dart';
 import 'package:crm_task_manager/offline/core/offline_runtime.dart';
 import 'package:crm_task_manager/offline/core/request_priority.dart';
@@ -64,6 +65,8 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
     on<FetchLeadStatusesWithFilters>(_fetchLeadStatusesWithFilters);
     on<LeadCreatedFromSocket>(_onLeadCreatedFromSocket);
   }
+
+  bool _isWorkdayAccessError(Object error) => error is WorkdayAccessException;
 
   bool get _hasActiveFilters {
     final bool listsOrQuery =
@@ -307,6 +310,9 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
           leadCounts: Map.from(_leadCounts),
           isLoadingMore: false));
     } catch (e) {
+      if (_isWorkdayAccessError(e)) {
+        return;
+      }
       if (kDebugMode) {
         debugPrint('❌ LeadBloc: _fetchLeads - Error: $e');
       }
@@ -343,6 +349,7 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
 
     try {
       List<LeadStatus> response;
+      final previousTabStatusId = _currentTabStatusId;
 
       // При forceRefresh = true делаем РАДИКАЛЬНУЮ перезагрузку
       if (event.forceRefresh) {
@@ -469,16 +476,18 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
       //print('LeadBloc: _fetchLeadStatuses - Final leadCounts: $_leadCounts');
       emit(LeadLoaded(response, leadCounts: Map.from(_leadCounts)));
 
-      // При обычной загрузке автоматически загружаем лиды для первого статуса,
-      // НО только если нет активных фильтров. При forceRefresh также не загружаем.
-      if (response.isNotEmpty && !event.forceRefresh && !_hasActiveFilters) {
-        final firstStatusId = response.first.id;
-        //print('LeadBloc: Auto-loading leads for first status: $firstStatusId');
-        add(FetchLeads(firstStatusId, ignoreCache: false));
-      } else if (event.forceRefresh) {
-        //print('LeadBloc: ForceRefresh mode - NOT auto-loading leads, waiting for manual trigger');
+      if (response.isNotEmpty && !_hasActiveFilters) {
+        final targetStatusId =
+            response.any((status) => status.id == previousTabStatusId)
+                ? previousTabStatusId!
+                : response.first.id;
+        _currentTabStatusId = targetStatusId;
+        add(FetchLeads(targetStatusId, ignoreCache: event.forceRefresh));
       }
     } catch (e) {
+      if (_isWorkdayAccessError(e)) {
+        return;
+      }
       //print('LeadBloc: _fetchLeadStatuses - Error: $e');
       emit(LeadError('Не удалось загрузить статусы: $e'));
     }
@@ -497,6 +506,9 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
       allLeadsFetched = leads.isEmpty;
       emit(LeadDataLoaded(leads, currentPage: 1, leadCounts: {}));
     } catch (e) {
+      if (_isWorkdayAccessError(e)) {
+        return;
+      }
       emit(LeadError('Не удалось загрузить лиды!'));
     }
   }
@@ -569,6 +581,9 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
         emit(currentState.merge(leads));
       }
     } catch (e) {
+      if (_isWorkdayAccessError(e)) {
+        return;
+      }
       emit(LeadError('Не удалось загрузить дополнительные лиды!'));
     } finally {
       isFetching = false;
@@ -685,7 +700,8 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
         return;
       }
 
-      final rawMessage = e.toString().replaceFirst(RegExp(r'^Exception:\s*'), '');
+      final rawMessage =
+          e.toString().replaceFirst(RegExp(r'^Exception:\s*'), '');
       emit(LeadError(
         rawMessage.isNotEmpty
             ? rawMessage
@@ -1142,20 +1158,18 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
         debugPrint('✅ LeadBloc: Got ${statuses.length} statuses with filters');
       }
 
-      // 2. Обновляем счётчики из полученных статусов
+      // 2. Обновляем счётчики только в памяти.
+      // Фильтрованные значения нельзя сохранять как постоянные,
+      // иначе после reset экран продолжит показывать числа от фильтра.
       _leadCounts.clear();
       for (var status in statuses) {
         _leadCounts[status.id] = status.leadsCount;
-        await LeadCache.setPersistentLeadCount(status.id, status.leadsCount);
       }
 
-      // 3. Кэшируем статусы
-      await LeadCache.cacheLeadStatuses(statuses);
-
-      // 4. Эмитим состояние со статусами
+      // 3. Эмитим состояние со статусами
       emit(LeadLoaded(statuses, leadCounts: Map.from(_leadCounts)));
 
-      // 5. Сохраняем фильтры в блоке перед загрузкой целевого статуса
+      // 4. Сохраняем фильтры в блоке перед загрузкой целевого статуса
       if (statuses.isNotEmpty) {
         if (kDebugMode) {
           debugPrint('🎯 LeadBloc: Saving filters before filtered fetch');
@@ -1200,10 +1214,10 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
           debugPrint('✅ LeadBloc: Filters saved to bloc state');
         }
 
-        final targetStatus = statuses.any(
-                (status) => status.id == event.preferredStatusId)
-            ? event.preferredStatusId!
-            : statuses.first.id;
+        final targetStatus =
+            statuses.any((status) => status.id == event.preferredStatusId)
+                ? event.preferredStatusId!
+                : statuses.first.id;
 
         _currentTabStatusId = targetStatus;
 
@@ -1247,6 +1261,9 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
             isLoadingMore: false));
       }
     } catch (e) {
+      if (_isWorkdayAccessError(e)) {
+        return;
+      }
       if (kDebugMode) {
         debugPrint('❌ LeadBloc: _fetchLeadStatusesWithFilters - Error: $e');
       }
@@ -1369,8 +1386,7 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
         listEquals(_currentChannelIds, event.channelIds) &&
         listEquals(
             _currentAdvertisingCampaignIds, event.advertisingCampaignIds) &&
-        listEquals(
-            _currentReasonForRefusalIds, event.reasonForRefusalIds) &&
+        listEquals(_currentReasonForRefusalIds, event.reasonForRefusalIds) &&
         _currentStatusId == event.statusIds &&
         _currentFromDate == event.fromDate &&
         _currentToDate == event.toDate &&

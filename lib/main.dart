@@ -157,9 +157,9 @@ import 'screens/auth/login_screen.dart';
 import 'screens/home_screen.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
-final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+final GlobalKey<NavigatorState> navigatorKey = ApiService.navigatorKey;
 final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
-    GlobalKey<ScaffoldMessengerState>();
+    ApiService.scaffoldMessengerKey;
 
 void main() async {
   try {
@@ -171,12 +171,12 @@ void main() async {
     await _safeInitializeOfflineRuntime();
     await _safeInitializeFirebase();
 
-    final sessionValidation = await _validateApplicationSession(apiService);      
+    final sessionValidation = await _validateApplicationSession(apiService);
 
     String? token;
     String? pin;
     bool isDomainChecked = false;
-    
+
     if (sessionValidation.isValid) {
       token = await apiService.getToken();
       pin = await authService.getPin();
@@ -415,7 +415,7 @@ Future<SessionValidationResult> _validateApplicationSession(
       String? qrDomain = qrData['domain'];
       String? qrMainDomain = qrData['mainDomain'];
 
-      if (qrDomain == null || 
+      if (qrDomain == null ||
           qrDomain.isEmpty ||
           qrMainDomain == null ||
           qrMainDomain.isEmpty) {
@@ -839,15 +839,15 @@ class _MyAppState extends State<MyApp> {
         // ✅ ДОБАВЬТЕ/РАСКОММЕНТИРУЙТЕ builder
         builder: (context, child) {
           final appChild = Stack(
-              children: [
-                NativeInternetAwareWrapper(
-                  // ← НОВОЕ ИМЯ
-                  child: child ?? const SizedBox.shrink(),
-                ),
-                const InAppUpdateCornerIndicator(),
-                if (kDebugMode) const HttpInspectorFab(),
-              ],
-            );
+            children: [
+              NativeInternetAwareWrapper(
+                // ← НОВОЕ ИМЯ
+                child: child ?? const SizedBox.shrink(),
+              ),
+              const InAppUpdateCornerIndicator(),
+              if (kDebugMode) const HttpInspectorFab(),
+            ],
+          );
           return appChild;
         },
         home: Builder(

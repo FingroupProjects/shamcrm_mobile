@@ -10,6 +10,8 @@ import 'package:crm_task_manager/models/calendar_model.dart';
 import 'package:crm_task_manager/models/file_helper.dart';
 import 'package:crm_task_manager/models/localization_model.dart';
 import 'package:crm_task_manager/models/task_overdue_history_model.dart';
+import 'package:crm_task_manager/models/workday_status_model.dart';
+import 'package:crm_task_manager/services/workday_profile_redirect_service.dart';
 import 'package:crm_task_manager/models/money/add_cash_desk_model.dart';
 import 'package:crm_task_manager/models/money/cash_register_model.dart';
 import 'package:crm_task_manager/models/money/expense_model.dart';
@@ -214,11 +216,20 @@ import 'dio_client.dart';
 
 class ApiService {
   static const Duration _defaultRequestTimeout = Duration(seconds: 20);
+  static const Set<String> _workdayEnabledSubdomains = {
+    'tajikistan-back',
+    'sham-back',
+    'khnodiraaaicloudcom-back',
+  };
 
   String? baseUrl;
   String? baseUrlSocket;
   static final GlobalKey<NavigatorState> navigatorKey =
       GlobalKey<NavigatorState>();
+  static final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
+      GlobalKey<ScaffoldMessengerState>();
+  static DateTime? _lastWorkdayWarningAt;
+  static bool _isWorkdayRedirectInProgress = false;
   // Добавьте этот список эндпоинтов, которые не требуют проверки сессии
   static const List<String> _noSessionCheckEndpoints = [
     '/login',
@@ -628,6 +639,14 @@ class ApiService {
       throw Exception('Неавторизованный доступ!');
     }
 
+    if (response.statusCode == 407 &&
+        await _shouldHandleWorkdayResponse(response)) {
+      final message =
+          _extractResponseMessage(response.body) ?? 'Рабочий день не начат';
+      await _handleWorkdayAccessDenied(message);
+      throw WorkdayAccessException(message);
+    }
+
     // Дополнительная проверка на другие критические ошибки
     if (response.statusCode >= 500) {
       // debugPrint('ApiService: Server error ${response.statusCode}');
@@ -651,6 +670,241 @@ class ApiService {
     baseUrl = null;
     baseUrlSocket = null;
     ////debugPrint('API сброшено');
+  }
+
+  Future<String?> getCurrentTenantSubdomain() async {
+    final verifiedDomain = await getVerifiedDomain();
+    if (verifiedDomain != null &&
+        verifiedDomain.isNotEmpty &&
+        verifiedDomain != 'null') {
+      final host =
+          Uri.tryParse('https://$verifiedDomain')?.host ?? verifiedDomain;
+      final parts = host.split('.');
+      if (parts.isNotEmpty && parts.first.isNotEmpty) {
+        return parts.first;
+      }
+    }
+
+    final qrDomain = await _getQrDomain();
+    if (qrDomain != null && qrDomain.isNotEmpty && qrDomain != 'null') {
+      final host = Uri.tryParse('https://$qrDomain')?.host ?? qrDomain;
+      final parts = host.split('.');
+      if (parts.isNotEmpty && parts.first.isNotEmpty) {
+        return parts.first;
+      }
+    }
+
+    final enteredDomains = await getEnteredDomain();
+    final domain = enteredDomains['enteredDomain'];
+    if (domain != null && domain.isNotEmpty && domain != 'null') {
+      return domain.endsWith('-back') ? domain : '${domain}-back';
+    }
+
+    return null;
+  }
+
+  Future<bool> isWorkdayFeatureEnabled() async {
+    final subdomain = await getCurrentTenantSubdomain();
+    return subdomain != null && _workdayEnabledSubdomains.contains(subdomain);
+  }
+
+  Future<WorkdayStatusResponse?> getWorkdayStatus() async {
+    await ensureSelectedSalesFunnelInitialized();
+    final response = await _getRequest('/workday/get-status');
+
+    if (response.statusCode == 200) {
+      return WorkdayStatusResponse.fromJson(
+        _decodeWorkdayJsonMap(response.body),
+      );
+    }
+
+    if (response.statusCode == 404) {
+      return null;
+    }
+
+    throw Exception('Ошибка получения статуса рабочего дня');
+  }
+
+  Future<WorkdayStatusResponse> startWorkday({
+    required double latitude,
+    required double longitude,
+    required File photo,
+  }) async {
+    return _submitWorkdayAction(
+      path: '/workday/start',
+      timestampField: 'time_start',
+      timestamp: DateTime.now().toUtc(),
+      latitude: latitude,
+      longitude: longitude,
+      photo: photo,
+      debugLabel: 'startWorkday',
+    );
+  }
+
+  Future<WorkdayStatusResponse> endWorkday({
+    required double latitude,
+    required double longitude,
+    required File photo,
+  }) async {
+    return _submitWorkdayAction(
+      path: '/workday/end',
+      timestampField: 'time_end',
+      timestamp: DateTime.now().toUtc(),
+      latitude: latitude,
+      longitude: longitude,
+      photo: photo,
+      debugLabel: 'endWorkday',
+    );
+  }
+
+  Future<WorkdayStatusResponse> _submitWorkdayAction({
+    required String path,
+    required String timestampField,
+    required DateTime timestamp,
+    required double latitude,
+    required double longitude,
+    required File photo,
+    required String debugLabel,
+  }) async {
+    if (!await _isSessionValid()) {
+      await _forceLogoutAndRedirect();
+      throw Exception('Session is invalid');
+    }
+
+    if (baseUrl == null) {
+      await _initializeIfDomainExists();
+      if (baseUrl == null) {
+        throw Exception('Base URL is not initialized');
+      }
+    }
+
+    final organizationId = await getSelectedOrganization() ?? '1';
+    final salesFunnelId = await ensureSelectedSalesFunnelInitialized() ?? '1';
+    final updatedPath = await _appendQueryParams(path);
+    final request = http.MultipartRequest(
+      'POST',
+      Uri.parse('$baseUrl$updatedPath'),
+    );
+
+    request.fields[timestampField] = timestamp.toIso8601String();
+    request.fields['latitude'] = latitude.toString();
+    request.fields['longitude'] = longitude.toString();
+    request.fields['organization_id'] = organizationId;
+    request.fields['sales_funnel_id'] = salesFunnelId;
+    request.files.add(
+      await http.MultipartFile.fromPath('photo', photo.path),
+    );
+
+    final response = await _multipartPostRequest(path, request);
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return WorkdayStatusResponse.fromJson(
+        _decodeWorkdayJsonMap(response.body),
+      );
+    }
+
+    throw Exception('Ошибка отправки рабочего дня');
+  }
+
+  Map<String, dynamic> _decodeWorkdayJsonMap(String body) {
+    final decoded = json.decode(body);
+    if (decoded is Map<String, dynamic>) {
+      return decoded;
+    }
+    if (decoded is Map) {
+      return Map<String, dynamic>.from(decoded);
+    }
+
+    throw Exception('Неожиданный формат ответа API');
+  }
+
+  Future<bool> _shouldHandleWorkdayResponse(http.Response response) async {
+    if (!await isWorkdayFeatureEnabled()) {
+      return false;
+    }
+
+    final prefs = await SharedPreferences.getInstance();
+    final localPin = prefs.getString('user_pin');
+    if (localPin == null || localPin.trim().isEmpty) {
+      return false;
+    }
+
+    final requestPath = response.request?.url.path ?? '';
+    return !requestPath.contains('/workday/');
+  }
+
+  String? _extractResponseMessage(String body) {
+    try {
+      final decoded = json.decode(body);
+      if (decoded is Map<String, dynamic>) {
+        final message = decoded['message']?.toString();
+        if (message != null && message.trim().isNotEmpty) {
+          return message.trim();
+        }
+      }
+    } catch (_) {
+      return null;
+    }
+
+    return null;
+  }
+
+  Future<void> _handleWorkdayAccessDenied(String message) async {
+    final now = DateTime.now();
+    final shouldNotify = _lastWorkdayWarningAt == null ||
+        now.difference(_lastWorkdayWarningAt!) > const Duration(seconds: 2);
+
+    if (shouldNotify) {
+      _lastWorkdayWarningAt = now;
+      final messenger = scaffoldMessengerKey.currentState;
+      messenger
+        ?..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(
+            content: Text(
+              message,
+              style: const TextStyle(
+                fontFamily: 'Gilroy',
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: Colors.white,
+              ),
+            ),
+            behavior: SnackBarBehavior.floating,
+            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            backgroundColor: const Color(0xFF4C7DFF),
+          ),
+        );
+    }
+
+    if (_isWorkdayRedirectInProgress) {
+      return;
+    }
+
+    _isWorkdayRedirectInProgress = true;
+
+    try {
+      final navigator = navigatorKey.currentState;
+      if (navigator == null) return;
+
+      WorkdayProfileRedirectService.requestOpenProfile();
+      await navigator.pushNamedAndRemoveUntil(
+        '/home',
+        (route) => false,
+        arguments: const {
+          'showWorkdayProfile': true,
+        },
+      );
+    } catch (e) {
+      debugPrint('ApiService: workday redirect failed: $e');
+    } finally {
+      Future<void>.delayed(const Duration(milliseconds: 400), () {
+        _isWorkdayRedirectInProgress = false;
+      });
+    }
   }
 
   // Метод для получения токена из SharedPreferences
@@ -8275,7 +8529,7 @@ class ApiService {
           path += '&has_chat=1';
         }
         if (filters['hasNoReplies'] == true) {
-          path += '&has_no_replies=1';
+          path += '&hasNoReplies=1';
         }
         if (filters['hasUnreadMessages'] == true) {
           path += '&unread_only=1';
@@ -14680,8 +14934,8 @@ class ApiService {
     int? storageId,
   }) async {
     var url = '/rmk-documents?page=$page&per_page=$perPage';
-    if (query != null && query.isNotEmpty) { 
-      url += '&search=$query'; 
+    if (query != null && query.isNotEmpty) {
+      url += '&search=$query';
     }
     if (dateFrom != null) {
       url += '&date_from=${dateFrom.toIso8601String()}';
@@ -14875,7 +15129,7 @@ class ApiService {
     try {
       final token = await getToken();
       if (token == null) throw Exception('Токен не найден');
-      
+
       final uri = Uri.parse('$baseUrl$path');
       final response = await http.post(
         uri,

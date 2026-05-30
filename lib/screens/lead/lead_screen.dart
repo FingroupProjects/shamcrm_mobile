@@ -639,6 +639,8 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
     if (mounted) {
       setState(() {
         _showCustomTabBar = true;
+        _isFilterLoading = true;
+        _shouldShowLoader = true;
         _selectedManagers = [];
         _selectedRegions = [];
         _selectedState = null;
@@ -696,7 +698,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
     }
 
     final leadBloc = BlocProvider.of<LeadBloc>(context);
-    leadBloc.add(FetchLeadStatuses());
+    leadBloc.add(FetchLeadStatuses(forceRefresh: true));
   }
 
   Future<void> _handleManagerSelected(Map managers) async {

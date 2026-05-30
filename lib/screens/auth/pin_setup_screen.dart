@@ -16,6 +16,7 @@ import 'package:crm_task_manager/bloc/task/task_event.dart';
 import 'package:crm_task_manager/models/user_byId_model..dart';
 import 'package:crm_task_manager/screens/home_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/services/workday_profile_redirect_service.dart';
 import 'package:crm_task_manager/widgets/biometric_dialogs.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
@@ -563,11 +564,17 @@ class _PinSetupScreenState extends State<PinSetupScreen>
         debugPrint('════════════════════════════════════════════════════════');
 
         await _maybeShowBiometricPrompt();
+        final shouldOpenWorkdayProfile =
+            await _shouldOpenInitialWorkdayProfile(apiService);
         if (!mounted) return;
 
         Navigator.pushAndRemoveUntil(
           context,
-          MaterialPageRoute(builder: (context) => HomeScreen()),
+          MaterialPageRoute(
+            builder: (context) => HomeScreen(
+              initialShowProfileScreen: shouldOpenWorkdayProfile,
+            ),
+          ),
           (Route<dynamic> route) => false,
         );
       } else {
@@ -577,6 +584,31 @@ class _PinSetupScreenState extends State<PinSetupScreen>
     } else {
       debugPrint('PinSetupScreen: ❌ PIN-коды не совпадают');
       _triggerErrorEffect();
+    }
+  }
+
+  Future<bool> _shouldOpenInitialWorkdayProfile(ApiService apiService) async {
+    try {
+      final isWorkdayEnabled = await apiService.isWorkdayFeatureEnabled();
+      if (!isWorkdayEnabled) {
+        WorkdayProfileRedirectService.closeProfileBlock();
+        return false;
+      }
+
+      final status = await apiService.getWorkdayStatus();
+      if (status?.isActive == true) {
+        WorkdayProfileRedirectService.closeProfileBlock();
+        return false;
+      }
+
+      WorkdayProfileRedirectService.requestOpenProfile();
+      return true;
+    } catch (e) {
+      debugPrint(
+        'PinSetupScreen: Ошибка подготовки workday-редиректа после PIN: $e',
+      );
+      WorkdayProfileRedirectService.requestOpenProfile();
+      return true;
     }
   }
 

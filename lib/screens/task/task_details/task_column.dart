@@ -571,6 +571,7 @@ class _TaskColumnState extends State<TaskColumn> {
       floatingActionButton: _hasPermissionToAddTask
           ? FloatingActionButton(
               key: keyFloatingActionButton,
+              heroTag: 'task_column_fab_${widget.statusId}',
               onPressed: () {
                 Navigator.push(
                   context,

@@ -40,11 +40,10 @@ import 'package:crm_task_manager/screens/profile/profile_widget/biometric.dart';
 import 'package:crm_task_manager/screens/profile/profile_widget/biometric_toggle.dart';
 import 'package:crm_task_manager/screens/profile/profile_widget/edit_profile_button.dart';
 import 'package:crm_task_manager/screens/profile/languages/languages.dart';
-import 'package:crm_task_manager/screens/profile/profile_widget/phone_call_widget.dart';
 import 'package:crm_task_manager/screens/profile/profile_widget/profile_button_1c.dart';
 import 'package:crm_task_manager/screens/profile/profile_widget/switch_button.dart';
+import 'package:crm_task_manager/screens/profile/profile_widget/workday_card.dart';
 import 'package:crm_task_manager/screens/task/task_cache.dart';
-import 'package:crm_task_manager/utils/TutorialStyleWidget.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -62,7 +61,9 @@ import 'dart:io' show Platform; // Добавляем импорт для про
 import 'package:crm_task_manager/screens/profile/profile_widget/http_inspector_toggle.dart';
 
 class ProfileScreen extends StatefulWidget {
-  const ProfileScreen({super.key});
+  final bool embedded;
+
+  const ProfileScreen({super.key, this.embedded = false});
 
   @override
   _ProfileScreenState createState() => _ProfileScreenState();
@@ -374,129 +375,133 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
-    return Scaffold(
-      body: SafeArea(
-        child: Stack(
-          children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.only(bottom: 56),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    BlocBuilder<OrganizationBloc, OrganizationState>(
-                      builder: (context, state) {
-                        if (state is OrganizationLoading) {
+    final content = SafeArea(
+      top: !widget.embedded,
+      child: Stack(
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.only(bottom: 56),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  BlocBuilder<OrganizationBloc, OrganizationState>(
+                    builder: (context, state) {
+                      if (state is OrganizationLoading) {
+                        return const Center(
+                          child: Padding(
+                            padding: EdgeInsets.symmetric(vertical: 20),
+                            child: PlayStoreImageLoading(
+                                size: 80.0,
+                                duration: Duration(milliseconds: 1000)),
+                          ),
+                        );
+                      } else if (state is OrganizationLoaded) {
+                        final selectedOrg = _selectedOrganization != null
+                            ? state.organizations.firstWhere(
+                                (org) =>
+                                    org.id.toString() == _selectedOrganization,
+                                orElse: () => state.organizations.first,
+                              )
+                            : state.organizations.first;
+
+                        return Column(
+                          children: [
+                            OrganizationWidget(
+                              selectedOrganization: _selectedOrganization,
+                              onChanged: _onOrganizationChanged,
+                            ),
+                            WorkdayCard(
+                              key: ValueKey(_selectedOrganization),
+                              organizationId: _selectedOrganization,
+                            ),
+                            ProfileEdit(),
+                            LanguageButtonWidget(),
+                            PinChangeWidget(),
+                            LogoutButtonWidget(),
+                            if (_hasPermissionToAddLeadAndSwitch)
+                              ToggleFeatureButton(),
+                            BiometricToggleWidget(),
+                            const HttpInspectorToggleWidget(),
+                            if (_hasPermissionForOneC)
+                              UpdateWidget1C(organization: selectedOrg),
+                            const SizedBox(height: 20),
+                            GestureDetector(
+                              onTap: _openAppStoreLink,
+                              child: Text(
+                                '${AppLocalizations.of(context)!.translate('version_mobile')}: $_appVersion',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontFamily: 'Gilroy',
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                  color: Color.fromARGB(255, 6, 44, 231),
+                                  decoration: TextDecoration.none,
+                                ),
+                              ),
+                            ),
+                          ],
+                        );
+                      } else if (state is OrganizationError) {
+                        if (state.message.contains(
+                            localizations.translate("unauthorized_access"))) {
+                          WidgetsBinding.instance.addPostFrameCallback((_) {
+                            _forceLogout();
+                          });
                           return const Center(
                             child: Padding(
-                              padding: EdgeInsets.symmetric(vertical: 20),
+                              padding: EdgeInsets.all(20),
                               child: PlayStoreImageLoading(
                                   size: 80.0,
                                   duration: Duration(milliseconds: 1000)),
                             ),
                           );
-                        } else if (state is OrganizationLoaded) {
-                          final selectedOrg = _selectedOrganization != null
-                              ? state.organizations.firstWhere(
-                                  (org) =>
-                                      org.id.toString() ==
-                                      _selectedOrganization,
-                                  orElse: () => state.organizations.first,
-                                )
-                              : state.organizations.first;
-
-                          return Column(
-                            children: [
-                              OrganizationWidget(
-                                selectedOrganization: _selectedOrganization,
-                                onChanged: _onOrganizationChanged,
-                              ),
-                              ProfileEdit(),
-                              LanguageButtonWidget(),
-                              PinChangeWidget(),
-                              LogoutButtonWidget(),
-                              if (_hasPermissionToAddLeadAndSwitch)
-                                ToggleFeatureButton(),
-                              BiometricToggleWidget(),
-                              const HttpInspectorToggleWidget(),
-                              if (_hasPermissionForOneC)
-                                UpdateWidget1C(organization: selectedOrg),
-                              const SizedBox(height: 20),
-                              GestureDetector(
-                                onTap: _openAppStoreLink,
-                                child: Text(
-                                  '${AppLocalizations.of(context)!.translate('version_mobile')}: $_appVersion',
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    fontFamily: 'Gilroy',
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w500,
-                                    color: Color.fromARGB(255, 6, 44, 231),
-                                    decoration: TextDecoration.none,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          );
-                        } else if (state is OrganizationError) {
-                          // Проверяем, является ли это ошибкой авторизации
-                          if (state.message.contains(
-                              localizations.translate("unauthorized_access"))) {
-                            // В случае ошибки авторизации сразу выполняем выход
-                            WidgetsBinding.instance.addPostFrameCallback((_) {
-                              _forceLogout();
-                            });
-                            return const Center(
-                              child: Padding(
-                                padding: EdgeInsets.all(20),
-                                child: PlayStoreImageLoading(
-                                    size: 80.0,
-                                    duration: Duration(milliseconds: 1000)),
-                              ),
-                            );
-                          }
-
-                          // Для других ошибок показываем сообщение и стандартную кнопку выхода
-                          return Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const SizedBox(height: 50),
-                              Icon(
-                                Icons.error_outline,
-                                size: 80,
-                                color: Colors.red.shade400,
-                              ),
-                              const SizedBox(height: 20),
-                              Padding(
-                                padding:
-                                    const EdgeInsets.symmetric(horizontal: 20),
-                                child: Text(
-                                  state.message,
-                                  textAlign: TextAlign.center,
-                                  style: const TextStyle(
-                                      fontFamily: 'Gilroy',
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.w500,
-                                      color: Colors.black87),
-                                ),
-                              ),
-                              const SizedBox(height: 30),
-                              // Используем стандартную кнопку выхода вместо кастомной
-                              LogoutButtonWidget(),
-                            ],
-                          );
                         }
-                        return const SizedBox.shrink();
-                      },
-                    ),
-                  ],
-                ),
+
+                        return Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const SizedBox(height: 50),
+                            Icon(
+                              Icons.error_outline,
+                              size: 80,
+                              color: Colors.red.shade400,
+                            ),
+                            const SizedBox(height: 20),
+                            Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 20),
+                              child: Text(
+                                state.message,
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(
+                                    fontFamily: 'Gilroy',
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w500,
+                                    color: Colors.black87),
+                              ),
+                            ),
+                            const SizedBox(height: 30),
+                            LogoutButtonWidget(),
+                          ],
+                        );
+                      }
+                      return const SizedBox.shrink();
+                    },
+                  ),
+                ],
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
+
+    if (widget.embedded) {
+      return content;
+    }
+
+    return Scaffold(body: content);
   }
 }
