@@ -5,16 +5,8 @@
     <!-- ОСНОВНЫЕ РАЗРЕШЕНИЯ -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-    <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_PHONE_CALL" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
-    <!-- Точные будильники для перезапуска SIP-сервиса на Android 12+ (Xiaomi HyperOS) -->
-    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
-    <!-- USE_EXACT_ALARM (Android 13+) — не требует подтверждения пользователем -->
-    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
 
     <!-- Биометрия -->
     <uses-permission android:name="android.permission.USE_BIOMETRIC" />
@@ -24,22 +16,13 @@
     <uses-permission android:name="android.permission.READ_CONTACTS" tools:node="replace"/>
     <uses-permission android:name="android.permission.WRITE_CONTACTS" />
 
-    <!-- Камера и микрофон -->
+    <!-- Камера и голосовые сообщения -->
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
-    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
 
     <!-- Геолокация для отправки местоположения в чат -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
-
-
-
-    <!-- Дополнительные разрешения для работы с аудио
-    <uses-permission android:name="android.permission.WAKE_LOCK" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
-    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" /> -->
 
     <application
         android:enableOnBackInvokedCallback="true"
@@ -81,40 +64,6 @@
             </intent-filter>
         </activity>
 
-        <activity
-            android:name=".IncomingCallActivity"
-            android:exported="false"
-            android:theme="@style/IncomingCallTheme"
-            android:excludeFromRecents="true"
-            android:launchMode="singleTask"
-            android:showOnLockScreen="true"
-            android:showWhenLocked="true"
-            android:turnScreenOn="true"
-            android:taskAffinity="" />
-
-        <service
-            android:name=".NativeSipForegroundService"
-            android:enabled="true"
-            android:exported="false"
-            android:stopWithTask="false"
-            android:foregroundServiceType="phoneCall" />
-
-        <receiver
-            android:name=".NativeSipActionReceiver"
-            android:enabled="true"
-            android:exported="false" />
-
-        <receiver
-            android:name=".NativeSipBootReceiver"
-            android:enabled="true"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.intent.action.BOOT_COMPLETED" />
-                <action android:name="android.intent.action.LOCKED_BOOT_COMPLETED" />
-                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
-            </intent-filter>
-        </receiver>
-
 <!-- ВИДЖЕТ SHAMCRM -->
 
          <receiver 
@@ -154,18 +103,6 @@
                        android:resource="@xml/references_widget_info" />
                         </receiver>
 
-<!-- ВИДЖЕТ RMK -->
-
-         <receiver
-             android:name=".RmkWidgetProvider"
-             android:exported="true">
-                 <intent-filter>
-                    <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-                    </intent-filter>
-                 <meta-data
-                       android:name="android.appwidget.provider"
-                         android:resource="@xml/rmk_widget_info" />
-                        </receiver>
         <!-- Flutter embedding -->
         <meta-data
             android:name="flutterEmbedding"
@@ -181,16 +118,6 @@
                 android:resource="@xml/share_file_paths" />
         </provider>
     </application>
-
-    <!-- Объявляем, что приложение использует аудио функции -->
-    <uses-feature
-        android:name="android.hardware.audio.output"
-        android:required="true" />
-    
-    <!-- Поддержка микрофона (опционально) -->
-    <uses-feature
-        android:name="android.hardware.microphone"
-        android:required="false" />
 
     <!-- Поддержка камеры (опционально) -->
     <uses-feature

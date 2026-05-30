@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/models/api_exception_model.dart';
 import 'package:crm_task_manager/models/task_model.dart';
+import 'package:crm_task_manager/models/workday_status_model.dart';
 import 'package:crm_task_manager/offline/core/offline_module.dart';
 import 'package:crm_task_manager/offline/core/offline_runtime.dart';
 import 'package:crm_task_manager/offline/core/request_priority.dart';
@@ -53,6 +54,8 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
     on<FetchTaskStatus>(_fetchTaskStatus);
     on<UpdateTaskStatusEdit>(_updateTaskStatusEdit);
   }
+
+  bool _isWorkdayAccessError(Object error) => error is WorkdayAccessException;
 
   bool _hasActiveFilters() {
     return (_currentQuery != null && _currentQuery!.isNotEmpty) ||
@@ -317,6 +320,9 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
       //   add(FetchTasks(firstStatusId));
       // }
     } catch (e) {
+      if (_isWorkdayAccessError(e)) {
+        return;
+      }
       emit(TaskError('Не удалось загрузить статусы: $e'));
     }
   }
@@ -521,6 +527,9 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
             isLoadingMore: false));
       }
     } catch (e) {
+      if (_isWorkdayAccessError(e)) {
+        return;
+      }
       if (kDebugMode) {
         debugPrint('❌ TaskBloc: _fetchTasks - Error: $e');
       }
@@ -582,8 +591,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
       }
 
       final pageStatusId = _currentTabStatusId ?? event.statusId;
-      final statusFilterForNextPage =
-          _hasActiveFilters() ? pageStatusId : null;
+      final statusFilterForNextPage = _hasActiveFilters() ? pageStatusId : null;
 
       // ОПТИМИЗАЦИЯ: Загружаем дополнительные задачи с timeout
       final tasks = await apiService
@@ -593,7 +601,8 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
             perPage: 20,
             search: event.query ?? _currentQuery,
             users: event.userIds ?? _currentUserIds,
-            statuses: statusFilterForNextPage ?? event.statusIds ?? _currentStatusIds,
+            statuses:
+                statusFilterForNextPage ?? event.statusIds ?? _currentStatusIds,
             fromDate: event.fromDate ?? _currentFromDate,
             toDate: event.toDate ?? _currentToDate,
             overdue: event.overdue ?? _currentOverdue,
@@ -632,6 +641,9 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
         emit(currentState.merge(tasks));
       }
     } catch (e) {
+      if (_isWorkdayAccessError(e)) {
+        return;
+      }
       emit(TaskError('Не удалось загрузить дополнительные задачи!'));
     } finally {
       isFetching = false;

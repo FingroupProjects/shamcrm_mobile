@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/models/deal_model.dart';
+import 'package:crm_task_manager/models/workday_status_model.dart';
 import 'package:crm_task_manager/offline/core/offline_module.dart';
 import 'package:crm_task_manager/offline/core/offline_runtime.dart';
 import 'package:crm_task_manager/offline/core/request_priority.dart';
@@ -16,6 +17,7 @@ class DealBloc extends Bloc<DealEvent, DealState> {
   bool allDealsFetched = false;
   bool isFetching = false;
   Map<int, int> _dealCounts = {};
+  Map<int, int> get dealCountsSnapshot => Map<int, int>.from(_dealCounts);
   FetchDeals? _activeFetchDealsEvent;
   FetchDeals? _queuedFetchDealsEvent;
   FetchMoreDeals? _queuedFetchMoreDealsEvent;
@@ -56,6 +58,8 @@ class DealBloc extends Bloc<DealEvent, DealState> {
     on<FetchDealStatus>(_fetchDealStatus);
     on<DealCreatedFromSocket>(_onDealCreatedFromSocket);
   }
+
+  bool _isWorkdayAccessError(Object error) => error is WorkdayAccessException;
 
   bool get _hasActiveFilters {
     final bool listsOrQuery = (_currentQuery != null &&
@@ -172,12 +176,14 @@ class DealBloc extends Bloc<DealEvent, DealState> {
       _currentNames = event.names;
       _currentCustomFieldFilters = event.customFieldFilters;
 
-      // КРИТИЧНО: Восстанавливаем ВСЕ постоянные счетчики
+      // Восстанавливаем постоянные счетчики только для отсутствующих статусов.
+      // Нельзя безусловно перезаписывать _dealCounts, иначе свежие значения
+      // из FetchDealStatuses будут затираться старыми числами из persistent cache.
       final allPersistentCounts = await DealCache.getPersistentDealCounts();
       for (String statusIdStr in allPersistentCounts.keys) {
         int statusId = int.parse(statusIdStr);
         int count = allPersistentCounts[statusIdStr] ?? 0;
-        _dealCounts[statusId] = count;
+        _dealCounts.putIfAbsent(statusId, () => count);
       }
 
       debugPrint('✅ DealBloc: Restored persistent counts: $_dealCounts');
@@ -269,6 +275,9 @@ class DealBloc extends Bloc<DealEvent, DealState> {
           dealCounts: Map.from(_dealCounts),
           isLoadingMore: false));
     } catch (e) {
+      if (_isWorkdayAccessError(e)) {
+        return;
+      }
       debugPrint('❌ DealBloc: _fetchDeals - Error: $e');
       emit(DealError('Не удалось загрузить данные!'));
     } finally {
@@ -303,6 +312,7 @@ class DealBloc extends Bloc<DealEvent, DealState> {
 
     try {
       List<DealStatus> response;
+      final previousTabStatusId = _currentTabStatusId;
 
       // При forceRefresh = true делаем РАДИКАЛЬНУЮ перезагрузку
       if (event.forceRefresh) {
@@ -446,12 +456,21 @@ class DealBloc extends Bloc<DealEvent, DealState> {
 
       emit(DealLoaded(response, dealCounts: Map.from(_dealCounts)));
 
-      // При обычной загрузке автоматически загружаем сделки для первого статуса
-      if (response.isNotEmpty && !event.forceRefresh && !_hasActiveFilters) {
-        final firstStatusId = response.first.id;
-        add(FetchDeals(firstStatusId, salesFunnelId: event.salesFunnelId));
+      if (response.isNotEmpty && !_hasActiveFilters) {
+        final targetStatusId =
+            response.any((status) => status.id == previousTabStatusId)
+                ? previousTabStatusId!
+                : response.first.id;
+        _currentTabStatusId = targetStatusId;
+        add(FetchDeals(
+          targetStatusId,
+          salesFunnelId: event.salesFunnelId,
+        ));
       }
     } catch (e) {
+      if (_isWorkdayAccessError(e)) {
+        return;
+      }
       debugPrint('❌ DealBloc: _fetchDealStatuses - Error: $e');
       emit(DealError('Не удалось загрузить статусы: $e'));
     }
@@ -930,28 +949,19 @@ class DealBloc extends Bloc<DealEvent, DealState> {
       debugPrint(
           '✅ DealBloc: filtered status ids=${statuses.map((e) => e.id).toList()}');
 
-      // 2. Обновляем счётчики из полученных статусов
+      // 2. Обновляем счётчики только в памяти.
+      // Фильтрованные значения нельзя сохранять в persistent cache,
+      // иначе после очистки фильтра останутся неверные counts.
       _dealCounts.clear();
       for (var status in statuses) {
         final count = status.dealsCount ?? 0;
         _dealCounts[status.id] = count;
-        await DealCache.setPersistentDealCount(status.id, count);
       }
 
-      // 3. Кэшируем статусы
-      await DealCache.cacheDealStatuses(statuses
-          .map((status) => {
-                'id': status.id,
-                'title': status.title,
-                'deals_count': status.dealsCount ?? 0,
-                'is_unassembled': status.isUnassembled,
-              })
-          .toList());
-
-      // 4. Эмитим состояние со статусами
+      // 3. Эмитим состояние со статусами
       emit(DealLoaded(statuses, dealCounts: Map.from(_dealCounts)));
 
-      // 5. СОХРАНЯЕМ ФИЛЬТРЫ В БЛОКЕ
+      // 4. СОХРАНЯЕМ ФИЛЬТРЫ В БЛОКЕ
       if (statuses.isNotEmpty) {
         // Сохраняем фильтры для последующих запросов
         _currentQuery = null;

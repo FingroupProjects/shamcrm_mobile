@@ -1,8 +1,6 @@
-import 'package:crm_task_manager/app_feature_flags.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/api/service/firebase_api.dart';
 import 'package:crm_task_manager/api/service/widget_service.dart';
-import 'package:crm_task_manager/main.dart';
 import 'package:crm_task_manager/bloc/permission/permession_bloc.dart';
 import 'package:crm_task_manager/bloc/permission/permession_event.dart';
 import 'package:crm_task_manager/bloc/permission/permession_state.dart';
@@ -15,8 +13,6 @@ import 'package:crm_task_manager/page_2/money/money_outcome/money_outcome_screen
 import 'package:crm_task_manager/page_2/money/money_references/cash_desk/cash_desk_screen.dart';
 import 'package:crm_task_manager/page_2/money/money_references/expense/expense_screen.dart';
 import 'package:crm_task_manager/page_2/money/money_references/income/income_screen.dart';
-import 'package:crm_task_manager/page_2/rmk/rmk_screen.dart';
-import 'package:crm_task_manager/page_2/rmk/rmk_sales_screen.dart';
 import 'package:crm_task_manager/page_2/warehouse/client_return/client_return_screen.dart';
 import 'package:crm_task_manager/page_2/warehouse/client_sale/client_sales_screen.dart';
 import 'package:crm_task_manager/page_2/warehouse/incoming/incoming_screen.dart';
@@ -37,19 +33,25 @@ import 'package:crm_task_manager/screens/empty_screen.dart';
 import 'package:crm_task_manager/screens/no_access_screen.dart';
 import 'package:crm_task_manager/screens/lead/lead_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
-import 'package:crm_task_manager/screens/sip/sip_screen.dart';
-import 'package:crm_task_manager/screens/sip/sip_service.dart';
-import 'package:crm_task_manager/screens/sip/sip_state.dart';
+import 'package:crm_task_manager/screens/profile/profile_screen.dart';
 import 'package:crm_task_manager/screens/task/task_screen.dart';
 import 'package:crm_task_manager/services/chat_unread_counter_service.dart';
+import 'package:crm_task_manager/services/workday_profile_redirect_service.dart';
+import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  final bool initialShowProfileScreen;
+
+  const HomeScreen({
+    super.key,
+    this.initialShowProfileScreen = false,
+  });
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -58,12 +60,16 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   int _selectedIndexGroup1 = 0;
   int _selectedIndexGroup2 = -1;
+  bool _showProfileScreen = false;
   final TextEditingController _searchController = TextEditingController();
   bool _isPushHandled = false;
+  bool _didApplyWorkdayRouteArgument = false;
   bool _isBackgroundLoading = false;
   bool _isInitialized = false;
+  int _dashboardReloadNonce = 0;
   DateTime? _lastPermissionUpdate;
   DateTime? _lastResumeSyncAt;
+  String _profileHeaderName = 'Профиль';
 
   List<Widget> _widgetOptionsGroup1 = [];
   List<Widget> _widgetOptionsGroup2 = [];
@@ -75,29 +81,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   List<String> _inactiveIconsGroup2 = [];
 
   void _refreshChatUnreadCounters() {
-    if (_hasActiveSipInteraction()) {
-      debugPrint(
-          'HomeScreen: skip chat unread refresh while SIP call is active');
-      return;
-    }
     ChatUnreadCounterService.instance.refreshCounts(silent: true);
   }
 
-  bool _hasActiveSipInteraction() {
-    final callStatus = SipService().state.callStatus;
-    return callStatus == SipCallUiStatus.incoming ||
-        callStatus == SipCallUiStatus.calling ||
-        callStatus == SipCallUiStatus.ringing ||
-        callStatus == SipCallUiStatus.inCall;
-  }
-
   bool _shouldSkipResumeSideEffects() {
-    if (_hasActiveSipInteraction()) {
-      debugPrint(
-          'HomeScreen: resume side effects skipped during active SIP call');
-      return true;
-    }
-
     final now = DateTime.now();
     if (_lastResumeSyncAt != null &&
         now.difference(_lastResumeSyncAt!) < const Duration(seconds: 2)) {
@@ -112,12 +99,19 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();
+    _showProfileScreen = widget.initialShowProfileScreen;
 
     // ✅ Подписываемся на изменения жизненного цикла приложения
     WidgetsBinding.instance.addObserver(this);
+    WorkdayProfileRedirectService.requestCounter
+        .addListener(_handleWorkdayProfileRequest);
+    WorkdayProfileRedirectService.closeCounter
+        .addListener(_handleWorkdayProfileClose);
+    _consumePendingWorkdayProfileRequest();
 
     // ✅ Инициализируем экраны синхронно
     _initializeScreensSync();
+    _loadProfileHeaderName();
 
     // ✅ Устанавливаем callback'и для навигации от виджета
     _setupWidgetNavigationCallbacks();
@@ -205,12 +199,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     debugPrint(
         'HomeScreen: _widgetOptionsGroup1.length = ${_widgetOptionsGroup1.length}');
 
-    if (_hasActiveSipInteraction()) {
-      debugPrint(
-          'HomeScreen: skip pending widget navigation while SIP call is active');
-      return;
-    }
-
     final pendingScreen = WidgetService.consumePendingNavigation();
     debugPrint('HomeScreen: pendingScreen from WidgetService: $pendingScreen');
 
@@ -228,6 +216,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   void dispose() {
     // ✅ Отписываемся от изменений жизненного цикла
     WidgetsBinding.instance.removeObserver(this);
+    WorkdayProfileRedirectService.requestCounter
+        .removeListener(_handleWorkdayProfileRequest);
+    WorkdayProfileRedirectService.closeCounter
+        .removeListener(_handleWorkdayProfileClose);
 
     WidgetService.onNavigateFromWidget = null;
     WidgetService.onNavigateFromWidgetByScreen = null;
@@ -257,18 +249,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       return;
     }
 
-    if (screenIdentifier == 'sip' && kShowSip) {
-      debugPrint('HomeScreen: SIP screen identifier detected');
-      Future.microtask(() async {
-        if (!mounted) return;
-        await navigatorKey.currentState?.push(
-          MaterialPageRoute<void>(
-            builder: (_) => const SipScreen(),
-            fullscreenDialog: true,
-          ),
-        );
+    if (_showProfileScreen) {
+      setState(() {
+        _showProfileScreen = false;
       });
-      return;
     }
 
     // Маппинг идентификаторов экранов на их типы
@@ -277,8 +261,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
     // Handle accounting document screen identifiers
     final accountingScreenIdentifiers = [
-      if (kShowRmk) 'rmk',
-      if (kShowRmkSales) 'rmk_sales',
       'client_sale',
       'client_return',
       'income_goods',
@@ -449,12 +431,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
           Widget? targetScreen;
           switch (screenIdentifier) {
-            case 'rmk':
-              targetScreen = const RmkScreen();
-              break;
-            case 'rmk_sales':
-              targetScreen = const RmkSalesScreen();
-              break;
             case 'client_sale':
               targetScreen = ClientSaleScreen();
               break;
@@ -598,6 +574,160 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       debugPrint(
           'HomeScreen: ❌ Screen $screenIdentifier not found or not available');
     }
+  }
+
+  void _handleWorkdayProfileRequest() {
+    if (!WorkdayProfileRedirectService.consumePendingOpenProfile()) {
+      return;
+    }
+    if (!mounted) return;
+    setState(() {
+      _showProfileScreen = true;
+    });
+  }
+
+  void _handleWorkdayProfileClose() {
+    if (!mounted) return;
+    final shouldRefresh = _showProfileScreen;
+    setState(() {
+      _showProfileScreen = false;
+      if (shouldRefresh) {
+        _dashboardReloadNonce++;
+      }
+      _selectDashboardTabIfAvailable();
+    });
+    if (shouldRefresh) {
+      initializeScreensWithPermissions();
+    }
+  }
+
+  void _selectDashboardTabIfAvailable() {
+    final dashboardIndex = _widgetOptionsGroup1.indexWhere(
+      (widget) => widget is DashboardScreen,
+    );
+
+    if (dashboardIndex != -1) {
+      _selectedIndexGroup1 = dashboardIndex;
+      _selectedIndexGroup2 = -1;
+    }
+  }
+
+  void _consumePendingWorkdayProfileRequest() {
+    if (!WorkdayProfileRedirectService.consumePendingOpenProfile()) {
+      return;
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      setState(() {
+        _showProfileScreen = true;
+      });
+    });
+  }
+
+  Future<void> _loadProfileHeaderName() async {
+    final prefs = await SharedPreferences.getInstance();
+    final userName = prefs.getString('userNameProfile') ??
+        prefs.getString('userName') ??
+        'Профиль';
+    if (!mounted) return;
+    setState(() {
+      _profileHeaderName = userName.isEmpty ? 'Профиль' : userName;
+    });
+  }
+
+  String _currentSectionTitle(AppLocalizations localizations) {
+    if (_showProfileScreen) {
+      return _profileHeaderName;
+    }
+
+    if (_selectedIndexGroup1 != -1 &&
+        _selectedIndexGroup1 < _navBarTitleKeysGroup1.length) {
+      return localizations
+          .translate(_navBarTitleKeysGroup1[_selectedIndexGroup1]);
+    }
+
+    if (_selectedIndexGroup2 != -1 &&
+        _selectedIndexGroup2 < _navBarTitleKeysGroup2.length) {
+      return localizations
+          .translate(_navBarTitleKeysGroup2[_selectedIndexGroup2]);
+    }
+
+    return 'shamCRM';
+  }
+
+  Widget _buildEmbeddedProfileOverlay(BuildContext context) {
+    final localizations = AppLocalizations.of(context)!;
+    return Positioned.fill(
+      child: Material(
+        color: Colors.white,
+        child: Column(
+          children: [
+            SafeArea(
+              bottom: false,
+              child: Container(
+                height: 68,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 42,
+                      height: 42,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFF2447B8),
+                        shape: BoxShape.circle,
+                      ),
+                      alignment: Alignment.center,
+                      child: Text(
+                        _profileHeaderName.isNotEmpty
+                            ? _profileHeaderName.substring(0, 1).toUpperCase()
+                            : 'P',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                          fontFamily: 'Gilroy',
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        _currentSectionTitle(localizations),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Color(0xFF1E2E52),
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                          fontFamily: 'Gilroy',
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () {},
+                      icon: const Icon(Icons.search, color: Color(0xFF1E2E52)),
+                    ),
+                    IconButton(
+                      onPressed: () {},
+                      icon: const Icon(Icons.notifications_none,
+                          color: Color(0xFF1E2E52)),
+                    ),
+                    IconButton(
+                      onPressed: () {},
+                      icon:
+                          const Icon(Icons.more_vert, color: Color(0xFF1E2E52)),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const Expanded(
+              child: ProfileScreen(embedded: true),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   // ==========================================================================
@@ -815,7 +945,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
     // Дашборд
     if (hasPermission('section.dashboard')) {
-      widgetsGroup1.add(DashboardScreen());
+      widgetsGroup1.add(
+        DashboardScreen(
+          key: ValueKey('dashboard_$_dashboardReloadNonce'),
+        ),
+      );
       titleKeysGroup1.add('appbar_dashboard');
       navBarTitleKeysGroup1.add('appbar_dashboard');
       activeIconsGroup1.add('assets/icons/MyNavBar/dashboard_ON.png');
@@ -961,6 +1095,18 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     final args =
         ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
 
+    if (!_didApplyWorkdayRouteArgument &&
+        args?['showWorkdayProfile'] == true &&
+        mounted) {
+      _didApplyWorkdayRouteArgument = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        setState(() {
+          _showProfileScreen = true;
+        });
+      });
+    }
+
     if (args != null && !_isPushHandled && _isInitialized) {
       _refreshChatUnreadCounters();
       setState(() {
@@ -1026,9 +1172,14 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             currentWidget = EmptyScreen();
           }
 
-          Widget safeBody = SafeArea(
-            bottom: true,
-            child: currentWidget,
+          Widget safeBody = Stack(
+            children: [
+              SafeArea(
+                bottom: true,
+                child: currentWidget,
+              ),
+              if (_showProfileScreen) _buildEmbeddedProfileOverlay(context),
+            ],
           );
 
           return Scaffold(
@@ -1056,6 +1207,15 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                                 currentIndexGroup1: _selectedIndexGroup1,
                                 currentIndexGroup2: _selectedIndexGroup2,
                                 onItemSelected: (groupIndex, itemIndex) {
+                                  if (_showProfileScreen) {
+                                    showCustomSnackBar(
+                                      context: context,
+                                      message: 'Сначала начните работу',
+                                      isSuccess: false,
+                                    );
+                                    return;
+                                  }
+
                                   final now = DateTime.now();
                                   if (_lastPermissionUpdate == null ||
                                       now.difference(_lastPermissionUpdate!) >
@@ -1069,6 +1229,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                                   _refreshChatUnreadCounters();
 
                                   setState(() {
+                                    _showProfileScreen = false;
                                     if (groupIndex == 1) {
                                       _selectedIndexGroup1 = itemIndex;
                                       _selectedIndexGroup2 = -1;

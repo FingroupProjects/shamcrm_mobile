@@ -1257,6 +1257,13 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
     final targetStatusId = newStatusId ?? currentStatusId ?? fallbackStatusId;
     if (targetStatusId == null) return;
 
+    _dealBloc.add(
+      FetchDealStatuses(
+        salesFunnelId: _selectedFunnel?.id,
+        forceRefresh: true,
+      ),
+    );
+
     _dealBloc.add(FetchDeals(
       targetStatusId,
       query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
@@ -1857,7 +1864,9 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
 
     return BlocBuilder<DealBloc, DealState>(
       builder: (context, state) {
-        int dealCount = (_tabTitles[index]['deals_count'] as int?) ?? 0;
+        final blocCounts = context.read<DealBloc>().dealCountsSnapshot;
+        int dealCount =
+            blocCounts[statusId] ?? (_tabTitles[index]['deals_count'] as int?) ?? 0;
 
         if (state is DealLoaded) {
           dealCount = state.dealCounts[statusId] ??
@@ -1881,7 +1890,6 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
           dealCount = state.dealCounts[statusId] ?? dealCount;
         }
 
-        DealCache.setPersistentDealCount(statusId, dealCount);
         return _buildTabButtonUI(index, isActive, dealCount);
       },
     );
@@ -2317,7 +2325,10 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
                     }
 
                     _dealBloc.add(
-                      FetchDealStatuses(salesFunnelId: _selectedFunnel?.id),
+                      FetchDealStatuses(
+                        salesFunnelId: _selectedFunnel?.id,
+                        forceRefresh: true,
+                      ),
                     );
 
                     final index =

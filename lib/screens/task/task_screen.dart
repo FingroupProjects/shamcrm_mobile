@@ -1000,6 +1000,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
               _hasPermissionToAddTask &&
               _getCreateTaskStatusId() != null)
           ? FloatingActionButton(
+              heroTag: 'task_screen_filtered_fab',
               onPressed: _openCreateTaskFromFilteredView,
               backgroundColor: const Color(0xff1E2E52),
               child: Image.asset('assets/icons/tabBar/add.png',

@@ -42,7 +42,6 @@ class AccountingWidgetProvider : AppWidgetProvider() {
             // Note: Using simple icons that are available in all Android versions
             // For better icons, consider adding custom drawable resources later
             val allButtons = listOf(
-                AccountingButton("rmk", R.drawable.ic_rmk, "expense_document.read"),
                 AccountingButton("client_sale", R.drawable.ic_shop, "expense_document.read"),
                 AccountingButton("client_return", R.drawable.ic_return, "client_return_document.read"),
                 AccountingButton("income_goods", R.drawable.ic_goods_income, "income_document.read"),
@@ -82,7 +81,6 @@ class AccountingWidgetProvider : AppWidgetProvider() {
             
             // Use Russian labels directly (hardcoded)
             val labelTextMap = mapOf(
-                "rmk" to "РМК",
                 "client_sale" to "Продажа",
                 "client_return" to "Возврат от клиента",
                 "income_goods" to "Приход товаров",

@@ -6,7 +6,6 @@ import 'package:crm_task_manager/screens/deal/deal_cache.dart';
 import 'package:crm_task_manager/screens/event/event_cache.dart';
 import 'package:crm_task_manager/screens/lead/lead_cache.dart';
 import 'package:crm_task_manager/screens/my-task/my_task_cache.dart';
-import 'package:crm_task_manager/screens/sip/sip_service.dart';
 import 'package:crm_task_manager/screens/task/task_cache.dart';
 import 'package:crm_task_manager/services/message_cache_service.dart';
 import 'package:flutter/material.dart';
@@ -29,12 +28,6 @@ class AppLogoutService {
       } catch (e) {
         debugPrint('AppLogoutService: logoutAccount error: $e');
       }
-    }
-
-    try {
-      await SipService().disconnect();
-    } catch (e) {
-      debugPrint('AppLogoutService: SIP disconnect error: $e');
     }
 
     try {

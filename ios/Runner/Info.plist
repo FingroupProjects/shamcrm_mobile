@@ -72,7 +72,7 @@
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>shamCRM использует ваше местоположение для предоставления функций геолокации, таких как отображение вашего текущего положения в приложении.</string>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>Мы используем микрофон для SIP-звонков и записи голосовых сообщений.</string>
+	<string>Мы используем микрофон для записи голосовых сообщений.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>Приложение сохраняет изображения в вашу фотогалерею.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
@@ -84,7 +84,6 @@
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>remote-notification</string>
-		<string>voip</string>
 	</array>
 	<key>UILaunchStoryboardName</key>
 	<string>Launch Screen</string>
@@ -110,10 +109,6 @@
 	<key>UISupportsDocumentBrowser</key>
 	<true/>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
-	<true/>
-	<key>com.apple.security.device.audio-input</key>
-	<true/>
-	<key>com.apple.security.device.microphone</key>
 	<true/>
 	<!-- Deep Link для виджета -->
 <key>CFBundleURLTypes</key>

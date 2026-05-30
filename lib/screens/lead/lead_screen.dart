@@ -62,6 +62,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
   bool _canCreateLeadStatus = false;
   bool _canUpdateLeadStatus = false;
   bool _canDeleteLeadStatus = false;
+  bool _permissionsInitialized = false;
   bool _isSwitch = false;
   bool _isSwitchingFunnel = false;
   bool _hasPermissionToAddLead = false;
@@ -136,6 +137,17 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
   int? _skipNextTabListenerIndex;
   PusherChannelsClient? _leadSocketClient;
   final List<StreamSubscription<dynamic>> _leadSocketSubscriptions = [];
+
+  void _resetLeadLoaderFlags() {
+    if (!mounted) return;
+    setState(() {
+      _isFilterLoading = false;
+      _shouldShowLoader = false;
+      _isSwitchingFunnel = false;
+      _skipNextTabListener = false;
+      _skipNextTabListenerIndex = null;
+    });
+  }
 
   Map<String, List<String>> _cloneCustomFieldFilters(
       Map<String, List<String>> source) {
@@ -527,7 +539,18 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
         _canUpdateLeadStatus = canUpdate;
         _canDeleteLeadStatus = canDelete;
         _hasPermissionToAddLead = canAddLead;
+        _permissionsInitialized = true;
       });
+    }
+
+    if (mounted && canRead) {
+      final leadState = context.read<LeadBloc>().state;
+      if (leadState is LeadInitial ||
+          (leadState is LeadLoaded && _tabTitles.isEmpty)) {
+        context.read<LeadBloc>().add(FetchLeadStatuses());
+      }
+    } else if (mounted && !canRead) {
+      _resetLeadLoaderFlags();
     }
 
     try {
@@ -616,6 +639,8 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
     if (mounted) {
       setState(() {
         _showCustomTabBar = true;
+        _isFilterLoading = true;
+        _shouldShowLoader = true;
         _selectedManagers = [];
         _selectedRegions = [];
         _selectedState = null;
@@ -673,7 +698,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
     }
 
     final leadBloc = BlocProvider.of<LeadBloc>(context);
-    leadBloc.add(FetchLeadStatuses());
+    leadBloc.add(FetchLeadStatuses(forceRefresh: true));
   }
 
   Future<void> _handleManagerSelected(Map managers) async {
@@ -1473,16 +1498,12 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
     return BlocListener<LeadBloc, LeadState>(
       listener: (context, state) {
         // Сбрасываем флаги когда данные загружены или произошла ошибка
-        if ((state is LeadDataLoaded || state is LeadError) &&
+        if ((state is LeadDataLoaded ||
+                state is LeadLoaded ||
+                state is LeadError) &&
             mounted &&
             (_isFilterLoading || _shouldShowLoader)) {
-          setState(() {
-            _isFilterLoading = false;
-            _shouldShowLoader = false;
-            _skipNextTabListener = false;
-            _skipNextTabListenerIndex = null;
-            //print('LeadScreen: _buildManagerView - Loader flags reset');
-          });
+          _resetLeadLoaderFlags();
         }
       },
       child: BlocBuilder<LeadBloc, LeadState>(
@@ -1540,8 +1561,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
               backgroundColor: Colors.white,
               child: ListView.builder(
                 controller: _listScrollController,
-                itemCount:
-                    filteredLeads.length + (state.isLoadingMore ? 1 : 0),
+                itemCount: filteredLeads.length + (state.isLoadingMore ? 1 : 0),
                 itemBuilder: (context, index) {
                   if (index >= filteredLeads.length) {
                     return const Padding(
@@ -1590,6 +1610,57 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
                 ),
               ),
             );
+          }
+
+          if (state is LeadLoaded) {
+            if (!_permissionsInitialized) {
+              return const Center(
+                child: PlayStoreImageLoading(
+                  size: 80.0,
+                  duration: Duration(milliseconds: 1000),
+                ),
+              );
+            }
+
+            if (!_canReadLeadStatus) {
+              return const Center(
+                child: Text(
+                  'Нет доступа к статусам лидов',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontFamily: 'Gilroy',
+                    fontWeight: FontWeight.w500,
+                    color: Color(0xff99A4BA),
+                  ),
+                ),
+              );
+            }
+
+            if (_tabTitles.isEmpty) {
+              return Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text(
+                      'Не удалось подготовить список статусов',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontFamily: 'Gilroy',
+                        fontWeight: FontWeight.w500,
+                        color: Color(0xff1E2E52),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    ElevatedButton(
+                      onPressed: () {
+                        context.read<LeadBloc>().add(FetchLeadStatuses());
+                      },
+                      child: const Text('Повторить'),
+                    ),
+                  ],
+                ),
+              );
+            }
           }
 
           return const Center(
@@ -1874,18 +1945,29 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
       listener: (context, state) async {
         //print('LeadScreen: BlocListener received state: ${state.runtimeType}');
         // Сбрасываем флаг загрузки когда получены данные
-        if (state is LeadDataLoaded || state is LeadError) {
-          if (mounted && _isFilterLoading) {
-            setState(() {
-              _isFilterLoading = false;
-              _shouldShowLoader = false;
-              _isSwitchingFunnel = false;
-              _skipNextTabListener = false;
-              _skipNextTabListenerIndex = null;
-            });
-          }
+        if ((state is LeadDataLoaded ||
+                state is LeadLoaded ||
+                state is LeadError) &&
+            mounted &&
+            (_isFilterLoading || _shouldShowLoader)) {
+          _resetLeadLoaderFlags();
         }
         if (state is LeadLoaded) {
+          if (!_permissionsInitialized) {
+            return;
+          }
+
+          if (!_canReadLeadStatus) {
+            if (mounted) {
+              setState(() {
+                _tabTitles.clear();
+                _tabKeys.clear();
+                _currentTabIndex = 0;
+              });
+            }
+            return;
+          }
+
           //print('LeadScreen: LeadLoaded state, caching lead statuses: ${state.leadStatuses}');
           await LeadCache.cacheLeadStatuses(state.leadStatuses);
 
@@ -1893,7 +1975,6 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
             setState(() {
               // Обновляем табы с новыми данными
               _tabTitles = state.leadStatuses
-                  .where((status) => _canReadLeadStatus)
                   .map((status) => {
                         'id': status.id,
                         'title': status.title,
@@ -2122,7 +2203,6 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
                     });
                   }
                 }
-
               } else {
                 // Если табы пустые, создаем пустой контроллер
                 if (_tabController.length > 0) {
@@ -2153,116 +2233,114 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
           }
         }
       },
-      child: _tabTitles.isEmpty
-          ? const Center(
+      child: Builder(
+        builder: (context) {
+          final state = context.watch<LeadBloc>().state;
+
+          if (_tabTitles.isEmpty) {
+            if (!_permissionsInitialized || state is LeadLoading) {
+              return const Center(
+                child: PlayStoreImageLoading(
+                  size: 80.0,
+                  duration: Duration(milliseconds: 1000),
+                ),
+              );
+            }
+
+            if (!_canReadLeadStatus) {
+              return const Center(
+                child: Text(
+                  'Нет доступа к статусам лидов',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontFamily: 'Gilroy',
+                    fontWeight: FontWeight.w500,
+                    color: Color(0xff99A4BA),
+                  ),
+                ),
+              );
+            }
+
+            if (state is LeadError) {
+              return Center(
+                child: Text(
+                  state.message,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontFamily: 'Gilroy',
+                    fontWeight: FontWeight.w500,
+                    color: Colors.red,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              );
+            }
+
+            if (state is LeadLoaded) {
+              return Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text(
+                      'Список статусов пуст',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontFamily: 'Gilroy',
+                        fontWeight: FontWeight.w500,
+                        color: Color(0xff1E2E52),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    ElevatedButton(
+                      onPressed: () {
+                        context.read<LeadBloc>().add(FetchLeadStatuses());
+                      },
+                      child: const Text('Обновить'),
+                    ),
+                  ],
+                ),
+              );
+            }
+
+            return const Center(
               child: PlayStoreImageLoading(
                 size: 80.0,
                 duration: Duration(milliseconds: 1000),
               ),
-            )
-          : TabBarView(
-              controller: _tabController,
-              physics: const AlwaysScrollableScrollPhysics(),
-              children: _tabTitles.map((status) {
-                //print('LeadScreen: Building TabBarView child for status: ${status['title']}');
-                return RefreshIndicator(
-                  onRefresh: () => _onRefresh(status['id']),
-                  color: const Color(0xff1E2E52),
-                  backgroundColor: Colors.white,
-                  child: LeadColumn(
-                    isLeadScreenTutorialCompleted:
-                        _isLeadScreenTutorialCompleted,
-                    statusId: status['id'],
-                    title: status['title'],
-                    onStatusId: (newStatusId) {
-                      //print('LeadScreen: onStatusId called with id: $newStatusId');
-                      final index =
-                          _tabTitles.indexWhere((s) => s['id'] == newStatusId);
-                      if (index != -1) {
-                        _tabController.animateTo(index);
-                        //print('LeadScreen: Animated to tab index: $index for statusId: $newStatusId');
+            );
+          }
 
-                        // Проверяем, есть ли уже данные для этого статуса
-                        final currentLeadBloc = context.read<LeadBloc>();
-                        if (currentLeadBloc.state is LeadDataLoaded) {
-                          final currentState =
-                              currentLeadBloc.state as LeadDataLoaded;
-                          final hasLeadsForStatus = currentState.leads
-                              .any((lead) => lead.statusId == newStatusId);
+          return TabBarView(
+            controller: _tabController,
+            physics: const AlwaysScrollableScrollPhysics(),
+            children: _tabTitles.map((status) {
+              //print('LeadScreen: Building TabBarView child for status: ${status['title']}');
+              return RefreshIndicator(
+                onRefresh: () => _onRefresh(status['id']),
+                color: const Color(0xff1E2E52),
+                backgroundColor: Colors.white,
+                child: LeadColumn(
+                  isLeadScreenTutorialCompleted: _isLeadScreenTutorialCompleted,
+                  statusId: status['id'],
+                  title: status['title'],
+                  onStatusId: (newStatusId) {
+                    //print('LeadScreen: onStatusId called with id: $newStatusId');
+                    final index =
+                        _tabTitles.indexWhere((s) => s['id'] == newStatusId);
+                    if (index != -1) {
+                      _tabController.animateTo(index);
+                      //print('LeadScreen: Animated to tab index: $index for statusId: $newStatusId');
 
-                          // Загружаем только если нет данных для этого статуса
-                          if (!hasLeadsForStatus) {
-                            if (mounted) {
-                              setState(() {
-                                _shouldShowLoader = true;
-                              });
-                            }
-                            currentLeadBloc.add(FetchLeads(
-                              newStatusId,
-                              salesFunnelId: _selectedFunnel?.id,
-                              ignoreCache: false,
-                              query: _lastSearchQuery.isNotEmpty
-                                  ? _lastSearchQuery
-                                  : null,
-                              managerIds: _selectedManagers.isNotEmpty
-                                  ? _selectedManagers
-                                      .map((manager) => manager.id)
-                                      .toList()
-                                  : null,
-                              regionsIds: _selectedRegions.isNotEmpty
-                                  ? _selectedRegions
-                                      .map((region) => region.id)
-                                      .toList()
-                                  : null,
-                              regionId: _selectedState?.id,
-                              cityIds: _selectedCities.isNotEmpty
-                                  ? _selectedCities
-                                      .map((city) => city.id)
-                                      .toList()
-                                  : null,
-                              sourcesIds: _selectedSources.isNotEmpty
-                                  ? _selectedSources
-                                      .map((source) => source.id)
-                                      .toList()
-                                  : null,
-                              channelIds: _selectedChannels.isNotEmpty
-                                  ? _selectedChannels
-                                      .map((channel) => channel.id)
-                                      .toList()
-                                  : null,
-                              advertisingCampaignIds:
-                                  _selectedAdvertisingCampaigns.isNotEmpty
-                                      ? _selectedAdvertisingCampaigns
-                                          .map((campaign) => campaign.id)
-                                          .toList()
-                                      : null,
-                              reasonForRefusalIds:
-                                  _selectedReasonForRefusalIds.isNotEmpty
-                                      ? _selectedReasonForRefusalIds
-                                      : null,
-                              statusIds: _selectedStatuses,
-                              fromDate: _fromDate,
-                              toDate: _toDate,
-                              hasSuccessDeals: _hasSuccessDeals,
-                              hasInProgressDeals: _hasInProgressDeals,
-                              hasFailureDeals: _hasFailureDeals,
-                              hasNotices: _hasNotices,
-                              hasContact: _hasContact,
-                              hasChat: _hasChat,
-                              hasNoReplies: _hasNoReplies,
-                              hasUnreadMessages: _hasUnreadMessages,
-                              hasDeal: _hasDeal,
-                              hasOrders: _hasOrders,
-                              daysWithoutActivity: _daysWithoutActivity,
-                              numberOfDaysDeal: _numberOfDaysDeal,
-                              directoryValues: _directoryValues,
-                            ));
-                            //print('LeadScreen: FetchLeads dispatched for statusId: $newStatusId (no cached data found)');
-                          } else {
-                            //print('LeadScreen: Using cached data for statusId: $newStatusId');
-                          }
-                        } else {
-                          // Если нет состояния LeadDataLoaded, загружаем данные
+                      // Проверяем, есть ли уже данные для этого статуса
+                      final currentLeadBloc = context.read<LeadBloc>();
+                      if (currentLeadBloc.state is LeadDataLoaded) {
+                        final currentState =
+                            currentLeadBloc.state as LeadDataLoaded;
+                        final hasLeadsForStatus = currentState.leads
+                            .any((lead) => lead.statusId == newStatusId);
+
+                        // Загружаем только если нет данных для этого статуса
+                        if (!hasLeadsForStatus) {
                           if (mounted) {
                             setState(() {
                               _shouldShowLoader = true;
@@ -2272,6 +2350,9 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
                             newStatusId,
                             salesFunnelId: _selectedFunnel?.id,
                             ignoreCache: false,
+                            query: _lastSearchQuery.isNotEmpty
+                                ? _lastSearchQuery
+                                : null,
                             managerIds: _selectedManagers.isNotEmpty
                                 ? _selectedManagers
                                     .map((manager) => manager.id)
@@ -2324,16 +2405,84 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
                             daysWithoutActivity: _daysWithoutActivity,
                             numberOfDaysDeal: _numberOfDaysDeal,
                             directoryValues: _directoryValues,
-                            customFieldFilters: _selectedCustomFieldFilters,
                           ));
-                          //print('LeadScreen: FetchLeads dispatched for statusId: $newStatusId (no LeadDataLoaded state)');
+                          //print('LeadScreen: FetchLeads dispatched for statusId: $newStatusId (no cached data found)');
+                        } else {
+                          //print('LeadScreen: Using cached data for statusId: $newStatusId');
                         }
+                      } else {
+                        // Если нет состояния LeadDataLoaded, загружаем данные
+                        if (mounted) {
+                          setState(() {
+                            _shouldShowLoader = true;
+                          });
+                        }
+                        currentLeadBloc.add(FetchLeads(
+                          newStatusId,
+                          salesFunnelId: _selectedFunnel?.id,
+                          ignoreCache: false,
+                          managerIds: _selectedManagers.isNotEmpty
+                              ? _selectedManagers
+                                  .map((manager) => manager.id)
+                                  .toList()
+                              : null,
+                          regionsIds: _selectedRegions.isNotEmpty
+                              ? _selectedRegions
+                                  .map((region) => region.id)
+                                  .toList()
+                              : null,
+                          regionId: _selectedState?.id,
+                          cityIds: _selectedCities.isNotEmpty
+                              ? _selectedCities.map((city) => city.id).toList()
+                              : null,
+                          sourcesIds: _selectedSources.isNotEmpty
+                              ? _selectedSources
+                                  .map((source) => source.id)
+                                  .toList()
+                              : null,
+                          channelIds: _selectedChannels.isNotEmpty
+                              ? _selectedChannels
+                                  .map((channel) => channel.id)
+                                  .toList()
+                              : null,
+                          advertisingCampaignIds:
+                              _selectedAdvertisingCampaigns.isNotEmpty
+                                  ? _selectedAdvertisingCampaigns
+                                      .map((campaign) => campaign.id)
+                                      .toList()
+                                  : null,
+                          reasonForRefusalIds:
+                              _selectedReasonForRefusalIds.isNotEmpty
+                                  ? _selectedReasonForRefusalIds
+                                  : null,
+                          statusIds: _selectedStatuses,
+                          fromDate: _fromDate,
+                          toDate: _toDate,
+                          hasSuccessDeals: _hasSuccessDeals,
+                          hasInProgressDeals: _hasInProgressDeals,
+                          hasFailureDeals: _hasFailureDeals,
+                          hasNotices: _hasNotices,
+                          hasContact: _hasContact,
+                          hasChat: _hasChat,
+                          hasNoReplies: _hasNoReplies,
+                          hasUnreadMessages: _hasUnreadMessages,
+                          hasDeal: _hasDeal,
+                          hasOrders: _hasOrders,
+                          daysWithoutActivity: _daysWithoutActivity,
+                          numberOfDaysDeal: _numberOfDaysDeal,
+                          directoryValues: _directoryValues,
+                          customFieldFilters: _selectedCustomFieldFilters,
+                        ));
+                        //print('LeadScreen: FetchLeads dispatched for statusId: $newStatusId (no LeadDataLoaded state)');
                       }
-                    },
-                  ),
-                );
-              }).toList(),
-            ),
+                    }
+                  },
+                ),
+              );
+            }).toList(),
+          );
+        },
+      ),
     );
   }
 

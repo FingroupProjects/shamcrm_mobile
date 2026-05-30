@@ -605,7 +605,51 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                   child: CircularProgressIndicator(color: Color(0xff1E2E52)));
             } else if (state is NotificationError) {
               debugPrint("❌ [BUILD] Ошибка: ${state.message}");
-              return Center(child: Text(state.message));
+              return RefreshIndicator(
+                color: const Color(0xff1E2E52),
+                backgroundColor: Colors.white,
+                onRefresh: _onRefresh,
+                child: ListView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  children: [
+                    SizedBox(height: MediaQuery.of(context).size.height * 0.28),
+                    Icon(
+                      Icons.notifications_off_outlined,
+                      size: 56,
+                      color: Colors.grey.shade400,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      state.message,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                        color: Color(0xff1E2E52),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Center(
+                      child: ElevatedButton(
+                        onPressed: _onRefresh,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xff1E2E52),
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 12,
+                          ),
+                        ),
+                        child: const Text('Повторить'),
+                      ),
+                    ),
+                  ],
+                ),
+              );
             } else if (state is NotificationDeleted) {
               return RefreshIndicator(
                 color: Color(0xff1E2E52),
