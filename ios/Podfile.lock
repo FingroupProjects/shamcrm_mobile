@@ -9,6 +9,8 @@ PODS:
   - audioplayers_darwin (0.0.1):
     - Flutter
     - FlutterMacOS
+  - camera_avfoundation (0.0.1):
+    - Flutter
   - connectivity_plus (0.0.1):
     - Flutter
   - device_info_plus (0.0.1):
@@ -205,6 +207,7 @@ DEPENDENCIES:
   - audio_service (from `.symlinks/plugins/audio_service/darwin`)
   - audio_session (from `.symlinks/plugins/audio_session/ios`)
   - audioplayers_darwin (from `.symlinks/plugins/audioplayers_darwin/darwin`)
+  - camera_avfoundation (from `.symlinks/plugins/camera_avfoundation/ios`)
   - connectivity_plus (from `.symlinks/plugins/connectivity_plus/ios`)
   - device_info_plus (from `.symlinks/plugins/device_info_plus/ios`)
   - file_picker (from `.symlinks/plugins/file_picker/ios`)
@@ -264,6 +267,8 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/audio_session/ios"
   audioplayers_darwin:
     :path: ".symlinks/plugins/audioplayers_darwin/darwin"
+  camera_avfoundation:
+    :path: ".symlinks/plugins/camera_avfoundation/ios"
   connectivity_plus:
     :path: ".symlinks/plugins/connectivity_plus/ios"
   device_info_plus:
@@ -332,6 +337,7 @@ SPEC CHECKSUMS:
   audio_service: aa99a6ba2ae7565996015322b0bb024e1d25c6fd
   audio_session: 9bb7f6c970f21241b19f5a3658097ae459681ba0
   audioplayers_darwin: 835ced6edd4c9fc8ebb0a7cc9e294a91d99917d5
+  camera_avfoundation: 5675ca25298b6f81fa0a325188e7df62cc217741
   connectivity_plus: cb623214f4e1f6ef8fe7403d580fdad517d2f7dd
   device_info_plus: 21fcca2080fbcd348be798aa36c3e5ed849eefbe
   DKImagePickerController: 946cec48c7873164274ecc4624d19e3da4c1ef3c
@@ -379,6 +385,6 @@ SPEC CHECKSUMS:
   vibration: 8e2f50fc35bb736f9eecb7dd9f7047fbb6a6e888
   WebRTC-SDK: dff00a3892bc570b6014e046297782084071657e
 
-PODFILE CHECKSUM: 54c81e7bead08c04fb442abcab8f2ce988b23c90
+PODFILE CHECKSUM: f89dafc5a5060c60caa9a47487b7e65cc0db3520
 
 COCOAPODS: 1.16.2
