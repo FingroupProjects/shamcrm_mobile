@@ -1,4 +1,5 @@
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:crm_task_manager/api/service/localization_service.dart';
 import 'package:crm_task_manager/offline/db/app_database.dart';
 import 'package:crm_task_manager/page_2/rmk/rmk_repository.dart';
 import 'package:flutter/material.dart';
@@ -28,6 +29,7 @@ class _RmkQuantityScreenState extends State<RmkQuantityScreen> {
   late RmkGood _good;
   bool _isSaving = false;
   bool _isProgrammaticEdit = false;
+  String _currencyTitle = 'TJS';
 
   double get _quantity => double.tryParse(_quantityController.text) ?? 0;
 
@@ -60,6 +62,7 @@ class _RmkQuantityScreenState extends State<RmkQuantityScreen> {
         }
       });
     });
+    _loadCurrency();
   }
 
   @override
@@ -69,6 +72,18 @@ class _RmkQuantityScreenState extends State<RmkQuantityScreen> {
     _quantityFocusNode.dispose();
     _totalFocusNode.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadCurrency() async {
+    final currency = await LocalizationService.getCurrency();
+    if (!mounted) return;
+    setState(() {
+      _currencyTitle = currency?.symbolCode?.trim().isNotEmpty == true
+          ? currency!.symbolCode!.trim()
+          : (currency?.name?.trim().isNotEmpty == true
+              ? currency!.name!.trim()
+              : _currencyTitle);
+    });
   }
 
   Future<void> _saveAndPop() async {
@@ -244,9 +259,11 @@ class _RmkQuantityScreenState extends State<RmkQuantityScreen> {
               _ProductHeader(
                 good: _good,
                 unitLabel: RmkRepository.unitLabelForGood(_good),
+                currencyTitle: _currencyTitle,
               ),
               _TotalRow(
                 total: _total,
+                currencyTitle: _currencyTitle,
                 selected: _activeField == _EditField.total,
                 controller: _totalController,
                 focusNode: _totalFocusNode,
@@ -260,6 +277,7 @@ class _RmkQuantityScreenState extends State<RmkQuantityScreen> {
                 quantityFocusNode: _quantityFocusNode,
                 totalFocusNode: _totalFocusNode,
                 unitLabel: RmkRepository.unitLabelForGood(_good),
+                currencyTitle: _currencyTitle,
                 onSelect: _selectField,
                 onChanged: _handleFieldChanged,
               ),
@@ -304,10 +322,12 @@ class _ProductHeader extends StatelessWidget {
   const _ProductHeader({
     required this.good,
     required this.unitLabel,
+    required this.currencyTitle,
   });
 
   final RmkGood good;
   final String unitLabel;
+  final String currencyTitle;
 
   @override
   Widget build(BuildContext context) {
@@ -348,7 +368,10 @@ class _ProductHeader extends StatelessWidget {
                   'Остаток',
                   '${_formatQuantity(good.quantity)} $unitLabel',
                 ),
-                _InfoLine('Продажная цена', _formatMoney(good.price)),
+                _InfoLine(
+                  'Продажная цена',
+                  '${_formatMoney(good.price)} $currencyTitle',
+                ),
               ],
             ),
           ),
@@ -426,6 +449,7 @@ class _ProductImage extends StatelessWidget {
 class _TotalRow extends StatelessWidget {
   const _TotalRow({
     required this.total,
+    required this.currencyTitle,
     required this.selected,
     required this.controller,
     required this.focusNode,
@@ -434,6 +458,7 @@ class _TotalRow extends StatelessWidget {
   });
 
   final double total;
+  final String currencyTitle;
   final bool selected;
   final TextEditingController controller;
   final FocusNode focusNode;
@@ -479,12 +504,13 @@ class _TotalRow extends StatelessWidget {
                         focusNode: focusNode,
                         selected: true,
                         hint: _formatMoney(total),
+                        suffix: currencyTitle,
                         textAlign: TextAlign.right,
                         onTap: onTap,
                         onChanged: onChanged,
                       )
                     : Text(
-                        _formatMoney(total),
+                        '${_formatMoney(total)} $currencyTitle',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         textAlign: TextAlign.right,
@@ -512,6 +538,7 @@ class _ActiveFieldPanel extends StatelessWidget {
     required this.quantityFocusNode,
     required this.totalFocusNode,
     required this.unitLabel,
+    required this.currencyTitle,
     required this.onSelect,
     required this.onChanged,
   });
@@ -522,6 +549,7 @@ class _ActiveFieldPanel extends StatelessWidget {
   final FocusNode quantityFocusNode;
   final FocusNode totalFocusNode;
   final String unitLabel;
+  final String currencyTitle;
   final ValueChanged<_EditField> onSelect;
   final ValueChanged<_EditField> onChanged;
 
@@ -553,7 +581,7 @@ class _ActiveFieldPanel extends StatelessWidget {
               label: 'Всего',
               controller: totalController,
               focusNode: totalFocusNode,
-              suffix: '',
+              suffix: currencyTitle,
               onTap: () => onSelect(_EditField.total),
               onChanged: () => onChanged(_EditField.total),
             ),

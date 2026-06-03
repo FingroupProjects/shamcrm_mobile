@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:crm_task_manager/api/service/localization_service.dart';
 import 'package:crm_task_manager/models/page_2/storage_model.dart';
 import 'package:crm_task_manager/offline/db/app_database.dart';
 import 'package:crm_task_manager/page_2/rmk/rmk_barcode_scanner_screen.dart';
@@ -43,11 +45,13 @@ class _RmkScreenState extends State<RmkScreen> {
   bool _isLoadingStorages = false;
   bool _hasCompletedInitialLoad = false;
   bool _isSearching = false;
+  String _currencyTitle = 'TJS';
 
   @override
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
+    unawaited(_loadCurrency());
     unawaited(_loadStoragesAndSync());
   }
 
@@ -70,6 +74,18 @@ class _RmkScreenState extends State<RmkScreen> {
 
     _lastBottomSyncAt = now;
     unawaited(_runSync());
+  }
+
+  Future<void> _loadCurrency() async {
+    final currency = await LocalizationService.getCurrency();
+    if (!mounted) return;
+    setState(() {
+      _currencyTitle = currency?.symbolCode?.trim().isNotEmpty == true
+          ? currency!.symbolCode!.trim()
+          : (currency?.name?.trim().isNotEmpty == true
+              ? currency!.name!.trim()
+              : _currencyTitle);
+    });
   }
 
   Future<void> _runSync({bool resetCatalogCache = false}) async {
@@ -362,6 +378,7 @@ class _RmkScreenState extends State<RmkScreen> {
         paymentMethod: payment.method?.value,
         paidAmount: payment.paidAmount,
         debtAmount: payment.debtAmount,
+        leadId: payment.leadId,
       );
       if (!mounted) return;
 
@@ -422,6 +439,146 @@ class _RmkScreenState extends State<RmkScreen> {
       return;
     }
     await _openQuantityScreen(good);
+  }
+
+  Future<void> _openSelectedItemsSheet(List<RmkCartItem> items) async {
+    if (items.isEmpty) return;
+
+    final total = items.fold<double>(
+      0,
+      (sum, item) => sum + (item.customTotal ?? item.quantity * item.price),
+    );
+
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) {
+        return DraggableScrollableSheet(
+          expand: false,
+          initialChildSize: 0.72,
+          minChildSize: 0.46,
+          maxChildSize: 0.92,
+          builder: (context, controller) {
+            return Container(
+              decoration: const BoxDecoration(
+                color: Color(0xffF8F9FB),
+                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+              ),
+              child: Column(
+                children: [
+                  const SizedBox(height: 10),
+                  Container(
+                    width: 44,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: const Color(0xffD7DEE9),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 10),
+                    child: Row(
+                      children: [
+                        const Expanded(
+                          child: Text(
+                            'Выбранные товары',
+                            style: TextStyle(
+                              color: Color(0xff1E2E52),
+                              fontFamily: 'Gilroy',
+                              fontSize: 20,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 7,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                          child: Text(
+                            '${items.length} шт',
+                            style: const TextStyle(
+                              color: Color(0xff1E2E52),
+                              fontFamily: 'Gilroy',
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    child: ListView.separated(
+                      controller: controller,
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                      itemCount: items.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 10),
+                      itemBuilder: (context, index) {
+                        final item = items[index];
+                        return _RmkSelectedCartCard(item: item);
+                      },
+                    ),
+                  ),
+                  SafeArea(
+                    top: false,
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 14,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xff1E2E52)
+                                  .withValues(alpha: 0.06),
+                              blurRadius: 18,
+                              offset: const Offset(0, 6),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          children: [
+                            const Text(
+                              'Итого',
+                              style: TextStyle(
+                                color: Color(0xff718096),
+                                fontFamily: 'Gilroy',
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const Spacer(),
+                            Text(
+                              _formatMoney(total),
+                              style: const TextStyle(
+                                color: Color(0xff1E2E52),
+                                fontFamily: 'Gilroy',
+                                fontSize: 20,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
   }
 
   @override
@@ -536,11 +693,23 @@ class _RmkScreenState extends State<RmkScreen> {
                   Container(
                     color: const Color(0xffF8F9FB),
                     padding: const EdgeInsets.fromLTRB(16, 8, 16, 10),
-                    child: _DoneButton(
-                      total: total,
-                      count: cartItems.length,
-                      isLoading: _isSubmitting,
-                      onTap: () => _finishSale(cartItems),
+                    child: Column(
+                      children: [
+                        _DoneButton(
+                          total: total,
+                          count: cartItems.length,
+                          isLoading: _isSubmitting,
+                          currencyTitle: _currencyTitle,
+                          onOpenItems: () => _openSelectedItemsSheet(cartItems),
+                          onTap: () => _finishSale(cartItems),
+                        ),
+                        const SizedBox(height: 10),
+                        _CategoryBottomButton(
+                          title: _selectedCategoryTitle(categories),
+                          isActive: _categoryId != null,
+                          onTap: () => _openFilter(categories),
+                        ),
+                      ],
                     ),
                   ),
                   Expanded(
@@ -559,7 +728,8 @@ class _RmkScreenState extends State<RmkScreen> {
                               query: _query,
                               categoryIds: _categoryId == null
                                   ? null
-                                  : RmkRepository.categoryIdsIncludingDescendants(
+                                  : RmkRepository
+                                      .categoryIdsIncludingDescendants(
                                       _categoryId!,
                                       categories,
                                     ),
@@ -610,12 +780,20 @@ class _RmkScreenState extends State<RmkScreen> {
                                           SliverGridDelegateWithFixedCrossAxisCount(
                                         crossAxisCount:
                                             MediaQuery.sizeOf(context).width >=
-                                                    520
-                                                ? 3
-                                                : 2,
+                                                    900
+                                                ? 5
+                                                : MediaQuery.sizeOf(context)
+                                                            .width >=
+                                                        700
+                                                    ? 4
+                                                    : 3,
                                         mainAxisSpacing: 10,
                                         crossAxisSpacing: 10,
-                                        childAspectRatio: 0.72,
+                                        childAspectRatio:
+                                            MediaQuery.sizeOf(context).width >=
+                                                    700
+                                                ? 0.76
+                                                : 0.7,
                                       ),
                                       delegate: SliverChildBuilderDelegate(
                                         (context, index) {
@@ -824,49 +1002,370 @@ class _DoneButton extends StatelessWidget {
     required this.total,
     required this.count,
     required this.isLoading,
+    required this.currencyTitle,
+    required this.onOpenItems,
     required this.onTap,
   });
 
   final double total;
   final int count;
   final bool isLoading;
+  final String currencyTitle;
+  final VoidCallback onOpenItems;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final isEnabled = count > 0 && !isLoading;
-    return SizedBox(
-      width: double.infinity,
-      height: 52,
-      child: ElevatedButton(
-        style: ElevatedButton.styleFrom(
-          backgroundColor:
-              isEnabled ? const Color(0xff1E2E52) : const Color(0xffCBD5E0),
-          foregroundColor: Colors.white,
-          elevation: 0,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        ),
-        onPressed: isEnabled ? onTap : null,
-        child: isLoading
-            ? const SizedBox(
-                width: 18,
-                height: 18,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                ),
-              )
-            : Text(
-                'Готово · ${_formatMoney(total)}',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontFamily: 'Gilroy',
-                  fontWeight: FontWeight.w700,
-                  fontSize: 16,
+    return Row(
+      children: [
+        Expanded(
+          child: SizedBox(
+            height: 52,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: isEnabled
+                    ? const Color(0xff1E2E52)
+                    : const Color(0xffCBD5E0),
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
                 ),
               ),
+              onPressed: isEnabled ? onTap : null,
+              child: isLoading
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    )
+                  : Text(
+                      'Готово · ${_formatMoney(total)} $currencyTitle',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontFamily: 'Gilroy',
+                        fontWeight: FontWeight.w700,
+                        fontSize: 16,
+                      ),
+                    ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 10),
+        SizedBox(
+          width: 52,
+          height: 52,
+          child: ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor:
+                  isEnabled ? Colors.white : const Color(0xffE2E8F0),
+              foregroundColor: const Color(0xff1E2E52),
+              elevation: 0,
+              padding: EdgeInsets.zero,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+                side: BorderSide(
+                  color: isEnabled
+                      ? const Color(0xffD9E2F1)
+                      : const Color(0xffE2E8F0),
+                ),
+              ),
+            ),
+            onPressed: isEnabled ? onOpenItems : null,
+            child: Stack(
+              clipBehavior: Clip.none,
+              alignment: Alignment.center,
+              children: [
+                Icon(
+                  Icons.receipt_long_rounded,
+                  size: 22,
+                  color: isEnabled
+                      ? const Color(0xff1E2E52)
+                      : const Color(0xff99A4BA),
+                ),
+                if (count > 0)
+                  Positioned(
+                    top: 8,
+                    right: 7,
+                    child: Container(
+                      constraints: const BoxConstraints(
+                        minWidth: 18,
+                        minHeight: 18,
+                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      decoration: BoxDecoration(
+                        color: const Color(0xff1E2E52),
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      alignment: Alignment.center,
+                      child: Text(
+                        '$count',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontFamily: 'Gilroy',
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _CategoryBottomButton extends StatelessWidget {
+  const _CategoryBottomButton({
+    required this.title,
+    required this.isActive,
+    required this.onTap,
+  });
+
+  final String title;
+  final bool isActive;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      height: 46,
+      child: OutlinedButton(
+        style: OutlinedButton.styleFrom(
+          backgroundColor:
+              isActive ? const Color(0xffEEF4FF) : const Color(0xffFFFFFF),
+          foregroundColor: const Color(0xff1E2E52),
+          side: BorderSide(
+            color: isActive ? const Color(0xffC9D8F2) : const Color(0xffD9E2F1),
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 14),
+        ),
+        onPressed: onTap,
+        child: Row(
+          children: [
+            Icon(
+              Icons.tune_rounded,
+              size: 18,
+              color:
+                  isActive ? const Color(0xff1E2E52) : const Color(0xff718096),
+            ),
+            const SizedBox(width: 10),
+            const Text(
+              'Категория',
+              style: TextStyle(
+                fontFamily: 'Gilroy',
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.right,
+                style: TextStyle(
+                  color: isActive
+                      ? const Color(0xff1E2E52)
+                      : const Color(0xff718096),
+                  fontFamily: 'Gilroy',
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            const Icon(
+              Icons.keyboard_arrow_down_rounded,
+              size: 20,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _RmkSelectedCartCard extends StatelessWidget {
+  const _RmkSelectedCartCard({required this.item});
+
+  final RmkCartItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    final total = item.customTotal ?? item.quantity * item.price;
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xffE7EDF6)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _RmkSelectedItemImage(imageUrl: item.imageUrl),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  item.name,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Color(0xff1E2E52),
+                    fontFamily: 'Gilroy',
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    height: 1.2,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    _RmkMetaChip(
+                      label: 'Кол-во',
+                      value: _formatMoney(item.quantity),
+                    ),
+                    _RmkMetaChip(
+                      label: 'Цена',
+                      value: _formatMoney(item.price),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 10),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              const Text(
+                'Сумма',
+                style: TextStyle(
+                  color: Color(0xff99A4BA),
+                  fontFamily: 'Gilroy',
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                _formatMoney(total),
+                style: const TextStyle(
+                  color: Color(0xff1E2E52),
+                  fontFamily: 'Gilroy',
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RmkSelectedItemImage extends StatelessWidget {
+  const _RmkSelectedItemImage({this.imageUrl});
+
+  final String? imageUrl;
+
+  @override
+  Widget build(BuildContext context) {
+    final url = imageUrl;
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(14),
+      child: SizedBox(
+        width: 62,
+        height: 62,
+        child: url == null || url.isEmpty
+            ? const ColoredBox(
+                color: Color(0xffEEF2F7),
+                child: Icon(
+                  Icons.inventory_2_outlined,
+                  color: Color(0xff99A4BA),
+                ),
+              )
+            : CachedNetworkImage(
+                imageUrl: url,
+                fit: BoxFit.cover,
+                memCacheWidth: 220,
+                fadeInDuration: Duration.zero,
+                fadeOutDuration: Duration.zero,
+                placeholder: (_, __) =>
+                    const ColoredBox(color: Color(0xffEEF2F7)),
+                errorWidget: (_, __, ___) => const ColoredBox(
+                  color: Color(0xffEEF2F7),
+                  child: Icon(
+                    Icons.inventory_2_outlined,
+                    color: Color(0xff99A4BA),
+                  ),
+                ),
+              ),
+      ),
+    );
+  }
+}
+
+class _RmkMetaChip extends StatelessWidget {
+  const _RmkMetaChip({
+    required this.label,
+    required this.value,
+  });
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: const Color(0xffF4F7FD),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: RichText(
+        text: TextSpan(
+          children: [
+            TextSpan(
+              text: '$label: ',
+              style: const TextStyle(
+                color: Color(0xff718096),
+                fontFamily: 'Gilroy',
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            TextSpan(
+              text: value,
+              style: const TextStyle(
+                color: Color(0xff1E2E52),
+                fontFamily: 'Gilroy',
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -4,7 +4,6 @@ import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/custom_widget/custom_app_bar_page_2.dart';
 import 'package:crm_task_manager/page_2/money/money_income/money_income_screen.dart';
 import 'package:crm_task_manager/page_2/money/money_outcome/money_outcome_screen.dart';
-import 'package:crm_task_manager/page_2/rmk/rmk_sales_screen.dart';
 import 'package:crm_task_manager/page_2/rmk/rmk_screen.dart';
 import 'package:crm_task_manager/page_2/warehouse/client_return/client_return_screen.dart';
 import 'package:crm_task_manager/page_2/warehouse/client_sale/client_sales_screen.dart';
@@ -166,14 +165,14 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
         );
       }
       if (kShowRmkSales) {
-        allDocuments.add(
-          WarehouseDocument(
-            keyName: 'rmk_sales',
-            title: 'Продажа РМК',
-            icon: Icons.receipt_long_outlined,
-            color: docColor,
-          ),
-        );
+        // allDocuments.add(
+        //   WarehouseDocument(
+        //     keyName: 'rmk_sales',
+        //     title: 'Продажа РМК',
+        //     icon: Icons.receipt_long_outlined,
+        //     color: docColor,
+        //   ),
+        // );
       }
       allDocuments.add(
         WarehouseDocument(
@@ -342,11 +341,11 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
         context,
         MaterialPageRoute(builder: (context) => const RmkScreen()),
       );
-    } else if (document.keyName == 'rmk_sales') {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => const RmkSalesScreen()),
-      );
+      // } else if (document.keyName == 'rmk_sales') {
+      //   Navigator.push(
+      //     context,
+      //     MaterialPageRoute(builder: (context) => const RmkSalesScreen()),
+      //   );
     } else if (document.keyName == 'supplier_return') {
       Navigator.push(
         context,

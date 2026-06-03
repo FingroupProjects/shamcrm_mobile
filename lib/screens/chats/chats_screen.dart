@@ -50,7 +50,10 @@ class _ChatsScreenState extends State<ChatsScreen>
   late TabController _tabController;
   late List<String> _tabTitles;
   late PusherChannelsClient socketClient;
+  bool _isSocketClientInitialized = false;
   late StreamSubscription<ChannelReadEvent> chatSubscribtion;
+  StreamSubscription<SalesFunnelState>? _salesFunnelSubscription;
+  final List<StreamSubscription<dynamic>> _socketSubscriptions = [];
   String endPointInTab = 'lead';
   Map<String, dynamic>? _activeFilters;
   bool _hasActiveFilters = false;
@@ -100,6 +103,7 @@ class _ChatsScreenState extends State<ChatsScreen>
     final LeadChat = await apiService.hasPermission('chat.read');
     final CorporateChat = await apiService.hasPermission('corporateChat.read');
     final TaskChat = await apiService.hasPermission('task.read');
+    if (!mounted) return;
 
     setState(() {
       _showLeadChat = LeadChat;
@@ -280,7 +284,8 @@ class _ChatsScreenState extends State<ChatsScreen>
           }
         });
 
-        context.read<SalesFunnelBloc>().stream.listen((state) {
+        _salesFunnelSubscription =
+            context.read<SalesFunnelBloc>().stream.listen((state) {
           if (state is SalesFunnelLoaded && mounted) {
             //print(   'ChatsScreen: SalesFunnelLoaded, funnels: ${state.funnels.length}, selectedFunnel: ${state.selectedFunnel?.id}');
             setState(() {
@@ -381,12 +386,14 @@ class _ChatsScreenState extends State<ChatsScreen>
     try {
       final prefs = await SharedPreferences.getInstance();
       final progress = await apiService.getTutorialProgress();
+      if (!mounted) return;
       setState(() {
         tutorialProgress = progress['result'];
       });
       await prefs.setString(
           'tutorial_progress', json.encode(progress['result']));
       bool isTutorialShown = prefs.getBool('isTutorialShowninChat') ?? false;
+      if (!mounted) return;
       if (isTutorialShown) {
         setState(() {
           _isTaskScreenTutorialCompleted = true;
@@ -404,10 +411,12 @@ class _ChatsScreenState extends State<ChatsScreen>
       final prefs = await SharedPreferences.getInstance();
       final savedProgress = prefs.getString('tutorial_progress');
       if (savedProgress != null) {
+        if (!mounted) return;
         setState(() {
           tutorialProgress = json.decode(savedProgress);
         });
         bool isTutorialShown = prefs.getBool('isTutorialShowninChat') ?? false;
+        if (!mounted) return;
         if (isTutorialShown) {
           setState(() {
             _isTaskScreenTutorialCompleted = true;
@@ -938,6 +947,7 @@ class _ChatsScreenState extends State<ChatsScreen>
       },
       minimumReconnectDelayDuration: const Duration(seconds: 1),
     );
+    _isSocketClientInitialized = true;
 
     final myPresenceChannel = socketClient.presenceChannel(
       'presence-user.$userId',
@@ -957,23 +967,27 @@ class _ChatsScreenState extends State<ChatsScreen>
       ),
     );
 
-    socketClient.onConnectionEstablished.listen((_) {
+    _socketSubscriptions.add(socketClient.onConnectionEstablished.listen((_) {
       debugPrint(
           '=================-=== ChatsScreen: Socket connected successfully for userId: $userId');
       myPresenceChannel.subscribeIfNotUnsubscribed();
       debugPrint(
           '=================-=== ChatsScreen: Subscribed to channel: presence-user.$userId');
-    });
+    }));
 
-    myPresenceChannel.bind('pusher:subscription_succeeded').listen((event) {
-      debugPrint(
-          '=================-=== ChatsScreen: Successfully subscribed to presence-user.$userId: ${event.data}');
-    });
+    _socketSubscriptions.add(
+      myPresenceChannel.bind('pusher:subscription_succeeded').listen((event) {
+        debugPrint(
+            '=================-=== ChatsScreen: Successfully subscribed to presence-user.$userId: ${event.data}');
+      }),
+    );
 
-    myPresenceChannel.bind('pusher:subscription_error').listen((event) {
-      debugPrint(
-          '=================-=== ChatsScreen: Subscription error for presence-user.$userId: ${event.data}');
-    });
+    _socketSubscriptions.add(
+      myPresenceChannel.bind('pusher:subscription_error').listen((event) {
+        debugPrint(
+            '=================-=== ChatsScreen: Subscription error for presence-user.$userId: ${event.data}');
+      }),
+    );
 
     // Используем список подписок, чтобы избежать перезаписи
     final List<StreamSubscription<ChannelReadEvent>> subscriptions = [];
@@ -1021,6 +1035,7 @@ class _ChatsScreenState extends State<ChatsScreen>
     );
 
     // Сохраняем подписки для последующей очистки
+    _socketSubscriptions.addAll(subscriptions);
     chatSubscribtion =
         subscriptions.first; // Для совместимости с текущей структурой
 
@@ -1480,11 +1495,19 @@ class _ChatsScreenState extends State<ChatsScreen>
 
   @override
   void dispose() {
-    _tabController.dispose();
+    if (_isTabControllerInitialized) {
+      _tabController.dispose();
+    }
     _pendingPageRequests.values.forEach((timer) => timer?.cancel());
+    _debounce?.cancel();
     WidgetsBinding.instance.removeObserver(this);
-    chatSubscribtion.cancel();
-    socketClient.dispose();
+    _salesFunnelSubscription?.cancel();
+    for (final subscription in _socketSubscriptions) {
+      subscription.cancel();
+    }
+    if (_isSocketClientInitialized) {
+      socketClient.dispose();
+    }
     _pagingControllers.forEach((_, controller) => controller.dispose());
     _chatsBlocs.forEach((_, bloc) => bloc.close());
     super.dispose();

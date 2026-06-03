@@ -113,6 +113,7 @@ class RmkRepository {
     required String? paymentMethod,
     required double paidAmount,
     required double debtAmount,
+    int? leadId,
   }) async {
     if (items.isEmpty) {
       return const RmkSaleSubmitResult(sentToServer: false, savedLocal: false);
@@ -129,6 +130,7 @@ class RmkRepository {
       paymentMethod: paymentMethod,
       paidAmount: paidAmount,
       debtAmount: debtAmount,
+      leadId: leadId,
     );
 
     await _db.into(_db.rmkOutboxSales).insert(
@@ -374,6 +376,7 @@ class RmkRepository {
     required String? paymentMethod,
     required double paidAmount,
     required double debtAmount,
+    int? leadId,
   }) async {
     final saleItems = await Future.wait(items.map((item) async {
       final total = item.customTotal ?? item.quantity * item.price;
@@ -399,7 +402,8 @@ class RmkRepository {
       'date': createdAt.toUtc().toIso8601String(),
       'storage_id': storageId,
       'comment': 'RMK',
-      'counterparty_id': 0,
+      'counterparty_id': leadId ?? 0,
+      'lead_id': leadId ?? 0,
       'document_goods': saleItems,
       'organization_id': organizationId,
       'sales_funnel_id': salesFunnelId,
@@ -534,7 +538,8 @@ class RmkRepository {
 
     final measurements = payload['measurements'];
     if (unitId != null && measurements is List) {
-      for (final measurement in measurements.whereType<Map<String, dynamic>>()) {
+      for (final measurement
+          in measurements.whereType<Map<String, dynamic>>()) {
         if (_asInt(measurement['unit_id']) == unitId) {
           final measurementUnit = measurement['unit'];
           if (measurementUnit is Map<String, dynamic>) {
@@ -549,8 +554,7 @@ class RmkRepository {
       final baseUnit = units.whereType<Map<String, dynamic>>().where((item) {
         return item['is_base'] == true || item['is_base'] == 1;
       }).firstOrNull;
-      final baseLabel =
-          baseUnit != null ? _unitNameFromMap(baseUnit) : null;
+      final baseLabel = baseUnit != null ? _unitNameFromMap(baseUnit) : null;
       if (baseLabel != null) return baseLabel;
 
       final firstUnit = units.whereType<Map<String, dynamic>>().firstOrNull;
@@ -825,7 +829,8 @@ class RmkRepository {
     final cachedGoods = await _db.select(_db.rmkGoods).get();
     return cachedGoods.any((good) {
       final payload = good.payload;
-      return !payload.contains('"unit_id"') || !payload.contains('"unit_label"');
+      return !payload.contains('"unit_id"') ||
+          !payload.contains('"unit_label"');
     });
   }
 

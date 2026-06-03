@@ -1,4 +1,6 @@
 import 'package:crm_task_manager/api/service/localization_service.dart';
+import 'package:crm_task_manager/models/lead_list_model.dart';
+import 'package:crm_task_manager/screens/deal/tabBar/lead_list.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -30,12 +32,14 @@ class RmkPaymentResult {
     required this.method,
     required this.paidAmount,
     required this.debtAmount,
+    this.leadId,
   });
 
   final RmkPaymentMode mode;
   final RmkPaymentMethod? method;
   final double paidAmount;
   final double debtAmount;
+  final int? leadId;
 }
 
 class RmkPaymentScreen extends StatefulWidget {
@@ -64,8 +68,11 @@ class _RmkPaymentScreenState extends State<RmkPaymentScreen> {
   double _paidAmountValue = 0;
   double _debtAmountValue = 0;
   String _currencyTitle = 'TJS';
+  LeadData? _selectedLead;
+  String? _leadErrorText;
 
   bool get _showsPaymentMethods => _selectedMode == RmkPaymentMode.payment;
+  bool get _requiresLead => _debtAmount > 0;
 
   bool get _needsPaymentMethod {
     if (_selectedMode == RmkPaymentMode.payment) return true;
@@ -110,6 +117,9 @@ class _RmkPaymentScreenState extends State<RmkPaymentScreen> {
     setState(() {
       _selectedMode = mode;
       _selectedMethod = null;
+      if (!_requiresLead) {
+        _leadErrorText = null;
+      }
       _syncVisibleAmount();
     });
   }
@@ -149,6 +159,9 @@ class _RmkPaymentScreenState extends State<RmkPaymentScreen> {
         _debtAmountValue =
             (widget.total - amount).clamp(0, widget.total).toDouble();
       }
+      if (!_requiresLead) {
+        _leadErrorText = null;
+      }
     });
   }
 
@@ -161,6 +174,12 @@ class _RmkPaymentScreenState extends State<RmkPaymentScreen> {
     if (_needsPaymentMethod && _selectedMethod == null) return;
     if (_selectedMode == RmkPaymentMode.payment && _amount <= 0) return;
     if (_selectedMode == RmkPaymentMode.debt && _amount <= 0) return;
+    if (_requiresLead && _selectedLead == null) {
+      setState(() {
+        _leadErrorText = 'Выберите клиента';
+      });
+      return;
+    }
     Navigator.pop(
       context,
       RmkPaymentResult(
@@ -168,6 +187,7 @@ class _RmkPaymentScreenState extends State<RmkPaymentScreen> {
         method: _needsPaymentMethod ? _selectedMethod : null,
         paidAmount: _paidAmount,
         debtAmount: _debtAmount,
+        leadId: _selectedLead?.id,
       ),
     );
   }
@@ -175,8 +195,9 @@ class _RmkPaymentScreenState extends State<RmkPaymentScreen> {
   @override
   Widget build(BuildContext context) {
     final hasValidAmount = _amount > 0;
-    final canSubmit =
-        hasValidAmount && (!_needsPaymentMethod || _selectedMethod != null);
+    final canSubmit = hasValidAmount &&
+        (!_needsPaymentMethod || _selectedMethod != null) &&
+        (!_requiresLead || _selectedLead != null);
     return Scaffold(
       backgroundColor: const Color(0xffF8F9FB),
       appBar: AppBar(
@@ -201,96 +222,125 @@ class _RmkPaymentScreenState extends State<RmkPaymentScreen> {
           ),
         ),
       ),
-      body: SafeArea(
-        child: Column(
-          children: [
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.fromLTRB(16, 10, 16, 20),
-                children: [
-                  _PaymentSummaryRow(
-                    title: 'Всего:',
-                    value: '${_formatMoney(widget.total)} $_currencyTitle',
-                    isPrimary: true,
-                  ),
-                  const SizedBox(height: 12),
-                  _PaymentSummaryRow(
-                    title: 'Остаток:',
-                    value: '${_formatMoney(_debtAmount)} $_currencyTitle',
-                  ),
-                  const SizedBox(height: 18),
-                  _PaymentTabs(
-                    selectedMode: _selectedMode,
-                    onSelected: _selectMode,
-                  ),
-                  const SizedBox(height: 14),
-                  _AmountField(
-                    controller: _amountController,
-                    focusNode: _amountFocusNode,
-                    currencyTitle: _currencyTitle,
-                    isEnabled: true,
-                    onChanged: _onAmountChanged,
-                    onTap: _handleAmountTap,
-                  ),
-                  if (_showsPaymentMethods) ...[
+      body: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () => FocusScope.of(context).unfocus(),
+        child: SafeArea(
+          child: Column(
+            children: [
+              Expanded(
+                child: ListView(
+                  keyboardDismissBehavior:
+                      ScrollViewKeyboardDismissBehavior.onDrag,
+                  padding: const EdgeInsets.fromLTRB(16, 10, 16, 20),
+                  children: [
+                    _PaymentSummaryRow(
+                      title: 'Всего:',
+                      value: '${_formatMoney(widget.total)} $_currencyTitle',
+                      isPrimary: true,
+                    ),
+                    const SizedBox(height: 12),
+                    _PaymentSummaryRow(
+                      title: 'Остаток:',
+                      value: '${_formatMoney(_debtAmount)} $_currencyTitle',
+                    ),
+                    const SizedBox(height: 18),
+                    _PaymentTabs(
+                      selectedMode: _selectedMode,
+                      onSelected: _selectMode,
+                    ),
                     const SizedBox(height: 14),
-                    Row(
-                      children: [
-                        for (final method in RmkPaymentMethod.values) ...[
-                          Expanded(
-                            child: _PaymentMethodButton(
-                              method: method,
-                              isSelected: _selectedMethod == method,
-                              onTap: () {
-                                setState(() => _selectedMethod = method);
-                              },
-                            ),
+                    _AmountField(
+                      controller: _amountController,
+                      focusNode: _amountFocusNode,
+                      currencyTitle: _currencyTitle,
+                      isEnabled: true,
+                      onChanged: _onAmountChanged,
+                      onTap: _handleAmountTap,
+                    ),
+                    if (_requiresLead) ...[
+                      const SizedBox(height: 14),
+                      LeadRadioGroupWidget(
+                        selectedLead: _selectedLead?.id.toString(),
+                        showDebt: true,
+                        onSelectLead: (lead) {
+                          setState(() {
+                            _selectedLead = lead;
+                            _leadErrorText = null;
+                          });
+                        },
+                      ),
+                      if (_leadErrorText != null) ...[
+                        const SizedBox(height: 6),
+                        Text(
+                          _leadErrorText!,
+                          style: const TextStyle(
+                            color: Color(0xffEF4444),
+                            fontFamily: 'Gilroy',
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
                           ),
-                          if (method != RmkPaymentMethod.values.last)
-                            const SizedBox(width: 8),
-                        ],
+                        ),
                       ],
-                    ),
+                    ],
+                    if (_showsPaymentMethods) ...[
+                      const SizedBox(height: 14),
+                      Row(
+                        children: [
+                          for (final method in RmkPaymentMethod.values) ...[
+                            Expanded(
+                              child: _PaymentMethodButton(
+                                method: method,
+                                isSelected: _selectedMethod == method,
+                                onTap: () {
+                                  setState(() => _selectedMethod = method);
+                                },
+                              ),
+                            ),
+                            if (method != RmkPaymentMethod.values.last)
+                              const SizedBox(width: 8),
+                          ],
+                        ],
+                      ),
+                    ],
                   ],
-                ],
+                ),
               ),
-            ),
-            Padding(
-              padding: EdgeInsets.fromLTRB(
-                16,
-                10,
-                16,
-                MediaQuery.paddingOf(context).bottom + 12,
-              ),
-              child: SizedBox(
-                width: double.infinity,
-                height: 52,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: canSubmit
-                        ? const Color(0xff1E2E52)
-                        : const Color(0xffCBD5E0),
-                    foregroundColor: Colors.white,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+              Padding(
+                padding: EdgeInsets.fromLTRB(
+                  16,
+                  10,
+                  16,
+                  MediaQuery.paddingOf(context).bottom + 12,
+                ),
+                child: SizedBox(
+                  width: double.infinity,
+                  height: 52,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: canSubmit
+                          ? const Color(0xff1E2E52)
+                          : const Color(0xffCBD5E0),
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
-                  ),
-                  onPressed: canSubmit ? _submit : null,
-                  child: Text(
-                    _selectedMode == RmkPaymentMode.debt
-                        ? 'Создать долг'
-                        : 'Создать продажу',
-                    style: const TextStyle(
-                      fontFamily: 'Gilroy',
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
+                    onPressed: canSubmit ? _submit : null,
+                    child: const Text(
+                      'Создать продажу',
+                      style: TextStyle(
+                        fontFamily: 'Gilroy',
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                   ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
